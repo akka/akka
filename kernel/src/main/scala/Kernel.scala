@@ -4,3 +4,5 @@
 
 package com.scalablesolutions.akka.kernel
 
+object Kernel {
+}

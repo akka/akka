@@ -3,13 +3,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>kernel</artifactId>
-
+  <artifactId>akka-kernel</artifactId>
   <name>Akka Kernel Module</name>
 
+  <packaging>jar</packaging>
+
   <parent>
-    <groupId>${akka.groupId}</groupId>
     <artifactId>akka</artifactId>
+    <groupId>${akka.groupId}</groupId>
     <version>${akka.version}</version>
   </parent>
 
@@ -29,6 +30,11 @@
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
+    <repository>
+      <id>lag</id>
+      <name>Configgy's' Repository</name>
+      <url>http://www.lag.net/repo</url>
+    </repository>
   </repositories>
 
   <pluginRepositories>
@@ -46,17 +52,17 @@
       <version>${scala.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.scala-tools</groupId>
+      <groupId>org.scala-libs</groupId>
       <artifactId>scala-otp-behavior</artifactId>
       <version>0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.scala-tools</groupId>
+      <groupId>org.scala-libs</groupId>
       <artifactId>scala-otp-component</artifactId>
       <version>0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.scala-tools</groupId>
+      <groupId>org.scala-libs</groupId>
       <artifactId>scala-otp-util-java</artifactId>
       <version>0.1-SNAPSHOT</version>
     </dependency>
@@ -65,7 +71,11 @@
       <artifactId>configgy</artifactId>
       <version>1.2</version>
     </dependency>
-
+    <dependency>
+      <groupId>org.guiceyfruit</groupId>
+      <artifactId>guice-core</artifactId>
+      <version>2.0-SNAPSHOT</version>
+    </dependency>
     <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
@@ -106,37 +116,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <suiteXmlFiles>
-            <suiteXmlFile>testng.xml</suiteXmlFile>
-          </suiteXmlFiles>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>maven-jetty-plugin</artifactId>
-        <configuration>
-          <contextPath>/</contextPath>
-          <scanIntervalSeconds>5</scanIntervalSeconds>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>net.sf.alchim</groupId>
-        <artifactId>yuicompressor-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compress</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <nosuffix>true</nosuffix>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
         <configuration>
           <downloadSources>true</downloadSources>
@@ -171,20 +150,6 @@
           </formats>
         </configuration>
         </plugin>
-      <plugin>
-        <artifactId>maven-clean-plugin</artifactId>
-        <configuration>
-          <filesets>
-            <fileset>
-              <directory>${basedir}</directory>
-              <includes>
-                <include>derby.log</include>
-                <include>gps_db</include>
-              </includes>
-            </fileset>
-          </filesets>
-        </configuration>
-      </plugin>
     </plugins>
     <resources>
       <resource>
@@ -202,24 +167,8 @@
         </excludes>
       </resource>
     </resources>
-    <testResources>
-      <testResource>
-        <filtering>false</filtering>
-        <directory>src/test/resources</directory>
-      </testResource>
-      <testResource>
-        <filtering>false</filtering>
-        <directory>src/test/scala</directory>
-        <includes>
-          <include>**</include>
-        </includes>
-        <excludes>
-          <exclude>**/*.scala</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
   </build>
- <reporting>
+  <reporting>
     <plugins>
       <plugin>
         <groupId>org.scala-tools</groupId>

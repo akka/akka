@@ -3,20 +3,21 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <name>Akka Java API</name>
+  <artifactId>akka-api-java</artifactId>
+
   <packaging>jar</packaging>
+
   <parent>
-    <groupId>${akka.groupId}</groupId>
     <artifactId>akka</artifactId>
+    <groupId>${akka.groupId}</groupId>
     <version>${akka.version}</version>
   </parent>
 
-  <name>Akka Java API</name>
-  <artifactId>api-java</artifactId>
-
   <dependencies>
     <dependency>
-      <groupId>com.scalablesolutions.akka</groupId>
-      <artifactId>kernel</artifactId>
+      <groupId>${akka.groupId}</groupId>
+      <artifactId>akka-kernel</artifactId>
       <version>${akka.version}</version>
     </dependency>
     <dependency>
@@ -48,29 +49,15 @@
           </includes>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <suiteXmlFiles>
-            <suiteXmlFile>testng.xml</suiteXmlFile>
-          </suiteXmlFiles>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-clean-plugin</artifactId>
-        <configuration>
-          <filesets>
-            <fileset>
-              <directory>${basedir}</directory>
-              <includes>
-                <include>derby.log</include>
-                <include>gps_db</include>
-              </includes>
-            </fileset>
-          </filesets>
-        </configuration>
-      </plugin>
+      <!-- <plugin> -->
+      <!--   <groupId>org.apache.maven.plugins</groupId> -->
+      <!--   <artifactId>maven-surefire-plugin</artifactId> -->
+      <!--   <configuration> -->
+      <!--     <suiteXmlFiles> -->
+      <!--       <suiteXmlFile>testng.xml</suiteXmlFile> -->
+      <!--     </suiteXmlFiles> -->
+      <!--   </configuration> -->
+      <!-- </plugin> -->
     </plugins>
     <resources>
       <resource>
@@ -88,19 +75,6 @@
         </excludes>
       </resource>
     </resources>
-
-    <testResources>
-      <testResource>
-        <filtering>false</filtering>
-        <directory>src/test/resources</directory>
-        <includes>
-          <include>**</include>
-        </includes>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
   </build>
   <reporting>
     <plugins></plugins>

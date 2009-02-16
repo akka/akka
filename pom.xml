@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   
   <modelVersion>4.0.0</modelVersion>
-  <groupId>${akka.groupId}</groupId>
-  <artifactId>akka</artifactId>
-  <name>Akka Actor Kernel</name>
 
+  <name>Akka Actor Kernel</name>
+  <artifactId>akka</artifactId>
+  <groupId>${akka.groupId}</groupId>
   <version>${akka.version}</version>
   <inceptionYear>2009</inceptionYear>
   <packaging>pom</packaging>
@@ -18,16 +18,9 @@
     <scala.version>2.7.3</scala.version>
   </properties>
 
-
-  <!-- scm>
-    <connection>scm:svn:http://ec2-67-202-34-240.compute-1.amazonaws.com/svn/gps/trunk</connection>
-    <developerConnection>scm:svn:http://ec2-67-202-34-240.compute-1.amazonaws.com/svn/gps/trunk</developerConnection>
-    <url>http://ec2-67-202-34-240.compute-1.amazonaws.com/svn/gps/trunk</url>
-  </scm -->
-
   <modules>
     <module>kernel</module>
-    <module>api-scala</module>
+    <module>api-java</module>
   </modules>
 
 </project>
