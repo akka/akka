@@ -72,7 +72,7 @@ class ActiveObjectProxy(val target: AnyRef, val timeout: Int) extends Invocation
     }
   }
 
-  private[kernel] val server = new GenericServerContainer(target.getClass.getName, () => dispatcher)
+  private[akka] val server = new GenericServerContainer(target.getClass.getName, () => dispatcher)
   server.setTimeout(timeout)
   
   def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = invoke(Invocation(m, args, target))
