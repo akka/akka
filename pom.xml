@@ -1,0 +1,33 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>${akka.groupId}</groupId>
+  <artifactId>akka</artifactId>
+  <name>Akka Actor Kernel</name>
+
+  <version>${akka.version}</version>
+  <inceptionYear>2009</inceptionYear>
+  <packaging>pom</packaging>
+
+  <properties>
+    <akka.version>0.1-SNAPSHOT</akka.version>
+    <akka.groupId>com.scalablesolutions.akka</akka.groupId>
+    <scala.version>2.7.3</scala.version>
+  </properties>
+
+
+  <!-- scm>
+    <connection>scm:svn:http://ec2-67-202-34-240.compute-1.amazonaws.com/svn/gps/trunk</connection>
+    <developerConnection>scm:svn:http://ec2-67-202-34-240.compute-1.amazonaws.com/svn/gps/trunk</developerConnection>
+    <url>http://ec2-67-202-34-240.compute-1.amazonaws.com/svn/gps/trunk</url>
+  </scm -->
+
+  <modules>
+    <module>kernel</module>
+    <module>api-scala</module>
+  </modules>
+
+</project>

@@ -1,0 +1,17 @@
+*.*~
+*#
+*.iml
+*.ipr
+*.iws
+etags
+TAGS
+target
+out
+akka.conf
+semantic.cache
+akka.log
+~
+tm*.log
+tm*.lck
+tm.out
+*.tm.epoch
