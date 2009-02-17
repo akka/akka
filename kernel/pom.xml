@@ -14,37 +14,6 @@
     <version>${akka.version}</version>
   </parent>
 
-  <repositories>
-    <repository>
-      <id>repo1.maven</id>
-      <name>Maven Main Repository</name>
-      <url>http://repo1.maven.org/maven2</url>
-    </repository>
-    <repository>
-      <id>scala-tools-snapshots</id>
-      <name>Scala-Tools Maven2 Snapshot Repository</name>
-      <url>http://scala-tools.org/repo-snapshots</url>
-    </repository>
-    <repository>
-      <id>scala-tools</id>
-      <name>Scala-Tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url>
-    </repository>
-    <repository>
-      <id>lag</id>
-      <name>Configgy's' Repository</name>
-      <url>http://www.lag.net/repo</url>
-    </repository>
-  </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>scala-tools.org</id>
-      <name>Scala-Tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url> 
-   </pluginRepository>
-  </pluginRepositories>
-
   <dependencies>
     <dependency>
       <groupId>org.scala-lang</groupId>
