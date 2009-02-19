@@ -1,5 +1,7 @@
 package com.scalablesolutions.akka.api;
 
+import com.scalablesolutions.akka.kernel.configuration.*;
+
 import com.google.inject.*;
 import com.google.inject.jsr250.ResourceProviderFactory;
 

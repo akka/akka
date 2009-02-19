@@ -36,6 +36,13 @@ object ActiveObject {
        proxy).asInstanceOf[T]
    }
 
+  def newInstance[T](intf: Class[_], target: AnyRef, timeout: Int): T = {
+    val proxy = new ActiveObjectProxy(intf, target.getClass, timeout)
+    proxy.setTargetInstance(target)
+    supervise(proxy)
+    newInstance(intf, proxy)
+  }
+
   def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor = {
   	object factory extends SupervisorFactory {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
@@ -44,6 +51,14 @@ object ActiveObject {
     supervisor ! scala.actors.behavior.Start
     supervisor
   }
+
+  private def supervise(proxy: ActiveObjectProxy): Supervisor = 
+    supervise(
+      RestartStrategy(OneForOne, 5, 1000),
+      Worker(
+        proxy.server,
+        LifeCycle(Permanent, 100))
+      :: Nil)
 }
 
 /**
@@ -58,10 +73,16 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     override def body: PartialFunction[Any, Unit] = {
       case invocation: Invocation =>
         try {
+          println("==========> " + invocation)
           reply(ErrRef(invocation.invoke))
         } catch {
-          case e: InvocationTargetException => reply(ErrRef({ throw e.getTargetException }))
-          case e => reply(ErrRef({ throw e }))
+          case e: InvocationTargetException =>
+            val te = e.getTargetException
+            te.printStackTrace
+            reply(ErrRef({ throw te }))
+          case e =>
+            e.printStackTrace
+            reply(ErrRef({ throw e }))
         }
       case 'exit =>  exit; reply()
       case unexpected => throw new ActiveObjectException("Unexpected message to actor proxy: " + unexpected)
@@ -89,10 +110,10 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
  */
 case class Invocation(val method: Method, val args: Array[Object], val target: AnyRef) {
   method.setAccessible(true);
-  
-  def invoke: AnyRef = method.invoke(target, args: _*)
 
-  override def toString: String = "Invocation[method: " + method.getName + ", args: " + args + ", target: " + target + "]"
+  def invoke: AnyRef = method.invoke(target, args:_*)
+
+  override def toString: String = "Invocation [method: " + method.getName + ", args: " + argsToString(args) + ", target: " + target + "]"
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -106,8 +127,13 @@ case class Invocation(val method: Method, val args: Array[Object], val target: A
     that != null &&
     that.isInstanceOf[Invocation] &&
     that.asInstanceOf[Invocation].method == method &&
-    that.asInstanceOf[Invocation].args == args
-    that.asInstanceOf[Invocation].target == target
+    that.asInstanceOf[Invocation].target == target &&
+    isEqual(that.asInstanceOf[Invocation].args, args)
   }
-}
 
+  private def isEqual(a1: Array[Object], a2: Array[Object]): Boolean =
+    (a1 == null && a2 == null) ||
+    (a1 != null && a2 != null && a1.size == a2.size && a1.zip(a2).find(t => t._1 == t._2).isDefined)
+
+  private def argsToString(array: Array[Object]): String = array.foldLeft("(")(_ + " " + _) + ")"
+}

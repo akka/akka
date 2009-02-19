@@ -55,9 +55,6 @@
            <excludes>
              <exclude>**/Abstract*</exclude>
             </excludes>
-           <!--<suiteXmlFiles>-->
-             <!--<suiteXmlFile>testng.xml</suiteXmlFile>-->
-           <!--</suiteXmlFiles>-->
          </configuration>
        </plugin>
     </plugins>

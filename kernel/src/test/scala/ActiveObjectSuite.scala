@@ -4,6 +4,8 @@
 
 package com.scalablesolutions.akka.kernel
 
+import org.specs.runner.JUnit4
+import org.specs.Specification
 import scala.actors.behavior._
 import scala.actors.annotation.oneway
 
@@ -11,57 +13,55 @@ import scala.actors.annotation.oneway
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 
+class activeObjectSpecTest extends JUnit4(activeObjectSpec) // for JUnit4 and Maven
+object activeObjectSpec extends Specification {
 
-// class ActiveObjectSuite extends TestNGSuite {
+  private var messageLog = ""
 
-//   private var messageLog = ""
+  trait Foo {
+    def foo(msg: String): String
+    @oneway def bar(msg: String)
+    def longRunning
+    def throwsException
+  }
 
-//   trait Foo {
-//     def foo(msg: String): String    
-//     @oneway def bar(msg: String)
-//     def longRunning
-//     def throwsException
-//   }
+  class FooImpl extends Foo {
+    val bar: Bar = new BarImpl
+    def foo(msg: String): String = {
+      messageLog += msg
+      "return_foo "
+    }
+    def bar(msg: String) = bar.bar(msg)
+    def longRunning = Thread.sleep(10000)
+    def throwsException = error("expected")
+  }
 
-//   class FooImpl extends Foo {
-//     val bar: Bar = new BarImpl 
-//     def foo(msg: String): String = { 
-//       messageLog += msg
-//       "return_foo " 
-//     }
-//     def bar(msg: String) = bar.bar(msg)
-//     def longRunning = Thread.sleep(10000)
-//     def throwsException = error("expected")
-//   }
+  trait Bar {
+    @oneway def bar(msg: String)
+  }
 
-//   trait Bar {
-//     @oneway def bar(msg: String)
-//   }
+  class BarImpl extends Bar {
+    def bar(msg: String) = {
+      Thread.sleep(100)
+      messageLog += msg
+    }
+  }
 
-//   class BarImpl extends Bar {
-//     def bar(msg: String) = { 
-//       Thread.sleep(100)
-//       messageLog += msg
-//     }
-//   }
+//  "make sure default supervisor works correctly" in {
+//    val foo = ActiveObject.newInstance[Foo](classOf[Foo], classOf[FooImpl], 1000)
+//
+//    val result = foo.foo("foo ")
+//    messageLog += result
+//
+//    foo.bar("bar ")
+//    messageLog += "before_bar "
+//
+//    Thread.sleep(500)
+//    messageLog must equalIgnoreCase("foo return_foo before_bar bar ")
+// }
 
-//   @BeforeMethod
-//   def setup = messageLog = ""
 
-//   @Test { val groups=Array("unit") }
-//   def testCreateGenericServerBasedComponentUsingDefaultSupervisor = {
-//     val foo = ActiveObject.newInstance[Foo](classOf[Foo], new FooImpl, 1000)
-    
-//     val result = foo.foo("foo ")
-//     messageLog += result
-
-//     foo.bar("bar ")
-//     messageLog += "before_bar "
-
-//     Thread.sleep(500)
-//     assert(messageLog === "foo return_foo before_bar bar ")
-//   }
-
+}
 //   @Test { val groups=Array("unit") }
 //   def testCreateGenericServerBasedComponentUsingCustomSupervisorConfiguration = {
 //     val proxy = new ActiveObjectProxy(new FooImpl, 1000)
@@ -137,3 +137,6 @@ import scala.actors.annotation.oneway
 //     assert(true === true)
 //   }
 // }
+
+
+
