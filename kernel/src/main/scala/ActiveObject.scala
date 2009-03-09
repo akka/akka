@@ -4,7 +4,7 @@
 
 package com.scalablesolutions.akka.kernel
 
-import scala.actors.behavior._
+import com.scalablesolutions.akka.supervisor._
 
 import java.util.{List => JList, ArrayList}
 
@@ -23,7 +23,6 @@ class ActiveObjectFactory {
   def supervise(restartStrategy: RestartStrategy, components: JList[Worker]): Supervisor =
     ActiveObject.supervise(restartStrategy, components.toArray.toList.asInstanceOf[List[Worker]])  
 }
-
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -48,7 +47,7 @@ object ActiveObject {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
     val supervisor = factory.newSupervisor
-    supervisor ! scala.actors.behavior.Start
+    supervisor ! com.scalablesolutions.akka.supervisor.Start
     supervisor
   }
 
@@ -65,7 +64,7 @@ object ActiveObject {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int) extends InvocationHandler {
-  private val oneway = classOf[scala.actors.annotation.oneway]
+  private val oneway = classOf[com.scalablesolutions.akka.annotation.oneway]
   private var targetInstance: AnyRef = _
   private[akka] def setTargetInstance(instance: AnyRef) = targetInstance = instance
 
@@ -73,7 +72,6 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     override def body: PartialFunction[Any, Unit] = {
       case invocation: Invocation =>
         try {
-          println("==========> " + invocation)
           reply(ErrRef(invocation.invoke))
         } catch {
           case e: InvocationTargetException =>
@@ -133,7 +131,10 @@ case class Invocation(val method: Method, val args: Array[Object], val target: A
 
   private def isEqual(a1: Array[Object], a2: Array[Object]): Boolean =
     (a1 == null && a2 == null) ||
-    (a1 != null && a2 != null && a1.size == a2.size && a1.zip(a2).find(t => t._1 == t._2).isDefined)
+    (a1 != null && 
+     a2 != null && 
+     a1.size == a2.size && 
+     a1.zip(a2).find(t => t._1 == t._2).isDefined)
 
-  private def argsToString(array: Array[Object]): String = array.foldLeft("(")(_ + " " + _) + ")"
+  private def argsToString(array: Array[Object]): String = synchronized { array.foldLeft("(")(_ + " " + _) + ")" }
 }

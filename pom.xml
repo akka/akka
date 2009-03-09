@@ -18,6 +18,8 @@
   </properties>
 
   <modules>
+    <module>util-java</module>
+    <module>supervisor</module>
     <module>kernel</module>
     <module>api-java</module>
   </modules>

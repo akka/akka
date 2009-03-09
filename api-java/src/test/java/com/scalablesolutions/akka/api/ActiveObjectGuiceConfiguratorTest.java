@@ -4,11 +4,12 @@
 
 package com.scalablesolutions.akka.api;
 
+import com.scalablesolutions.akka.annotation.oneway;
+import com.scalablesolutions.akka.kernel.configuration.*;
+
 import com.google.inject.Inject;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-
-import scala.actors.annotation.oneway;
 
 import junit.framework.TestCase;
 
@@ -99,9 +100,8 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 interface Foo {
   public String foo(String msg);
 
-  public
   @oneway
-  void bar(String msg);
+  public void bar(String msg);
 
   public void longRunning();
 

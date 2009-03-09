@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
 package com.scalablesolutions.akka.api;
 
 import com.scalablesolutions.akka.kernel.configuration.*;
@@ -13,8 +17,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
-import scala.actors.behavior.Supervisor;
-import scala.actors.behavior.Worker;
+import com.scalablesolutions.akka.supervisor.Supervisor;
+import com.scalablesolutions.akka.supervisor.Worker;
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
