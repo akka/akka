@@ -1,0 +1,17 @@
+<cluster>
+  <name>mycluster</name>
+  <server>
+    <id>0</id>
+    <host>localhost</host>
+    <http-port>8081</http-port>
+    <socket-port>6666</socket-port>
+    <partitions>0, 1</partitions>
+  </server>
+  <server>
+    <id>1</id>
+    <host>localhost</host>
+    <http-port>8082</http-port>
+    <socket-port>6667</socket-port>
+    <partitions>2, 3</partitions>
+  </server>
+</cluster>
