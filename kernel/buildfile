@@ -1,0 +1,44 @@
+require 'buildr/scala'
+ 
+repositories.remote << 'http://www.ibiblio.org/maven2'
+repositories.remote << 'http://scala-tools.org/repo-releases'
+repositories.remote << 'http://scala-tools.org/repo-snapshots'
+repositories.remote << 'http://www.lag.net/repo'
+repositories.local = '/home/jboner/.m2/repository'
+
+#AXIS2 = 'org.apache.axis2:axis2:jar:1.2'
+#AXIOM = group('axiom-api', 'axiom-impl', 'axiom-dom',
+#  :under=>'org.apache.ws.commons.axiom', :version=>'1.2.4')
+#AXIS_OF_WS = [AXIOM, AXIS2]
+#OPENJPA = ['org.apache.openjpa:openjpa:jar:1.2.0',
+#  'net.sourceforge.serp:serp:jar:1.12.0']
+CONFIGGY = 'net.lag:configgy:jar:1.2'
+AKKA_SUPERVISOR = 'com.scalablesolutions.akka:akka-supervisor:jar:0.1'
+AKKA_UTIL_JAVA = 'com.scalablesolutions.akka:akka-util-java:jar:0.1'
+GUICEYFRUIT_CORE = 'org.guiceyfruit:guice-core:jar:2.0-SNAPSHOT'
+GUICEYFRUIT_JSR250 = 'org.guiceyfruit:guice-jsr250:jar:2.0-SNAPSHOT'
+GRIZZLY_WEBSERVER = 'com.sun.grizzly:grizzly-servlet-webserver:jar:1.8.6.3'
+JERSEY_CORE = 'com.sun.jersey:jersey-core:jar:1.0.1'
+JERSEY_SERVER = 'com.sun.jersey:jersey-server:jar:1.0.1'
+JERSEY_JSON = 'com.sun.jersey:jersey-json:jar:1.0.1'
+JERSEY_ATOM = 'com.sun.jersey:jersey-atom:jar:1.0.1'
+JSR_311 = 'javax.ws.rs:jsr311-api:jar:1.0'
+VOLDEMORT = 'voldemort:voldemort:jar:0.4a'
+VOLDEMORT_CONTRIB = 'voldemort:voldemort-contrib:jar:0.4a'
+ZOOKEEPER = 'org.apache:zookeeper:jar:3.1.0'
+SLF4J_LOG4J_12 = 'org.slf4j:slf4j-log4j12:jar:1.4.3'
+SLF4J_API = 'org.slf4j:slf4j-api:jar:1.4.3'
+LOG4J = 'log4j:log4j:jar:1.2.13'
+SPECS = 'org.specs:specs:jar:1.4.3'
+JUNIT4 = 'junit:junit:jar:4.0'
+
+desc 'The Akka Actor kernel core implementation'
+define 'akka-kernel' do
+  project.version = '0.1'
+  project.group = 'com.scalablesolutios.akka' 
+  compile.with [CONFIGGY, AKKA_SUPERVISOR, AKKA_UTIL_JAVA, GUICEYFRUIT_CORE, GUICEYFRUIT_JSR250, GRIZZLY_WEBSERVER, JERSEY_CORE, JERSEY_SERVER, JERSEY_JSON, JERSEY_ATOM, JSR_311, VOLDEMORT, VOLDEMORT_CONTRIB, ZOOKEEPER, SLF4J_LOG4J_12, SLF4J_API, LOG4J, SPECS, JUNIT4]
+  
+  test.using :specs
+  package :jar
+end
+

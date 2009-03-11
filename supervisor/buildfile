@@ -1,0 +1,18 @@
+require 'buildr/scala'
+ 
+repositories.remote << 'http://www.ibiblio.org/maven2'
+repositories.remote << 'http://scala-tools.org/repo-releases'
+repositories.remote << 'http://scala-tools.org/repo-snapshots'
+repositories.remote << 'http://www.lag.net/repo'
+
+CONFIGGY = 'net.lag:configgy:jar:1.2'
+
+desc 'Implementation of Erlangs Supervisor and GenericServer behaviors'
+define 'akka-supervisor' do
+  project.version = '0.1'
+  project.group = 'com.scalablesolutions.akka' 
+  compile.with CONFIGGY
+  #test.using :specs
+  package :jar
+end
+
