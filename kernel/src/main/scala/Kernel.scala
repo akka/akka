@@ -22,7 +22,6 @@ import java.util.{Map, HashMap}
 import java.io.{File, IOException}
 
 import javax.ws.rs.core.UriBuilder
-import javax.ws.rs.{Produces, Path, GET}
 import javax.management.JMException
 
 /**
@@ -127,6 +126,7 @@ object Kernel extends Logging {
   }
 }
 
+//import javax.ws.rs.{Produces, Path, GET}
 //  @GET
 //  @Produces("application/json")
 //  @Path("/network/{id: [0-9]+}/{nid}")

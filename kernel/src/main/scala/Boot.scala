@@ -2,7 +2,9 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package com.scalablesolutions.akka
+
+import com.scalablesolutions.akka.kernel.Logging
 
 import java.io.File
 import java.lang.reflect.Method
@@ -11,7 +13,7 @@ import java.net.{URL, URLClassLoader}
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Boot extends Logging {
+class Boot extends Logging {
 
   /**
    * Assumes that the AKKA_HOME directory is set with /config, /classes and /lib beneath it holding files and jars.
