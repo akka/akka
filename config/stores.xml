@@ -1,38 +1,18 @@
 <stores>
-  <!-- Note that "test" store requires 2 reads and writes,
-       so to use this store you must have both nodes started and running -->
   <store>
-    <name>snapshots</name>
+    <name>snapshot</name>
     <persistence>bdb</persistence>
     <routing>client</routing>
-    <replication-factor>2</replication-factor>
-    <required-reads>2</required-reads>
-    <required-writes>2</required-writes>
+    <replication-factor>1</replication-factor>
+    <required-reads>1</required-reads>
+    <required-writes>1</required-writes>
     <key-serializer>
       <type>json</type>
-      <schema-info>"int32"</schema-info>
+      <schema-info>"string"</schema-info>
     </key-serializer>
     <value-serializer>
       <type>json</type>
-      <schema-info>{"a":"int32"}</schema-info>
+      <schema-info>"string"</schema-info>
     </value-serializer>
-    <retention-days>1</retention-days>
-  </store>
-  <store>
-    <name>events</name>
-    <persistence>bdb</persistence>
-    <routing>client</routing>
-    <replication-factor>2</replication-factor>
-    <required-reads>2</required-reads>
-    <required-writes>2</required-writes>
-    <key-serializer>
-      <type>json</type>
-      <schema-info>"int32"</schema-info>
-    </key-serializer>
-    <value-serializer>
-      <type>json</type>
-      <schema-info>{"a":"int32"}</schema-info>
-    </value-serializer>
-    <retention-days>1</retention-days>
   </store>
 </stores>
