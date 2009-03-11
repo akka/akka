@@ -6,8 +6,8 @@ package com.scalablesolutions.akka.kernel
 
 import org.specs.runner.JUnit4
 import org.specs.Specification
-import scala.actors.behavior._
-import scala.actors.annotation.oneway
+import com.scalablesolutions.akka.supervisor._
+import com.scalablesolutions.akka.annotation.oneway
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
