@@ -65,4 +65,43 @@
     </pluginRepository>
   </pluginRepositories>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <configuration>
+          <tasks>
+            <!-- To start an akka server, use: mvn antrun:run -->
+            <echo message="akka kernel starting..."/>
+
+            <property name="compile_classpath" refid="maven.compile.classpath"/>
+            <property name="runtime_classpath" refid="maven.runtime.classpath"/>
+            <property name="test_classpath"    refid="maven.test.classpath"/>
+
+            <java classname="com.scalablesolutions.akka.Boot" fork="true">
+              <classpath>
+                <pathelement path="${runtime_classpath}"/>
+                <pathelement path="${compile_classpath}"/>
+              </classpath>
+              <jvmarg value="-server"/>
+              <jvmarg value="-Xms256M"/>
+              <jvmarg value="-Xmx256M"/>
+              <jvmarg value="-verbosegc"/>
+              <!-- for profiling/performance...
+              <jvmarg value="-javaagent:tmp/shiftone-jrat.jar"/>
+              <jvmarg value="-agentlib:hprof=heap=sites"/>
+              <jvmarg value="-agentlib:hprof=cpu=samples"/>
+              <jvmarg value="-agentlib:hprof=cpu=times,thread=y"/>
+                -->
+              <arg value="com.scalablesolutions.akka.kernel.Kernel"/>
+              <arg value="."/>
+            </java>
+            <echo message="akka server is shutdown"/>
+          </tasks>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
 </project>
