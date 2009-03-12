@@ -1,0 +1,21 @@
+require 'buildr/scala'
+ 
+repositories.remote << 'http://www.ibiblio.org/maven2'
+repositories.remote << 'http://scala-tools.org/repo-releases'
+repositories.remote << 'http://scala-tools.org/repo-snapshots'
+repositories.remote << 'http://www.lag.net/repo'
+
+AKKA = ['com.scalablesolutions.akka:akka-kernel:jar:0.1',
+        'com.scalablesolutions.akka:akka-supervisor:jar:0.1,
+        'com.scalablesolutions.akka:akka-util-java:jar:0.1']
+GUICEYFRUIT = 'org.guiceyfruit:guice-core:jar:2.0-SNAPSHOT'
+JUNIT4 = 'junit:junit:jar:4.0'
+
+desc 'Java API for the Akka kernel'
+define 'akka-api-java' do
+  project.version = '0.1'
+  project.group = 'com.scalablesolutions.akka' 
+  compile.with(AKKA, GUICEYFRUIT, JUNIT4)
+  package :jar
+end
+
