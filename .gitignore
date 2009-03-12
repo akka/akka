@@ -1,13 +1,14 @@
-*.*~
+*~
 *#
 etags
 TAGS
+reports
+dist
 target
 out
 akka.conf
 semantic.cache
 akka.log
-~
 tm*.log
 tm*.lck
 tm.out
