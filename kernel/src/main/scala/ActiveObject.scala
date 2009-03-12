@@ -90,12 +90,16 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
   private[akka] val server = new GenericServerContainer(target.getName, () => dispatcher)
   server.setTimeout(timeout)
   
-  def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = invoke(Invocation(m, args, targetInstance))
+  def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = 
+    invoke(Invocation(m, args, targetInstance))
 
   def invoke(invocation: Invocation): AnyRef =  {
     if (invocation.method.isAnnotationPresent(oneway)) server ! invocation
     else {
-      val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({ throw new ActiveObjectInvocationTimeoutException("proxy invocation timed out after " + timeout + " milliseconds") })) 
+      val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({ 
+        throw new ActiveObjectInvocationTimeoutException(
+          "proxy invocation timed out after " + timeout + " milliseconds") 
+      })) 
       result()
     }
   }
@@ -107,11 +111,12 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 case class Invocation(val method: Method, val args: Array[Object], val target: AnyRef) {
-  method.setAccessible(true);
+  method.setAccessible(true)
 
   def invoke: AnyRef = method.invoke(target, args:_*)
 
-  override def toString: String = "Invocation [method: " + method.getName + ", args: " + argsToString(args) + ", target: " + target + "]"
+  override def toString: String = 
+    "Invocation [method: " + method.getName + ", args: " + argsToString(args) + ", target: " + target + "]"
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -136,5 +141,7 @@ case class Invocation(val method: Method, val args: Array[Object], val target: A
      a1.size == a2.size && 
      a1.zip(a2).find(t => t._1 == t._2).isDefined)
 
-  private def argsToString(array: Array[Object]): String = synchronized { array.foldLeft("(")(_ + " " + _) + ")" }
+  private def argsToString(array: Array[Object]): String = synchronized { 
+    array.foldLeft("(")(_ + " " + _) + ")" 
+  }
 }
