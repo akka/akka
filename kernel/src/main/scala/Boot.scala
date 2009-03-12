@@ -13,7 +13,7 @@ import java.net.{URL, URLClassLoader}
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Boot extends Logging {
+object Boot extends Logging {
 
   /**
    * Assumes that the AKKA_HOME directory is set with /config, /classes and /lib beneath it holding files and jars.
@@ -24,13 +24,14 @@ class Boot extends Logging {
    * $AKKA_HOME/lib
    * $AKKA_HOME/config
    */
-  def main(args: Array[String]) = {
-    val HOME = System.getProperty("AKKA_HOME", "..")
+  def main(args: Array[String]): Unit = {
+    // TODO: read from env rather than jvm variables
+    val HOME = System.getProperty("AKKA_HOME", ".")
     val CLASSES = HOME + "/classes"
     val LIB = HOME + "/lib"
     val CONFIG = HOME + "/config"
 
-    log.info("Bootstrapping Akka server from AKKA_HOME=" + HOME)
+    log.info("Bootstrapping Akka server from AKKA_HOME=%s", HOME)
 
     val libs = for (f <- new File(LIB).listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
     val urls = new File(CLASSES).toURL :: libs

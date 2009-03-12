@@ -30,7 +30,7 @@ import javax.management.JMException
 object Kernel extends Logging {
 
   val SERVER_URL = "localhost"
-  val HOME = System.getProperty("AKKA_HOME", "..")
+  val HOME = System.getProperty("AKKA_HOME", ".")
 
   val JERSEY_SERVER_URL = "http://" + SERVER_URL + "/"
   val JERSEY_SERVER_PORT = 9998
@@ -43,7 +43,7 @@ object Kernel extends Logging {
   val ZOO_KEEPER_SERVER_URL = SERVER_URL
   val ZOO_KEEPER_SERVER_PORT = 9898
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     //startZooKeeper
     startVoldemort
     //val threadSelector = startJersey
@@ -66,7 +66,7 @@ object Kernel extends Logging {
     val config = VoldemortConfig.loadFromVoldemortHome(HOME)
     val server = new VoldemortServer(config)
     server.start
-    log.info("Replicated persistent storage server started at s%", VOLDEMORT_SERVER_URL + ":" + VOLDEMORT_SERVER_PORT)
+    log.info("Replicated persistent storage server started at %s", VOLDEMORT_SERVER_URL + ":" + VOLDEMORT_SERVER_PORT)
   }
   
   // private[akka] def startZooKeeper = {
