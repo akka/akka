@@ -30,8 +30,7 @@ import javax.management.JMException
 object Kernel extends Logging {
 
   val SERVER_URL = "localhost"
-  val HOME = System.getProperty("AKKA_HOME", ".")
-
+  
   val JERSEY_SERVER_URL = "http://" + SERVER_URL + "/"
   val JERSEY_SERVER_PORT = 9998
   val JERSEY_REST_CLASSES_ROOT_PACKAGE = "com.scalablesolutions.akka.kernel"
@@ -39,10 +38,14 @@ object Kernel extends Logging {
 
   val VOLDEMORT_SERVER_URL = "tcp://" + SERVER_URL
   val VOLDEMORT_SERVER_PORT = 6666
+  val VOLDEMORT_BOOTSTRAP_URL = VOLDEMORT_SERVER_URL + ":" + VOLDEMORT_SERVER_PORT
 
   val ZOO_KEEPER_SERVER_URL = SERVER_URL
   val ZOO_KEEPER_SERVER_PORT = 9898
 
+  private[this] var storageFactory: StoreClientFactory = _
+  private[this] var storageServer: VoldemortServer = _
+   
   def main(args: Array[String]): Unit = {
     //startZooKeeper
     startVoldemort
@@ -63,12 +66,36 @@ object Kernel extends Logging {
   }
 
    private[akka] def startVoldemort = {
-    val config = VoldemortConfig.loadFromVoldemortHome(HOME)
-    val server = new VoldemortServer(config)
-    server.start
-    log.info("Replicated persistent storage server started at %s", VOLDEMORT_SERVER_URL + ":" + VOLDEMORT_SERVER_PORT)
+    // Start Voldemort server
+    val config = VoldemortConfig.loadFromVoldemortHome(Boot.HOME)
+    storageServer = new VoldemortServer(config)
+    storageServer.start
+    log.info("Replicated persistent storage server started at %s", VOLDEMORT_BOOTSTRAP_URL)
+
+    // Create Voldemort client factory
+    val numThreads = 10
+    val maxQueuedRequests = 10
+    val maxConnectionsPerNode = 10
+    val maxTotalConnections = 100
+    storageFactory = new SocketStoreClientFactory(
+      numThreads,
+      numThreads,
+      maxQueuedRequests,
+      maxConnectionsPerNode,
+      maxTotalConnections,
+      VOLDEMORT_BOOTSTRAP_URL)
+
+    val name = this.getClass.getName
+    val storage = getStorageFor("actors")
+//    val value = storage.get(name)
+    val value = new Versioned("state")
+    //value.setObject("state")
+    storage.put(name, value)
   }
   
+  private[akka] def getStorageFor(storageName: String): StoreClient[String, String] =
+    storageFactory.getStoreClient(storageName)
+
   // private[akka] def startZooKeeper = {
   //   try {
   //     ManagedUtil.registerLog4jMBeans
@@ -99,25 +126,6 @@ object Kernel extends Logging {
   //     // if (zooKeeper.isRunning) zooKeeper.shutdown
   //   } catch { case e => log.fatal("Unexpected exception: s%",e) }  
   // }
-
-  private[akka] def getStorage(storageName: String): StoreClient[String, String] = {
-  //Versioned value = client.get("some_key");
-  //value.setObject("some_value");
-  //client.put("some_key", value);
-    val numThreads = 10
-    val maxQueuedRequests = 10
-    val maxConnectionsPerNode = 10
-    val maxTotalConnections = 100
-    val bootstrapUrl = VOLDEMORT_SERVER_URL + VOLDEMORT_SERVER_PORT
-    val factory = new SocketStoreClientFactory(
-      numThreads,
-      numThreads,
-      maxQueuedRequests,
-      maxConnectionsPerNode,
-      maxTotalConnections,
-      bootstrapUrl)
-    factory.getStoreClient(storageName)
-  }
 
   private def getPort(defaultPort: Int) = {
     val port = System.getenv("JERSEY_HTTP_PORT")

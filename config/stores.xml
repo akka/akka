@@ -1,6 +1,6 @@
 <stores>
   <store>
-    <name>snapshot</name>
+    <name>actors</name>
     <persistence>bdb</persistence>
     <routing>client</routing>
     <replication-factor>1</replication-factor>

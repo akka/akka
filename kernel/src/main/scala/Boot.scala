@@ -4,7 +4,8 @@
 
 package com.scalablesolutions.akka
 
-import com.scalablesolutions.akka.kernel.Logging
+import kernel.Logging
+import kernel.configuration.ConfigurationException
 
 import java.io.File
 import java.lang.reflect.Method
@@ -14,6 +15,11 @@ import java.net.{URL, URLClassLoader}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Boot extends Logging {
+
+  val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new ConfigurationException("AKKA_HOME system variable needs to be set") }
+  val CLASSES = HOME + "/classes"
+  val LIB = HOME + "/lib"
+  val CONFIG = HOME + "/config"
 
   /**
    * Assumes that the AKKA_HOME directory is set with /config, /classes and /lib beneath it holding files and jars.
@@ -25,12 +31,6 @@ object Boot extends Logging {
    * $AKKA_HOME/config
    */
   def main(args: Array[String]): Unit = {
-    // TODO: read from env rather than jvm variables
-    val HOME = System.getProperty("AKKA_HOME", ".")
-    val CLASSES = HOME + "/classes"
-    val LIB = HOME + "/lib"
-    val CONFIG = HOME + "/config"
-
     log.info("Bootstrapping Akka server from AKKA_HOME=%s", HOME)
 
     val libs = for (f <- new File(LIB).listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL

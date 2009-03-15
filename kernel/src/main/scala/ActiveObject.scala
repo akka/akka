@@ -11,6 +11,9 @@ import java.util.{List => JList, ArrayList}
 import java.lang.reflect.{Method, Field, InvocationHandler, Proxy, InvocationTargetException}
 import java.lang.annotation.Annotation
 
+import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
+import voldemort.versioning.Versioned
+
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
 
@@ -94,14 +97,16 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     invoke(Invocation(m, args, targetInstance))
 
   def invoke(invocation: Invocation): AnyRef =  {
-    if (invocation.method.isAnnotationPresent(oneway)) server ! invocation
-    else {
-      val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({ 
-        throw new ActiveObjectInvocationTimeoutException(
-          "proxy invocation timed out after " + timeout + " milliseconds") 
-      })) 
-      result()
-    }
+    val result: AnyRef = 
+      if (invocation.method.isAnnotationPresent(oneway)) server ! invocation
+      else {
+        val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({ 
+          throw new ActiveObjectInvocationTimeoutException(
+            "proxy invocation timed out after " + timeout + " milliseconds") 
+        })) 
+        result()
+      }
+    result
   }
 }
 

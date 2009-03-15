@@ -4,6 +4,8 @@ require 'buildr/scala'
 
 VERSION_NUMBER = '0.1'
 
+ENV['AKKA_HOME'] ||= '.'
+
 repositories.remote << 'http://www.ibiblio.org/maven2'
 repositories.remote << 'http://scala-tools.org/repo-releases'
 repositories.remote << 'http://scala-tools.org/repo-snapshots'
@@ -12,7 +14,9 @@ repositories.remote << 'http://www.lag.net/repo'
 AKKA_KERNEL =     'com.scalablesolutions.akka:akka-kernel:jar:0.1' 
 AKKA_SUPERVISOR = 'com.scalablesolutions.akka:akka-supervisor:jar:0.1' 
 AKKA_UTIL_JAVA =  'com.scalablesolutions.akka:akka-util-java:jar:0.1'
+AKKA_API_JAVA =   'com.scalablesolutions.akka:akka-api-java:jar:0.1'
 
+SCALA =        'org.scala-lang:scala-library:jar:2.7.3'
 GUICEYFRUIT = ['org.guiceyfruit:guice-core:jar:2.0-SNAPSHOT', 
                'org.guiceyfruit:guice-jsr250:jar:2.0-SNAPSHOT']
 JERSEY =      ['com.sun.jersey:jersey-core:jar:1.0.1',
@@ -29,6 +33,10 @@ CONFIGGY =     'net.lag:configgy:jar:1.2'
 ZOOKEEPER =    'org.apache:zookeeper:jar:3.1.0'
 GRIZZLY =      'com.sun.grizzly:grizzly-servlet-webserver:jar:1.8.6.3'
 JUNIT4 =       'junit:junit:jar:4.0'
+GOOGLE_COLLECT = 'com.google.code.google-collections:google-collect:jar:snapshot-20080530'
+JDOM =         'jdom:jdom:jar:1.0'
+MINA_CORE =    'com.assembla.scala.mina:mina-core:jar:2.0.0-M2-SNAPSHOT'
+MINA_SCALA =   'com.assembla.scala.mina:mina-integration-scala:jar:2.0.0-M2-SNAPSHOT'
 
 desc 'The Akka Actor Kernel'
 define 'akka' do
@@ -52,7 +60,14 @@ define 'akka' do
   
   desc 'Akka Actor kernel core implementation'
   define 'kernel' do
-    compile.with(AKKA_SUPERVISOR, AKKA_UTIL_JAVA, GUICEYFRUIT, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, JUNIT4)
+    compile.with(AKKA_SUPERVISOR, AKKA_UTIL_JAVA, GUICEYFRUIT, MINA_CORE, MINA_SCALA, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, JUNIT4)
+    test.using :specs
+    package :jar
+  end
+
+  desc 'Akka DB'
+  define 'db' do
+    compile.with(AKKA_KERNEL, MINA_CORE, MINA_SCALA, ZOOKEEPER, CONFIGGY, SLF4J, JUNIT4)
     test.using :specs
     package :jar
   end
@@ -71,5 +86,23 @@ define 'akka' do
   package(:zip).include 'supervisor/target/*.jar', :path=>'lib'
   package(:zip).include 'api-java/target/*.jar', :path=>'lib'
   package(:zip).include 'util-java/target/*.jar', :path=>'lib'
+
+  task :run => [:package] do |t|
+    puts "-------------------------"
+    puts "Running Akka Actor Kernel"
+    puts "-------------------------"
+    puts "\n"
+
+#    uri = URI("file://./lib")
+#    uri.upload file('kernel')
+
+    cp = [SCALA, GUICEYFRUIT, JERSEY, VOLDEMORT, GOOGLE_COLLECT, JDOM, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, project('kernel').package(:jar)]
+#    Java.java('com.scalablesolutions.akka.kernel.Kernel', {:classpath => '-cp ' + cp})
+
+#    cp = FileList[_('lib/*')].join(File::PATH_SEPARATOR)
+    puts "Running with classpath:\n" + cp
+    Java.java('com.scalablesolutions.akka.Boot', 'com.scalablesolutions.akka.kernel.Kernel', {:classpath => cp})
+  end
+
 end
 
