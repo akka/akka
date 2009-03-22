@@ -4,15 +4,13 @@
 
 package com.scalablesolutions.akka.kernel
 
-import com.scalablesolutions.akka.supervisor._
-
 import java.util.{List => JList, ArrayList}
 
 import java.lang.reflect.{Method, Field, InvocationHandler, Proxy, InvocationTargetException}
 import java.lang.annotation.Annotation
 
-import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
-import voldemort.versioning.Versioned
+//import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
+//import voldemort.versioning.Versioned
 
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
@@ -50,7 +48,7 @@ object ActiveObject {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
     val supervisor = factory.newSupervisor
-    supervisor ! com.scalablesolutions.akka.supervisor.Start
+    supervisor ! com.scalablesolutions.akka.kernel.Start
     supervisor
   }
 
@@ -100,6 +98,7 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     val result: AnyRef = 
       if (invocation.method.isAnnotationPresent(oneway)) server ! invocation
       else {
+        val transaction = _
         val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({ 
           throw new ActiveObjectInvocationTimeoutException(
             "proxy invocation timed out after " + timeout + " milliseconds") 
