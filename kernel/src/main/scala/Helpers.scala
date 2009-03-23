@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 

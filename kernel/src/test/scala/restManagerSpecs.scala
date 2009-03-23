@@ -2,11 +2,17 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import org.specs.runner.JUnit4
 import org.specs.Specification
+
 import javax.ws.rs.{Produces, Path, GET}
+
+//import com.sun.net.httpserver.HttpServer;
+//import com.sun.ws.rest.api.client.Client;
+//import com.sun.ws.rest.api.client.ClientResponse;
+//import com.sun.ws.rest.api.client.ResourceProxy;
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -16,7 +22,13 @@ object restManagerSpec extends Specification {
 
   "jersey server should be able to start and stop" in {
     val threadSelector = Kernel.startJersey
-    threadSelector.stopEndpoint
+/*    val cc = new DefaultClientConfig
+    val c = Client.create(cc)
+    val resource = c.proxy("http://localhost:9998/")
+    val hello = resource.get(classOf[HelloWorldResource])
+    val msg = hello.getMessage
+    println("=============: " + msg)
+*/    threadSelector.stopEndpoint
   }
 }
 

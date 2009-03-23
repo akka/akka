@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka
+package se.scalablesolutions.akka
 
 import kernel.Logging
 import kernel.configuration.ConfigurationException

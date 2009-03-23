@@ -37,8 +37,7 @@ object NetCat {
          // Set reader idle time to 10 seconds.
          // sessionIdle(...) method will be invoked when no data is read
          // for 10 seconds.
-         val config = immutable.Map.empty[Any, Any] +
-Tuple2(IdleTime(IdleStatus.READER_IDLE), 10)
+         val config = immutable.Map.empty[Any, Any] + Tuple2(IdleTime(IdleStatus.READER_IDLE), 10)
          session.callReact(SetConfig(config)) {
            case OK(_) => ()
            case Error(cause) => exit(('setConfigFailed, cause))
@@ -98,8 +97,7 @@ Tuple2(IdleTime(IdleStatus.READER_IDLE), 10)
    connector.setConnectTimeout(30)
 
    // Hook up our code, and start service.
-   val handlingReference = IoSessionActor.installHandling(connector,
-handleSession(_))
+   val handlingReference = IoSessionActor.installHandling(connector, handleSession(_))
    val cf = connector.connect(new InetSocketAddress(host, port))
    cf.awaitUninterruptibly()
    cf.getSession().getCloseFuture().awaitUninterruptibly()

@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import net.lag.configgy.Config
 import net.lag.logging.Logger

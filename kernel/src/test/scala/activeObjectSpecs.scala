@@ -2,12 +2,12 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import org.specs.runner.JUnit4
 import org.specs.Specification
-import com.scalablesolutions.akka.supervisor._
-import com.scalablesolutions.akka.annotation.oneway
+
+import se.scalablesolutions.akka.annotation.oneway
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

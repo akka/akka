@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import java.util.{List => JList, ArrayList}
 
@@ -29,6 +29,12 @@ class ActiveObjectFactory {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActiveObject {
+   private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = {
+     val tl = new ThreadLocal[Option[Transaction]]
+     tl.set(None)
+     tl
+   }
+
    def newInstance[T](intf: Class[_], proxy: ActiveObjectProxy): T = {
      Proxy.newProxyInstance(
        intf.getClassLoader,
@@ -44,11 +50,11 @@ object ActiveObject {
   }
 
   def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor = {
-  	object factory extends SupervisorFactory {
+    object factory extends SupervisorFactory {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
     val supervisor = factory.newSupervisor
-    supervisor ! com.scalablesolutions.akka.kernel.Start
+    supervisor ! se.scalablesolutions.akka.kernel.Start
     supervisor
   }
 
@@ -65,46 +71,72 @@ object ActiveObject {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int) extends InvocationHandler {
-  private val oneway = classOf[com.scalablesolutions.akka.annotation.oneway]
-  private var targetInstance: AnyRef = _
-  private[akka] def setTargetInstance(instance: AnyRef) = targetInstance = instance
+  val oneway = classOf[se.scalablesolutions.akka.annotation.oneway]
 
-  private[ActiveObjectProxy] object dispatcher extends GenericServer {
+  private[this] var activeTx: Option[Transaction] = None
+
+  private var targetInstance: AnyRef = _
+  private[kernel] def setTargetInstance(instance: AnyRef) = targetInstance = instance
+
+  private[this] val dispatcher = new GenericServer {
     override def body: PartialFunction[Any, Unit] = {
       case invocation: Invocation =>
+        val tx = invocation.tx
         try {
-          reply(ErrRef(invocation.invoke))
+          reply(ErrRef(invocation.invoke, tx))
         } catch {
           case e: InvocationTargetException =>
             val te = e.getTargetException
             te.printStackTrace
-            reply(ErrRef({ throw te }))
+            reply(ErrRef({ throw te }, tx))
           case e =>
             e.printStackTrace
-            reply(ErrRef({ throw e }))
+            reply(ErrRef({ throw e }, tx))
         }
       case 'exit =>  exit; reply()
       case unexpected => throw new ActiveObjectException("Unexpected message to actor proxy: " + unexpected)
     }
   }
 
-  private[akka] val server = new GenericServerContainer(target.getName, () => dispatcher)
+  private[kernel] val server = new GenericServerContainer(target.getName, () => dispatcher)
   server.setTimeout(timeout)
   
-  def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = 
-    invoke(Invocation(m, args, targetInstance))
+  def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = {
+    val cflowTx = ActiveObject.threadBoundTx.get
+    activeTx.get.asInstanceOf[Option[Transaction]] match {
+      case Some(tx) =>
+        if (cflowTx.isDefined && cflowTx.get != tx) {
+          // new tx in scope; try to commit
+          tx.commit(server)
+          activeTx = None
+        } 
+      case None =>
+        if (cflowTx.isDefined) activeTx = Some(cflowTx.get)
+    }
+    invoke(Invocation(m, args, targetInstance, activeTx))
+  }
 
-  def invoke(invocation: Invocation): AnyRef =  {
+  private def invoke(invocation: Invocation): AnyRef =  {
     val result: AnyRef = 
       if (invocation.method.isAnnotationPresent(oneway)) server ! invocation
       else {
-        val transaction = _
-        val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({ 
-          throw new ActiveObjectInvocationTimeoutException(
-            "proxy invocation timed out after " + timeout + " milliseconds") 
-        })) 
-        result()
+        val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({
+          throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + timeout + " milliseconds")
+        }, activeTx))
+        try {
+          result()
+        } catch {
+          case e =>
+            result.tx match {
+              case None => // no tx; nothing to do
+              case Some(tx) =>
+                tx.rollback(server)
+                ActiveObject.threadBoundTx.set(Some(tx))
+            }
+            throw e
+        }
       }
+    if (activeTx.isDefined) activeTx.get.precommit(server)
     result
   }
 }
@@ -114,7 +146,10 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-case class Invocation(val method: Method, val args: Array[Object], val target: AnyRef) {
+case class Invocation(val method: Method,
+                      val args: Array[Object],
+                      val target: AnyRef,
+                      val tx: Option[Transaction]) {
   method.setAccessible(true)
 
   def invoke: AnyRef = method.invoke(target, args:_*)
@@ -145,7 +180,7 @@ case class Invocation(val method: Method, val args: Array[Object], val target: A
      a1.size == a2.size && 
      a1.zip(a2).find(t => t._1 == t._2).isDefined)
 
-  private def argsToString(array: Array[Object]): String = synchronized { 
+  private def argsToString(array: Array[Object]): String = synchronized {
     array.foldLeft("(")(_ + " " + _) + ")" 
   }
 }

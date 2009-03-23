@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import org.apache.zookeeper.jmx.ManagedUtil
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog
@@ -33,7 +33,7 @@ object Kernel extends Logging {
   
   val JERSEY_SERVER_URL = "http://" + SERVER_URL + "/"
   val JERSEY_SERVER_PORT = 9998
-  val JERSEY_REST_CLASSES_ROOT_PACKAGE = "com.scalablesolutions.akka.kernel"
+  val JERSEY_REST_CLASSES_ROOT_PACKAGE = "se.scalablesolutions.akka.kernel"
   val JERSEY_BASE_URI = UriBuilder.fromUri(JERSEY_SERVER_URL).port(getPort(JERSEY_SERVER_PORT)).build()
 
   val VOLDEMORT_SERVER_URL = "tcp://" + SERVER_URL

@@ -12,7 +12,7 @@ repositories.remote << 'http://scala-tools.org/repo-snapshots'
 repositories.remote << 'http://www.lag.net/repo'
 
 AKKA_KERNEL =     'se.scalablesolutions.akka:akka-kernel:jar:0.1' 
-AKKA_SUPERVISOR = 'se.scalablesolutions.akka:akka-supervisor:jar:0.1' 
+#AKKA_SUPERVISOR = 'se.scalablesolutions.akka:akka-supervisor:jar:0.1' 
 AKKA_UTIL_JAVA =  'se.scalablesolutions.akka:akka-util-java:jar:0.1'
 AKKA_API_JAVA =   'se.scalablesolutions.akka:akka-api-java:jar:0.1'
 
@@ -60,7 +60,7 @@ define 'akka' do
   
   desc 'Akka Actor kernel core implementation'
   define 'kernel' do
-    compile.with(AKKA_SUPERVISOR, AKKA_UTIL_JAVA, GUICEYFRUIT, MINA_CORE, MINA_SCALA, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, JUNIT4)
+    compile.with(AKKA_UTIL_JAVA, GUICEYFRUIT, MINA_CORE, MINA_SCALA, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, JUNIT4)
     test.using :specs
     package :jar
   end
@@ -74,7 +74,7 @@ define 'akka' do
   
   #desc 'Akka Java API'
   #define 'api-java' do
-  #  compile.with(AKKA_KERNEL, AKKA_SUPERVISOR, AKKA_UTIL_JAVA, GUICEYFRUIT, JUNIT4)
+  #  compile.with(AKKA_KERNEL, AKKA_UTIL_JAVA, GUICEYFRUIT, JUNIT4)
   #  package :jar
   #end
 

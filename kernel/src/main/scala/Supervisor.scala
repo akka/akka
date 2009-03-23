@@ -2,13 +2,13 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import scala.actors._
 import scala.actors.Actor._
 import scala.collection.mutable.HashMap
 
-import com.scalablesolutions.akka.kernel.Helpers._
+import se.scalablesolutions.akka.kernel.Helpers._
 
 //====================================================
 

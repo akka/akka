@@ -2,12 +2,12 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 import scala.actors._
 import scala.actors.Actor._
 
-import com.scalablesolutions.akka.kernel.Helpers._
+import se.scalablesolutions.akka.kernel.Helpers._
 
 sealed abstract class GenericServerMessage
 case class Init(config: AnyRef) extends GenericServerMessage
@@ -91,7 +91,7 @@ class GenericServerContainer(val id: String, var serverFactory: () => GenericSer
   var lifeCycle: Option[LifeCycle] = None
   val lock = new ReadWriteLock
 
-  private var server: GenericServer = null
+  private var server: GenericServer = _
   private var currentConfig: Option[AnyRef] = None
   private var timeout = 5000
 
@@ -278,5 +278,15 @@ class GenericServerContainer(val id: String, var serverFactory: () => GenericSer
   }
 
   private[kernel] def getServer: GenericServer = server
+
+  private[kernel] def cloneServerAndReturnOldVersion: GenericServer = lock.withWriteLock {
+    val oldServer = server
+    server = Serializer.deepClone(server)
+    oldServer
+  }
+  
+  private[kernel] def swapServer(newServer: GenericServer) = lock.withWriteLock {
+    server = newServer
+  }
 }
 

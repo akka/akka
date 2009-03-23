@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel
 
 /**
  * Reference that can hold either a typed value or an exception.
@@ -35,16 +35,23 @@ package com.scalablesolutions.akka.kernel
  * 	at .<clinit>(<console>)
  * 	at Re...
  * </pre>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ErrRef[S](s: S){
-  private[this] var contents: Either[Throwable, S] = Right(s)
-  def update(value: => S) = contents = try { Right(value) } catch { case (e : Throwable) => Left(e) }
+class ErrRef[Payload](payload: Payload, val tx: Option[Transaction]){
+  private[this] var contents: Either[Throwable, Payload] = Right(payload)
+
+  def update(value: => Payload) = {
+    contents = try { Right(value) } catch { case (e : Throwable) => Left(e) }
+  }
+
   def apply() = contents match {
-    case Right(s) => s
+    case Right(payload) => payload
     case Left(e) => throw e.fillInStackTrace
   }
+
   override def toString(): String = "ErrRef[" + contents + "]"
 }
 object ErrRef {
-  def apply[S](s: S) = new ErrRef(s)
+  def apply[Payload](payload: Payload, tx: Option[Transaction]) = new ErrRef(payload, tx)
 }
