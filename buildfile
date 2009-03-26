@@ -72,11 +72,11 @@ define 'akka' do
   #  package :jar
   #end
   
-  #desc 'Akka Java API'
-  #define 'api-java' do
-  #  compile.with(AKKA_KERNEL, AKKA_UTIL_JAVA, GUICEYFRUIT, JUNIT4)
-  #  package :jar
-  #end
+  desc 'Akka Java API'
+  define 'api-java' do
+    compile.with(AKKA_KERNEL, AKKA_UTIL_JAVA, GUICEYFRUIT, JUNIT4)
+    package :jar
+  end
 
   package(:zip).include 'README'
   package(:zip).include 'bin/*', :path=>'bin'

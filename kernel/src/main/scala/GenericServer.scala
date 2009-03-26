@@ -263,10 +263,11 @@ class GenericServerContainer(val id: String, var serverFactory: () => GenericSer
    */
   private[kernel] def terminate(reason: AnyRef, shutdownTime: Int) = lock.withReadLock {
     if (shutdownTime > 0) {
-      log.debug("Waiting {} milliseconds for the server to shut down before killing it.", shutdownTime)
-      server !? (shutdownTime, Shutdown(reason)) match {
-        case Some('success) => log.debug("Server [{}] has been shut down cleanly.", id)
-        case None => log.warning("Server [{}] was **not able** to complete shutdown cleanly within its configured shutdown time [{}]", id, shutdownTime)
+      log.debug("Waiting [%s milliseconds for the server to shut down before killing it.", shutdownTime)
+//      server !? (shutdownTime, Shutdown(reason)) match {
+      server !? Shutdown(reason) match {
+        case Some('success) => log.debug("Server [%s] has been shut down cleanly.", id)
+        case None => log.warning("Server [%s] was **not able** to complete shutdown cleanly within its configured shutdown time [%s]", id, shutdownTime)
       }
     }
     server ! Terminate(reason)

@@ -71,7 +71,9 @@ object ActiveObject {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int) extends InvocationHandler {
+  val transactional = classOf[se.scalablesolutions.akka.annotation.transactional]
   val oneway = classOf[se.scalablesolutions.akka.annotation.oneway]
+  val immutable = classOf[se.scalablesolutions.akka.annotation.immutable]
 
   private[this] var activeTx: Option[Transaction] = None
 
@@ -82,6 +84,7 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     override def body: PartialFunction[Any, Unit] = {
       case invocation: Invocation =>
         val tx = invocation.tx
+        ActiveObject.threadBoundTx.set(tx)
         try {
           reply(ErrRef(invocation.invoke, tx))
         } catch {
@@ -102,8 +105,17 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
   server.setTimeout(timeout)
   
   def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = {
+    if (m.isAnnotationPresent(transactional)) {
+      val newTx = new Transaction
+      newTx.begin(server)
+      ActiveObject.threadBoundTx.set(Some(newTx))
+    }
     val cflowTx = ActiveObject.threadBoundTx.get
-    activeTx.get.asInstanceOf[Option[Transaction]] match {
+
+    println("========== invoking: " + m.getName)
+    println("========== cflowTx: " + cflowTx)
+    println("========== activeTx: " + activeTx)
+    activeTx match {
       case Some(tx) =>
         if (cflowTx.isDefined && cflowTx.get != tx) {
           // new tx in scope; try to commit
@@ -113,6 +125,7 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
       case None =>
         if (cflowTx.isDefined) activeTx = Some(cflowTx.get)
     }
+    activeTx = ActiveObject.threadBoundTx.get
     invoke(Invocation(m, args, targetInstance, activeTx))
   }
 
@@ -120,24 +133,30 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     val result: AnyRef = 
       if (invocation.method.isAnnotationPresent(oneway)) server ! invocation
       else {
-        val result: ErrRef[AnyRef] = server !!! (invocation, ErrRef({
-          throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + timeout + " milliseconds")
-        }, activeTx))
+        val result: ErrRef[AnyRef] =
+          server !!! (invocation, {
+            var ref = ErrRef(activeTx)
+            ref() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + timeout + " milliseconds")
+            ref
+          })
         try {
           result()
         } catch {
-          case e =>
-            result.tx match {
-              case None => // no tx; nothing to do
-              case Some(tx) =>
-                tx.rollback(server)
-                ActiveObject.threadBoundTx.set(Some(tx))
-            }
+          case e => 
+            rollback(result.tx)
             throw e
         }
       }
     if (activeTx.isDefined) activeTx.get.precommit(server)
     result
+  }
+
+  private def rollback(tx: Option[Transaction]) = tx match {
+    case None => {} // no tx; nothing to do
+    case Some(tx) =>
+      println("================ ROLLING BACK")
+      tx.rollback(server)
+      ActiveObject.threadBoundTx.set(Some(tx))
   }
 }
 
@@ -147,7 +166,7 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 case class Invocation(val method: Method,
-                      val args: Array[Object],
+                      val args: Array[AnyRef],
                       val target: AnyRef,
                       val tx: Option[Transaction]) {
   method.setAccessible(true)

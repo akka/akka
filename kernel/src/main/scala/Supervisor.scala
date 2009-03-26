@@ -146,22 +146,22 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
     loop {
       react {
         case Configure(config, factory) =>
-          log.debug("Configuring supervisor:{} ", this)
+          log.debug("Configuring supervisor:%s ", this)
           configure(config, factory)
           reply('success)
 
         case Start =>
           state.serverContainers.foreach { serverContainer =>
             serverContainer.start
-            log.info("Starting server: {}", serverContainer.getServer)
+            log.info("Starting server: %s", serverContainer.getServer)
           }
 
         case Stop =>
           state.serverContainers.foreach { serverContainer =>
             serverContainer.terminate('normal)
-            log.info("Stopping server: {}", serverContainer)
+            log.info("Stopping ser-ver: %s", serverContainer)
           }
-          log.info("Stopping supervisor: {}", this)
+          log.info("Stopping supervisor: %s", this)
           exit('normal)
 
         case Exit(failedServer, reason) =>
@@ -170,7 +170,7 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
             case _ => state.faultHandler.handleFailure(state, failedServer, reason)
           }
 
-        case unexpected => log.warning("Unexpected message [{}], ignoring...", unexpected)
+        case unexpected => log.warning("Unexpected message [%s] from [%s] ignoring...", unexpected, sender)
       }
     }
   }
@@ -194,7 +194,7 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
     val newServer = serverContainer.newServer()
     newServer.start
     self.link(newServer)
-    log.debug("Linking actor [{}] to supervisor [{}]", newServer, this)
+    log.debug("Linking actor [%s] to supervisor [%s]", newServer, this)
     state.addServerContainer(serverContainer)
     newServer
   }
@@ -215,7 +215,7 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
     nrOfRetries += 1
     if (timeRangeHasExpired) {
       if (hasReachedMaximumNrOfRetries) {
-        log.info("Maximum of restarts [{}] for server [{}] has been reached - the supervisor including all its servers will now be shut down.", maxNrOfRetries, failedServer)
+        log.info("Maximum of restarts [%s] for server [%s] has been reached - the supervisor including all its servers will now be shut down.", maxNrOfRetries, failedServer)
         supervisor ! Stop // execution stops here
       } else {
         nrOfRetries = 0
@@ -241,17 +241,17 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
 
           scope match {
             case Permanent =>
-              log.debug("Restarting server [{}] configured as PERMANENT.", serverContainer.id)
+              log.debug("Restarting server [%s] configured as PERMANENT.", serverContainer.id)
               serverContainer.reconfigure(reason, supervisor.spawnLink(serverContainer), state.supervisor)
 
             case Temporary =>
               if (reason == 'normal) {
-                log.debug("Restarting server [{}] configured as TEMPORARY (since exited naturally).", serverContainer.id)
+                log.debug("Restarting server [%s] configured as TEMPORARY (since exited naturally).", serverContainer.id)
                 serverContainer.reconfigure(reason, supervisor.spawnLink(serverContainer), state.supervisor)
-              } else log.info("Server [{}] configured as TEMPORARY will not be restarted (received unnatural exit message).", serverContainer.id)
+              } else log.info("Server [%s] configured as TEMPORARY will not be restarted (received unnatural exit message).", serverContainer.id)
 
             case Transient =>
-              log.info("Server [{}] configured as TRANSIENT will not be restarted.", serverContainer.id)
+              log.info("Server [%s] configured as TRANSIENT will not be restarted.", serverContainer.id)
           }
       }
     }
@@ -287,7 +287,7 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
 class AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
 extends FaultHandlingStrategy(maxNrOfRetries, withinTimeRange) {
   override def doHandleFailure(state: SupervisorState, failedServer: AbstractActor, reason: AnyRef) = {
-    log.error("Server [{}] has failed due to [{}] - scheduling restart - scheme: ALL_FOR_ONE.", failedServer, reason)
+    log.error("Server [%s] has failed due to [%s] - scheduling restart - scheme: ALL_FOR_ONE.", failedServer, reason)
     for (serverContainer <- state.serverContainers) restart(serverContainer, reason, state)
     state.supervisors.foreach(_ ! Exit(failedServer, reason))
   }
@@ -302,7 +302,7 @@ extends FaultHandlingStrategy(maxNrOfRetries, withinTimeRange) {
 class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
 extends FaultHandlingStrategy(maxNrOfRetries, withinTimeRange) {
   override def doHandleFailure(state: SupervisorState, failedServer: AbstractActor, reason: AnyRef) = {
-    log.error("Server [{}] has failed due to [{}] - scheduling restart - scheme: ONE_FOR_ONE.", failedServer, reason)
+    log.error("Server [%s] has failed due to [%s] - scheduling restart - scheme: ONE_FOR_ONE.", failedServer, reason)
     var serverContainer: Option[GenericServerContainer] = None
     state.serverContainers.foreach {
       container => if (container.getServer == failedServer) serverContainer = Some(container)
