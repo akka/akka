@@ -4,8 +4,11 @@ etags
 TAGS
 reports
 dist
+build
 target
+data
 out
+manifest.mf
 akka.conf
 semantic.cache
 akka.log
