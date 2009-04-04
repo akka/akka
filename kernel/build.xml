@@ -5,6 +5,34 @@
 <project name="akka-kernel" default="default" basedir=".">
     <description>Builds, tests, and runs the project akka-kernel.</description>
     <import file="nbproject/build-impl.xml"/>
+
+
+  <path id="scalatest.classpath">
+    <pathelement location="../lib/scalatest-0.9.5.jar"/>
+    <pathelement location="../lib/scala-library-2.7.3.jar"/>
+  </path>
+
+  <target name="test" depends="akka-kernel-impl.jar">
+<!--   <target name="test" depends="init"> -->
+    <taskdef name="scalatest" classname="org.scalatest.tools.ScalaTestTask">
+      <classpath refid="scalatest.classpath"/>
+    </taskdef>
+
+    <scalatest suite="se.scalablesolutions.akka.kernel.AllSuite">
+      <runpath>
+        <fileset dir="../lib">
+          <include name="**/*.jar"/>
+        </fileset>
+        <pathelement location="${dist.jar}"/>
+        <pathelement location="${javac.includes}"/>
+        <pathelement location="${build.classes.dir}"/>
+        <pathelement location="${build.test.classes.dir}"/>
+        <pathelement location="${scalatest.classpath}"/>
+        <pathelement location="${project.akka-util-java}/dist/akka-util-java.jar"/>
+      </runpath>
+    </scalatest>
+  </target>
+
     <!--
 
     There exist several targets which are by default empty and which can be 
