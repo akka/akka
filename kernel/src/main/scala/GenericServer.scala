@@ -81,7 +81,10 @@ trait GenericServer extends Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class GenericServerContainer(val id: String, var serverFactory: () => GenericServer) extends Logging {
+class GenericServerContainer(
+  val id: String,
+  var serverFactory: () => GenericServer,
+  private[kernel] var state: Option[TransientObjectState]) extends Logging {
   require(id != null && id != "")
 
   // TODO: see if we can parameterize class and add type safe getActor method

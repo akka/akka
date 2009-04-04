@@ -7,6 +7,12 @@ package se.scalablesolutions.akka.kernel
 import se.scalablesolutions.akka.collection._
 import scala.collection.mutable.{HashMap}
 
+trait Transactional {
+  private[kernel] def begin
+  private[kernel] def commit
+  private[kernel] def rollback
+}
+
 sealed trait State[K, V] {
   def put(key: K, value: V)
   def remove(key: K)
@@ -17,28 +23,20 @@ sealed trait State[K, V] {
   def clear
 }
 
-sealed trait TransactionalState[K, V] extends State[K, V] { this: HashState[K, V] =>
-  private[kernel] var snapshot = state
-  private[kernel] val unitOfWork = new HashMap[K, V]
-
-  private[kernel] def record = {
-    snapshot = state
-    unitOfWork.clear
-  }
-
-  abstract override def put(key: K, value: V) = {
-    super.put(key, value)
-    unitOfWork += key -> value
-  }
-
-  abstract override def remove(key: K) = {
-    super.remove(key)
-    unitOfWork -= key
-  }
-}
-
-final class HashState[K, V] extends State[K, V] {
+sealed class TransientState[K, V] extends State[K, V] with Transactional {
   private[kernel] var state = new HashTrie[K, V]
+  private[kernel] var snapshot = state
+
+  private[kernel] override def begin = {
+    snapshot = state
+  }
+
+  private[kernel] override def commit = {
+  }
+
+  private[kernel] override def rollback = {
+    state = snapshot
+  }
 
   override def put(key: K, value: V) = {
     state = state.update(key, value)
@@ -57,6 +55,29 @@ final class HashState[K, V] extends State[K, V] {
   def size: Int = state.size
 
   def clear = state = new HashTrie[K, V]
+}
+
+final class TransientStringState extends TransientState[String, String]
+final class TransientObjectState extends TransientState[String, AnyRef]
+
+trait UnitOfWork[K, V] extends State[K, V] with Transactional {
+  this: TransientState[K, V] =>
+  private[kernel] val changeSet = new HashMap[K, V]
+
+  abstract override def begin = {
+    super.begin
+    changeSet.clear
+  }
+
+  abstract override def put(key: K, value: V) = {
+    super.put(key, value)
+    changeSet += key -> value
+  }
+
+  abstract override def remove(key: K) = {
+    super.remove(key)
+    changeSet -= key
+  }
 }
 
 //class VectorState[T] {

@@ -4,10 +4,51 @@
 
 package se.scalablesolutions.akka.kernel
 
-import org.specs.runner.JUnit4
-import org.specs.Specification
+import org.scalatest.Spec
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.junit.JUnit3Suite
 
 import se.scalablesolutions.akka.annotation.{oneway, transactional, stateful}
+
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object ActiveObjectSpec {
+  var messageLog = ""
+}
+class ActiveObjectSpec extends Spec with ShouldMatchers {
+
+  describe("An ActiveObject") {
+
+    it("(with default supervisor) should dispatch method calls normally") {
+      val foo = ActiveObject.newInstance[Foo](classOf[Foo], new FooImpl, 1000)
+
+      val result = foo.foo("foo ")
+      ActiveObjectSpec.messageLog += result
+
+      foo.bar("bar ")
+      ActiveObjectSpec.messageLog += "before_bar "
+
+      Thread.sleep(500)
+      ActiveObjectSpec.messageLog should equal ("foo return_foo before_bar bar ")
+    }
+
+    it("should not rollback state for a stateful server in case of success") {
+      val stateful = ActiveObject.newInstance[Stateful](classOf[Stateful], new StatefulImpl, 1000)
+
+      stateful.success("new state")
+      stateful.state should equal ("new state")
+    }
+
+    it("should rollback state for a stateful server in case of failure") {
+      val stateful = ActiveObject.newInstance[Stateful](classOf[Stateful], new StatefulImpl, 1000)
+      val failer = ActiveObject.newInstance[Failer](classOf[Failer], new FailerImpl, 1000)
+
+      stateful.failure("new state", failer)
+      stateful.state should equal ("nil")
+    }
+  }
+}
 
 trait Foo {
   def foo(msg: String): String
@@ -17,15 +58,14 @@ trait Foo {
   def throwsException
 }
 
-
 class FooImpl extends Foo {
   val bar: Bar = new BarImpl
   def foo(msg: String): String = {
-    activeObjectSpec.messageLog += msg
+    ActiveObjectSpec.messageLog += msg
     "return_foo "
   }
   def fooInTx(msg: String): String = {
-    activeObjectSpec.messageLog += msg
+    ActiveObjectSpec.messageLog += msg
     "return_foo "
   }
   def bar(msg: String) = bar.bar(msg)
@@ -40,7 +80,7 @@ trait Bar {
 class BarImpl extends Bar {
   def bar(msg: String) = {
     Thread.sleep(100)
-    activeObjectSpec.messageLog += msg
+    ActiveObjectSpec.messageLog += msg
   }
 }
 
@@ -68,44 +108,6 @@ class FailerImpl extends Failer {
   def fail = throw new RuntimeException("expected")
 }
 
-
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class activeObjectSpecTest extends JUnit4(activeObjectSpec) // for JUnit4 and Maven
-object activeObjectSpec extends Specification {
-
-  var messageLog = ""
-
-  "make sure default supervisor works correctly" in {
-    val foo = ActiveObject.newInstance[Foo](classOf[Foo], new FooImpl, 1000)
-
-    val result = foo.foo("foo ")
-    messageLog += result
-
-    foo.bar("bar ")
-    messageLog += "before_bar "
-
-    Thread.sleep(500)
-    messageLog must equalIgnoreCase("foo return_foo before_bar bar ")
- }
-
-  "stateful server should not rollback state in case of success" in {
-    val stateful = ActiveObject.newInstance[Stateful](classOf[Stateful], new StatefulImpl, 1000)
-
-    stateful.success("new state")
-    stateful.state must be_==("new state")
- }
-
-  "stateful server should rollback state in case of failure" in {
-    val stateful = ActiveObject.newInstance[Stateful](classOf[Stateful], new StatefulImpl, 1000)
-    val failer = ActiveObject.newInstance[Failer](classOf[Failer], new FailerImpl, 1000)
-
-    stateful.failure("new state", failer)
-    stateful.state must be_==("nil")
- }
-
-}
 //   @Test { val groups=Array("unit") }
 //   def testCreateGenericServerBasedComponentUsingCustomSupervisorConfiguration = {
 //     val proxy = new ActiveObjectProxy(new FooImpl, 1000)

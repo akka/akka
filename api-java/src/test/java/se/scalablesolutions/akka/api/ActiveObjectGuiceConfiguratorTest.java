@@ -4,8 +4,9 @@
 
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.annotation.oneway;
+import se.scalablesolutions.akka.annotation.*;
 import se.scalablesolutions.akka.kernel.configuration.*;
+import se.scalablesolutions.akka.kernel.TransientObjectState;
 
 import com.google.inject.Inject;
 import com.google.inject.AbstractModule;
@@ -33,6 +34,16 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
             new Component(
                 Bar.class,
                 BarImpl.class,
+                new LifeCycle(new Permanent(), 100),
+                1000),
+            new Component(
+                Stateful.class,
+                StatefulImpl.class,
+                new LifeCycle(new Permanent(), 100),
+                1000),
+            new Component(
+                Failer.class,
+                FailerImpl.class,
                 new LifeCycle(new Permanent(), 100),
                 1000)
         }).inject().supervise();
@@ -92,6 +103,19 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
       fail("exception should have been thrown");
     } catch (RuntimeException e) {
     }
+  }
+
+  public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+    Stateful stateful = conf.getActiveObject(Stateful.class);    
+    stateful.success("test", "new state");
+    assertEquals("new state", stateful.getState("test"));
+  }
+
+  public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
+    Stateful stateful = conf.getActiveObject(Stateful.class);
+    Failer failer = conf.getActiveObject(Failer.class);
+    stateful.failure("test", "new state", failer);
+    assertEquals("nil", stateful.getState("test"));
   }
 }
 
@@ -163,6 +187,37 @@ interface Ext {
 
 class ExtImpl implements Ext {
   public void ext() {
+  }
+}
+
+interface Stateful {
+  @transactional public void success(String key, String msg);
+  @transactional public void failure(String key, String msg, Failer failer);
+  public String getState(String key);
+}
+
+@stateful // TODO: make it possible to add @stateful to interface not impl class
+class StatefulImpl implements Stateful {
+  @Inject private TransientObjectState state;
+  public String getState(String key) {
+    return (String)state.get(key);
+  }
+  public void success(String key, String msg) {
+    state.put(key, msg);
+  }
+  public void failure(String key, String msg, Failer failer) {
+    state.put(key, msg);
+    failer.fail();
+  }
+}
+
+interface Failer {
+  public void fail();
+}
+
+class FailerImpl implements Failer {
+  public void fail() {
+    throw new RuntimeException("expected");
   }
 }
 

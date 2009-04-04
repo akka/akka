@@ -4,8 +4,8 @@
 
 package se.scalablesolutions.akka.kernel
 
-import org.specs.runner.JUnit4
-import org.specs.Specification
+import org.scalatest.Spec
+import org.scalatest.matchers.ShouldMatchers
 
 import javax.ws.rs.{Produces, Path, GET}
 
@@ -17,18 +17,20 @@ import javax.ws.rs.{Produces, Path, GET}
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class restManagerSpecTest extends JUnit4(restManagerSpec) // for JUnit4 and Maven
-object restManagerSpec extends Specification {
+class RestManagerSpec extends Spec with ShouldMatchers {
 
-  "jersey server should be able to start and stop" in {
-    val threadSelector = Kernel.startJersey
-/*    val cc = new DefaultClientConfig
+  describe("A RestManager") {
+
+    it("should be able to start and stop") {
+      val threadSelector = Kernel.startJersey
+      /*    val cc = new DefaultClientConfig
     val c = Client.create(cc)
     val resource = c.proxy("http://localhost:9998/")
     val hello = resource.get(classOf[HelloWorldResource])
     val msg = hello.getMessage
     println("=============: " + msg)
 */    threadSelector.stopEndpoint
+    }
   }
 }
 

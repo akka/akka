@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.kernel
 
 import java.util.{List => JList, ArrayList}
-
 import java.lang.reflect.{Method, Field, InvocationHandler, Proxy, InvocationTargetException}
 import java.lang.annotation.Annotation
 
@@ -74,11 +73,15 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
   val transactional = classOf[se.scalablesolutions.akka.annotation.transactional]
   val oneway = classOf[se.scalablesolutions.akka.annotation.oneway]
   val immutable = classOf[se.scalablesolutions.akka.annotation.immutable]
+  val stateful= classOf[se.scalablesolutions.akka.annotation.stateful]
 
   private[this] var activeTx: Option[Transaction] = None
 
   private var targetInstance: AnyRef = _
-  private[kernel] def setTargetInstance(instance: AnyRef) = targetInstance = instance
+  private[kernel] def setTargetInstance(instance: AnyRef) = {
+    targetInstance = instance
+    if (server.state.isDefined) injectState(server.state.get, targetInstance)
+  }
 
   private[this] val dispatcher = new GenericServer {
     override def body: PartialFunction[Any, Unit] = {
@@ -101,9 +104,11 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     }
   }
 
-  private[kernel] val server = new GenericServerContainer(target.getName, () => dispatcher)
+  private[kernel] val server = 
+    if (target.isAnnotationPresent(stateful)) new GenericServerContainer(target.getName, () => dispatcher, Some(new TransientObjectState))
+    else new GenericServerContainer(target.getName, () => dispatcher, None)
   server.setTimeout(timeout)
-  
+
   def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = {
     if (m.isAnnotationPresent(transactional)) {
       val newTx = new Transaction
@@ -112,9 +117,9 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     }
     val cflowTx = ActiveObject.threadBoundTx.get
 
-    println("========== invoking: " + m.getName)
-    println("========== cflowTx: " + cflowTx)
-    println("========== activeTx: " + activeTx)
+//    println("========== invoking: " + m.getName)
+//    println("========== cflowTx: " + cflowTx)
+//    println("========== activeTx: " + activeTx)
     activeTx match {
       case Some(tx) =>
         if (cflowTx.isDefined && cflowTx.get != tx) {
@@ -157,6 +162,21 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
       println("================ ROLLING BACK")
       tx.rollback(server)
       ActiveObject.threadBoundTx.set(Some(tx))
+  }
+
+  private def injectState(state: TransientObjectState, targetInstance: AnyRef) = {
+    require(state != null)
+    require(targetInstance != null)
+    import se.scalablesolutions.akka.kernel.configuration.ConfigurationException
+    val fields = for {
+      field <- target.getDeclaredFields
+      if field.getType == classOf[TransientObjectState]
+    } yield field
+    if (fields.size == 0) throw new ConfigurationException("Stateful active object needs to have a field '@Inject TransientObjectState state' defined")
+    if (fields.size > 1) throw new ConfigurationException("Stateful active object can only have one single field '@Inject TransientObjectState state' defined")
+    val field = fields(0)
+    field.setAccessible(true)
+    field.set(targetInstance, state)
   }
 }
 
