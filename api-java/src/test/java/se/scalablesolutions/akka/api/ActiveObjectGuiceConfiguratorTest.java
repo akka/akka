@@ -196,9 +196,9 @@ interface Stateful {
   public String getState(String key);
 }
 
-@stateful // TODO: make it possible to add @stateful to interface not impl class
 class StatefulImpl implements Stateful {
-  @Inject private TransientObjectState state;
+  @state private TransientObjectState state = new TransientObjectState();
+
   public String getState(String key) {
     return (String)state.get(key);
   }

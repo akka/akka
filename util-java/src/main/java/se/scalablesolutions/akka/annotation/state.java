@@ -7,5 +7,5 @@ package se.scalablesolutions.akka.annotation;
 import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface stateful {}
+@Target(ElementType.FIELD)
+public @interface state {}
