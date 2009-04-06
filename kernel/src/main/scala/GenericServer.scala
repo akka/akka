@@ -83,16 +83,16 @@ trait GenericServer extends Actor {
  */
 class GenericServerContainer(
   val id: String,
-  var serverFactory: () => GenericServer,
-  private[kernel] var state: Option[TransientObjectState]) extends Logging {
+  private[kernel] var serverFactory: () => GenericServer) extends Logging {
   require(id != null && id != "")
 
   // TODO: see if we can parameterize class and add type safe getActor method
   //class GenericServerContainer[T <: GenericServer](var factory: () => T) {
   //def getActor: T = server
 
-  var lifeCycle: Option[LifeCycle] = None
-  val lock = new ReadWriteLock
+  private[kernel] var lifeCycle: Option[LifeCycle] = None
+  private[kernel] var states: List[State[_,_]] = Nil
+  private[kernel] val lock = new ReadWriteLock
 
   private var server: GenericServer = _
   private var currentConfig: Option[AnyRef] = None

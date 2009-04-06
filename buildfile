@@ -62,14 +62,14 @@ define 'akka' do
   
   desc 'Akka Actor kernel core implementation'
   define 'kernel' do
-    compile.with(AKKA_UTIL_JAVA, GUICEYFRUIT, MINA_CORE, MINA_SCALA, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, JUNIT3, SCALATEST)
+    compile.with(AKKA_UTIL_JAVA, GUICEYFRUIT, MINA_CORE, MINA_SCALA, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, SCALATEST)
     test.using :scalatest
     package :jar
   end
 
   #desc 'Akka DB'
   #define 'db' do
-  #  compile.with(AKKA_KERNEL, MINA_CORE, MINA_SCALA, ZOOKEEPER, CONFIGGY, SLF4J, JUNIT3)
+  #  compile.with(AKKA_KERNEL, MINA_CORE, MINA_SCALA, ZOOKEEPER, CONFIGGY, SLF4J)
   #  test.using :scalatest
   #  package :jar
   #end
