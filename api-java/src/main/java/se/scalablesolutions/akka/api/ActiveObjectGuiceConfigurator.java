@@ -25,10 +25,10 @@ import java.util.HashMap;
 public class ActiveObjectGuiceConfigurator {
   private List<Module> modules = new ArrayList<Module>();
   private Injector injector;
-  private Supervisor supervisor;
+  private Supervisor supervisor; // TODO is supervisor needed
   private RestartStrategy restartStrategy;
   private Component[] components;
-  private Map<Class, Component> configRegistry = new HashMap<Class, Component>();
+  private Map<Class, Component> configRegistry = new HashMap<Class, Component>(); // TODO is configRegistry needed? 
   private Map<Class, ActiveObjectProxy> activeObjectRegistry = new HashMap<Class, ActiveObjectProxy>();
   private ActiveObjectFactory activeObjectFactory = new ActiveObjectFactory();
 

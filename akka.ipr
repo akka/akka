@@ -44,6 +44,29 @@
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
+  <component name="FacetAutodetectingManager">
+    <autodetection-disabled>
+      <facet-type id="Scala">
+        <modules>
+          <module name="akka">
+            <files>
+              <file url="file://$PROJECT_DIR$/db/src/main/scala/Db.scala" />
+              <file url="file://$PROJECT_DIR$/db/src/test/scala/DbReplicationSpecs.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/sample.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/src/main/scala/GenericServer.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/src/main/scala/Helpers.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/src/main/scala/Supervisor.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/GenericServerContainerSuite.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/GenericServerSuite.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/Messages.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/SupervisorStateSuite.scala" />
+              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/SupervisorSuite.scala" />
+            </files>
+          </module>
+        </modules>
+      </facet-type>
+    </autodetection-disabled>
+  </component>
   <component name="IdProvider" IDEtalkID="0E3A0445954D4D390C337AFB20B2746C" />
   <component name="InspectionProjectProfileManager">
     <option name="PROJECT_PROFILE" value="Project Default" />
@@ -219,12 +242,12 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/akka.iml" filepath="$PROJECT_DIR$/akka.iml" />
       <module fileurl="file://$PROJECT_DIR$/api-java/api-java.iml" filepath="$PROJECT_DIR$/api-java/api-java.iml" />
       <module fileurl="file://$PROJECT_DIR$/kernel/kernel.iml" filepath="$PROJECT_DIR$/kernel/kernel.iml" />
+      <module fileurl="file://$PROJECT_DIR$/util-java/util-java.iml" filepath="$PROJECT_DIR$/util-java/util-java.iml" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_5" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="ResourceManagerContainer">
@@ -250,19 +273,19 @@
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
-    <library name="scala-2.7.2.final">
+    <library name="scala-2.7.3">
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/lib/scala-compiler.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/lib/scala-dbc.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/lib/scala-library.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/lib/scala-swing.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-compiler.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-dbc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-library.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-swing.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES>
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/src/scala-compiler-src.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/src/scala-dbc-src.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/src/scala-library-src.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.2.final/src/scala-swing-src.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-compiler-src.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-dbc-src.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-library-src.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-swing-src.jar!/" />
       </SOURCES>
     </library>
   </component>

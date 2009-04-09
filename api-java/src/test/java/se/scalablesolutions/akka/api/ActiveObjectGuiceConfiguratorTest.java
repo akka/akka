@@ -25,27 +25,32 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
         bind(Ext.class).to(ExtImpl.class).in(Scopes.SINGLETON);
       }
     }).configureActiveObjects(
-        new RestartStrategy(new AllForOne(), 3, 100), new Component[]{
+        new RestartStrategy(new AllForOne(), 3, 5000), new Component[]{
             new Component(
                 Foo.class,
                 FooImpl.class,
-                new LifeCycle(new Permanent(), 100),
+                new LifeCycle(new Permanent(), 1000),
                 1000),
             new Component(
                 Bar.class,
                 BarImpl.class,
-                new LifeCycle(new Permanent(), 100),
+                new LifeCycle(new Permanent(), 1000),
                 1000),
             new Component(
                 Stateful.class,
                 StatefulImpl.class,
-                new LifeCycle(new Permanent(), 100),
-                1000),
+                new LifeCycle(new Permanent(), 1000),
+                10000000),
             new Component(
                 Failer.class,
                 FailerImpl.class,
-                new LifeCycle(new Permanent(), 100),
-                1000)
+                new LifeCycle(new Permanent(), 1000),
+                1000),
+            new Component(
+                Clasher.class,
+                ClasherImpl.class,
+                new LifeCycle(new Permanent(), 1000),
+                100000)
         }).inject().supervise();
 
   }
@@ -62,6 +67,15 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     Bar bar = conf.getActiveObject(Bar.class);
     Ext ext = conf.getExternalDependency(Ext.class);
     assertTrue(bar.getExt().toString().equals(ext.toString()));
+  }
+
+  public void testLookupNonSupervisedInstance() {
+    try {
+      String str = conf.getActiveObject(String.class);
+      fail("exception should have been thrown");
+    } catch (Exception e) {
+      assertEquals("Class java.lang.String has not been put under supervision (by passing in the config to the supervise()  method", e.getMessage());
+    }
   }
 
   public void testActiveObjectInvocation() throws InterruptedException {
@@ -85,6 +99,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     assertEquals("foo return_foo before_bar ", messageLog);
   }
 
+
   public void testForcedTimeout() {
     messageLog = "";
     Foo foo = conf.getActiveObject(Foo.class);
@@ -104,18 +119,45 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     } catch (RuntimeException e) {
     }
   }
+//
+//  public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+//    Stateful stateful = conf.getActiveObject(Stateful.class);
+//    stateful.setState("stateful", "init"); // set init state
+//    stateful.success("stateful", "new state"); // transactional
+//    assertEquals("new state", stateful.getState("stateful"));
+//  }
+//
+//  public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
+//    Stateful stateful = conf.getActiveObject(Stateful.class);
+//    stateful.setState("stateful", "init"); // set init state
+//
+//    Failer failer = conf.getActiveObject(Failer.class);
+//    try {
+//      stateful.failure("stateful", "new state", failer); // call failing transactional method
+//      fail("should have thrown an exception");
+//    } catch (RuntimeException e) { } // expected
+//    assertEquals("init", stateful.getState("stateful")); // check that state is == init state
+//  }
 
-  public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    Stateful stateful = conf.getActiveObject(Stateful.class);    
-    stateful.success("test", "new state");
-    assertEquals("new state", stateful.getState("test"));
-  }
-
-  public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
+  public void testShouldRollbackStateForStatefulServerInCaseOfMessageClash() {
     Stateful stateful = conf.getActiveObject(Stateful.class);
-    Failer failer = conf.getActiveObject(Failer.class);
-    stateful.failure("test", "new state", failer);
-    assertEquals("nil", stateful.getState("test"));
+    stateful.setState("stateful", "init"); // set init state
+
+    Clasher clasher = conf.getActiveObject(Clasher.class);
+    clasher.setState("clasher", "init"); // set init state
+
+//    try {
+//      stateful.clashOk("stateful", "new state", clasher);
+//    } catch (RuntimeException e) { } // expected
+//    assertEquals("new state", stateful.getState("stateful")); // check that state is == init state
+//    assertEquals("was here", clasher.getState("clasher")); // check that state is == init state
+
+    try {
+      stateful.clashNotOk("stateful", "new state", clasher);
+      fail("should have thrown an exception");
+    } catch (RuntimeException e) { System.out.println(e); } // expected
+    assertEquals("init", stateful.getState("stateful")); // check that state is == init state
+    //assertEquals("init", clasher.getState("clasher")); // check that state is == init state
   }
 }
 
@@ -123,60 +165,44 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
 interface Foo {
   public String foo(String msg);
-
-  @oneway
-  public void bar(String msg);
-
+  @oneway public void bar(String msg);
   public void longRunning();
-
   public void throwsException();
-
   public Bar getBar();
 }
 
 class FooImpl implements Foo {
-  @Inject
-  private Bar bar;
-
+  @Inject private Bar bar;
   public Bar getBar() {
     return bar;
   }
-
   public String foo(String msg) {
     return msg + "return_foo ";
   }
-
   public void bar(String msg) {
     bar.bar(msg);
   }
-
   public void longRunning() {
     try {
       Thread.sleep(10000);
     } catch (InterruptedException e) {
     }
   }
-
   public void throwsException() {
     throw new RuntimeException("expected");
   }
 }
 
 interface Bar {
-  @oneway
-  void bar(String msg);
-
+  @oneway void bar(String msg);
   Ext getExt();
 }
 
 class BarImpl implements Bar {
-  @Inject
-  private Ext ext;
-
+  @Inject private Ext ext;
   public Ext getExt() {
     return ext;
   }
-
   public void bar(String msg) {
   }
 }
@@ -191,16 +217,24 @@ class ExtImpl implements Ext {
 }
 
 interface Stateful {
+  // transactional
   @transactional public void success(String key, String msg);
   @transactional public void failure(String key, String msg, Failer failer);
+  @transactional public void clashOk(String key, String msg, Clasher clasher);
+  @transactional public void clashNotOk(String key, String msg, Clasher clasher);
+
+  // non-transactional
   public String getState(String key);
+  public void setState(String key, String value);
 }
 
 class StatefulImpl implements Stateful {
   @state private TransientObjectState state = new TransientObjectState();
-
   public String getState(String key) {
     return (String)state.get(key);
+  }
+  public void setState(String key, String msg) {
+    state.put(key, msg);
   }
   public void success(String key, String msg) {
     state.put(key, msg);
@@ -208,6 +242,15 @@ class StatefulImpl implements Stateful {
   public void failure(String key, String msg, Failer failer) {
     state.put(key, msg);
     failer.fail();
+  }
+  public void clashOk(String key, String msg, Clasher clasher) {
+    state.put(key, msg);
+    clasher.clash();
+  }
+  public void clashNotOk(String key, String msg, Clasher clasher) {
+    state.put(key, msg);
+    clasher.clash();
+    clasher.clash();
   }
 }
 
@@ -221,4 +264,36 @@ class FailerImpl implements Failer {
   }
 }
 
-             
+interface Clasher {
+  public void clash();
+  public String getState(String key);
+  public void setState(String key, String value);
+}
+
+class ClasherImpl implements Clasher {
+  @state private TransientObjectState state = new TransientObjectState();
+  public String getState(String key) {
+    return (String)state.get(key);
+  }
+  public void setState(String key, String msg) {
+    state.put(key, msg);
+  }
+  public void clash() {
+    state.put("clasher", "was here");
+    // spend some time here
+    for (long i = 0; i < 1000000000; i++) {
+      for (long j = 0; j < 10000000; j++) {
+        j += i;
+      }
+    }
+
+    // FIXME: this statement gives me this error:
+    // se.scalablesolutions.akka.kernel.ActiveObjectException:
+    //      Unexpected message [!(scala.actors.Channel@c2b2f6,ErrRef[Right(null)])] to
+    //      [GenericServer[se.scalablesolutions.akka.api.StatefulImpl]] from
+    //      [GenericServer[se.scalablesolutions.akka.api.ClasherImpl]]]
+    //try { Thread.sleep(1000); } catch (InterruptedException e) {}
+  }
+}
+
+

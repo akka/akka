@@ -4,10 +4,10 @@
 
 package se.scalablesolutions.akka.kernel
 
-import org.apache.zookeeper.jmx.ManagedUtil
-import org.apache.zookeeper.server.persistence.FileTxnSnapLog
-import org.apache.zookeeper.server.ServerConfig
-import org.apache.zookeeper.server.NIOServerCnxn
+//import org.apache.zookeeper.jmx.ManagedUtil
+//import org.apache.zookeeper.server.persistence.FileTxnSnapLog
+//import org.apache.zookeeper.server.ServerConfig
+//import org.apache.zookeeper.server.NIOServerCnxn
 
 import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
 import voldemort.server.{VoldemortConfig, VoldemortServer}

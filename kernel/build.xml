@@ -18,7 +18,7 @@
       <classpath refid="scalatest.classpath"/>
     </taskdef>
 
-    <scalatest suite="se.scalablesolutions.akka.kernel.AllSuite">
+    <scalatest wildcard="se.scalablesolutions.akka">
       <runpath>
         <fileset dir="../lib">
           <include name="**/*.jar"/>

@@ -13,7 +13,7 @@ trait Transactional {
   private[kernel] def rollback
 }
 
-sealed trait State[K, V] {
+sealed trait State[K, V] extends Transactional {
   def put(key: K, value: V)
   def remove(key: K)
   def get(key: K): V
@@ -23,7 +23,10 @@ sealed trait State[K, V] {
   def clear
 }
 
-sealed class TransientState[K, V] extends State[K, V] with Transactional {
+/**
+ * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ */
+sealed class TransientState[K, V] extends State[K, V] {
   private[kernel] var state = new HashTrie[K, V]
   private[kernel] var snapshot = state
 
@@ -32,6 +35,7 @@ sealed class TransientState[K, V] extends State[K, V] with Transactional {
   }
 
   private[kernel] override def commit = {
+    snapshot = state
   }
 
   private[kernel] override def rollback = {
@@ -60,6 +64,9 @@ sealed class TransientState[K, V] extends State[K, V] with Transactional {
 final class TransientStringState extends TransientState[String, String]
 final class TransientObjectState extends TransientState[String, AnyRef]
 
+/**
+ * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ */
 trait UnitOfWork[K, V] extends State[K, V] with Transactional {
   this: TransientState[K, V] =>
   private[kernel] val changeSet = new HashMap[K, V]

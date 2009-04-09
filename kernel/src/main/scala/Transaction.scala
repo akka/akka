@@ -36,21 +36,25 @@ class Transaction extends Logging {
 
   log.debug("Creating a new transaction [%s]", id)
   private[this] var parent: Option[Transaction] = None
-  private[this] var participants = new HashMap[GenericServerContainer, GenericServer]
+  private[this] var participants: List[GenericServerContainer] = Nil
   private[this] var precommitted: List[GenericServerContainer] = Nil
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
 
   def begin(server: GenericServerContainer) = synchronized {
+    println("===== begin 1 " + server)
     if (status == TransactionStatus.Aborted) throw new IllegalStateException("Can't begin ABORTED transaction")
     if (status == TransactionStatus.Completed) throw new IllegalStateException("Can't begin COMPLETED transaction")
     if (status == TransactionStatus.New) log.debug("Actor [%s] is starting NEW transaction", server)
     else log.debug("Actor [%s] is participating in transaction", server)
-    if (server.state.isDefined) server.state.get.begin
+    println("===== begin 2 " + server)
+    server.states.foreach(_.begin)
+    participants ::= server
     status = TransactionStatus.Active
   }
 
   def precommit(server: GenericServerContainer) = synchronized {
     if (status == TransactionStatus.Active) {
+      println("===== precommit " + server)
       log.debug("Pre-committing transaction for actor [%s]", server)
       precommitted ::= server
     }
@@ -58,10 +62,11 @@ class Transaction extends Logging {
 
   def commit(server: GenericServerContainer) = synchronized {
     if (status == TransactionStatus.Active) {
+      println("===== commit " + server)
       log.debug("Committing transaction for actor [%s]", server)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
-          for (server <- participants.keys) yield {
+          for (server <- participants) yield {
             if (precommitted.exists(_.id == server.id)) true
             else false
           }}.exists(_ == false)
@@ -73,12 +78,16 @@ class Transaction extends Logging {
 
   def rollback(server: GenericServerContainer) = synchronized {
     ensureIsActiveOrAborted
-    log.debug("Actor [%s] has initiated transaction rollback, rolling back [%s]" , server, participants.keys)
-    participants.foreach(entry => {
-      val (server, backup) = entry
-      if (server.state.isDefined) server.state.get.rollback
-    })
+    println("===== rollback " + server)
+    log.debug("Actor [%s] has initiated transaction rollback, rolling back [%s]" , server, participants)
+    participants.foreach(_.states.foreach(_.rollback))
     status = TransactionStatus.Aborted
+  }
+
+  def join(server: GenericServerContainer) = synchronized {
+    println("===== joining " + server)
+    server.states.foreach(_.begin)
+    participants ::= server
   }
 
   private def ensureIsActive = if (status != TransactionStatus.Active)

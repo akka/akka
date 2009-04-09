@@ -93,7 +93,7 @@ abstract class SupervisorFactory extends Logging {
       val supervisor = create(restartStrategy)
       supervisor.start
       supervisor !? Configure(config, this) match {
-        case 'success => log.debug("Supervisor successfully configured")
+        case 'configSuccess => log.debug("Supervisor successfully configured")
         case _ => log.error("Supervisor could not be configured")
       }
       supervisor
@@ -148,7 +148,7 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
         case Configure(config, factory) =>
           log.debug("Configuring supervisor:%s ", this)
           configure(config, factory)
-          reply('success)
+          reply('configSuccess)
 
         case Start =>
           state.serverContainers.foreach { serverContainer =>
@@ -229,20 +229,21 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
   private[kernel] def restart(serverContainer: GenericServerContainer, reason: AnyRef, state: SupervisorState) = {
     preRestart(serverContainer)
     serverContainer.lock.withWriteLock {
-
       // TODO: this is the place to fail-over all pending messages in the failing actor's mailbox, if possible to get a hold of them
       // e.g. something like 'serverContainer.getServer.getPendingMessages.map(newServer ! _)'
 
       self.unlink(serverContainer.getServer)
       serverContainer.lifeCycle match {
-        case None => throw new IllegalStateException("Server [" + serverContainer.id + "] does not have a life-cycle defined.")
-        case Some(LifeCycle(scope, shutdownTime)) =>
+        case None =>
+          throw new IllegalStateException("Server [" + serverContainer.id + "] does not have a life-cycle defined.")
+        case Some(LifeCycle(scope, shutdownTime)) => {
           serverContainer.terminate(reason, shutdownTime)
 
           scope match {
-            case Permanent =>
+            case Permanent => {
               log.debug("Restarting server [%s] configured as PERMANENT.", serverContainer.id)
               serverContainer.reconfigure(reason, supervisor.spawnLink(serverContainer), state.supervisor)
+            }
 
             case Temporary =>
               if (reason == 'normal) {
@@ -253,6 +254,7 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
             case Transient =>
               log.info("Server [%s] configured as TRANSIENT will not be restarted.", serverContainer.id)
           }
+        }
       }
     }
     postRestart(serverContainer)

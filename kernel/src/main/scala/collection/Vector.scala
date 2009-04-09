@@ -222,7 +222,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     back
   }
   
-  override def flatMap[A](f: (T)=>Iterable[A]) = {
+  override def flatMap[A](f: (T)=>Iterable[A]):  Vector[A] = {
     var back = new Vector[A]
     var i = 0
     
@@ -234,7 +234,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     back
   }
   
-  override def map[A](f: (T)=>A) = {
+  override def map[A](f: (T)=>A): Vector[A] = {
     var back = new Vector[A]
     var i = 0
     

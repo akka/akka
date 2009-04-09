@@ -14,6 +14,14 @@ import java.lang.annotation.Annotation
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
 
+object Annotation {
+  import se.scalablesolutions.akka.annotation._
+  val transactional = classOf[transactional]
+  val oneway =        classOf[oneway]
+  val immutable =     classOf[immutable]
+  val state =         classOf[state]
+}
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -70,11 +78,7 @@ object ActiveObject {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int) extends InvocationHandler {
-  val transactional = classOf[se.scalablesolutions.akka.annotation.transactional]
-  val oneway =        classOf[se.scalablesolutions.akka.annotation.oneway]
-  val immutable =     classOf[se.scalablesolutions.akka.annotation.immutable]
-  val state=          classOf[se.scalablesolutions.akka.annotation.state]
-
+  import ActiveObject.threadBoundTx
   private[this] var activeTx: Option[Transaction] = None
 
   private var targetInstance: AnyRef = _
@@ -86,58 +90,39 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     }
   }
 
-  private[this] val dispatcher = new GenericServer {
-    override def body: PartialFunction[Any, Unit] = {
-      case invocation: Invocation =>
-        val tx = invocation.tx
-        ActiveObject.threadBoundTx.set(tx)
-        try {
-          reply(ErrRef(invocation.invoke, tx))
-        } catch {
-          case e: InvocationTargetException =>
-            val te = e.getTargetException
-            te.printStackTrace
-            reply(ErrRef({ throw te }, tx))
-          case e =>
-            e.printStackTrace
-            reply(ErrRef({ throw e }, tx))
-        }
-      case 'exit =>  exit; reply()
-      case unexpected => throw new ActiveObjectException("Unexpected message to actor proxy: " + unexpected)
-    }
-  }
-
-  private[kernel] val server = new GenericServerContainer(target.getName, () => dispatcher)
+  private[kernel] val server = new GenericServerContainer(target.getName, () => new Dispatcher(target.getName))
   server.setTimeout(timeout)
 
   def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = {
-    if (m.isAnnotationPresent(transactional)) {
+    if (m.isAnnotationPresent(Annotation.transactional)) {
+      // FIXME: check if we are already in a transaction if so NEST (set parent)
       val newTx = new Transaction
       newTx.begin(server)
-      ActiveObject.threadBoundTx.set(Some(newTx))
+      threadBoundTx.set(Some(newTx))
     }
-    val cflowTx = ActiveObject.threadBoundTx.get
-
-//    println("========== invoking: " + m.getName)
-//    println("========== cflowTx: " + cflowTx)
-//    println("========== activeTx: " + activeTx)
+    val cflowTx = threadBoundTx.get
     activeTx match {
       case Some(tx) =>
         if (cflowTx.isDefined && cflowTx.get != tx) {
           // new tx in scope; try to commit
           tx.commit(server)
+          threadBoundTx.set(None)
           activeTx = None
         } 
       case None =>
-        if (cflowTx.isDefined) activeTx = Some(cflowTx.get)
+        if (cflowTx.isDefined) {
+          val currentTx = cflowTx.get
+          currentTx.join(server)
+          activeTx = Some(currentTx)
+        }
     }
-    activeTx = ActiveObject.threadBoundTx.get
+    activeTx = threadBoundTx.get
     invoke(Invocation(m, args, targetInstance, activeTx))
   }
 
   private def invoke(invocation: Invocation): AnyRef =  {
     val result: AnyRef = 
-      if (invocation.method.isAnnotationPresent(oneway)) server ! invocation
+      if (invocation.method.isAnnotationPresent(Annotation.oneway)) server ! invocation
       else {
         val result: ErrRef[AnyRef] =
           server !!! (invocation, {
@@ -153,6 +138,7 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
             throw e
         }
       }
+    // FIXME: clear threadBoundTx on successful commit
     if (activeTx.isDefined) activeTx.get.precommit(server)
     result
   }
@@ -160,26 +146,54 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
   private def rollback(tx: Option[Transaction]) = tx match {
     case None => {} // no tx; nothing to do
     case Some(tx) =>
-      println("================ ROLLING BACK")
       tx.rollback(server)
-      ActiveObject.threadBoundTx.set(Some(tx))
+      threadBoundTx.set(Some(tx))
   }
 
   private def getStateList(targetInstance: AnyRef): List[State[_,_]] = {
     require(targetInstance != null)
     import se.scalablesolutions.akka.kernel.configuration.ConfigurationException
-    val states = for {
-      field <- target.getDeclaredFields
-      if field.isAnnotationPresent(state)
-      state = field.get(targetInstance)
+    val states: List[State[_,_]] = for {
+      field <- target.getDeclaredFields.toArray.toList
+      if field.isAnnotationPresent(Annotation.state)
+      state = {
+        field.setAccessible(true)
+        field.get(targetInstance)
+      }
       if state != null
     } yield {
       if (!state.isInstanceOf[State[_, _]]) throw new ConfigurationException("Fields annotated with [@state] needs to to be a subtype of [se.scalablesolutions.akka.kernel.State[K, V]]")
-      state
+      state.asInstanceOf[State[_,_]]
     }
     states
-//    if (fields.size > 1) throw new ConfigurationException("Stateful active object can only have one single field '@Inject TransientObjectState state' defined")
   }
+}
+
+/**
+ * Generic GenericServer managing Invocation dispatch, transaction and error management.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
+  override def body: PartialFunction[Any, Unit] = {
+    case invocation: Invocation =>
+      val tx = invocation.tx
+      ActiveObject.threadBoundTx.set(tx)
+      try {
+        reply(ErrRef(invocation.invoke, tx))
+      } catch {
+        case e: InvocationTargetException =>
+          val ref = ErrRef(tx); ref() = throw e.getTargetException; reply(ref)
+        case e =>
+          val ref = ErrRef(tx); ref() = throw e; reply(ref)
+      }
+    case 'exit =>
+      exit; reply()
+    case unexpected =>
+      throw new ActiveObjectException("Unexpected message [" + unexpected + "] to [" + this + "] from [" + sender + "]")
+  }
+  
+  override def toString(): String = "GenericServer[" + targetName + "]"
 }
 
 /**
@@ -187,18 +201,21 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-case class Invocation(val method: Method,
-                      val args: Array[AnyRef],
-                      val target: AnyRef,
-                      val tx: Option[Transaction]) {
+private[kernel] case class Invocation(val method: Method,
+                                      val args: Array[AnyRef],
+                                      val target: AnyRef,
+                                      val tx: Option[Transaction]) {
   method.setAccessible(true)
 
-  def invoke: AnyRef = method.invoke(target, args:_*)
+  def invoke: AnyRef = synchronized {
+    method.invoke(target, args:_*)
+  }
 
-  override def toString: String = 
+  override def toString: String = synchronized {
     "Invocation [method: " + method.getName + ", args: " + argsToString(args) + ", target: " + target + "]"
-
-  override def hashCode(): Int = {
+  }
+  
+  override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
     result = HashCode.hash(result, method)
     result = HashCode.hash(result, args)
@@ -206,7 +223,7 @@ case class Invocation(val method: Method,
     result
   }
 
-  override def equals(that: Any): Boolean = {
+  override def equals(that: Any): Boolean = synchronized {
     that != null &&
     that.isInstanceOf[Invocation] &&
     that.asInstanceOf[Invocation].method == method &&
@@ -214,14 +231,13 @@ case class Invocation(val method: Method,
     isEqual(that.asInstanceOf[Invocation].args, args)
   }
 
-  private def isEqual(a1: Array[Object], a2: Array[Object]): Boolean =
+  private[this] def isEqual(a1: Array[Object], a2: Array[Object]): Boolean =
     (a1 == null && a2 == null) ||
     (a1 != null && 
      a2 != null && 
      a1.size == a2.size && 
      a1.zip(a2).find(t => t._1 == t._2).isDefined)
 
-  private def argsToString(array: Array[Object]): String = synchronized {
+  private[this] def argsToString(array: Array[Object]): String =
     array.foldLeft("(")(_ + " " + _) + ")" 
-  }
 }

@@ -10,9 +10,14 @@ import org.scalatest._
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class AllSuite extends SuperSuite(
+
   List(
-    new ActiveObjectSpec,
-    new RestManagerSpec
+    new SupervisorSpec,
+    new SupervisorStateSpec,
+    new GenericServerSpec,
+    new GenericServerContainerSpec
+//    new ActiveObjectSpec,
+//    new RestManagerSpec
   )
 )
 

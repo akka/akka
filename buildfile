@@ -12,12 +12,9 @@ repositories.remote << 'http://scala-tools.org/repo-snapshots'
 repositories.remote << 'http://www.lag.net/repo'
 
 AKKA_KERNEL =     'se.scalablesolutions.akka:akka-kernel:jar:0.1' 
-#AKKA_SUPERVISOR = 'se.scalablesolutions.akka:akka-supervisor:jar:0.1' 
 AKKA_UTIL_JAVA =  'se.scalablesolutions.akka:akka-util-java:jar:0.1'
 AKKA_API_JAVA =   'se.scalablesolutions.akka:akka-api-java:jar:0.1'
 
-SCALA =        'org.scala-lang:scala-library:jar:2.7.3'
-SCALATEST =    'org.scala-tools.testing:scalatest:jar:0.9.5'
 GUICEYFRUIT = ['org.guiceyfruit:guice-core:jar:2.0-SNAPSHOT', 
                'org.guiceyfruit:guice-jsr250:jar:2.0-SNAPSHOT']
 JERSEY =      ['com.sun.jersey:jersey-core:jar:1.0.1',
@@ -27,18 +24,23 @@ JERSEY =      ['com.sun.jersey:jersey-core:jar:1.0.1',
                'javax.ws.rs:jsr311-api:jar:1.0']
 VOLDEMORT =   ['voldemort:voldemort:jar:0.4a',
                'voldemort:voldemort-contrib:jar:0.4a']
+ZOOKEEPER =    'org.apache:zookeeper:jar:3.1.0'
+GRIZZLY =      'com.sun.grizzly:grizzly-servlet-webserver:jar:1.8.6.3'
+MINA_CORE =    'com.assembla.scala.mina:mina-core:jar:2.0.0-M2-SNAPSHOT'
+MINA_SCALA =   'com.assembla.scala.mina:mina-integration-scala:jar:2.0.0-M2-SNAPSHOT'
+
+CONFIGGY =     'net.lag:configgy:jar:1.2'
 SLF4J =       ['org.slf4j:slf4j-log4j12:jar:1.4.3', 
                'org.slf4j:slf4j-api:jar:1.4.3',
                'log4j:log4j:jar:1.2.13']
-CONFIGGY =     'net.lag:configgy:jar:1.2'
-ZOOKEEPER =    'org.apache:zookeeper:jar:3.1.0'
-GRIZZLY =      'com.sun.grizzly:grizzly-servlet-webserver:jar:1.8.6.3'
+JDOM =         'jdom:jdom:jar:1.0'
+GOOGLE_COLLECT = 'com.google.code.google-collections:google-collect:jar:snapshot-20080530'
+
+SCALA =        'org.scala-lang:scala-library:jar:2.7.3'
+SCALATEST =    'org.scala-tools.testing:scalatest:jar:0.9.5'
 JUNIT4 =       'junit:junit:jar:4.5'
 JUNIT3 =       'junit:junit:jar:3.8.2'
-GOOGLE_COLLECT = 'com.google.code.google-collections:google-collect:jar:snapshot-20080530'
-JDOM =         'jdom:jdom:jar:1.0'
-MINA_CORE =    'com.assembla.scala.mina:mina-core:jar:2.0.0-M2-SNAPSHOT'
-MINA_SCALA =   'com.assembla.scala.mina:mina-integration-scala:jar:2.0.0-M2-SNAPSHOT'
+#SCALATEST_JUNIT4_MVN_PLUGIN = 'com.jteigen.scalatest:junit4runner:jar:1.0-SNAPSHOT'
 
 desc 'The Akka Actor Kernel'
 define 'akka' do
@@ -53,17 +55,16 @@ define 'akka' do
     package :jar
   end
   
-  #desc 'Implementation of Erlangs Supervisor and GenericServer behaviors'
-  #define 'supervisor' do
-  #  compile.with(CONFIGGY)
-  #  test.using :scalatest
-  # package :jar
-  #end
-  
   desc 'Akka Actor kernel core implementation'
   define 'kernel' do
-    compile.with(AKKA_UTIL_JAVA, GUICEYFRUIT, MINA_CORE, MINA_SCALA, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY, SCALATEST)
+    compile.with(AKKA_UTIL_JAVA, GUICEYFRUIT, MINA_CORE, MINA_SCALA, JERSEY, VOLDEMORT, ZOOKEEPER, SLF4J, GRIZZLY, CONFIGGY)
     test.using :scalatest
+    package :jar
+  end
+
+  desc 'Akka Java API'
+  define 'api-java' do
+    compile.with(AKKA_KERNEL, AKKA_UTIL_JAVA, GUICEYFRUIT)
     package :jar
   end
 
@@ -73,13 +74,14 @@ define 'akka' do
   #  test.using :scalatest
   #  package :jar
   #end
+  #desc 'Implementation of Erlangs Supervisor and GenericServer behaviors'
+  #define 'supervisor' do
+  #  compile.with(CONFIGGY)
+  #  test.using :scalatest
+  # package :jar
+  #end
   
-  desc 'Akka Java API'
-  define 'api-java' do
-    compile.with(AKKA_KERNEL, AKKA_UTIL_JAVA, GUICEYFRUIT, JUNIT4)
-    package :jar
-  end
-
+  
   package(:zip).include 'README'
   package(:zip).include 'bin/*', :path=>'bin'
   package(:zip).include 'config/*', :path=>'config'
