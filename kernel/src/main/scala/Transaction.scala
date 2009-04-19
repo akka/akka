@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.kernel
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable.HashMap
 
-sealed abstract case class TransactionStatus
+sealed abstract class TransactionStatus
 object TransactionStatus {
   case object New extends TransactionStatus
   case object Active extends TransactionStatus

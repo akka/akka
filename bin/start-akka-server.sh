@@ -6,11 +6,37 @@ then
 	exit 1
 fi
 
-base_dir=$(dirname $0)/..
+BASE_DIR=$(dirname $0)/..
 
-for file in $base_dir/lib/*.jar;
+echo 'Starting Akka Kernel from directory' $BASE_DIR
+
+for FILE in $BASE_DIR/lib/*.jar;
 do
-  CLASSPATH=$CLASSPATH:$file
+  CLASSPATH=$CLASSPATH:$FILE
 done
+CLASSPATH=$CLASSPATH:$BASE_DIR/config
+CLASSPATH=$CLASSPATH:$BASE_DIR/kernel/build/classes
 
-java -Xmx1G -server -cp $CLASSPATH -Dcom.sun.management.jmxremote com.scalablesolutions.akka.Boot com.scalablesolutions.akka.kernel.Kernel ${1}
+STORAGE_OPTS=" \
+        -Dcassandra \
+        -Dstorage-config=$BASE_DIR/config/storage-conf.xml"
+
+JVM_OPTS=" \
+        -server \
+        -Xdebug \
+        -Xrunjdwp:transport=dt_socket,server=y,address=8888,suspend=n \
+        -Xms128M \
+        -Xmx1G \
+        -XX:SurvivorRatio=8 \
+        -XX:TargetSurvivorRatio=90 \
+        -XX:+AggressiveOpts \
+        -XX:+UseParNewGC \
+        -XX:+UseConcMarkSweepGC \
+        -XX:CMSInitiatingOccupancyFraction=1 \
+        -XX:+CMSParallelRemarkEnabled \
+        -XX:+HeapDumpOnOutOfMemoryError \
+        -Dcom.sun.management.jmxremote.port=8080 \
+        -Dcom.sun.management.jmxremote.ssl=false \
+        -Dcom.sun.management.jmxremote.authenticate=false"
+
+java $JVM_OPTS $STORAGE_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}

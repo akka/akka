@@ -8,12 +8,12 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="library" name="scala-2.7.2.final" level="project" />
     <orderEntry type="library" name="scala-2.7.3" level="project" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="api-java" />
     <orderEntry type="module" module-name="kernel" />
+    <orderEntry type="module" module-name="util-java" />
   </component>
 </module>
 

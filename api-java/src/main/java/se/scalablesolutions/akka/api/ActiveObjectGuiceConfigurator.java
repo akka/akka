@@ -12,7 +12,6 @@ import se.scalablesolutions.akka.kernel.ActiveObjectFactory;
 import se.scalablesolutions.akka.kernel.ActiveObjectProxy;
 import se.scalablesolutions.akka.kernel.Supervisor;
 import se.scalablesolutions.akka.kernel.Worker;
-import se.scalablesolutions.akka.kernel.TransientStringState;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -56,7 +55,6 @@ public class ActiveObjectGuiceConfigurator {
     this.components = components;
     modules.add(new AbstractModule() {
       protected void configure() {
-        bind(TransientStringState.class);
         bind(ResourceProviderFactory.class);
         for (int i = 0; i < components.length; i++) {
           Component c = components[i];

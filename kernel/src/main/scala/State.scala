@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.kernel
 
 import se.scalablesolutions.akka.collection._
-import scala.collection.mutable.{HashMap}
+import scala.collection.mutable.HashMap
 
 trait Transactional {
   private[kernel] def begin
@@ -26,7 +26,7 @@ sealed trait State[K, V] extends Transactional {
 /**
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
  */
-sealed class TransientState[K, V] extends State[K, V] {
+sealed class InMemoryState[K, V] extends State[K, V] {
   private[kernel] var state = new HashTrie[K, V]
   private[kernel] var snapshot = state
 
@@ -53,7 +53,7 @@ sealed class TransientState[K, V] extends State[K, V] {
   def get(key: K): V = state.get(key).getOrElse { throw new NoSuchElementException("No value for key [" + key + "]") }
 
   def contains(key: K): Boolean = state.contains(key)
- 
+
   def elements: Iterator[(K, V)] = state.elements
 
   def size: Int = state.size
@@ -61,14 +61,14 @@ sealed class TransientState[K, V] extends State[K, V] {
   def clear = state = new HashTrie[K, V]
 }
 
-final class TransientStringState extends TransientState[String, String]
-final class TransientObjectState extends TransientState[String, AnyRef]
-
+//final class InMemoryStringState extends InMemoryState[String, String]
+//final class InMemoryObjectState extends InMemoryState[String, AnyRef]
+//
 /**
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
  */
 trait UnitOfWork[K, V] extends State[K, V] with Transactional {
-  this: TransientState[K, V] =>
+  this: InMemoryState[K, V] =>
   private[kernel] val changeSet = new HashMap[K, V]
 
   abstract override def begin = {

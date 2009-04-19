@@ -30,7 +30,7 @@ import javax.management.JMException
 object Kernel extends Logging {
 
   val SERVER_URL = "localhost"
-  
+
   val JERSEY_SERVER_URL = "http://" + SERVER_URL + "/"
   val JERSEY_SERVER_PORT = 9998
   val JERSEY_REST_CLASSES_ROOT_PACKAGE = "se.scalablesolutions.akka.kernel"
@@ -43,12 +43,16 @@ object Kernel extends Logging {
   val ZOO_KEEPER_SERVER_URL = SERVER_URL
   val ZOO_KEEPER_SERVER_PORT = 9898
 
-  private[this] var storageFactory: StoreClientFactory = _
-  private[this] var storageServer: VoldemortServer = _
-   
+  private[this] var cassandraNode: CassandraNode = _
+
+  //private[this] var storageFactory: StoreClientFactory = _
+  //private[this] var storageServer: VoldemortServer = _
+
   def main(args: Array[String]): Unit = {
+    log.info("Starting Akka kernel...")
     //startZooKeeper
-    startVoldemort
+    //startVoldemort
+    startCassandra
     //val threadSelector = startJersey
 
     // TODO: handle shutdown of Jersey in separate thread
@@ -65,51 +69,56 @@ object Kernel extends Logging {
     GrizzlyWebContainerFactory.create(JERSEY_BASE_URI, initParams)
   }
 
-   private[akka] def startVoldemort = {
-    // Start Voldemort server
-    val config = VoldemortConfig.loadFromVoldemortHome(Boot.HOME)
-    storageServer = new VoldemortServer(config)
-    storageServer.start
-    log.info("Replicated persistent storage server started at %s", VOLDEMORT_BOOTSTRAP_URL)
-
-    // Create Voldemort client factory
-    val numThreads = 10
-    val maxQueuedRequests = 10
-    val maxConnectionsPerNode = 10
-    val maxTotalConnections = 100
-    storageFactory = new SocketStoreClientFactory(
-      numThreads,
-      numThreads,
-      maxQueuedRequests,
-      maxConnectionsPerNode,
-      maxTotalConnections,
-      VOLDEMORT_BOOTSTRAP_URL)
-
-    val name = this.getClass.getName
-    val storage = getStorageFor("actors")
-//    val value = storage.get(name)
-    val value = new Versioned("state")
-    //value.setObject("state")
-    storage.put(name, value)
+  private[akka] def startCassandra = {
+    cassandraNode = new CassandraNode
+    cassandraNode.start
   }
-  
-  private[akka] def getStorageFor(storageName: String): StoreClient[String, String] =
-    storageFactory.getStoreClient(storageName)
+
+//  private[akka] def startVoldemort = {
+//    // Start Voldemort server
+//    val config = VoldemortConfig.loadFromVoldemortHome(Boot.HOME)
+//    storageServer = new VoldemortServer(config)
+//    storageServer.start
+//    log.info("Replicated persistent storage server started at %s", VOLDEMORT_BOOTSTRAP_URL)
+//
+//    // Create Voldemort client factory
+//    val numThreads = 10
+//    val maxQueuedRequests = 10
+//    val maxConnectionsPerNode = 10
+//    val maxTotalConnections = 100
+//    storageFactory = new SocketStoreClientFactory(
+//      numThreads,
+//      numThreads,
+//      maxQueuedRequests,
+//      maxConnectionsPerNode,
+//      maxTotalConnections,
+//      VOLDEMORT_BOOTSTRAP_URL)
+//
+//    val name = this.getClass.getName
+//    val storage = getStorageFor("actors")
+////    val value = storage.get(name)
+//    val value = new Versioned("state")
+//    //value.setObject("state")
+//    storage.put(name, value)
+//  }
+//
+//  private[akka] def getStorageFor(storageName: String): StoreClient[String, String] =
+//    storageFactory.getStoreClient(storageName)
 
   // private[akka] def startZooKeeper = {
   //   try {
   //     ManagedUtil.registerLog4jMBeans
   //     ServerConfig.parse(args)
-  //   } catch { 
+  //   } catch {
   //     case e: JMException => log.warning("Unable to register log4j JMX control: s%", e)
-  //     case e => log.fatal("Error in ZooKeeper config: s%", e) 
+  //     case e => log.fatal("Error in ZooKeeper config: s%", e)
   //   }
   //   val factory = new ZooKeeperServer.Factory() {
   //     override def createConnectionFactory = new NIOServerCnxn.Factory(ServerConfig.getClientPort)
   //     override def createServer = {
   //       val server = new ZooKeeperServer
   //       val txLog = new FileTxnSnapLog(
-  //         new File(ServerConfig.getDataLogDir), 
+  //         new File(ServerConfig.getDataLogDir),
   //         new File(ServerConfig.getDataDir))
   //       server.setTxnLogFactory(txLog)
   //       server
@@ -124,7 +133,7 @@ object Kernel extends Logging {
   //     // cnxnFactory.setZooKeeperServer(zooKeeper)
   //     // cnxnFactory.join
   //     // if (zooKeeper.isRunning) zooKeeper.shutdown
-  //   } catch { case e => log.fatal("Unexpected exception: s%",e) }  
+  //   } catch { case e => log.fatal("Unexpected exception: s%",e) }
   // }
 
   private def getPort(defaultPort: Int) = {

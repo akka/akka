@@ -1,0 +1,45 @@
+<Storage>
+   <ClusterName>akka</ClusterName>
+   <!-- any IPartitioner may be used, including your own
+        as long as it is on the classpath.  Out of the box,
+        Cassandra provides
+        org.apache.cassandra.dht.RandomPartitioner and
+        org.apache.cassandra.dht.OrderPreservingPartitioner.
+        Range queries require using OrderPreservingPartitioner or a subclass. -->
+   <Partitioner>org.apache.cassandra.dht.RandomPartitioner</Partitioner>
+   <RackAware>false</RackAware>
+   <MulticastChannel>230.0.0.1</MulticastChannel>
+   <ReplicationFactor>1</ReplicationFactor>
+   <ZookeeperAddress>127.0.0.1</ZookeeperAddress>
+   <RpcTimeoutInMillis>5000</RpcTimeoutInMillis>
+   <!--JobTrackerHost>tdsearch001.sf2p.facebook.com</JobTrackerHost>
+   <JobJarFileLocation>C:\Engagements\Cassandra-Nexus</JobJarFileLocation-->
+   <StoragePort>7000</StoragePort>
+   <ControlPort>7001</ControlPort>
+   <ThriftPort>9160</ThriftPort>
+   <ColumnIndexSizeInKB>256</ColumnIndexSizeInKB>
+   <HttpPort>7002</HttpPort>
+   <MetadataDirectory>./storage/system</MetadataDirectory>
+   <CommitLogDirectory>./storage/commitlog</CommitLogDirectory>
+   <CommitLogRotationThresholdInMB>128</CommitLogRotationThresholdInMB>
+   <GangliaServers>
+     <GangliaServer>127.0.0.1:12000</GangliaServer>
+   </GangliaServers>
+   <DataFileDirectories>
+     <DataFileDirectory>./storage/data</DataFileDirectory>
+   </DataFileDirectories>
+   <CalloutLocation>./storage/callouts</CalloutLocation>
+   <BootstrapFileDirectory>./storage/bootstrap</BootstrapFileDirectory>
+   <StagingFileDirectory>./storage/staging</StagingFileDirectory>
+   <CommitLogFastSync>false</CommitLogFastSync>
+   <Tables>
+     <Table Name = "akka">
+       <ColumnFamily ColumnSort="Name" Name="hash"/>
+       <!--ColumnFamily ColumnType="Super" ColumnSort="Name" Name="Super2"/-->
+     </Table>
+   </Tables>
+   <Seeds>
+     <!-- Add names of hosts that are deemed contact points -->
+     <Seed>127.0.0.1</Seed>
+   </Seeds>
+</Storage>
