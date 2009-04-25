@@ -8,6 +8,8 @@ build
 target
 data
 out
+storage
+.manager
 manifest.mf
 akka.conf
 semantic.cache
