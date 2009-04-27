@@ -15,6 +15,8 @@ import java.net.UnknownHostException;
 
 /**
  * Base trait for all classes that wants to be able use the logging infrastructure.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Logging {
   @transient val log = Logger.get(this.getClass.getName)
@@ -27,6 +29,8 @@ trait Logging {
  * It keeps track of the exception is logged or not and also stores the unique id,
  * so that it can be carried all along to the client tier and displayed to the end user.
  * The end user can call up the customer support using this number.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LoggableException extends Exception with Logging {
   private val uniqueId = getExceptionID

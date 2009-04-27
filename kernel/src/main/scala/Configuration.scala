@@ -12,8 +12,14 @@ import scala.reflect.BeanProperty
 // ============================================
 // Java version of the configuration API
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 sealed class ConfigurationException(msg: String) extends RuntimeException(msg)
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 sealed abstract class Configuration
 
 class RestartStrategy(@BeanProperty val scheme: FailOverScheme, @BeanProperty val maxNrOfRetries: Int, @BeanProperty val withinTimeRange: Int) extends Configuration {

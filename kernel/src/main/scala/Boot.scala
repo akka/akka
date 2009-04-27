@@ -12,6 +12,8 @@ import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 
 /**
+ * Bootstraps the Akka server by isolating the server classes and all its dependency JARs into its own classloader.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Boot extends Logging {

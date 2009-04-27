@@ -12,6 +12,11 @@ import scala.actors.Actor._
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
+/**
+ * Implements Oz-style dataflow (single assignment) variables.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object DataFlow {  
   def thread(body: => Unit) = { 
     val thread = new IsolatedEventBasedThread(body).start
@@ -40,6 +45,9 @@ object DataFlow {
     }
   }
 
+  /**
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
   sealed class DataFlowVariable[T] {
   
     private sealed abstract class DataFlowVariableMessage
@@ -95,6 +103,9 @@ object DataFlow {
     def shutdown = in ! 'exit
   }
 
+  /**
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
   class DataFlowStream[T] extends Seq[T] { 
     private[this] val queue = new LinkedBlockingQueue[DataFlowVariable[T]]
 
@@ -131,6 +142,9 @@ object DataFlow {
     override def toList: List[T] = queue.toArray.toList.asInstanceOf[List[T]]
   }
   
+  /**
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
   class DataFlowVariableException(msg: String) extends RuntimeException(msg)
 }
 

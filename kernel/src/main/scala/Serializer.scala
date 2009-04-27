@@ -6,6 +6,9 @@ package se.scalablesolutions.akka.kernel
 
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
 
+/** 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object Serializer {
   def deepClone[T <: AnyRef](obj: T): T = in(out(obj)).asInstanceOf[T]
   

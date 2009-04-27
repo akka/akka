@@ -17,6 +17,8 @@ trait Transactional {
  * Base trait for all state implementations (persistent or in-memory).
  * 
  * TODO: Make this class inherit scala.collection.mutable.Map and/or java.util.Map
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait TransactionalMap[K, V] extends Transactional {
   def put(key: K, value: V)
@@ -33,6 +35,8 @@ trait TransactionalMap[K, V] extends Transactional {
  * Implements a Unit of Work, records changes into a change set.
  * 
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
   protected[kernel] val changeSet = new HashMap[K, V]
@@ -54,6 +58,8 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 
 /**
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
   protected[kernel] var state = new HashTrie[K, V]
@@ -74,6 +80,8 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
 
 /**
  * Implements a persistent state based on the Cassandra distributed P2P key-value storage. 
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class CassandraPersistentTransactionalMap(val actorName: String) extends PersistentTransactionalMap[String, String] {
   override def begin = {}
@@ -117,6 +125,8 @@ class CassandraPersistentTransactionalMap(val actorName: String) extends Persist
 /**
  * TODO: extend scala.Seq
  * Base for all transactional vector implementations.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class TransactionalVector[T] extends Transactional {
   def add(elem: T)
@@ -128,6 +138,8 @@ abstract class TransactionalVector[T] extends Transactional {
  * Implements an in-memory transactional vector.
  * 
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
   private[kernel] var state: Vector[T] = EmptyVector
@@ -146,6 +158,8 @@ class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
  * Implements a transactional reference.
  * 
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {
   private[kernel] var ref: Option[T] = None
