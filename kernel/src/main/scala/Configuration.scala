@@ -51,8 +51,8 @@ abstract class Server extends Configuration
 //  def transform = se.scalablesolutions.akka.kernel.kernelConfig(restartStrategy.transform, servers.toArray.toList.asInstanceOf[List[Server]].map(_.transform))
 //}
 class Component(@BeanProperty val intf: Class[_],
-                 @BeanProperty val target: Class[_],
-                 @BeanProperty val lifeCycle: LifeCycle,
-                 @BeanProperty val timeout: Int) extends Server {
+                @BeanProperty val target: Class[_],
+                @BeanProperty val lifeCycle: LifeCycle,
+                @BeanProperty val timeout: Int) extends Server {
   def newWorker(proxy: ActiveObjectProxy) = se.scalablesolutions.akka.kernel.Worker(proxy.server, lifeCycle.transform)
 }

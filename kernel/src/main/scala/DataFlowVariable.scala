@@ -12,8 +12,7 @@ import scala.actors.Actor._
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
-object DataFlow {
-  
+object DataFlow {  
   def thread(body: => Unit) = { 
     val thread = new IsolatedEventBasedThread(body).start
     thread ! 'start

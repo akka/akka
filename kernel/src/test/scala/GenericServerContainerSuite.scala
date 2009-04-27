@@ -7,11 +7,14 @@ package se.scalablesolutions.akka.kernel
 import scala.actors._
 import scala.actors.Actor._
 
+import com.jteigen.scalatest.JUnit4Runner
+import org.junit.runner.RunWith
 import org.scalatest._
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
+@RunWith(classOf[JUnit4Runner])
 class GenericServerContainerSpec extends Suite {
 
   var inner: GenericServerContainerActor = null

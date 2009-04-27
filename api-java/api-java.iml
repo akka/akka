@@ -18,7 +18,6 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="util-java" exported="" />
-    <orderEntry type="module" module-name="kernel" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>

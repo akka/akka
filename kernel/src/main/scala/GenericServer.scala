@@ -86,17 +86,48 @@ class GenericServerContainer(
   private[kernel] var serverFactory: () => GenericServer) extends Logging {
   require(id != null && id != "")
 
+  private[kernel] var lifeCycle: Option[LifeCycle] = None
+  private[kernel] val lock = new ReadWriteLock
+  private[kernel] val txItemsLock = new ReadWriteLock
+  
+  private var server: GenericServer = _
+  private var currentConfig: Option[AnyRef] = None
+  private var timeout = 5000
+
   // TODO: see if we can parameterize class and add type safe getActor method
   //class GenericServerContainer[T <: GenericServer](var factory: () => T) {
   //def getActor: T = server
 
-  private[kernel] var lifeCycle: Option[LifeCycle] = None
-  private[kernel] var states: List[State[_,_]] = Nil
-  private[kernel] val lock = new ReadWriteLock
+  private[kernel] def transactionalItems: List[Transactional] = txItemsLock.withReadLock {
+    _transactionalMaps ::: _transactionalVectors ::: _transactionalRefs
+  }
+  
+  // TX Maps
+  private[this] var _transactionalMaps: List[TransactionalMap[_, _]] = Nil
+  private[kernel] def transactionalMaps_=(maps: List[TransactionalMap[_, _]]) = txItemsLock.withWriteLock {
+    _transactionalMaps = maps
+  }
+  private[kernel] def transactionalMaps: List[TransactionalMap[_, _]] = txItemsLock.withReadLock {
+    _transactionalMaps
+  }
 
-  private var server: GenericServer = _
-  private var currentConfig: Option[AnyRef] = None
-  private var timeout = 5000
+  // TX Vectors
+  private[this] var _transactionalVectors: List[TransactionalVector[_]] = Nil
+  private[kernel] def transactionalVectors_=(vectors: List[TransactionalVector[_]]) = txItemsLock.withWriteLock {
+    _transactionalVectors = vectors
+  }
+  private[kernel] def transactionalVectors: List[TransactionalVector[_]] = txItemsLock.withReadLock {
+    _transactionalVectors
+  }
+
+  // TX Refs
+  private[this] var _transactionalRefs: List[TransactionalRef[_]] = Nil
+  private[kernel] def transactionalRefs_=(refs: List[TransactionalRef[_]]) = txItemsLock.withWriteLock {
+    _transactionalRefs = refs
+  }
+  private[kernel] def transactionalRefs: List[TransactionalRef[_]] = txItemsLock.withReadLock {
+    _transactionalRefs
+  }
 
   /**
    * Sends a one way message to the server - alias for <code>cast(message)</code>.

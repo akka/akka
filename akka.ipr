@@ -15,11 +15,99 @@
     <option name="BUILD_JARS_ON_MAKE" value="false" />
   </component>
   <component name="CodeStyleSettingsManager">
-    <option name="PER_PROJECT_SETTINGS" />
-    <option name="USE_PER_PROJECT_SETTINGS" value="false" />
+    <option name="PER_PROJECT_SETTINGS">
+      <value>
+        <option name="USE_SAME_INDENTS" value="true" />
+        <option name="OTHER_INDENT_OPTIONS">
+          <value>
+            <option name="INDENT_SIZE" value="2" />
+            <option name="CONTINUATION_INDENT_SIZE" value="4" />
+            <option name="TAB_SIZE" value="4" />
+            <option name="USE_TAB_CHARACTER" value="false" />
+            <option name="SMART_TABS" value="false" />
+            <option name="LABEL_INDENT_SIZE" value="0" />
+            <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+          </value>
+        </option>
+        <option name="LINE_SEPARATOR" value="&#10;" />
+        <ADDITIONAL_INDENT_OPTIONS fileType="groovy">
+          <option name="INDENT_SIZE" value="2" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+        <ADDITIONAL_INDENT_OPTIONS fileType="gsp">
+          <option name="INDENT_SIZE" value="2" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+        <ADDITIONAL_INDENT_OPTIONS fileType="java">
+          <option name="INDENT_SIZE" value="4" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+        <ADDITIONAL_INDENT_OPTIONS fileType="js">
+          <option name="INDENT_SIZE" value="4" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+        <ADDITIONAL_INDENT_OPTIONS fileType="jsp">
+          <option name="INDENT_SIZE" value="4" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+        <ADDITIONAL_INDENT_OPTIONS fileType="scala">
+          <option name="INDENT_SIZE" value="2" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="2" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+        <ADDITIONAL_INDENT_OPTIONS fileType="sql">
+          <option name="INDENT_SIZE" value="2" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+        <ADDITIONAL_INDENT_OPTIONS fileType="xml">
+          <option name="INDENT_SIZE" value="4" />
+          <option name="CONTINUATION_INDENT_SIZE" value="8" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+          <option name="SMART_TABS" value="false" />
+          <option name="LABEL_INDENT_SIZE" value="0" />
+          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
+        </ADDITIONAL_INDENT_OPTIONS>
+      </value>
+    </option>
+    <option name="USE_PER_PROJECT_SETTINGS" value="true" />
   </component>
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Javac" />
+    <option name="DEFAULT_COMPILER" value="Eclipse" />
     <option name="DEPLOY_AFTER_MAKE" value="0" />
     <resourceExtensions>
       <entry name=".+\.(properties|xml|html|dtd|tld)" />
@@ -76,6 +164,35 @@
               <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/Messages.scala" />
               <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/SupervisorStateSuite.scala" />
               <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/SupervisorSuite.scala" />
+            </files>
+          </module>
+          <module name="kernel">
+            <files>
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/AkkaComponentProvider.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Boot.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/CassandraNode.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Configuration.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/DataFlowVariable.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/ErrRef.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/GenericServer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/HashCode.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Helpers.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Logging.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/NetCat.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Serializer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/State.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Supervisor.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Transaction.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/HashTrie.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/Vector.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/AllSuite.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/GenericServerContainerSuite.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/GenericServerSpec.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/Messages.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/SupervisorSpec.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/SupervisorStateSpec.scala" />
             </files>
           </module>
         </modules>
@@ -253,18 +370,18 @@
   </component>
   <component name="ProjectFileVersion" converted="true" />
   <component name="ProjectKey">
-    <option name="state" value="project://C:\home\jboner\src\scala\akka\akka.ipr" />
+    <option name="state" value="project:///Users/jboner/src/scala/akka/akka.ipr" />
   </component>
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/akka.iml" filepath="$PROJECT_DIR$/akka.iml" />
       <module fileurl="file://$PROJECT_DIR$/api-java/api-java.iml" filepath="$PROJECT_DIR$/api-java/api-java.iml" />
-      <module fileurl="file://$PROJECT_DIR$/kernel/kernel.iml" filepath="$PROJECT_DIR$/kernel/kernel.iml" />
+      <module fileurl="file://$PROJECT_DIR$/core/core.iml" filepath="$PROJECT_DIR$/core/core.iml" />
       <module fileurl="file://$PROJECT_DIR$/util-java/util-java.iml" filepath="$PROJECT_DIR$/util-java/util-java.iml" />
     </modules>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
-    <output url="file://$PROJECT_DIR$/out" />
+    <output url="file://$PROJECT_DIR$/build" />
   </component>
   <component name="ResourceManagerContainer">
     <option name="myResourceBundles">
@@ -288,23 +405,6 @@
     <mapping directory="" vcs="Git" />
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
-  <component name="libraryTable">
-    <library name="scala-2.7.3">
-      <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-compiler.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-dbc.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-library.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/lib/scala-swing.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES>
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-compiler-src.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-dbc-src.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-library-src.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../../../../bin/scala-2.7.3.final/src/scala-swing-src.jar!/" />
-      </SOURCES>
-    </library>
-  </component>
   <UsedPathMacros>
     <macro name="MAVEN_REPOSITORY" description="Maven Local Repostiry" />
   </UsedPathMacros>

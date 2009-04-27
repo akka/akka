@@ -51,8 +51,17 @@
     </repository>
     <repository>
       <id>java.net</id>
+      <name>Java.net Legacy Repository for Maven</name>
       <url>http://download.java.net/maven/1</url>
       <layout>legacy</layout>
+    </repository>
+	<repository>
+      <id>repository.jboss.org</id>
+      <name>JBoss Repository for Maven</name>
+      <url>http://repository.jboss.org/maven2</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
     </repository>
   </repositories>
 

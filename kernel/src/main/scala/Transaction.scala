@@ -47,7 +47,7 @@ class Transaction extends Logging {
     if (status == TransactionStatus.New) log.debug("Actor [%s] is starting NEW transaction", server)
     else log.debug("Actor [%s] is participating in transaction", server)
     println("===== begin 2 " + server)
-    server.states.foreach(_.begin)
+    server.transactionalItems.foreach(_.begin)
     participants ::= server
     status = TransactionStatus.Active
   }
@@ -80,13 +80,13 @@ class Transaction extends Logging {
     ensureIsActiveOrAborted
     println("===== rollback " + server)
     log.debug("Actor [%s] has initiated transaction rollback, rolling back [%s]" , server, participants)
-    participants.foreach(_.states.foreach(_.rollback))
+    participants.foreach(_.transactionalItems.foreach(_.rollback))
     status = TransactionStatus.Aborted
   }
 
   def join(server: GenericServerContainer) = synchronized {
     println("===== joining " + server)
-    server.states.foreach(_.begin)
+    server.transactionalItems.foreach(_.begin)
     participants ::= server
   }
 

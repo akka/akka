@@ -14,7 +14,7 @@ import java.lang.annotation.Annotation
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
 
-object Annotation {
+object Annotations {
   import se.scalablesolutions.akka.annotation._
   val transactional = classOf[transactional]
   val oneway =        classOf[oneway]
@@ -84,17 +84,17 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
   private var targetInstance: AnyRef = _
   private[kernel] def setTargetInstance(instance: AnyRef) = {
     targetInstance = instance
-    getStateList(targetInstance) match {
-      case Nil => {}
-      case states => server.states = states
-    }
+    val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance) 
+    server.transactionalMaps = maps
+    server.transactionalVectors = vectors
+    server.transactionalRefs = refs
   }
 
   private[kernel] val server = new GenericServerContainer(target.getName, () => new Dispatcher(target.getName))
   server.setTimeout(timeout)
 
   def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = {
-    if (m.isAnnotationPresent(Annotation.transactional)) {
+    if (m.isAnnotationPresent(Annotations.transactional)) {
       // FIXME: check if we are already in a transaction if so NEST (set parent)
       val newTx = new Transaction
       newTx.begin(server)
@@ -122,7 +122,7 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
 
   private def invoke(invocation: Invocation): AnyRef =  {
     val result: AnyRef = 
-      if (invocation.method.isAnnotationPresent(Annotation.oneway)) server ! invocation
+      if (invocation.method.isAnnotationPresent(Annotations.oneway)) server ! invocation
       else {
         val result: ErrRef[AnyRef] =
           server !!! (invocation, {
@@ -150,22 +150,29 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
       threadBoundTx.set(Some(tx))
   }
 
-  private def getStateList(targetInstance: AnyRef): List[State[_,_]] = {
+  private def getTransactionalItemsFor(targetInstance: AnyRef): 
+    Tuple3[List[TransactionalMap[_, _]], List[TransactionalVector[_]], List[TransactionalRef[_]]] = {
     require(targetInstance != null)
-    import se.scalablesolutions.akka.kernel.configuration.ConfigurationException
-    val states: List[State[_,_]] = for {
-      field <- target.getDeclaredFields.toArray.toList
-      if field.isAnnotationPresent(Annotation.state)
-      state = {
+    var maps:    List[TransactionalMap[_, _]] = Nil 
+    var vectors: List[TransactionalVector[_]] = Nil 
+    var refs:    List[TransactionalRef[_]] = Nil 
+    for {
+      field <- target.getDeclaredFields.toArray.toList.asInstanceOf[List[Field]]
+      fieldType = field.getType
+      if fieldType == classOf[TransactionalMap[_, _]] || 
+        fieldType  == classOf[TransactionalVector[_]] || 
+        fieldType  == classOf[TransactionalRef[_]]
+      txItem = {
         field.setAccessible(true)
         field.get(targetInstance)
       }
-      if state != null
-    } yield {
-      if (!state.isInstanceOf[State[_, _]]) throw new ConfigurationException("Fields annotated with [@state] needs to to be a subtype of [se.scalablesolutions.akka.kernel.State[K, V]]")
-      state.asInstanceOf[State[_,_]]
+      if txItem != null
+    } {
+      if (txItem.isInstanceOf[TransactionalMap[_, _]])      maps ::= txItem.asInstanceOf[TransactionalMap[_, _]]
+      else if (txItem.isInstanceOf[TransactionalVector[_]]) vectors ::= txItem.asInstanceOf[TransactionalVector[_]]
+      else if (txItem.isInstanceOf[TransactionalRef[_]])    refs ::= txItem.asInstanceOf[TransactionalRef[_]]
     }
-    states
+    (maps, vectors, refs)
   }
 }
 

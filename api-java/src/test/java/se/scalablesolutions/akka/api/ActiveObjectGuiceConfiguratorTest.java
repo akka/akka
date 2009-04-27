@@ -103,58 +103,58 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     } catch (RuntimeException e) {
     }
   }
+}
 
-  interface Foo {
-    public String foo(String msg);
-    @oneway public void bar(String msg);
-    public void longRunning();
-    public void throwsException();
-    public Bar getBar();
+interface Foo {
+  public String foo(String msg);
+  @oneway public void bar(String msg);
+  public void longRunning();
+  public void throwsException();
+  public Bar getBar();
+}
+
+class FooImpl implements Foo {
+  @Inject private Bar bar;
+  public Bar getBar() {
+    return bar;
   }
-
-  class FooImpl implements Foo {
-    @Inject private Bar bar;
-    public Bar getBar() {
-      return bar;
-    }
-    public String foo(String msg) {
-      return msg + "return_foo ";
-    }
-    public void bar(String msg) {
-      bar.bar(msg);
-    }
-    public void longRunning() {
-      try {
-        Thread.sleep(10000);
-      } catch (InterruptedException e) {
-      }
-    }
-    public void throwsException() {
-      throw new RuntimeException("expected");
+  public String foo(String msg) {
+    return msg + "return_foo ";
+  }
+  public void bar(String msg) {
+    bar.bar(msg);
+  }
+  public void longRunning() {
+    try {
+      Thread.sleep(10000);
+    } catch (InterruptedException e) {
     }
   }
-
-  interface Bar {
-    @oneway void bar(String msg);
-    Ext getExt();
+  public void throwsException() {
+    throw new RuntimeException("expected");
   }
+}
 
-  class BarImpl implements Bar {
-    @Inject private Ext ext;
-    public Ext getExt() {
-      return ext;
-    }
-    public void bar(String msg) {
-    }
+interface Bar {
+  @oneway void bar(String msg);
+  Ext getExt();
+}
+
+class BarImpl implements Bar {
+  @Inject private Ext ext;
+  public Ext getExt() {
+    return ext;
   }
-
-  interface Ext {
-    void ext();
+  public void bar(String msg) {
   }
+}
 
-  class ExtImpl implements Ext {
-    public void ext() {
-    }
+interface Ext {
+  void ext();
+}
+
+class ExtImpl implements Ext {
+  public void ext() {
   }
 }
 

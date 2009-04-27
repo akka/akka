@@ -14,7 +14,6 @@ import com.google.inject.Scopes;
 
 import junit.framework.TestCase;
 
-
 public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
@@ -22,131 +21,121 @@ public class PersistentStateTest extends TestCase {
 
   protected void setUp() {
     conf.configureActiveObjects(
-        new RestartStrategy(new AllForOne(), 3, 5000), new Component[]{
-            new Component(
-                Stateful.class,
-                StatefulImpl.class,
-                new LifeCycle(new Permanent(), 1000),
-                10000000),
-            new Component(
-                Failer.class,
-                FailerImpl.class,
-                new LifeCycle(new Permanent(), 1000),
-                1000),
-            new Component(
-                Clasher.class,
-                ClasherImpl.class,
-                new LifeCycle(new Permanent(), 1000),
-                100000)
+        new RestartStrategy(new AllForOne(), 3, 5000),
+        new Component[] { 
+          new Component(PersistentStateful.class, PersistentStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000), 
+          new Component(PersistentFailer.class, PersistentFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
+          new Component(PersistentClasher.class, PersistentClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
         }).inject().supervise();
 
   }
 
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    Stateful stateful = conf.getActiveObject(Stateful.class);
+    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
     stateful.setState("stateful", "init"); // set init state
     stateful.success("stateful", "new state"); // transactional
     assertEquals("new state", stateful.getState("stateful"));
   }
+}
 
-  interface Stateful {
-    // transactional
-    @transactional
-    public void success(String key, String msg);
+interface PersistentStateful {
+  // transactional
+  @transactional
+  public void success(String key, String msg);
 
-    @transactional
-    public void failure(String key, String msg, Failer failer);
+  @transactional
+  public void failure(String key, String msg, PersistentFailer failer);
 
-    @transactional
-    public void clashOk(String key, String msg, Clasher clasher);
+  @transactional
+  public void clashOk(String key, String msg, PersistentClasher clasher);
 
-    @transactional
-    public void clashNotOk(String key, String msg, Clasher clasher);
+  @transactional
+  public void clashNotOk(String key, String msg, PersistentClasher clasher);
 
-    // non-transactional
-    public String getState(String key);
+  // non-transactional
+  public String getState(String key);
 
-    public void setState(String key, String value);
+  public void setState(String key, String value);
+}
+
+class PersistentStatefulImpl implements PersistentStateful {
+  @state
+  private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
+
+  public String getState(String key) {
+    return (String) state.get(key);
   }
 
-  class StatefulImpl implements Stateful {
-    @state
-    private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
-
-    public String getState(String key) {
-      return (String) state.get(key);
-    }
-
-    public void setState(String key, String msg) {
-      state.put(key, msg);
-    }
-
-    public void success(String key, String msg) {
-      state.put(key, msg);
-    }
-
-    public void failure(String key, String msg, Failer failer) {
-      state.put(key, msg);
-      failer.fail();
-    }
-
-    public void clashOk(String key, String msg, Clasher clasher) {
-      state.put(key, msg);
-      clasher.clash();
-    }
-
-    public void clashNotOk(String key, String msg, Clasher clasher) {
-      state.put(key, msg);
-      clasher.clash();
-      clasher.clash();
-    }
+  public void setState(String key, String msg) {
+    state.put(key, msg);
   }
 
-  interface Failer {
-    public void fail();
+  public void success(String key, String msg) {
+    state.put(key, msg);
   }
 
-  class FailerImpl implements Failer {
-    public void fail() {
-      throw new RuntimeException("expected");
-    }
+  public void failure(String key, String msg, PersistentFailer failer) {
+    state.put(key, msg);
+    failer.fail();
   }
 
-  interface Clasher {
-    public void clash();
-
-    public String getState(String key);
-
-    public void setState(String key, String value);
+  public void clashOk(String key, String msg, PersistentClasher clasher) {
+    state.put(key, msg);
+    clasher.clash();
   }
 
-  class ClasherImpl implements Clasher {
-    @state
-    private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
+  public void clashNotOk(String key, String msg, PersistentClasher clasher) {
+    state.put(key, msg);
+    clasher.clash();
+    clasher.clash();
+  }
+}
 
-    public String getState(String key) {
-      return (String) state.get(key);
-    }
+interface PersistentFailer {
+  public void fail();
+}
 
-    public void setState(String key, String msg) {
-      state.put(key, msg);
-    }
+class PersistentFailerImpl implements PersistentFailer {
+  public void fail() {
+    throw new RuntimeException("expected");
+  }
+}
 
-    public void clash() {
-      state.put("clasher", "was here");
-      // spend some time here
-      for (long i = 0; i < 1000000000; i++) {
-        for (long j = 0; j < 10000000; j++) {
-          j += i;
-        }
+interface PersistentClasher {
+  public void clash();
+
+  public String getState(String key);
+
+  public void setState(String key, String value);
+}
+
+class PersistentClasherImpl implements PersistentClasher {
+  @state
+  private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
+
+  public String getState(String key) {
+    return (String) state.get(key);
+  }
+
+  public void setState(String key, String msg) {
+    state.put(key, msg);
+  }
+
+  public void clash() {
+    state.put("clasher", "was here");
+    // spend some time here
+    for (long i = 0; i < 1000000000; i++) {
+      for (long j = 0; j < 10000000; j++) {
+        j += i;
       }
-
-      // FIXME: this statement gives me this error:
-      // se.scalablesolutions.akka.kernel.ActiveObjectException:
-      //      Unexpected message [!(scala.actors.Channel@c2b2f6,ErrRef[Right(null)])] to
-      //      [GenericServer[se.scalablesolutions.akka.api.StatefulImpl]] from
-      //      [GenericServer[se.scalablesolutions.akka.api.ClasherImpl]]]
-      //try { Thread.sleep(1000); } catch (InterruptedException e) {}
     }
+
+    // FIXME: this statement gives me this error:
+    // se.scalablesolutions.akka.kernel.ActiveObjectException:
+    // Unexpected message [!(scala.actors.Channel@c2b2f6,ErrRef[Right(null)])]
+    // to
+    // [GenericServer[se.scalablesolutions.akka.api.StatefulImpl]] from
+    // [GenericServer[se.scalablesolutions.akka.api.ClasherImpl]]]
+    // try { Thread.sleep(1000); } catch (InterruptedException e) {}
   }
 }

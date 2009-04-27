@@ -47,7 +47,7 @@ object Helpers extends Logging {
   // implicit conversion between regular actor and actor with a type future
   implicit def actorWithFuture(a: Actor) = new ActorWithTypedFuture(a)
 
-  abstract class FutureWithTimeout[T](ch: InputChannel[Any]) extends Future[T](ch) {
+  abstract class FutureWithTimeout[T](ch: InputChannel[T]) extends Future[T](ch) {
     def receiveWithin(timeout: Int) : Option[T]
     override def respond(f: T => Unit): Unit = throw new UnsupportedOperationException("Does not support the Responder API") 
   }
@@ -63,8 +63,8 @@ object Helpers extends Logging {
     require(a != null)
 
     def !!![A](msg: Any): FutureWithTimeout[A] = {
-      val ftch = new Channel[Any](Actor.self)
-      a.send(msg, ftch)
+      val ftch = new Channel[A](Actor.self)
+      a.send(msg, ftch.asInstanceOf[OutputChannel[Any]])
       new FutureWithTimeout[A](ftch) {
         def apply() =
           if (isSet) value.get.asInstanceOf[A]

@@ -60,7 +60,27 @@
       <artifactId>jersey-atom</artifactId>
       <version>1.0.1</version>
     </dependency>
-    <dependency>
+	<dependency>
+      <groupId>org.jboss.netty</groupId>
+      <artifactId>netty</artifactId>
+      <version>3.1.0.BETA2</version>
+    </dependency>
+	<dependency>
+      <groupId>org.apache.cassandra</groupId>
+      <artifactId>cassandra</artifactId>
+      <version>1.0</version>
+    </dependency>
+	<dependency>
+      <groupId>com.facebook</groupId>
+      <artifactId>thrift</artifactId>
+      <version>1.0</version>
+    </dependency>
+	<dependency>
+      <groupId>com.facebook</groupId>
+      <artifactId>fb303</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <!--dependency>
       <groupId>voldemort</groupId>
       <artifactId>voldemort</artifactId>
       <version>0.4a</version>
@@ -69,14 +89,12 @@
       <groupId>voldemort</groupId>
       <artifactId>voldemort-contrib</artifactId>
       <version>0.4a</version>
-    </dependency>
-<!--     
-    <dependency>
+    </dependency-->
+    <!--dependency>
       <groupId>org.apache</groupId>
       <artifactId>zookeeper</artifactId>
       <version>3.1.0</version>
-    </dependency>
- -->
+    </dependency-->
      <dependency>
       <groupId>com.assembla.scala.mina</groupId>
       <artifactId>mina-core</artifactId>
@@ -108,24 +126,18 @@
       <version>0.9.5</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>com.jteigen.scalatest</groupId>
       <artifactId>junit4runner</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>1.0</version>
       <scope>test</scope>
     </dependency>    
-    <dependency>
-      <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck</artifactId>
-      <version>1.5</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.5</version>
       <scope>test</scope>
-     </dependency>
+     </dependency-->
   </dependencies>
 
   <build>
@@ -177,7 +189,7 @@
           </classpathContainers>
         </configuration>
       </plugin>
-      <plugin>
+      <!--plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
@@ -186,7 +198,7 @@
           </includes>
           <junitArtifactName>junit:junit</junitArtifactName>
         </configuration>
-      </plugin>
+      </plugin-->
     </plugins>
     <resources>
       <resource>

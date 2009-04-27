@@ -19,22 +19,22 @@
    <ThriftPort>9160</ThriftPort>
    <ColumnIndexSizeInKB>256</ColumnIndexSizeInKB>
    <HttpPort>7002</HttpPort>
-   <MetadataDirectory>./storage/system</MetadataDirectory>
-   <CommitLogDirectory>./storage/commitlog</CommitLogDirectory>
+   <MetadataDirectory>/Users/jboner/src/scala/akka/storage/system</MetadataDirectory>
+   <CommitLogDirectory>/Users/jboner/src/scala/akka/storage/commitlog</CommitLogDirectory>
    <CommitLogRotationThresholdInMB>128</CommitLogRotationThresholdInMB>
    <GangliaServers>
      <GangliaServer>127.0.0.1:12000</GangliaServer>
    </GangliaServers>
    <DataFileDirectories>
-     <DataFileDirectory>./storage/data</DataFileDirectory>
+     <DataFileDirectory>/Users/jboner/src/scala/akka/storage/data</DataFileDirectory>
    </DataFileDirectories>
-   <CalloutLocation>./storage/callouts</CalloutLocation>
-   <BootstrapFileDirectory>./storage/bootstrap</BootstrapFileDirectory>
-   <StagingFileDirectory>./storage/staging</StagingFileDirectory>
+   <CalloutLocation>/Users/jboner/src/scala/akka/storage/callouts</CalloutLocation>
+   <BootstrapFileDirectory>/Users/jboner/src/scala/akka/storage/bootstrap</BootstrapFileDirectory>
+   <StagingFileDirectory>/Users/jboner/src/scala/akka/storage/staging</StagingFileDirectory>
    <CommitLogFastSync>false</CommitLogFastSync>
    <Tables>
      <Table Name = "akka">
-       <ColumnFamily ColumnSort="Name" Name="hash"/>
+       <ColumnFamily ColumnSort="Name" Name="hashtrie"/>
        <!--ColumnFamily ColumnType="Super" ColumnSort="Name" Name="Super2"/-->
      </Table>
    </Tables>

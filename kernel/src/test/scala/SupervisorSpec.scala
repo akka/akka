@@ -9,11 +9,14 @@ import scala.actors.Actor._
 import scala.collection.Map
 import scala.collection.mutable.HashMap
 
+import com.jteigen.scalatest.JUnit4Runner
+import org.junit.runner.RunWith
 import org.scalatest._
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
+@RunWith(classOf[JUnit4Runner])
 class SupervisorSpec extends Suite {
 
   var messageLog: String = ""

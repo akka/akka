@@ -76,7 +76,6 @@
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/voldemort-contrib-0.4a.jar"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/xerces.jar"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/zookeeper-3.1.0.jar"/>
-	<classpathentry kind="var" path="JRE_LIB"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/config"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

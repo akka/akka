@@ -9,9 +9,9 @@ package se.scalablesolutions.akka.kernel
 //import org.apache.zookeeper.server.ServerConfig
 //import org.apache.zookeeper.server.NIOServerCnxn
 
-import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
-import voldemort.server.{VoldemortConfig, VoldemortServer}
-import voldemort.versioning.Versioned
+//import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
+//import voldemort.server.{VoldemortConfig, VoldemortServer}
+//import voldemort.versioning.Versioned
 
 import com.sun.grizzly.http.SelectorThread
 import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory
@@ -36,29 +36,29 @@ object Kernel extends Logging {
   val JERSEY_REST_CLASSES_ROOT_PACKAGE = "se.scalablesolutions.akka.kernel"
   val JERSEY_BASE_URI = UriBuilder.fromUri(JERSEY_SERVER_URL).port(getPort(JERSEY_SERVER_PORT)).build()
 
+/*  
   val VOLDEMORT_SERVER_URL = "tcp://" + SERVER_URL
   val VOLDEMORT_SERVER_PORT = 6666
   val VOLDEMORT_BOOTSTRAP_URL = VOLDEMORT_SERVER_URL + ":" + VOLDEMORT_SERVER_PORT
-
   val ZOO_KEEPER_SERVER_URL = SERVER_URL
   val ZOO_KEEPER_SERVER_PORT = 9898
-
-  private[this] var cassandraNode: CassandraNode = _
-
-  //private[this] var storageFactory: StoreClientFactory = _
-  //private[this] var storageServer: VoldemortServer = _
+  private[this] var storageFactory: StoreClientFactory = _
+  private[this] var storageServer: VoldemortServer = _
+*/
 
   def main(args: Array[String]): Unit = {
     log.info("Starting Akka kernel...")
-    //startZooKeeper
-    //startVoldemort
     startCassandra
+    cassandraBenchmark
+      
     //val threadSelector = startJersey
-
     // TODO: handle shutdown of Jersey in separate thread
     // TODO: spawn main in new thread an communicate using socket
     //System.in.read
     //threadSelector.stopEndpoint
+
+    //startZooKeeper
+    //startVoldemort
   }
 
   private[akka] def startJersey: SelectorThread = {
@@ -70,10 +70,51 @@ object Kernel extends Logging {
   }
 
   private[akka] def startCassandra = {
-    cassandraNode = new CassandraNode
-    cassandraNode.start
+    CassandraNode.start
   }
 
+  private def cassandraBenchmark = {
+    val NR_ENTRIES = 1000000
+ 
+    println("=================================================")
+    var start = System.currentTimeMillis
+    for (i <- 1 to NR_ENTRIES) CassandraNode.insertActorStorageEntry("test", i.toString, "data")
+    var end = System.currentTimeMillis
+    println("Writes per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
+
+    /*
+FIXME: batch_insert fails with the following exception: 
+
+ERROR - Exception was generated at : 04/27/2009 15:26:35 on thread main
+[B cannot be cast to org.apache.cassandra.db.WriteResponse
+java.lang.ClassCastException: [B cannot be cast to org.apache.cassandra.db.WriteResponse
+    at org.apache.cassandra.service.WriteResponseResolver.resolve(WriteResponseResolver.java:50)
+    at org.apache.cassandra.service.WriteResponseResolver.resolve(WriteResponseResolver.java:31)
+    at org.apache.cassandra.service.QuorumResponseHandler.get(QuorumResponseHandler.java:101)
+    at org.apache.cassandra.service.StorageProxy.insertBlocking(StorageProxy.java:135)
+    at org.apache.cassandra.service.CassandraServer.batch_insert_blocking(CassandraServer.java:489)
+    at se.scalablesolutions.akka.kernel.CassandraNode$.insertHashEntries(CassandraNode.scala:59)
+    at se.scalablesolutions.akka.kernel.Kernel$.cassandraBenchmark(Kernel.scala:91)
+    at se.scalablesolutions.akka.kernel.Kernel$.main(Kernel.scala:52)
+    at se.scalablesolutions.akka.kernel.Kernel.main(Kernel.scala)
+ 
+    println("=================================================")
+    var start = System.currentTimeMillis
+    println(start)
+    val entries = new scala.collection.mutable.ArrayBuffer[Tuple2[String, String]]
+    for (i <- 1 to NR_ENTRIES) entries += (i.toString, "data")
+    CassandraNode.insertHashEntries("test", entries.toList)
+    var end = System.currentTimeMillis
+    println("Writes per second - batch: " + NR_ENTRIES / ((end - start).toDouble / 1000))
+    */
+    println("=================================================")
+    start = System.currentTimeMillis
+    for (i <- 1 to NR_ENTRIES) CassandraNode.getActorStorageEntryFor("test", i.toString)
+    end = System.currentTimeMillis
+    println("Reads per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
+
+    System.exit(0)
+  }
 //  private[akka] def startVoldemort = {
 //    // Start Voldemort server
 //    val config = VoldemortConfig.loadFromVoldemortHome(Boot.HOME)
