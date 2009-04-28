@@ -83,7 +83,8 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentTransactionalMap(val actorName: String) extends PersistentTransactionalMap[String, String] {
+class CassandraPersistentTransactionalMap(actorNameInstance: AnyRef) extends PersistentTransactionalMap[String, String] {
+  val actorName = actorNameInstance.getClass.getName
   override def begin = {}
   override def rollback = {}
   

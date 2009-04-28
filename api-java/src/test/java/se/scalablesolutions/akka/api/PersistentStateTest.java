@@ -5,8 +5,12 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.configuration.*;
-import se.scalablesolutions.akka.kernel.InMemoryState;
+import se.scalablesolutions.akka.kernel.*;
+import se.scalablesolutions.akka.kernel.configuration.LifeCycle;
+import se.scalablesolutions.akka.kernel.configuration.Permanent;
+import se.scalablesolutions.akka.kernel.configuration.Component;
+import se.scalablesolutions.akka.kernel.configuration.AllForOne;
+import se.scalablesolutions.akka.kernel.configuration.RestartStrategy;
 
 import com.google.inject.Inject;
 import com.google.inject.AbstractModule;
@@ -18,7 +22,7 @@ public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
   final private ActiveObjectGuiceConfigurator conf = new ActiveObjectGuiceConfigurator();
-
+  
   protected void setUp() {
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
@@ -59,8 +63,7 @@ interface PersistentStateful {
 }
 
 class PersistentStatefulImpl implements PersistentStateful {
-  @state
-  private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
+  private TransactionalMap state = new CassandraPersistentTransactionalMap(this);
 
   public String getState(String key) {
     return (String) state.get(key);
@@ -110,8 +113,7 @@ interface PersistentClasher {
 }
 
 class PersistentClasherImpl implements PersistentClasher {
-  @state
-  private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
+  private TransactionalMap state = new CassandraPersistentTransactionalMap(this);
 
   public String getState(String key) {
     return (String) state.get(key);

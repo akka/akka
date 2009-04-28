@@ -5,8 +5,12 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.configuration.*;
-import se.scalablesolutions.akka.kernel.InMemoryState;
+import se.scalablesolutions.akka.kernel.*;
+import se.scalablesolutions.akka.kernel.configuration.LifeCycle;
+import se.scalablesolutions.akka.kernel.configuration.Permanent;
+import se.scalablesolutions.akka.kernel.configuration.Component;
+import se.scalablesolutions.akka.kernel.configuration.AllForOne;
+import se.scalablesolutions.akka.kernel.configuration.RestartStrategy;
 
 import com.google.inject.Inject;
 import com.google.inject.AbstractModule;
@@ -101,7 +105,7 @@ interface InMemStateful {
 
 class InMemStatefulImpl implements InMemStateful {
   @state
-  private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
+  private TransactionalMap<String, Object> state = new InMemoryTransactionalMap<String, Object>();
 
   public String getState(String key) {
     return (String) state.get(key);
@@ -152,7 +156,7 @@ interface InMemClasher {
 
 class InMemClasherImpl implements InMemClasher {
   @state
-  private InMemoryState<String, Object> state = new InMemoryState<String, Object>();
+  private TransactionalMap<String, Object> state = new InMemoryTransactionalMap<String, Object>();
 
   public String getState(String key) {
     return (String) state.get(key);

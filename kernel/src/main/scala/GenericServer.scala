@@ -103,7 +103,7 @@ class GenericServerContainer(
   }
   
   // TX Maps
-  private[this] var _transactionalMaps: List[TransactionalMap[_, _]] = Nil
+  private[kernel] var _transactionalMaps: List[TransactionalMap[_, _]] = Nil
   private[kernel] def transactionalMaps_=(maps: List[TransactionalMap[_, _]]) = txItemsLock.withWriteLock {
     _transactionalMaps = maps
   }
@@ -112,7 +112,7 @@ class GenericServerContainer(
   }
 
   // TX Vectors
-  private[this] var _transactionalVectors: List[TransactionalVector[_]] = Nil
+  private[kernel] var _transactionalVectors: List[TransactionalVector[_]] = Nil
   private[kernel] def transactionalVectors_=(vectors: List[TransactionalVector[_]]) = txItemsLock.withWriteLock {
     _transactionalVectors = vectors
   }
@@ -121,7 +121,7 @@ class GenericServerContainer(
   }
 
   // TX Refs
-  private[this] var _transactionalRefs: List[TransactionalRef[_]] = Nil
+  private[kernel] var _transactionalRefs: List[TransactionalRef[_]] = Nil
   private[kernel] def transactionalRefs_=(refs: List[TransactionalRef[_]]) = txItemsLock.withWriteLock {
     _transactionalRefs = refs
   }
