@@ -68,7 +68,7 @@
 	<dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>cassandra</artifactId>
-      <version>1.0</version>
+      <version>0.3.0-dev</version>
     </dependency>
 	<dependency>
       <groupId>com.facebook</groupId>

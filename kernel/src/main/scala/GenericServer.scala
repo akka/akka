@@ -89,7 +89,8 @@ class GenericServerContainer(
   private[kernel] var lifeCycle: Option[LifeCycle] = None
   private[kernel] val lock = new ReadWriteLock
   private[kernel] val txItemsLock = new ReadWriteLock
-  
+  private[kernel] val serializer = new JavaSerializationSerializer
+
   private var server: GenericServer = _
   private var currentConfig: Option[AnyRef] = None
   private var timeout = 5000
@@ -315,7 +316,7 @@ class GenericServerContainer(
 
   private[kernel] def cloneServerAndReturnOldVersion: GenericServer = lock.withWriteLock {
     val oldServer = server
-    server = Serializer.deepClone(server)
+    server = serializer.deepClone(server)
     oldServer
   }
   

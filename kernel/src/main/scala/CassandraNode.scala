@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.kernel
 
 import java.io.File
+import java.lang.reflect.Constructor
 
 import org.apache.cassandra.config.DatabaseDescriptor
 import org.apache.cassandra.service._
@@ -18,9 +19,16 @@ final object CassandraNode extends Logging {
   val ACTOR_KEY_PREFIX = "actor"
   val ACTOR_MAP_COLUMN_FAMILY = "map"
   
+  // TODO: make pluggable (JSON, Thrift, Protobuf etc.)
+  private[this] var serializer: Serializer = new JavaSerializationSerializer
+  
   // TODO: is this server thread-safe or needed to be wrapped up in an actor?
-  private[this] val server = new CassandraServer
-
+  private[this] val server = {
+    val ctor = classOf[CassandraServer].getConstructor(Array[Class[_]]():_*)
+    ctor.setAccessible(true)
+    ctor.newInstance(Array[AnyRef]():_*).asInstanceOf[CassandraServer]
+  }
+  
   def start = {
     try {
       server.start
@@ -32,45 +40,44 @@ final object CassandraNode extends Logging {
     }
   }
 
-  def stop = server.shutdown
+  def stop = {}
 
-  def insertActorStorageEntry(actorName: String, entry: String, content: String) = {
+  def insertActorStorageEntry(actorName: String, entry: String, content: AnyRef) = {
     server.insert(
       TABLE_NAME, 
       ACTOR_KEY_PREFIX + ":" + actorName, 
       ACTOR_MAP_COLUMN_FAMILY + ":" + entry, 
-      content, 
+      serializer.out(content), 
       System.currentTimeMillis)
   }
 
-  def insertActorStorageEntries(actorName: String, entries: List[Tuple2[String, String]]) = {
+  def insertActorStorageEntries(actorName: String, entries: List[Tuple2[String, AnyRef]]) = {
     import java.util.{Map, HashMap, List, ArrayList}
     val columns: Map[String, List[column_t]] = new HashMap
     for (entry <- entries) {
       val cls: List[column_t] = new ArrayList
-      cls.add(new column_t(entry._1, entry._2, System.currentTimeMillis))
+      cls.add(new column_t(entry._1, serializer.out(entry._2), System.currentTimeMillis))
       columns.put(ACTOR_MAP_COLUMN_FAMILY, cls)
     }
     server.batch_insert_blocking(new batch_mutation_t(
       TABLE_NAME, 
       ACTOR_KEY_PREFIX + ":" + actorName, 
-      columns, 
-      new HashMap[String, List[column_t]]))
+      columns))
   }
 
-  def getActorStorageEntryFor(actorName: String, entry: String): Option[String] = {
+  def getActorStorageEntryFor(actorName: String, entry: AnyRef): Option[AnyRef] = {
     try {
       val column = server.get_column(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + actorName, ACTOR_MAP_COLUMN_FAMILY + ":" + entry)
-      Some(column.value)
+      Some(serializer.in(column.value))
     } catch { case e => None }
   }
 
-  def getActorStorageFor(actorName: String): List[Tuple2[String, String]]  = {
+  def getActorStorageFor(actorName: String): List[Tuple2[String, AnyRef]]  = {
     val columns = server.get_columns_since(TABLE_NAME, ACTOR_KEY_PREFIX, ACTOR_MAP_COLUMN_FAMILY, -1)
       .toArray.toList.asInstanceOf[List[org.apache.cassandra.service.column_t]]
     for {
       column <- columns
-      col = (column.columnName, column.value)
+      col = (column.columnName, serializer.in(column.value))
     } yield col
   }
   
@@ -78,11 +85,11 @@ final object CassandraNode extends Logging {
     server.get_column_count(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + actorName, ACTOR_MAP_COLUMN_FAMILY)
 
   def removeActorStorageFor(actorName: String) = 
-    server.remove(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + actorName, ACTOR_MAP_COLUMN_FAMILY)
+    server.remove(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + actorName, ACTOR_MAP_COLUMN_FAMILY, System.currentTimeMillis, false)
 
-  def getActorStorageRange(actorName: String, start: Int, count: Int): List[Tuple2[String, String]] =
+  def getActorStorageRange(actorName: String, start: Int, count: Int): List[Tuple2[String, AnyRef]] =
     server.get_slice(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + actorName, ACTOR_MAP_COLUMN_FAMILY, start, count)
-      .toArray.toList.asInstanceOf[List[Tuple2[String, String]]]
+      .toArray.toList.asInstanceOf[List[Tuple2[String, AnyRef]]]
 }
 
 /*

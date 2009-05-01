@@ -10,7 +10,7 @@
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/aopalliance-1.0.jar"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/asm-3.1.jar"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/asm-all-2.2.1.jar"/>
-	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/cassandra-1.0.jar"/>
+	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/cassandra-0.3.0-dev.jar" sourcepath="/Users/jboner/src/java/cassandra/src"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/catalina-ant.jar"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/cglib-2.2.jar"/>
 	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/colt-1.2.0.jar"/>

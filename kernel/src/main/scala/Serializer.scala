@@ -9,7 +9,15 @@ import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, By
 /** 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Serializer {
+trait Serializer {  
+  def out(obj: AnyRef): Array[Byte]
+  def in(bytes: Array[Byte]): AnyRef
+}
+
+/** 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class JavaSerializationSerializer extends Serializer {
   def deepClone[T <: AnyRef](obj: T): T = in(out(obj)).asInstanceOf[T]
   
   def out(obj: AnyRef): Array[Byte] = {

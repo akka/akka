@@ -24,7 +24,7 @@ JERSEY =      ['com.sun.jersey:jersey-core:jar:1.0.1',
                'javax.ws.rs:jsr311-api:jar:1.0']
 GRIZZLY =      'com.sun.grizzly:grizzly-servlet-webserver:jar:1.8.6.3'
 NETTY =        'org.jboss.netty:netty:jar:3.1.0.BETA2'
-CASSANDRA =    'org.apache.cassandra:cassandra:jar:1.0'
+CASSANDRA =    'org.apache.cassandra:cassandra:jar:0.3.0-dev'
 THRIFT =       'com.facebook:thrift:jar:1.0'
 FB303 =        'com.facebook:fb303:jar:1.0'
 CONFIGGY =     'net.lag:configgy:jar:1.2'

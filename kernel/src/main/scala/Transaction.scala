@@ -93,16 +93,18 @@ class Transaction extends Logging {
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new IllegalStateException("Expected ACTIVE transaction - current status [" + status + "]")
 
-  private def ensureIsActiveOrAborted = 
-    if (!(status == TransactionStatus.Active || status == TransactionStatus.Aborted))
-      throw new IllegalStateException("Expected ACTIVE or ABORTED transaction - current status [" + status + "]")
+  private def ensureIsActiveOrAborted = if (!(status == TransactionStatus.Active || status == TransactionStatus.Aborted))
+    throw new IllegalStateException("Expected ACTIVE or ABORTED transaction - current status [" + status + "]")
 
-  override def equals(that: Any): Boolean = 
+  override def equals(that: Any): Boolean = synchronized {
     that != null && 
     that.isInstanceOf[Transaction] && 
     that.asInstanceOf[Transaction].id == this.id
+  }
  
   override def hashCode(): Int = id.toInt
  
-  override def toString(): String = "Transaction[" + id + ", " + status + "]"
+  override def toString(): String = synchronized { 
+    "Transaction[" + id + ", " + status + "]"
+  }
 }

@@ -83,7 +83,7 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentTransactionalMap(actorNameInstance: AnyRef) extends PersistentTransactionalMap[String, String] {
+class CassandraPersistentTransactionalMap(actorNameInstance: AnyRef) extends PersistentTransactionalMap[String, AnyRef] {
   val actorName = actorNameInstance.getClass.getName
   override def begin = {}
   override def rollback = {}
@@ -96,7 +96,7 @@ class CassandraPersistentTransactionalMap(actorNameInstance: AnyRef) extends Per
     }
   }
   
-  override def get(key: String): String = CassandraNode.getActorStorageEntryFor(actorName, key)
+  override def get(key: String): AnyRef = CassandraNode.getActorStorageEntryFor(actorName, key)
       .getOrElse(throw new NoSuchElementException("Could not find element for key [" + key + "]"))
   
   override def contains(key: String): Boolean = CassandraNode.getActorStorageEntryFor(actorName, key).isDefined
@@ -107,12 +107,12 @@ class CassandraPersistentTransactionalMap(actorNameInstance: AnyRef) extends Per
   
   override def getRange(start: Int, count: Int) = CassandraNode.getActorStorageRange(actorName, start, count)
   
-  override def elements: Iterator[Tuple2[String, String]]  = { 
-    new Iterator[Tuple2[String, String]] {
-      private val originalList: List[Tuple2[String, String]] = CassandraNode.getActorStorageFor(actorName) 
+  override def elements: Iterator[Tuple2[String, AnyRef]]  = { 
+    new Iterator[Tuple2[String, AnyRef]] {
+      private val originalList: List[Tuple2[String, AnyRef]] = CassandraNode.getActorStorageFor(actorName) 
       private var elements = originalList.reverse
   
-      override def next: Tuple2[String, String]= synchronized {
+      override def next: Tuple2[String, AnyRef]= synchronized {
         val element = elements.head
         elements = elements.tail
         element

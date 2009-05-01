@@ -30,57 +30,62 @@ public class InMemoryStateTest extends TestCase {
           new Component(InMemStateful.class, InMemStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000), 
           new Component(InMemFailer.class, InMemFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
           new Component(InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
-        }).inject().supervise();
+          }).inject().supervise();
+  }
+  
+  protected void tearDown() {
+    conf.stop();
+  }
+  
 
+  public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    assertEquals("new state", stateful.getState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
-  // public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-  // Stateful stateful = conf.getActiveObject(Stateful.class);
-  // stateful.setState("stateful", "init"); // set init state
-  // stateful.success("stateful", "new state"); // transactional
-  // assertEquals("new state", stateful.getState("stateful"));
-  // }
-  //
-  // public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
-  // Stateful stateful = conf.getActiveObject(Stateful.class);
-  // stateful.setState("stateful", "init"); // set init state
-  //
-  // Failer failer = conf.getActiveObject(Failer.class);
-  // try {
-  // stateful.failure("stateful", "new state", failer); // call failing
-  // transactional method
-  // fail("should have thrown an exception");
-  // } catch (RuntimeException e) { } // expected
-  // assertEquals("init", stateful.getState("stateful")); // check that state is
-  // == init state
-  // }
-
-  public void testShouldRollbackStateForStatefulServerInCaseOfMessageClash() {
+  public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
     InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
-    stateful.setState("stateful", "init"); // set init state
+    stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
 
-    InMemClasher clasher = conf.getActiveObject(InMemClasher.class);
-    clasher.setState("clasher", "init"); // set init state
-
-    // try {
-    // stateful.clashOk("stateful", "new state", clasher);
-    // } catch (RuntimeException e) { } // expected
-    // assertEquals("new state", stateful.getState("stateful")); // check that
-    // state is == init state
-    // assertEquals("was here", clasher.getState("clasher")); // check that
-    // state is == init state
-
+    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.clashNotOk("stateful", "new state", clasher);
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
-      System.out.println(e);
     } // expected
-    assertEquals("init", stateful.getState("stateful")); // check that state is
-    // == init state
-    // assertEquals("init", clasher.getState("clasher")); // check that state is
-    // == init state
+    assertEquals("init", stateful.getState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
   }
+
+  // public void testShouldRollbackStateForStatefulServerInCaseOfMessageClash()
+  // {
+  // InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+  // stateful.setState("stateful", "init"); // set init state
+  //
+  // InMemClasher clasher = conf.getActiveObject(InMemClasher.class);
+  // clasher.setState("clasher", "init"); // set init state
+  //
+  // // try {
+  // // stateful.clashOk("stateful", "new state", clasher);
+  // // } catch (RuntimeException e) { } // expected
+  // // assertEquals("new state", stateful.getState("stateful")); // check that
+  // // state is == init state
+  // // assertEquals("was here", clasher.getState("clasher")); // check that
+  // // state is == init state
+  //
+  // try {
+  // stateful.clashNotOk("stateful", "new state", clasher);
+  // fail("should have thrown an exception");
+  // } catch (RuntimeException e) {
+  // System.out.println(e);
+  // } // expected
+  // assertEquals("init", stateful.getState("stateful")); // check that state is
+  // // == init state
+  // // assertEquals("init", clasher.getState("clasher")); // check that state
+  // is
+  // // == init state
+  // }
 }
 
 interface InMemStateful {
@@ -105,10 +110,10 @@ interface InMemStateful {
 
 class InMemStatefulImpl implements InMemStateful {
   @state
-  private TransactionalMap<String, Object> state = new InMemoryTransactionalMap<String, Object>();
+  private TransactionalMap<String, String> state = new InMemoryTransactionalMap<String, String>();
 
   public String getState(String key) {
-    return (String) state.get(key);
+    return state.get(key);
   }
 
   public void setState(String key, String msg) {
@@ -132,7 +137,7 @@ class InMemStatefulImpl implements InMemStateful {
   public void clashNotOk(String key, String msg, InMemClasher clasher) {
     state.put(key, msg);
     clasher.clash();
-    clasher.clash();
+    this.success("clash", "clash");
   }
 }
 
@@ -169,11 +174,11 @@ class InMemClasherImpl implements InMemClasher {
   public void clash() {
     state.put("clasher", "was here");
     // spend some time here
-    for (long i = 0; i < 1000000000; i++) {
-      for (long j = 0; j < 10000000; j++) {
-        j += i;
-      }
-    }
+    // for (long i = 0; i < 1000000000; i++) {
+    // for (long j = 0; j < 10000000; j++) {
+    // j += i;
+    // }
+    // }
 
     // FIXME: this statement gives me this error:
     // se.scalablesolutions.akka.kernel.ActiveObjectException:

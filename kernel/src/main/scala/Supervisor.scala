@@ -141,6 +141,8 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
     }
   }
 
+  def stop = Actor.self ! Stop
+  
   def act = {
     self.trapExit = true
     loop {

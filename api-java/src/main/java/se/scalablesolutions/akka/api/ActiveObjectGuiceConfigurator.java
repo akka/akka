@@ -116,6 +116,6 @@ public class ActiveObjectGuiceConfigurator {
   }
 
   public synchronized void stop() {
-    // TODO: fix supervisor.stop();    
+    supervisor.stop();    
   }
 }
