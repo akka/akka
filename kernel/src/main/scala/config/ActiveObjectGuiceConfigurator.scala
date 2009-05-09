@@ -4,7 +4,6 @@
 
 package se.scalablesolutions.akka.kernel.config
 
-
 import com.google.inject._
 import com.google.inject.jsr250.ResourceProviderFactory
 
@@ -17,7 +16,6 @@ import se.scalablesolutions.akka.kernel.ActiveObjectFactory
 import se.scalablesolutions.akka.kernel.ActiveObjectProxy
 import se.scalablesolutions.akka.kernel.Supervisor
 import se.scalablesolutions.akka.kernel.config.ScalaConfig._
-
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -33,7 +31,7 @@ class ActiveObjectGuiceConfigurator extends Logging {
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
   private var activeObjectRegistry = new HashMap[String, Tuple3[Class[_], Class[_], ActiveObjectProxy]]
   private var activeObjectFactory = new ActiveObjectFactory
-  private var camelContext = new DefaultCamelContext();
+//  private var camelContext = new DefaultCamelContext();
   private var modules = new java.util.ArrayList[Module]
   private var methodToUriRegistry = new HashMap[Method, String]
 
@@ -41,10 +39,11 @@ class ActiveObjectGuiceConfigurator extends Logging {
     injector.getInstance(clazz).asInstanceOf[T]
   }
 
+/*
   def getRoutingEndpoint(uri: String): Endpoint = synchronized {
     camelContext.getEndpoint(uri)
   }
-                                            
+
   def getRoutingEndpoints: java.util.Collection[Endpoint] = synchronized {
     camelContext.getEndpoints
   }
@@ -52,7 +51,7 @@ class ActiveObjectGuiceConfigurator extends Logging {
   def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = synchronized {
     camelContext.getEndpoints(uri)
   }
-
+*/
   /**
    * Returns the active abject that has been put under supervision for the class specified.
    *
@@ -108,18 +107,18 @@ class ActiveObjectGuiceConfigurator extends Logging {
     injector = Guice.createInjector(modules)
     var workers = new java.util.ArrayList[Worker]
     for (component <- components) {
-      val activeObjectProxy = new ActiveObjectProxy(component.intf, component.target, component.timeout, this)
+      val activeObjectProxy = new ActiveObjectProxy(component.intf, component.target, component.timeout)
       workers.add(Worker(activeObjectProxy.server, component.lifeCycle))
       activeObjectRegistry.put(component.name, (component.intf, component.target, activeObjectProxy))
-      camelContext.getRegistry.asInstanceOf[JndiRegistry].bind(component.name, activeObjectProxy)
-      for (method <- component.intf.getDeclaredMethods.toList) {
-        registerMethodForUri(method, component.name)
-      }
-      log.debug("Registering active object in Camel context under the name [%s]", component.target.getName)
+//      camelContext.getRegistry.asInstanceOf[JndiRegistry].bind(component.name, activeObjectProxy)
+//      for (method <- component.intf.getDeclaredMethods.toList) {
+//        registerMethodForUri(method, component.name)
+//      }
+//      log.debug("Registering active object in Camel context under the name [%s]", component.target.getName)
     }
     supervisor = activeObjectFactory.supervise(restartStrategy, workers)
-    camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
-    camelContext.start
+//    camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
+//    camelContext.start
     this
   }
 
@@ -154,12 +153,12 @@ class ActiveObjectGuiceConfigurator extends Logging {
    *   }
    * }).inject().supervise();
    * </pre>
-   */
+   *
   def addRoutes(routes: Routes): ActiveObjectGuiceConfigurator  = synchronized {
     camelContext.addRoutes(routes)
     this
   }
-
+  */
   def getGuiceModules = modules
 
   def reset = synchronized {
@@ -169,11 +168,11 @@ class ActiveObjectGuiceConfigurator extends Logging {
     methodToUriRegistry = new HashMap[Method, String]
     injector = null
     restartStrategy = null
-    camelContext = new DefaultCamelContext
+//    camelContext = new DefaultCamelContext
   }
 
   def stop = synchronized {
-    camelContext.stop
+//    camelContext.stop
     supervisor.stop
   }
 

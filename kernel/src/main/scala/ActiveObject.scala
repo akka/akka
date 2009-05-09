@@ -56,8 +56,8 @@ object ActiveObject {
       proxy).asInstanceOf[T]
   }
 
-  def newInstance[T](intf: Class[_], target: AnyRef, timeout: Int, conf: ActiveObjectGuiceConfigurator): T = {
-    val proxy = new ActiveObjectProxy(intf, target.getClass, timeout, conf)
+  def newInstance[T](intf: Class[_], target: AnyRef, timeout: Int): T = {
+    val proxy = new ActiveObjectProxy(intf, target.getClass, timeout)
     proxy.setTargetInstance(target)
     supervise(proxy)
     newInstance(intf, proxy)
@@ -85,7 +85,7 @@ object ActiveObject {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 // FIXME: use interface for ActiveObjectGuiceConfigurator
-class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int, conf: ActiveObjectGuiceConfigurator) extends InvocationHandler {
+class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int) extends InvocationHandler {
   import ActiveObject.threadBoundTx
 
   private[this] var activeTx: Option[Transaction] = None
@@ -131,10 +131,12 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
 
   private def invoke(invocation: Invocation): AnyRef =  {
     val result: AnyRef =
+/*
       if (invocation.target.isInstanceOf[MessageDriven] &&
           invocation.method.getName == "onMessage") {
         val m = invocation.method
-        val endpointName = m.getDeclaringClass.getName + "." + m.getName
+
+      val endpointName = m.getDeclaringClass.getName + "." + m.getName
         val activeObjectName = m.getDeclaringClass.getName
         val endpoint = conf.getRoutingEndpoint(conf.lookupUriFor(m))
         val producer = endpoint.createProducer
@@ -147,7 +149,8 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
         // FIXME: need some timeout and future here...
         exchange.getOut.getBody
         
-      } else if (invocation.method.isAnnotationPresent(Annotations.oneway)) {
+      } else */ 
+      if (invocation.method.isAnnotationPresent(Annotations.oneway)) {
         server ! invocation
       } else {
         val result: ErrRef[AnyRef] =
@@ -225,11 +228,11 @@ private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
     case 'exit =>
       exit; reply()
 
-    case exchange: Exchange =>
+/*    case exchange: Exchange =>
       println("=============> Exchange From Actor: " + exchange)
       val invocation = exchange.getIn.getBody.asInstanceOf[Invocation]
       invocation.invoke
-
+*/
     case unexpected =>
       throw new ActiveObjectException("Unexpected message [" + unexpected + "] to [" + this + "] from [" + sender + "]")
   }

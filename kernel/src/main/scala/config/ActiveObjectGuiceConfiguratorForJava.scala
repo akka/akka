@@ -27,12 +27,12 @@ class ActiveObjectGuiceConfiguratorForJava {
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
   private var activeObjectRegistry = new HashMap[String, Tuple2[Class[_], ActiveObjectProxy]]
   private var activeObjectFactory = new ActiveObjectFactory
-  private var camelContext = new DefaultCamelContext();
+  //private var camelContext = new DefaultCamelContext();
 
   def getExternalDependency[T](clazz: Class[T]): T = synchronized {
     injector.getInstance(clazz).asInstanceOf[T]
   }
-
+/*
   def getRoutingEndpoint(uri: String): Endpoint = synchronized {
     camelContext.getEndpoint(uri)
   }
@@ -44,7 +44,7 @@ class ActiveObjectGuiceConfiguratorForJava {
   def getRoutingEndpoints(uri: String): Collection[Endpoint] = synchronized {
     camelContext.getEndpoints(uri)
   }
-
+*/
   /**
    * Returns the active abject that has been put under supervision for the class specified.
    *
@@ -84,19 +84,18 @@ class ActiveObjectGuiceConfiguratorForJava {
   }
 
   def supervise: ActiveObjectGuiceConfiguratorForJava = synchronized {
-  /*
     if (injector == null) inject()
     injector = Guice.createInjector(modules)
     val workers = new java.util.ArrayList[se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker]
     for (c <- components) {
-      val activeObjectProxy = new ActiveObjectProxy(c.intf, c.target, c.timeout, this)
+      val activeObjectProxy = new ActiveObjectProxy(c.intf, c.target, c.timeout)
       workers.add(c.newWorker(activeObjectProxy))
       activeObjectRegistry.put(c.name, (c.intf, activeObjectProxy))
-      camelContext.getRegistry.asInstanceOf[JndiRegistry].bind(c.intf.getName, activeObjectProxy)
+//      camelContext.getRegistry.asInstanceOf[JndiRegistry].bind(c.intf.getName, activeObjectProxy)
     }
     supervisor = activeObjectFactory.supervise(restartStrategy.transform, workers)
-    camelContext.start
-    */this
+//    camelContext.start
+    this
   }
 
 
@@ -131,11 +130,12 @@ class ActiveObjectGuiceConfiguratorForJava {
    *   }
    * }).inject().supervise();
    * </pre>
-   */
+   *
   def addRoutes(routes: Routes): ActiveObjectGuiceConfiguratorForJava  = synchronized {
     camelContext.addRoutes(routes)
     this
   }
+  */
 
   def getGuiceModules = modules
 
@@ -145,11 +145,11 @@ class ActiveObjectGuiceConfiguratorForJava {
     activeObjectRegistry = new HashMap[String, Tuple2[Class[_], ActiveObjectProxy]]
     injector = null
     restartStrategy = null
-    camelContext = new DefaultCamelContext
+    //camelContext = new DefaultCamelContext
   }
 
   def stop = synchronized {
-    camelContext.stop
+    //camelContext.stop
     supervisor.stop
   }
 }
