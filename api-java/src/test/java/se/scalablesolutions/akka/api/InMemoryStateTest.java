@@ -5,31 +5,25 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.*;
-import se.scalablesolutions.akka.kernel.configuration.LifeCycle;
-import se.scalablesolutions.akka.kernel.configuration.Permanent;
-import se.scalablesolutions.akka.kernel.configuration.Component;
-import se.scalablesolutions.akka.kernel.configuration.AllForOne;
-import se.scalablesolutions.akka.kernel.configuration.RestartStrategy;
-
-import com.google.inject.Inject;
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
+import se.scalablesolutions.akka.kernel.config.*;
+import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.kernel.TransactionalMap;
+import se.scalablesolutions.akka.kernel.InMemoryTransactionalMap;
 
 import junit.framework.TestCase;
 
 public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectGuiceConfigurator conf = new ActiveObjectGuiceConfigurator();
+  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
   protected void setUp() {
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] { 
-          new Component(InMemStateful.class, InMemStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000), 
-          new Component(InMemFailer.class, InMemFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
-          new Component(InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
+          new Component("inmem-stateful", InMemStateful.class, InMemStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000),
+          new Component("inmem-failer", InMemFailer.class, InMemFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
+          new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
           }).inject().supervise();
   }
   
@@ -39,17 +33,17 @@ public class InMemoryStateTest extends TestCase {
   
 
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getActiveObject("inmem-stateful");
     stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     assertEquals("new state", stateful.getState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
   public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getActiveObject("inmem-stateful");
     stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
 
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getActiveObject("inmem-failer");
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
       fail("should have thrown an exception");

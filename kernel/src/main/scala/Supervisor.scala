@@ -10,31 +10,7 @@ import scala.collection.mutable.HashMap
 
 import se.scalablesolutions.akka.kernel.Helpers._
 
-//====================================================
-
-/**
- * Configuration classes - not to be used as messages.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-sealed abstract class ConfigElement
-
-abstract class Server extends ConfigElement
-abstract class FailOverScheme extends ConfigElement
-abstract class Scope extends ConfigElement
-
-case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
-case class Worker(serverContainer: GenericServerContainer, lifeCycle: LifeCycle) extends Server
-
-case class RestartStrategy(scheme: FailOverScheme, maxNrOfRetries: Int, withinTimeRange: Int) extends ConfigElement
-
-case object AllForOne extends FailOverScheme
-case object OneForOne extends FailOverScheme
-
-case class LifeCycle(scope: Scope, shutdownTime: Int) extends ConfigElement
-case object Permanent extends Scope
-case object Transient extends Scope
-case object Temporary extends Scope
+import se.scalablesolutions.akka.kernel.config.ScalaConfig._
 
 //====================================================
 

@@ -5,31 +5,25 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.*;
-import se.scalablesolutions.akka.kernel.configuration.LifeCycle;
-import se.scalablesolutions.akka.kernel.configuration.Permanent;
-import se.scalablesolutions.akka.kernel.configuration.Component;
-import se.scalablesolutions.akka.kernel.configuration.AllForOne;
-import se.scalablesolutions.akka.kernel.configuration.RestartStrategy;
-
-import com.google.inject.Inject;
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
+import se.scalablesolutions.akka.kernel.config.*;
+import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.kernel.TransactionalMap;
+import se.scalablesolutions.akka.kernel.CassandraPersistentTransactionalMap;
 
 import junit.framework.TestCase;
 
 public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectGuiceConfigurator conf = new ActiveObjectGuiceConfigurator();
+  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
   
   protected void setUp() {
     conf.configureActiveObjects(
-        new RestartStrategy(new AllForOne(), 3, 5000),
+        new JavaConfig.RestartStrategy(new JavaConfig.AllForOne(), 3, 5000),
         new Component[] { 
-          new Component(PersistentStateful.class, PersistentStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000), 
-          new Component(PersistentFailer.class, PersistentFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
-          new Component(PersistentClasher.class, PersistentClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
+          new Component("persistent-stateful", PersistentStateful.class, PersistentStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000),
+          new Component("persistent-failer", PersistentFailer.class, PersistentFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
+          new Component("persistent-clasher", PersistentClasher.class, PersistentClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
         }).inject().supervise();
   }
 
@@ -63,10 +57,10 @@ interface PersistentStateful {
 }
 
 class PersistentStatefulImpl implements PersistentStateful {
-  private TransactionalMap<String, String> state = new CassandraPersistentTransactionalMap(this);
+  private TransactionalMap state = new CassandraPersistentTransactionalMap(this);
 
   public String getState(String key) {
-    return state.get(key);
+    return (String)state.get(key);
   }
 
   public void setState(String key, String msg) {
@@ -113,10 +107,10 @@ interface PersistentClasher {
 }
 
 class PersistentClasherImpl implements PersistentClasher {
-  private TransactionalMap<String, String> state = new CassandraPersistentTransactionalMap(this);
+  private TransactionalMap state = new CassandraPersistentTransactionalMap(this);
 
   public String getState(String key) {
-    return state.get(key);
+    return (String)state.get(key);
   }
 
   public void setState(String key, String msg) {

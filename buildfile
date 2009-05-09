@@ -25,6 +25,7 @@ JERSEY =      ['com.sun.jersey:jersey-core:jar:1.0.1',
 GRIZZLY =      'com.sun.grizzly:grizzly-servlet-webserver:jar:1.8.6.3'
 NETTY =        'org.jboss.netty:netty:jar:3.1.0.BETA2'
 CASSANDRA =    'org.apache.cassandra:cassandra:jar:0.3.0-dev'
+CAMEL =        'org.apache.camel:camel-core:jar:2.0-SNAPSHOT'
 THRIFT =       'com.facebook:thrift:jar:1.0'
 FB303 =        'com.facebook:fb303:jar:1.0'
 CONFIGGY =     'net.lag:configgy:jar:1.2'
@@ -34,6 +35,7 @@ JSR_250 =      'javax.annotation:jsr250-api:jar:1.0'
 SLF4J =       ['org.slf4j:slf4j-log4j12:jar:1.4.3', 
                'org.slf4j:slf4j-api:jar:1.4.3',
                'log4j:log4j:jar:1.2.13']
+COMMONS_LOGGING = 'commons-logging:commons-logging:jar:1.1.1'
 JDOM =         'jdom:jdom:jar:1.0'
 CGLIB =        'cglib:cglib-nodep:jar:2.1_3'
 AOPALLIANCE =  'aopalliance:aopalliance:jar:1.0'
@@ -57,22 +59,22 @@ define 'akka' do
   manifest['Copyright'] = 'Scalable Solutions (C) 2009'
   compile.options.target = '1.5'
 
-  desc 'Akka Java Utilities (annotations)'
+  desc 'Akka Java Utilities (annotations and guice module)'
   define 'util-java' do
-    compile
+    compile.with(GUICEYFRUIT, AOPALLIANCE)
     package :jar
   end
   
   desc 'Akka Actor Kernel core implementation'
   define 'kernel' do
-    compile.with(AKKA_UTIL_JAVA, GUICEYFRUIT, NETTY, JERSEY, GRIZZLY, CASSANDRA, THRIFT, FB303, SLF4J, CONFIGGY, JUNIT4RUNNER, JUNIT4, SCALATEST)
+    compile.with(AKKA_UTIL_JAVA, GUICEYFRUIT, AOPALLIANCE, NETTY, JERSEY, GRIZZLY, CASSANDRA, THRIFT, FB303, CAMEL, SLF4J, GOOGLE_COLLECT, CGLIB, JSR_250, COMMONS_LOGGING, CONFIGGY, JUNIT4RUNNER, JUNIT4, SCALATEST)
     test.using :junit
     package :jar
   end
 
   desc 'Akka Java API'
   define 'api-java' do
-    compile.with(AKKA_KERNEL, AKKA_UTIL_JAVA, NETTY, JERSEY, GRIZZLY, CASSANDRA, THRIFT, FB303, SLF4J, CONFIGGY, GUICEYFRUIT, SCALA, GOOGLE_COLLECT, AOPALLIANCE, CGLIB, JSR_250)
+    compile.with(AKKA_KERNEL, AKKA_UTIL_JAVA, NETTY, JERSEY, GRIZZLY, CASSANDRA, THRIFT, FB303, CAMEL, SLF4J, CONFIGGY, GUICEYFRUIT, SCALA, GOOGLE_COLLECT, AOPALLIANCE, CGLIB, JSR_250)
     test.using :junit
     package :jar
   end
