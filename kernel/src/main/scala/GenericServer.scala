@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.kernel
 import scala.actors._
 import scala.actors.Actor._
 
+import se.scalablesolutions.akka.kernel.config.ScalaConfig._
 import se.scalablesolutions.akka.kernel.Helpers._
 
 sealed abstract class GenericServerMessage

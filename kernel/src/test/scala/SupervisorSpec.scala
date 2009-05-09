@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.kernel
 
+import se.scalablesolutions.akka.kernel.config.ScalaConfig.{SupervisorConfig, Worker, LifeCycle, RestartStrategy, OneForOne, AllForOne, Permanent}
 import scala.actors._
 import scala.actors.Actor._
 import scala.collection.Map

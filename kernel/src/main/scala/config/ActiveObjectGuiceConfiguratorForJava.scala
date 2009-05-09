@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.kernel.config
 
 import akka.kernel.config.JavaConfig._
 import akka.kernel.{Supervisor, ActiveObjectProxy, ActiveObjectFactory}
-import akka.kernel.config.{DependencyBinding, ActiveObjectGuiceModule}
 
 import com.google.inject._
 import com.google.inject.jsr250.ResourceProviderFactory
@@ -85,18 +84,19 @@ class ActiveObjectGuiceConfiguratorForJava {
   }
 
   def supervise: ActiveObjectGuiceConfiguratorForJava = synchronized {
+  /*
     if (injector == null) inject()
     injector = Guice.createInjector(modules)
     val workers = new java.util.ArrayList[se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker]
     for (c <- components) {
-      val activeObjectProxy = new ActiveObjectProxy(c.intf, c.target, c.timeout)
+      val activeObjectProxy = new ActiveObjectProxy(c.intf, c.target, c.timeout, this)
       workers.add(c.newWorker(activeObjectProxy))
       activeObjectRegistry.put(c.name, (c.intf, activeObjectProxy))
       camelContext.getRegistry.asInstanceOf[JndiRegistry].bind(c.intf.getName, activeObjectProxy)
     }
     supervisor = activeObjectFactory.supervise(restartStrategy.transform, workers)
     camelContext.start
-    this
+    */this
   }
 
 

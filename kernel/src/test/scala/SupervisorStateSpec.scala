@@ -5,6 +5,9 @@
 package se.scalablesolutions.akka.kernel
 
 import com.jteigen.scalatest.JUnit4Runner
+import config.ScalaConfig.{SupervisorConfig, RestartStrategy, Worker, LifeCycle, AllForOne, Permanent}
+
+
 import org.junit.runner.RunWith
 import org.scalatest._
 

@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.kernel.configuration
 
+/*
 import se.scalablesolutions.akka.kernel.{ActiveObject, ActiveObjectProxy}
 import com.google.inject.{AbstractModule}
 import java.util.{List => JList, ArrayList}
@@ -12,14 +13,8 @@ import scala.reflect.BeanProperty
 // ============================================
 // Java version of the configuration API
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-sealed class ConfigurationException(msg: String) extends RuntimeException(msg)
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
+
 sealed abstract class Configuration
 
 class RestartStrategy(@BeanProperty val scheme: FailOverScheme, @BeanProperty val maxNrOfRetries: Int, @BeanProperty val withinTimeRange: Int) extends Configuration {
@@ -62,3 +57,4 @@ class Component(@BeanProperty val intf: Class[_],
                 @BeanProperty val timeout: Int) extends Server {
   def newWorker(proxy: ActiveObjectProxy) = se.scalablesolutions.akka.kernel.Worker(proxy.server, lifeCycle.transform)
 }
+*/

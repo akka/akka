@@ -140,7 +140,6 @@
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
-    <file url="file://$PROJECT_DIR$/api-java/src/main/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfigurator.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" charset="windows-1252" />
     <file url="file://$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" charset="windows-1252" />
     <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" charset="UTF-8" />
@@ -155,18 +154,44 @@
             <files>
               <file url="file://$PROJECT_DIR$/db/src/main/scala/Db.scala" />
               <file url="file://$PROJECT_DIR$/db/src/test/scala/DbReplicationSpecs.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/sample.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/src/main/scala/GenericServer.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/src/main/scala/Helpers.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/src/main/scala/Supervisor.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/GenericServerContainerSuite.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/GenericServerSuite.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/Messages.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/SupervisorStateSuite.scala" />
-              <file url="file://$PROJECT_DIR$/supervisor/test-code/test/scala/SupervisorSuite.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_ActiveObject.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_ActiveObjectGuiceConfigurator.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_AkkaComponentProvider.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Boot.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_CassandraNode.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Configuration.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_DataFlowVariable.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_ErrRef.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_GenericServer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_HashCode.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Helpers.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Kernel.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Logging.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Serializer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_State.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Supervisor.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Transaction.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectComponent.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectConsumer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectEndpoint.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectProducer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_collection_$_HashTrie.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_collection_$_Vector.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_AllSuite.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_CamelSpec.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_GenericServerContainerSuite.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_GenericServerSpec.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_Messages.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_SupervisorSpec.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_SupervisorStateSpec.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectConsumer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectProducer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala" />
             </files>
           </module>
-          <module name="kernel">
+          <module name="akka-kernel">
             <files>
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/AkkaComponentProvider.scala" />
@@ -180,14 +205,23 @@
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Helpers.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Logging.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/NetCat.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Serializer.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/State.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Supervisor.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Transaction.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectConsumer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectProducer.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/MessageDriven.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/SupervisorAwareCamelContext.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/HashTrie.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/Vector.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/config/Config.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/test/scala/AllSuite.scala" />
+              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/test/scala/GenericServerContainerSuite.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/test/scala/GenericServerSpec.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/test/scala/Messages.scala" />
@@ -216,7 +250,7 @@
     <option name="DEBUGGING_INFO" value="true" />
     <option name="GENERATE_NO_WARNINGS" value="false" />
     <option name="DEPRECATION" value="true" />
-    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-target 1.5" />
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="JavadocGenerationManager">
@@ -247,7 +281,7 @@
   <component name="MavenProjectsManager">
     <option name="originalFiles">
       <list>
-        <option value="$PROJECT_DIR$/kernel/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>
@@ -382,9 +416,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/akka.iml" filepath="$PROJECT_DIR$/akka.iml" />
+      <module fileurl="file://$PROJECT_DIR$/api-java/akka-api-java.iml" filepath="$PROJECT_DIR$/api-java/akka-api-java.iml" />
       <module fileurl="file://$PROJECT_DIR$/kernel/akka-kernel.iml" filepath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
-      <module fileurl="file://$PROJECT_DIR$/api-java/api-java.iml" filepath="$PROJECT_DIR$/api-java/api-java.iml" />
-      <module fileurl="file://$PROJECT_DIR$/util-java/util-java.iml" filepath="$PROJECT_DIR$/util-java/util-java.iml" />
+      <module fileurl="file://$PROJECT_DIR$/util-java/akka-util-java.iml" filepath="$PROJECT_DIR$/util-java/akka-util-java.iml" />
     </modules>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
@@ -413,17 +447,6 @@
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
-    <library name="Maven: se.scalablesolutions.akka:akka-util-java:0.1">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-util-java/0.1/akka-util-java-0.1.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-util-java/0.1/akka-util-java-0.1-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-util-java/0.1/akka-util-java-0.1-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.scala-lang:scala-library:2.7.3">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.3/scala-library-2.7.3.jar!/" />
@@ -798,6 +821,24 @@
         <root url="jar://$MAVEN_REPOSITORY$/com/facebook/fb303/1.0/fb303-1.0-sources.jar!/" />
       </SOURCES>
     </library>
+    <library name="Maven: org.apache.camel:camel-core:2.0-SNAPSHOT">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/camel/camel-core/2.0-SNAPSHOT/camel-core-2.0-SNAPSHOT.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Maven: commons-logging:commons-logging-api:1.1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/commons-logging/commons-logging-api/1.1/commons-logging-api-1.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/commons-logging/commons-logging-api/1.1/commons-logging-api-1.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/commons-logging/commons-logging-api/1.1/commons-logging-api-1.1-sources.jar!/" />
+      </SOURCES>
+    </library>
     <library name="Maven: com.assembla.scala.mina:mina-core:2.0.0-M2-SNAPSHOT">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/com/assembla/scala/mina/mina-core/2.0.0-M2-SNAPSHOT/mina-core-2.0.0-M2-SNAPSHOT.jar!/" />
@@ -862,6 +903,50 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/testing/scalatest/0.9.5/scalatest-0.9.5-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: junit:junit:4.5">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.5/junit-4.5.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.5/junit-4.5-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.5/junit-4.5-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.jmock:jmock:2.4.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jmock/jmock/2.4.0/jmock-2.4.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jmock/jmock/2.4.0/jmock-2.4.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jmock/jmock/2.4.0/jmock-2.4.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.hamcrest:hamcrest-core:1.1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.hamcrest:hamcrest-library:1.1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

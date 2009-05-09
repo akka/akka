@@ -70,7 +70,8 @@
       <artifactId>cassandra</artifactId>
       <version>0.3.0-dev</version>
     </dependency>
-	<dependency>
+
+    <dependency>
       <groupId>com.facebook</groupId>
       <artifactId>thrift</artifactId>
       <version>1.0</version>
@@ -79,6 +80,11 @@
       <groupId>com.facebook</groupId>
       <artifactId>fb303</artifactId>
       <version>1.0</version>
+    </dependency>
+	<dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <version>2.0-SNAPSHOT</version>
     </dependency>
     <!--dependency>
       <groupId>voldemort</groupId>

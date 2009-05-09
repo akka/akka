@@ -296,7 +296,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
   }
   
   override def equals(other: Any) = other match {
-    case vec:Vector[T] => {
+    case vec: Vector[T] => {
       var back = length == vec.length
       var i = 0
       

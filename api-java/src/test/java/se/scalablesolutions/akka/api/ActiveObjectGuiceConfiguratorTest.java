@@ -5,7 +5,13 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.configuration.*;
+import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJava;
+
+import se.scalablesolutions.akka.annotation.*;
+import se.scalablesolutions.akka.kernel.config.*;
+import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.kernel.TransactionalMap;
+import se.scalablesolutions.akka.kernel.InMemoryTransactionalMap;
 
 import com.google.inject.Inject;
 import com.google.inject.AbstractModule;
@@ -16,7 +22,7 @@ import junit.framework.TestCase;
 public class ActiveObjectGuiceConfiguratorTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectGuiceConfigurator conf = new ActiveObjectGuiceConfigurator();
+  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
   protected void setUp() {
     conf.addExternalGuiceModule(new AbstractModule() {
@@ -26,11 +32,13 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     }).configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000), new Component[]{
             new Component(
+                "foo",
                 Foo.class,
                 FooImpl.class,
                 new LifeCycle(new Permanent(), 1000),
                 1000),
             new Component(
+                "bar",
                 Bar.class,
                 BarImpl.class,
                 new LifeCycle(new Permanent(), 1000),
@@ -41,21 +49,21 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testGuiceActiveObjectInjection() {
     messageLog = "";
-    Foo foo = conf.getActiveObject(Foo.class);
-    Bar bar = conf.getActiveObject(Bar.class);
+    Foo foo = conf.getActiveObject("foo");
+    Bar bar = conf.getActiveObject("bar");
     assertTrue(foo.getBar().toString().equals(bar.toString()));
   }
 
   public void testGuiceExternalDependencyInjection() {
     messageLog = "";
-    Bar bar = conf.getActiveObject(Bar.class);
+    Bar bar = conf.getActiveObject("bar");
     Ext ext = conf.getExternalDependency(Ext.class);
     assertTrue(bar.getExt().toString().equals(ext.toString()));
   }
 
   public void testLookupNonSupervisedInstance() {
     try {
-      String str = conf.getActiveObject(String.class);
+      String str = conf.getActiveObject("string");
       fail("exception should have been thrown");
     } catch (Exception e) {
       assertEquals("Class java.lang.String has not been put under supervision (by passing in the config to the supervise()  method", e.getMessage());
@@ -64,7 +72,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testActiveObjectInvocation() throws InterruptedException {
     messageLog = "";
-    Foo foo = conf.getActiveObject(Foo.class);
+    Foo foo = conf.getActiveObject("foo");
     messageLog += foo.foo("foo ");
     foo.bar("bar ");
     messageLog += "before_bar ";
@@ -74,8 +82,8 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testActiveObjectInvocationsInvocation() throws InterruptedException {
     messageLog = "";
-    Foo foo = conf.getActiveObject(Foo.class);
-    Bar bar = conf.getActiveObject(Bar.class);
+    Foo foo = conf.getActiveObject("foo");
+    Bar bar = conf.getActiveObject("bar");
     messageLog += foo.foo("foo ");
     foo.bar("bar ");
     messageLog += "before_bar ";
@@ -86,7 +94,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testForcedTimeout() {
     messageLog = "";
-    Foo foo = conf.getActiveObject(Foo.class);
+    Foo foo = conf.getActiveObject("foo");
     try {
       foo.longRunning();
       fail("exception should have been thrown");
@@ -96,7 +104,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testForcedException() {
     messageLog = "";
-    Foo foo = conf.getActiveObject(Foo.class);
+    Foo foo = conf.getActiveObject("foo");
     try {
       foo.throwsException();
       fail("exception should have been thrown");

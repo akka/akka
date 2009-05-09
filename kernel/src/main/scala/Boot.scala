@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka
 
 import kernel.Logging
-import kernel.configuration.ConfigurationException
 
 import java.io.File
 import java.lang.reflect.Method
@@ -18,7 +17,7 @@ import java.net.{URL, URLClassLoader}
  */
 object Boot extends Logging {
 
-  val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new ConfigurationException("AKKA_HOME system variable needs to be set") }
+  val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new IllegalStateException("AKKA_HOME system variable needs to be set") }
   val CLASSES = HOME + "/classes"
   val LIB = HOME + "/lib"
   val CONFIG = HOME + "/config"
