@@ -10,7 +10,7 @@ import com.google.inject.jsr250.ResourceProviderFactory
 import java.lang.reflect.Method
 import kernel.camel.ActiveObjectComponent
 import org.apache.camel.impl.{JndiRegistry, DefaultCamelContext}
-import org.apache.camel.{Endpoint, Routes}
+import org.apache.camel.{CamelContext, Endpoint, Routes}
 import scala.collection.mutable.HashMap
 import se.scalablesolutions.akka.kernel.ActiveObjectFactory
 import se.scalablesolutions.akka.kernel.ActiveObjectProxy
@@ -31,27 +31,10 @@ class ActiveObjectGuiceConfigurator extends Logging {
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
   private var activeObjectRegistry = new HashMap[String, Tuple3[Class[_], Class[_], ActiveObjectProxy]]
   private var activeObjectFactory = new ActiveObjectFactory
-//  private var camelContext = new DefaultCamelContext();
+  private var camelContext = new DefaultCamelContext
   private var modules = new java.util.ArrayList[Module]
   private var methodToUriRegistry = new HashMap[Method, String]
 
-  def getExternalDependency[T](clazz: Class[T]): T = synchronized {
-    injector.getInstance(clazz).asInstanceOf[T]
-  }
-
-/*
-  def getRoutingEndpoint(uri: String): Endpoint = synchronized {
-    camelContext.getEndpoint(uri)
-  }
-
-  def getRoutingEndpoints: java.util.Collection[Endpoint] = synchronized {
-    camelContext.getEndpoints
-  }
-
-  def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = synchronized {
-    camelContext.getEndpoints(uri)
-  }
-*/
   /**
    * Returns the active abject that has been put under supervision for the class specified.
    *
@@ -60,16 +43,14 @@ class ActiveObjectGuiceConfigurator extends Logging {
    */
   def getActiveObject(name: String): AnyRef = synchronized {
   //def getActiveObject[T](name: String): T = synchronized {
-    println("Looking up active object " + name)
     log.debug("Looking up active object [%s]", name)
-    if (injector == null) throw new IllegalStateException("inject() and supervise() must be called before invoking newInstance(clazz)")
+    if (injector == null) throw new IllegalStateException("inject() and/or supervise() must be called before invoking newInstance(clazz)")
     val activeObjectOption: Option[Tuple3[Class[_], Class[_], ActiveObjectProxy]] = activeObjectRegistry.get(name)
     if (activeObjectOption.isDefined) {
       val classInfo = activeObjectOption.get
       val intfClass = classInfo._1
       val implClass = classInfo._2
       val activeObjectProxy = classInfo._3
-      //activeObjectProxy.setTargetInstance(injector.getInstance(clazz).asInstanceOf[AnyRef])
       val target = implClass.newInstance
       injector.injectMembers(target)
       activeObjectProxy.setTargetInstance(target.asInstanceOf[AnyRef])
@@ -83,6 +64,22 @@ class ActiveObjectGuiceConfigurator extends Logging {
     val activeObjectOption: Option[Tuple3[Class[_], Class[_], ActiveObjectProxy]] = activeObjectRegistry.get(name)
     if (activeObjectOption.isDefined) activeObjectOption.get._3
     else throw new IllegalStateException("Class " + name + " has not been put under supervision (by passing in the config to the 'supervise') method")
+  }
+
+  def getExternalDependency[T](clazz: Class[T]): T = synchronized {
+    injector.getInstance(clazz).asInstanceOf[T]
+  }
+
+  def getRoutingEndpoint(uri: String): Endpoint = synchronized {
+    camelContext.getEndpoint(uri)
+  }
+
+  def getRoutingEndpoints: java.util.Collection[Endpoint] = synchronized {
+    camelContext.getEndpoints
+  }
+
+  def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = synchronized {
+    camelContext.getEndpoints(uri)
   }
 
   def configureActiveObjects(restartStrategy: RestartStrategy, components: List[Component]): ActiveObjectGuiceConfigurator = synchronized {
@@ -104,21 +101,20 @@ class ActiveObjectGuiceConfigurator extends Logging {
 
   def supervise: ActiveObjectGuiceConfigurator = synchronized {
     if (injector == null) inject
-    injector = Guice.createInjector(modules)
     var workers = new java.util.ArrayList[Worker]
     for (component <- components) {
       val activeObjectProxy = new ActiveObjectProxy(component.intf, component.target, component.timeout)
       workers.add(Worker(activeObjectProxy.server, component.lifeCycle))
       activeObjectRegistry.put(component.name, (component.intf, component.target, activeObjectProxy))
-//      camelContext.getRegistry.asInstanceOf[JndiRegistry].bind(component.name, activeObjectProxy)
-//      for (method <- component.intf.getDeclaredMethods.toList) {
-//        registerMethodForUri(method, component.name)
-//      }
-//      log.debug("Registering active object in Camel context under the name [%s]", component.target.getName)
+      camelContext.getRegistry.asInstanceOf[JndiRegistry].bind(component.name, activeObjectProxy)
+      for (method <- component.intf.getDeclaredMethods.toList) {
+        registerMethodForUri(method, component.name)
+      }
+      log.debug("Registering active object in Camel context under the name [%s]", component.target.getName)
     }
     supervisor = activeObjectFactory.supervise(restartStrategy, workers)
-//    camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
-//    camelContext.start
+    camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
+    camelContext.start
     this
   }
 
@@ -153,13 +149,15 @@ class ActiveObjectGuiceConfigurator extends Logging {
    *   }
    * }).inject().supervise();
    * </pre>
-   *
+   */
   def addRoutes(routes: Routes): ActiveObjectGuiceConfigurator  = synchronized {
     camelContext.addRoutes(routes)
     this
   }
-  */
-  def getGuiceModules = modules
+
+  def getCamelContext: CamelContext = camelContext
+
+  def getGuiceModules: java.util.List[Module] = modules
 
   def reset = synchronized {
     modules = new java.util.ArrayList[Module]
@@ -168,11 +166,11 @@ class ActiveObjectGuiceConfigurator extends Logging {
     methodToUriRegistry = new HashMap[Method, String]
     injector = null
     restartStrategy = null
-//    camelContext = new DefaultCamelContext
+    camelContext = new DefaultCamelContext
   }
 
   def stop = synchronized {
-//    camelContext.stop
+    camelContext.stop
     supervisor.stop
   }
 
