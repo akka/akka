@@ -57,10 +57,10 @@ class ActiveObjectGuiceConfiguratorForJava {
       val activeObjectTuple = activeObjectRegistry.get(name)
       val clazz = activeObjectTuple._1
       val activeObjectProxy = activeObjectTuple._2
-      //activeObjectProxy.setTargetInstance(injector.getInstance(clazz).asInstanceOf[AnyRef])
-      val target = clazz.newInstance
-      injector.injectMembers(target)
-      activeObjectProxy.setTargetInstance(target.asInstanceOf[AnyRef])
+      activeObjectProxy.setTargetInstance(injector.getInstance(clazz).asInstanceOf[AnyRef])
+      //val target = clazz.newInstance
+      //injector.injectMembers(target)
+      //activeObjectProxy.setTargetInstance(target.asInstanceOf[AnyRef])
       activeObjectFactory.newInstance(clazz, activeObjectProxy).asInstanceOf[T]
     } else throw new IllegalStateException("Class " + name + " has not been put under supervision (by passing in the config to the supervise()  method")
   }

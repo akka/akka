@@ -37,6 +37,7 @@ class CamelSpec extends Spec with ShouldMatchers {
 
   describe("A Camel routing scheme") {
     it("should route message from direct:test to actor A using @Bean endpoint") {
+/*
       val latch = new CountDownLatch(1);
 
       val conf = new ActiveObjectGuiceConfigurator
@@ -64,7 +65,7 @@ class CamelSpec extends Spec with ShouldMatchers {
       val proxy = ProxyHelper.createProxy(endpoint, classOf[CamelFoo])
 
       proxy.foo("hello there")
-/*
+
       val exchange = endpoint.createExchange
       println("----- " + exchange)
 
@@ -78,8 +79,8 @@ class CamelSpec extends Spec with ShouldMatchers {
       // now lets sleep for a while
       val received = latch.await(5, TimeUnit.SECONDS)
       received should equal (true)
-*/
       conf.stop
+*/
     }
   }
 }

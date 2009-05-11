@@ -76,82 +76,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="ActiveObject.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala">
+      <file leaf-file-name="InMemoryStateTest.java" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="35" column="6" selection-start="1232" selection-end="1232" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="GenericServer.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/GenericServer.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="14" column="11" selection-start="371" selection-end="371" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObjectGuiceConfiguratorForJava.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="95" column="1" selection-start="4052" selection-end="4052" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObjectGuiceConfigurator.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="159" column="23" selection-start="6771" selection-end="6771" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SupervisorSpec.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/SupervisorSpec.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="18" column="29" selection-start="528" selection-end="528" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="CamelSpec.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="53" column="51" selection-start="1756" selection-end="1756" vertical-scroll-proportion="0.74493927">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="GenericServerContainerSuite.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/GenericServerContainerSuite.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="17" column="6" selection-start="352" selection-end="352" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SupervisorAwareCamelContext.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/camel/SupervisorAwareCamelContext.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="9" column="0" selection-start="248" selection-end="248" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Vector.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/collection/Vector.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="298" column="1" selection-start="8660" selection-end="8660" vertical-scroll-proportion="0.0">
+            <state line="40" column="2" selection-start="1730" selection-end="1730" vertical-scroll-proportion="1.0281124">
               <folding />
             </state>
           </provider>
@@ -241,14 +169,6 @@
           <option name="myItemId" value="src" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="test" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="scala" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
       </PATH>
       <PATH>
         <PATH_ELEMENT>
@@ -327,12 +247,28 @@
           <option name="myItemId" value="main" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
+      </PATH>
+      <PATH>
         <PATH_ELEMENT>
-          <option name="myItemId" value="scala" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="camel" />
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api-java" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -342,11 +278,11 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
+          <option name="myItemId" value="akka-api-java" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="kernel" />
+          <option name="myItemId" value="api-java" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
@@ -354,7 +290,33 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -416,7 +378,7 @@
       <recent name="se.scalablesolutions.akka.api" />
     </key>
   </component>
-  <component name="RunManager" selected="JUnit.CamelSpec">
+  <component name="RunManager" selected="JUnit.InMemoryStateTest">
     <tempConfiguration default="false" name="Scala Console" type="ScalaScriptConsoleRunConfiguration" factoryName="Scala Console">
       <module name="" />
       <setting name="vmparams" value="" />
@@ -551,10 +513,35 @@
         <option name="Make" value="true" />
       </method>
     </configuration>
-    <list size="3">
+    <configuration default="false" name="InMemoryStateTest" type="JUnit" factoryName="JUnit" enabled="false" merge="false" sample_coverage="true" runner="emma">
+      <module name="akka-api-java" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" value="" />
+      <option name="PACKAGE_NAME" value="se.scalablesolutions.akka.api" />
+      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.api.InMemoryStateTest" />
+      <option name="METHOD_NAME" value="" />
+      <option name="TEST_OBJECT" value="class" />
+      <option name="VM_PARAMETERS" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="ADDITIONAL_CLASS_PATH" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="moduleWithDependencies" />
+      </option>
+      <envs />
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method>
+        <option name="Make" value="true" />
+      </method>
+    </configuration>
+    <list size="4">
       <item index="0" class="java.lang.String" itemvalue="Application.Kernel" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.CamelSpec" />
-      <item index="2" class="java.lang.String" itemvalue="Scala Console.Scala Console" />
+      <item index="2" class="java.lang.String" itemvalue="JUnit.InMemoryStateTest" />
+      <item index="3" class="java.lang.String" itemvalue="Scala Console.Scala Console" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -670,13 +657,6 @@
     </buildFile>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/State.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="26" column="69" selection-start="581" selection-end="581" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/CassandraNode.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="36" column="11" selection-start="1063" selection-end="1063" vertical-scroll-proportion="0.0">
@@ -726,13 +706,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="95" column="1" selection-start="4052" selection-end="4052" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/SupervisorSpec.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="18" column="29" selection-start="528" selection-end="528" vertical-scroll-proportion="0.0">
@@ -761,6 +734,20 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="83" column="0" selection-start="2548" selection-end="2548" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="33" column="0" selection-start="932" selection-end="932" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="159" column="23" selection-start="6771" selection-end="6771" vertical-scroll-proportion="0.0">
@@ -768,9 +755,16 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="53" column="51" selection-start="1756" selection-end="1756" vertical-scroll-proportion="0.74493927">
+        <state line="62" column="8" selection-start="2385" selection-end="2385" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="40" column="2" selection-start="1730" selection-end="1730" vertical-scroll-proportion="1.0281124">
           <folding />
         </state>
       </provider>

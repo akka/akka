@@ -31,14 +31,14 @@ public class InMemoryStateTest extends TestCase {
     conf.stop();
   }
   
-
+/*
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getActiveObject("inmem-stateful");
     stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     assertEquals("new state", stateful.getState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
-
+*/
   public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
     InMemStateful stateful = conf.getActiveObject("inmem-stateful");
     stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
