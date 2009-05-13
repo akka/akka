@@ -6,7 +6,13 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.*;
 import se.scalablesolutions.akka.kernel.config.*;
+import se.scalablesolutions.akka.kernel.config.JavaConfig.AllForOne;
+import se.scalablesolutions.akka.kernel.config.JavaConfig.Component;
+import se.scalablesolutions.akka.kernel.config.JavaConfig.LifeCycle;
+import se.scalablesolutions.akka.kernel.config.JavaConfig.Permanent;
+import se.scalablesolutions.akka.kernel.config.JavaConfig.RestartStrategy;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.kernel.Kernel;
 import se.scalablesolutions.akka.kernel.TransactionalMap;
 import se.scalablesolutions.akka.kernel.CassandraPersistentTransactionalMap;
 
@@ -15,26 +21,43 @@ import junit.framework.TestCase;
 public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
+  static {
+    Kernel.startCassandra();    
+  }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
-  
+
   protected void setUp() {
     conf.configureActiveObjects(
         new JavaConfig.RestartStrategy(new JavaConfig.AllForOne(), 3, 5000),
-        new Component[] { 
+        new Component[] {
           new Component("persistent-stateful", PersistentStateful.class, PersistentStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000),
           new Component("persistent-failer", PersistentFailer.class, PersistentFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
           new Component("persistent-clasher", PersistentClasher.class, PersistentClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
-        }).inject().supervise();
+        }).supervise();
   }
 
+  protected void tearDown() {
+    conf.stop();
+  }
+  
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    /*
-       PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-    stateful.setState("stateful", "init"); // set init state
-    stateful.success("stateful", "new state"); // transactional
-    assertEquals("new state", stateful.getState("stateful"));
-  */
-    assertTrue(true);
+    PersistentStateful stateful = conf.getActiveObject("persistent-stateful");
+    stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
+    assertEquals("new state", stateful.getState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
+  }
+
+  public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
+    PersistentStateful stateful = conf.getActiveObject("persistent-stateful");
+    stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
+    PersistentFailer failer = conf.getActiveObject("persistent-failer");
+    try {
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      fail("should have thrown an exception");
+    } catch (RuntimeException e) {
+    } // expected
+    assertEquals("init", stateful.getState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
   }
 }
 
@@ -60,7 +83,7 @@ class PersistentStatefulImpl implements PersistentStateful {
   private TransactionalMap state = new CassandraPersistentTransactionalMap(this);
 
   public String getState(String key) {
-    return (String)state.get(key);
+    return (String)state.get(key).get();
   }
 
   public void setState(String key, String msg) {
@@ -110,7 +133,7 @@ class PersistentClasherImpl implements PersistentClasher {
   private TransactionalMap state = new CassandraPersistentTransactionalMap(this);
 
   public String getState(String key) {
-    return (String)state.get(key);
+    return (String)state.get(key).get();
   }
 
   public void setState(String key, String msg) {

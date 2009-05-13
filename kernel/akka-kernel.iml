@@ -90,6 +90,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="Akka Runtime Libs" level="project" />
   </component>
 </module>
 

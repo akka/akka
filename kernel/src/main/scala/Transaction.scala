@@ -67,7 +67,10 @@ class Transaction extends Logging {
             else false
           }}.exists(_ == true)
         } else false
-      if (haveAllPreCommitted) status = TransactionStatus.Completed
+      if (haveAllPreCommitted) {
+        participants.foreach(_.transactionalItems.foreach(_.commit))
+        status = TransactionStatus.Completed
+      }
       else rollback(server)
     }
     participants.clear

@@ -107,7 +107,7 @@ class InMemStatefulImpl implements InMemStateful {
   private TransactionalMap<String, String> state = new InMemoryTransactionalMap<String, String>();
 
   public String getState(String key) {
-    return state.get(key);
+    return state.get(key).get();
   }
 
   public void setState(String key, String msg) {
@@ -158,7 +158,7 @@ class InMemClasherImpl implements InMemClasher {
   private TransactionalMap<String, Object> state = new InMemoryTransactionalMap<String, Object>();
 
   public String getState(String key) {
-    return (String) state.get(key);
+    return (String) state.get(key).get();
   }
 
   public void setState(String key, String msg) {

@@ -12,8 +12,6 @@ import se.scalablesolutions.akka.kernel.Helpers._
 
 import se.scalablesolutions.akka.kernel.config.ScalaConfig._
 
-//====================================================
-
 /**
  * Messages that the supervisor responds to and returns.
  *
@@ -178,7 +176,6 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
   }
 }
 
-//====================================================
 /**
  * TODO: document
  *
@@ -202,7 +199,6 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
     }
     doHandleFailure(state, failedServer, reason)
   }
-
 
   private[kernel] def restart(serverContainer: GenericServerContainer, reason: AnyRef, state: SupervisorState) = {
     preRestart(serverContainer)

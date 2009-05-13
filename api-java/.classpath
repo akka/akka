@@ -51,7 +51,10 @@
 	<classpathentry kind="var" path="M2_REPO/com/facebook/thrift/1.0/thrift-1.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/util-java"/>
-	<classpathentry kind="lib" path="/akka-kernel/target/akka-kernel-0.1.jar"/>
+	<classpathentry kind="lib" path="/akka-kernel/target/akka-kernel-0.1.jar" sourcepath="/akka-kernel/src/main/scala"/>
 	<classpathentry kind="lib" path="/util-java/target/akka-util-java-0.1.jar"/>
+	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/commons-collections-3.2.1.jar"/>
+	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/commons-lang-2.4.jar"/>
+	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/high-scale-lib.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

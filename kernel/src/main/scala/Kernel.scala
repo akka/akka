@@ -74,7 +74,7 @@ object Kernel extends Logging {
   }
 
   private def cassandraBenchmark = {
-    val NR_ENTRIES = 1000000
+    val NR_ENTRIES = 100000
  
     println("=================================================")
     var start = System.currentTimeMillis

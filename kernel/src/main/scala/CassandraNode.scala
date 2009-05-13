@@ -15,6 +15,8 @@ import org.apache.cassandra.service._
  */
 final object CassandraNode extends Logging {
 
+  // NOTE: requires command line options:
+  //    -Dcassandra -Dstorage-config=config/ -Dpidfile=akka.pid
   val TABLE_NAME = "akka"
   val ACTOR_KEY_PREFIX = "actor"
   val ACTOR_MAP_COLUMN_FAMILY = "map"
@@ -23,11 +25,7 @@ final object CassandraNode extends Logging {
   private[this] var serializer: Serializer = new JavaSerializationSerializer
   
   // TODO: is this server thread-safe or needed to be wrapped up in an actor?
-  private[this] val server = {
-    val ctor = classOf[CassandraServer].getConstructor(Array[Class[_]]():_*)
-    ctor.setAccessible(true)
-    ctor.newInstance(Array[AnyRef]():_*).asInstanceOf[CassandraServer]
-  }
+  private[this] val server = classOf[CassandraServer].newInstance.asInstanceOf[CassandraServer]
   
   def start = {
     try {
@@ -48,7 +46,8 @@ final object CassandraNode extends Logging {
       ACTOR_KEY_PREFIX + ":" + actorName, 
       ACTOR_MAP_COLUMN_FAMILY + ":" + entry, 
       serializer.out(content), 
-      System.currentTimeMillis)
+      System.currentTimeMillis,
+      false) // FIXME: what is this flag for?
   }
 
   def insertActorStorageEntries(actorName: String, entries: List[Tuple2[String, AnyRef]]) = {
@@ -59,10 +58,11 @@ final object CassandraNode extends Logging {
       cls.add(new column_t(entry._1, serializer.out(entry._2), System.currentTimeMillis))
       columns.put(ACTOR_MAP_COLUMN_FAMILY, cls)
     }
-    server.batch_insert_blocking(new batch_mutation_t(
+    server.batch_insert(new batch_mutation_t(
       TABLE_NAME, 
       ACTOR_KEY_PREFIX + ":" + actorName, 
-      columns))
+      columns),
+      false) // non-blocking
   }
 
   def getActorStorageEntryFor(actorName: String, entry: AnyRef): Option[AnyRef] = {
