@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src/main/java"/>
-	<classpathentry kind="lib" path="target/akka-util-java-0.1.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/guice-core-2.0-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="/Users/jboner/src/scala/akka/lib/guice-jsr250-2.0-SNAPSHOT.jar"/>
-	<classpathentry kind="output" path="target/classes"/>
+  <classpathentry kind="src" path="src/main/java" including="**/*.java"/>
+  <classpathentry kind="output" path="target/classes"/>
+  <classpathentry kind="var" path="M2_REPO/javax/annotation/jsr250-api/1.0/jsr250-api-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/aopalliance/aopalliance/1.0/aopalliance-1.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/asm/asm/3.1/asm-3.1.jar"/>
+  <classpathentry kind="var" path="M2_REPO/cglib/cglib/2.2/cglib-2.2.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/code/google-collections/google-collect/snapshot-20080530/google-collect-snapshot-20080530.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT.jar" sourcepath="M2_REPO/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT-sources.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT.jar" sourcepath="M2_REPO/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT-sources.jar"/>
+  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 </classpath>
