@@ -31,18 +31,17 @@ public class InMemoryStateTest extends TestCase {
     conf.stop();
   }
   
-/*
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getActiveObject("inmem-stateful");
     stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     assertEquals("new state", stateful.getState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
-*/
-  public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
+
+   public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
     InMemStateful stateful = conf.getActiveObject("inmem-stateful");
     stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-
     InMemFailer failer = conf.getActiveObject("inmem-failer");
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
@@ -51,7 +50,8 @@ public class InMemoryStateTest extends TestCase {
     } // expected
     assertEquals("init", stateful.getState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
   }
-
+  /*
+  */
   // public void testShouldRollbackStateForStatefulServerInCaseOfMessageClash()
   // {
   // InMemStateful stateful = conf.getActiveObject(InMemStateful.class);

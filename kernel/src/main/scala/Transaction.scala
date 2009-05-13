@@ -5,8 +5,7 @@
 package se.scalablesolutions.akka.kernel
 
 import java.util.concurrent.atomic.AtomicLong
-import scala.collection.mutable.HashMap
-
+import scala.collection.mutable.{HashSet, HashMap}
 sealed abstract class TransactionStatus
 object TransactionStatus {
   case object New extends TransactionStatus
@@ -34,60 +33,59 @@ object TransactionIdFactory {
 class Transaction extends Logging {
   val id = TransactionIdFactory.newId
 
-  log.debug("Creating a new transaction [%s]", id)
+  log.debug("Creating a new transaction with id [%s]", id)
+
+  // FIXME: add support for nested transactions
   private[this] var parent: Option[Transaction] = None
-  private[this] var participants: List[GenericServerContainer] = Nil
-  private[this] var precommitted: List[GenericServerContainer] = Nil
+  private[this] val participants = new HashSet[GenericServerContainer]
+  private[this] val precommitted = new HashSet[GenericServerContainer]
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
 
   def begin(server: GenericServerContainer) = synchronized {
-    println("===== begin 1 " + server)
-    if (status == TransactionStatus.Aborted) throw new IllegalStateException("Can't begin ABORTED transaction")
-    if (status == TransactionStatus.Completed) throw new IllegalStateException("Can't begin COMPLETED transaction")
-    if (status == TransactionStatus.New) log.debug("Actor [%s] is starting NEW transaction", server)
-    else log.debug("Actor [%s] is participating in transaction", server)
-    println("===== begin 2 " + server)
+    ensureIsActiveOrNew
+    if (status == TransactionStatus.New) log.info("Server [%s] is starting NEW transaction [%s]", server.id, this)
+    else log.info("Server [%s] is participating in transaction", server)
     server.transactionalItems.foreach(_.begin)
-    participants ::= server
+    participants + server
     status = TransactionStatus.Active
   }
 
   def precommit(server: GenericServerContainer) = synchronized {
     if (status == TransactionStatus.Active) {
-      println("===== precommit " + server)
-      log.debug("Pre-committing transaction for actor [%s]", server)
-      precommitted ::= server
+      log.info("Pre-committing transaction [%s] for server [%s]", this, server.id)
+      precommitted + server
     }
   }
 
   def commit(server: GenericServerContainer) = synchronized {
     if (status == TransactionStatus.Active) {
-      println("===== commit " + server)
-      log.debug("Committing transaction for actor [%s]", server)
+      log.info("Committing transaction [%s] for server [%s]", this, server.id)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
           for (server <- participants) yield {
             if (precommitted.exists(_.id == server.id)) true
             else false
-          }}.exists(_ == false)
+          }}.exists(_ == true)
         } else false
       if (haveAllPreCommitted) status = TransactionStatus.Completed
       else rollback(server)
     }
+    participants.clear
+    precommitted.clear
   }
 
   def rollback(server: GenericServerContainer) = synchronized {
     ensureIsActiveOrAborted
-    println("===== rollback " + server)
-    log.debug("Actor [%s] has initiated transaction rollback, rolling back [%s]" , server, participants)
+    log.info("Server [%s] has initiated transaction rollback for [%s], rolling back [%s]", server.id, this, participants)
     participants.foreach(_.transactionalItems.foreach(_.rollback))
     status = TransactionStatus.Aborted
   }
 
   def join(server: GenericServerContainer) = synchronized {
-    println("===== joining " + server)
+    ensureIsActive
+    log.info("Server [%s] is joining transaction [%s]" , server.id, this)
     server.transactionalItems.foreach(_.begin)
-    participants ::= server
+    participants + server
   }
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
@@ -95,6 +93,9 @@ class Transaction extends Logging {
 
   private def ensureIsActiveOrAborted = if (!(status == TransactionStatus.Active || status == TransactionStatus.Aborted))
     throw new IllegalStateException("Expected ACTIVE or ABORTED transaction - current status [" + status + "]")
+
+  private def ensureIsActiveOrNew = if (!(status == TransactionStatus.Active || status == TransactionStatus.New))
+    throw new IllegalStateException("Expected ACTIVE or NEW transaction - current status [" + status + "]")
 
   override def equals(that: Any): Boolean = synchronized {
     that != null && 
