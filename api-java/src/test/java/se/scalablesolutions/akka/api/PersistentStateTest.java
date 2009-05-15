@@ -22,7 +22,8 @@ public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
   static {
-    Kernel.startCassandra();    
+    System.setProperty("storage-config", "config");
+    Kernel.startCassandra();
   }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 

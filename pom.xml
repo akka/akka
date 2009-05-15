@@ -55,6 +55,17 @@
       <url>http://download.java.net/maven/1</url>
       <layout>legacy</layout>
     </repository>
+    <repository>
+      <id>guiceyfruit.release</id>
+      <name>GuiceyFruit Release Repository</name>
+      <url>http://guiceyfruit.googlecode.com/svn/repo/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
 	<repository>
       <id>repository.jboss.org</id>
       <name>JBoss Repository for Maven</name>
