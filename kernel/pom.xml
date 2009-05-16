@@ -92,6 +92,11 @@
       <artifactId>jersey-guice</artifactId>
       <version>1.0.3</version>
     </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+      <version>1.0</version>
+    </dependency>
     <!--dependency>
       <groupId>com.sun.jersey.contribs</groupId>
       <artifactId>jersey-scala</artifactId>
@@ -182,12 +187,6 @@
       <version>4.5</version>
       <scope>test</scope>
      </dependency>
-    <!--dependency>
-      <groupId>com.sun.jersey.test.framework</groupId>
-       <artifactId>jersey-test-framework</artifactId>
-       <version>1.0.3</version>
-       <scope>test</scope>
-     </dependency-->
   </dependencies>
 
   <build>

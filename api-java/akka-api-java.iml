@@ -77,9 +77,6 @@
     <orderEntry type="library" name="Maven: org.jmock:jmock:2.4.0" level="project" />
     <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-core:1.1" level="project" />
     <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-library:1.1" level="project" />
-    <orderEntry type="library" name="Maven: com.sun.jersey.test.framework:jersey-test-framework:1.0.3" level="project" />
-    <orderEntry type="library" name="Maven: org.glassfish.embedded:glassfish-embedded-all:3.0-Prelude-Embedded-b10" level="project" />
-    <orderEntry type="library" name="Maven: com.sun.net.httpserver:http:20070405" level="project" />
   </component>
 </module>
 

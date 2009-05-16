@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.kernel.camel
 
-import config.ActiveObjectGuiceConfigurator
+import config.ActiveObjectConfigurator
 import se.scalablesolutions.akka.kernel.Logging
 
 import java.util.{ArrayList, HashSet, List, Set}
@@ -17,7 +17,7 @@ import org.apache.camel.spi.BrowsableEndpoint;
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ActiveObjectEndpoint(val uri: String, val component: DefaultComponent, val conf: ActiveObjectGuiceConfigurator) // FIXME: need abstraction trait here
+class ActiveObjectEndpoint(val uri: String, val component: DefaultComponent, val conf: ActiveObjectConfigurator) // FIXME: need abstraction trait here
   extends DefaultEndpoint(uri) with BrowsableEndpoint with Logging {
 
   val firstSep = uri.indexOf(':')
@@ -25,8 +25,9 @@ class ActiveObjectEndpoint(val uri: String, val component: DefaultComponent, val
 
   val scheme = uri.substring(0, firstSep)
   val activeObjectName = uri.substring(uri.indexOf(':') + 1, lastSep)
+  val activeObjectClass = Thread.currentThread.getContextClassLoader.loadClass(activeObjectName)
   val methodName = uri.substring(lastSep + 1, uri.length) 
-  val activeObject = conf.getActiveObject(activeObjectName).asInstanceOf[MessageDriven]
+  val activeObject = conf.getActiveObject(activeObjectClass).asInstanceOf[MessageDriven]
 //  val activeObjectProxy = conf.getActiveObjectProxy(activeObjectName)
   
 //  val genericServer = supervisor.getServerOrElse(

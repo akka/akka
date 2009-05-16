@@ -231,6 +231,11 @@
           </module>
         </modules>
       </facet-type>
+      <facet-type id="web">
+        <modules>
+          <module name="akka-kernel" />
+        </modules>
+      </facet-type>
     </autodetection-disabled>
   </component>
   <component name="IdProvider" IDEtalkID="0E3A0445954D4D390C337AFB20B2746C" />
@@ -967,39 +972,6 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.1.10/jaxb-impl-2.1.10-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: com.sun.jersey.test.framework:jersey-test-framework:1.0.3">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/jersey/test/framework/jersey-test-framework/1.0.3/jersey-test-framework-1.0.3.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/jersey/test/framework/jersey-test-framework/1.0.3/jersey-test-framework-1.0.3-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/jersey/test/framework/jersey-test-framework/1.0.3/jersey-test-framework-1.0.3-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.glassfish.embedded:glassfish-embedded-all:3.0-Prelude-Embedded-b10">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/embedded/glassfish-embedded-all/3.0-Prelude-Embedded-b10/glassfish-embedded-all-3.0-Prelude-Embedded-b10.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/embedded/glassfish-embedded-all/3.0-Prelude-Embedded-b10/glassfish-embedded-all-3.0-Prelude-Embedded-b10-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/embedded/glassfish-embedded-all/3.0-Prelude-Embedded-b10/glassfish-embedded-all-3.0-Prelude-Embedded-b10-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: com.sun.net.httpserver:http:20070405">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/net/httpserver/http/20070405/http-20070405.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/net/httpserver/http/20070405/http-20070405-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/net/httpserver/http/20070405/http-20070405-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: com.sun.jersey.contribs:jersey-multipart:1.0.3">

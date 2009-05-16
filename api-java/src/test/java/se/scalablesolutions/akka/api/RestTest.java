@@ -49,6 +49,7 @@ public class RestTest extends TestSuite {
   private static SelectorThread startJersey() throws IOException {
     Map initParams = new java.util.HashMap<String, String>();
     initParams.put("com.sun.jersey.config.property.packages", "se.scalablesolutions.akka.api");
-    return GrizzlyWebContainerFactory.create(URI, initParams);
+    //return GrizzlyWebContainerFactory.create(URI, initParams);
+    return GrizzlyWebContainerFactory.create(URI, se.scalablesolutions.akka.kernel.jersey.AkkaServlet.class);
   }
 }

@@ -46,7 +46,7 @@ class JerseySpec extends Spec with ShouldMatchers {
                 1000) ::
             Nil).supervise
 
-      conf.getActiveObject("jerseyfoo")
+      conf.getActiveObject(classOf[resource.JerseyFoo])
 
 /*
       val client = Client.create

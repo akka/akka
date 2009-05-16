@@ -1,0 +1,14 @@
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee">
+  <!--listener>
+    <description>Spring listener that initializes the ApplicationContext in ServletContext</description>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener-->
+  <servlet>
+    <servlet-name>Jersey Akka</servlet-name>
+    <servlet-class>se.scalablesolutions.akka.kernel.jersey.AkkaServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Jersey Akka</servlet-name>
+    <url-pattern>/*</url-pattern>
+  </servlet-mapping>
+ </web-app>

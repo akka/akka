@@ -9,6 +9,9 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="akka-api-java" />
+    <orderEntry type="module" module-name="akka-kernel" />
+    <orderEntry type="module" module-name="akka-util-java" />
   </component>
 </module>
 

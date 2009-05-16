@@ -56,12 +56,6 @@
       <version>2.4.0</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.sun.jersey.test.framework</groupId>
-       <artifactId>jersey-test-framework</artifactId>
-       <version>1.0.3</version>
-       <scope>test</scope>
-     </dependency>
   </dependencies>
 
   <build>
