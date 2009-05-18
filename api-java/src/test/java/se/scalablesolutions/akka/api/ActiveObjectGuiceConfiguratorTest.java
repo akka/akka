@@ -49,21 +49,21 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testGuiceActiveObjectInjection() {
     messageLog = "";
-    Foo foo = conf.getActiveObject("foo");
-    Bar bar = conf.getActiveObject("bar");
+    Foo foo = conf.getActiveObject(Foo.class);
+    Bar bar = conf.getActiveObject(Bar.class);
     assertTrue(foo.getBar().toString().equals(bar.toString()));
   }
 
   public void testGuiceExternalDependencyInjection() {
     messageLog = "";
-    Bar bar = conf.getActiveObject("bar");
+    Bar bar = conf.getActiveObject(Bar.class);
     Ext ext = conf.getExternalDependency(Ext.class);
     assertTrue(bar.getExt().toString().equals(ext.toString()));
   }
 
   public void testLookupNonSupervisedInstance() {
     try {
-      String str = conf.getActiveObject("string");
+      String str = conf.getActiveObject(String.class);
       fail("exception should have been thrown");
     } catch (Exception e) {
       assertEquals("Class string has not been put under supervision (by passing in the config to the supervise()  method", e.getMessage());
@@ -72,7 +72,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testActiveObjectInvocation() throws InterruptedException {
     messageLog = "";
-    Foo foo = conf.getActiveObject("foo");
+    Foo foo = conf.getActiveObject(Foo.class);
     messageLog += foo.foo("foo ");
     foo.bar("bar ");
     messageLog += "before_bar ";
@@ -82,8 +82,8 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testActiveObjectInvocationsInvocation() throws InterruptedException {
     messageLog = "";
-    Foo foo = conf.getActiveObject("foo");
-    Bar bar = conf.getActiveObject("bar");
+    Foo foo = conf.getActiveObject(Foo.class);
+    Bar bar = conf.getActiveObject(Bar.class);
     messageLog += foo.foo("foo ");
     foo.bar("bar ");
     messageLog += "before_bar ";
@@ -94,7 +94,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testForcedTimeout() {
     messageLog = "";
-    Foo foo = conf.getActiveObject("foo");
+    Foo foo = conf.getActiveObject(Foo.class);
     try {
       foo.longRunning();
       fail("exception should have been thrown");
@@ -104,7 +104,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   public void testForcedException() {
     messageLog = "";
-    Foo foo = conf.getActiveObject("foo");
+    Foo foo = conf.getActiveObject(Foo.class);
     try {
       foo.throwsException();
       fail("exception should have been thrown");

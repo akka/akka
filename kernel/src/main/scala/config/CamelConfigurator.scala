@@ -29,7 +29,6 @@ trait CamelConfigurator {
 
   def getRoutingEndpoint(uri: String): Endpoint
 
-  // F
   def getRoutingEndpoints: java.util.Collection[Endpoint]
 
   def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint]

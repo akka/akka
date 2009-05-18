@@ -135,6 +135,15 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module-library">
+      <library name="aspectwerkz 2.1">
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../lib/aspectwerkz-nodeps-jdk5-2.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 

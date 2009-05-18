@@ -29,12 +29,21 @@ trait ActiveObjectConfigurator {
    * @param clazz the class for the active object
    * @return the active object for the class
    */
-  def getActiveObject(clazz: Class[_]): AnyRef
+  def getActiveObject[T](clazz: Class[T]): T
+
   def getActiveObjectProxy(clazz: Class[_]): ActiveObjectProxy
+
   def getExternalDependency[T](clazz: Class[T]): T
+
+  def getComponentInterfaces: List[Class[_]]
+
   def configureActiveObjects(restartStrategy: RestartStrategy, components: List[Component]): ActiveObjectConfigurator
+
   def inject: ActiveObjectConfigurator
+
   def supervise: ActiveObjectConfigurator
+
   def reset
+
   def stop
 }

@@ -84,12 +84,13 @@ object ActiveObject {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-// FIXME: use interface for ActiveObjectGuiceConfigurator
+
+// FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
 class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int) extends InvocationHandler {
   import ActiveObject.threadBoundTx
 
   private[this] var activeTx: Option[Transaction] = None
-  private[this] var targetInstance: AnyRef = _
+  private[akka] var targetInstance: AnyRef = _
 
   private[akka] def setTargetInstance(instance: AnyRef) = {
     targetInstance = instance

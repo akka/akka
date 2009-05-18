@@ -86,6 +86,8 @@ object JavaConfig {
                   @BeanProperty val target: Class[_],
                   @BeanProperty val lifeCycle: LifeCycle,
                   @BeanProperty val timeout: Int) extends Server {
+    def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.Component(
+      name, intf, target, lifeCycle.transform, timeout)
     def newWorker(proxy: ActiveObjectProxy) =
       se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker(proxy.server, lifeCycle.transform)
   }

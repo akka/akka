@@ -11,9 +11,7 @@ import config.ActiveObjectConfigurator
 class ActiveObjectComponentProviderFactory(val configurator: ActiveObjectConfigurator)
     extends IoCComponentProviderFactory {
 
-  override def getComponentProvider(clazz: Class[_]): ActiveObjectComponentProvider = {
-    new ActiveObjectComponentProvider(clazz, configurator)
-  }
+  override def getComponentProvider(clazz: Class[_]): ActiveObjectComponentProvider = getComponentProvider(null, clazz)
 
   override def getComponentProvider(context: ComponentContext, clazz: Class[_]): ActiveObjectComponentProvider = {
     new ActiveObjectComponentProvider(clazz, configurator)

@@ -32,7 +32,7 @@ public class InMemoryStateTest extends TestCase {
   }
   
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject("inmem-stateful");
+    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
     stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
@@ -40,9 +40,9 @@ public class InMemoryStateTest extends TestCase {
   }
 
    public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject("inmem-stateful");
+    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
     stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    InMemFailer failer = conf.getActiveObject("inmem-failer");
+    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
       fail("should have thrown an exception");

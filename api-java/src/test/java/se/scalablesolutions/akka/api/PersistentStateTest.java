@@ -42,7 +42,7 @@ public class PersistentStateTest extends TestCase {
   }
   
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    PersistentStateful stateful = conf.getActiveObject("persistent-stateful");
+    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
     stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
@@ -50,9 +50,9 @@ public class PersistentStateTest extends TestCase {
   }
 
   public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    PersistentStateful stateful = conf.getActiveObject("persistent-stateful");
+    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
     stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    PersistentFailer failer = conf.getActiveObject("persistent-failer");
+    PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
       fail("should have thrown an exception");

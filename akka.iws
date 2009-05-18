@@ -2,25 +2,23 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager">
     <list default="true" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/akka-api-java.iml" afterPath="$PROJECT_DIR$/api-java/akka-api-java.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/JerseyFoo.java" afterPath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/JerseyFoo.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" afterPath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" afterPath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/akka-kernel.iml" afterPath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/kernel/web.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iml" afterPath="$PROJECT_DIR$/akka.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/JerseyFooImpl.java" afterPath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/JerseyFooImpl.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" afterPath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectConfigurator.scala" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/kernel/src/main/scala/config/CamelConfigurator.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/pom.xml" afterPath="$PROJECT_DIR$/kernel/pom.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/Config.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/config/Config.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProviderFactory.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProviderFactory.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" afterPath="$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api-java/pom.xml" afterPath="$PROJECT_DIR$/api-java/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProviderFactory.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/AkkaComponentProvider.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/JerseySpec.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/JerseySpec.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectConfigurator.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectConfigurator.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/CamelConfigurator.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/config/CamelConfigurator.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
@@ -40,7 +38,46 @@
   </component>
   <component name="DebuggerManager">
     <line_breakpoints>
-      <breakpoint url="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" line="166" class="Class at ActiveObject.scala:166" package="">
+      <breakpoint url="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" line="167" class="Class at ActiveObject.scala:167" package="">
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint url="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala" line="18" class="Class at ActiveObjectComponentProvider.scala:18" package="">
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint url="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" line="123" class="Class at ActiveObjectGuiceConfigurator.scala:121" package="">
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint url="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/server/impl/uri/rules/ResourceClassRule.java" line="55" class="com.sun.jersey.server.impl.uri.rules.ResourceClassRule" package="com.sun.jersey.server.impl.uri.rules">
         <option name="ENABLED" value="true" />
         <option name="LOG_ENABLED" value="false" />
         <option name="LOG_EXPRESSION_ENABLED" value="false" />
@@ -111,19 +148,37 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="ActiveObjectGuiceConfigurator.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
+      <file leaf-file-name="ActiveObjectConfigurator.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectConfigurator.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="130" column="27" selection-start="5976" selection-end="5976" vertical-scroll-proportion="4.16">
+            <state line="9" column="7" selection-start="199" selection-end="199" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ActiveObjectComponentProvider.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala">
+      <file leaf-file-name="ActiveObjectGuiceConfigurator.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="14" column="87" selection-start="442" selection-end="442" vertical-scroll-proportion="0.0">
+            <state line="39" column="53" selection-start="1464" selection-end="1464" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ActiveObject.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="42" column="7" selection-start="1375" selection-end="1375" vertical-scroll-proportion="0.6827881">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="DefaultResourceConfig.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/api/core/DefaultResourceConfig.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="57" column="13" selection-start="2517" selection-end="2517" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -132,16 +187,45 @@
       <file leaf-file-name="ActiveObjectComponentProviderFactory.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProviderFactory.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="10" column="6" selection-start="329" selection-end="329" vertical-scroll-proportion="0.0">
+            <state line="15" column="96" selection-start="670" selection-end="670" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="CamelConfigurator.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/CamelConfigurator.scala">
+      <file leaf-file-name="WebApplicationFactory.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/spi/container/WebApplicationFactory.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="31" column="7" selection-start="766" selection-end="766" vertical-scroll-proportion="0.0">
+            <state line="48" column="19" selection-start="2265" selection-end="2265" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="WebApplicationImpl.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/server/impl/application/WebApplicationImpl.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="712" column="34" selection-start="29186" selection-end="29186" vertical-scroll-proportion="0.0">
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ActiveObjectComponentProvider.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="3" column="86" selection-start="50" selection-end="50" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ProviderServices.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-core/1.0.3/jersey-core-1.0.3-sources.jar!/com/sun/jersey/core/spi/component/ProviderServices.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="213" column="17" selection-start="7514" selection-end="7514" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -150,52 +234,7 @@
       <file leaf-file-name="AkkaServlet.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="16" column="35" selection-start="534" selection-end="534" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="CamelSpec.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="6" column="26" selection-start="119" selection-end="119" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="JerseySpec.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/JerseySpec.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="37" column="21" selection-start="1012" selection-end="1012" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObjectComponent.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="8" column="0" selection-start="139" selection-end="139" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObjectEndpoint.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="19" column="87" selection-start="673" selection-end="673" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObjectConfigurator.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectConfigurator.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="36" column="17" selection-start="1269" selection-end="1269" vertical-scroll-proportion="0.0">
+            <state line="2" column="46" selection-start="49" selection-end="49" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -259,256 +298,6 @@
         <PATH_ELEMENT>
           <option name="myItemId" value="Libraries" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="servlet" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="WebComponent" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="servlet" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="ServletContainer" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="servlet" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="container" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="container" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="WebApplication" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="httpserver" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="HttpServerFactory" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="grizzly" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="GrizzlyWebContainerFactory" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-kernel" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Libraries" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="Maven: com.sun.jersey:jersey-server:1.0.3" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="jersey-server-1.0.3.jar" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="grizzly" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
       <PATH>
@@ -787,6 +576,176 @@
         <PATH_ELEMENT>
           <option name="myItemId" value="api" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="PersistentStateTest" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="InMemoryStateTest" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="ActiveObjectGuiceConfiguratorTest" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="JerseyFooImpl" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="JerseyFoo" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
         </PATH_ELEMENT>
       </PATH>
       <PATH>
@@ -1148,7 +1107,7 @@
       <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.api.RestTest" />
       <option name="METHOD_NAME" value="" />
       <option name="TEST_OBJECT" value="class" />
-      <option name="VM_PARAMETERS" value="" />
+      <option name="VM_PARAMETERS" value="-Djava.naming.factory.initial=org.apache.camel.util.jndi.CamelInitialContextFactory" />
       <option name="PARAMETERS" value="" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
       <option name="ENV_VARIABLES" />
@@ -1171,14 +1130,14 @@
       </method>
     </configuration>
     <list size="8">
-      <item index="0" class="java.lang.String" itemvalue="Scala Console.Scala Console" />
-      <item index="1" class="java.lang.String" itemvalue="Application.Kernel" />
-      <item index="2" class="java.lang.String" itemvalue="JUnit.CamelSpec" />
-      <item index="3" class="java.lang.String" itemvalue="JUnit.InMemoryStateTest" />
-      <item index="4" class="java.lang.String" itemvalue="JUnit.PersistentStateTest" />
-      <item index="5" class="java.lang.String" itemvalue="JUnit.ActiveObjectGuiceConfiguratorTest" />
-      <item index="6" class="java.lang.String" itemvalue="JUnit.JerseySpec" />
-      <item index="7" class="java.lang.String" itemvalue="JUnit.REST" />
+      <item index="0" class="java.lang.String" itemvalue="Application.Kernel" />
+      <item index="1" class="java.lang.String" itemvalue="JUnit.CamelSpec" />
+      <item index="2" class="java.lang.String" itemvalue="JUnit.InMemoryStateTest" />
+      <item index="3" class="java.lang.String" itemvalue="JUnit.PersistentStateTest" />
+      <item index="4" class="java.lang.String" itemvalue="JUnit.ActiveObjectGuiceConfiguratorTest" />
+      <item index="5" class="java.lang.String" itemvalue="JUnit.JerseySpec" />
+      <item index="6" class="java.lang.String" itemvalue="JUnit.REST" />
+      <item index="7" class="java.lang.String" itemvalue="Scala Console.Scala Console" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -1225,7 +1184,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="4" y="22" width="1436" height="878" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Web Preview" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32908162" sideWeight="0.5" order="13" side_tool="false" />
       <window_info id="Dataflow to this" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="14" side_tool="false" />
@@ -1233,11 +1192,11 @@
       <window_info id="Data Sources" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3294881" sideWeight="0.6875" order="3" side_tool="false" />
       <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3294881" sideWeight="0.59183675" order="4" side_tool="false" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32780612" sideWeight="0.5" order="6" side_tool="false" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24585436" sideWeight="0.7410714" order="1" side_tool="false" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24585436" sideWeight="0.20535715" order="1" side_tool="false" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3265306" sideWeight="0.5" order="1" side_tool="false" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24873829" sideWeight="0.84143966" order="0" side_tool="false" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24873829" sideWeight="0.74165636" order="0" side_tool="false" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25" sideWeight="0.5" order="11" side_tool="false" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25765306" sideWeight="0.5" order="11" side_tool="false" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="12" side_tool="false" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24945927" sideWeight="0.6875" order="1" side_tool="false" />
@@ -1295,116 +1254,116 @@
     </buildFile>
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/api/container/grizzly/GrizzlyWebContainerFactory.java">
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/server/impl/uri/rules/RightHandPathRule.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="35" column="6" selection-start="1907" selection-end="1907" vertical-scroll-proportion="0.0">
+        <state line="110" column="0" selection-start="4684" selection-end="4684" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/api/container/httpserver/HttpServerFactory.java">
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/api/core/ResourceConfig.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="285" column="17" selection-start="14248" selection-end="14248" vertical-scroll-proportion="0.0">
+        <state line="62" column="24" selection-start="2738" selection-end="2738" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/spi/container/WebApplication.java">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/Config.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="133" column="9" selection-start="5523" selection-end="5523" vertical-scroll-proportion="0.0">
+        <state line="35" column="13" selection-start="1149" selection-end="1149" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/spi/container/servlet/WebComponent.java">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="308" column="32" selection-start="11175" selection-end="11175" vertical-scroll-proportion="0.0">
+        <state line="63" column="128" selection-start="1793" selection-end="1793" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/spi/container/servlet/ServletContainer.java">
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/server/impl/uri/rules/ResourceClassRule.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="226" column="51" selection-start="10184" selection-end="10184" vertical-scroll-proportion="-4.3076925">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="7" column="14" selection-start="165" selection-end="165" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="6" column="26" selection-start="119" selection-end="119" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/JerseySpec.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="37" column="21" selection-start="1012" selection-end="1012" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="8" column="0" selection-start="139" selection-end="139" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="19" column="87" selection-start="673" selection-end="673" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectConfigurator.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="36" column="17" selection-start="1269" selection-end="1269" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="14" column="87" selection-start="442" selection-end="442" vertical-scroll-proportion="0.0">
+        <state line="55" column="0" selection-start="2411" selection-end="2411" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="16" column="35" selection-start="534" selection-end="534" vertical-scroll-proportion="0.0">
+        <state line="2" column="46" selection-start="49" selection-end="49" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/api/core/DefaultResourceConfig.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="57" column="13" selection-start="2517" selection-end="2517" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-core/1.0.3/jersey-core-1.0.3-sources.jar!/com/sun/jersey/core/spi/component/ProviderFactory.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-core/1.0.3/jersey-core-1.0.3-sources.jar!/com/sun/jersey/core/spi/component/ProviderServices.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="213" column="17" selection-start="7514" selection-end="7514" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProvider.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="3" column="86" selection-start="50" selection-end="50" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/ActiveObjectComponentProviderFactory.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="6" selection-start="329" selection-end="329" vertical-scroll-proportion="0.0">
+        <state line="15" column="96" selection-start="670" selection-end="670" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/CamelConfigurator.scala">
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/spi/container/WebApplicationFactory.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="31" column="7" selection-start="766" selection-end="766" vertical-scroll-proportion="0.0">
+        <state line="48" column="19" selection-start="2265" selection-end="2265" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-server/1.0.3/jersey-server-1.0.3-sources.jar!/com/sun/jersey/server/impl/application/WebApplicationImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="712" column="34" selection-start="29186" selection-end="29186" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectConfigurator.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="9" column="7" selection-start="199" selection-end="199" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="130" column="27" selection-start="5976" selection-end="5976" vertical-scroll-proportion="4.16">
+        <state line="39" column="53" selection-start="1464" selection-end="1464" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="42" column="7" selection-start="1375" selection-end="1375" vertical-scroll-proportion="0.6827881">
           <folding />
         </state>
       </provider>

@@ -45,9 +45,8 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
    * @param clazz the class for the active object
    * @return the active object for the class
    */
-  override def getActiveObject(clazz: Class[_]): AnyRef = synchronized {
-  //def getActiveObject[T](name: String): T = synchronized {
-    log.debug("Looking up active object [%s]", clazz.getName)
+  override def getActiveObject[T](clazz: Class[T]): T = synchronized {
+    log.debug("Creating new active object [%s]", clazz.getName)
     if (injector == null) throw new IllegalStateException("inject() and/or supervise() must be called before invoking getActiveObject(clazz)")
     val activeObjectOption: Option[Tuple3[Class[_], Class[_], ActiveObjectProxy]] = activeObjectRegistry.get(clazz)
     if (activeObjectOption.isDefined) {
@@ -58,7 +57,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
       val target = implClass.newInstance
       injector.injectMembers(target)
       activeObjectProxy.setTargetInstance(target.asInstanceOf[AnyRef])
-      activeObjectFactory.newInstance(intfClass, activeObjectProxy).asInstanceOf[AnyRef]
+      activeObjectFactory.newInstance(intfClass, activeObjectProxy).asInstanceOf[T]
     } else throw new IllegalStateException("Class [" + clazz.getName + "] has not been put under supervision (by passing in the config to the 'supervise') method")
   }
 
@@ -74,6 +73,8 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     injector.getInstance(clazz).asInstanceOf[T]
   }
 
+  override def getComponentInterfaces: List[Class[_]] = components.map(_.intf)
+  
   override def getRoutingEndpoint(uri: String): Endpoint = synchronized {
     camelContext.getEndpoint(uri)
   }
@@ -91,9 +92,9 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     this.components = components.toArray.toList.asInstanceOf[List[Component]]
     bindings = for (c <- this.components)
                yield new DependencyBinding(c.intf, c.target) // build up the Guice interface class -> impl class bindings
-    val arrayList = new java.util.ArrayList[DependencyBinding]()
-    for (b <- bindings) arrayList.add(b)
-    modules.add(new ActiveObjectGuiceModule(arrayList))
+    val deps = new java.util.ArrayList[DependencyBinding](bindings.size)
+    for (b <- bindings) deps.add(b)
+    modules.add(new ActiveObjectGuiceModule(deps))
     this
   }
 
