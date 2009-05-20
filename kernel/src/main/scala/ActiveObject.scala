@@ -9,7 +9,10 @@ import config.ActiveObjectGuiceConfigurator
 import config.ScalaConfig._
 
 import java.util.{List => JList, ArrayList}
-import java.lang.reflect.{Method, Field, InvocationHandler, Proxy, InvocationTargetException}
+import java.lang.reflect.{Method, Field}
+import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
+import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
+import org.codehaus.aspectwerkz.proxy.Proxy
 import java.lang.annotation.Annotation
 
 import org.apache.camel.{Processor, Exchange}
@@ -31,7 +34,13 @@ object Annotations {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
-  def newInstance[T](intf: Class[_], proxy: ActiveObjectProxy): T = ActiveObject.newInstance(intf, proxy)
+  def newInstance[T](target: Class[T], server: GenericServerContainer): T = {
+    ActiveObject.newInstance(target, server)
+  }
+
+  def newInstance[T](intf: Class[T], target: AnyRef, server: GenericServerContainer): T = {
+    ActiveObject.newInstance(intf, target, server)     
+  }
 
   def supervise(restartStrategy: RestartStrategy, components: JList[Worker]): Supervisor =
     ActiveObject.supervise(restartStrategy, components.toArray.toList.asInstanceOf[List[Worker]])  
@@ -49,18 +58,17 @@ object ActiveObject {
     tl
   }
 
-  def newInstance[T](intf: Class[_], proxy: ActiveObjectProxy): T = {
-    Proxy.newProxyInstance(
-      intf.getClassLoader,
-      Array(intf),
-      proxy).asInstanceOf[T]
+  def newInstance[T](target: Class[T], server: GenericServerContainer): T = {
+    val proxy = Proxy.newInstance(target, false, true)
+    // FIXME switch to weaving in the aspect at compile time
+    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new ActorAroundAdvice(target, proxy, server))
+    proxy.asInstanceOf[T]
   }
 
-  def newInstance[T](intf: Class[_], target: AnyRef, timeout: Int): T = {
-    val proxy = new ActiveObjectProxy(intf, target.getClass, timeout)
-    proxy.setTargetInstance(target)
-    supervise(proxy)
-    newInstance(intf, proxy)
+  def newInstance[T](intf: Class[T], target: AnyRef, server: GenericServerContainer): T = {
+    val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
+    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new ActorAroundAdvice(intf, target, server))
+    proxy.asInstanceOf[T]
   }
 
   def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor = {
@@ -72,13 +80,15 @@ object ActiveObject {
     supervisor
   }
 
-  private def supervise(proxy: ActiveObjectProxy): Supervisor = 
+  /*
+  private def supervise(proxy: AnyRef): Supervisor = 
     supervise(
       RestartStrategy(OneForOne, 5, 1000),
       Worker(
         proxy.server,
         LifeCycle(Permanent, 100))
       :: Nil)
+  */
 }
 
 /**
@@ -86,25 +96,21 @@ object ActiveObject {
  */
 
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
-class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: Int) extends InvocationHandler {
+sealed class ActorAroundAdvice(target: Class[_],
+                               targetInstance: AnyRef,
+                               val server: GenericServerContainer) extends AroundAdvice {
+  val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance) 
+  server.transactionalRefs = refs
+  server.transactionalMaps = maps
+  server.transactionalVectors = vectors
+
   import ActiveObject.threadBoundTx
-
   private[this] var activeTx: Option[Transaction] = None
-  private[akka] var targetInstance: AnyRef = _
-
-  private[akka] def setTargetInstance(instance: AnyRef) = {
-    targetInstance = instance
-    val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance) 
-    server.transactionalRefs = refs
-    server.transactionalMaps = maps
-    server.transactionalVectors = vectors
-  }
-
-  private[akka] val server = new GenericServerContainer(intf.getName, () => new Dispatcher(target.getName))
-  server.setTimeout(timeout)
-
-  def invoke(proxy: AnyRef, m: Method, args: Array[AnyRef]): AnyRef = {
-    if (m.isAnnotationPresent(Annotations.transactional)) {
+ 
+  def invoke(joinpoint: JoinPoint): AnyRef = {
+    // FIXME: switch to using PCD annotation matching, break out into its own aspect + switch to StaticJoinPoint
+    val method = joinpoint.getRtti.asInstanceOf[MethodRtti].getMethod
+    if (method.isAnnotationPresent(Annotations.transactional)) {
       if (activeTx.isDefined) {
         val tx = activeTx.get
         //val cflowTx = threadBoundTx.get
@@ -128,22 +134,23 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
       activeTx = Some(currentTx)
     }
     activeTx = threadBoundTx.get
-    invoke(Invocation(m, args, targetInstance, activeTx))
+    invoke(joinpoint, activeTx)
+    //invoke(Invocation(method, joinpoint.getRtti.asInstanceOf[MethodRtti].getParameterValues, targetInstance, activeTx))
   }
 
-  private def invoke(invocation: Invocation): AnyRef =  {
+  private def invoke(joinpoint: JoinPoint, tx: Option[Transaction]): AnyRef =  {
     val result: AnyRef =
 /*
-      if (invocation.target.isInstanceOf[MessageDriven] &&
-          invocation.method.getName == "onMessage") {
-        val m = invocation.method
+      if (joinpoint.target.isInstanceOf[MessageDriven] &&
+          joinpoint.method.getName == "onMessage") {
+        val m = joinpoint.method
 
       val endpointName = m.getDeclaringClass.getName + "." + m.getName
         val activeObjectName = m.getDeclaringClass.getName
         val endpoint = conf.getRoutingEndpoint(conf.lookupUriFor(m))
         val producer = endpoint.createProducer
         val exchange = endpoint.createExchange
-        exchange.getIn().setBody(invocation)
+        exchange.getIn().setBody(joinpoint)
         producer.process(exchange)
         val fault = exchange.getException();
         if (fault != null) throw new InvocationTargetException(fault)
@@ -151,20 +158,22 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
         // FIXME: need some timeout and future here...
         exchange.getOut.getBody
         
-      } else */ 
-      if (invocation.method.isAnnotationPresent(Annotations.oneway)) {
-        server ! invocation
+      } else */
+      // FIXME: switch to using PCD annotation matching, break out into its own aspect + switch to StaticJoinPoint
+      if (joinpoint.getRtti.asInstanceOf[MethodRtti].getMethod.isAnnotationPresent(Annotations.oneway)) {
+        server ! (tx, joinpoint)
       } else {
         val result: ErrRef[AnyRef] =
-          server !!! (invocation, {
+          server !!! ((tx, joinpoint), {
             var ref = ErrRef(activeTx)
-            ref() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + timeout + " milliseconds")
+            ref() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + server.timeout + " milliseconds")
             ref
           })
         try {
           result()
         } catch {
           case e => 
+            println("$$$$$$$$$$$$$$ " + joinpoint)
             rollback(result.tx)
             throw e
         }
@@ -188,19 +197,19 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
     var vectors: List[TransactionalVector[_]] = Nil 
     var refs:    List[TransactionalRef[_]] = Nil 
     for {
-      field <- target.getDeclaredFields.toArray.toList.asInstanceOf[List[Field]]
+      field <- targetInstance.getClass.getDeclaredFields.toArray.toList.asInstanceOf[List[Field]]
       fieldType = field.getType
       if fieldType == classOf[TransactionalMap[_, _]] || 
-        fieldType  == classOf[TransactionalVector[_]] || 
-        fieldType  == classOf[TransactionalRef[_]]
+         fieldType  == classOf[TransactionalVector[_]] ||
+         fieldType  == classOf[TransactionalRef[_]]
       txItem = {
         field.setAccessible(true)
         field.get(targetInstance)
       }
       if txItem != null
     } {
-      if (txItem.isInstanceOf[TransactionalMap[_, _]])      maps ::= txItem.asInstanceOf[TransactionalMap[_, _]]
-      else if (txItem.isInstanceOf[TransactionalRef[_]])    refs ::= txItem.asInstanceOf[TransactionalRef[_]]
+      if (txItem.isInstanceOf[TransactionalMap[_, _]])      maps    ::= txItem.asInstanceOf[TransactionalMap[_, _]]
+      else if (txItem.isInstanceOf[TransactionalRef[_]])    refs    ::= txItem.asInstanceOf[TransactionalRef[_]]
       else if (txItem.isInstanceOf[TransactionalVector[_]]) vectors ::= txItem.asInstanceOf[TransactionalVector[_]]
     }
     (maps, vectors, refs)
@@ -215,14 +224,11 @@ class ActiveObjectProxy(val intf: Class[_], val target: Class[_], val timeout: I
 private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
   override def body: PartialFunction[Any, Unit] = {
 
-    case invocation: Invocation =>
-      val tx = invocation.tx
+    case (tx: Option[Transaction], joinpoint: JoinPoint) =>
       ActiveObject.threadBoundTx.set(tx)
       try {
-        reply(ErrRef(invocation.invoke, tx))
+        reply(ErrRef(joinpoint.proceed, tx))
       } catch {
-        case e: InvocationTargetException =>
-          val ref = ErrRef(tx); ref() = throw e.getTargetException; reply(ref)
         case e =>
           val ref = ErrRef(tx); ref() = throw e; reply(ref)
       }
@@ -254,7 +260,10 @@ private[kernel] case class Invocation(val method: Method,
   method.setAccessible(true)
 
   def invoke: AnyRef = synchronized {
-    method.invoke(target, args:_*)
+    println("======== " + this.toString)
+    if (method.getDeclaringClass.isInterface) {
+      target.getClass.getDeclaredMethod(method.getName, method.getParameterTypes).invoke(target, args:_*)
+    } else method.invoke(target, args:_*)
   }
 
   override def toString: String = synchronized {

@@ -20,17 +20,18 @@ public class InMemoryStateTest extends TestCase {
   protected void setUp() {
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
-        new Component[] { 
+        new Component[] {
+          // FIXME: remove string-name, add ctor to only accept target class
           new Component("inmem-stateful", InMemStateful.class, InMemStatefulImpl.class, new LifeCycle(new Permanent(), 1000), 10000000),
-          new Component("inmem-failer", InMemFailer.class, InMemFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000),
-          new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000) 
+          new Component("inmem-failer", InMemFailer.class, InMemFailerImpl.class, new LifeCycle(new Permanent(), 1000), 1000)
+          //new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000)
           }).inject().supervise();
   }
   
   protected void tearDown() {
     conf.stop();
   }
-  
+
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
     stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
@@ -82,69 +83,7 @@ public class InMemoryStateTest extends TestCase {
   // }
 }
 
-interface InMemStateful {
-  // transactional
-  @transactional
-  public void success(String key, String msg);
-
-  @transactional
-  public void failure(String key, String msg, InMemFailer failer);
-
-  @transactional
-  public void clashOk(String key, String msg, InMemClasher clasher);
-
-  @transactional
-  public void clashNotOk(String key, String msg, InMemClasher clasher);
-
-  // non-transactional
-  public String getState(String key);
-
-  public void setState(String key, String value);
-}
-
-class InMemStatefulImpl implements InMemStateful {
-  @state
-  private TransactionalMap<String, String> state = new InMemoryTransactionalMap<String, String>();
-
-  public String getState(String key) {
-    return state.get(key).get();
-  }
-
-  public void setState(String key, String msg) {
-    state.put(key, msg);
-  }
-
-  public void success(String key, String msg) {
-    state.put(key, msg);
-  }
-
-  public void failure(String key, String msg, InMemFailer failer) {
-    state.put(key, msg);
-    failer.fail();
-  }
-
-  public void clashOk(String key, String msg, InMemClasher clasher) {
-    state.put(key, msg);
-    clasher.clash();
-  }
-
-  public void clashNotOk(String key, String msg, InMemClasher clasher) {
-    state.put(key, msg);
-    clasher.clash();
-    this.success("clash", "clash");
-  }
-}
-
-interface InMemFailer {
-  public void fail();
-}
-
-class InMemFailerImpl implements InMemFailer {
-  public void fail() {
-    throw new RuntimeException("expected");
-  }
-}
-
+/*
 interface InMemClasher {
   public void clash();
 
@@ -183,3 +122,4 @@ class InMemClasherImpl implements InMemClasher {
     // try { Thread.sleep(1000); } catch (InterruptedException e) {}
   }
 }
+*/

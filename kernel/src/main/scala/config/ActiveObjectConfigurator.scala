@@ -31,8 +31,6 @@ trait ActiveObjectConfigurator {
    */
   def getActiveObject[T](clazz: Class[T]): T
 
-  def getActiveObjectProxy(clazz: Class[_]): ActiveObjectProxy
-
   def getExternalDependency[T](clazz: Class[T]): T
 
   def getComponentInterfaces: List[Class[_]]

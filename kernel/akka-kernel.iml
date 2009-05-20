@@ -141,7 +141,9 @@
           <root url="jar://$MODULE_DIR$/../lib/aspectwerkz-nodeps-jdk5-2.1.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../../../java/aspectwerkz4/src/main" />
+        </SOURCES>
       </library>
     </orderEntry>
   </component>

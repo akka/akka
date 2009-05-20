@@ -26,6 +26,11 @@
       <version>${scala.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.codehaus.aspectwerkz</groupId>
+      <artifactId>aspectwerkz-nodeps-jdk5</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <dependency>
       <groupId>net.lag</groupId>
       <artifactId>configgy</artifactId>
       <version>1.2</version>

@@ -94,7 +94,7 @@ class GenericServerContainer(
 
   private var server: GenericServer = _
   private var currentConfig: Option[AnyRef] = None
-  private var timeout = 5000
+  private[kernel] var timeout = 5000
 
   // TODO: see if we can parameterize class and add type safe getActor method
   //class GenericServerContainer[T <: GenericServer](var factory: () => T) {
