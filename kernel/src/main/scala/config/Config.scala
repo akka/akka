@@ -33,11 +33,18 @@ object ScalaConfig {
   case object Transient extends Scope
   case object Temporary extends Scope
 
-  case class Component(val name: String,
-                       val intf: Class[_],
+  class Component(_intf: Class[_],
                        val target: Class[_],
                        val lifeCycle: LifeCycle,
-                       val timeout: Int) extends Server
+                       val timeout: Int) extends Server {
+    val intf: Option[Class[_]] = if (_intf == null) None else Some(_intf)
+  }
+  object Component {
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
+      new Component(intf, target, lifeCycle, timeout)
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
+      new Component(null, target, lifeCycle, timeout)
+  }
 }
 
 /**
@@ -81,13 +88,14 @@ object JavaConfig {
   }
 
   abstract class Server extends ConfigElement
-  class Component(@BeanProperty val name: String,
-                  @BeanProperty val intf: Class[_],
+  class Component(@BeanProperty val intf: Class[_],
                   @BeanProperty val target: Class[_],
                   @BeanProperty val lifeCycle: LifeCycle,
                   @BeanProperty val timeout: Int) extends Server {
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
+      this(null, target, lifeCycle, timeout)
     def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.Component(
-      name, intf, target, lifeCycle.transform, timeout)
+      intf, target, lifeCycle.transform, timeout)
     def newWorker(server: GenericServerContainer) =
       se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker(server, lifeCycle.transform)
   }

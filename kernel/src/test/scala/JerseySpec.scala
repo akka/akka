@@ -32,30 +32,29 @@ class JerseySpec extends Spec with ShouldMatchers {
 
   describe("A Jersey REST service") {
     it("should ...") {
-      //val selector = startJersey
-      //oselector.start
-      
+      val selector = startJersey
+      selector.start
+      /*
       val conf = new ActiveObjectGuiceConfigurator
       conf.configureActiveObjects(
         RestartStrategy(AllForOne, 3, 5000),
             Component(
-                "jerseyfoo",
                 classOf[resource.JerseyFoo],
-                classOf[resource.JerseyFooImpl],
                 LifeCycle(Permanent, 1000),
                 1000) ::
             Nil).supervise
 
       conf.getActiveObject(classOf[resource.JerseyFoo])
+      */
 
-/*
+      /*
       val client = Client.create
       val webResource = client.resource(UriBuilder.fromUri("http://localhost/").port(9998).build)
       //val webResource = client.resource("http://localhost:9998/foo")
       val responseMsg = webResource.get(classOf[String])
       responseMsg should equal ("Hello World")
       selector.stopEndpoint
-*/
+    */
     }
   }
 
@@ -79,20 +78,14 @@ class JerseySpec extends Spec with ShouldMatchers {
 package resource {
   import javax.ws.rs.{Produces, Path, GET}
 
-  trait JerseyFoo {
-    def foo: String
-  }
-  trait JerseyBar {
-    def bar(msg: String): String
-  }
-
-  @Path("/foo")
-  class JerseyFooImpl extends JerseyFoo {
+  class JerseyFoo {
     @GET
     @Produces(Array("application/json"))
     def foo: String = { val ret = "JerseyFoo.foo"; println(ret); ret }
   }
-  class JerseyBarImpl extends JerseyBar {
+  @Path("/foo")
+  class JerseyFooSub extends JerseyFoo
+  class JerseyBar {
     def bar(msg: String) = msg + "return_bar "
   }
 }

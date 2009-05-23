@@ -1,5 +1,7 @@
 package se.scalablesolutions.akka.api;
 
-public interface InMemFailer {
-  public void fail();
+public class InMemFailer { 
+  public void fail() {
+    throw new RuntimeException("expected");
+  }
 }

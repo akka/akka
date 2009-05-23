@@ -4,7 +4,6 @@
 
 package se.scalablesolutions.akka.api;
 
-import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.grizzly.http.SelectorThread;
@@ -18,7 +17,6 @@ import javax.servlet.Servlet;
 import org.junit.*;
 import static org.junit.Assert.*;
 
-import java.util.Map;
 import java.io.IOException;
 import java.net.URI;
 
@@ -39,9 +37,7 @@ public class RestTest extends TestSuite {
         new JavaConfig.RestartStrategy(new JavaConfig.AllForOne(), 3, 5000),
         new JavaConfig.Component[] {
           new JavaConfig.Component(
-              "jersey-foo",
               JerseyFoo.class,
-              JerseyFooImpl.class,
               new JavaConfig.LifeCycle(new JavaConfig.Permanent(), 1000), 10000000)
           }).inject().supervise();
     selector = startJersey();

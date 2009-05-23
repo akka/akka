@@ -57,6 +57,7 @@ class ActiveObjectGuiceConfiguratorForJava {
     this
   }
 
+  
   def getComponentInterfaces: List[Class[_]] = {
     val al = new ArrayList[Class[_]]
     for (c <- INSTANCE.getComponentInterfaces) al.add(c)

@@ -32,17 +32,14 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     }).configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000), new Component[]{
             new Component(
-                "foo",
                 Foo.class,
-                FooImpl.class,
                 new LifeCycle(new Permanent(), 1000),
-                1000),
+                10000),
             new Component(
-                "bar",
                 Bar.class,
                 BarImpl.class,
                 new LifeCycle(new Permanent(), 1000),
-                1000)
+                10000)
         }).inject().supervise();
 
   }
@@ -51,7 +48,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     messageLog = "";
     Foo foo = conf.getActiveObject(Foo.class);
     Bar bar = conf.getActiveObject(Bar.class);
-    assertTrue(foo.getBar().toString().equals(bar.toString()));
+    assertEquals(foo.getBar(), bar);
   }
 
   public void testGuiceExternalDependencyInjection() {
@@ -66,7 +63,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
       String str = conf.getActiveObject(String.class);
       fail("exception should have been thrown");
     } catch (Exception e) {
-      assertEquals("Class string has not been put under supervision (by passing in the config to the supervise()  method", e.getMessage());
+      assertEquals("Class [java.lang.String] has not been put under supervision (by passing in the config to the 'configureActiveObjects' and then invoking 'supervise') method", e.getMessage());
     }
   }
 
@@ -110,59 +107,6 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
       fail("exception should have been thrown");
     } catch (RuntimeException e) {
     }
-  }
-}
-
-interface Foo {
-  public String foo(String msg);
-  @oneway public void bar(String msg);
-  public void longRunning();
-  public void throwsException();
-  public Bar getBar();
-}
-
-class FooImpl implements Foo {
-  @Inject private Bar bar;
-  public Bar getBar() {
-    return bar;
-  }
-  public String foo(String msg) {
-    return msg + "return_foo ";
-  }
-  public void bar(String msg) {
-    bar.bar(msg);
-  }
-  public void longRunning() {
-    try {
-      Thread.sleep(10000);
-    } catch (InterruptedException e) {
-    }
-  }
-  public void throwsException() {
-    throw new RuntimeException("expected");
-  }
-}
-
-interface Bar {
-  @oneway void bar(String msg);
-  Ext getExt();
-}
-
-class BarImpl implements Bar {
-  @Inject private Ext ext;
-  public Ext getExt() {
-    return ext;
-  }
-  public void bar(String msg) {
-  }
-}
-
-interface Ext {
-  void ext();
-}
-
-class ExtImpl implements Ext {
-  public void ext() {
   }
 }
 

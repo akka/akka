@@ -23,6 +23,7 @@ case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends GenericServ
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait GenericServer extends Actor {
+  private val actorScheduler = new ManagedActorScheduler
 
   /**
    * Template method implementing the server logic.
@@ -62,6 +63,8 @@ trait GenericServer extends Actor {
 
   def act = loop { react { genericBase orElse actorBase } }
 
+  //override protected def scheduler = actorScheduler
+  
   private def actorBase: PartialFunction[Any, Unit] = hotswap getOrElse body
 
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
@@ -226,6 +229,7 @@ class GenericServerContainer(
    */
   def !!![T](message: Any, errorHandler: => T, time: Int): T = {
     require(server != null)
+    println("---------- SERVER " + server + " MESSAGE " + message)
     val future: FutureWithTimeout[T] = lock.withReadLock { server !!! message }
     future.receiveWithin(time) match {
       case None => errorHandler

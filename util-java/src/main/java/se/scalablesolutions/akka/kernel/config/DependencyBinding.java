@@ -9,16 +9,16 @@ package se.scalablesolutions.akka.kernel.config;
  */
 public class DependencyBinding {
   private final Class intf;
-  private final Class target;
+  private final Object target;
   
-  public DependencyBinding(final Class intf, final Class target) {
+  public DependencyBinding(final Class intf, final Object target) {
     this.intf = intf;
     this.target = target;
   }
   public Class getInterface() {
     return intf;
   }
-  public Class getTarget() {
+  public Object getTarget() {
     return target;
   }
 }

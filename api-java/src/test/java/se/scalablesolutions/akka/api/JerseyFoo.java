@@ -5,8 +5,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 
 @Path("/foo")
-public interface JerseyFoo {
+public class JerseyFoo {
   @GET
   @Produces({"application/json"})
-  public String foo();
+  public String foo() {
+    return "hello foo";
+  }
 }
