@@ -36,15 +36,15 @@ public class InMemStateful {
   @transactional
   public void success(String key, String msg) {
     mapState.put(key, msg);
-    vectorState.add(msg);
-    refState.swap(msg);
+    //vectorState.add(msg);
+    //refState.swap(msg);
   }
 
   @transactional
   public void failure(String key, String msg, InMemFailer failer) {
     mapState.put(key, msg);
-    vectorState.add(msg);
-    refState.swap(msg);
+    //vectorState.add(msg);
+    //refState.swap(msg);
     failer.fail();
   }
 
