@@ -1,16 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-  <name>akka-api-java</name>
-  <comment/>
-  <projects>
-    <project>akka-kernel</project>
-    <project>akka-util-java</project>
-  </projects>
-  <buildSpec>
-    <buildCommand>
-      <name>org.eclipse.jdt.core.javabuilder</name>
-    </buildCommand>
-  </buildSpec>
-  <natures>
-    <nature>org.eclipse.jdt.core.javanature</nature>
-  </natures>
+	<name>akka-fun-test</name>
+	<comment></comment>
+	<projects>
+		<project>akka-kernel</project>
+		<project>akka-util-java</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
 </projectDescription>

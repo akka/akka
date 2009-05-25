@@ -49,6 +49,6 @@
 	<classpathentry kind="var" path="M2_REPO/com/facebook/thrift/1.0/thrift-1.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/util-java"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/akka-util-java"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
