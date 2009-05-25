@@ -12,8 +12,6 @@ package se.scalablesolutions.akka.kernel.reactor
 
 import java.util.{LinkedList, Queue}
 
-import kernel.reactor.CompletableFutureResult
-
 trait MessageDispatcher {
   def registerHandler(key: AnyRef, handler: MessageHandler)
   def unregisterHandler(key: AnyRef)

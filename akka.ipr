@@ -148,42 +148,15 @@
   </component>
   <component name="FacetAutodetectingManager">
     <autodetection-disabled>
+      <facet-type id="web">
+        <modules>
+          <module name="akka-kernel" />
+        </modules>
+      </facet-type>
       <facet-type id="Scala">
         <modules>
           <module name="akka">
             <files>
-              <file url="file://$PROJECT_DIR$/db/src/main/scala/Db.scala" />
-              <file url="file://$PROJECT_DIR$/db/src/test/scala/DbReplicationSpecs.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_ActiveObject.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_ActiveObjectGuiceConfigurator.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_AkkaComponentProvider.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Boot.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_CassandraNode.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Configuration.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_DataFlowVariable.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_ErrRef.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_GenericServer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_HashCode.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Helpers.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Kernel.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Logging.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Serializer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_State.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Supervisor.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_Transaction.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectComponent.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectConsumer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectEndpoint.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_camel_$_ActiveObjectProducer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_collection_$_HashTrie.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_main_$_scala_$_collection_$_Vector.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_AllSuite.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_CamelSpec.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_GenericServerContainerSuite.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_GenericServerSpec.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_Messages.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_SupervisorSpec.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/.manager/_$_Users_$_jboner_$_src_$_scala_$_akka_$_kernel_$_src_$_test_$_scala_$_SupervisorStateSpec.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectConsumer.scala" />
               <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" />
@@ -191,49 +164,6 @@
               <file url="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala" />
             </files>
           </module>
-          <module name="akka-kernel">
-            <files>
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/AkkaComponentProvider.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Boot.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/CassandraNode.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Configuration.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/DataFlowVariable.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/ErrRef.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/GenericServer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/HashCode.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Helpers.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Logging.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Serializer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/State.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Supervisor.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Transaction.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectConsumer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectProducer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/MessageDriven.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/SupervisorAwareCamelContext.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/HashTrie.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/Vector.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfiguratorForJava.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/config/Config.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/AllSuite.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/GenericServerContainerSuite.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/GenericServerSpec.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/Messages.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/SupervisorSpec.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/SupervisorStateSpec.scala" />
-            </files>
-          </module>
-        </modules>
-      </facet-type>
-      <facet-type id="web">
-        <modules>
-          <module name="akka-kernel" />
         </modules>
       </facet-type>
     </autodetection-disabled>
@@ -421,6 +351,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/akka.iml" filepath="$PROJECT_DIR$/akka.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fun-test-java/akka-funtest-java.iml" filepath="$PROJECT_DIR$/fun-test-java/akka-funtest-java.iml" />
       <module fileurl="file://$PROJECT_DIR$/kernel/akka-kernel.iml" filepath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
       <module fileurl="file://$PROJECT_DIR$/util-java/akka-util-java.iml" filepath="$PROJECT_DIR$/util-java/akka-util-java.iml" />
     </modules>

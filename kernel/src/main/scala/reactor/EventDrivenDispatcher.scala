@@ -17,6 +17,7 @@ class EventDrivenDispatcher extends MessageDispatcher {
   private val handlers = new ConcurrentHashMap[AnyRef, MessageHandler]
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
+  private val guard = new Object
 
   def registerHandler(key: AnyRef, handler: MessageHandler) = handlers.put(key, handler)
 
@@ -28,6 +29,7 @@ class EventDrivenDispatcher extends MessageDispatcher {
     selectorThread = new Thread {
       override def run = {
         while (active) {
+          guard.synchronized { /* empty */ }
           messageDemultiplexer.select
           val handles = messageDemultiplexer.acquireSelectedQueue
           val handlesList = handles.toArray.toList.asInstanceOf[List[MessageHandle]]
