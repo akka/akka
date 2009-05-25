@@ -18,13 +18,11 @@ case class Terminate(reason: AnyRef) extends GenericServerMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends GenericServerMessage
 
 /**
- * Base trait for all user-defined servers/actors.
+ * Base trait for all user-defined servers.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait GenericServer extends Actor {
-  private val actorScheduler = new ManagedActorScheduler
-
   /**
    * Template method implementing the server logic.
    * To be implemented by subclassing server.
@@ -61,11 +59,9 @@ trait GenericServer extends Actor {
    */
   def shutdown(reason: AnyRef) {}
 
-  def act = loop { react { genericBase orElse actorBase } }
+  def act = loop { react { genericBase orElse base } }
 
-  //override protected def scheduler = actorScheduler
-  
-  private def actorBase: PartialFunction[Any, Unit] = hotswap getOrElse body
+  private def base: PartialFunction[Any, Unit] = hotswap getOrElse body
 
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
 
@@ -98,10 +94,6 @@ class GenericServerContainer(
   private var server: GenericServer = _
   private var currentConfig: Option[AnyRef] = None
   private[kernel] var timeout = 5000
-
-  // TODO: see if we can parameterize class and add type safe getActor method
-  //class GenericServerContainer[T <: GenericServer](var factory: () => T) {
-  //def getActor: T = server
 
   private[kernel] def transactionalItems: List[Transactional] = txItemsLock.withReadLock {
     _transactionalMaps ::: _transactionalVectors ::: _transactionalRefs
@@ -145,39 +137,6 @@ class GenericServerContainer(
   def !(message: Any) = {
     require(server != null)
     lock.withReadLock { server ! message }
-  }
-
-  /**
-   * Sends a message to the server returns a FutureWithTimeout holding the future reply .
-   * <p>
-   * Example:
-   * <pre>
-   *  val future = server !! Message
-   *  future.receiveWithin(100) match {
-   *    case None => ... // timed out
-   *    case Some(reply) => ... // handle reply
-   *  }
-   * </pre>
-   */
-  def !![T](message: Any): FutureWithTimeout[T] = {
-    require(server != null)
-    lock.withReadLock { server !!! message }
-  }
-
-  /**
-   * Sends a message to the server and blocks indefinitely (no time out), waiting for the reply.
-   * <p>
-   * Example:
-   * <pre>
-   *   val result: String = server !? Message
-   * </pre>
-   */
-  def !?[T](message: Any): T = {
-    require(server != null)
-    val future: Future[T] = lock.withReadLock { server.!![T](message, {case t => t.asInstanceOf[T]}) }
-    Actor.receive {
-      case (future.ch ! arg) => arg.asInstanceOf[T]
-    }
   }
 
   /**
@@ -229,7 +188,6 @@ class GenericServerContainer(
    */
   def !!![T](message: Any, errorHandler: => T, time: Int): T = {
     require(server != null)
-    println("---------- SERVER " + server + " MESSAGE " + message)
     val future: FutureWithTimeout[T] = lock.withReadLock { server !!! message }
     future.receiveWithin(time) match {
       case None => errorHandler

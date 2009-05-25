@@ -74,17 +74,6 @@ class GenericServerContainerSpec extends Suite {
     }
   }
 
-  def test_bangquestion = {
-    setup
-    expect("pong") {
-      val res: String = server !? Ping
-      res
-    }
-    expect("got a ping") {
-      inner.log
-    }
-  }
-
   def test_bangbangbang_Timeout1 = {
     setup
     expect("pong") {
@@ -102,32 +91,6 @@ class GenericServerContainerSpec extends Suite {
     }
     expect("got a oneway") {
       inner.log
-    }
-  }
-
-  def test_bangbangbang_GetFutureTimeout1 = {
-    setup
-    val future = server !! Ping
-    future.receiveWithin(100) match {
-      case None => fail("timed out") // timed out
-      case Some(reply) =>
-        expect("got a ping") {
-          inner.log
-        }
-        assert("pong" === reply)
-    }
-  }
-
-  def test_bangbangbang_GetFutureTimeout2 = {
-    setup
-    val future = server !! OneWay
-    future.receiveWithin(100) match {
-      case None =>
-        expect("got a oneway") {
-          inner.log
-        }
-      case Some(reply) =>
-        fail("expected a timeout, got Some(reply)")
     }
   }
 

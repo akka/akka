@@ -3,9 +3,11 @@
  */
 
 /**
+ * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].
+ * See also this article: [http://today.java.net/cs/user/print/a/350].
+ *
  * Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
  */
-
 package se.scalablesolutions.akka.kernel.reactor
 
 import java.util.concurrent.{ConcurrentHashMap, Executors}

@@ -5,7 +5,6 @@
 /**
  * Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
  */
-
 package se.scalablesolutions.akka.kernel.reactor
 
 import java.util.concurrent.locks.{Lock, Condition, ReentrantLock}
@@ -25,8 +24,7 @@ trait CompletableFutureResult extends FutureResult {
   def completeWithException(exception: Exception)
 }
 
-class CoreFutureResult(val timeoutInNanos: Long) extends CompletableFutureResult {
-
+class GenericFutureResult(val timeoutInNanos: Long) extends CompletableFutureResult {
   private val _startTimeInNanos = currentTimeInNanos
   private val _lock = new ReentrantLock
   private val _signal = _lock.newCondition

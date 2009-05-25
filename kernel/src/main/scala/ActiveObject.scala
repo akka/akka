@@ -160,10 +160,10 @@ sealed class TransactionalAroundAdvice(target: Class[_],
       threadBoundTx.set(Some(tx))
   }
 
-  private def sendOneWay(joinpoint: JoinPoint) = server ! (activeTx, joinpoint)
+  private def sendOneWay(joinpoint: JoinPoint) = server ! Invocation(joinpoint, activeTx)
 
   private def sendAndReceiveEventually(joinpoint: JoinPoint): ErrRef[AnyRef] = {
-    server !!! ((activeTx, joinpoint), {
+    server !!! (Invocation(joinpoint, activeTx), {
       var ref = ErrRef(activeTx)
       ref() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + server.timeout + " milliseconds")
       ref
@@ -239,6 +239,33 @@ private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
 
   override def toString(): String = "GenericServer[" + targetName + "]"
 }
+
+/**
+ * Represents a snapshot of the current invocation.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[kernel] case class Invocation(val joinpoint: JoinPoint, val transaction: Option[Transaction]) {
+
+  override def toString: String = synchronized {
+    "Invocation [joinpoint: " + joinpoint.toString+ " | transaction: " + transaction.toString + "]"
+  }
+
+  override def hashCode(): Int = synchronized {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, joinpoint)
+    if (transaction.isDefined) result = HashCode.hash(result, transaction.get)
+    result
+  }
+
+  override def equals(that: Any): Boolean = synchronized {
+    that != null &&
+    that.isInstanceOf[Invocation] &&
+    that.asInstanceOf[Invocation].joinpoint == joinpoint &&
+    that.asInstanceOf[Invocation].transaction.getOrElse(false) == transaction.getOrElse(false)
+  }
+}
+
 
 /*
 ublic class CamelInvocationHandler implements InvocationHandler {

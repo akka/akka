@@ -3,9 +3,11 @@
  */
 
 /**
+ * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].
+ * See also this article: [http://today.java.net/cs/user/print/a/350].
+ *
  * Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
  */
-
 package se.scalablesolutions.akka.kernel.reactor
 
 import java.util.{LinkedList, Queue}
@@ -27,15 +29,21 @@ trait MessageDemultiplexer {
 }
 
 class MessageHandle(val key: AnyRef, val message: AnyRef, val future: CompletableFutureResult) {
-  override def equals(obj: Any): Boolean = {
-    // FIXME: implement equals
-    true
+
+  override def hashCode(): Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, key)
+    result = HashCode.hash(result, message)
+    result = HashCode.hash(result, future)
+    result
   }
 
-  override def hashCode: Int = {
-    // FIXME: implement hashCode
-    1
-  }
+  override def equals(that: Any): Boolean =
+    that != null &&
+    that.isInstanceOf[MessageHandle] &&
+    that.asInstanceOf[MessageHandle].key == key &&
+    that.asInstanceOf[MessageHandle].message == message &&
+    that.asInstanceOf[MessageHandle].future == future
 }
 
 trait MessageHandler {
