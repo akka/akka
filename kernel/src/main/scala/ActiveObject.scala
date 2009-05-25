@@ -143,7 +143,7 @@ sealed class TransactionalAroundAdvice(target: Class[_],
     activeTx = None
   }
 
-  private def handleResult(result: ErrRef[AnyRef]): AnyRef = {
+  private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
     try {
       result()
     } catch {
@@ -162,11 +162,11 @@ sealed class TransactionalAroundAdvice(target: Class[_],
 
   private def sendOneWay(joinpoint: JoinPoint) = server ! Invocation(joinpoint, activeTx)
 
-  private def sendAndReceiveEventually(joinpoint: JoinPoint): ErrRef[AnyRef] = {
+  private def sendAndReceiveEventually(joinpoint: JoinPoint): ResultOrFailure[AnyRef] = {
     server !!! (Invocation(joinpoint, activeTx), {
-      var ref = ErrRef(activeTx)
-      ref() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + server.timeout + " milliseconds")
-      ref
+      var resultOrFailure = ResultOrFailure(activeTx)
+      resultOrFailure() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + server.timeout + " milliseconds")
+      resultOrFailure
     })
   }
 
@@ -216,13 +216,15 @@ sealed class TransactionalAroundAdvice(target: Class[_],
 private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
   override def body: PartialFunction[Any, Unit] = {
 
-    case (tx: Option[Transaction], joinpoint: JoinPoint) =>
+    case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
       ActiveObject.threadBoundTx.set(tx)
       try {
-        reply(ErrRef(joinpoint.proceed, tx))
+        reply(ResultOrFailure(joinpoint.proceed, tx))
       } catch {
         case e =>
-          val ref = ErrRef(tx); ref() = throw e; reply(ref)
+          val resultOrFailure = ResultOrFailure(tx)
+          resultOrFailure() = throw e
+          reply(resultOrFailure)
       }
 
     case 'exit =>

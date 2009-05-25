@@ -20,7 +20,7 @@
   <modules>
     <module>util-java</module>
     <module>kernel</module>
-    <module>api-java</module>
+    <module>fun-test-java</module>
   </modules>
 
   <repositories>

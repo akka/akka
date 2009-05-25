@@ -20,7 +20,7 @@ public class PersistentClasher {
 
     // FIXME: this statement gives me this error:
     // se.scalablesolutions.akka.kernel.ActiveObjectException:
-    // Unexpected message [!(scala.actors.Channel@c2b2f6,ErrRef[Right(null)])]
+    // Unexpected message [!(scala.actors.Channel@c2b2f6,ResultOrFailure[Right(null)])]
     // to
     // [GenericServer[se.scalablesolutions.akka.api.StatefulImpl]] from
     // [GenericServer[se.scalablesolutions.akka.api.ClasherImpl]]]

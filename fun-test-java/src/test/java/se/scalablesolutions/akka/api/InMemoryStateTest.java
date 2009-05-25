@@ -4,8 +4,8 @@
 
 package se.scalablesolutions.akka.api;
 
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 import se.scalablesolutions.akka.kernel.config.*;
+import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 
 import junit.framework.TestCase;
 
@@ -145,7 +145,7 @@ class InMemClasherImpl implements InMemClasher {
 
     // FIXME: this statement gives me this error:
     // se.scalablesolutions.akka.kernel.ActiveObjectException:
-    // Unexpected message [!(scala.actors.Channel@c2b2f6,ErrRef[Right(null)])]
+    // Unexpected message [!(scala.actors.Channel@c2b2f6,ResultOrFailure[Right(null)])]
     // to
     // [GenericServer[se.scalablesolutions.akka.api.StatefulImpl]] from
     // [GenericServer[se.scalablesolutions.akka.api.ClasherImpl]]]

@@ -140,8 +140,8 @@
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
-    <file url="file://$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" charset="windows-1252" />
-    <file url="file://$PROJECT_DIR$/api-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" charset="windows-1252" />
     <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/HashTrie.scala" charset="windows-1252" />
     <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/Vector.scala" charset="windows-1252" />
@@ -421,7 +421,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/akka.iml" filepath="$PROJECT_DIR$/akka.iml" />
-      <module fileurl="file://$PROJECT_DIR$/api-java/akka-api-java.iml" filepath="$PROJECT_DIR$/api-java/akka-api-java.iml" />
       <module fileurl="file://$PROJECT_DIR$/kernel/akka-kernel.iml" filepath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
       <module fileurl="file://$PROJECT_DIR$/util-java/akka-util-java.iml" filepath="$PROJECT_DIR$/util-java/akka-util-java.iml" />
     </modules>
@@ -461,17 +460,6 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.3/scala-library-2.7.3-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: net.lag:configgy:1.2">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/lag/configgy/1.2/configgy-1.2.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/net/lag/configgy/1.2/configgy-1.2-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/lag/configgy/1.2/configgy-1.2-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: org.guiceyfruit:guice-core:2.0-SNAPSHOT">
@@ -930,50 +918,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/jersey/jersey-client/1.1.0-ea/jersey-client-1.1.0-ea-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.jmock:jmock:2.4.0">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jmock/jmock/2.4.0/jmock-2.4.0.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jmock/jmock/2.4.0/jmock-2.4.0-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jmock/jmock/2.4.0/jmock-2.4.0-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.hamcrest:hamcrest-core:1.1">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.hamcrest:hamcrest-library:1.1">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: com.sun.xml.bind:jaxb-impl:2.1.10">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.1.10/jaxb-impl-2.1.10.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.1.10/jaxb-impl-2.1.10-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.1.10/jaxb-impl-2.1.10-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: com.sun.jersey.contribs:jersey-multipart:1.0.3">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/jersey/contribs/jersey-multipart/1.0.3/jersey-multipart-1.0.3.jar!/" />
@@ -1027,28 +971,6 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-servlet/2.0-beta-6/guice-servlet-2.0-beta-6-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.guiceyfruit:guiceyfruit-core:2.0-beta-7">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guiceyfruit-core/2.0-beta-7/guiceyfruit-core-2.0-beta-7.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guiceyfruit-core/2.0-beta-7/guiceyfruit-core-2.0-beta-7-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guiceyfruit-core/2.0-beta-7/guiceyfruit-core-2.0-beta-7-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.guiceyfruit:guice-all:2.0-beta-7">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-all/2.0-beta-7/guice-all-2.0-beta-7.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-all/2.0-beta-7/guice-all-2.0-beta-7-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-all/2.0-beta-7/guice-all-2.0-beta-7-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: javax.annotation:com.springsource.javax.annotation:1.0.0">
@@ -1192,6 +1114,94 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/grizzly/grizzly-http-servlet/1.9.9/grizzly-http-servlet-1.9.9-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.codehaus.aspectwerkz:aspectwerkz-nodeps-jdk5:2.1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/aspectwerkz/aspectwerkz-nodeps-jdk5/2.1/aspectwerkz-nodeps-jdk5-2.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/aspectwerkz/aspectwerkz-nodeps-jdk5/2.1/aspectwerkz-nodeps-jdk5-2.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/aspectwerkz/aspectwerkz-nodeps-jdk5/2.1/aspectwerkz-nodeps-jdk5-2.1-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: net.lag:configgy:1.3">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/lag/configgy/1.3/configgy-1.3.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/net/lag/configgy/1.3/configgy-1.3-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/lag/configgy/1.3/configgy-1.3-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.scala-lang:scala-compiler:2.7.4">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-compiler/2.7.4/scala-compiler-2.7.4.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-compiler/2.7.4/scala-compiler-2.7.4-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-compiler/2.7.4/scala-compiler-2.7.4-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.scala-tools:vscaladoc:1.1-md-3">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/vscaladoc/1.1-md-3/vscaladoc-1.1-md-3.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/vscaladoc/1.1-md-3/vscaladoc-1.1-md-3-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/vscaladoc/1.1-md-3/vscaladoc-1.1-md-3-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: markdownj:markdownj:1.0.2b4-0.3.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/markdownj/markdownj/1.0.2b4-0.3.0/markdownj-1.0.2b4-0.3.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/markdownj/markdownj/1.0.2b4-0.3.0/markdownj-1.0.2b4-0.3.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/markdownj/markdownj/1.0.2b4-0.3.0/markdownj-1.0.2b4-0.3.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.scala-tools.testing:specs:1.4.4">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/testing/specs/1.4.4/specs-1.4.4.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/testing/specs/1.4.4/specs-1.4.4-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/testing/specs/1.4.4/specs-1.4.4-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.guiceyfruit:guiceyfruit-core:2.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guiceyfruit-core/2.0/guiceyfruit-core-2.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guiceyfruit-core/2.0/guiceyfruit-core-2.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guiceyfruit-core/2.0/guiceyfruit-core-2.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.guiceyfruit:guice-all:2.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-all/2.0/guice-all-2.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-all/2.0/guice-all-2.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-all/2.0/guice-all-2.0-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

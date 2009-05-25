@@ -9,8 +9,8 @@ package se.scalablesolutions.akka.kernel
  *
  * Usage:
  * <pre>
- * scala> ErrRef(1)
- * res0: ErrRef[Int] = ErrRef@a96606
+ * scala> ResultOrFailure(1)
+ * res0: ResultOrFailure[Int] = ResultOrFailure@a96606
  *  
  * scala> res0()
  * res1: Int = 1
@@ -30,7 +30,7 @@ package se.scalablesolutions.akka.kernel
  *
  * scala> res0()
  * java.lang.RuntimeException: Lets see what happens here...
- * 	at ErrRef.apply(RefExcept.scala:11)
+ * 	at ResultOrFailure.apply(RefExcept.scala:11)
  * 	at .<init>(<console>:6)
  * 	at .<clinit>(<console>)
  * 	at Re...
@@ -38,7 +38,7 @@ package se.scalablesolutions.akka.kernel
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ErrRef[Payload](payload: Payload, val tx: Option[Transaction]) {
+class ResultOrFailure[Payload](payload: Payload, val tx: Option[Transaction]) {
   private[this] var contents: Either[Throwable, Payload] = Right(payload)
 
   def update(value: => Payload) = {
@@ -50,9 +50,9 @@ class ErrRef[Payload](payload: Payload, val tx: Option[Transaction]) {
     case Left(e) => throw e.fillInStackTrace
   }
 
-  override def toString(): String = "ErrRef[" + contents + "]"
+  override def toString(): String = "ResultOrFailure[" + contents + "]"
 }
-object ErrRef {
-  def apply[Payload](payload: Payload, tx: Option[Transaction]) = new ErrRef(payload, tx)
-  def apply[AnyRef](tx: Option[Transaction]) = new ErrRef(new Object, tx)
+object ResultOrFailure {
+  def apply[Payload](payload: Payload, tx: Option[Transaction]) = new ResultOrFailure(payload, tx)
+  def apply[AnyRef](tx: Option[Transaction]) = new ResultOrFailure(new Object, tx)
 }
