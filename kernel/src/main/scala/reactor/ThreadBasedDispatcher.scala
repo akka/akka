@@ -14,16 +14,18 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.concurrent.locks.ReentrantLock
 import java.util.{HashSet, LinkedList, Queue}
 
+// FIXME: lift up common stuff in base
 class ThreadBasedDispatcher(val threadPoolSize: Int) extends MessageDispatcher {
   private val handlers = new ConcurrentHashMap[AnyRef, MessageHandler]
   private val busyHandlers = new HashSet[AnyRef]
   private val handlerExecutor = Executors.newFixedThreadPool(threadPoolSize)
-  @volatile private var selectorThread: Thread = null
+  private var selectorThread: Thread = null
   @volatile private var active: Boolean = false
+  private val guard = new Object
 
-  def registerHandler(key: AnyRef, handler: MessageHandler) = handlers.put(key, handler)
+  def registerHandler(key: AnyRef, handler: MessageHandler) = guard.synchronized { handlers.put(key, handler) }
 
-  def unregisterHandler(key: AnyRef) = handlers.remove(key)
+  def unregisterHandler(key: AnyRef) = guard.synchronized { handlers.remove(key) }
 
   def dispatch(messageQueue: MessageQueue) = {
     if (!active) {
@@ -33,16 +35,17 @@ class ThreadBasedDispatcher(val threadPoolSize: Int) extends MessageDispatcher {
         override def run = {
           while (active) {
             try {
+              guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
               val handles = messageDemultiplexer.acquireSelectedQueue
               for (index <- 0 to handles.size) {
                 val handle = handles.peek
-                val handler = checkIfNotBusyThenGet(handle.key)
+                val handler = checkIfNotBusyThenGet(handle.sender)
                 if (handler.isDefined) {
                   handlerExecutor.execute(new Runnable {
                     override def run = {
                       handler.get.handle(handle)
-                      free(handle.key)
+                      free(handle.sender)
                       messageDemultiplexer.wakeUp
                     }
                   })

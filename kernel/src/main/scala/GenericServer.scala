@@ -4,11 +4,12 @@
 
 package se.scalablesolutions.akka.kernel
 
-import scala.actors._
-import scala.actors.Actor._
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
-import se.scalablesolutions.akka.kernel.config.ScalaConfig._
-import se.scalablesolutions.akka.kernel.Helpers._
+import kernel.config.ScalaConfig._
+import kernel.Helpers._
+import kernel.reactor._
+import scala.collection.mutable.HashSet
 
 sealed abstract class GenericServerMessage
 case class Init(config: AnyRef) extends GenericServerMessage
@@ -16,13 +17,21 @@ case class ReInit(config: AnyRef) extends GenericServerMessage
 case class Shutdown(reason: AnyRef) extends GenericServerMessage
 case class Terminate(reason: AnyRef) extends GenericServerMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends GenericServerMessage
+case class Killed(victim: GenericServer, reason: AnyRef) extends GenericServerMessage
 
 /**
  * Base trait for all user-defined servers.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait GenericServer extends Actor {
+trait GenericServer {
+  private val unit = TimeUnit.MILLISECONDS
+  private[kernel] var sender: GenericServerContainer = _
+  private[kernel] var container: GenericServerContainer = _
+  private[kernel] var mailbox: MessageQueue = _
+  @volatile protected[this] var isRunning = true
+  protected var trapExit: Boolean = false
+
   /**
    * Template method implementing the server logic.
    * To be implemented by subclassing server.
@@ -39,39 +48,93 @@ trait GenericServer extends Actor {
    *   }
    * </pre>
    */
-  def body: PartialFunction[Any, Unit]
+  protected def body: PartialFunction[Any, Unit]
 
   /**
    * Callback method that is called during initialization.
    * To be implemented by subclassing server.
    */
-  def init(config: AnyRef) {}
+  protected def init(config: AnyRef) {}
 
   /**
    * Callback method that is called during reinitialization after a server crash.
    * To be implemented by subclassing server.
    */
-  def reinit(config: AnyRef) {}
+  protected def reinit(config: AnyRef) {}
 
   /**
    * Callback method that is called during termination.
    * To be implemented by subclassing server.
    */
-  def shutdown(reason: AnyRef) {}
+  protected def shutdown(reason: AnyRef) {}
 
-  def act = loop { react { genericBase orElse base } }
+  protected def reply(message: AnyRef) = sender ! message
+  
+  private[kernel] def link(server: GenericServer) = container.link(server)
 
-  private def base: PartialFunction[Any, Unit] = hotswap getOrElse body
+  private[kernel] def unlink(server: GenericServer) = container.unlink(server)
+
+  private[kernel] def !(message: AnyRef) = mailbox.put(new MessageHandle(this, message, new NullFutureResult))
+
+  private[kernel] def !![T](message: AnyRef)(implicit timeout: Long): Option[T] = {
+    val future = new GenericFutureResult(unit.toNanos(timeout))
+    mailbox.put(new MessageHandle(this, message, future))
+    future.await
+    val result = future.result
+    if (result == null) None
+    else Some(result.asInstanceOf[T])
+  }
+
+  private[kernel] def !?(message: AnyRef): AnyRef = {
+    val future = new GenericFutureResult(unit.toNanos(100000))
+    mailbox.put(new MessageHandle(this, message, future))
+    future.await
+    future.result.asInstanceOf[AnyRef]
+  }
+
+  private[kernel] def start = {} //try { act } catch { case e: SuspendServerException => act }
+
+  private[kernel] def shutdown(shutdownTime: Int, reason: AnyRef) {
+    //FIXME: how to implement?
+  }
+
+  private[kernel] def handle(message: AnyRef, future: CompletableFutureResult) = {
+    react(message) { lifecycle orElse base }
+/*
+    try {
+      val result = message.asInstanceOf[Invocation].joinpoint.proceed
+      future.completeWithResult(result)
+    } catch {
+      case e: Exception => future.completeWithException(e)
+    }
+*/
+  }
+
+  //private[kernel] def act = while(isRunning) { react { lifecycle orElse base } }
+
+  private[this] def base: PartialFunction[Any, Unit] = hotswap getOrElse body
 
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
 
-  private val genericBase: PartialFunction[Any, Unit] = {
+  private val lifecycle: PartialFunction[Any, Unit] = {
     case Init(config) =>      init(config)
     case ReInit(config) =>    reinit(config)
     case HotSwap(code) =>     hotswap = code
-    case Shutdown(reason) =>  shutdown(reason); reply('success)
-    case Terminate(reason) => exit(reason)
+    case Terminate(reason) => shutdown(reason); exit
   }
+
+  protected[this] def react(message: AnyRef)(f: PartialFunction[AnyRef, Unit]): Unit = {
+    // FIXME: loop over all elements, grab the first that matches
+    if (f.isDefinedAt(message)) {
+ //     sender = message.sender.asInstanceOf[GenericServerContainer]
+      f(message)
+    } else {
+      throw new IllegalArgumentException("Message not defined: " + message)
+    }
+    //throw new SuspendServerException
+  }
+  
+  private[this] def exit = isRunning = false  
 }
 
 /**
@@ -83,17 +146,18 @@ trait GenericServer extends Actor {
  */
 class GenericServerContainer(
   val id: String,
-  private[kernel] var serverFactory: () => GenericServer) extends Logging {
+  private[this] var serverFactory: () => GenericServer) extends Logging {
   require(id != null && id != "")
 
-  private[kernel] var lifeCycle: Option[LifeCycle] = None
-  private[kernel] val lock = new ReadWriteLock
-  private[kernel] val txItemsLock = new ReadWriteLock
-  private[kernel] val serializer = new JavaSerializationSerializer
+  private[this] val txItemsLock = new ReadWriteLock
+  private[this] val serializer = new JavaSerializationSerializer
+  private[this] val linkedServers = new HashSet[GenericServer]
+  private[kernel] var server: GenericServer = serverFactory()
+  private[this] var currentConfig: Option[AnyRef] = None
 
-  private var server: GenericServer = _
-  private var currentConfig: Option[AnyRef] = None
-  private[kernel] var timeout = 5000
+  private[kernel] val lock = new ReadWriteLock
+  private[kernel] var lifeCycle: Option[LifeCycle] = None
+  private[kernel] implicit var timeout = 5000L
 
   private[kernel] def transactionalItems: List[Transactional] = txItemsLock.withReadLock {
     _transactionalMaps ::: _transactionalVectors ::: _transactionalRefs
@@ -126,15 +190,19 @@ class GenericServerContainer(
     _transactionalRefs
   }
 
+  def link(server: GenericServer) = lock.withWriteLock { linkedServers + server }
+
+  def unlink(server: GenericServer) = lock.withWriteLock { linkedServers - server }
+
   /**
-   * Sends a one way message to the server - alias for <code>cast(message)</code>.
+   * Sends a one way message to the server.
    * <p>
    * Example:
    * <pre>
    *   server ! Message
    * </pre>
    */
-  def !(message: Any) = {
+  def !(message: AnyRef) = {
     require(server != null)
     lock.withReadLock { server ! message }
   }
@@ -147,13 +215,12 @@ class GenericServerContainer(
    * <p>
    * Example:
    * <pre>
-   *   (server !!! Message).getOrElse(throw new RuntimeException("time out")
+   *   (server !! Message).getOrElse(throw new RuntimeException("time out")
    * </pre>
    */
-  def !!![T](message: Any): Option[T] = {
+  def !![T](message: AnyRef): Option[T] = {
     require(server != null)
-    val future: FutureWithTimeout[T] = lock.withReadLock { server !!! message }
-    future.receiveWithin(timeout)
+    lock.withReadLock { server !! message }
   }
 
   /**
@@ -165,13 +232,16 @@ class GenericServerContainer(
    * <p>
    * Example:
    * <pre>
-   *   server !!! (Message, throw new RuntimeException("time out"))
+   *   server !! (Message, throw new RuntimeException("time out"))
    *   // OR
-   *   server !!! (Message, DefaultReturnValue)
+   *   server !! (Message, DefaultReturnValue)
    * </pre>
    */
-  def !!![T](message: Any, errorHandler: => T): T = !!!(message, errorHandler, timeout)
-
+  def !![T](message: AnyRef, errorHandler: => T): T = {
+    require(server != null)
+    lock.withReadLock { (server !! message).getOrElse(errorHandler).asInstanceOf[T] }
+  }
+  
   /**
    * Sends a message to the server and gets a future back with the reply.
    * <p>
@@ -181,18 +251,27 @@ class GenericServerContainer(
    * <p>
    * Example:
    * <pre>
-   *   server !!! (Message, throw new RuntimeException("time out"), 1000)
+   *   server !! (Message, throw new RuntimeException("time out"), 1000)
    *   // OR
-   *   server !!! (Message, DefaultReturnValue, 1000)
+   *   server !! (Message, DefaultReturnValue, 1000)
    * </pre>
    */
-  def !!![T](message: Any, errorHandler: => T, time: Int): T = {
+  def !![T](message: AnyRef, errorHandler: => T, time: Long): T = {
     require(server != null)
-    val future: FutureWithTimeout[T] = lock.withReadLock { server !!! message }
-    future.receiveWithin(time) match {
-      case None => errorHandler
-      case Some(reply) => reply
-    }
+    lock.withReadLock { (server.!!(message)(time)).getOrElse(errorHandler).asInstanceOf[T] }
+  }
+  
+  /**
+   * Sends a synchronous message to the server.
+   * <p>
+   * Example:
+   * <pre>
+   *   val result = server !? Message
+   * </pre>
+   */
+  def !?(message: AnyRef) = {
+    require(server != null)
+    lock.withReadLock { server !? message }
   }
 
   /**
@@ -232,15 +311,11 @@ class GenericServerContainer(
   def setTimeout(time: Int) = timeout = time
 
   /**
-   * Returns the next message in the servers mailbox.
-   */
-  def nextMessage = lock.withReadLock { server ? }
-
-  /**
    * Creates a new actor for the GenericServerContainer, and return the newly created actor.
    */
   private[kernel] def newServer(): GenericServer = lock.withWriteLock {
     server = serverFactory()
+    server.container = this
     server
   }
 
@@ -262,10 +337,7 @@ class GenericServerContainer(
   private[kernel] def terminate(reason: AnyRef, shutdownTime: Int) = lock.withReadLock {
     if (shutdownTime > 0) {
       log.debug("Waiting [%s milliseconds for the server to shut down before killing it.", shutdownTime)
-      server !? (shutdownTime, Shutdown(reason)) match {
-        case Some('success) => log.debug("Server [%s] has been shut down cleanly.", id)
-        case None => log.warning("Server [%s] was **not able** to complete shutdown cleanly within its configured shutdown time [%s]", id, shutdownTime)
-      }
+      server.shutdown(shutdownTime, Shutdown(reason))
     }
     server ! Terminate(reason)
   }
@@ -285,8 +357,12 @@ class GenericServerContainer(
   
   private[kernel] def swapServer(newServer: GenericServer) = lock.withWriteLock {
     server = newServer
+    server.container = this
   }
 
   override def toString(): String = "GenericServerContainer[" + server + "]"
 }
 
+private[kernel] class SuspendServerException extends Throwable {
+  override def fillInStackTrace(): Throwable = this
+}

@@ -35,7 +35,7 @@ class SupervisorSpec extends Suite {
     sup ! Start
 
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
   }
 
@@ -63,7 +63,7 @@ class SupervisorSpec extends Suite {
     sup ! Start
 
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("oneforone") {
@@ -77,21 +77,21 @@ class SupervisorSpec extends Suite {
     sup ! Start
 
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("ping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("pingoneforone") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingoneforoneping") {
@@ -104,7 +104,7 @@ class SupervisorSpec extends Suite {
     val sup = getSingleActorAllForOneSupervisor
     sup ! Start
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("allforone") {
@@ -117,21 +117,21 @@ class SupervisorSpec extends Suite {
     val sup = getSingleActorAllForOneSupervisor
     sup ! Start
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("ping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("pingallforone") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingallforoneping") {
@@ -144,7 +144,7 @@ class SupervisorSpec extends Suite {
     val sup = getMultipleActorsOneForOneConf
     sup ! Start
     intercept(classOf[RuntimeException]) {
-      pingpong3 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong3 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("oneforone") {
@@ -157,37 +157,37 @@ class SupervisorSpec extends Suite {
     val sup = getMultipleActorsOneForOneConf
     sup ! Start
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingpingping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong2 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("pingpingpingoneforone") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingpingpingoneforonepingpingping") {
@@ -200,7 +200,7 @@ class SupervisorSpec extends Suite {
     val sup = getMultipleActorsAllForOneConf
     sup ! Start
     intercept(classOf[RuntimeException]) {
-      pingpong2 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong2 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("allforoneallforoneallforone") {
@@ -213,37 +213,37 @@ class SupervisorSpec extends Suite {
     val sup = getMultipleActorsAllForOneConf
     sup ! Start
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingpingping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong2 !! (Die, throw new RuntimeException("TIME OUT"))
     }
     Thread.sleep(100)
     expect("pingpingpingallforoneallforoneallforone") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingpingpingallforoneallforoneallforonepingpingping") {
@@ -256,7 +256,7 @@ class SupervisorSpec extends Suite {
      val sup = getNestedSupervisorsAllForOneConf
      sup ! Start
      intercept(classOf[RuntimeException]) {
-       pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+       pingpong1 !! (Die, throw new RuntimeException("TIME OUT"))
      }
      Thread.sleep(100)
      expect("allforoneallforoneallforone") {

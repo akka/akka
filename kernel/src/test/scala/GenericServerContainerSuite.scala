@@ -67,7 +67,7 @@ class GenericServerContainerSpec extends Suite {
   def test_bangbangbang = {
     setup
     expect("pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
     expect("got a ping") {
       inner.log
@@ -77,7 +77,7 @@ class GenericServerContainerSpec extends Suite {
   def test_bangbangbang_Timeout1 = {
     setup
     expect("pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
     expect("got a ping") {
       inner.log
@@ -87,7 +87,7 @@ class GenericServerContainerSpec extends Suite {
   def test_bangbangbang_Timeout2 = {
     setup
     expect("error handler") {
-      server !!! (OneWay, "error handler")
+      server !! (OneWay, "error handler")
     }
     expect("got a oneway") {
       inner.log
@@ -98,7 +98,7 @@ class GenericServerContainerSpec extends Suite {
     setup
     // using base
     expect("pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
 
     // hotswapping
@@ -106,7 +106,7 @@ class GenericServerContainerSpec extends Suite {
       case Ping => reply("hotswapped pong")
     }))
     expect("hotswapped pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
   }
 
@@ -114,7 +114,7 @@ class GenericServerContainerSpec extends Suite {
     setup
     // using base
     expect("pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
 
     // hotswapping
@@ -122,7 +122,7 @@ class GenericServerContainerSpec extends Suite {
       case Ping => reply("hotswapped pong")
     }))
     expect("hotswapped pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
 
     // hotswapping again
@@ -130,7 +130,7 @@ class GenericServerContainerSpec extends Suite {
       case Ping => reply("hotswapped pong again")
     }))
     expect("hotswapped pong again") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
   }
 
@@ -139,7 +139,7 @@ class GenericServerContainerSpec extends Suite {
     setup
     // using base
     expect("pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
 
     // hotswapping
@@ -147,13 +147,13 @@ class GenericServerContainerSpec extends Suite {
       case Ping => reply("hotswapped pong")
     }))
     expect("hotswapped pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
 
     // restoring original base
     server.hotswap(None)
     expect("pong") {
-      (server !!! Ping).getOrElse("nil")
+      (server !! Ping).getOrElse("nil")
     }
   }
 }

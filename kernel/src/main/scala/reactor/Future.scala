@@ -25,6 +25,7 @@ trait CompletableFutureResult extends FutureResult {
 }
 
 class GenericFutureResult(val timeoutInNanos: Long) extends CompletableFutureResult {
+  
   private val _startTimeInNanos = currentTimeInNanos
   private val _lock = new ReentrantLock
   private val _signal = _lock.newCondition
@@ -82,7 +83,6 @@ class GenericFutureResult(val timeoutInNanos: Long) extends CompletableFutureRes
       _completed = true
       _result = result
     }
-
   } finally {
     _signal.signalAll
     _lock.unlock

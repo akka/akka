@@ -11,13 +11,12 @@
 package se.scalablesolutions.akka.kernel.reactor
 
 import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
-import java.util.{LinkedList, Queue}
+import java.util.{LinkedList, Queue}                    
 
-class EventDrivenDispatcher extends MessageDispatcher {
+class EventBasedDispatcher extends MessageDispatcher {
   private val handlers = new ConcurrentHashMap[AnyRef, MessageHandler]
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
-  private val guard = new Object
 
   def registerHandler(key: AnyRef, handler: MessageHandler) = handlers.put(key, handler)
 
@@ -25,17 +24,15 @@ class EventDrivenDispatcher extends MessageDispatcher {
 
   def dispatch(messageQueue: MessageQueue) = if (!active) {
     active = true
-    val messageDemultiplexer = new EventDrivenDemultiplexer(messageQueue)
+    val messageDemultiplexer = new EventBasedDemultiplexer(messageQueue)
     selectorThread = new Thread {
       override def run = {
         while (active) {
-          guard.synchronized { /* empty */ }
           messageDemultiplexer.select
-          val handles = messageDemultiplexer.acquireSelectedQueue
-          val handlesList = handles.toArray.toList.asInstanceOf[List[MessageHandle]]
-          for (index <- 0 to handles.size) {
-            val handle = handles.remove
-            val handler = handlers.get(handle.key)
+          val queue = messageDemultiplexer.acquireSelectedQueue
+          for (index <- 0 to queue.size) {
+            val handle = queue.remove
+            val handler = handlers.get(handle.sender)
             if (handler != null) handler.handle(handle)
           }
         }
@@ -50,18 +47,14 @@ class EventDrivenDispatcher extends MessageDispatcher {
   }
 }
 
-class EventDrivenDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
+class EventBasedDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
   private val selectedQueue: Queue[MessageHandle] = new LinkedList[MessageHandle]
 
   def select = messageQueue.read(selectedQueue)
 
   def acquireSelectedQueue: Queue[MessageHandle] = selectedQueue
 
-  def releaseSelectedQueue = {
-    throw new UnsupportedOperationException
-  }
+  def releaseSelectedQueue = throw new UnsupportedOperationException("EventBasedDemultiplexer can't release its queue since it is always alive and kicking")
 
-  def wakeUp = {
-    throw new UnsupportedOperationException
-  }
+  def wakeUp = throw new UnsupportedOperationException("EventBasedDemultiplexer can't be woken up isince always alive and kicking")
 }

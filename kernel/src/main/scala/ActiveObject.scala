@@ -163,7 +163,7 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   private def sendOneWay(joinpoint: JoinPoint) = server ! Invocation(joinpoint, activeTx)
 
   private def sendAndReceiveEventually(joinpoint: JoinPoint): ResultOrFailure[AnyRef] = {
-    server !!! (Invocation(joinpoint, activeTx), {
+    server !! (Invocation(joinpoint, activeTx), {
       var resultOrFailure = ResultOrFailure(activeTx)
       resultOrFailure() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + server.timeout + " milliseconds")
       resultOrFailure
@@ -228,7 +228,7 @@ private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
       }
 
     case 'exit =>
-      exit; reply()
+      exit
 
 /*    case exchange: Exchange =>
       println("=============> Exchange From Actor: " + exchange)

@@ -26,11 +26,11 @@ trait MessageDemultiplexer {
   def wakeUp
 }
 
-class MessageHandle(val key: AnyRef, val message: AnyRef, val future: CompletableFutureResult) {
+class MessageHandle(val sender: AnyRef, val message: AnyRef, val future: CompletableFutureResult) {
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
-    result = HashCode.hash(result, key)
+    result = HashCode.hash(result, sender)
     result = HashCode.hash(result, message)
     result = HashCode.hash(result, future)
     result
@@ -39,7 +39,7 @@ class MessageHandle(val key: AnyRef, val message: AnyRef, val future: Completabl
   override def equals(that: Any): Boolean =
     that != null &&
     that.isInstanceOf[MessageHandle] &&
-    that.asInstanceOf[MessageHandle].key == key &&
+    that.asInstanceOf[MessageHandle].sender == sender &&
     that.asInstanceOf[MessageHandle].message == message &&
     that.asInstanceOf[MessageHandle].future == future
 }
@@ -48,6 +48,9 @@ trait MessageHandler {
   def handle(message: MessageHandle)
 }
 
+class GenericServerMessageHandler(val server: GenericServer) extends MessageHandler {
+  def handle(handle: MessageHandle) = server.handle(handle.message, handle.future)
+}
 
 class MessageQueue {
   private val handles: Queue[MessageHandle] = new LinkedList[MessageHandle]
@@ -59,16 +62,9 @@ class MessageQueue {
   }
 
   def read(destination: Queue[MessageHandle]) = handles.synchronized {
-    while (handles.isEmpty && !interrupted) {
-      handles.wait
-    }
-    if (!interrupted) {
-      while (!handles.isEmpty) {
-        destination.offer(handles.remove)
-      }
-    } else {
-      interrupted = false
-    }
+    while (handles.isEmpty && !interrupted) handles.wait
+    if (!interrupted) while (!handles.isEmpty) destination.offer(handles.remove)
+    else interrupted = false
   }
 
   def interrupt = handles.synchronized {

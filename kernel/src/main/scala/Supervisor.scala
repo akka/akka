@@ -4,8 +4,7 @@
 
 package se.scalablesolutions.akka.kernel
 
-import scala.actors._
-import scala.actors.Actor._
+import kernel.reactor.{MessageQueue, GenericServerMessageHandler, EventBasedDispatcher}
 import scala.collection.mutable.HashMap
 
 import se.scalablesolutions.akka.kernel.Helpers._
@@ -68,7 +67,7 @@ abstract class SupervisorFactory extends Logging {
       supervisor.start
       supervisor !? Configure(config, this) match {
         case 'configSuccess => log.debug("Supervisor successfully configured")
-        case _ => log.error("Supervisor could not be configured")
+        case error => log.error("Supervisor could not be configured due to [" + error + "]")
       }
       supervisor
   }
@@ -94,7 +93,15 @@ abstract class SupervisorFactory extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging {
+class Supervisor(faultHandler: FaultHandlingStrategy) extends GenericServer with Logging {
+  trapExit = true
+
+  private[kernel] val messageQueue = new MessageQueue
+  mailbox = messageQueue
+
+  // FIXME: make dispatcher configurable
+  private[kernel] val messageDispatcher = new EventBasedDispatcher
+  messageDispatcher.dispatch(messageQueue)
 
   private val state = new SupervisorState(this, faultHandler)
 
@@ -115,40 +122,37 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
     }
   }
 
-  def stop = Actor.self ! Stop
-  
-  def act = {
-    self.trapExit = true
-    loop {
-      react {
-        case Configure(config, factory) =>
-          log.debug("Configuring supervisor:%s ", this)
-          configure(config, factory)
-          reply('configSuccess)
+  def stop = this ! Stop
 
-        case Start =>
-          state.serverContainers.foreach { serverContainer =>
+  override def body: PartialFunction[Any, Unit] = {
+    case Configure(config, factory) =>
+      log.debug("Configuring supervisor: %s ", this)
+      configure(config, factory)
+      reply('configSuccess)
+
+    case Start =>
+      state.serverContainers.foreach {
+        serverContainer =>
             serverContainer.start
             log.info("Starting server: %s", serverContainer.getServer)
-          }
-
-        case Stop =>
-          state.serverContainers.foreach { serverContainer =>
-            serverContainer.terminate('normal)
-            log.info("Stopping ser-ver: %s", serverContainer)
-          }
-          log.info("Stopping supervisor: %s", this)
-          exit('normal)
-
-        case Exit(failedServer, reason) =>
-          reason match {
-            case 'forced => {} // do nothing
-            case _ => state.faultHandler.handleFailure(state, failedServer, reason)
-          }
-
-        case unexpected => log.warning("Unexpected message [%s] from [%s] ignoring...", unexpected, sender)
       }
-    }
+
+    case Stop =>
+      state.serverContainers.foreach {
+        serverContainer =>
+            serverContainer.terminate('normal)
+            log.info("Stopping server: %s", serverContainer)
+      }
+      log.info("Stopping supervisor: %s", this)
+      exit
+
+    case Killed(failedServer, reason) =>
+      reason match {
+        case 'forced => {} // do nothing
+        case _ => state.faultHandler.handleFailure(state, failedServer, reason)
+      }
+
+    case unexpected => log.warning("Unexpected message [%s] from [%s] ignoring...", unexpected, sender)
   }
 
   private def configure(config: SupervisorConfig, factory: SupervisorFactory) = config match {
@@ -167,10 +171,13 @@ class Supervisor(faultHandler: FaultHandlingStrategy) extends Actor with Logging
   }
 
   private[kernel] def spawnLink(serverContainer: GenericServerContainer): GenericServer = {
+    println("----------------- SPAWN LINK")
     val newServer = serverContainer.newServer()
+    messageDispatcher.registerHandler(serverContainer.id, new GenericServerMessageHandler(newServer));
+    newServer.mailbox = messageQueue
     newServer.start
-    self.link(newServer)
-    log.debug("Linking actor [%s] to supervisor [%s]", newServer, this)
+    link(newServer)
+    log.debug("Linking server [%s] to supervisor [%s]", newServer, this)
     state.addServerContainer(serverContainer)
     newServer
   }
@@ -186,7 +193,7 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
   private var nrOfRetries = 0
   private var retryStartTime = currentTime
 
-  private[kernel] def handleFailure(state: SupervisorState, failedServer: AbstractActor, reason: AnyRef) = {
+  private[kernel] def handleFailure(state: SupervisorState, failedServer: GenericServer, reason: AnyRef) = {
     nrOfRetries += 1
     if (timeRangeHasExpired) {
       if (hasReachedMaximumNrOfRetries) {
@@ -206,7 +213,7 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
       // TODO: this is the place to fail-over all pending messages in the failing actor's mailbox, if possible to get a hold of them
       // e.g. something like 'serverContainer.getServer.getPendingMessages.map(newServer ! _)'
 
-      self.unlink(serverContainer.getServer)
+      supervisor.unlink(serverContainer.getServer)
       serverContainer.lifeCycle match {
         case None =>
           throw new IllegalStateException("Server [" + serverContainer.id + "] does not have a life-cycle defined.")
@@ -237,7 +244,7 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
   /**
    * To be overriden by concrete strategies.
    */
-  protected def doHandleFailure(state: SupervisorState, failedServer: AbstractActor, reason: AnyRef)
+  protected def doHandleFailure(state: SupervisorState, failedServer: GenericServer, reason: AnyRef)
 
   /**
    * To be overriden by concrete strategies.
@@ -262,10 +269,10 @@ abstract class FaultHandlingStrategy(val maxNrOfRetries: Int, val withinTimeRang
  */
 class AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
 extends FaultHandlingStrategy(maxNrOfRetries, withinTimeRange) {
-  override def doHandleFailure(state: SupervisorState, failedServer: AbstractActor, reason: AnyRef) = {
+  override def doHandleFailure(state: SupervisorState, failedServer: GenericServer, reason: AnyRef) = {
     log.error("Server [%s] has failed due to [%s] - scheduling restart - scheme: ALL_FOR_ONE.", failedServer, reason)
     for (serverContainer <- state.serverContainers) restart(serverContainer, reason, state)
-    state.supervisors.foreach(_ ! Exit(failedServer, reason))
+    state.supervisors.foreach(_ ! Killed(failedServer, reason))
   }
 }
 
@@ -277,7 +284,7 @@ extends FaultHandlingStrategy(maxNrOfRetries, withinTimeRange) {
  */
 class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
 extends FaultHandlingStrategy(maxNrOfRetries, withinTimeRange) {
-  override def doHandleFailure(state: SupervisorState, failedServer: AbstractActor, reason: AnyRef) = {
+  override def doHandleFailure(state: SupervisorState, failedServer: GenericServer, reason: AnyRef) = {
     log.error("Server [%s] has failed due to [%s] - scheduling restart - scheme: ONE_FOR_ONE.", failedServer, reason)
     var serverContainer: Option[GenericServerContainer] = None
     state.serverContainers.foreach {
