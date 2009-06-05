@@ -11,38 +11,52 @@ import java.util.concurrent.locks.{Lock, Condition, ReentrantLock}
 import java.util.concurrent.TimeUnit
 
 sealed trait FutureResult {
-  def await
+  def await_?
+  def await_!
   def isCompleted: Boolean
   def isExpired: Boolean
   def timeoutInNanos: Long
-  def result: AnyRef
-  def exception: Exception
+  def result: Option[AnyRef]
+  def exception: Option[Throwable]
 }
 
 trait CompletableFutureResult extends FutureResult {
   def completeWithResult(result: AnyRef)
-  def completeWithException(exception: Exception)
+  def completeWithException(exception: Throwable)
 }
 
-class GenericFutureResult(val timeoutInNanos: Long) extends CompletableFutureResult {
+class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureResult {
+  private val TIME_UNIT = TimeUnit.MILLISECONDS
+  def this() = this(0)
+
+  val timeoutInNanos = TIME_UNIT.toNanos(timeout)
   private val _startTimeInNanos = currentTimeInNanos
   private val _lock = new ReentrantLock
   private val _signal = _lock.newCondition
   private var _completed: Boolean = _
-  private var _result: AnyRef = _
-  private var _exception: Exception = _
+  private var _result: Option[AnyRef] = None
+  private var _exception: Option[Throwable] = None
   
-  override def await = try {
+  override def await_? = try {
     _lock.lock
-    var wait = timeoutInNanos - currentTimeInNanos - _startTimeInNanos
+    var wait = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
     while (!_completed && wait > 0) {
       var start = currentTimeInNanos
       try {
         wait = _signal.awaitNanos(wait)
       } catch {
         case e: InterruptedException =>
-          wait = wait - currentTimeInNanos - start
+          wait = wait - (currentTimeInNanos - start)
       }
+    }
+  } finally {
+    _lock.unlock
+  }
+
+  override def await_! = try {
+    _lock.lock
+    while (!_completed) {
+      _signal.await
     }
   } finally {
     _lock.unlock
@@ -57,19 +71,19 @@ class GenericFutureResult(val timeoutInNanos: Long) extends CompletableFutureRes
 
   override def isExpired: Boolean = try {
     _lock.lock
-    timeoutInNanos - currentTimeInNanos - _startTimeInNanos <= 0
+    timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
   } finally {
     _lock.unlock
   }
 
-  override def result: AnyRef = try {
+  override def result: Option[AnyRef] = try {
     _lock.lock
     _result
   } finally {
     _lock.unlock
   }
 
-  override def exception: Exception = try {
+  override def exception: Option[Throwable] = try {
     _lock.lock
     _exception
   } finally {
@@ -80,19 +94,18 @@ class GenericFutureResult(val timeoutInNanos: Long) extends CompletableFutureRes
     _lock.lock
     if (!_completed) {
       _completed = true
-      _result = result
+      _result = Some(result)
     }
-
   } finally {
     _signal.signalAll
     _lock.unlock
   }
 
-  override def completeWithException(exception: Exception) = try {
+  override def completeWithException(exception: Throwable) = try {
     _lock.lock
     if (!_completed) {
       _completed = true
-      _exception = exception
+      _exception = Some(exception)
     }
 
   } finally {
@@ -100,16 +113,17 @@ class GenericFutureResult(val timeoutInNanos: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  private def currentTimeInNanos: Long = TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis)
+  private def currentTimeInNanos: Long = TIME_UNIT.toNanos(System.currentTimeMillis)
 }
 
 class NullFutureResult extends CompletableFutureResult {
   override def completeWithResult(result: AnyRef) = {}
-  override def completeWithException(exception: Exception) = {}
-  override def await: Unit = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  override def completeWithException(exception: Throwable) = {}
+  override def await_? = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  override def await_! = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def isCompleted: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def isExpired: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def timeoutInNanos: Long = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  override def result: AnyRef = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  override def exception: Exception = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  override def result: Option[AnyRef] = None
+  override def exception: Option[Throwable] = None
 }

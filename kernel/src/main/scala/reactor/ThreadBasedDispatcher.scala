@@ -10,65 +10,59 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-import java.util.concurrent.{ConcurrentHashMap, Executors}
-import java.util.concurrent.locks.ReentrantLock
-import java.util.{HashSet, LinkedList, Queue}
-
-class ThreadBasedDispatcher(val threadPoolSize: Int) extends MessageDispatcher {
-  private val handlers = new ConcurrentHashMap[AnyRef, MessageHandler]
+object ThreadBasedDispatcher extends MessageDispatcherBase {
+  import java.util.concurrent.Executors
+  import java.util.HashSet
+  
+  // FIXME: make configurable using configgy + JMX
+  // FIXME: create one executor per invocation to dispatch(..), grab config settings for specific actor (set in registerHandler)
+  private val threadPoolSize: Int = 10
   private val busyHandlers = new HashSet[AnyRef]
   private val handlerExecutor = Executors.newFixedThreadPool(threadPoolSize)
-  @volatile private var selectorThread: Thread = null
-  @volatile private var active: Boolean = false
 
-  def registerHandler(key: AnyRef, handler: MessageHandler) = handlers.put(key, handler)
-
-  def unregisterHandler(key: AnyRef) = handlers.remove(key)
-
-  def dispatch(messageQueue: MessageQueue) = {
-    if (!active) {
-      active = true
-      val messageDemultiplexer = new ThreadBasedDemultiplexer(messageQueue)
-      selectorThread = new Thread {
-        override def run = {
-          while (active) {
+  start
+  
+  def start = if (!active) {
+    active = true
+    val messageDemultiplexer = new ThreadBasedDemultiplexer(messageQueue)
+    selectorThread = new Thread {
+      override def run = {
+        while (active) {
+          try {
+            guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
             try {
               messageDemultiplexer.select
-              val handles = messageDemultiplexer.acquireSelectedQueue
-              for (index <- 0 to handles.size) {
-                val handle = handles.peek
-                val handler = checkIfNotBusyThenGet(handle.key)
-                if (handler.isDefined) {
-                  handlerExecutor.execute(new Runnable {
-                    override def run = {
-                      handler.get.handle(handle)
-                      free(handle.key)
-                      messageDemultiplexer.wakeUp
-                    }
-                  })
-                  handles.remove
-                }
+            } catch {case e: InterruptedException => active = false}
+            val queue = messageDemultiplexer.acquireSelectedQueue
+            for (index <- 0 until queue.size) {
+              val message = queue.peek
+              val messageHandler = getIfNotBusy(message.sender)
+              if (messageHandler.isDefined) {
+                handlerExecutor.execute(new Runnable {
+                  override def run = {
+                    messageHandler.get.handle(message)
+                    free(message.sender)
+                    messageDemultiplexer.wakeUp
+                  }
+                })
+                queue.remove
               }
-            } finally {
-              messageDemultiplexer.releaseSelectedQueue
             }
+          } finally {
+            messageDemultiplexer.releaseSelectedQueue
           }
         }
-      };
-      selectorThread.start();
-    }
+      }
+    };
+    selectorThread.start
   }
 
-  def shutdown = if (active) {
-    active = false
-    selectorThread.interrupt
-    handlerExecutor.shutdownNow
-  }
+  override protected def doShutdown = handlerExecutor.shutdownNow
 
-  private def checkIfNotBusyThenGet(key: AnyRef): Option[MessageHandler] = synchronized {
-    if (!busyHandlers.contains(key) && handlers.containsKey(key)) {
+  private def getIfNotBusy(key: AnyRef): Option[MessageHandler] = synchronized {
+    if (!busyHandlers.contains(key) && messageHandlers.containsKey(key)) {
       busyHandlers.add(key)
-      Some(handlers.get(key))
+      Some(messageHandlers.get(key))
     } else None
   }
 
@@ -76,6 +70,9 @@ class ThreadBasedDispatcher(val threadPoolSize: Int) extends MessageDispatcher {
 }
 
 class ThreadBasedDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
+  import java.util.concurrent.locks.ReentrantLock
+  import java.util.{LinkedList, Queue}
+
   private val selectedQueue: Queue[MessageHandle] = new LinkedList[MessageHandle]
   private val selectedQueueLock = new ReentrantLock
 

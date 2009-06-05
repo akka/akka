@@ -69,6 +69,27 @@ public class InMemoryStateTest extends TestCase {
    assertEquals("init", stateful.getVectorState()); // check that state is == init state
  }
 
+  public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    stateful.setRefState("init"); // set init state
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
+    assertEquals("new state", stateful.getRefState());
+  }
+
+  public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
+   InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+   stateful.setRefState("init"); // set init state
+   InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+   try {
+     stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+     fail("should have thrown an exception");
+   } catch (RuntimeException e) {
+   } // expected
+   assertEquals("init", stateful.getRefState()); // check that state is == init state
+ }
+
+ /*
   public void testNestedNonTransactionalMethodHangs() {
    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
    stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
@@ -80,9 +101,7 @@ public class InMemoryStateTest extends TestCase {
    } // expected
    assertEquals("init", stateful.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
  }
-
-  /*
-  */
+ */
   // public void testShouldRollbackStateForStatefulServerInCaseOfMessageClash()
   // {
   // InMemStateful stateful = conf.getActiveObject(InMemStateful.class);

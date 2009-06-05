@@ -102,18 +102,30 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   def invoke(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val method = rtti.getMethod
-
     if (method.isAnnotationPresent(Annotations.transactional)) {
       tryToCommitTransaction
       startNewTransaction
     }
     joinExistingTransaction
-
-    val result: AnyRef = if (rtti.getMethod.isAnnotationPresent(Annotations.oneway)) sendOneWay(joinpoint)
-                         else handleResult(sendAndReceiveEventually(joinpoint))
-    tryToPrecommitTransaction
+    incrementTransaction
+    val result: AnyRef = try {
+      if (rtti.getMethod.isAnnotationPresent(Annotations.oneway)) sendOneWay(joinpoint)
+      else handleResult(sendAndReceiveEventually(joinpoint))
+    } finally {
+      decrementTransaction
+      tryToPrecommitTransaction
+      removeTransactionIfTopLevel
+    }
     result
   }
+
+  private def incrementTransaction =  if (activeTx.isDefined) activeTx.get.increment
+  private def decrementTransaction =  if (activeTx.isDefined) activeTx.get.decrement
+  private def removeTransactionIfTopLevel =
+    if (activeTx.isDefined && activeTx.get.topLevel_?) {
+      activeTx = None
+      threadBoundTx.set(None)
+    }
 
   private def startNewTransaction = {
     val newTx = new Transaction
@@ -131,10 +143,7 @@ sealed class TransactionalAroundAdvice(target: Class[_],
     activeTx = threadBoundTx.get
   }
 
-  private def tryToPrecommitTransaction = {
-    // FIXME: clear threadBoundTx on successful commit
-    if (activeTx.isDefined) activeTx.get.precommit(server)
-  }
+  private def tryToPrecommitTransaction = if (activeTx.isDefined) activeTx.get.precommit(server)
 
   private def tryToCommitTransaction = if (activeTx.isDefined) {
     val tx = activeTx.get

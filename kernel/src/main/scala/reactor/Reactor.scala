@@ -12,10 +12,14 @@ package se.scalablesolutions.akka.kernel.reactor
 
 import java.util.{LinkedList, Queue}
 
+trait MessageHandler {
+  def handle(message: MessageHandle)
+}
+
 trait MessageDispatcher {
   def registerHandler(key: AnyRef, handler: MessageHandler)
   def unregisterHandler(key: AnyRef)
-  def dispatch(messageQueue: MessageQueue)
+  def start
   def shutdown
 }
 
@@ -26,11 +30,11 @@ trait MessageDemultiplexer {
   def wakeUp
 }
 
-class MessageHandle(val key: AnyRef, val message: AnyRef, val future: CompletableFutureResult) {
+class MessageHandle(val sender: AnyRef, val message: AnyRef, val future: CompletableFutureResult) {
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
-    result = HashCode.hash(result, key)
+    result = HashCode.hash(result, sender)
     result = HashCode.hash(result, message)
     result = HashCode.hash(result, future)
     result
@@ -39,40 +43,33 @@ class MessageHandle(val key: AnyRef, val message: AnyRef, val future: Completabl
   override def equals(that: Any): Boolean =
     that != null &&
     that.isInstanceOf[MessageHandle] &&
-    that.asInstanceOf[MessageHandle].key == key &&
+    that.asInstanceOf[MessageHandle].sender == sender &&
     that.asInstanceOf[MessageHandle].message == message &&
     that.asInstanceOf[MessageHandle].future == future
 }
 
-trait MessageHandler {
-  def handle(message: MessageHandle)
-}
-
-
 class MessageQueue {
-  private val handles: Queue[MessageHandle] = new LinkedList[MessageHandle]
+  private val queue: Queue[MessageHandle] = new LinkedList[MessageHandle]
   @volatile private var interrupted = false
 
-  def put(handle: MessageHandle) = handles.synchronized {
-    handles.offer(handle)
-    handles.notifyAll
+  def append(handle: MessageHandle) = queue.synchronized {
+    queue.offer(handle)
+    queue.notifyAll
   }
 
-  def read(destination: Queue[MessageHandle]) = handles.synchronized {
-    while (handles.isEmpty && !interrupted) {
-      handles.wait
-    }
-    if (!interrupted) {
-      while (!handles.isEmpty) {
-        destination.offer(handles.remove)
-      }
-    } else {
-      interrupted = false
-    }
+  def prepend(handle: MessageHandle) = queue.synchronized {
+    queue.add(handle)
+    queue.notifyAll
+  }
+  
+  def read(destination: Queue[MessageHandle]) = queue.synchronized {
+    while (queue.isEmpty && !interrupted) queue.wait
+    if (!interrupted) while (!queue.isEmpty) destination.offer(queue.remove)
+    else interrupted = false
   }
 
-  def interrupt = handles.synchronized {
+  def interrupt = queue.synchronized {
     interrupted = true
-    handles.notifyAll
+    queue.notifyAll
   }
 }

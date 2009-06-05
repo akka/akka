@@ -4,8 +4,9 @@
 
 package se.scalablesolutions.akka.kernel
 
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import scala.collection.mutable.{HashSet, HashMap}
+
 sealed abstract class TransactionStatus
 object TransactionStatus {
   case object New extends TransactionStatus
@@ -39,8 +40,13 @@ class Transaction extends Logging {
   private[this] var parent: Option[Transaction] = None
   private[this] val participants = new HashSet[GenericServerContainer]
   private[this] val precommitted = new HashSet[GenericServerContainer]
+  private[this] val depth = new AtomicInteger(0)
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
 
+  def increment = depth.incrementAndGet
+  def decrement = depth.decrementAndGet
+  def topLevel_? = depth.get == 0
+  
   def begin(server: GenericServerContainer) = synchronized {
     ensureIsActiveOrNew
     if (status == TransactionStatus.New) log.info("Server [%s] is starting NEW transaction [%s]", server.id, this)
