@@ -27,8 +27,8 @@ public class PersistentStateTest extends TestCase {
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {
           new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 10000000),
-          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000),
-          new Component(PersistentClasher.class, new LifeCycle(new Permanent(), 1000), 100000) 
+          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000)
+          //new Component(PersistentClasher.class, new LifeCycle(new Permanent(), 1000), 100000) 
         }).supervise();
   }
 
@@ -38,21 +38,62 @@ public class PersistentStateTest extends TestCase {
   
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-    stateful.setState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
+    stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
-    assertEquals("new state", stateful.getState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
+    assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
-  public void testShouldRollbackStateForStatefulServerInCaseOfFailure() {
+  public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
+   PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+   stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
+   PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+   try {
+     stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+     fail("should have thrown an exception");
+   } catch (RuntimeException e) {
+   } // expected
+   assertEquals("init", stateful.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
+ }
+
+  public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-    stateful.setState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
-    try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
-      fail("should have thrown an exception");
-    } catch (RuntimeException e) {
-    } // expected
-    assertEquals("init", stateful.getState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
+    stateful.setVectorState("init"); // set init state
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
+    assertEquals("new state", stateful.getVectorState());
   }
+
+  public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
+   PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+   stateful.setVectorState("init"); // set init state
+   PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+   try {
+     stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+     fail("should have thrown an exception");
+   } catch (RuntimeException e) {
+   } // expected
+   assertEquals("init", stateful.getVectorState()); // check that state is == init state
+ }
+/*
+  public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+    stateful.setRefState("init"); // set init state
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
+    assertEquals("new state", stateful.getRefState());
+  }
+
+  public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
+   PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+   stateful.setRefState("init"); // set init state
+   PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+   try {
+     stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+     fail("should have thrown an exception");
+   } catch (RuntimeException e) {
+   } // expected
+   assertEquals("init", stateful.getRefState()); // check that state is == init state
+ }
+ */
 }

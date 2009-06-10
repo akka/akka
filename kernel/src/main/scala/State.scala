@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.kernel
 
+import org.codehaus.aspectwerkz.proxy.Uuid
 import se.scalablesolutions.akka.collection._
 import scala.collection.mutable.HashMap
 
@@ -11,6 +12,7 @@ import scala.collection.mutable.HashMap
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Transactional {
+  val uuid = Uuid.newUuid.toString
   private[kernel] def begin
   private[kernel] def commit
   private[kernel] def rollback
@@ -60,7 +62,7 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
 }
 
 /**
- * Base class for all persistent state implementations should extend.
+ * Base class for all persistent transactional map implementations should extend.
  * Implements a Unit of Work, records changes into a change set.
  * 
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
@@ -68,6 +70,8 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
+
+  // FIXME: need to handle remove in another changeSet
   protected[kernel] val changeSet = new HashMap[K, V]
   
   def getRange(start: Int, count: Int)
@@ -87,56 +91,56 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 }
 
 /**
- * Implements a persistent state based on the Cassandra distributed P2P key-value storage. 
- * 
+ * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage. 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class CassandraPersistentTransactionalMap(actorNameInstance: AnyRef)
     extends PersistentTransactionalMap[String, AnyRef] {
-  
+
   val actorName = actorNameInstance.getClass.getName
 
-  override def getRange(start: Int, count: Int) = CassandraNode.getActorStorageRange(actorName, start, count)
+  override def getRange(start: Int, count: Int) = CassandraNode.getMapStorageRangeFor(uuid, start, count)
 
   // ---- For Transactional ----
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
     for (entry <- changeSet) {
       val (key, value) = entry
-      CassandraNode.insertActorStorageEntry(actorName, key, value)
+      CassandraNode.insertMapStorageEntryFor(uuid, key, value)
     }
   }
-  
+
   // ---- Overriding scala.collection.mutable.Map behavior ----
-  override def clear = CassandraNode.removeActorStorageFor(actorName)
-  override def contains(key: String): Boolean = CassandraNode.getActorStorageEntryFor(actorName, key).isDefined
-  override def size: Int = CassandraNode.getActorStorageSizeFor(actorName)
- 
+  override def clear = CassandraNode.removeMapStorageFor(uuid)
+  override def contains(key: String): Boolean = CassandraNode.getMapStorageEntryFor(uuid, key).isDefined
+  override def size: Int = CassandraNode.getMapStorageSizeFor(uuid)
+
   // ---- For scala.collection.mutable.Map ----
-  override def get(key: String): Option[AnyRef] = CassandraNode.getActorStorageEntryFor(actorName, key)
+  override def get(key: String): Option[AnyRef] =  CassandraNode.getMapStorageEntryFor(uuid, key)
   override def elements: Iterator[Tuple2[String, AnyRef]]  = {
     new Iterator[Tuple2[String, AnyRef]] {
-      private val originalList: List[Tuple2[String, AnyRef]] = CassandraNode.getActorStorageFor(actorName) 
+      private val originalList: List[Tuple2[String, AnyRef]] = CassandraNode.getMapStorageFor(uuid)
       private var elements = originalList.reverse
       override def next: Tuple2[String, AnyRef]= synchronized {
         val element = elements.head
         elements = elements.tail
         element
-      }      
+      }
       override def hasNext: Boolean = synchronized { !elements.isEmpty }
     }
   }
 }
 
 /**
- * TODO: extend scala.Seq
  * Base for all transactional vector implementations.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
   def add(elem: T)
   def get(index: Int): T
+  def getRange(start: Int, count: Int): List[T]
 }
 
 /**
@@ -150,8 +154,9 @@ class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
   private[kernel] var state: Vector[T] = EmptyVector
   private[kernel] var snapshot = state
 
-  override def add(elem: T) = state = state + elem
-  override def get(index: Int): T = state(index)
+  def add(elem: T) = state = state + elem
+  def get(index: Int): T = state(index)
+  def getRange(start: Int, count: Int): List[T] = state.slice(start, count).toList.asInstanceOf[List[T]]
 
   // ---- For Transactional ----
   override def begin = snapshot = state
@@ -163,6 +168,52 @@ class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
   def apply(index: Int): T = state(index)
   override def elements: Iterator[T] = state.elements
   override def toList: List[T] = state.toList
+}
+
+/**
+ * Base class for all persistent transactional vector implementations should extend.
+ * Implements a Unit of Work, records changes into a change set.
+ *
+ * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
+
+  // FIXME: need to handle remove in another changeSet
+  protected[kernel] var changeSet: List[T] = Nil
+
+  // ---- For Transactional ----
+  override def begin = changeSet = Nil
+  override def rollback = {}
+
+  // ---- For TransactionalVector ----
+  override def add(value: T) = changeSet ::= value
+}
+
+/**
+ * Implements a persistent transactional vector based on the Cassandra distributed P2P key-value storage.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class CassandraPersistentTransactionalVector(actorNameInstance: AnyRef)
+    extends PersistentTransactionalVector[AnyRef] {
+
+  val actorName = actorNameInstance.getClass.getName
+
+  // ---- For TransactionalVector ----
+  override def get(index: Int): AnyRef = CassandraNode.getVectorStorageEntryFor(uuid, index)
+  override def getRange(start: Int, count: Int): List[AnyRef] = CassandraNode.getVectorStorageRangeFor(uuid, start, count)
+  override def length: Int = CassandraNode.getVectorStorageSizeFor(uuid)
+  override def apply(index: Int): AnyRef = get(index)
+  override def first: AnyRef = get(0)
+  override def last: AnyRef = get(length)
+
+  // ---- For Transactional ----
+  override def commit = {
+    // FIXME: should use batch function once the bug is resolved
+    for (element <- changeSet) CassandraNode.insertVectorStorageEntryFor(uuid, element)
+  }
 }
 
 /**

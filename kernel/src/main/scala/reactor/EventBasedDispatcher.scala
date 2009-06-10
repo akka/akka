@@ -10,10 +10,8 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-object EventBasedDispatcher extends MessageDispatcherBase {
+class EventBasedDispatcher extends MessageDispatcherBase {
 
-  start
-  
   //def dispatch(messageQueue: MessageQueue) = if (!active) {
   def start = if (!active) {
     active = true

@@ -1,42 +1,56 @@
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.kernel.TransactionalMap;
-import se.scalablesolutions.akka.kernel.CassandraPersistentTransactionalMap;
+import se.scalablesolutions.akka.kernel.*;
 import se.scalablesolutions.akka.annotation.transactional;
+import se.scalablesolutions.akka.annotation.state;
 
 public class PersistentStateful {
-  private TransactionalMap state = new CassandraPersistentTransactionalMap(this);
+  private TransactionalMap mapState = new CassandraPersistentTransactionalMap(this);
+  private TransactionalVector vectorState = new CassandraPersistentTransactionalVector(this);
+  //private TransactionalRef refState = new CassandraPersistentTransactionalRef(this);
 
-  public String getState(String key) {
-    return (String)state.get(key).get();
+  public String getMapState(String key) {
+    return (String) mapState.get(key).get();
   }
 
-  public void setState(String key, String msg) {
-    state.put(key, msg);
+  public String getVectorState() {
+    return (String) vectorState.first();
   }
+
+//  public String getRefState() {
+//    return (String) refState.get().get();
+//  }
+
+  public void setMapState(String key, String msg) {
+    mapState.put(key, msg);
+  }
+
+  public void setVectorState(String msg) {
+    vectorState.add(msg);
+  }
+
+//  public void setRefState(String msg) {
+//    refState.swap(msg);
+//  }
 
   @transactional
   public void success(String key, String msg) {
-    state.put(key, msg);
+    mapState.put(key, msg);
+    vectorState.add(msg);
+//    refState.swap(msg);
   }
 
   @transactional
   public void failure(String key, String msg, PersistentFailer failer) {
-    state.put(key, msg);
+    mapState.put(key, msg);
+    vectorState.add(msg);
+//    refState.swap(msg);
     failer.fail();
   }
 
   @transactional
-  public void clashOk(String key, String msg, PersistentClasher clasher) {
-    state.put(key, msg);
-    clasher.clash();
-  }
-
-  @transactional
-  public void clashNotOk(String key, String msg, PersistentClasher clasher) {
-    state.put(key, msg);
-    clasher.clash();
-    clasher.clash();
+  public void thisMethodHangs(String key, String msg, PersistentFailer failer) {
+    setMapState(key, msg);
   }
 }
 

@@ -26,6 +26,7 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
 trait Actor {  
   private[this] val linkedActors = new ConcurrentSkipListSet[Actor]
 
+  private[this] var dispatcher: MessageDispatcher = _
   private[this] var mailbox: MessageQueue = _
   private[this] var senderFuture: Option[CompletableFutureResult] = None
   @volatile private var isRunning: Boolean = false
@@ -119,12 +120,13 @@ trait Actor {
     if (!isRunning) {
       dispatcherType match {
         case EventBased =>
-          mailbox = EventBasedDispatcher.messageQueue
-          EventBasedDispatcher.registerHandler(this, new ActorMessageHandler(this))
+          dispatcher = new EventBasedDispatcher
         case ThreadBased =>
-          mailbox = ThreadBasedDispatcher.messageQueue
-          ThreadBasedDispatcher.registerHandler(this, new ActorMessageHandler(this))
+          dispatcher = new ThreadBasedDispatcher
       }
+      mailbox = dispatcher.messageQueue
+      dispatcher.registerHandler(this, new ActorMessageHandler(this))
+      dispatcher.start
       isRunning = true
     }
   }
@@ -132,10 +134,7 @@ trait Actor {
   def stop =
     if (isRunning) {
       this ! Stop("Actor gracefully stopped")
-      dispatcherType match {
-        case EventBased => EventBasedDispatcher.unregisterHandler(this)
-        case ThreadBased => ThreadBasedDispatcher.unregisterHandler(this)
-      }
+      dispatcher.unregisterHandler(this)
       isRunning = false
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 

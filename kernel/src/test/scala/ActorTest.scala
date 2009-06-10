@@ -36,7 +36,7 @@ class ActorTest {
     val result = actor ! "OneWay"
     Thread.sleep(100)
     assertEquals("received", oneWay)
-    //actor.stop
+    actor.stop
   }
 
   @Test
@@ -46,7 +46,7 @@ class ActorTest {
     actor.start
     val result = actor !? "Hello"
     assertEquals("World", result.get.asInstanceOf[String])
-    //actor.stop
+    actor.stop
   }
 
   @Test
@@ -56,7 +56,7 @@ class ActorTest {
     actor.start
     val result = actor !! "Hello"
     assertEquals("World", result.get.asInstanceOf[String])
-    //actor.stop
+    actor.stop
   }
 
   @Test
@@ -71,6 +71,6 @@ class ActorTest {
       case e =>
         assertEquals("expected", e.getMessage())
     }
-    //actor.stop
+    actor.stop
   }
 }

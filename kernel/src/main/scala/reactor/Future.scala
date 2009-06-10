@@ -10,6 +10,8 @@ package se.scalablesolutions.akka.kernel.reactor
 import java.util.concurrent.locks.{Lock, Condition, ReentrantLock}
 import java.util.concurrent.TimeUnit
 
+class FutureTimeoutException(message: String) extends RuntimeException(message)
+
 sealed trait FutureResult {
   def await_?
   def await_!
@@ -44,6 +46,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
       var start = currentTimeInNanos
       try {
         wait = _signal.awaitNanos(wait)
+        if (wait <= 0) throw new FutureTimeoutException("Future timed out after [" + timeout + "] milliseconds") 
       } catch {
         case e: InterruptedException =>
           wait = wait - (currentTimeInNanos - start)

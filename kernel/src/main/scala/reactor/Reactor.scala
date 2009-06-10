@@ -17,6 +17,7 @@ trait MessageHandler {
 }
 
 trait MessageDispatcher {
+  def messageQueue: MessageQueue
   def registerHandler(key: AnyRef, handler: MessageHandler)
   def unregisterHandler(key: AnyRef)
   def start

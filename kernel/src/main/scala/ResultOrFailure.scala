@@ -47,7 +47,7 @@ class ResultOrFailure[Payload](payload: Payload, val tx: Option[Transaction]) {
 
   def apply() = contents match {
     case Right(payload) => payload
-    case Left(e) => throw e.fillInStackTrace
+    case Left(e) => throw e
   }
 
   override def toString(): String = "ResultOrFailure[" + contents + "]"

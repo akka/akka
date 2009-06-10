@@ -35,6 +35,8 @@
    <Tables>
      <Table Name="akka">
        <ColumnFamily ColumnSort="Name" Name="map"/>
+       <ColumnFamily ColumnSort="Name" Name="vector"/>
+       <ColumnFamily ColumnSort="Name" Name="ref"/>
        <!--ColumnFamily ColumnType="Super" ColumnSort="Name" Name="Super2"/-->
      </Table>
    </Tables>

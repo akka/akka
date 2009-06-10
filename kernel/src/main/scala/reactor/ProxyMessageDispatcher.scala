@@ -10,21 +10,20 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-class ThreadBasedDispatcher extends MessageDispatcherBase {
+class ProxyMessageDispatcher extends MessageDispatcherBase {
   import java.util.concurrent.Executors
   import java.util.HashSet
+  import org.codehaus.aspectwerkz.joinpoint.JoinPoint
   
   // FIXME: make configurable using configgy + JMX
   // FIXME: create one executor per invocation to dispatch(..), grab config settings for specific actor (set in registerHandler)
   private val threadPoolSize: Int = 100
-  private val busyHandlers = new HashSet[AnyRef]
   private val handlerExecutor = Executors.newCachedThreadPool()
 
   def start = if (!active) {
     active = true
-    val messageDemultiplexer = new ThreadBasedDemultiplexer(messageQueue)
+    val messageDemultiplexer = new ProxyMessageDemultiplexer(messageQueue)
     selectorThread = new Thread {
-      //val enqued = new LinkedList[MessageHandle]
       override def run = {
         while (active) {
           try {
@@ -33,29 +32,20 @@ class ThreadBasedDispatcher extends MessageDispatcherBase {
               messageDemultiplexer.select
             } catch {case e: InterruptedException => active = false}
             val queue = messageDemultiplexer.acquireSelectedQueue
-            println("--- QUEUE " + queue.size)
-//            while (!queue.isEmpty) {
             for (index <- 0 until queue.size) {
-              val message = queue.peek
-              println("------ MESSAGE: " + message)
-              val messageHandler = getIfNotBusy(message.sender)
-              println("------ MESSAGEHANDLER: " + messageHandler)
-              if (messageHandler.isDefined) {
-                println("-------- SCHEDULING MESSAGE")
-                handlerExecutor.execute(new Runnable {
-                  override def run = {
-                    messageHandler.get.handle(message)
-                    free(message.sender)
-                    messageDemultiplexer.wakeUp
+              val handle = queue.remove
+              handlerExecutor.execute(new Runnable {
+                override def run = {
+                  try {
+                    val result = handle.message.asInstanceOf[Invocation].joinpoint.proceed
+                    handle.future.completeWithResult(result)
+                  } catch {
+                    case e: Exception => handle.future.completeWithException(e)
                   }
-                })
-                queue.remove
-              }
+                  messageDemultiplexer.wakeUp
+                }
+              })
             }
-//            }
-            if (!queue.isEmpty) {
-              for (index <- 0 until queue.size) messageQueue.append(queue.remove)
-             }
           } finally {
             messageDemultiplexer.releaseSelectedQueue
           }
@@ -66,18 +56,9 @@ class ThreadBasedDispatcher extends MessageDispatcherBase {
   }
 
   override protected def doShutdown = handlerExecutor.shutdownNow
-
-  private def getIfNotBusy(key: AnyRef): Option[MessageHandler] = synchronized {
-    if (!busyHandlers.contains(key) && messageHandlers.containsKey(key)) {
-      busyHandlers.add(key)
-      Some(messageHandlers.get(key))
-    } else None
-  }
-
-  private def free(key: AnyRef) = synchronized { busyHandlers.remove(key) }
 }
 
-class ThreadBasedDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
+class ProxyMessageDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
   import java.util.concurrent.locks.ReentrantLock
   import java.util.{LinkedList, Queue}
 

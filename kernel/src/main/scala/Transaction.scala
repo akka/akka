@@ -49,8 +49,8 @@ class Transaction extends Logging {
   
   def begin(server: GenericServerContainer) = synchronized {
     ensureIsActiveOrNew
-    if (status == TransactionStatus.New) log.info("Server [%s] is starting NEW transaction [%s]", server.id, this)
-    else log.info("Server [%s] is participating in transaction", server)
+    if (status == TransactionStatus.New) log.debug("Server [%s] is starting NEW transaction [%s]", server.id, this)
+    else log.debug("Server [%s] is participating in transaction", server)
     server.transactionalItems.foreach(_.begin)
     participants + server
     status = TransactionStatus.Active
@@ -58,14 +58,14 @@ class Transaction extends Logging {
 
   def precommit(server: GenericServerContainer) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.info("Pre-committing transaction [%s] for server [%s]", this, server.id)
+      log.debug("Pre-committing transaction [%s] for server [%s]", this, server.id)
       precommitted + server
     }
   }
 
   def commit(server: GenericServerContainer) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.info("Committing transaction [%s] for server [%s]", this, server.id)
+      log.debug("Committing transaction [%s] for server [%s]", this, server.id)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
           for (server <- participants) yield {
@@ -85,17 +85,22 @@ class Transaction extends Logging {
 
   def rollback(server: GenericServerContainer) = synchronized {
     ensureIsActiveOrAborted
-    log.info("Server [%s] has initiated transaction rollback for [%s], rolling back [%s]", server.id, this, participants)
+    log.debug("Server [%s] has initiated transaction rollback for [%s], rolling back [%s]", server.id, this, participants)
     participants.foreach(_.transactionalItems.foreach(_.rollback))
     status = TransactionStatus.Aborted
   }
 
   def join(server: GenericServerContainer) = synchronized {
     ensureIsActive
-    log.info("Server [%s] is joining transaction [%s]" , server.id, this)
+    log.debug("Server [%s] is joining transaction [%s]" , server.id, this)
     server.transactionalItems.foreach(_.begin)
     participants + server
   }
+
+  def isNew = status == TransactionStatus.New
+  def isActive = status == TransactionStatus.Active
+  def isCompleted = status == TransactionStatus.Completed
+  def isAborted = status == TransactionStatus.Aborted
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new IllegalStateException("Expected ACTIVE transaction - current status [" + status + "]")

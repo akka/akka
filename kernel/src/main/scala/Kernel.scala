@@ -78,7 +78,7 @@ object Kernel extends Logging {
  
     println("=================================================")
     var start = System.currentTimeMillis
-    for (i <- 1 to NR_ENTRIES) CassandraNode.insertActorStorageEntry("test", i.toString, "data")
+    for (i <- 1 to NR_ENTRIES) CassandraNode.insertMapStorageEntryFor("test", i.toString, "data")
     var end = System.currentTimeMillis
     println("Writes per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
 
@@ -109,7 +109,7 @@ java.lang.ClassCastException: [B cannot be cast to org.apache.cassandra.db.Write
     */
     println("=================================================")
     start = System.currentTimeMillis
-    for (i <- 1 to NR_ENTRIES) CassandraNode.getActorStorageEntryFor("test", i.toString)
+    for (i <- 1 to NR_ENTRIES) CassandraNode.getMapStorageEntryFor("test", i.toString)
     end = System.currentTimeMillis
     println("Reads per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
 

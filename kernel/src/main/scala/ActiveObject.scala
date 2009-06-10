@@ -95,6 +95,11 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   server.transactionalMaps = maps
   server.transactionalVectors = vectors
 
+  import kernel.reactor._
+  private[this] var dispatcher = new ProxyMessageDispatcher
+  private[this] var mailbox = dispatcher.messageQueue
+  dispatcher.start
+  
   import ActiveObject.threadBoundTx
   private[this] var activeTx: Option[Transaction] = None
 
@@ -113,12 +118,13 @@ sealed class TransactionalAroundAdvice(target: Class[_],
       else handleResult(sendAndReceiveEventually(joinpoint))
     } finally {
       decrementTransaction
-      tryToPrecommitTransaction
-      removeTransactionIfTopLevel
+      if (isTransactionAborted) removeTransactionIfTopLevel
+      else tryToPrecommitTransaction
     }
     result
   }
 
+  private def isTransactionAborted = activeTx.isDefined && activeTx.get.isAborted
   private def incrementTransaction =  if (activeTx.isDefined) activeTx.get.increment
   private def decrementTransaction =  if (activeTx.isDefined) activeTx.get.decrement
   private def removeTransactionIfTopLevel =
@@ -148,8 +154,7 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   private def tryToCommitTransaction = if (activeTx.isDefined) {
     val tx = activeTx.get
     tx.commit(server)
-    threadBoundTx.set(None)
-    activeTx = None
+    removeTransactionIfTopLevel
   }
 
   private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
@@ -166,18 +171,30 @@ sealed class TransactionalAroundAdvice(target: Class[_],
     case None => {} // no tx; nothing to do
     case Some(tx) =>
       tx.rollback(server)
-      threadBoundTx.set(Some(tx))
   }
 
-  private def sendOneWay(joinpoint: JoinPoint) = server ! Invocation(joinpoint, activeTx)
+  private def sendOneWay(joinpoint: JoinPoint) = 
+    mailbox.append(new MessageHandle(this, Invocation(joinpoint, activeTx), new NullFutureResult))
 
   private def sendAndReceiveEventually(joinpoint: JoinPoint): ResultOrFailure[AnyRef] = {
-    server !!! (Invocation(joinpoint, activeTx), {
-      var resultOrFailure = ResultOrFailure(activeTx)
-      resultOrFailure() = throw new ActiveObjectInvocationTimeoutException("Invocation to active object [" + targetInstance.getClass.getName + "] timed out after " + server.timeout + " milliseconds")
-      resultOrFailure
-    })
+    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(Invocation(joinpoint, activeTx), 1000)
+    future.await_?
+    getResultOrThrowException(future)
   }
+
+  private def postMessageToMailboxAndCreateFutureResultWithTimeout(
+    message: AnyRef, timeout: Long): CompletableFutureResult = {
+    val future = new DefaultCompletableFutureResult(timeout)
+    mailbox.append(new MessageHandle(this, message, future))
+    future
+  }
+
+  private def getResultOrThrowException[T](future: FutureResult): ResultOrFailure[AnyRef] =
+    if (future.exception.isDefined) {
+      var resultOrFailure = ResultOrFailure(activeTx)
+      resultOrFailure() = throw future.exception.get
+      resultOrFailure
+    } else ResultOrFailure(future.result.get, activeTx)
 
   /**
    * Search for transactional items for a specific target instance, crawl the class hierarchy recursively up to the top.

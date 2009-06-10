@@ -57,10 +57,11 @@ class EventBasedDispatcherTest {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(10)
     val key = "key"
-    EventBasedDispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
-    EventBasedDispatcher.start
+    val dispatcher = new EventBasedDispatcher
+    dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
+    dispatcher.start
     for (i <- 0 until 10) {
-      EventBasedDispatcher.messageQueue.append(new MessageHandle(key, new Object, new NullFutureResult))
+      dispatcher.messageQueue.append(new MessageHandle(key, new Object, new NullFutureResult))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
@@ -70,11 +71,12 @@ class EventBasedDispatcherTest {
     val handleLatch = new CountDownLatch(2)
     val key1 = "key1"
     val key2 = "key2"
-    EventBasedDispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
-    EventBasedDispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
-    EventBasedDispatcher.start
-    EventBasedDispatcher.messageQueue.append(new MessageHandle(key1, new Object, new NullFutureResult))
-    EventBasedDispatcher.messageQueue.append(new MessageHandle(key2, new Object, new NullFutureResult))
+    val dispatcher = new EventBasedDispatcher
+    dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
+    dispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
+    dispatcher.start
+    dispatcher.messageQueue.append(new MessageHandle(key1, new Object, new NullFutureResult))
+    dispatcher.messageQueue.append(new MessageHandle(key2, new Object, new NullFutureResult))
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
   }
@@ -83,7 +85,8 @@ class EventBasedDispatcherTest {
     val handleLatch = new CountDownLatch(200)
     val key1 = "key1"
     val key2 = "key2"
-    EventBasedDispatcher.registerHandler(key1, new MessageHandler {
+    val dispatcher = new EventBasedDispatcher
+    dispatcher.registerHandler(key1, new MessageHandler {
       var currentValue = -1;
       def handle(message: MessageHandle) {
         if (threadingIssueDetected.get) return
@@ -94,7 +97,7 @@ class EventBasedDispatcherTest {
         } else threadingIssueDetected.set(true)
       }
     })
-    EventBasedDispatcher.registerHandler(key2, new MessageHandler {
+    dispatcher.registerHandler(key2, new MessageHandler {
       var currentValue = -1;
       def handle(message: MessageHandle) {
         if (threadingIssueDetected.get) return
@@ -105,12 +108,13 @@ class EventBasedDispatcherTest {
         } else threadingIssueDetected.set(true)
       }
     })
-    EventBasedDispatcher.start
+    dispatcher.start
     for (i <- 0 until 100) {
-      EventBasedDispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), new NullFutureResult))
-      EventBasedDispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), new NullFutureResult))
+      dispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), new NullFutureResult))
+      dispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), new NullFutureResult))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
+    dispatcher.shutdown
   }
 }

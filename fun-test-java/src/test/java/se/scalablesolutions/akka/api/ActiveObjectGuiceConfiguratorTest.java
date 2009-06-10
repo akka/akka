@@ -95,7 +95,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     try {
       foo.longRunning();
       fail("exception should have been thrown");
-    } catch (se.scalablesolutions.akka.kernel.ActiveObjectInvocationTimeoutException e) {
+    } catch (se.scalablesolutions.akka.kernel.reactor.FutureTimeoutException e) {
     }
   }
 

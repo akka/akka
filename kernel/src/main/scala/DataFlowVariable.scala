@@ -48,7 +48,7 @@ object DataFlow {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  sealed class DataFlowVariable[T] {
+  sealed class DataFlowVariable[T] {                                                                     
   
     private sealed abstract class DataFlowVariableMessage
     private case class Set[T](value: T) extends DataFlowVariableMessage
