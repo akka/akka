@@ -254,7 +254,7 @@ private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
       }
 
     case 'exit =>
-      exit; reply()
+      exit
 
 /*    case exchange: Exchange =>
       println("=============> Exchange From Actor: " + exchange)

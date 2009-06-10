@@ -11,8 +11,6 @@
 package se.scalablesolutions.akka.kernel.reactor
 
 class EventBasedDispatcher extends MessageDispatcherBase {
-
-  //def dispatch(messageQueue: MessageQueue) = if (!active) {
   def start = if (!active) {
     active = true
     val messageDemultiplexer = new EventBasedDemultiplexer(messageQueue)

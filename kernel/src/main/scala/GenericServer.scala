@@ -98,7 +98,7 @@ class GenericServerContainer(
   private[kernel] def transactionalItems: List[Transactional] = txItemsLock.withReadLock {
     _transactionalMaps ::: _transactionalVectors ::: _transactionalRefs
   }
-  
+
   // TX Maps
   private[kernel] var _transactionalMaps: List[TransactionalMap[_, _]] = Nil
   private[kernel] def transactionalMaps_=(maps: List[TransactionalMap[_, _]]) = txItemsLock.withWriteLock {
@@ -282,7 +282,7 @@ class GenericServerContainer(
     server = serializer.deepClone(server)
     oldServer
   }
-  
+
   private[kernel] def swapServer(newServer: GenericServer) = lock.withWriteLock {
     server = newServer
   }

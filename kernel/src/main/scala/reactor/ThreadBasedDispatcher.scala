@@ -30,6 +30,7 @@ class ThreadBasedDispatcher extends MessageDispatcherBase {
           try {
             guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
             try {
+              guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
             } catch {case e: InterruptedException => active = false}
             val queue = messageDemultiplexer.acquireSelectedQueue
