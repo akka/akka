@@ -39,7 +39,7 @@ class ThreadBasedDispatcherTest {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(100)
     val key = "key"
-    val dispatcher = new ThreadBasedDispatcher
+    val dispatcher = new EventBasedThreadPoolDispatcher
     dispatcher.registerHandler(key, new MessageHandler {
       def handle(message: MessageHandle) {
         try {
@@ -68,7 +68,7 @@ class ThreadBasedDispatcherTest {
     val handlersBarrier = new CyclicBarrier(3)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = new ThreadBasedDispatcher
+    val dispatcher = new EventBasedThreadPoolDispatcher
     dispatcher.registerHandler(key1, new MessageHandler {
       def handle(message: MessageHandle) = synchronized {
         try {handlersBarrier.await(1, TimeUnit.SECONDS)}
@@ -93,7 +93,7 @@ class ThreadBasedDispatcherTest {
     val handleLatch = new CountDownLatch(200)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = new ThreadBasedDispatcher
+    val dispatcher = new EventBasedThreadPoolDispatcher
     dispatcher.registerHandler(key1, new MessageHandler {
       var currentValue = -1;
       def handle(message: MessageHandle) {

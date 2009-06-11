@@ -10,10 +10,10 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-class EventBasedDispatcher extends MessageDispatcherBase {
+class EventBasedSingleThreadDispatcher extends MessageDispatcherBase {
   def start = if (!active) {
     active = true
-    val messageDemultiplexer = new EventBasedDemultiplexer(messageQueue)
+    val messageDemultiplexer = new EventBasedSingleThreadDemultiplexer(messageQueue)
     selectorThread = new Thread {
       override def run = {
         while (active) {
@@ -34,7 +34,7 @@ class EventBasedDispatcher extends MessageDispatcherBase {
   }
 }
 
-class EventBasedDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
+class EventBasedSingleThreadDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
   import java.util.{LinkedList, Queue}
 
   private val selectedQueue: Queue[MessageHandle] = new LinkedList[MessageHandle]
@@ -43,7 +43,7 @@ class EventBasedDemultiplexer(private val messageQueue: MessageQueue) extends Me
 
   def acquireSelectedQueue: Queue[MessageHandle] = selectedQueue
 
-  def releaseSelectedQueue = throw new UnsupportedOperationException("EventBasedDemultiplexer can't release its queue")
+  def releaseSelectedQueue = throw new UnsupportedOperationException("EventBasedSingleThreadDemultiplexer can't release its queue")
 
-  def wakeUp = throw new UnsupportedOperationException("EventBasedDemultiplexer can't be woken up")
+  def wakeUp = throw new UnsupportedOperationException("EventBasedSingleThreadDemultiplexer can't be woken up")
 }

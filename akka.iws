@@ -2,14 +2,14 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager">
     <list default="true" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/CassandraNode.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/CassandraNode.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentClasher.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentClasher.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateful.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateful.java" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Actor.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Actor.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/State.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/State.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/ThreadBasedDispatcherTest.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/ThreadBasedDispatcherTest.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/EventBasedDispatcherTest.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/EventBasedDispatcherTest.scala" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ProxyMessageDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ProxyDispatcher.scala" />
     </list>
     <ignored path="akka.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -142,7 +142,7 @@
       <file leaf-file-name="ActiveObject.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="137" column="0" selection-start="4931" selection-end="4931" vertical-scroll-proportion="0.0">
+            <state line="137" column="0" selection-start="4924" selection-end="4924" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -202,28 +202,28 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ProxyMessageDispatcher.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ProxyMessageDispatcher.scala">
+      <file leaf-file-name="ProxyDispatcher.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ProxyDispatcher.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="12" column="6" selection-start="401" selection-end="401" vertical-scroll-proportion="0.0">
+            <state line="60" column="6" selection-start="2239" selection-end="2239" vertical-scroll-proportion="0.9080235">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ThreadBasedDispatcher.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala">
+      <file leaf-file-name="EventBasedThreadPoolDispatcher.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="102" column="0" selection-start="3620" selection-end="3620" vertical-scroll-proportion="0.0">
+            <state line="12" column="12" selection-start="407" selection-end="407" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="EventBasedDispatcher.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedDispatcher.scala">
+      <file leaf-file-name="EventBasedSingleThreadDispatcher.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+            <state line="30" column="13" selection-start="1275" selection-end="1275" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -1337,7 +1337,7 @@
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32472324" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24873829" sideWeight="0.74165636" order="0" side_tool="false" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.21771218" sideWeight="0.5" order="12" side_tool="false" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.21771218" sideWeight="0.5" order="12" side_tool="false" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="13" side_tool="false" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24945927" sideWeight="0.6875" order="1" side_tool="false" />
@@ -1439,7 +1439,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/ActiveObject.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="137" column="0" selection-start="4931" selection-end="4931" vertical-scroll-proportion="0.0">
+        <state line="137" column="0" selection-start="4924" selection-end="4924" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -1486,23 +1486,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ProxyMessageDispatcher.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="12" column="6" selection-start="401" selection-end="401" vertical-scroll-proportion="0.0">
+        <state line="12" column="12" selection-start="407" selection-end="407" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="102" column="0" selection-start="3620" selection-end="3620" vertical-scroll-proportion="0.0">
+        <state line="30" column="13" selection-start="1275" selection-end="1275" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedDispatcher.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ProxyDispatcher.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+        <state line="60" column="6" selection-start="2239" selection-end="2239" vertical-scroll-proportion="0.9080235">
           <folding />
         </state>
       </provider>

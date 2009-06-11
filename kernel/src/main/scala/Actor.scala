@@ -120,9 +120,9 @@ trait Actor {
     if (!isRunning) {
       dispatcherType match {
         case EventBased =>
-          dispatcher = new EventBasedDispatcher
+          dispatcher = new EventBasedSingleThreadDispatcher
         case ThreadBased =>
-          dispatcher = new ThreadBasedDispatcher
+          dispatcher = new EventBasedThreadPoolDispatcher
       }
       mailbox = dispatcher.messageQueue
       dispatcher.registerHandler(this, new ActorMessageHandler(this))

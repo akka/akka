@@ -10,7 +10,7 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-class ThreadBasedDispatcher extends MessageDispatcherBase {
+class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   import java.util.concurrent.Executors
   import java.util.HashSet
   
@@ -22,7 +22,7 @@ class ThreadBasedDispatcher extends MessageDispatcherBase {
 
   def start = if (!active) {
     active = true
-    val messageDemultiplexer = new ThreadBasedDemultiplexer(messageQueue)
+    val messageDemultiplexer = new EventBasedThreadPoolDemultiplexer(messageQueue)
     selectorThread = new Thread {
       //val enqued = new LinkedList[MessageHandle]
       override def run = {
@@ -74,7 +74,7 @@ class ThreadBasedDispatcher extends MessageDispatcherBase {
   private def free(key: AnyRef) = synchronized { busyHandlers.remove(key) }
 }
 
-class ThreadBasedDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
+class EventBasedThreadPoolDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
   import java.util.concurrent.locks.ReentrantLock
   import java.util.{LinkedList, Queue}
 

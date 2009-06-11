@@ -96,7 +96,7 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   server.transactionalVectors = vectors
 
   import kernel.reactor._
-  private[this] var dispatcher = new ProxyMessageDispatcher
+  private[this] var dispatcher = new ProxyDispatcher
   private[this] var mailbox = dispatcher.messageQueue
   dispatcher.start
   

@@ -10,7 +10,7 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-class ProxyMessageDispatcher extends MessageDispatcherBase {
+class ProxyDispatcher extends MessageDispatcherBase {
   import java.util.concurrent.Executors
   import java.util.HashSet
   import org.codehaus.aspectwerkz.joinpoint.JoinPoint
@@ -22,7 +22,7 @@ class ProxyMessageDispatcher extends MessageDispatcherBase {
 
   def start = if (!active) {
     active = true
-    val messageDemultiplexer = new ProxyMessageDemultiplexer(messageQueue)
+    val messageDemultiplexer = new ProxyDemultiplexer(messageQueue)
     selectorThread = new Thread {
       override def run = {
         while (active) {
@@ -58,7 +58,7 @@ class ProxyMessageDispatcher extends MessageDispatcherBase {
   override protected def doShutdown = handlerExecutor.shutdownNow
 }
 
-class ProxyMessageDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
+class ProxyDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
   import java.util.concurrent.locks.ReentrantLock
   import java.util.{LinkedList, Queue}
 
