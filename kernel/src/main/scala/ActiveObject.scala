@@ -208,12 +208,13 @@ sealed class TransactionalAroundAdvice(target: Class[_],
 
     def getTransactionalItemsFor(target: Class[_]):
       Tuple3[List[TransactionalMap[_, _]], List[TransactionalVector[_]], List[TransactionalRef[_]]] = {
+      target.getDeclaredFields.toArray.toList.asInstanceOf[List[Field]].foreach(println)
     for {
         field <- target.getDeclaredFields.toArray.toList.asInstanceOf[List[Field]]
         fieldType = field.getType
-        if fieldType ==  classOf[TransactionalMap[_, _]] ||
-           fieldType  == classOf[TransactionalVector[_]] ||
-           fieldType  == classOf[TransactionalRef[_]]
+        if (fieldType == classOf[TransactionalMap[_, _]]) ||
+           (fieldType == classOf[TransactionalVector[_]]) ||
+           (fieldType == classOf[TransactionalRef[_]])
         txItem = {
           field.setAccessible(true)
           field.get(targetInstance)
@@ -225,7 +226,7 @@ sealed class TransactionalAroundAdvice(target: Class[_],
         else if (txItem.isInstanceOf[TransactionalVector[_]]) vectors ::= txItem.asInstanceOf[TransactionalVector[_]]
       }
       val parent = target.getSuperclass
-      if (parent == null) (maps, vectors, refs)
+      if (parent == classOf[Object]) (maps, vectors, refs)
       else getTransactionalItemsFor(parent)
     }
 

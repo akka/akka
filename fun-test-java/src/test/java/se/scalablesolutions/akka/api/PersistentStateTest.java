@@ -35,12 +35,11 @@ public class PersistentStateTest extends TestCase {
   protected void tearDown() {
     conf.stop();
   }
-  
+
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
@@ -60,8 +59,8 @@ public class PersistentStateTest extends TestCase {
     PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
     stateful.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
-    assertEquals("new state", stateful.getVectorState());
+    assertEquals("init", stateful.getVectorState(0));
+    assertEquals("new state", stateful.getVectorState(1));
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
@@ -73,14 +72,13 @@ public class PersistentStateTest extends TestCase {
      fail("should have thrown an exception");
    } catch (RuntimeException e) {
    } // expected
-   assertEquals("init", stateful.getVectorState()); // check that state is == init state
+   assertEquals("init", stateful.getVectorState(0)); // check that state is == init state
  }
-/*
+
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
     stateful.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getRefState());
   }
 
@@ -95,5 +93,4 @@ public class PersistentStateTest extends TestCase {
    } // expected
    assertEquals("init", stateful.getRefState()); // check that state is == init state
  }
- */
 }

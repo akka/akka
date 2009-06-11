@@ -95,10 +95,7 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentTransactionalMap(actorNameInstance: AnyRef)
-    extends PersistentTransactionalMap[String, AnyRef] {
-
-  val actorName = actorNameInstance.getClass.getName
+class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[String, AnyRef] {
 
   override def getRange(start: Int, count: Int) = CassandraNode.getMapStorageRangeFor(uuid, start, count)
 
@@ -196,10 +193,7 @@ abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentTransactionalVector(actorNameInstance: AnyRef)
-    extends PersistentTransactionalVector[AnyRef] {
-
-  val actorName = actorNameInstance.getClass.getName
+class CassandraPersistentTransactionalVector extends PersistentTransactionalVector[AnyRef] {
 
   // ---- For TransactionalVector ----
   override def get(index: Int): AnyRef = CassandraNode.getVectorStorageEntryFor(uuid, index)
@@ -234,5 +228,16 @@ class TransactionalRef[T] extends Transactional {
   def swap(elem: T) = ref = Some(elem)
   def get: Option[T] = ref
   def getOrElse(default: => T): T = ref.getOrElse(default)
-  def isDefined: Boolean= ref.isDefined
+  def isDefined: Boolean = ref.isDefined
+}
+
+class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
+  override def commit = if (ref.isDefined) CassandraNode.insertRefStorageFor(uuid, ref.get)
+  override def get: Option[AnyRef] = CassandraNode.getRefStorageFor(uuid)
+  override def isDefined: Boolean = get.isDefined
+  override def getOrElse(default: => AnyRef): AnyRef = {
+    val ref = get
+    if (ref.isDefined) ref
+    else default
+  }
 }

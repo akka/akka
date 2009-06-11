@@ -11,17 +11,18 @@ import org.apache.cassandra.config.DatabaseDescriptor
 import org.apache.cassandra.service._
 
 /**
+ * NOTE: requires command line options:
+ * <br/>
+ *   <code>-Dcassandra -Dstorage-config=config/ -Dpidfile=akka.pid</code>
+ * <p/>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final object CassandraNode extends Logging {
 
-  // NOTE: requires command line options:
-  //    -Dcassandra -Dstorage-config=config/ -Dpidfile=akka.pid
   val TABLE_NAME = "akka"
-  val ACTOR_KEY_PREFIX = "actor"
-  val ACTOR_MAP_COLUMN_FAMILY = "map"
-  val ACTOR_VECTOR_COLUMN_FAMILY = "vector"
-  val ACTOR_REF_COLUMN_FAMILY = "ref"
+  val MAP_COLUMN_FAMILY = "map"
+  val VECTOR_COLUMN_FAMILY = "vector"
+  val REF_COLUMN_FAMILY = "ref:item"
 
   // TODO: make pluggable (JSON, Thrift, Protobuf etc.)
   private[this] var serializer: Serializer = new JavaSerializationSerializer
@@ -46,6 +47,27 @@ final object CassandraNode extends Logging {
   // For Ref
   // ===============================================================
 
+  def insertRefStorageFor(name: String, element: AnyRef) = {
+    server.insert(
+      TABLE_NAME,
+      name,
+      REF_COLUMN_FAMILY,
+      serializer.out(element),
+      System.currentTimeMillis,
+      false) // FIXME: what is this flag for?
+  }
+
+  def getRefStorageFor(name: String): Option[AnyRef] = {
+    try {
+      val column = server.get_column(TABLE_NAME, name, REF_COLUMN_FAMILY)
+      Some(serializer.in(column.value))
+    } catch {
+      case e =>
+        e.printStackTrace
+        None //throw new Predef.NoSuchElementException(e.getMessage)
+    }
+  }
+
   // ===============================================================
   // For Vector
   // ===============================================================
@@ -53,8 +75,8 @@ final object CassandraNode extends Logging {
   def insertVectorStorageEntryFor(name: String, element: AnyRef) = {
     server.insert(
       TABLE_NAME,
-      ACTOR_KEY_PREFIX + ":" + name,
-      ACTOR_VECTOR_COLUMN_FAMILY + ":" + getVectorStorageSizeFor(name),
+      name,
+      VECTOR_COLUMN_FAMILY + ":" + getVectorStorageSizeFor(name),
       serializer.out(element),
       System.currentTimeMillis,
       false) // FIXME: what is this flag for?
@@ -62,7 +84,7 @@ final object CassandraNode extends Logging {
 
   def getVectorStorageEntryFor(name: String, index: Int): AnyRef = {                                                                                
     try {
-      val column = server.get_column(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + name, ACTOR_VECTOR_COLUMN_FAMILY + ":" + index)
+      val column = server.get_column(TABLE_NAME, name, VECTOR_COLUMN_FAMILY + ":" + index)
       serializer.in(column.value)
     } catch {
       case e => throw new Predef.NoSuchElementException(e.getMessage)
@@ -70,22 +92,21 @@ final object CassandraNode extends Logging {
   }
 
   def getVectorStorageRangeFor(name: String, start: Int, count: Int): List[AnyRef]  =
-    server.get_slice(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + name, ACTOR_VECTOR_COLUMN_FAMILY, start, count)
+    server.get_slice(TABLE_NAME, name, VECTOR_COLUMN_FAMILY, start, count)
       .toArray.toList.asInstanceOf[List[Tuple2[String, AnyRef]]].map(tuple => tuple._2)
 
   def getVectorStorageSizeFor(name: String): Int =
-    server.get_column_count(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + name, ACTOR_VECTOR_COLUMN_FAMILY)
+    server.get_column_count(TABLE_NAME, name, VECTOR_COLUMN_FAMILY)
 
   // ===============================================================
   // For Map
   // ===============================================================
 
   def insertMapStorageEntryFor(name: String, key: String, value: AnyRef) = {
-    println("PUT: " + name + " " + key + " " + value)
     server.insert(
       TABLE_NAME, 
-      ACTOR_KEY_PREFIX + ":" + name,
-      ACTOR_MAP_COLUMN_FAMILY + ":" + key,
+      name,
+      MAP_COLUMN_FAMILY + ":" + key,
       serializer.out(value),
       System.currentTimeMillis,
       false) // FIXME: what is this flag for?
@@ -97,25 +118,24 @@ final object CassandraNode extends Logging {
     for (entry <- entries) {
       val cls: List[column_t] = new ArrayList
       cls.add(new column_t(entry._1, serializer.out(entry._2), System.currentTimeMillis))
-      columns.put(ACTOR_MAP_COLUMN_FAMILY, cls)
+      columns.put(MAP_COLUMN_FAMILY, cls)
     }
     server.batch_insert(new batch_mutation_t(
       TABLE_NAME, 
-      ACTOR_KEY_PREFIX + ":" + name,
+      name,
       columns),
       false) // non-blocking
   }
 
   def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
-    println("GET: " + name + " " + key)
     try {
-      val column = server.get_column(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + name, ACTOR_MAP_COLUMN_FAMILY + ":" + key)
+      val column = server.get_column(TABLE_NAME, name, MAP_COLUMN_FAMILY + ":" + key)
       Some(serializer.in(column.value))
     } catch { case e => None }
   }
 
   def getMapStorageFor(name: String): List[Tuple2[String, AnyRef]]  = {
-    val columns = server.get_columns_since(TABLE_NAME, ACTOR_KEY_PREFIX, ACTOR_MAP_COLUMN_FAMILY, -1)
+    val columns = server.get_columns_since(TABLE_NAME, name, MAP_COLUMN_FAMILY, -1)
       .toArray.toList.asInstanceOf[List[org.apache.cassandra.service.column_t]]
     for {
       column <- columns
@@ -124,13 +144,13 @@ final object CassandraNode extends Logging {
   }
   
   def getMapStorageSizeFor(name: String): Int =
-    server.get_column_count(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + name, ACTOR_MAP_COLUMN_FAMILY)
+    server.get_column_count(TABLE_NAME, name, MAP_COLUMN_FAMILY)
 
   def removeMapStorageFor(name: String) =
-    server.remove(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + name, ACTOR_MAP_COLUMN_FAMILY, System.currentTimeMillis, false)
+    server.remove(TABLE_NAME, name, MAP_COLUMN_FAMILY, System.currentTimeMillis, false)
 
   def getMapStorageRangeFor(name: String, start: Int, count: Int): List[Tuple2[String, AnyRef]] =
-    server.get_slice(TABLE_NAME, ACTOR_KEY_PREFIX + ":" + name, ACTOR_MAP_COLUMN_FAMILY, start, count)
+    server.get_slice(TABLE_NAME, name, MAP_COLUMN_FAMILY, start, count)
       .toArray.toList.asInstanceOf[List[Tuple2[String, AnyRef]]]
 }
 

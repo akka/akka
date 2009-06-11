@@ -34,15 +34,11 @@ class ThreadBasedDispatcher extends MessageDispatcherBase {
               messageDemultiplexer.select
             } catch {case e: InterruptedException => active = false}
             val queue = messageDemultiplexer.acquireSelectedQueue
-            println("--- QUEUE " + queue.size)
 //            while (!queue.isEmpty) {
             for (index <- 0 until queue.size) {
               val message = queue.peek
-              println("------ MESSAGE: " + message)
               val messageHandler = getIfNotBusy(message.sender)
-              println("------ MESSAGEHANDLER: " + messageHandler)
               if (messageHandler.isDefined) {
-                println("-------- SCHEDULING MESSAGE")
                 handlerExecutor.execute(new Runnable {
                   override def run = {
                     messageHandler.get.handle(message)
