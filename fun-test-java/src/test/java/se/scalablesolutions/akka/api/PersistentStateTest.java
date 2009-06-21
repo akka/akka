@@ -8,8 +8,8 @@ import se.scalablesolutions.akka.annotation.*;
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 import se.scalablesolutions.akka.kernel.Kernel;
-import se.scalablesolutions.akka.kernel.TransactionalMap;
-import se.scalablesolutions.akka.kernel.CassandraPersistentTransactionalMap;
+import se.scalablesolutions.akka.kernel.state.TransactionalMap;
+import se.scalablesolutions.akka.kernel.state.CassandraPersistentTransactionalMap;
 
 import junit.framework.TestCase;
 

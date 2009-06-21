@@ -2,15 +2,19 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel
-
-import kernel.camel.{MessageDriven, ActiveObjectProducer}
-import config.ActiveObjectGuiceConfigurator
-import config.ScalaConfig._
+package se.scalablesolutions.akka.kernel.actor
 
 import java.util.{List => JList, ArrayList}
 import java.lang.reflect.{Method, Field}
 import java.lang.annotation.Annotation
+
+import kernel.config.ActiveObjectGuiceConfigurator
+import kernel.config.ScalaConfig._
+import kernel.camel.{MessageDriven, ActiveObjectProducer}
+import kernel.util.Helpers.ReadWriteLock
+import kernel.util.{HashCode, ResultOrFailure}
+import kernel.state.{Transactional, TransactionalMap, TransactionalRef, TransactionalVector}
+import kernel.stm.Transaction
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -32,15 +36,17 @@ object Annotations {
 }
 
 /**
+ * Factory for Java API.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
-  def newInstance[T](target: Class[T], server: GenericServerContainer): T = {
-    ActiveObject.newInstance(target, server)
+  def newInstance[T](target: Class[T]): T = {
+    ActiveObject.newInstance(target)
   }
 
-  def newInstance[T](intf: Class[T], target: AnyRef, server: GenericServerContainer): T = {
-    ActiveObject.newInstance(intf, target, server)
+  def newInstance[T](intf: Class[T], target: AnyRef): T = {
+    ActiveObject.newInstance(intf, target)
   }
 
   def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
@@ -48,6 +54,8 @@ class ActiveObjectFactory {
 }
 
 /**
+ * Factory for Scala API.
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActiveObject {
@@ -59,16 +67,16 @@ object ActiveObject {
     tl
   }
 
-  def newInstance[T](target: Class[T], server: GenericServerContainer): T = {
+  def newInstance[T](target: Class[T]): T = {
     val proxy = Proxy.newInstance(target, false, true)
     // FIXME switch to weaving in the aspect at compile time
-    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new TransactionalAroundAdvice(target, proxy, server))
+    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(target, proxy))
     proxy.asInstanceOf[T]
   }
 
-  def newInstance[T](intf: Class[T], target: AnyRef, server: GenericServerContainer): T = {
+  def newInstance[T](intf: Class[T], target: AnyRef): T = {
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
-    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new TransactionalAroundAdvice(intf, target, server))
+    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(intf, target))
     proxy.asInstanceOf[T]
   }
 
@@ -77,7 +85,7 @@ object ActiveObject {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
     val supervisor = factory.newSupervisor
-    supervisor ! se.scalablesolutions.akka.kernel.Start
+    supervisor ! StartSupervisor
     supervisor
   }
 }
@@ -87,19 +95,19 @@ object ActiveObject {
  */
 
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
-sealed class TransactionalAroundAdvice(target: Class[_],
-                                       targetInstance: AnyRef,
-                                       server: GenericServerContainer) extends AroundAdvice {
+sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstance: AnyRef) extends AroundAdvice {
+  private val changeSet = new ChangeSet(target.getName)
+  
   private val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance)
-  server.transactionalRefs = refs
-  server.transactionalMaps = maps
-  server.transactionalVectors = vectors
+  changeSet.refs = refs
+  changeSet.maps = maps
+  changeSet.vectors = vectors
 
   import kernel.reactor._
-  private[this] var dispatcher = new ProxyDispatcher
+  private[this] var dispatcher = new ProxyMessageDispatcher
   private[this] var mailbox = dispatcher.messageQueue
   dispatcher.start
-  
+
   import ActiveObject.threadBoundTx
   private[this] var activeTx: Option[Transaction] = None
 
@@ -107,14 +115,14 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   def invoke(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val method = rtti.getMethod
-    if (method.isAnnotationPresent(Annotations.transactional)) {
+    if (reenteringExistingTransaction) {
       tryToCommitTransaction
-      startNewTransaction
+      if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
+      joinExistingTransaction
     }
-    joinExistingTransaction
-    incrementTransaction
     val result: AnyRef = try {
-      if (rtti.getMethod.isAnnotationPresent(Annotations.oneway)) sendOneWay(joinpoint)
+      incrementTransaction
+      if (rtti.getMethod.isAnnotationPresent(Annotations.oneway)) sendOneWay(joinpoint) // FIXME put in 2 different aspects
       else handleResult(sendAndReceiveEventually(joinpoint))
     } finally {
       decrementTransaction
@@ -135,7 +143,7 @@ sealed class TransactionalAroundAdvice(target: Class[_],
 
   private def startNewTransaction = {
     val newTx = new Transaction
-    newTx.begin(server)
+    newTx.begin(changeSet)
     threadBoundTx.set(Some(newTx))
   }
 
@@ -143,20 +151,25 @@ sealed class TransactionalAroundAdvice(target: Class[_],
     val cflowTx = threadBoundTx.get
     if (!activeTx.isDefined && cflowTx.isDefined) {
       val currentTx = cflowTx.get
-      currentTx.join(server)
+      currentTx.join(changeSet)
       activeTx = Some(currentTx)
     }
-    activeTx = threadBoundTx.get
   }
 
-  private def tryToPrecommitTransaction = if (activeTx.isDefined) activeTx.get.precommit(server)
+  private def tryToPrecommitTransaction = if (activeTx.isDefined) activeTx.get.precommit(changeSet)
+
+  private def reenteringExistingTransaction= if (activeTx.isDefined) {
+    val cflowTx = threadBoundTx.get
+    if (cflowTx.isDefined && cflowTx.get.id == activeTx.get.id) false
+    else true
+  } else true
 
   private def tryToCommitTransaction = if (activeTx.isDefined) {
     val tx = activeTx.get
-    tx.commit(server)
+    tx.commit(changeSet)
     removeTransactionIfTopLevel
   }
-
+                                                               
   private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
     try {
       result()
@@ -170,14 +183,14 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   private def rollback(tx: Option[Transaction]) = tx match {
     case None => {} // no tx; nothing to do
     case Some(tx) =>
-      tx.rollback(server)
+      tx.rollback(changeSet)
   }
 
-  private def sendOneWay(joinpoint: JoinPoint) = 
+  private def sendOneWay(joinpoint: JoinPoint) =
     mailbox.append(new MessageHandle(this, Invocation(joinpoint, activeTx), new NullFutureResult))
 
   private def sendAndReceiveEventually(joinpoint: JoinPoint): ResultOrFailure[AnyRef] = {
-    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(Invocation(joinpoint, activeTx), 1000)
+    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(Invocation(joinpoint, activeTx), 1000) // FIXME configure
     future.await_?
     getResultOrThrowException(future)
   }
@@ -192,7 +205,8 @@ sealed class TransactionalAroundAdvice(target: Class[_],
   private def getResultOrThrowException[T](future: FutureResult): ResultOrFailure[AnyRef] =
     if (future.exception.isDefined) {
       var resultOrFailure = ResultOrFailure(activeTx)
-      resultOrFailure() = throw future.exception.get
+      val (toBlame, cause) = future.exception.get
+      resultOrFailure() = throw cause
       resultOrFailure
     } else ResultOrFailure(future.result.get, activeTx)
 
@@ -230,43 +244,44 @@ sealed class TransactionalAroundAdvice(target: Class[_],
       else getTransactionalItemsFor(parent)
     }
 
-    // start the search for transactional items, crawl the class hierarchy up until we reach 'null'
+    // start the search for transactional items, crawl the class hierarchy up until we reach Object
     getTransactionalItemsFor(targetInstance.getClass)
   }
 }
 
-/**
- * Generic GenericServer managing Invocation dispatch, transaction and error management.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
-  override def body: PartialFunction[Any, Unit] = {
-
-    case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
-      ActiveObject.threadBoundTx.set(tx)
-      try {
-        reply(ResultOrFailure(joinpoint.proceed, tx))
-      } catch {
-        case e =>
-          val resultOrFailure = ResultOrFailure(tx)
-          resultOrFailure() = throw e
-          reply(resultOrFailure)
-      }
-
-    case 'exit =>
-      exit
-
-/*    case exchange: Exchange =>
-      println("=============> Exchange From Actor: " + exchange)
-      val invocation = exchange.getIn.getBody.asInstanceOf[Invocation]
-      invocation.invoke
-*/
-    case unexpected =>
-      throw new ActiveObjectException("Unexpected message [" + unexpected + "] to [" + this + "] from [" + sender + "]")
+class ChangeSet(val id: String) {
+  private val lock = new ReadWriteLock
+  
+  private[kernel] def full: List[Transactional] = lock.withReadLock {
+    _maps ::: _vectors ::: _refs
   }
 
-  override def toString(): String = "GenericServer[" + targetName + "]"
+  // TX Maps
+  private[kernel] var _maps: List[TransactionalMap[_, _]] = Nil
+  private[kernel] def maps_=(maps: List[TransactionalMap[_, _]]) = lock.withWriteLock {
+    _maps = maps
+  }
+  private[kernel] def maps: List[TransactionalMap[_, _]] = lock.withReadLock {
+    _maps
+  }
+
+  // TX Vectors
+  private[kernel] var _vectors: List[TransactionalVector[_]] = Nil
+  private[kernel] def vectors_=(vectors: List[TransactionalVector[_]]) = lock.withWriteLock {
+    _vectors = vectors
+  }
+  private[kernel] def vectors: List[TransactionalVector[_]] = lock.withReadLock {
+    _vectors
+  }
+
+  // TX Refs
+  private[kernel] var _refs: List[TransactionalRef[_]] = Nil
+  private[kernel] def refs_=(refs: List[TransactionalRef[_]]) = lock.withWriteLock {
+    _refs = refs
+  }
+  private[kernel] def refs: List[TransactionalRef[_]] = lock.withReadLock {
+    _refs
+  }  
 }
 
 /**
@@ -274,7 +289,7 @@ private[kernel] class Dispatcher(val targetName: String) extends GenericServer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[kernel] case class Invocation(val joinpoint: JoinPoint, val transaction: Option[Transaction]) {
+@serializable private[kernel] case class Invocation(val joinpoint: JoinPoint, val transaction: Option[Transaction]) {
 
   override def toString: String = synchronized {
     "Invocation [joinpoint: " + joinpoint.toString+ " | transaction: " + transaction.toString + "]"
@@ -349,5 +364,33 @@ ublic class CamelInvocationHandler implements InvocationHandler {
         exchange.getOut.getBody
 
       } else
-
 */
+
+/**
+ * Generic GenericServer managing Invocation dispatch, transaction and error management.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[kernel] class Dispatcher(val targetName: String) extends Actor {
+  override def receive: PartialFunction[Any, Unit] = {
+
+    case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
+      ActiveObject.threadBoundTx.set(tx)
+      try {
+        reply(ResultOrFailure(joinpoint.proceed, tx))
+      } catch {
+        case e =>
+          val resultOrFailure = ResultOrFailure(tx)
+          resultOrFailure() = throw e
+          reply(resultOrFailure)
+      }
+
+    case 'exit =>
+      exit
+
+    case unexpected =>
+      throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
+  }
+
+  override def toString(): String = "Actor[" + targetName + "]"
+}

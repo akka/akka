@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel.state
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 import se.scalablesolutions.akka.collection._

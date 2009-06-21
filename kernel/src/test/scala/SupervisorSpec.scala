@@ -4,9 +4,9 @@
 
 package se.scalablesolutions.akka.kernel
 
-import se.scalablesolutions.akka.kernel.config.ScalaConfig.{SupervisorConfig, Worker, LifeCycle, RestartStrategy, OneForOne, AllForOne, Permanent}
-import scala.actors._
-import scala.actors.Actor._
+import kernel.actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
+import kernel.config.ScalaConfig._
+
 import scala.collection.Map
 import scala.collection.mutable.HashMap
 
@@ -21,52 +21,30 @@ import org.scalatest._
 class SupervisorSpec extends Suite {
 
   var messageLog: String = ""
-  val pingpong1 = new GenericServerContainer("pingpong1", () => new PingPong1Actor)
-  val pingpong2 = new GenericServerContainer("pingpong2", () => new PingPong2Actor)
-  val pingpong3 = new GenericServerContainer("pingpong3", () => new PingPong3Actor)
-
-  pingpong1.setTimeout(100)
-  pingpong2.setTimeout(100)
-  pingpong3.setTimeout(100)
+  var pingpong1: PingPong1Actor = _
+  var pingpong2: PingPong2Actor = _
+  var pingpong3: PingPong3Actor = _
 
   def testStartServer = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! Start
+    sup ! StartSupervisor
 
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
-    }
-  }
-
-  def testGetServer = {
-    messageLog = ""
-    val sup = getSingleActorAllForOneSupervisor
-    sup ! Start
-    val server = sup.getServerOrElse("pingpong1", throw new RuntimeException("server not found"))
-    assert(server.isInstanceOf[GenericServerContainer])
-    assert(server === pingpong1)
-  }
-
-  def testGetServerOrFail = {
-    messageLog = ""
-    val sup = getSingleActorAllForOneSupervisor
-    sup ! Start
-    intercept(classOf[RuntimeException]) {
-      sup.getServerOrElse("wrong_name", throw new RuntimeException("server not found"))
+      (pingpong1 !! Ping).getOrElse("nil")
     }
   }
 
   def testKillSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! Start
+    sup ! StartSupervisor
 
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! Die
     }
     Thread.sleep(100)
-    expect("oneforone") {
+    expect("DIE") {
       messageLog
     }
   }
@@ -74,27 +52,27 @@ class SupervisorSpec extends Suite {
   def testCallKillCallSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! Start
+    sup ! StartSupervisor
 
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("ping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! Die
     }
     Thread.sleep(100)
-    expect("pingoneforone") {
+    expect("pingDIE") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
-    expect("pingoneforoneping") {
+    expect("pingDIEping") {
       messageLog
     }
   }
@@ -102,12 +80,12 @@ class SupervisorSpec extends Suite {
   def testKillSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! Start
+    sup ! StartSupervisor
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! Die
     }
     Thread.sleep(100)
-    expect("allforone") {
+    expect("DIE") {
       messageLog
     }
   }
@@ -115,26 +93,28 @@ class SupervisorSpec extends Suite {
   def testCallKillCallSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! Start
+    pingpong1.timeout = 10000000
+    sup.timeout = 10000000
+    sup ! StartSupervisor
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(100)
+    Thread.sleep(500)
     expect("ping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong1 !! Die
     }
-    Thread.sleep(100)
-    expect("pingallforone") {
+    Thread.sleep(1100)
+    expect("pingDIE") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(100)
-    expect("pingallforoneping") {
+    Thread.sleep(500)
+    expect("pingDIEping") {
       messageLog
     }
   }
@@ -142,12 +122,12 @@ class SupervisorSpec extends Suite {
   def testKillMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! Start
+    sup ! StartSupervisor
     intercept(classOf[RuntimeException]) {
-      pingpong3 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong3 !! Die
     }
     Thread.sleep(100)
-    expect("oneforone") {
+    expect("DIE") {
       messageLog
     }
   }
@@ -155,42 +135,42 @@ class SupervisorSpec extends Suite {
   def tesCallKillCallMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! Start
+    sup ! StartSupervisor
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingpingping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong2 !! Die
     }
     Thread.sleep(100)
-    expect("pingpingpingoneforone") {
+    expect("pingpingpingDIE") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
-    expect("pingpingpingoneforonepingpingping") {
+    expect("pingpingpingDIEpingpingping") {
       messageLog
     }
   }
@@ -198,12 +178,12 @@ class SupervisorSpec extends Suite {
   def testKillMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! Start
+    sup ! StartSupervisor
     intercept(classOf[RuntimeException]) {
-      pingpong2 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong2 !! Die
     }
     Thread.sleep(100)
-    expect("allforoneallforoneallforone") {
+    expect("DIEDIEDIE") {
       messageLog
     }
   }
@@ -211,60 +191,61 @@ class SupervisorSpec extends Suite {
   def tesCallKillCallMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! Start
+    sup ! StartSupervisor
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pingpingping") {
       messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 !!! (Die, throw new RuntimeException("TIME OUT"))
+      pingpong2 !! Die
     }
     Thread.sleep(100)
-    expect("pingpingpingallforoneallforoneallforone") {
+    expect("pingpingpingDIEDIEDIE") {
       messageLog
     }
     expect("pong") {
-      (pingpong1 !!! Ping).getOrElse("nil")
+      (pingpong1 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong2 !!! Ping).getOrElse("nil")
+      (pingpong2 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
     expect("pong") {
-      (pingpong3 !!! Ping).getOrElse("nil")
+      (pingpong3 !! Ping).getOrElse("nil")
     }
     Thread.sleep(100)
-    expect("pingpingpingallforoneallforoneallforonepingpingping") {
+    expect("pingpingpingDIEDIEDIEpingpingping") {
       messageLog
     }
   }
 
-   def testTerminateFirstLevelActorAllForOne = {
+  /*
+   def testNestedSupervisorsTerminateFirstLevelActorAllForOne = {
     messageLog = ""
      val sup = getNestedSupervisorsAllForOneConf
-     sup ! Start
+     sup ! StartSupervisor
      intercept(classOf[RuntimeException]) {
-       pingpong1 !!! (Die, throw new RuntimeException("TIME OUT"))
+       pingpong1 !! Die
      }
      Thread.sleep(100)
-     expect("allforoneallforoneallforone") {
+     expect("DIEDIEDIE") {
        messageLog
      }
    }
-
-
+*/
+  
   // =============================================
   // Creat some supervisors with different configurations
 
@@ -276,7 +257,9 @@ class SupervisorSpec extends Suite {
     // Then create a concrete container in which we mix in support for the specific
     // implementation of the Actors we want to use.
 
-    object factory extends TestSupervisorFactory {
+    pingpong1 = new PingPong1Actor
+    
+    object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
@@ -290,7 +273,9 @@ class SupervisorSpec extends Suite {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    object factory extends TestSupervisorFactory {
+    pingpong1 = new PingPong1Actor
+
+    object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
@@ -304,7 +289,11 @@ class SupervisorSpec extends Suite {
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    object factory extends TestSupervisorFactory {
+    pingpong1 = new PingPong1Actor
+    pingpong2 = new PingPong2Actor
+    pingpong3 = new PingPong3Actor
+
+    object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
@@ -326,7 +315,11 @@ class SupervisorSpec extends Suite {
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    object factory extends TestSupervisorFactory {
+    pingpong1 = new PingPong1Actor
+    pingpong2 = new PingPong2Actor
+    pingpong3 = new PingPong3Actor
+
+    object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
@@ -348,7 +341,11 @@ class SupervisorSpec extends Suite {
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
-    object factory extends TestSupervisorFactory {
+    pingpong1 = new PingPong1Actor
+    pingpong2 = new PingPong2Actor
+    pingpong3 = new PingPong3Actor
+
+    object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
@@ -372,46 +369,57 @@ class SupervisorSpec extends Suite {
      factory.newSupervisor
    }
 
-  class PingPong1Actor extends GenericServer {
-    override def body: PartialFunction[Any, Unit] = {
+  class PingPong1Actor extends Actor {
+    override def receive: PartialFunction[Any, Unit] = {
       case Ping =>
         messageLog += "ping"
         reply("pong")
+      
       case Die =>
-        throw new RuntimeException("Recieved Die message")
+        throw new RuntimeException("DIE")
+    }
+    override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+      messageLog += reason.asInstanceOf[Exception].getMessage      
     }
   }
 
-  class PingPong2Actor extends GenericServer {
-    override def body: PartialFunction[Any, Unit] = {
+  class PingPong2Actor extends Actor {
+    override def receive: PartialFunction[Any, Unit] = {
       case Ping =>
         messageLog += "ping"
         reply("pong")
       case Die =>
-        throw new RuntimeException("Recieved Die message")
+        throw new RuntimeException("DIE")
+    }
+    override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+      messageLog += reason.asInstanceOf[Exception].getMessage
     }
   }
 
-  class PingPong3Actor extends GenericServer {
-    override def body: PartialFunction[Any, Unit] = {
+  class PingPong3Actor extends Actor {
+    override def receive: PartialFunction[Any, Unit] = {
       case Ping =>
         messageLog += "ping"
         reply("pong")
       case Die =>
-        throw new RuntimeException("Recieved Die message")
+        throw new RuntimeException("DIE")
+    }
+
+    override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+      messageLog += reason.asInstanceOf[Exception].getMessage
     }
   }
 
   // =============================================
-
+/*
   class TestAllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends AllForOneStrategy(maxNrOfRetries, withinTimeRange) {
-    override def postRestart(serverContainer: GenericServerContainer) = {
+    override def postRestart(serverContainer: ActorContainer) = {
       messageLog += "allforone"
     }
   }
 
   class TestOneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends OneForOneStrategy(maxNrOfRetries, withinTimeRange) {
-    override def postRestart(serverContainer: GenericServerContainer) = {
+    override def postRestart(serverContainer: ActorContainer) = {
       messageLog += "oneforone"
     }
   }
@@ -425,4 +433,5 @@ class SupervisorSpec extends Suite {
         }
     }
   }
+  */
 }

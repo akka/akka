@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.configuration
+package se.scalablesolutions.akka.kernel.config
 
 /*
 import se.scalablesolutions.akka.kernel.{ActiveObject, ActiveObjectProxy}

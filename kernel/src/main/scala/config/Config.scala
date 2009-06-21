@@ -4,9 +4,8 @@
 
 package se.scalablesolutions.akka.kernel.config
 
+import kernel.actor.Actor
 import reflect.BeanProperty
-
-import se.scalablesolutions.akka.kernel.GenericServerContainer
 
 /**
  * Configuration classes - not to be used as messages.
@@ -21,7 +20,7 @@ object ScalaConfig {
   abstract class Scope extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
-  case class Worker(serverContainer: GenericServerContainer, lifeCycle: LifeCycle) extends Server
+  case class Worker(actor: Actor, lifeCycle: LifeCycle) extends Server
 
   case class RestartStrategy(scheme: FailOverScheme, maxNrOfRetries: Int, withinTimeRange: Int) extends ConfigElement
 
@@ -96,8 +95,8 @@ object JavaConfig {
       this(null, target, lifeCycle, timeout)
     def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.Component(
       intf, target, lifeCycle.transform, timeout)
-    def newWorker(server: GenericServerContainer) =
-      se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker(server, lifeCycle.transform)
+    def newWorker(actor: Actor) =
+      se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker(actor, lifeCycle.transform)
   }
   
 }

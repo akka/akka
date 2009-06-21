@@ -4,8 +4,8 @@
 
 package se.scalablesolutions.akka.kernel.camel
 
-import config.ActiveObjectConfigurator
-import se.scalablesolutions.akka.kernel.Logging
+import kernel.config.ActiveObjectConfigurator
+import kernel.util.Logging
 
 import java.util.{ArrayList, HashSet, List, Set}
 import java.util.concurrent.{BlockingQueue, CopyOnWriteArraySet, LinkedBlockingQueue}

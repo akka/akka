@@ -7,17 +7,19 @@ package se.scalablesolutions.akka.kernel.config
 import com.google.inject._
 import com.google.inject.jsr250.ResourceProviderFactory
 
-import java.lang.reflect.Method
-import javax.servlet.ServletContext
+import ScalaConfig._
+import kernel.actor.{Supervisor, ActiveObjectFactory}
+import kernel.camel.ActiveObjectComponent
+import kernel.util.Logging
 
 import org.apache.camel.impl.{JndiRegistry, DefaultCamelContext}
 import org.apache.camel.{CamelContext, Endpoint, Routes}
 
 import scala.collection.mutable.HashMap
 
-import kernel.camel.ActiveObjectComponent
-import kernel.{ActiveObjectFactory, Supervisor}
-import kernel.config.ScalaConfig._
+import java.lang.reflect.Method
+import javax.servlet.ServletContext
+
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -32,7 +34,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private var workers: List[Worker] = Nil
   private var bindings: List[DependencyBinding] = Nil
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
-  private var activeObjectRegistry = new HashMap[Class[_], Tuple4[AnyRef, AnyRef, Component, GenericServerContainer]]
+  private var activeObjectRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
   private var activeObjectFactory = new ActiveObjectFactory
   private var camelContext = new DefaultCamelContext
   private var modules = new java.util.ArrayList[Module]
@@ -47,7 +49,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   override def getActiveObject[T](clazz: Class[T]): T = synchronized {
     log.debug("Retrieving active object [%s]", clazz.getName)
     if (injector == null) throw new IllegalStateException("inject() and/or supervise() must be called before invoking getActiveObject(clazz)")
-    val (proxy, targetInstance, component, server) =
+    val (proxy, targetInstance, component) =
         activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException("Class [" + clazz.getName + "] has not been put under supervision (by passing in the config to the 'configureActiveObjects' and then invoking 'supervise') method"))
     injector.injectMembers(targetInstance)
     proxy.asInstanceOf[T]
@@ -104,23 +106,21 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
-    val server = new GenericServerContainer(targetClass.getName, () => new Dispatcher(component.target.getName))
-    server.setTimeout(component.timeout)
-    workers ::= Worker(server, component.lifeCycle)
-    val proxy = activeObjectFactory.newInstance(targetClass, server).asInstanceOf[AnyRef]
-    activeObjectRegistry.put(targetClass, (proxy, proxy, component, server))
+
+    // FIXME add wrapping Actor and pass into Worker
+    workers ::= Worker(null, component.lifeCycle)
+    val proxy = activeObjectFactory.newInstance(targetClass).asInstanceOf[AnyRef]
+    activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
   }
 
   private def newDelegatingProxy(component: Component): DependencyBinding = {
     val targetClass = component.intf.get
-    val server = new GenericServerContainer(targetClass.getName, () => new Dispatcher(component.target.getName))
-    server.setTimeout(component.timeout)
-    workers ::= Worker(server, component.lifeCycle)
-    component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
-    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, server).asInstanceOf[AnyRef]
-    activeObjectRegistry.put(targetClass, (proxy, targetInstance, component, server))
+    workers ::= Worker(null, component.lifeCycle) // TODO null is not an Actor
+    component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
+    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance).asInstanceOf[AnyRef]
+    activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }
 
@@ -168,7 +168,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   def reset = synchronized {
     modules = new java.util.ArrayList[Module]
     configRegistry = new HashMap[Class[_], Component]
-    activeObjectRegistry = new HashMap[Class[_], Tuple4[AnyRef, AnyRef, Component, GenericServerContainer]]
+    activeObjectRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
     methodToUriRegistry = new HashMap[Method, String]
     injector = null
     restartStrategy = null

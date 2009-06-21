@@ -10,7 +10,10 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-class ProxyDispatcher extends MessageDispatcherBase {
+
+import kernel.actor.Invocation
+
+class ProxyMessageDispatcher extends MessageDispatcherBase {
   import java.util.concurrent.Executors
   import java.util.HashSet
   import org.codehaus.aspectwerkz.joinpoint.JoinPoint
@@ -35,12 +38,13 @@ class ProxyDispatcher extends MessageDispatcherBase {
             for (index <- 0 until queue.size) {
               val handle = queue.remove
               handlerExecutor.execute(new Runnable {
+                val invocation = handle.message.asInstanceOf[Invocation]
                 override def run = {
                   try {
-                    val result = handle.message.asInstanceOf[Invocation].joinpoint.proceed
+                    val result = invocation.joinpoint.proceed
                     handle.future.completeWithResult(result)
                   } catch {
-                    case e: Exception => handle.future.completeWithException(e)
+                    case e: Exception => handle.future.completeWithException(invocation.joinpoint.getTarget, e)
                   }
                   messageDemultiplexer.wakeUp
                 }

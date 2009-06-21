@@ -4,8 +4,9 @@
 
 package se.scalablesolutions.akka.kernel.config
 
-import config.ScalaConfig.{RestartStrategy, Component}
+import ScalaConfig.{RestartStrategy, Component}
 import javax.servlet.ServletContext
+import kernel.util.Logging
 
 object ActiveObjectConfigurator extends Logging {
 

@@ -1,7 +1,7 @@
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.kernel.TransactionalMap;
-import se.scalablesolutions.akka.kernel.CassandraPersistentTransactionalMap;
+import se.scalablesolutions.akka.kernel.state.TransactionalMap;
+import se.scalablesolutions.akka.kernel.state.CassandraPersistentTransactionalMap;
 
 public class PersistentClasher {
   private TransactionalMap state = new CassandraPersistentTransactionalMap();

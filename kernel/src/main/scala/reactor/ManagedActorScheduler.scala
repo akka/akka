@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.kernel
 
+import kernel.util.Logging
 import net.lag.logging.Logger
 
 import java.util.concurrent.Executors

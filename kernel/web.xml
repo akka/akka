@@ -2,7 +2,7 @@
   <!--listener>
     <description>Spring listener that initializes the ApplicationContext in ServletContext</description>
     <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-  </listener-->
+  </listener>
   <servlet>
     <servlet-name>Jersey Akka</servlet-name>
     <servlet-class>se.scalablesolutions.akka.kernel.jersey.AkkaServlet</servlet-class>
@@ -10,5 +10,5 @@
   <servlet-mapping>
     <servlet-name>Jersey Akka</servlet-name>
     <url-pattern>/*</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping-->
  </web-app>

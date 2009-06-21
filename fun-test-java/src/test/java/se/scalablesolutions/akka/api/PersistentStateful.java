@@ -1,6 +1,6 @@
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.kernel.*;
+import se.scalablesolutions.akka.kernel.state.*;
 import se.scalablesolutions.akka.annotation.transactional;
 import se.scalablesolutions.akka.annotation.state;
 

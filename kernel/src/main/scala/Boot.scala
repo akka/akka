@@ -4,11 +4,10 @@
 
 package se.scalablesolutions.akka
 
-import kernel.Logging
-
 import java.io.File
 import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
+import kernel.util.Logging
 
 /**
  * Bootstraps the Akka server by isolating the server classes and all its dependency JARs into its own classloader.

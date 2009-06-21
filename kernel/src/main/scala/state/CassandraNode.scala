@@ -2,10 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel.state
 
 import java.io.File
 import java.lang.reflect.Constructor
+import kernel.util.{Serializer, JavaSerializationSerializer, Logging}
 
 import org.apache.cassandra.config.DatabaseDescriptor
 import org.apache.cassandra.service._

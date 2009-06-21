@@ -6,9 +6,8 @@ package se.scalablesolutions.akka.kernel.jersey
 
 import com.sun.jersey.core.spi.component.ioc.IoCFullyManagedComponentProvider
 
-import kernel.Logging
-import config.ActiveObjectConfigurator
-
+import kernel.config.ActiveObjectConfigurator
+import kernel.util.Logging
 import java.lang.reflect.{Constructor, InvocationTargetException}
 
 class ActiveObjectComponentProvider(val clazz: Class[_], val configurator: ActiveObjectConfigurator)

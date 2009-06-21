@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka.kernel.util
 
 import java.lang.reflect.{Array => JArray}
 import java.lang.{Float => JFloat, Double => JDouble}

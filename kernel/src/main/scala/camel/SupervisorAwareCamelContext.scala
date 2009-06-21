@@ -4,8 +4,9 @@
 
 package se.scalablesolutions.akka.kernel.camel
 
+import kernel.actor.Supervisor
+import kernel.util.Logging
 import org.apache.camel.impl.{DefaultCamelContext, DefaultEndpoint, DefaultComponent}
-import se.scalablesolutions.akka.kernel.{Supervisor, Logging}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

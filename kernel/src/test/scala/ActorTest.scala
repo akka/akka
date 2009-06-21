@@ -45,7 +45,7 @@ class ActorTest {
     val actor = new TestActor
     actor.start
     val result = actor !? "Hello"
-    assertEquals("World", result.get.asInstanceOf[String])
+    assertEquals("World", result.asInstanceOf[String])
     actor.stop
   }
 

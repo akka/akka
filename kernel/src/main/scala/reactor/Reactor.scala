@@ -11,6 +11,7 @@
 package se.scalablesolutions.akka.kernel.reactor
 
 import java.util.{LinkedList, Queue}
+import kernel.util.HashCode
 
 trait MessageHandler {
   def handle(message: MessageHandle)
@@ -50,7 +51,7 @@ class MessageHandle(val sender: AnyRef, val message: AnyRef, val future: Complet
 }
 
 class MessageQueue {
-  private val queue: Queue[MessageHandle] = new LinkedList[MessageHandle]
+  private[kernel] val queue: Queue[MessageHandle] = new LinkedList[MessageHandle]
   @volatile private var interrupted = false
 
   def append(handle: MessageHandle) = queue.synchronized {

@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.kernel.camel
 
 import java.util.concurrent.{BlockingQueue, ExecutorService, Executors, ThreadFactory, TimeUnit}
 
-import se.scalablesolutions.akka.kernel.{Logging, GenericServerContainer}
+import kernel.util.Logging
 
 import org.apache.camel.{AsyncCallback, AsyncProcessor, Consumer, Exchange, Processor}
 import org.apache.camel.impl.ServiceSupport

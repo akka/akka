@@ -19,12 +19,18 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guiceyfruit-core:2.0-beta-7" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-all:2.0-beta-7" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.10" level="project" />
+    <orderEntry type="library" name="Maven: org.jmock:jmock:2.4.0" level="project" />
+    <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-core:1.1" level="project" />
+    <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-library:1.1" level="project" />
     <orderEntry type="module" module-name="akka-kernel" exported="" />
     <orderEntry type="module" module-name="akka-util-java" exported="" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-beta-4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-jsr250:2.0-beta-4" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.annotation:jsr250-api:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.scala-lang:scala-library:2.7.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.scala-lang:scala-library:2.7.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.aspectwerkz:aspectwerkz-nodeps-jdk5:2.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: net.lag:configgy:1.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.scala-lang:scala-compiler:2.7.4" level="project" />
@@ -32,8 +38,8 @@
     <orderEntry type="library" exported="" name="Maven: markdownj:markdownj:1.0.2b4-0.3.0" level="project" />
     <orderEntry type="library" name="Maven: junit:junit:4.5" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.scala-tools.testing:specs:1.4.4" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guiceyfruit-core:2.0-beta-7" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-all:2.0-beta-7" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guiceyfruit-core:2.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-all:2.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.annotation:com.springsource.javax.annotation:1.0.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.aopalliance:com.springsource.org.aopalliance:1.0.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.google.code.google-collections:google-collect:snapshot-20080530" level="project" />

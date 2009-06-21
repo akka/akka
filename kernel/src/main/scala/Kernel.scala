@@ -23,6 +23,8 @@ import java.io.{File, IOException}
 
 import javax.ws.rs.core.UriBuilder
 import javax.management.JMException
+import kernel.state.CassandraNode
+import kernel.util.Logging
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

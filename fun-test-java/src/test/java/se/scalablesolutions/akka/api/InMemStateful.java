@@ -2,7 +2,7 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.state;
 import se.scalablesolutions.akka.annotation.transactional;
-import se.scalablesolutions.akka.kernel.*;
+import se.scalablesolutions.akka.kernel.state.*;
 
 public class InMemStateful {
   @state private TransactionalMap<String, String> mapState = new InMemoryTransactionalMap<String, String>();

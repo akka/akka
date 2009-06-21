@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.kernel.config
 
 import akka.kernel.config.JavaConfig._
-import akka.kernel.{Supervisor, ActiveObjectFactory}
 
 import com.google.inject._
 import com.google.inject.jsr250.ResourceProviderFactory

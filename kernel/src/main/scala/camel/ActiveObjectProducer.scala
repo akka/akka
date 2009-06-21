@@ -4,10 +4,9 @@
 
 package se.scalablesolutions.akka.kernel.camel
 
-import java.util.Collection;
+import java.util.Collection
+import kernel.util.Logging;
 import java.util.concurrent.BlockingQueue;
-
-import se.scalablesolutions.akka.kernel.{Logging, GenericServerContainer}
 
 import org.apache.camel.{Exchange, AsyncProcessor, AsyncCallback}
 import org.apache.camel.impl.DefaultProducer

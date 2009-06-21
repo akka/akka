@@ -19,12 +19,12 @@ sealed trait FutureResult {
   def isExpired: Boolean
   def timeoutInNanos: Long
   def result: Option[AnyRef]
-  def exception: Option[Throwable]
+  def exception: Option[Tuple2[AnyRef, Throwable]]
 }
 
 trait CompletableFutureResult extends FutureResult {
   def completeWithResult(result: AnyRef)
-  def completeWithException(exception: Throwable)
+  def completeWithException(toBlame: AnyRef, exception: Throwable)
 }
 
 class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureResult {
@@ -37,8 +37,8 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
   private val _signal = _lock.newCondition
   private var _completed: Boolean = _
   private var _result: Option[AnyRef] = None
-  private var _exception: Option[Throwable] = None
-  
+  private var _exception: Option[Tuple2[AnyRef, Throwable]] = None
+
   override def await_? = try {
     _lock.lock
     var wait = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
@@ -86,7 +86,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  override def exception: Option[Throwable] = try {
+  override def exception: Option[Tuple2[AnyRef, Throwable]] = try {
     _lock.lock
     _exception
   } finally {
@@ -104,11 +104,11 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  override def completeWithException(exception: Throwable) = try {
+  override def completeWithException(toBlame: AnyRef, exception: Throwable) = try {
     _lock.lock
     if (!_completed) {
       _completed = true
-      _exception = Some(exception)
+      _exception = Some((toBlame, exception))
     }
 
   } finally {
@@ -121,12 +121,12 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
 
 class NullFutureResult extends CompletableFutureResult {
   override def completeWithResult(result: AnyRef) = {}
-  override def completeWithException(exception: Throwable) = {}
+  override def completeWithException(toBlame: AnyRef, exception: Throwable) = {}
   override def await_? = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def await_! = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def isCompleted: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def isExpired: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def timeoutInNanos: Long = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   override def result: Option[AnyRef] = None
-  override def exception: Option[Throwable] = None
+  override def exception: Option[Tuple2[AnyRef, Throwable]] = None
 }

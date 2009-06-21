@@ -10,8 +10,8 @@ import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJ
 import se.scalablesolutions.akka.annotation.*;
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
-import se.scalablesolutions.akka.kernel.TransactionalMap;
-import se.scalablesolutions.akka.kernel.InMemoryTransactionalMap;
+import se.scalablesolutions.akka.kernel.state.TransactionalMap;
+import se.scalablesolutions.akka.kernel.state.InMemoryTransactionalMap;
 
 import com.google.inject.Inject;
 import com.google.inject.AbstractModule;
