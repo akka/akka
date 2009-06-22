@@ -14,7 +14,6 @@ class ActorTest {
   class TestActor extends Actor {
     def receive: PartialFunction[Any, Unit] = {
       case "Hello" =>
-        println("Hello")
         reply("World")
       case "Failure" =>
         throw new RuntimeException("expected")
@@ -44,8 +43,8 @@ class ActorTest {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
-    val result = actor !? "Hello"
-    assertEquals("World", result.asInstanceOf[String])
+    val result: String = actor !? "Hello"
+    assertEquals("World", result)
     actor.stop
   }
 

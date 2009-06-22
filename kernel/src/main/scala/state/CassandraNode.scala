@@ -25,7 +25,7 @@ final object CassandraNode extends Logging {
   val VECTOR_COLUMN_FAMILY = "vector"
   val REF_COLUMN_FAMILY = "ref:item"
 
-  // TODO: make pluggable (JSON, Thrift, Protobuf etc.)
+  // TODO: make pluggable (Avro, JSON, Thrift, Protobuf etc.)
   private[this] var serializer: Serializer = new JavaSerializationSerializer
   
   // TODO: is this server thread-safe or needed to be wrapped up in an actor?

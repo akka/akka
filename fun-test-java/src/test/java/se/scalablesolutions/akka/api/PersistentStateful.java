@@ -5,9 +5,10 @@ import se.scalablesolutions.akka.annotation.transactional;
 import se.scalablesolutions.akka.annotation.state;
 
 public class PersistentStateful {
-  private TransactionalMap mapState = new CassandraPersistentTransactionalMap();
-  private TransactionalVector vectorState = new CassandraPersistentTransactionalVector();
-  private TransactionalRef refState = new CassandraPersistentTransactionalRef();
+  private TransactionalState factory = new TransactionalState();
+  private TransactionalMap mapState =       factory.newMap(new PersistentMapConfig(new CassandraStorageConfig()));
+  private TransactionalVector vectorState = factory.newVector(new PersistentVectorConfig(new CassandraStorageConfig()));;
+  private TransactionalRef refState =       factory.newRef(new PersistentRefConfig(new CassandraStorageConfig()));
 
   @transactional
   public String getMapState(String key) {
