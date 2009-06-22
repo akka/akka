@@ -41,12 +41,12 @@ object Annotations {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
-  def newInstance[T](target: Class[T]): T = {
-    ActiveObject.newInstance(target)
+  def newInstance[T](target: Class[T], actor: Actor): T = {
+    ActiveObject.newInstance(target, actor)
   }
 
-  def newInstance[T](intf: Class[T], target: AnyRef): T = {
-    ActiveObject.newInstance(intf, target)
+  def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor): T = {
+    ActiveObject.newInstance(intf, target, actor)
   }
 
   def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
@@ -67,16 +67,16 @@ object ActiveObject {
     tl
   }
 
-  def newInstance[T](target: Class[T]): T = {
+  def newInstance[T](target: Class[T], actor: Actor): T = {
     val proxy = Proxy.newInstance(target, false, true)
     // FIXME switch to weaving in the aspect at compile time
-    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(target, proxy))
+    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(target, proxy, actor))
     proxy.asInstanceOf[T]
   }
 
-  def newInstance[T](intf: Class[T], target: AnyRef): T = {
+  def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor): T = {
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
-    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(intf, target))
+    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(intf, target, actor))
     proxy.asInstanceOf[T]
   }
 
@@ -95,7 +95,7 @@ object ActiveObject {
  */
 
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
-sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstance: AnyRef) extends AroundAdvice {
+sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstance: AnyRef, actor: Actor) extends AroundAdvice {
   private val changeSet = new ChangeSet(target.getName)
   
   private val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance)
@@ -115,15 +115,24 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
   def invoke(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val method = rtti.getMethod
-    if (reenteringExistingTransaction) {
-      tryToCommitTransaction
-      if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
+
+    tryToCommitTransaction
+
+    if (isInExistingTransaction) {
       joinExistingTransaction
+    } else {
+      if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
     }
+
     val result: AnyRef = try {
       incrementTransaction
-      if (rtti.getMethod.isAnnotationPresent(Annotations.oneway)) sendOneWay(joinpoint) // FIXME put in 2 different aspects
-      else handleResult(sendAndReceiveEventually(joinpoint))
+//      if (rtti.getMethod.isAnnotationPresent(Annotations.oneway)) sendOneWay(joinpoint) // FIXME put in 2 different aspects
+//      else handleResult(sendAndReceiveEventually(joinpoint))
+      val result = actor !! Invocation(joinpoint, activeTx)
+      val resultOrFailure =
+        if (result.isDefined) result.get.asInstanceOf[ResultOrFailure[AnyRef]]
+        else throw new ActiveObjectInvocationTimeoutException("TIMED OUT")
+      handleResult(resultOrFailure)
     } finally {
       decrementTransaction
       if (isTransactionAborted) removeTransactionIfTopLevel
@@ -132,19 +141,12 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
     result
   }
 
-  private def isTransactionAborted = activeTx.isDefined && activeTx.get.isAborted
-  private def incrementTransaction =  if (activeTx.isDefined) activeTx.get.increment
-  private def decrementTransaction =  if (activeTx.isDefined) activeTx.get.decrement
-  private def removeTransactionIfTopLevel =
-    if (activeTx.isDefined && activeTx.get.topLevel_?) {
-      activeTx = None
-      threadBoundTx.set(None)
-    }
-
   private def startNewTransaction = {
     val newTx = new Transaction
     newTx.begin(changeSet)
-    threadBoundTx.set(Some(newTx))
+    val tx = Some(newTx)
+    activeTx = tx
+    threadBoundTx.set(tx)
   }
 
   private def joinExistingTransaction = {
@@ -158,17 +160,12 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
 
   private def tryToPrecommitTransaction = if (activeTx.isDefined) activeTx.get.precommit(changeSet)
 
-  private def reenteringExistingTransaction= if (activeTx.isDefined) {
-    val cflowTx = threadBoundTx.get
-    if (cflowTx.isDefined && cflowTx.get.id == activeTx.get.id) false
-    else true
-  } else true
-
-  private def tryToCommitTransaction = if (activeTx.isDefined) {
+  private def tryToCommitTransaction: Boolean = if (activeTx.isDefined) {
     val tx = activeTx.get
     tx.commit(changeSet)
     removeTransactionIfTopLevel
-  }
+    true
+  } else false
                                                                
   private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
     try {
@@ -186,6 +183,26 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
       tx.rollback(changeSet)
   }
 
+  private def isInExistingTransaction = ActiveObject.threadBoundTx.get.isDefined
+
+  private def isTransactionAborted = activeTx.isDefined && activeTx.get.isAborted
+
+  private def incrementTransaction =  if (activeTx.isDefined) activeTx.get.increment
+
+  private def decrementTransaction =  if (activeTx.isDefined) activeTx.get.decrement
+
+  private def removeTransactionIfTopLevel =
+    if (activeTx.isDefined && activeTx.get.topLevel_?) {
+      activeTx = None
+      threadBoundTx.set(None)
+    }
+
+  private def reenteringExistingTransaction= if (activeTx.isDefined) {
+    val cflowTx = threadBoundTx.get
+    if (cflowTx.isDefined && cflowTx.get.id == activeTx.get.id) false
+    else true
+  } else true
+
   private def sendOneWay(joinpoint: JoinPoint) =
     mailbox.append(new MessageHandle(this, Invocation(joinpoint, activeTx), new NullFutureResult))
 
@@ -195,8 +212,7 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
     getResultOrThrowException(future)
   }
 
-  private def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: AnyRef, timeout: Long): CompletableFutureResult = {
+  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = {
     val future = new DefaultCompletableFutureResult(timeout)
     mailbox.append(new MessageHandle(this, message, future))
     future
@@ -310,6 +326,30 @@ class ChangeSet(val id: String) {
   }
 }
 
+/**
+ * Generic Actor managing Invocation dispatch, transaction and error management.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[kernel] class Dispatcher(val targetName: String) extends Actor {
+  id = targetName
+  override def receive: PartialFunction[Any, Unit] = {
+
+    case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
+      ActiveObject.threadBoundTx.set(tx)
+      try {
+        reply(ResultOrFailure(joinpoint.proceed, tx))
+      } catch {
+        case e =>
+          val resultOrFailure = ResultOrFailure(tx)
+          resultOrFailure() = throw e
+          reply(resultOrFailure)
+      }
+
+    case unexpected =>
+      throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
+  }
+}
 
 /*
 ublic class CamelInvocationHandler implements InvocationHandler {
@@ -365,32 +405,3 @@ ublic class CamelInvocationHandler implements InvocationHandler {
 
       } else
 */
-
-/**
- * Generic GenericServer managing Invocation dispatch, transaction and error management.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[kernel] class Dispatcher(val targetName: String) extends Actor {
-  override def receive: PartialFunction[Any, Unit] = {
-
-    case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
-      ActiveObject.threadBoundTx.set(tx)
-      try {
-        reply(ResultOrFailure(joinpoint.proceed, tx))
-      } catch {
-        case e =>
-          val resultOrFailure = ResultOrFailure(tx)
-          resultOrFailure() = throw e
-          reply(resultOrFailure)
-      }
-
-    case 'exit =>
-      exit
-
-    case unexpected =>
-      throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
-  }
-
-  override def toString(): String = "Actor[" + targetName + "]"
-}

@@ -5,7 +5,10 @@
 package se.scalablesolutions.akka.kernel.state
 
 import org.codehaus.aspectwerkz.proxy.Uuid
+
+import kernel.actor.ActiveObject
 import se.scalablesolutions.akka.collection._
+
 import scala.collection.mutable.HashMap
 
 /**
@@ -13,9 +16,13 @@ import scala.collection.mutable.HashMap
  */
 trait Transactional {
   val uuid = Uuid.newUuid.toString
+
   private[kernel] def begin
   private[kernel] def commit
   private[kernel] def rollback
+
+  protected def isInTransaction = ActiveObject.threadBoundTx.get.isDefined
+  protected def nonTransactionalCall = throw new IllegalStateException("Can't access transactional map outside the scope of a transaction")
 }
 
 /**
@@ -26,7 +33,37 @@ trait Transactional {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
-  def remove(key: K)   
+  def remove(key: K)
+}
+
+trait TransactionalMapGuard[K, V] extends TransactionalMap[K, V] with Transactional {
+  abstract override def contains(key: K): Boolean =
+    if (isInTransaction) super.contains(key)
+    else nonTransactionalCall
+  abstract override def clear =
+    if (isInTransaction) super.clear
+    else nonTransactionalCall
+  abstract override def size: Int =
+    if (isInTransaction) super.size
+    else nonTransactionalCall
+  abstract override def remove(key: K) =
+    if (isInTransaction) super.remove(key)
+    else nonTransactionalCall
+  abstract override def elements: Iterator[(K, V)] = 
+    if (isInTransaction) super.elements
+    else nonTransactionalCall
+  abstract override def get(key: K): Option[V] =
+    if (isInTransaction) super.get(key)
+    else nonTransactionalCall
+  abstract override def put(key: K, value: V): Option[V] =
+    if (isInTransaction) super.put(key, value)
+    else nonTransactionalCall
+  abstract override def -=(key: K) =
+    if (isInTransaction) super.-=(key)
+    else nonTransactionalCall
+  abstract override def update(key: K, value: V) =
+    if (isInTransaction) super.update(key, value)
+    else nonTransactionalCall
 }
 
 /**

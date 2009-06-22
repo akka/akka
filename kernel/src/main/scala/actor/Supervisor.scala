@@ -87,6 +87,7 @@ abstract class SupervisorFactory extends Logging {
   }
 }
 
+// FIXME remove Supervisor - all Actors can be supervisors - move SupervisorFactory config into actor
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

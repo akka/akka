@@ -8,9 +8,11 @@ import com.google.inject._
 import com.google.inject.jsr250.ResourceProviderFactory
 
 import ScalaConfig._
-import kernel.actor.{Supervisor, ActiveObjectFactory}
+import kernel.actor.{Actor, Supervisor, ActiveObjectFactory, Dispatcher}
 import kernel.camel.ActiveObjectComponent
 import kernel.util.Logging
+
+import org.codehaus.aspectwerkz.intercept.Advisable
 
 import org.apache.camel.impl.{JndiRegistry, DefaultCamelContext}
 import org.apache.camel.{CamelContext, Endpoint, Routes}
@@ -106,10 +108,9 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
-
-    // FIXME add wrapping Actor and pass into Worker
-    workers ::= Worker(null, component.lifeCycle)
-    val proxy = activeObjectFactory.newInstance(targetClass).asInstanceOf[AnyRef]
+    val actor = new Dispatcher(targetClass.getName)
+    val proxy = activeObjectFactory.newInstance(targetClass, actor).asInstanceOf[AnyRef]
+    workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
   }
@@ -117,9 +118,10 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private def newDelegatingProxy(component: Component): DependencyBinding = {
     val targetClass = component.intf.get
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
-    workers ::= Worker(null, component.lifeCycle) // TODO null is not an Actor
     component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
-    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance).asInstanceOf[AnyRef]
+    val actor = new Dispatcher(targetClass.getName)
+    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor).asInstanceOf[AnyRef]
+    workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }

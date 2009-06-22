@@ -9,26 +9,32 @@ public class InMemStateful {
   @state private TransactionalVector<String> vectorState = new InMemoryTransactionalVector<String>();
   @state private TransactionalRef<String> refState = new TransactionalRef<String>();
 
+  @transactional
   public String getMapState(String key) {
     return (String)mapState.get(key).get();
   }
 
+  @transactional
   public String getVectorState() {
     return (String)vectorState.last();
   }
 
+  @transactional
   public String getRefState() {
     return (String)refState.get().get();
   }
 
+  @transactional
   public void setMapState(String key, String msg) {
     mapState.put(key, msg);
   }
 
+  @transactional
   public void setVectorState(String msg) {
     vectorState.add(msg);
   }
 
+  @transactional
   public void setRefState(String msg) {
     refState.swap(msg);
   }

@@ -89,6 +89,8 @@ object TransactionIdFactory {
     log.debug("Server [%s] has initiated transaction rollback for [%s], rolling back [%s]", changeSet.id, this, participants)
     participants.foreach(_.full.foreach(_.rollback))
     status = TransactionStatus.Aborted
+    participants.clear
+    precommitted.clear
   }
 
   def join(changeSet: ChangeSet) = synchronized {

@@ -167,6 +167,8 @@ trait Actor extends Logging {
           dispatcher = new EventBasedThreadPoolDispatcher
         case DispatcherType.ThreadBasedDispatcher =>
           dispatcher = new ThreadBasedDispatcher
+        case DispatcherType.EventBasedThreadPooledProxyInvokingDispatcher =>
+          dispatcher = new ProxyMessageDispatcher
       }
       mailbox = dispatcher.messageQueue
       dispatcher.registerHandler(this, new ActorMessageHandler(this))
