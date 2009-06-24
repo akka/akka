@@ -4,7 +4,6 @@
     <output url="file://$MODULE_DIR$/target/classes" />
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
@@ -21,10 +20,6 @@
     </orderEntry>
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guiceyfruit-core:2.0-beta-7" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-all:2.0-beta-7" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.10" level="project" />
-    <orderEntry type="library" name="Maven: org.jmock:jmock:2.4.0" level="project" />
-    <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-core:1.1" level="project" />
-    <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-library:1.1" level="project" />
     <orderEntry type="module" module-name="akka-kernel" exported="" />
     <orderEntry type="module" module-name="akka-util-java" exported="" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-beta-4" level="project" />
@@ -52,7 +47,7 @@
     <orderEntry type="library" exported="" name="Maven: javax.xml.stream:stax-api:1.0-2" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.activation:activation:1.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.10" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.BETA2" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.CR1" level="project" />
     <orderEntry type="library" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.9.9" level="project" />
     <orderEntry type="library" name="Maven: com.sun.grizzly:grizzly-http:1.9.9" level="project" />
     <orderEntry type="library" name="Maven: com.sun.grizzly:grizzly-framework:1.9.9" level="project" />

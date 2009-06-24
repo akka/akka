@@ -10,9 +10,10 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ThreadFactory
 import java.util.{LinkedList, Queue}
-import kernel.util.HashCode
-
+import kernel.util.{Logging, HashCode}
 trait MessageHandler {
   def handle(message: MessageHandle)
 }
@@ -74,4 +75,35 @@ class MessageQueue {
     interrupted = true
     queue.notifyAll
   }
+}
+
+class MonitorableThreadFactory(val name: String) extends ThreadFactory {
+  def newThread(runnable: Runnable) =
+    //new MonitorableThread(runnable, name)
+    new Thread(runnable)
+}
+
+object MonitorableThread {
+  val DEFAULT_NAME = "MonitorableThread"
+  val created = new AtomicInteger
+  val alive = new AtomicInteger
+  @volatile val debugLifecycle = false
+}
+class MonitorableThread(runnable: Runnable, name: String)
+  extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) {//with Logging {
+  setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+    def uncaughtException(thread: Thread, cause: Throwable) = {} //log.error("UNCAUGHT in thread [%s] cause [%s]", thread.getName, cause)
+  })
+
+  override def run = {
+    val debug = MonitorableThread.debugLifecycle
+    //if (debug) log.debug("Created %s", getName)
+    try {
+       MonitorableThread.alive.incrementAndGet
+       super.run
+     } finally {
+        MonitorableThread.alive.decrementAndGet
+        //if (debug) log.debug("Exiting %s", getName)
+      }
+   }
 }

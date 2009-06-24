@@ -116,7 +116,7 @@
     <orderEntry type="library" exported="" name="Maven: javax.xml.stream:stax-api:1.0-2" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.activation:activation:1.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.6" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.BETA2" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.CR1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.9.9" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.9.9" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-framework:1.9.9" level="project" />

@@ -18,17 +18,17 @@ abstract class TransactionalRefConfig  extends TransactionalStateConfig
 
 abstract class PersistentStorageConfig  extends TransactionalStateConfig
 case class CassandraStorageConfig extends PersistentStorageConfig
-case object TerracottaStorageConfig extends PersistentStorageConfig
-case object TokyoCabinetStorageConfig extends PersistentStorageConfig
+case class TerracottaStorageConfig extends PersistentStorageConfig
+case class TokyoCabinetStorageConfig extends PersistentStorageConfig
 
 case class PersistentMapConfig(storage: PersistentStorageConfig) extends TransactionalMapConfig
-case object InMemoryMapConfig extends TransactionalMapConfig
+case class InMemoryMapConfig extends TransactionalMapConfig
 
 case class PersistentVectorConfig(storage: PersistentStorageConfig) extends TransactionalVectorConfig
-case object InMemoryVectorConfig extends TransactionalVectorConfig
+case class InMemoryVectorConfig extends TransactionalVectorConfig
 
 case class PersistentRefConfig(storage: PersistentStorageConfig) extends TransactionalRefConfig
-case object InMemoryRefConfig extends TransactionalRefConfig
+case class InMemoryRefConfig extends TransactionalRefConfig
 
 object TransactionalState extends TransactionalState
 class TransactionalState {
@@ -39,13 +39,13 @@ class TransactionalState {
    * val myMap = TransactionalState.newMap(PersistentMapConfig(CassandraStorageConfig))
    * </pre>
    */
-  def newMap(config: TransactionalMapConfig): TransactionalMap = config match {
+  def newMap(config: TransactionalMapConfig) = config match {
     case PersistentMapConfig(storage) => storage match {
       case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
-      case TerracottaStorageConfig => throw new UnsupportedOperationException
-      case TokyoCabinetStorageConfig => throw new UnsupportedOperationException
+      case TerracottaStorageConfig() => throw new UnsupportedOperationException
+      case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
     }
-    case InMemoryMapConfig => new InMemoryTransactionalMap
+    case InMemoryMapConfig() => new InMemoryTransactionalMap
   }
 
   /**
@@ -54,13 +54,13 @@ class TransactionalState {
    * val myVector = TransactionalState.newVector(PersistentVectorConfig(CassandraStorageConfig))
    * </pre>
    */
-  def newVector(config: TransactionalVectorConfig): TransactionalVector = config match {
+  def newVector(config: TransactionalVectorConfig) = config match {
     case PersistentVectorConfig(storage) => storage match {
       case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
-      case TerracottaStorageConfig => throw new UnsupportedOperationException
-      case TokyoCabinetStorageConfig => throw new UnsupportedOperationException
+      case TerracottaStorageConfig() => throw new UnsupportedOperationException
+      case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
     }
-    case InMemoryVectorConfig => new InMemoryTransactionalVector
+    case InMemoryVectorConfig() => new InMemoryTransactionalVector
   }
 
   /**
@@ -69,13 +69,13 @@ class TransactionalState {
    * val myRef = TransactionalState.newRef(PersistentRefConfig(CassandraStorageConfig))
    * </pre>
    */
-  def newRef(config: TransactionalRefConfig): TransactionalRef = config match {
+  def newRef(config: TransactionalRefConfig) = config match {
     case PersistentRefConfig(storage) => storage match {
       case CassandraStorageConfig() => new CassandraPersistentTransactionalRef
-      case TerracottaStorageConfig => throw new UnsupportedOperationException
-      case TokyoCabinetStorageConfig => throw new UnsupportedOperationException
+      case TerracottaStorageConfig() => throw new UnsupportedOperationException
+      case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
     }
-    case InMemoryRefConfig => new TransactionalRef
+    case InMemoryRefConfig() => new TransactionalRef
   }
 }
 

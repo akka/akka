@@ -5,9 +5,10 @@ import se.scalablesolutions.akka.annotation.transactional;
 import se.scalablesolutions.akka.kernel.state.*;
 
 public class InMemStateful {
-  @state private TransactionalMap<String, String> mapState = new InMemoryTransactionalMap<String, String>();
-  @state private TransactionalVector<String> vectorState = new InMemoryTransactionalVector<String>();
-  @state private TransactionalRef<String> refState = new TransactionalRef<String>();
+  private TransactionalState factory = new TransactionalState();
+  private TransactionalMap mapState =       factory.newMap(new InMemoryMapConfig());
+  private TransactionalVector vectorState = factory.newVector(new InMemoryVectorConfig());;
+  private TransactionalRef refState =       factory.newRef(new InMemoryRefConfig());
 
   @transactional
   public String getMapState(String key) {
@@ -47,11 +48,12 @@ public class InMemStateful {
   }
 
   @transactional
-  public void failure(String key, String msg, InMemFailer failer) {
+  public String failure(String key, String msg, InMemFailer failer) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
     failer.fail();
+    return msg;
   }
 
   @transactional

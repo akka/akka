@@ -11,10 +11,11 @@ import java.lang.annotation.Annotation
 import kernel.config.ActiveObjectGuiceConfigurator
 import kernel.config.ScalaConfig._
 import kernel.camel.{MessageDriven, ActiveObjectProducer}
+import kernel.nio.{RemoteRequest, NettyClient}
+import kernel.stm.{ChangeSet, Transaction}
 import kernel.util.Helpers.ReadWriteLock
 import kernel.util.{HashCode, ResultOrFailure}
 import kernel.state.{Transactional, TransactionalMap, TransactionalRef, TransactionalVector}
-import kernel.stm.Transaction
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -61,6 +62,8 @@ class ActiveObjectFactory {
 object ActiveObject {
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
+  val RemoteClient = new NettyClient
+
   private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = {
     val tl = new ThreadLocal[Option[Transaction]]
     tl.set(None)
@@ -95,7 +98,7 @@ object ActiveObject {
  */
 
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
-sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstance: AnyRef, actor: Actor) extends AroundAdvice {
+@serializable sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstance: AnyRef, actor: Actor) extends AroundAdvice {
   private val changeSet = new ChangeSet(target.getName)
   
   private val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance)
@@ -116,29 +119,58 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val method = rtti.getMethod
 
-    tryToCommitTransaction
-
-    if (isInExistingTransaction) {
-      joinExistingTransaction
-    } else {
-      if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
-    }
-
-    val result: AnyRef = try {
-      incrementTransaction
-//      if (rtti.getMethod.isAnnotationPresent(Annotations.oneway)) sendOneWay(joinpoint) // FIXME put in 2 different aspects
-//      else handleResult(sendAndReceiveEventually(joinpoint))
-      val result = actor !! Invocation(joinpoint, activeTx)
-      val resultOrFailure =
-        if (result.isDefined) result.get.asInstanceOf[ResultOrFailure[AnyRef]]
-        else throw new ActiveObjectInvocationTimeoutException("TIMED OUT")
-      handleResult(resultOrFailure)
-    } finally {
-      decrementTransaction
-      if (isTransactionAborted) removeTransactionIfTopLevel
-      else tryToPrecommitTransaction
-    }
+    val remoteCall = true
+    val isOneWay = rtti.getMethod.getReturnType == java.lang.Void.TYPE
+    val result: AnyRef =
+      if (remoteCall) {
+        // FIXME: Make part of TX semantics??
+        val future = ActiveObject.RemoteClient.send(new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, isOneWay))
+        if (isOneWay) null // for void methods
+        else {
+          future.await_?
+          val resultOrFailure = getResultOrThrowException(future)
+          handleResult(resultOrFailure)
+        }
+        
+      } else {
+        // FIXME join TX with same id, do not COMMIT
+        tryToCommitTransaction
+        if (isInExistingTransaction) {
+          joinExistingTransaction
+        } else {
+          if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
+        }
+        try {
+          incrementTransaction
+          if (isOneWay) actor ! Invocation(joinpoint, activeTx)
+          else {
+            val result = actor !! Invocation(joinpoint, activeTx)
+            val resultOrFailure =
+              if (result.isDefined) result.get.asInstanceOf[ResultOrFailure[AnyRef]]
+              else throw new ActiveObjectInvocationTimeoutException("TIMED OUT")
+            handleResult(resultOrFailure)
+          }
+        } finally {
+          decrementTransaction
+          if (isTransactionAborted) removeTransactionIfTopLevel
+          else tryToPrecommitTransaction
+        }
+      }
     result
+  }
+
+  // TODO: create a method setCallee/setCaller to the joinpoint interface and compiler
+  private def nullOutTransientFieldsInJoinpoint(joinpoint: JoinPoint) = {
+    val clazz = joinpoint.getClass
+    val callee = clazz.getDeclaredField("CALLEE")
+    callee.setAccessible(true)
+    callee.set(joinpoint, null)
+    val caller = clazz.getDeclaredField("CALLER")
+    caller.setAccessible(true)
+    caller.set(joinpoint, null)
+    val interceptors = clazz.getDeclaredField("AROUND_INTERCEPTORS")
+    interceptors.setAccessible(true)
+    interceptors.set(joinpoint, null)
   }
 
   private def startNewTransaction = {
@@ -167,7 +199,9 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
     true
   } else false
                                                                
-  private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
+
+
+     private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
     try {
       result()
     } catch {
@@ -265,41 +299,6 @@ sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstanc
   }
 }
 
-class ChangeSet(val id: String) {
-  private val lock = new ReadWriteLock
-  
-  private[kernel] def full: List[Transactional] = lock.withReadLock {
-    _maps ::: _vectors ::: _refs
-  }
-
-  // TX Maps
-  private[kernel] var _maps: List[TransactionalMap[_, _]] = Nil
-  private[kernel] def maps_=(maps: List[TransactionalMap[_, _]]) = lock.withWriteLock {
-    _maps = maps
-  }
-  private[kernel] def maps: List[TransactionalMap[_, _]] = lock.withReadLock {
-    _maps
-  }
-
-  // TX Vectors
-  private[kernel] var _vectors: List[TransactionalVector[_]] = Nil
-  private[kernel] def vectors_=(vectors: List[TransactionalVector[_]]) = lock.withWriteLock {
-    _vectors = vectors
-  }
-  private[kernel] def vectors: List[TransactionalVector[_]] = lock.withReadLock {
-    _vectors
-  }
-
-  // TX Refs
-  private[kernel] var _refs: List[TransactionalRef[_]] = Nil
-  private[kernel] def refs_=(refs: List[TransactionalRef[_]]) = lock.withWriteLock {
-    _refs = refs
-  }
-  private[kernel] def refs: List[TransactionalRef[_]] = lock.withReadLock {
-    _refs
-  }  
-}
-
 /**
  * Represents a snapshot of the current invocation.
  *
@@ -333,6 +332,11 @@ class ChangeSet(val id: String) {
  */
 private[kernel] class Dispatcher(val targetName: String) extends Actor {
   id = targetName
+
+  // FIXME implement the pre/post restart methods and call annotated methods on the POJO
+
+  // FIXME create new POJO on creation and swap POJO at restart - joinpoint.setTarget(new POJO)
+  
   override def receive: PartialFunction[Any, Unit] = {
 
     case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
@@ -353,7 +357,7 @@ private[kernel] class Dispatcher(val targetName: String) extends Actor {
 
 /*
 ublic class CamelInvocationHandler implements InvocationHandler {
-    private final Endpoint endpoint;
+     private final Endpoint endpoint;
     private final Producer producer;
     private final MethodInfoCache methodInfoCache;
 

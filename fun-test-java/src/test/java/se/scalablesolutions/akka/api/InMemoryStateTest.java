@@ -24,7 +24,7 @@ public class InMemoryStateTest extends TestCase {
           //new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000)
           }).inject().supervise();
   }
-                                             
+
   protected void tearDown() {
     conf.stop();
   }
@@ -87,7 +87,6 @@ public class InMemoryStateTest extends TestCase {
    } // expected
    assertEquals("init", stateful.getRefState()); // check that state is == init state
  }
-
  /*
   public void testNestedNonTransactionalMethodHangs() {
    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);

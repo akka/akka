@@ -747,17 +747,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.1.10/jaxb-impl-2.1.10-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.jboss.netty:netty:3.1.0.BETA2">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.BETA2/netty-3.1.0.BETA2.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.BETA2/netty-3.1.0.BETA2-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.BETA2/netty-3.1.0.BETA2-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.9.9">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/grizzly/grizzly-servlet-webserver/1.9.9/grizzly-servlet-webserver-1.9.9.jar!/" />
@@ -1185,6 +1174,17 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.jboss.netty:netty:3.1.0.CR1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

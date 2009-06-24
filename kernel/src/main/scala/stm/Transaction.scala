@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.kernel.stm
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
-import kernel.actor.ChangeSet
 import kernel.util.Logging
 import scala.collection.mutable.{HashSet, HashMap}
 

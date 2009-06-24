@@ -10,15 +10,29 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
+
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, RejectedExecutionHandler, ThreadPoolExecutor}
+
 class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   import java.util.concurrent.Executors
   import java.util.HashSet
   
   // FIXME: make configurable using configgy + JMX
-  // FIXME: create one executor per invocation to dispatch(..), grab config settings for specific actor (set in registerHandler)
-  private val threadPoolSize: Int = 100
   private val busyHandlers = new HashSet[AnyRef]
-  private val handlerExecutor = Executors.newCachedThreadPool()
+
+  private val minNrThreads, maxNrThreads = 10
+  private val timeOut = 1000L // ????
+  private val timeUnit = TimeUnit.MILLISECONDS
+  private val threadFactory = new MonitorableThreadFactory("akka:kernel")
+  private val rejectedExecutionHandler = new RejectedExecutionHandler() {
+    def rejectedExecution(runnable: Runnable, threadPoolExecutor: ThreadPoolExecutor) {
+      
+    }
+  }
+  private val queue = new LinkedBlockingQueue[Runnable]
+  private val handlerExecutor = new ThreadPoolExecutor(minNrThreads, maxNrThreads, timeOut, timeUnit, queue, threadFactory, rejectedExecutionHandler)
+
+  //private val handlerExecutor = Executors.newCachedThreadPool()
 
   def start = if (!active) {
     active = true
