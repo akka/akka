@@ -19,6 +19,7 @@ class SystemFailure(cause: Throwable) extends RuntimeException(cause)
 object Helpers extends Logging {
 
  // ================================================
+  @serializable
   class ReadWriteLock {
     private val rwl = new ReentrantReadWriteLock
     private val readLock = rwl.readLock

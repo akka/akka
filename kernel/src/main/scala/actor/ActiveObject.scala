@@ -133,7 +133,7 @@ object ActiveObject {
 
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
 @serializable sealed class SequentialTransactionalAroundAdvice(
-    target: Class[_], targetInstance: AnyRef, actor: Actor, val remote: Boolean) extends AroundAdvice {
+    target: Class[_], targetInstance: AnyRef, actor: Actor, val isRemote: Boolean) extends AroundAdvice {
   private val changeSet = new ChangeSet(target.getName)
   
   private val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance)
@@ -147,7 +147,7 @@ object ActiveObject {
   dispatcher.start
 
   import ActiveObject.threadBoundTx
-  private[this] var activeTx: Option[Transaction] = None
+  private[kernel] var activeTx: Option[Transaction] = None
 
   // FIXME: switch to using PCD annotation matching, break out into its own aspect + switch to StaticJoinPoint
   def invoke(joinpoint: JoinPoint): AnyRef = {
@@ -164,9 +164,9 @@ object ActiveObject {
     }
     try {
       incrementTransaction
-      if (remote) {
+      if (isRemote) {
         val future = NettyClient.send(
-          new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, isOneWay, false))
+          new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, activeTx, isOneWay, false))
         if (isOneWay) null // for void methods
         else {
           future.await_?
@@ -232,9 +232,7 @@ object ActiveObject {
     removeTransactionIfTopLevel
     true
   } else false
-                                                               
-
-
+ 
   private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
     try {
       result()
@@ -271,17 +269,6 @@ object ActiveObject {
     else true
   } else true
 
-  /*
-  private def sendOneWay(joinpoint: JoinPoint) =
-    mailbox.append(new MessageHandle(this, Invocation(joinpoint, activeTx), new NullFutureResult))
-
-  private def sendAndReceiveEventually(joinpoint: JoinPoint): ResultOrFailure[AnyRef] = {
-    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(Invocation(joinpoint, activeTx), 1000) // FIXME configure
-    future.await_?
-    getResultOrThrowException(future)
-  }
-  */
-  
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = {
     val future = new DefaultCompletableFutureResult(timeout)
     mailbox.append(new MessageHandle(this, message, future))
@@ -292,15 +279,13 @@ object ActiveObject {
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
       throw new TransactionAwareException(cause, activeTx)
-    } else future.result.asInstanceOf[Option[T]]
-/*
-    if (future.exception.isDefined) {
-      var resultOrFailure = ResultOrFailure(activeTx)
-      val (toBlame, cause) = future.exception.get
-      resultOrFailure() = throw cause
-      resultOrFailure
-    } else ResultOrFailure(future.result.get, activeTx)
- */
+    } else {
+      if (future.result.isDefined) {
+        val (res, tx) = future.result.get.asInstanceOf[Tuple2[AnyRef, Option[Transaction]]]
+        Some(res).asInstanceOf[Option[T]]
+      } else None
+    }
+
   /**
    * Search for transactional items for a specific target instance, crawl the class hierarchy recursively up to the top.
    */
@@ -387,11 +372,7 @@ private[kernel] class Dispatcher(val targetName: String) extends Actor {
       } catch {
         case e =>
           throw new TransactionAwareException(e, tx)
-/*
-          val resultOrFailure = ResultOrFailure(tx)
-          resultOrFailure() = throw e
-          reply(resultOrFailure)
-*/      }
+      }
 
     case unexpected =>
       throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")

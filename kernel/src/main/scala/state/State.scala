@@ -82,6 +82,7 @@ class TransactionalState {
 /**
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
+@serializable
 trait Transactional {
   val uuid = Uuid.newUuid.toString
 

@@ -7,17 +7,26 @@ package se.scalablesolutions.akka.api;
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 import se.scalablesolutions.akka.kernel.actor.*;
+import se.scalablesolutions.akka.kernel.nio.NettyServer;
 
 import junit.framework.TestCase;
 
-public class InMemoryStateTest extends TestCase {
+public class RemoteInMemoryStateTest extends TestCase {
   static String messageLog = "";
 
+  static {
+    new Thread(new Runnable() {
+       public void run() {
+         NettyServer server = new NettyServer();
+         server.connect();         
+       }
+    }).start();
+  }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
-  final private ActiveObjectFactory factory = new ActiveObjectFactory();
+  final private se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory factory = new se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory();
 
   protected void setUp() {
-
+    new se.scalablesolutions.akka.kernel.nio.NettyServer();
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
@@ -33,16 +42,16 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class);
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = factory.newRemoteInstance(InMemFailer.class); //conf.getActiveObject(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
       fail("should have thrown an exception");
@@ -52,7 +61,7 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
@@ -60,9 +69,9 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = factory.newRemoteInstance(InMemFailer.class); //conf.getActiveObject(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
       fail("should have thrown an exception");
@@ -72,7 +81,7 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class);
     stateful.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
@@ -80,9 +89,9 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class);
     stateful.setRefState("init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = factory.newRemoteInstance(InMemFailer.class); //conf.getActiveObject(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
       fail("should have thrown an exception");
@@ -132,44 +141,3 @@ public class InMemoryStateTest extends TestCase {
   // // == init state
   // }
 }
-
-/*
-interface InMemClasher {
-  public void clash();
-
-  public String getState(String key);
-
-  public void setState(String key, String value);
-}
-
-class InMemClasherImpl implements InMemClasher {
-  @state
-  private TransactionalMap<String, Object> state = new InMemoryTransactionalMap<String, Object>();
-
-  public String getState(String key) {
-    return (String) state.get(key).get();
-  }
-
-  public void setState(String key, String msg) {
-    state.put(key, msg);
-  }
-
-  public void clash() {
-    state.put("clasher", "was here");
-    // spend some time here
-    // for (long i = 0; i < 1000000000; i++) {
-    // for (long j = 0; j < 10000000; j++) {
-    // j += i;
-    // }
-    // }
-
-    // FIXME: this statement gives me this error:
-    // se.scalablesolutions.akka.kernel.ActiveObjectException:
-    // Unexpected message [!(scala.actors.Channel@c2b2f6,ResultOrFailure[Right(null)])]
-    // to
-    // [GenericServer[se.scalablesolutions.akka.api.StatefulImpl]] from
-    // [GenericServer[se.scalablesolutions.akka.api.ClasherImpl]]]
-    // try { Thread.sleep(1000); } catch (InterruptedException e) {}
-  }
-}
-*/

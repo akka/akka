@@ -8,6 +8,8 @@ import java.util.concurrent.{CopyOnWriteArraySet, TimeUnit}
 
 import kernel.reactor._
 import kernel.config.ScalaConfig._
+import kernel.nio.{NettyClient, RemoteRequest}
+import kernel.stm.Transaction
 import kernel.util.Logging
 import kernel.util.Helpers._
 
@@ -32,7 +34,8 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
 
 trait Actor extends Logging {
   var timeout: Long = 5000L
-
+  var isRemote = false
+  
   @volatile private[this] var isRunning: Boolean = false
   protected[this] var id: String = super.toString
   protected[this] var dispatcher: MessageDispatcher = _
@@ -50,6 +53,9 @@ trait Actor extends Logging {
   // ==== USER CALLBACKS TO OVERRIDE ====
   // ====================================
 
+  /**
+   * TODO: document
+   */
   protected var faultHandler: Option[FaultHandlingStrategy] = None
 
   /**
@@ -61,7 +67,7 @@ trait Actor extends Logging {
   /**
    * Set trapExit to true if actor should be able to trap linked actors exit messages.
    */
-  @volatile protected[this] var trapExit: Boolean = false
+  protected[this] var trapExit: Boolean = false
 
   /**
    * Partial function implementing the server logic.
@@ -112,9 +118,10 @@ trait Actor extends Logging {
   // ==== API ====
   // =============
 
-  def !(message: AnyRef) =
-    if (isRunning) mailbox.append(new MessageHandle(this, message, new NullFutureResult))
-    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+  def !(message: AnyRef) = if (isRunning) {
+    if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, true, false))
+    else mailbox.append(new MessageHandle(this, message, new NullFutureResult))
+  } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
     val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
@@ -130,8 +137,13 @@ trait Actor extends Logging {
     getResultOrThrowException(future).get
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
-  // FIXME can be deadlock prone - HOWTO?
-  def link(actor: Actor) = synchronized { actor.synchronized {
+  protected[this] def reply(message: AnyRef) = senderFuture match {
+    case None => throw new IllegalStateException("No sender future in scope, can't reply. Have you used '!' (async, fire-and-forget)? If so, switch to '!!' which will return a future to wait on." )
+    case Some(future) => future.completeWithResult(message)
+  }
+
+  // FIXME can be deadlock prone if cyclic linking? - HOWTO?
+  protected[this] def link(actor: Actor) = synchronized { actor.synchronized {
     if (isRunning) {
       linkedActors.add(actor)
       if (actor.supervisor.isDefined) throw new IllegalStateException("Actor can only have one supervisor [" + actor + "], e.g. link(actor) fails")
@@ -140,8 +152,8 @@ trait Actor extends Logging {
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }}
 
-    // FIXME can be deadlock prone - HOWTO?
-  def unlink(actor: Actor) = synchronized { actor.synchronized {
+    // FIXME can be deadlock prone if cyclic linking? - HOWTO?
+  protected[this] def unlink(actor: Actor) = synchronized { actor.synchronized {
     if (isRunning) {
       if (!linkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
       linkedActors.remove(actor)
@@ -150,14 +162,6 @@ trait Actor extends Logging {
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }}
   
-  /**
-   * Atomically start and link actor.
-   */
-  def spawnLink(actor: Actor) = actor.synchronized {
-    actor.start
-    link(actor)
-  }
-
   def start = synchronized  {
     if (!isRunning) {
       dispatcherType match {
@@ -184,10 +188,38 @@ trait Actor extends Logging {
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
   
-  protected def reply(message: AnyRef) = senderFuture match {
-    case None => throw new IllegalStateException("No sender future in scope, can't reply. Have you used '!' (async, fire-and-forget)? If so switch to '!!' to wait using a future." )
-    case Some(future) => future.completeWithResult(message)
+  /**
+   * Atomically start and link actor.
+   */
+  def spawnLink(actor: Actor) = actor.synchronized {
+    actor.start
+    link(actor)
   }
+
+  /**
+   * Atomically start and link a remote actor.
+   */
+  def spawnLinkRemote(actor: Actor) = actor.synchronized {
+    actor.makeRemote
+    actor.start
+    link(actor)
+  }
+
+  def spawn(actorClass: Class[_]) = {
+
+    // FIXME: should pass in dispatcher etc. - inherit
+  }
+
+  def spawnRemote(actorClass: Class[_]) = {
+  }
+
+  def spawnLink(actorClass: Class[_]) = {
+  }
+
+  def spawnLinkRemote(actorClass: Class[_]) = {
+  }
+
+  def makeRemote = isRemote = true
 
   // ================================
   // ==== IMPLEMENTATION DETAILS ====
@@ -205,18 +237,38 @@ trait Actor extends Logging {
     }
   }
 
-  private def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: AnyRef, timeout: Long): CompletableFutureResult = {
-    val future = new DefaultCompletableFutureResult(timeout)
-    mailbox.append(new MessageHandle(this, message, future))
-    future
+  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = {
+    if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, false, false))
+    else {
+      val future = new DefaultCompletableFutureResult(timeout)
+      mailbox.append(new MessageHandle(this, message, future))
+      future
+    }
   }
 
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
+    if (isRemote) getRemoteResultOrThrowException(future)
+    else {
+      if (future.exception.isDefined) {
+        val (_, cause) = future.exception.get
+        throw cause
+      } else {
+        future.result.asInstanceOf[Option[T]]
+      }
+    }
+
+  // FIXME: UGLY - Either: make the remote tx work
+  // FIXME:        OR: remove this method along with the tx tuple making in NettyClient.messageReceived and ActiveObject.getResultOrThrowException
+  private def getRemoteResultOrThrowException[T](future: FutureResult): Option[T] =
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
-      throw cause
-    } else future.result.asInstanceOf[Option[T]]
+      throw cause // throw new TransactionAwareException(cause, activeTx)
+    } else {
+      if (future.result.isDefined) {
+        val (res, tx) = future.result.get.asInstanceOf[Tuple2[Option[T], Option[Transaction]]]
+        res
+      } else None
+    }
 
   private def base: PartialFunction[Any, Unit] = lifeCycle orElse (hotswap getOrElse receive)
 

@@ -116,8 +116,9 @@ class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
+        val tx = reply.tx
         val future = futures.get(reply.id)
-        if (reply.successful) future.completeWithResult(reply.message)
+        if (reply.successful) future.completeWithResult((reply.message, tx))
         else future.completeWithException(null, reply.exception)
       } else throw new IllegalArgumentException("Unknown message received in NIO client handler: " + result)
     } catch {

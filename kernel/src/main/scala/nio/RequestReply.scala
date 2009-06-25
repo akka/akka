@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.kernel.nio
 
 import java.util.concurrent.atomic.AtomicLong
+import kernel.stm.Transaction
 import kernel.util.HashCode
 
 object IdFactory {
@@ -18,13 +19,15 @@ object IdFactory {
                                   val message: AnyRef,
                                   val method: String,
                                   val target: String,
+                                  val tx: Option[Transaction],
                                   val isOneWay: Boolean,
                                   val isEscaped: Boolean) {
   private[RemoteRequest] var _id = IdFactory.nextId
   def id = _id
 
   override def toString: String = synchronized {
-    "RemoteRequest[isActor: " + isActor + " | message: " + message + " | method: " + method + " | target: " + target + " | isOneWay: " + isOneWay + "]"
+    "RemoteRequest[isActor: " + isActor + " | message: " + message + " | method: " + method + 
+        " | target: " + target + " | tx: " + tx + " | isOneWay: " + isOneWay + "]"
   }
 
   override def hashCode(): Int = synchronized {
@@ -45,20 +48,25 @@ object IdFactory {
     that.asInstanceOf[RemoteRequest].target == target
   }
 
-  def newReplyWithMessage(message: AnyRef) = synchronized { new RemoteReply(true, id, message, null) }
+  def newReplyWithMessage(message: AnyRef, tx: Option[Transaction]) = synchronized { new RemoteReply(true, id, message, null, tx) }
 
-  def newReplyWithException(error: Throwable) = synchronized { new RemoteReply(false, id, null, error) }
+  def newReplyWithException(error: Throwable) = synchronized { new RemoteReply(false, id, null, error, None) }
 
   def cloneWithNewMessage(message: AnyRef, isEscaped: Boolean) = synchronized {
-    val request = new RemoteRequest(isActor, message, method, target, isOneWay, isEscaped)
+    val request = new RemoteRequest(isActor, message, method, target, tx, isOneWay, isEscaped)
     request._id = id
     request
   }
 }
 
-@serializable class RemoteReply(val successful: Boolean, val id: Long, val message: AnyRef, val exception: Throwable) {
+@serializable class RemoteReply(val successful: Boolean,
+                                val id: Long,
+                                val message: AnyRef,
+                                val exception: Throwable,
+                                val tx: Option[Transaction]) {
   override def toString: String = synchronized {
-    "RemoteReply[successful: " + successful + " | id: " + id + " | message: " + message + " | exception: " + exception + "]"
+    "RemoteReply[successful: " + successful + " | id: " + id + " | message: " +
+        message + " | exception: " + exception + " | tx: " + tx + "]"
   }
 
   override def hashCode(): Int = synchronized {

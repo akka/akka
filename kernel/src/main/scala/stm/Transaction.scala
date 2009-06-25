@@ -6,6 +6,7 @@ package se.scalablesolutions.akka.kernel.stm
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import kernel.util.Logging
+
 import scala.collection.mutable.{HashSet, HashMap}
 
 @serializable sealed abstract class TransactionStatus
@@ -38,7 +39,7 @@ object TransactionIdFactory {
   log.debug("Creating a new transaction with id [%s]", id)
 
   // FIXME: add support for nested transactions
-  private[this] var parent: Option[Transaction] = None
+  //private[this] var parent: Option[Transaction] = None
   private[this] val participants = new HashSet[ChangeSet]
   private[this] val precommitted = new HashSet[ChangeSet]
   private[this] val depth = new AtomicInteger(0)
@@ -94,6 +95,8 @@ object TransactionIdFactory {
 
   def join(changeSet: ChangeSet) = synchronized {
     ensureIsActive
+    println(" --- log ;" + log)
+    println(" --- changeset ;" + changeSet)
     log.debug("TX JOIN - Server [%s] is joining transaction [%s]" , changeSet.id, this)
     changeSet.full.foreach(_.begin)
     participants + changeSet
@@ -112,6 +115,14 @@ object TransactionIdFactory {
 
   private def ensureIsActiveOrNew = if (!(status == TransactionStatus.Active || status == TransactionStatus.New))
     throw new IllegalStateException("Expected ACTIVE or NEW transaction - current status [" + status + "]")
+
+  private[kernel] def reinit = {
+    import net.lag.logging.{Logger, Level}
+    if (log == null) {
+      log = Logger.get(this.getClass.getName)
+      log.setLevel(Level.ALL)
+    }
+  }
 
   override def equals(that: Any): Boolean = synchronized {
     that != null && 

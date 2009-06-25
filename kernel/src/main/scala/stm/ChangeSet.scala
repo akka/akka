@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.kernel.stm
 import kernel.state.{Transactional, TransactionalMap, TransactionalVector, TransactionalRef}
 import kernel.util.Helpers.ReadWriteLock
 
+@serializable
 class ChangeSet(val id: String) {
   private val lock = new ReadWriteLock
 

@@ -42,6 +42,7 @@ package se.scalablesolutions.akka.collection
  * @author Daniel Spiewak
  * @author Rich Hickey
  */
+@serializable
 final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] {
   lazy val size = root.size
   
@@ -73,6 +74,7 @@ object HashTrie {
 // ============================================================================
 // nodes
 
+@serializable
 private[collection] sealed trait Node[K, +V] {
   val size: Int
   
@@ -85,7 +87,7 @@ private[collection] sealed trait Node[K, +V] {
   def elements: Iterator[(K, V)]
 }
 
-
+@serializable
 private[collection] class EmptyNode[K] extends Node[K, Nothing] {
   val size = 0
   
