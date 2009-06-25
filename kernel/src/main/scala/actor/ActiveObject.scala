@@ -27,6 +27,7 @@ import scala.collection.mutable.HashMap
 
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
+class TransactionAwareException(val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause)
 
 object Annotations {
   import se.scalablesolutions.akka.annotation._
@@ -42,15 +43,36 @@ object Annotations {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
-  def newInstance[T](target: Class[T], actor: Actor): T = {
+  def newInstance[T](target: Class[T]): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), false)
+
+  def newInstance[T](intf: Class[T], target: AnyRef): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), false)
+
+  def newRemoteInstance[T](target: Class[T]): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), true)
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), true)
+
+  /*
+  def newInstanceAndLink[T](target: Class[T], supervisor: AnyRef): T = {
+    val actor = new Dispatcher(target.getName)
     ActiveObject.newInstance(target, actor)
   }
 
-  def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor): T = {
+  def newInstanceAndLink[T](intf: Class[T], target: AnyRef, supervisor: AnyRef): T = {
+    val actor = new Dispatcher(target.getName)
     ActiveObject.newInstance(intf, target, actor)
   }
+  */
+  // ================================================
 
-  def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
+  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean): T = {
+    ActiveObject.newInstance(target, actor, remote)
+  }
+
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean): T = {
+    ActiveObject.newInstance(intf, target, actor, remote)
+  }
+
+  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
     ActiveObject.supervise(restartStrategy, components)
 }
 
@@ -62,28 +84,40 @@ class ActiveObjectFactory {
 object ActiveObject {
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
-  val RemoteClient = new NettyClient
-
   private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = {
     val tl = new ThreadLocal[Option[Transaction]]
     tl.set(None)
     tl
   }
 
-  def newInstance[T](target: Class[T], actor: Actor): T = {
+  def newInstance[T](target: Class[T]): T = newInstance(target, new Dispatcher(target.getName), false)
+
+  def newInstance[T](intf: Class[T], target: AnyRef): T = newInstance(intf, target, new Dispatcher(intf.getName), false)
+
+  def newRemoteInstance[T](target: Class[T]): T = newInstance(target, new Dispatcher(target.getName), true)
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef): T = newInstance(intf, target, new Dispatcher(intf.getName), true)
+
+  // ================================================
+
+  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean): T = {
+    if (remote) NettyClient.connect
     val proxy = Proxy.newInstance(target, false, true)
     // FIXME switch to weaving in the aspect at compile time
-    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(target, proxy, actor))
+    proxy.asInstanceOf[Advisable].aw_addAdvice(
+      "execution(* *.*(..))", new SequentialTransactionalAroundAdvice(target, proxy, actor, remote))
     proxy.asInstanceOf[T]
   }
 
-  def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor): T = {
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean): T = {
+    if (remote) NettyClient.connect
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
-    proxy.asInstanceOf[Advisable].aw_addAdvice("execution(* *.*(..))", new SequentialTransactionalAroundAdvice(intf, target, actor))
+    proxy.asInstanceOf[Advisable].aw_addAdvice(
+      "execution(* *.*(..))", new SequentialTransactionalAroundAdvice(intf, target, actor, remote))
     proxy.asInstanceOf[T]
   }
 
-  def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor = {
+  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor = {
     object factory extends SupervisorFactory {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
@@ -98,7 +132,8 @@ object ActiveObject {
  */
 
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
-@serializable sealed class SequentialTransactionalAroundAdvice(target: Class[_], targetInstance: AnyRef, actor: Actor) extends AroundAdvice {
+@serializable sealed class SequentialTransactionalAroundAdvice(
+    target: Class[_], targetInstance: AnyRef, actor: Actor, val remote: Boolean) extends AroundAdvice {
   private val changeSet = new ChangeSet(target.getName)
   
   private val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance)
@@ -119,44 +154,43 @@ object ActiveObject {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val method = rtti.getMethod
 
-    val remoteCall = true
     val isOneWay = rtti.getMethod.getReturnType == java.lang.Void.TYPE
-    val result: AnyRef =
-      if (remoteCall) {
-        // FIXME: Make part of TX semantics??
-        val future = ActiveObject.RemoteClient.send(new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, isOneWay))
+    // FIXME join TX with same id, do not COMMIT
+    tryToCommitTransaction
+    if (isInExistingTransaction) {
+      joinExistingTransaction
+    } else {
+      if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
+    }
+    try {
+      incrementTransaction
+      if (remote) {
+        val future = NettyClient.send(
+          new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, isOneWay, false))
         if (isOneWay) null // for void methods
         else {
           future.await_?
-          val resultOrFailure = getResultOrThrowException(future)
-          handleResult(resultOrFailure)
+          val result = getResultOrThrowException(future)
+          if (result.isDefined) result.get
+          else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
         }
-        
       } else {
-        // FIXME join TX with same id, do not COMMIT
-        tryToCommitTransaction
-        if (isInExistingTransaction) {
-          joinExistingTransaction
-        } else {
-          if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
-        }
-        try {
-          incrementTransaction
-          if (isOneWay) actor ! Invocation(joinpoint, activeTx)
-          else {
-            val result = actor !! Invocation(joinpoint, activeTx)
-            val resultOrFailure =
-              if (result.isDefined) result.get.asInstanceOf[ResultOrFailure[AnyRef]]
-              else throw new ActiveObjectInvocationTimeoutException("TIMED OUT")
-            handleResult(resultOrFailure)
-          }
-        } finally {
-          decrementTransaction
-          if (isTransactionAborted) removeTransactionIfTopLevel
-          else tryToPrecommitTransaction
+        if (isOneWay) actor !! Invocation(joinpoint, activeTx) // FIXME investigate why ! causes TX to race
+        else {
+          val result = actor !! Invocation(joinpoint, activeTx)
+          if (result.isDefined) result.get
+          else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
         }
       }
-    result
+    } catch {
+      case e: TransactionAwareException =>
+        rollback(e.tx)
+        throw e.cause
+    } finally {
+      decrementTransaction
+      if (isTransactionAborted) removeTransactionIfTopLevel
+      else tryToPrecommitTransaction
+    }
   }
 
   // TODO: create a method setCallee/setCaller to the joinpoint interface and compiler
@@ -201,7 +235,7 @@ object ActiveObject {
                                                                
 
 
-     private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
+  private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
     try {
       result()
     } catch {
@@ -237,6 +271,7 @@ object ActiveObject {
     else true
   } else true
 
+  /*
   private def sendOneWay(joinpoint: JoinPoint) =
     mailbox.append(new MessageHandle(this, Invocation(joinpoint, activeTx), new NullFutureResult))
 
@@ -245,21 +280,27 @@ object ActiveObject {
     future.await_?
     getResultOrThrowException(future)
   }
-
+  */
+  
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = {
     val future = new DefaultCompletableFutureResult(timeout)
     mailbox.append(new MessageHandle(this, message, future))
     future
   }
 
-  private def getResultOrThrowException[T](future: FutureResult): ResultOrFailure[AnyRef] =
+  private def getResultOrThrowException[T](future: FutureResult): Option[T] =
+    if (future.exception.isDefined) {
+      val (_, cause) = future.exception.get
+      throw new TransactionAwareException(cause, activeTx)
+    } else future.result.asInstanceOf[Option[T]]
+/*
     if (future.exception.isDefined) {
       var resultOrFailure = ResultOrFailure(activeTx)
       val (toBlame, cause) = future.exception.get
       resultOrFailure() = throw cause
       resultOrFailure
     } else ResultOrFailure(future.result.get, activeTx)
-
+ */
   /**
    * Search for transactional items for a specific target instance, crawl the class hierarchy recursively up to the top.
    */
@@ -342,13 +383,15 @@ private[kernel] class Dispatcher(val targetName: String) extends Actor {
     case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
       ActiveObject.threadBoundTx.set(tx)
       try {
-        reply(ResultOrFailure(joinpoint.proceed, tx))
+        reply(joinpoint.proceed)
       } catch {
         case e =>
+          throw new TransactionAwareException(e, tx)
+/*
           val resultOrFailure = ResultOrFailure(tx)
           resultOrFailure() = throw e
           reply(resultOrFailure)
-      }
+*/      }
 
     case unexpected =>
       throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")

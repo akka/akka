@@ -20,7 +20,6 @@ class EventBasedDispatcherTest {
       try {
         if (threadingIssueDetected.get) return
         if (guardLock.tryLock) {
-          Thread.sleep(100)
           handleLatch.countDown
         } else {
           threadingIssueDetected.set(true)
@@ -55,12 +54,12 @@ class EventBasedDispatcherTest {
 
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
-    val handleLatch = new CountDownLatch(10)
+    val handleLatch = new CountDownLatch(100)
     val key = "key"
     val dispatcher = new EventBasedSingleThreadDispatcher
     dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
     dispatcher.start
-    for (i <- 0 until 10) {
+    for (i <- 0 until 100) {
       dispatcher.messageQueue.append(new MessageHandle(key, new Object, new NullFutureResult))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))

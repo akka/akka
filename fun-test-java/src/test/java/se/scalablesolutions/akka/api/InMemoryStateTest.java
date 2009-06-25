@@ -6,6 +6,7 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.kernel.actor.*;
 
 import junit.framework.TestCase;
 
@@ -13,6 +14,7 @@ public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
 
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
+  final private ActiveObjectFactory factory = new ActiveObjectFactory();
 
   protected void setUp() {
     conf.configureActiveObjects(
@@ -30,16 +32,16 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class); // conf.getActiveObject(InMemStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
-   InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+   InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class); // conf.getActiveObject(InMemStateful.class);
    stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-   InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+   InMemFailer failer = factory.newRemoteInstance(InMemFailer.class); //conf.getActiveObject(InMemFailer.class);
    try {
      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
      fail("should have thrown an exception");

@@ -39,7 +39,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
   private var _result: Option[AnyRef] = None
   private var _exception: Option[Tuple2[AnyRef, Throwable]] = None
 
-  override def await_? = try {
+  def await_? = try {
     _lock.lock
     var wait = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
     while (!_completed && wait > 0) {
@@ -56,7 +56,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  override def await_! = try {
+  def await_! = try {
     _lock.lock
     while (!_completed) {
       _signal.await
@@ -65,35 +65,35 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  override def isCompleted: Boolean = try {
+  def isCompleted: Boolean = try {
     _lock.lock
     _completed
   } finally {
     _lock.unlock
   }
 
-  override def isExpired: Boolean = try {
+  def isExpired: Boolean = try {
     _lock.lock
     timeoutInNanos - (currentTimeInNanos - _startTimeInNanos) <= 0
   } finally {
     _lock.unlock
   }
 
-  override def result: Option[AnyRef] = try {
+  def result: Option[AnyRef] = try {
     _lock.lock
     _result
   } finally {
     _lock.unlock
   }
 
-  override def exception: Option[Tuple2[AnyRef, Throwable]] = try {
+  def exception: Option[Tuple2[AnyRef, Throwable]] = try {
     _lock.lock
     _exception
   } finally {
     _lock.unlock
   }
 
-  override def completeWithResult(result: AnyRef) = try {
+  def completeWithResult(result: AnyRef) = try {
     _lock.lock
     if (!_completed) {
       _completed = true
@@ -104,13 +104,12 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  override def completeWithException(toBlame: AnyRef, exception: Throwable) = try {
+  def completeWithException(toBlame: AnyRef, exception: Throwable) = try {
     _lock.lock
     if (!_completed) {
       _completed = true
       _exception = Some((toBlame, exception))
     }
-
   } finally {
     _signal.signalAll
     _lock.unlock
@@ -120,13 +119,13 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
 }
 
 class NullFutureResult extends CompletableFutureResult {
-  override def completeWithResult(result: AnyRef) = {}
-  override def completeWithException(toBlame: AnyRef, exception: Throwable) = {}
-  override def await_? = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  override def await_! = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  override def isCompleted: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  override def isExpired: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  override def timeoutInNanos: Long = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  override def result: Option[AnyRef] = None
-  override def exception: Option[Tuple2[AnyRef, Throwable]] = None
+  def completeWithResult(result: AnyRef) = {}
+  def completeWithException(toBlame: AnyRef, exception: Throwable) = {}
+  def await_? = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  def await_! = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  def isCompleted: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  def isExpired: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  def timeoutInNanos: Long = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  def result: Option[AnyRef] = None
+  def exception: Option[Tuple2[AnyRef, Throwable]] = None
 }

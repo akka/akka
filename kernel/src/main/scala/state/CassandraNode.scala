@@ -88,7 +88,9 @@ final object CassandraNode extends Logging {
       val column = server.get_column(TABLE_NAME, name, VECTOR_COLUMN_FAMILY + ":" + index)
       serializer.in(column.value)
     } catch {
-      case e => throw new Predef.NoSuchElementException(e.getMessage)
+      case e =>
+        e.printStackTrace
+        throw new Predef.NoSuchElementException(e.getMessage)
     }  
   }
 
@@ -132,7 +134,11 @@ final object CassandraNode extends Logging {
     try {
       val column = server.get_column(TABLE_NAME, name, MAP_COLUMN_FAMILY + ":" + key)
       Some(serializer.in(column.value))
-    } catch { case e => None }
+    } catch {
+      case e =>
+        e.printStackTrace
+        None
+    }
   }
 
   def getMapStorageFor(name: String): List[Tuple2[String, AnyRef]]  = {

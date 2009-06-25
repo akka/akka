@@ -30,38 +30,42 @@ class ThreadBasedDispatcherTest {
     internalTestMessagesDispatchedToDifferentHandlersAreExecutedConcurrently
   }
 
-  //@Test
+  @Test
   def testMessagesDispatchedToHandlersAreExecutedInFIFOOrder = {
     internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder
+  }
+
+  class TestMessageHandle(handleLatch: CountDownLatch) extends MessageHandler {
+    val guardLock: Lock = new ReentrantLock
+
+    def handle(message: MessageHandle) {
+      try {
+        if (threadingIssueDetected.get) return
+        if (guardLock.tryLock) {
+          handleLatch.countDown
+        } else {
+          threadingIssueDetected.set(true)
+        }
+      } catch {
+        case e: Exception => threadingIssueDetected.set(true)
+      } finally {
+        guardLock.unlock
+      }
+    }
   }
 
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(100)
     val key = "key"
-    val dispatcher = new EventBasedThreadPoolDispatcher
-    dispatcher.registerHandler(key, new MessageHandler {
-      def handle(message: MessageHandle) {
-        try {
-          if (threadingIssueDetected.get) return
-          if (guardLock.tryLock) {
-            Thread.sleep(100)
-            handleLatch.countDown
-          } else threadingIssueDetected.set(true)
-        } catch {
-          case e: Exception => threadingIssueDetected.set(true)
-        } finally {
-          guardLock.unlock
-        }
-      }
-    })
+    val dispatcher = new EventBasedSingleThreadDispatcher
+    dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
       dispatcher.messageQueue.append(new MessageHandle(key, new Object, new NullFutureResult))
     }
-    assertTrue(handleLatch.await(5000, TimeUnit.SECONDS))
+    assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
-    //dispatcher.shutdown
   }
 
   private def internalTestMessagesDispatchedToDifferentHandlersAreExecutedConcurrently: Unit = {
@@ -93,7 +97,7 @@ class ThreadBasedDispatcherTest {
     val handleLatch = new CountDownLatch(200)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = new EventBasedThreadPoolDispatcher
+    val dispatcher = new EventBasedSingleThreadDispatcher
     dispatcher.registerHandler(key1, new MessageHandler {
       var currentValue = -1;
       def handle(message: MessageHandle) {
@@ -111,7 +115,7 @@ class ThreadBasedDispatcherTest {
         if (threadingIssueDetected.get) return
         val messageValue = message.message.asInstanceOf[Int]
         if (messageValue.intValue == currentValue + 1) {
-          currentValue = messageValue .intValue
+          currentValue = messageValue.intValue
           handleLatch.countDown
         } else threadingIssueDetected.set(true)
       }
@@ -121,7 +125,7 @@ class ThreadBasedDispatcherTest {
       dispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), new NullFutureResult))
       dispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), new NullFutureResult))
     }
-    assertTrue(handleLatch.await(10, TimeUnit.SECONDS))
+    assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
     dispatcher.shutdown
   }

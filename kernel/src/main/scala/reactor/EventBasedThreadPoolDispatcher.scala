@@ -32,23 +32,18 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   private val queue = new LinkedBlockingQueue[Runnable]
   private val handlerExecutor = new ThreadPoolExecutor(minNrThreads, maxNrThreads, timeOut, timeUnit, queue, threadFactory, rejectedExecutionHandler)
 
-  //private val handlerExecutor = Executors.newCachedThreadPool()
-
   def start = if (!active) {
     active = true
     val messageDemultiplexer = new EventBasedThreadPoolDemultiplexer(messageQueue)
     selectorThread = new Thread {
-      //val enqued = new LinkedList[MessageHandle]
       override def run = {
         while (active) {
           try {
-            guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
             try {
               guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
             } catch {case e: InterruptedException => active = false}
             val queue = messageDemultiplexer.acquireSelectedQueue
-//            while (!queue.isEmpty) {
             for (index <- 0 until queue.size) {
               val message = queue.peek
               val messageHandler = getIfNotBusy(message.sender)
@@ -63,10 +58,6 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
                 queue.remove
               }
             }
-//            }
-            if (!queue.isEmpty) {
-              for (index <- 0 until queue.size) messageQueue.append(queue.remove)
-             }
           } finally {
             messageDemultiplexer.releaseSelectedQueue
           }

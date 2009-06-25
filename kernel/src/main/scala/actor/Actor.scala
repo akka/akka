@@ -31,7 +31,7 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
 }
 
 trait Actor extends Logging {
-  var timeout: Long = 1000L
+  var timeout: Long = 5000L
 
   @volatile private[this] var isRunning: Boolean = false
   protected[this] var id: String = super.toString
@@ -115,7 +115,7 @@ trait Actor extends Logging {
   def !(message: AnyRef) =
     if (isRunning) mailbox.append(new MessageHandle(this, message, new NullFutureResult))
     else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-
+  
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
     val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
     future.await_?
@@ -200,6 +200,7 @@ trait Actor extends Logging {
       else throw new IllegalArgumentException("No handler matching message [" + message + "] in actor [" + this.getClass.getName + "]")
     } catch {
       case e =>
+        if (supervisor.isDefined) supervisor.get ! Exit(this, e)
         future.completeWithException(this, e)
     }
   }
@@ -213,8 +214,7 @@ trait Actor extends Logging {
 
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
     if (future.exception.isDefined) {
-      val (toBlame, cause) = future.exception.get
-      if (supervisor.isDefined) supervisor.get ! Exit(toBlame.asInstanceOf[Actor], cause)
+      val (_, cause) = future.exception.get
       throw cause
     } else future.result.asInstanceOf[Option[T]]
 

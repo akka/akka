@@ -9,9 +9,9 @@ import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
 trait MessageDispatcherBase extends MessageDispatcher {
   val messageQueue = new MessageQueue
 
+  @volatile protected var active: Boolean = false
   protected val messageHandlers = new ConcurrentHashMap[AnyRef, MessageHandler]
   protected var selectorThread: Thread = _
-  @volatile protected var active: Boolean = false
   protected val guard = new Object
 
   def registerHandler(key: AnyRef, handler: MessageHandler) = guard.synchronized {

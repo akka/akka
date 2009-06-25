@@ -50,11 +50,12 @@ public class PersistentStateful {
   }
 
   @transactional
-  public void failure(String key, String msg, PersistentFailer failer) {
+  public String failure(String key, String msg, PersistentFailer failer) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
     failer.fail();
+    return msg;
   }
 
   @transactional

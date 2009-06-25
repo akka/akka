@@ -50,7 +50,7 @@ object TransactionIdFactory {
   
   def begin(changeSet: ChangeSet) = synchronized {
     ensureIsActiveOrNew
-    if (status == TransactionStatus.New) log.debug("Server [%s] is starting NEW transaction [%s]", changeSet.id, this)
+    if (status == TransactionStatus.New) log.debug("TX BEGIN - Server [%s] is starting NEW transaction [%s]", changeSet.id, this)
     else log.debug("Server [%s] is participating in transaction", changeSet.id)
     changeSet.full.foreach(_.begin)
     participants + changeSet
@@ -59,14 +59,14 @@ object TransactionIdFactory {
 
   def precommit(changeSet: ChangeSet) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.debug("Pre-committing transaction [%s] for server [%s]", this, changeSet.id)
+      log.debug("TX PRECOMMIT - Pre-committing transaction [%s] for server [%s]", this, changeSet.id)
       precommitted + changeSet
     }
   }
 
   def commit(changeSet: ChangeSet) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.debug("Committing transaction [%s] for server [%s]", this, changeSet.id)
+      log.debug("TX COMMIT - Committing transaction [%s] for server [%s]", this, changeSet.id)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
           for (server <- participants) yield {
@@ -85,7 +85,7 @@ object TransactionIdFactory {
 
   def rollback(changeSet: ChangeSet) = synchronized {
     ensureIsActiveOrAborted
-    log.debug("Server [%s] has initiated transaction rollback for [%s], rolling back [%s]", changeSet.id, this, participants)
+    log.debug("TX ROLLBACK - Server [%s] has initiated transaction rollback for [%s], rolling back [%s]", changeSet.id, this, participants)
     participants.foreach(_.full.foreach(_.rollback))
     status = TransactionStatus.Aborted
     participants.clear
@@ -94,7 +94,7 @@ object TransactionIdFactory {
 
   def join(changeSet: ChangeSet) = synchronized {
     ensureIsActive
-    log.debug("Server [%s] is joining transaction [%s]" , changeSet.id, this)
+    log.debug("TX JOIN - Server [%s] is joining transaction [%s]" , changeSet.id, this)
     changeSet.full.foreach(_.begin)
     participants + changeSet
   }

@@ -1,7 +1,7 @@
 package se.scalablesolutions.akka.api;
 
 public class PersistentFailer {
-  public void fail() {
+  public int fail() {
     throw new RuntimeException("expected");
   }
 }

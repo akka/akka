@@ -22,28 +22,27 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder
 
 class NettyServer extends Logging {
-  val HOSTNAME = "localhost"
-  val PORT = 9999
-  val CONNECTION_TIMEOUT_MILLIS = 100
+  private val HOSTNAME = "localhost"
+  private val PORT = 9999
+  private val CONNECTION_TIMEOUT_MILLIS = 100  
 
-  log.info("Starting NIO server at [%s:%s]", HOSTNAME, PORT)
-  
-  val factory = new NioServerSocketChannelFactory(
+  private val factory = new NioServerSocketChannelFactory(
     Executors.newCachedThreadPool,
     Executors.newCachedThreadPool)
 
-  val bootstrap = new ServerBootstrap(factory)
+  private val activeObjectFactory = new ActiveObjectFactory
 
+  private val bootstrap = new ServerBootstrap(factory)
   // FIXME provide different codecs (Thrift, Avro, Protobuf, JSON)
-  val handler = new ObjectServerHandler
 
+  private val handler = new ObjectServerHandler
   bootstrap.getPipeline.addLast("handler", handler)
-  
   bootstrap.setOption("child.tcpNoDelay", true)
   bootstrap.setOption("child.keepAlive", true)
   bootstrap.setOption("child.reuseAddress", true)
   bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT_MILLIS)
 
+  log.info("Starting NIO server at [%s:%s]", HOSTNAME, PORT)
   bootstrap.bind(new InetSocketAddress(HOSTNAME, PORT))
 }
 
@@ -65,8 +64,7 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    // Send the first message if this handler is a client-side handler.
-    //    if (!firstMessage.isEmpty) e.getChannel.write(firstMessage)
+    //e.getChannel.write(firstMessage)
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) ={
@@ -90,13 +88,8 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
       } else {
         log.debug("Dispatching to [%s :: %s]", request.method, request.target)
         val activeObject = createActiveObject(request.target)
-//        val args = request.message.asInstanceOf[scala.List[Object]]
-//        val argClassesList = args.map(_.getClass)
-//        val argClasses = argClassesList.map(_.getClass).toArray
-//        val method = activeObject.getClass.getDeclaredMethod(request.method, argClasses)
-
         val args = request.message.asInstanceOf[scala.List[AnyRef]]
-        val argClazzes = args.map(_.getClass)//.toArray.asInstanceOf[Array[Class[_]]]
+        val argClazzes = args.map(_.getClass)
         val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClazzes)
         val method = activeObject.getClass.getDeclaredMethod(request.method, unescapedArgClasses)
         try {
@@ -142,15 +135,18 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     val activeObjectOrNull = activeObjects.get(name)
     if (activeObjectOrNull == null) {
       val clazz = Class.forName(name)
-      val newInstance = clazz.newInstance.asInstanceOf[AnyRef] // activeObjectFactory.newInstance(clazz, new Dispatcher(invocation.target)).asInstanceOf[AnyRef]
-      activeObjects.put(name, newInstance)
-      newInstance
+      try {
+        val actor = new Dispatcher(clazz.getName)
+        actor.start
+        val newInstance = activeObjectFactory.newInstance(clazz, actor, false).asInstanceOf[AnyRef]
+        activeObjects.put(name, newInstance)
+        newInstance
+      } catch {
+        case e =>
+          log.debug("Could not create remote active object instance due to: %s", e)
+          e.printStackTrace
+          throw e        
+      }
     } else activeObjectOrNull    
-  }
-}
-
-object NettyServerRunner {
-  def main(args: Array[String]) = {
-    new NettyServer
   }
 }

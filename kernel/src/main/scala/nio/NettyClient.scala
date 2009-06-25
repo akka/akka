@@ -16,10 +16,11 @@ import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.channel._
 
-class NettyClient extends Logging {
+object NettyClient extends Logging {
   private val HOSTNAME = "localhost"
   private val PORT = 9999
 
+  @volatile private var isRunning = false 
   private val futures = new ConcurrentHashMap[Long, CompletableFutureResult]
 
   private val channelFactory = new NioClientSocketChannelFactory(
@@ -33,22 +34,31 @@ class NettyClient extends Logging {
   bootstrap.setOption("tcpNoDelay", true)
   bootstrap.setOption("keepAlive", true)
 
-  private val connection = bootstrap.connect(new InetSocketAddress(HOSTNAME, PORT))
-  log.info("Starting NIO client at [%s:%s]", HOSTNAME, PORT)
+  private var connection: ChannelFuture = _
 
-  // Wait until the connection attempt succeeds or fails.
-  connection.awaitUninterruptibly
-  if (!connection.isSuccess) {
-    log.error("Connection has failed due to [%s]", connection.getCause)
-    connection.getCause.printStackTrace
+  def connect = synchronized {
+    if (!isRunning) {
+      connection = bootstrap.connect(new InetSocketAddress(HOSTNAME, PORT))
+      log.info("Starting NIO client at [%s:%s]", HOSTNAME, PORT)
+
+      // Wait until the connection attempt succeeds or fails.
+      connection.awaitUninterruptibly
+      if (!connection.isSuccess) {
+        log.error("Connection has failed due to [%s]", connection.getCause)
+        connection.getCause.printStackTrace
+      }
+      isRunning = true
+    }
   }
 
-  def shutdown = {
-    connection.getChannel.getCloseFuture.awaitUninterruptibly
-    channelFactory.releaseExternalResources
+  def shutdown = synchronized {
+    if (!isRunning) {
+      connection.getChannel.getCloseFuture.awaitUninterruptibly
+      channelFactory.releaseExternalResources
+    }
   }
 
-  def send(request: RemoteRequest): CompletableFutureResult = {
+  def send(request: RemoteRequest): CompletableFutureResult = if (isRunning) {
     val escapedRequest = escapeRequest(request)
     if (escapedRequest.isOneWay) {
       connection.getChannel.write(escapedRequest)
@@ -61,18 +71,20 @@ class NettyClient extends Logging {
         futureResult
       }      
     }
-  }
+  } else throw new IllegalStateException("Netty client is not running, make sure you have invoked 'connect' before using the client")
 
   private def escapeRequest(request: RemoteRequest) = {
     if (request.message.isInstanceOf[Array[Object]]) {
       val args = request.message.asInstanceOf[Array[Object]].toList.asInstanceOf[scala.List[Object]]
+      var isEscaped = false
       val escapedArgs = for (arg <- args) yield {
         val clazz = arg.getClass
         if (clazz.getName.contains("$$ProxiedByAW")) {
+          isEscaped = true
           new ProxyWrapper(clazz.getSuperclass.getName)
         } else arg
       }
-      request.cloneWithNewMessage(escapedArgs)
+      request.cloneWithNewMessage(escapedArgs, isEscaped)
     } else request
   }
 }
@@ -105,11 +117,8 @@ class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
         val future = futures.get(reply.id)
-        if (reply.successful) {
-          future.completeWithResult(reply.message)
-        } else {
-          future.completeWithException(null, reply.exception)
-        }
+        if (reply.successful) future.completeWithResult(reply.message)
+        else future.completeWithException(null, reply.exception)
       } else throw new IllegalArgumentException("Unknown message received in NIO client handler: " + result)
     } catch {
       case e: Exception => log.error("Unexpected exception in NIO client handler: %s", e); throw e
@@ -119,11 +128,5 @@ class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) {
     log.error("Unexpected exception from downstream: %s", event.getCause)
     event.getChannel.close
-  }
-}
-
-object NettyClientRunner {
-  def main(args: Array[String]) = {
-    new NettyClient
   }
 }

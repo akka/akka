@@ -14,7 +14,12 @@ object IdFactory {
 
 @serializable class ProxyWrapper(val proxyName: String)
 
-@serializable class RemoteRequest(val isActor: Boolean, val message: AnyRef, val method: String, val target: String, val isOneWay: Boolean) {
+@serializable class RemoteRequest(val isActor: Boolean,
+                                  val message: AnyRef,
+                                  val method: String,
+                                  val target: String,
+                                  val isOneWay: Boolean,
+                                  val isEscaped: Boolean) {
   private[RemoteRequest] var _id = IdFactory.nextId
   def id = _id
 
@@ -44,8 +49,8 @@ object IdFactory {
 
   def newReplyWithException(error: Throwable) = synchronized { new RemoteReply(false, id, null, error) }
 
-  def cloneWithNewMessage(message: AnyRef) = synchronized {
-    val request = new RemoteRequest(isActor, message, method, target, isOneWay)
+  def cloneWithNewMessage(message: AnyRef, isEscaped: Boolean) = synchronized {
+    val request = new RemoteRequest(isActor, message, method, target, isOneWay, isEscaped)
     request._id = id
     request
   }

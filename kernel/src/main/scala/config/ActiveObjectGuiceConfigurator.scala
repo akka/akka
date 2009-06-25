@@ -109,7 +109,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
     val actor = new Dispatcher(targetClass.getName)
-    val proxy = activeObjectFactory.newInstance(targetClass, actor).asInstanceOf[AnyRef]
+    val proxy = activeObjectFactory.newInstance(targetClass, actor, false).asInstanceOf[AnyRef]
     workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
@@ -120,7 +120,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
     val actor = new Dispatcher(targetClass.getName)
-    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor).asInstanceOf[AnyRef]
+    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor, false).asInstanceOf[AnyRef]
     workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
@@ -137,6 +137,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     supervisor = activeObjectFactory.supervise(restartStrategy, workers)
     //camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
     //camelContext.start
+    supervisor.startSupervisor
     ActiveObjectConfigurator.registerConfigurator(this)
     this
   }
