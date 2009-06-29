@@ -4,14 +4,13 @@
 
 package se.scalablesolutions.akka.kernel.actor
 
-import java.util.concurrent.{CopyOnWriteArraySet, TimeUnit}
+import java.util.concurrent.CopyOnWriteArraySet
 
 import kernel.reactor._
 import kernel.config.ScalaConfig._
 import kernel.nio.{NettyClient, RemoteRequest}
 import kernel.stm.{TransactionAwareWrapperException, TransactionManagement, Transaction}
 import kernel.util.Logging
-import kernel.util.Helpers._
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -33,11 +32,11 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
 }
 
 trait Actor extends Logging with TransactionManagement {  
-  val transactionalInstance = this
+  val id: String = this.getClass.toString
+
   @volatile private[this] var isRemote = false
   @volatile private[this] var isTransactional = false
   @volatile private[this] var isRunning: Boolean = false
-  protected[this] var id: String = super.toString
   protected[this] var dispatcher: MessageDispatcher = _
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
@@ -135,7 +134,7 @@ trait Actor extends Logging with TransactionManagement {
    * TODO: document
    */
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
-    if (TransactionManagement.isTransactionsEnabled) {
+    if (TransactionManagement.isTransactionalityEnabled) {
       transactionalDispatch(message, timeout, false)
     } else {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
@@ -153,7 +152,7 @@ trait Actor extends Logging with TransactionManagement {
    * TODO: document
    */
   def !?[T](message: AnyRef): T = if (isRunning) {
-    if (TransactionManagement.isTransactionsEnabled) {
+    if (TransactionManagement.isTransactionalityEnabled) {
       transactionalDispatch(message, 0, true).get
     } else {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
@@ -206,10 +205,10 @@ trait Actor extends Logging with TransactionManagement {
           dispatcher = new EventBasedSingleThreadDispatcher
         case DispatcherType.EventBasedThreadPoolingDispatcher =>
           dispatcher = new EventBasedThreadPoolDispatcher
-        case DispatcherType.ThreadBasedDispatcher =>
-          dispatcher = new ThreadBasedDispatcher
         case DispatcherType.EventBasedThreadPooledProxyInvokingDispatcher =>
           dispatcher = new ProxyMessageDispatcher
+        case DispatcherType.ThreadBasedDispatcher =>
+          throw new UnsupportedOperationException("ThreadBasedDispatcher is not yet implemented. Please help out and send in a patch.")
       }
       mailbox = dispatcher.messageQueue
       dispatcher.registerHandler(this, new ActorMessageHandler(this))
@@ -313,7 +312,6 @@ trait Actor extends Logging with TransactionManagement {
     }
   
   private def transactionalDispatch[T](message: AnyRef, timeout: Long, blocking: Boolean): Option[T] = {
-    // FIXME join TX with same id, do not COMMIT
     tryToCommitTransaction
     if (isInExistingTransaction) joinExistingTransaction
     else if (isTransactional) startNewTransaction
@@ -336,13 +334,12 @@ trait Actor extends Logging with TransactionManagement {
     }
   }
 
-
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
     if (isRemote) getRemoteResultOrThrowException(future)
     else {
       if (future.exception.isDefined) {
         val (_, cause) = future.exception.get
-        if (TransactionManagement.isTransactionsEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
+        if (TransactionManagement.isTransactionalityEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
         else throw cause
       } else {
         future.result.asInstanceOf[Option[T]]
@@ -354,7 +351,7 @@ trait Actor extends Logging with TransactionManagement {
   private def getRemoteResultOrThrowException[T](future: FutureResult): Option[T] =
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
-      if (TransactionManagement.isTransactionsEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
+      if (TransactionManagement.isTransactionalityEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
       else throw cause
     } else {
       if (future.result.isDefined) {

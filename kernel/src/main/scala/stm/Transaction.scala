@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.kernel.stm
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import kernel.state.Transactional
 import kernel.util.Logging
 
 import scala.collection.mutable.{HashSet, HashMap}
@@ -38,68 +39,69 @@ object TransactionIdFactory {
 
   log.debug("Creating a new transaction with id [%s]", id)
 
-  // FIXME: add support for nested transactions
-  //private[this] var parent: Option[Transaction] = None
-  private[this] val participants = new HashSet[ChangeSet]
-  private[this] val precommitted = new HashSet[ChangeSet]
+  private[this] val transactionals = new ChangeSet
+
+  private[this] var participants: List[String] = Nil
+  private[this] var precommitted: List[String] = Nil
+  
   private[this] val depth = new AtomicInteger(0)
+  
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
 
-  def increment = depth.incrementAndGet
-  def decrement = depth.decrementAndGet
-  def topLevel_? = depth.get == 0
+  def increment = synchronized { depth.incrementAndGet }
+  def decrement = synchronized { depth.decrementAndGet }
+  def topLevel_? = synchronized { depth.get == 0 }
   
-  def begin(changeSet: ChangeSet) = synchronized {
+  def register(transactional: Transactional) = synchronized {
     ensureIsActiveOrNew
-    if (status == TransactionStatus.New) log.debug("TX BEGIN - Server [%s] is starting NEW transaction [%s]", changeSet.id, this)
-    else log.debug("Server [%s] is participating in transaction", changeSet.id)
-    changeSet.full.foreach(_.begin)
-    participants + changeSet
+    transactionals + transactional
+  }
+
+  def begin(participant: String) = synchronized {
+    ensureIsActiveOrNew
+    if (status == TransactionStatus.New) log.debug("TX BEGIN - Server [%s] is starting NEW transaction [%s]", participant, this)
+    else log.debug("Server [%s] is participating in transaction", participant)
+    participants ::= participant
     status = TransactionStatus.Active
   }
 
-  def precommit(changeSet: ChangeSet) = synchronized {
+  def precommit(participant: String) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.debug("TX PRECOMMIT - Pre-committing transaction [%s] for server [%s]", this, changeSet.id)
-      precommitted + changeSet
+      log.debug("TX PRECOMMIT - Pre-committing transaction [%s] for server [%s]", this, participant)
+      precommitted ::= participant
     }
   }
 
-  def commit(changeSet: ChangeSet) = synchronized {
+  def commit(participant: String) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.debug("TX COMMIT - Committing transaction [%s] for server [%s]", this, changeSet.id)
+      log.debug("TX COMMIT - Committing transaction [%s] for server [%s]", this, participant)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
-          for (server <- participants) yield {
-            if (precommitted.exists(_.id == changeSet.id)) true
+          for (part <- participants) yield {
+            if (precommitted.exists(_ == part)) true
             else false
           }}.exists(_ == true)
         } else false
       if (haveAllPreCommitted) {
-        participants.foreach(_.full.foreach(_.commit))
+        transactionals.items.foreach(_.commit)
         status = TransactionStatus.Completed
-      } else rollback(changeSet)
+      } else rollback(participant)
     }
-    participants.clear
-    precommitted.clear
+    reset
   }
 
-  def rollback(changeSet: ChangeSet) = synchronized {
+  def rollback(participant: String) = synchronized {
     ensureIsActiveOrAborted
-    log.debug("TX ROLLBACK - Server [%s] has initiated transaction rollback for [%s], rolling back [%s]", changeSet.id, this, participants)
-    participants.foreach(_.full.foreach(_.rollback))
+    log.debug("TX ROLLBACK - Server [%s] has initiated transaction rollback for [%s]", participant, this)
+    transactionals.items.foreach(_.rollback)
     status = TransactionStatus.Aborted
-    participants.clear
-    precommitted.clear
+    reset
   }
 
-  def join(changeSet: ChangeSet) = synchronized {
+  def join(participant: String) = synchronized {
     ensureIsActive
-    println(" --- log ;" + log)
-    println(" --- changeset ;" + changeSet)
-    log.debug("TX JOIN - Server [%s] is joining transaction [%s]" , changeSet.id, this)
-    changeSet.full.foreach(_.begin)
-    participants + changeSet
+    log.debug("TX JOIN - Server [%s] is joining transaction [%s]" , participant, this)
+    participants ::= participant
   }
 
   def isNew = status == TransactionStatus.New
@@ -107,6 +109,12 @@ object TransactionIdFactory {
   def isCompleted = status == TransactionStatus.Completed
   def isAborted = status == TransactionStatus.Aborted
 
+  private def reset = {
+    transactionals.clear
+    participants = Nil
+    precommitted = Nil    
+  }
+  
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new IllegalStateException("Expected ACTIVE transaction - current status [" + status + "]")
 
@@ -116,6 +124,7 @@ object TransactionIdFactory {
   private def ensureIsActiveOrNew = if (!(status == TransactionStatus.Active || status == TransactionStatus.New))
     throw new IllegalStateException("Expected ACTIVE or NEW transaction - current status [" + status + "]")
 
+  // For reinitialize transaction after sending it over the wire 
   private[kernel] def reinit = {
     import net.lag.logging.{Logger, Level}
     if (log == null) {

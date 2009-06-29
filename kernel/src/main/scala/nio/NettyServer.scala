@@ -188,7 +188,6 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
       val clazz = Class.forName(name)
       try {
         val actor = new Dispatcher(clazz.getName)
-        actor.start
         val newInstance = activeObjectFactory.newInstance(clazz, actor, false).asInstanceOf[AnyRef]
         activeObjects.put(name, newInstance)
         newInstance

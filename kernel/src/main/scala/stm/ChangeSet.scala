@@ -4,17 +4,28 @@
 
 package se.scalablesolutions.akka.kernel.stm
 
-import kernel.state.{Transactional, TransactionalMap, TransactionalVector, TransactionalRef}
+import kernel.state.{Transactional, TransactionalMap}
 import kernel.util.Helpers.ReadWriteLock
+import scala.collection.immutable.HashSet
 
 @serializable
-class ChangeSet(val id: String) {
+class ChangeSet {
   private val lock = new ReadWriteLock
 
-  private[kernel] def full: List[Transactional] = lock.withReadLock {
-    _maps ::: _vectors ::: _refs
+  private var transactionalItems: Set[Transactional] = new HashSet
+  private[kernel] def +(item: Transactional) = lock.withWriteLock {
+    transactionalItems += item
+  }
+  private[kernel] def items: List[Transactional] = lock.withReadLock {
+    transactionalItems.toList.asInstanceOf[List[Transactional]]
   }
 
+  private[kernel] def clear = lock.withWriteLock {
+    transactionalItems = new HashSet 
+  }
+
+
+  /*
   // TX Maps
   private[kernel] var _maps: List[TransactionalMap[_, _]] = Nil
   private[kernel] def maps_=(maps: List[TransactionalMap[_, _]]) = lock.withWriteLock {
@@ -41,5 +52,6 @@ class ChangeSet(val id: String) {
   private[kernel] def refs: List[TransactionalRef[_]] = lock.withReadLock {
     _refs
   }
+  */
 }
 
