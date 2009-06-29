@@ -14,13 +14,13 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
   override def toString(): String = "TransactionAwareWrapperException[" + cause + ", " + tx + "]"
 }
 
-object TransactionManagement {   
+object TransactionManagement {
   private val txEnabled = new AtomicBoolean(true)
-  
+
   def isTransactionsEnabled = txEnabled.get
   def enableTransactions = txEnabled.set(true)
 
-  private[kernel] lazy val threadBoundTx: ThreadLocal[Option[Transaction]] = {
+  private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = {
     val tl = new ThreadLocal[Option[Transaction]]
     tl.set(None)
     tl
@@ -30,18 +30,14 @@ object TransactionManagement {
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
 trait TransactionManagement extends Logging {
   val transactionalInstance: AnyRef
-  
+
   private lazy val changeSet = new ChangeSet(transactionalInstance.getClass.getName)
 
   import TransactionManagement.threadBoundTx
   private[kernel] var activeTx: Option[Transaction] = None
 
   protected def startNewTransaction = {
-    val (maps, vectors, refs) = getTransactionalItemsFor(transactionalInstance)
-    changeSet.maps = maps
-    changeSet.refs = refs
-    changeSet.vectors = vectors
-
+    storeTransactionalItemsFor(transactionalInstance)
     val newTx = new Transaction
     newTx.begin(changeSet)
     val tx = Some(newTx)
@@ -52,6 +48,7 @@ trait TransactionManagement extends Logging {
   protected def joinExistingTransaction = {
     val cflowTx = threadBoundTx.get
     if (activeTx.isDefined && cflowTx.isDefined && activeTx.get.id == cflowTx.get.id) {
+      storeTransactionalItemsFor(transactionalInstance)
       val currentTx = cflowTx.get
       currentTx.join(changeSet)
       activeTx = Some(currentTx)
@@ -102,8 +99,7 @@ trait TransactionManagement extends Logging {
   /**
    * Search for transactional items for a specific target instance, crawl the class hierarchy recursively up to the top.
    */
-  protected def getTransactionalItemsFor(targetInstance: AnyRef):
-    Tuple3[List[TransactionalMap[_, _]], List[TransactionalVector[_]], List[TransactionalRef[_]]] = {
+  protected def storeTransactionalItemsFor(targetInstance: AnyRef) = {
     require(targetInstance != null)
     var maps:    List[TransactionalMap[_, _]] = Nil
     var refs:    List[TransactionalRef[_]] = Nil
@@ -134,7 +130,10 @@ trait TransactionManagement extends Logging {
     }
 
     // start the search for transactional items, crawl the class hierarchy up until we reach Object
-    getTransactionalItemsFor(targetInstance.getClass)
+    val (m, v, r) = getTransactionalItemsFor(targetInstance.getClass)
+    changeSet.maps = m
+    changeSet.vectors = v
+    changeSet.refs = r
   }
 
   /*

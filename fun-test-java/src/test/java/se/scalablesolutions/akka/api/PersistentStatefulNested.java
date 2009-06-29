@@ -4,7 +4,7 @@ import se.scalablesolutions.akka.kernel.state.*;
 import se.scalablesolutions.akka.annotation.transactional;
 import se.scalablesolutions.akka.annotation.state;
 
-public class PersistentStateful {
+public class PersistentStatefulNested {
   private TransactionalState factory = new TransactionalState();
   private TransactionalMap mapState =       factory.newPersistentMap(new CassandraStorageConfig());
   private TransactionalVector vectorState = factory.newPersistentVector(new CassandraStorageConfig());;
@@ -57,23 +57,6 @@ public class PersistentStateful {
     failer.fail();
     return msg;
   }
-
-  public void success(String key, String msg, PersistentStatefulNested nested) {
-    mapState.put(key, msg);
-    vectorState.add(msg);
-    refState.swap(msg);
-    nested.success(key, msg);
-  }
-
-  @transactional
-  public String failure(String key, String msg, PersistentStatefulNested nested, PersistentFailer failer) {
-    mapState.put(key, msg);
-    vectorState.add(msg);
-    refState.swap(msg);
-    nested.failure(key, msg, failer);
-    return msg;
-  }
-
 
   @transactional
   public void thisMethodHangs(String key, String msg, PersistentFailer failer) {

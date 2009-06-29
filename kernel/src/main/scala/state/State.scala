@@ -173,6 +173,8 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 
   // ---- For scala.collection.mutable.Map ----
   override def put(key: K, value: V): Option[V] = {
+    println("--------- MAP.PUT " + uuid + " " + key + " " + value)
+    
     changeSet += key -> value
     None // always return None to speed up writes (else need to go to DB to get
   }
@@ -195,6 +197,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
     // FIXME: should use batch function once the bug is resolved
     for (entry <- changeSet) {
       val (key, value) = entry
+      println("--------- COMMIT " + uuid + " " + key + " " + value)
       CassandraNode.insertMapStorageEntryFor(uuid, key, value)
     }
   }
@@ -205,7 +208,12 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   override def size: Int = CassandraNode.getMapStorageSizeFor(uuid)
 
   // ---- For scala.collection.mutable.Map ----
-  override def get(key: String): Option[AnyRef] =  CassandraNode.getMapStorageEntryFor(uuid, key)
+  override def get(key: String): Option[AnyRef] = {
+    val result = CassandraNode.getMapStorageEntryFor(uuid, key)
+    println("--------- MAP.GET " + result + " " + uuid + " " + key)
+    result
+  }
+  
   override def elements: Iterator[Tuple2[String, AnyRef]]  = {
     new Iterator[Tuple2[String, AnyRef]] {
       private val originalList: List[Tuple2[String, AnyRef]] = CassandraNode.getMapStorageFor(uuid)

@@ -161,6 +161,7 @@ object ActiveObject {
       decrementTransaction
       if (isTransactionAborted) removeTransactionIfTopLevel
       else tryToPrecommitTransaction
+      TransactionManagement.threadBoundTx.set(None)
     }
   }
 

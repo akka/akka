@@ -1,10 +1,9 @@
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.annotation.state;
 import se.scalablesolutions.akka.annotation.transactional;
 import se.scalablesolutions.akka.kernel.state.*;
 
-public class InMemStateful {
+public class InMemStatefulNested {
   private TransactionalState factory = new TransactionalState();
   private TransactionalMap<String, String> mapState = factory.newInMemoryMap();
   private TransactionalVector<String> vectorState = factory.newInMemoryVector();
@@ -47,28 +46,12 @@ public class InMemStateful {
     refState.swap(msg);
   }
 
-  public void success(String key, String msg, InMemStatefulNested nested) {
-    mapState.put(key, msg);
-    vectorState.add(msg);
-    refState.swap(msg);
-    nested.success(key, msg); 
-  }
-
   @transactional
   public String failure(String key, String msg, InMemFailer failer) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
     failer.fail();
-    return msg;
-  }
-
-  @transactional
-  public String failure(String key, String msg, InMemStatefulNested nested, InMemFailer failer) {
-    mapState.put(key, msg);
-    vectorState.add(msg);
-    refState.swap(msg);
-    nested.failure(key, msg, failer);
     return msg;
   }
 

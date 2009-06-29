@@ -314,12 +314,9 @@ trait Actor extends Logging with TransactionManagement {
   
   private def transactionalDispatch[T](message: AnyRef, timeout: Long, blocking: Boolean): Option[T] = {
     // FIXME join TX with same id, do not COMMIT
-    println("------ Actor1: " + this)
     tryToCommitTransaction
-    println("------ Actor2: " + this)
     if (isInExistingTransaction) joinExistingTransaction
     else if (isTransactional) startNewTransaction
-    println("------ Actor3: " + this)
     incrementTransaction
     try {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
