@@ -13,6 +13,7 @@ package se.scalablesolutions.akka.kernel.reactor
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.ThreadFactory
 import java.util.{LinkedList, Queue}
+import kernel.stm.Transaction
 import kernel.util.{Logging, HashCode}
 trait MessageHandler {
   def handle(message: MessageHandle)
@@ -33,13 +34,17 @@ trait MessageDemultiplexer {
   def wakeUp
 }
 
-class MessageHandle(val sender: AnyRef, val message: AnyRef, val future: CompletableFutureResult) {
+class MessageHandle(val sender: AnyRef,
+                    val message: AnyRef,
+                    val future: CompletableFutureResult,
+                    val tx: Option[Transaction]) {
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
     result = HashCode.hash(result, sender)
     result = HashCode.hash(result, message)
     result = HashCode.hash(result, future)
+    result = if (tx.isDefined) HashCode.hash(result, tx.get.id) else result
     result
   }
 
@@ -48,7 +53,9 @@ class MessageHandle(val sender: AnyRef, val message: AnyRef, val future: Complet
     that.isInstanceOf[MessageHandle] &&
     that.asInstanceOf[MessageHandle].sender == sender &&
     that.asInstanceOf[MessageHandle].message == message &&
-    that.asInstanceOf[MessageHandle].future == future
+    that.asInstanceOf[MessageHandle].future == future &&
+    that.asInstanceOf[MessageHandle].tx.isDefined == tx.isDefined &&
+    that.asInstanceOf[MessageHandle].tx.get.id == tx.get.id
 }
 
 class MessageQueue {

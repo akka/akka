@@ -92,6 +92,7 @@ abstract class SupervisorFactory extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging {
+  makeTransactional
   trapExit = true
   faultHandler = Some(handler)
 

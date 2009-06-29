@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
 class FutureTimeoutException(message: String) extends RuntimeException(message)
 
 sealed trait FutureResult {
-  def await_?
-  def await_!
+  def await
+  def awaitBlocking
   def isCompleted: Boolean
   def isExpired: Boolean
   def timeoutInNanos: Long
@@ -39,7 +39,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
   private var _result: Option[AnyRef] = None
   private var _exception: Option[Tuple2[AnyRef, Throwable]] = None
 
-  def await_? = try {
+  def await = try {
     _lock.lock
     var wait = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
     while (!_completed && wait > 0) {
@@ -56,7 +56,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  def await_! = try {
+  def awaitBlocking = try {
     _lock.lock
     while (!_completed) {
       _signal.await
@@ -121,8 +121,8 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
 class NullFutureResult extends CompletableFutureResult {
   def completeWithResult(result: AnyRef) = {}
   def completeWithException(toBlame: AnyRef, exception: Throwable) = {}
-  def await_? = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  def await_! = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  def await = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
+  def awaitBlocking = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   def isCompleted: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   def isExpired: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
   def timeoutInNanos: Long = throw new UnsupportedOperationException("Not implemented for NullFutureResult")

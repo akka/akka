@@ -12,7 +12,8 @@ import kernel.config.ActiveObjectGuiceConfigurator
 import kernel.config.ScalaConfig._
 import kernel.camel.{MessageDriven, ActiveObjectProducer}
 import kernel.nio.{RemoteRequest, NettyClient}
-import kernel.stm.{ChangeSet, Transaction}
+import kernel.stm.{TransactionManagement, TransactionAwareWrapperException, ChangeSet, Transaction}
+
 import kernel.util.Helpers.ReadWriteLock
 import kernel.util.{HashCode, ResultOrFailure}
 import kernel.state.{Transactional, TransactionalMap, TransactionalRef, TransactionalVector}
@@ -27,7 +28,6 @@ import scala.collection.mutable.HashMap
 
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
-class TransactionAwareException(val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause)
 
 object Annotations {
   import se.scalablesolutions.akka.annotation._
@@ -84,12 +84,6 @@ class ActiveObjectFactory {
 object ActiveObject {
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
-  private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = {
-    val tl = new ThreadLocal[Option[Transaction]]
-    tl.set(None)
-    tl
-  }
-
   def newInstance[T](target: Class[T]): T = newInstance(target, new Dispatcher(target.getName), false)
 
   def newInstance[T](intf: Class[T], target: AnyRef): T = newInstance(intf, target, new Dispatcher(intf.getName), false)
@@ -105,7 +99,7 @@ object ActiveObject {
     val proxy = Proxy.newInstance(target, false, true)
     // FIXME switch to weaving in the aspect at compile time
     proxy.asInstanceOf[Advisable].aw_addAdvice(
-      "execution(* *.*(..))", new SequentialTransactionalAroundAdvice(target, proxy, actor, remote))
+      "execution(* *.*(..))", new TransactionalAroundAdvice(target, proxy, actor, remote))
     proxy.asInstanceOf[T]
   }
 
@@ -113,7 +107,7 @@ object ActiveObject {
     if (remote) NettyClient.connect
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     proxy.asInstanceOf[Advisable].aw_addAdvice(
-      "execution(* *.*(..))", new SequentialTransactionalAroundAdvice(intf, target, actor, remote))
+      "execution(* *.*(..))", new TransactionalAroundAdvice(intf, target, actor, remote))
     proxy.asInstanceOf[T]
   }
 
@@ -130,60 +124,37 @@ object ActiveObject {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
+@serializable sealed class TransactionalAroundAdvice(
+    val target: Class[_], val targetInstance: AnyRef, actor: Actor, val isRemote: Boolean)
+    extends AroundAdvice with TransactionManagement {
 
-// FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
-@serializable sealed class SequentialTransactionalAroundAdvice(
-    target: Class[_], targetInstance: AnyRef, actor: Actor, val isRemote: Boolean) extends AroundAdvice {
-  private val changeSet = new ChangeSet(target.getName)
+  val transactionalInstance = targetInstance
   
-  private val (maps, vectors, refs) = getTransactionalItemsFor(targetInstance)
-  changeSet.refs = refs
-  changeSet.maps = maps
-  changeSet.vectors = vectors
-
   import kernel.reactor._
   private[this] var dispatcher = new ProxyMessageDispatcher
   private[this] var mailbox = dispatcher.messageQueue
   dispatcher.start
 
-  import ActiveObject.threadBoundTx
-  private[kernel] var activeTx: Option[Transaction] = None
+  def invoke(joinpoint: JoinPoint): AnyRef =
+    if (TransactionManagement.isTransactionsEnabled) transactionalDispatch(joinpoint)
+    else
+      dispatch(joinpoint)
 
-  // FIXME: switch to using PCD annotation matching, break out into its own aspect + switch to StaticJoinPoint
-  def invoke(joinpoint: JoinPoint): AnyRef = {
-    val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
-    val method = rtti.getMethod
+  private def dispatch(joinpoint: JoinPoint) = {
+    if (isRemote) remoteDispatch(joinpoint)
+    else localDispatch(joinpoint)
+  }
 
-    val isOneWay = rtti.getMethod.getReturnType == java.lang.Void.TYPE
+  private def transactionalDispatch(joinpoint: JoinPoint) = {
     // FIXME join TX with same id, do not COMMIT
     tryToCommitTransaction
-    if (isInExistingTransaction) {
-      joinExistingTransaction
-    } else {
-      if (method.isAnnotationPresent(Annotations.transactional)) startNewTransaction
-    }
+    if (isInExistingTransaction) joinExistingTransaction
+    else if (isTransactional(joinpoint)) startNewTransaction
+    incrementTransaction
     try {
-      incrementTransaction
-      if (isRemote) {
-        val future = NettyClient.send(
-          new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, activeTx, isOneWay, false))
-        if (isOneWay) null // for void methods
-        else {
-          future.await_?
-          val result = getResultOrThrowException(future)
-          if (result.isDefined) result.get
-          else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
-        }
-      } else {
-        if (isOneWay) actor !! Invocation(joinpoint, activeTx) // FIXME investigate why ! causes TX to race
-        else {
-          val result = actor !! Invocation(joinpoint, activeTx)
-          if (result.isDefined) result.get
-          else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
-        }
-      }
+      dispatch(joinpoint)
     } catch {
-      case e: TransactionAwareException =>
+      case e: TransactionAwareWrapperException =>
         rollback(e.tx)
         throw e.cause
     } finally {
@@ -193,136 +164,41 @@ object ActiveObject {
     }
   }
 
-  // TODO: create a method setCallee/setCaller to the joinpoint interface and compiler
-  private def nullOutTransientFieldsInJoinpoint(joinpoint: JoinPoint) = {
-    val clazz = joinpoint.getClass
-    val callee = clazz.getDeclaredField("CALLEE")
-    callee.setAccessible(true)
-    callee.set(joinpoint, null)
-    val caller = clazz.getDeclaredField("CALLER")
-    caller.setAccessible(true)
-    caller.set(joinpoint, null)
-    val interceptors = clazz.getDeclaredField("AROUND_INTERCEPTORS")
-    interceptors.setAccessible(true)
-    interceptors.set(joinpoint, null)
-  }
-
-  private def startNewTransaction = {
-    val newTx = new Transaction
-    newTx.begin(changeSet)
-    val tx = Some(newTx)
-    activeTx = tx
-    threadBoundTx.set(tx)
-  }
-
-  private def joinExistingTransaction = {
-    val cflowTx = threadBoundTx.get
-    if (!activeTx.isDefined && cflowTx.isDefined) {
-      val currentTx = cflowTx.get
-      currentTx.join(changeSet)
-      activeTx = Some(currentTx)
+  private def localDispatch(joinpoint: JoinPoint): AnyRef = {
+    val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
+    if (isOneWay(rtti)) actor !! Invocation(joinpoint, activeTx) // FIXME investigate why ! causes TX to race
+    else {
+      val result = actor !! Invocation(joinpoint, activeTx)
+      if (result.isDefined) result.get
+      else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
     }
   }
 
-  private def tryToPrecommitTransaction = if (activeTx.isDefined) activeTx.get.precommit(changeSet)
-
-  private def tryToCommitTransaction: Boolean = if (activeTx.isDefined) {
-    val tx = activeTx.get
-    tx.commit(changeSet)
-    removeTransactionIfTopLevel
-    true
-  } else false
- 
-  private def handleResult(result: ResultOrFailure[AnyRef]): AnyRef = {
-    try {
-      result()
-    } catch {
-      case e =>
-        rollback(result.tx)
-        throw e
+  private def remoteDispatch(joinpoint: JoinPoint): AnyRef = {
+    val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
+    val oneWay = isOneWay(rtti)
+    val future = NettyClient.send(
+      new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, activeTx, oneWay, false))
+    if (oneWay) null // for void methods
+    else {
+      future.await
+      val result = getResultOrThrowException(future)
+      if (result.isDefined) result.get
+      else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
     }
-  }
-
-  private def rollback(tx: Option[Transaction]) = tx match {
-    case None => {} // no tx; nothing to do
-    case Some(tx) =>
-      tx.rollback(changeSet)
-  }
-
-  private def isInExistingTransaction = ActiveObject.threadBoundTx.get.isDefined
-
-  private def isTransactionAborted = activeTx.isDefined && activeTx.get.isAborted
-
-  private def incrementTransaction =  if (activeTx.isDefined) activeTx.get.increment
-
-  private def decrementTransaction =  if (activeTx.isDefined) activeTx.get.decrement
-
-  private def removeTransactionIfTopLevel =
-    if (activeTx.isDefined && activeTx.get.topLevel_?) {
-      activeTx = None
-      threadBoundTx.set(None)
-    }
-
-  private def reenteringExistingTransaction= if (activeTx.isDefined) {
-    val cflowTx = threadBoundTx.get
-    if (cflowTx.isDefined && cflowTx.get.id == activeTx.get.id) false
-    else true
-  } else true
-
-  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = {
-    val future = new DefaultCompletableFutureResult(timeout)
-    mailbox.append(new MessageHandle(this, message, future))
-    future
   }
 
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
-      throw new TransactionAwareException(cause, activeTx)
-    } else {
-      if (future.result.isDefined) {
-        val (res, tx) = future.result.get.asInstanceOf[Tuple2[AnyRef, Option[Transaction]]]
-        Some(res).asInstanceOf[Option[T]]
-      } else None
-    }
+      if (TransactionManagement.isTransactionsEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
+      else throw cause
+    } else future.result.asInstanceOf[Option[T]]
 
-  /**
-   * Search for transactional items for a specific target instance, crawl the class hierarchy recursively up to the top.
-   */
-  private def getTransactionalItemsFor(targetInstance: AnyRef):
-    Tuple3[List[TransactionalMap[_, _]], List[TransactionalVector[_]], List[TransactionalRef[_]]] = {
-    require(targetInstance != null)
-    var maps:    List[TransactionalMap[_, _]] = Nil
-    var refs:    List[TransactionalRef[_]] = Nil
-    var vectors: List[TransactionalVector[_]] = Nil
+  private def isTransactional(joinpoint: JoinPoint) =
+    joinpoint.getRtti.asInstanceOf[MethodRtti].getMethod.isAnnotationPresent(Annotations.transactional)
 
-    def getTransactionalItemsFor(target: Class[_]):
-      Tuple3[List[TransactionalMap[_, _]], List[TransactionalVector[_]], List[TransactionalRef[_]]] = {
-      target.getDeclaredFields.toArray.toList.asInstanceOf[List[Field]].foreach(println)
-    for {
-        field <- target.getDeclaredFields.toArray.toList.asInstanceOf[List[Field]]
-        fieldType = field.getType
-        if (fieldType == classOf[TransactionalMap[_, _]]) ||
-           (fieldType == classOf[TransactionalVector[_]]) ||
-           (fieldType == classOf[TransactionalRef[_]])
-        txItem = {
-          field.setAccessible(true)
-          field.get(targetInstance)
-        }
-        if txItem != null
-      } {
-        if (txItem.isInstanceOf[TransactionalMap[_, _]])      maps    ::= txItem.asInstanceOf[TransactionalMap[_, _]]
-        else if (txItem.isInstanceOf[TransactionalRef[_]])    refs    ::= txItem.asInstanceOf[TransactionalRef[_]]
-        else if (txItem.isInstanceOf[TransactionalVector[_]]) vectors ::= txItem.asInstanceOf[TransactionalVector[_]]
-      }
-      val parent = target.getSuperclass
-      if (parent == classOf[Object]) (maps, vectors, refs)
-      else getTransactionalItemsFor(parent)
-    }
-
-    // start the search for transactional items, crawl the class hierarchy up until we reach Object
-    getTransactionalItemsFor(targetInstance.getClass)
-  }
+  private def isOneWay(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
 }
 
 /**
@@ -357,6 +233,7 @@ object ActiveObject {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[kernel] class Dispatcher(val targetName: String) extends Actor {
+  //makeTransactional
   id = targetName
 
   // FIXME implement the pre/post restart methods and call annotated methods on the POJO
@@ -366,18 +243,34 @@ private[kernel] class Dispatcher(val targetName: String) extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
 
     case Invocation(joinpoint: JoinPoint, tx: Option[Transaction]) =>
-      ActiveObject.threadBoundTx.set(tx)
+      TransactionManagement.threadBoundTx.set(tx)
       try {
         reply(joinpoint.proceed)
       } catch {
         case e =>
-          throw new TransactionAwareException(e, tx)
+          throw new TransactionAwareWrapperException(e, tx)
       }
 
     case unexpected =>
       throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
 }
+
+// TODO: create a method setCallee/setCaller to the joinpoint interface and compiler
+/*
+private def nullOutTransientFieldsInJoinpoint(joinpoint: JoinPoint) = {
+  val clazz = joinpoint.getClass
+  val callee = clazz.getDeclaredField("CALLEE")
+  callee.setAccessible(true)
+  callee.set(joinpoint, null)
+  val caller = clazz.getDeclaredField("CALLER")
+  caller.setAccessible(true)
+  caller.set(joinpoint, null)
+  val interceptors = clazz.getDeclaredField("AROUND_INTERCEPTORS")
+  interceptors.setAccessible(true)
+  interceptors.set(joinpoint, null)
+}
+*/
 
 /*
 ublic class CamelInvocationHandler implements InvocationHandler {

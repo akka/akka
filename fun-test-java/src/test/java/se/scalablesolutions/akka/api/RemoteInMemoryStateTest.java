@@ -21,6 +21,7 @@ public class RemoteInMemoryStateTest extends TestCase {
          server.connect();         
        }
     }).start();
+    try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
   }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
   final private se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory factory = new se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory();

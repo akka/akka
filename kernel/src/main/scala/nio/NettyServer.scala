@@ -8,7 +8,8 @@ import java.lang.reflect.InvocationTargetException
 import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import kernel.actor._
-import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
+import kernel.reactor.{MessageHandle, DefaultCompletableFutureResult, CompletableFutureResult}
+import kernel.stm.TransactionManagement
 import kernel.util.Logging
 import java.util.ArrayList
 import java.util.List
@@ -66,7 +67,7 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
   private val actors = new ConcurrentHashMap[String, Actor]
 
   private val MESSAGE_HANDLE = classOf[Actor].getDeclaredMethod(
-    "handle", Array[Class[_]](classOf[AnyRef], classOf[CompletableFutureResult]))
+    "handle", Array[Class[_]](classOf[MessageHandle]))
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
@@ -118,7 +119,8 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
         val resultOrNone = actor !! request.message
         val result = if (resultOrNone.isDefined) resultOrNone else null
         log.debug("Returning result from actor invocation [%s]", result)
-        channel.write(request.newReplyWithMessage(result, ActiveObject.threadBoundTx.get))
+        //channel.write(request.newReplyWithMessage(result, TransactionManagement.threadBoundTx.get))
+        channel.write(request.newReplyWithMessage(result, null))
       } catch {
         case e: InvocationTargetException =>
           log.error("Could not invoke remote actor [%s] due to: %s", request.target, e.getCause)
@@ -143,7 +145,8 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
       else {
         val result = messageReceiver.invoke(activeObject, unescapedArgs)
         log.debug("Returning result from active object invocation [%s]", result)
-        channel.write(request.newReplyWithMessage(result, ActiveObject.threadBoundTx.get))
+        //channel.write(request.newReplyWithMessage(result, TransactionManagement.threadBoundTx.get))
+        channel.write(request.newReplyWithMessage(result, null))
       }
     } catch {
       case e: InvocationTargetException =>
@@ -157,8 +160,8 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     val tx = request.tx
     if (tx.isDefined) {
       tx.get.reinit
-      ActiveObject.threadBoundTx.set(tx)
-    } else ActiveObject.threadBoundTx.set(None)     
+      TransactionManagement.threadBoundTx.set(tx)
+    } else TransactionManagement.threadBoundTx.set(None)     
   }
   
   private def unescapeArgs(args: scala.List[AnyRef], argClasses: scala.List[Class[_]]) = {

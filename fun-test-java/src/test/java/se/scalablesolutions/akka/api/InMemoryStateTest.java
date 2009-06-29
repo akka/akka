@@ -17,7 +17,6 @@ public class InMemoryStateTest extends TestCase {
   final private ActiveObjectFactory factory = new ActiveObjectFactory();
 
   protected void setUp() {
-
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{

@@ -36,6 +36,7 @@ class RemoteActorSpec {
        server.connect
      }
   }).start
+  Thread.sleep(1000)
   NettyClient.connect
   
   private val unit = TimeUnit.MILLISECONDS
@@ -74,11 +75,11 @@ class RemoteActorSpec {
     actor.stop
   }
 
-  @Test
+   @Test
   def sendReceiveException = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorBidirectional
-    actor.isRemote = true
+    actor.makeRemote
     actor.start
     try {
       actor !! "Failure"

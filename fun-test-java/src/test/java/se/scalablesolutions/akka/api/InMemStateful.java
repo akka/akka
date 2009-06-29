@@ -6,9 +6,9 @@ import se.scalablesolutions.akka.kernel.state.*;
 
 public class InMemStateful {
   private TransactionalState factory = new TransactionalState();
-  private TransactionalMap mapState =       factory.newMap(new InMemoryMapConfig());
-  private TransactionalVector vectorState = factory.newVector(new InMemoryVectorConfig());;
-  private TransactionalRef refState =       factory.newRef(new InMemoryRefConfig());
+  private TransactionalMap<String, String> mapState = factory.newInMemoryMap();
+  private TransactionalVector<String> vectorState = factory.newInMemoryVector();
+  private TransactionalRef<String> refState = factory.newInMemoryRef();
 
   @transactional
   public String getMapState(String key) {

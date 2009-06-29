@@ -60,7 +60,7 @@ class EventBasedDispatcherTest {
     dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageHandle(key, new Object, new NullFutureResult))
+      dispatcher.messageQueue.append(new MessageHandle(key, new Object, new NullFutureResult, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
@@ -74,8 +74,8 @@ class EventBasedDispatcherTest {
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
     dispatcher.start
-    dispatcher.messageQueue.append(new MessageHandle(key1, new Object, new NullFutureResult))
-    dispatcher.messageQueue.append(new MessageHandle(key2, new Object, new NullFutureResult))
+    dispatcher.messageQueue.append(new MessageHandle(key1, new Object, new NullFutureResult, None))
+    dispatcher.messageQueue.append(new MessageHandle(key2, new Object, new NullFutureResult, None))
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
   }
@@ -109,8 +109,8 @@ class EventBasedDispatcherTest {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), new NullFutureResult))
-      dispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), new NullFutureResult))
+      dispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), new NullFutureResult, None))
+      dispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), new NullFutureResult, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)

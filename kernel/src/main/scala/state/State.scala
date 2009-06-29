@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.kernel.state
 
+import kernel.stm.TransactionManagement
 import org.codehaus.aspectwerkz.proxy.Uuid
 
 import kernel.actor.ActiveObject
@@ -12,71 +13,54 @@ import se.scalablesolutions.akka.collection._
 import scala.collection.mutable.HashMap
 
 sealed abstract class TransactionalStateConfig
-abstract class TransactionalMapConfig  extends TransactionalStateConfig
-abstract class TransactionalVectorConfig  extends TransactionalStateConfig
-abstract class TransactionalRefConfig  extends TransactionalStateConfig
-
 abstract class PersistentStorageConfig  extends TransactionalStateConfig
 case class CassandraStorageConfig extends PersistentStorageConfig
 case class TerracottaStorageConfig extends PersistentStorageConfig
 case class TokyoCabinetStorageConfig extends PersistentStorageConfig
 
-case class PersistentMapConfig(storage: PersistentStorageConfig) extends TransactionalMapConfig
-case class InMemoryMapConfig extends TransactionalMapConfig
-
-case class PersistentVectorConfig(storage: PersistentStorageConfig) extends TransactionalVectorConfig
-case class InMemoryVectorConfig extends TransactionalVectorConfig
-
-case class PersistentRefConfig(storage: PersistentStorageConfig) extends TransactionalRefConfig
-case class InMemoryRefConfig extends TransactionalRefConfig
-
+/**
+ * Scala API.
+ * <p/>
+ * Example Scala usage:
+ * <pre>
+ * val myMap = TransactionalState.newPersistentMap(CassandraStorageConfig)
+ * </pre>
+ */
 object TransactionalState extends TransactionalState
+
+/**
+ * Java API.
+ * <p/>
+ * Example Java usage:
+ * <pre>
+ * TransactionalState state = new TransactionalState();
+ * TransactionalMap myMap = state.newPersistentMap(new CassandraStorageConfig());
+ * </pre>
+ */
 class TransactionalState {
-
-  /**
-   * Usage:
-   * <pre>
-   * val myMap = TransactionalState.newMap(PersistentMapConfig(CassandraStorageConfig))
-   * </pre>
-   */
-  def newMap(config: TransactionalMapConfig) = config match {
-    case PersistentMapConfig(storage) => storage match {
-      case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
-      case TerracottaStorageConfig() => throw new UnsupportedOperationException
-      case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
-    }
-    case InMemoryMapConfig() => new InMemoryTransactionalMap
+  def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[String, AnyRef] = config match {
+    case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
+    case TerracottaStorageConfig() => throw new UnsupportedOperationException
+    case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  /**
-   * Usage:
-   * <pre>
-   * val myVector = TransactionalState.newVector(PersistentVectorConfig(CassandraStorageConfig))
-   * </pre>
-   */
-  def newVector(config: TransactionalVectorConfig) = config match {
-    case PersistentVectorConfig(storage) => storage match {
-      case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
-      case TerracottaStorageConfig() => throw new UnsupportedOperationException
-      case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
-    }
-    case InMemoryVectorConfig() => new InMemoryTransactionalVector
+  def newPersistentVector(config: PersistentStorageConfig): TransactionalVector[AnyRef] = config match {
+    case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
+    case TerracottaStorageConfig() => throw new UnsupportedOperationException
+    case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  /**
-   * Usage:
-   * <pre>
-   * val myRef = TransactionalState.newRef(PersistentRefConfig(CassandraStorageConfig))
-   * </pre>
-   */
-  def newRef(config: TransactionalRefConfig) = config match {
-    case PersistentRefConfig(storage) => storage match {
-      case CassandraStorageConfig() => new CassandraPersistentTransactionalRef
-      case TerracottaStorageConfig() => throw new UnsupportedOperationException
-      case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
-    }
-    case InMemoryRefConfig() => new TransactionalRef
+  def newPersistentRef(config: PersistentStorageConfig): TransactionalRef[AnyRef] = config match {
+    case CassandraStorageConfig() => new CassandraPersistentTransactionalRef
+    case TerracottaStorageConfig() => throw new UnsupportedOperationException
+    case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
+
+  def newInMemoryMap[K, V]: TransactionalMap[K, V] = new InMemoryTransactionalMap[K, V]
+
+  def newInMemoryVector[T]: TransactionalVector[T] = new InMemoryTransactionalVector[T]
+
+  def newInMemoryRef[T]: TransactionalRef[T] = new TransactionalRef[T]
 }
 
 /**
@@ -90,15 +74,15 @@ trait Transactional {
   private[kernel] def commit
   private[kernel] def rollback
 
-  protected def isInTransaction = ActiveObject.threadBoundTx.get.isDefined
+  protected def isInTransaction = TransactionManagement.threadBoundTx.get.isDefined
   protected def nonTransactionalCall = throw new IllegalStateException("Can't access transactional map outside the scope of a transaction")
 }
 
 /**
  * Base trait for all state implementations (persistent or in-memory).
- * 
+ *
  * TODO: Make this class inherit scala.collection.mutable.Map and/or java.util.Map
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
@@ -118,7 +102,7 @@ trait TransactionalMapGuard[K, V] extends TransactionalMap[K, V] with Transactio
   abstract override def remove(key: K) =
     if (isInTransaction) super.remove(key)
     else nonTransactionalCall
-  abstract override def elements: Iterator[(K, V)] = 
+  abstract override def elements: Iterator[(K, V)] =
     if (isInTransaction) super.elements
     else nonTransactionalCall
   abstract override def get(key: K): Option[V] =
@@ -149,7 +133,7 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
   override def begin = snapshot = state
   override def commit = snapshot = state
   override def rollback = state = snapshot
-  
+
   // ---- Overriding scala.collection.mutable.Map behavior ----
   override def contains(key: K): Boolean = state.contains(key)
   override def clear = state = new HashTrie[K, V]
@@ -171,16 +155,16 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
 /**
  * Base class for all persistent transactional map implementations should extend.
  * Implements a Unit of Work, records changes into a change set.
- * 
+ *
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 
   // FIXME: need to handle remove in another changeSet
   protected[kernel] val changeSet = new HashMap[K, V]
-  
+
   def getRange(start: Int, count: Int)
 
   // ---- For Transactional ----
@@ -249,9 +233,9 @@ abstract class TransactionalVector[T] extends Transactional with RandomAccessSeq
 
 /**
  * Implements an in-memory transactional vector.
- * 
+ *
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
@@ -308,20 +292,27 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   override def length: Int = CassandraNode.getVectorStorageSizeFor(uuid)
   override def apply(index: Int): AnyRef = get(index)
   override def first: AnyRef = get(0)
-  override def last: AnyRef = get(length)
+  override def last: AnyRef = {
+    val l = length
+    if (l == 0) throw new NoSuchElementException("Vector is empty")
+    get(length - 1)
+  }
 
   // ---- For Transactional ----
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
-    for (element <- changeSet) CassandraNode.insertVectorStorageEntryFor(uuid, element)
+    for (element <- changeSet) {
+      CassandraNode.insertVectorStorageEntryFor(uuid, element)
+      println("33333333333 " + CassandraNode.getVectorStorageSizeFor(uuid))
+    }
   }
 }
 
 /**
  * Implements a transactional reference.
- * 
+ *
  * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {

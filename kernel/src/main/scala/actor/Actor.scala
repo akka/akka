@@ -9,7 +9,7 @@ import java.util.concurrent.{CopyOnWriteArraySet, TimeUnit}
 import kernel.reactor._
 import kernel.config.ScalaConfig._
 import kernel.nio.{NettyClient, RemoteRequest}
-import kernel.stm.Transaction
+import kernel.stm.{TransactionAwareWrapperException, TransactionManagement, Transaction}
 import kernel.util.Logging
 import kernel.util.Helpers._
 
@@ -29,13 +29,13 @@ object DispatcherType {
 }
 
 class ActorMessageHandler(val actor: Actor) extends MessageHandler {
-  def handle(handle: MessageHandle) = actor.handle(handle.message, handle.future)
+  def handle(handle: MessageHandle) = actor.handle(handle)
 }
 
-trait Actor extends Logging {
-  var timeout: Long = 5000L
-  var isRemote = false
-  
+trait Actor extends Logging with TransactionManagement {  
+  val transactionalInstance = this
+  @volatile private[this] var isRemote = false
+  @volatile private[this] var isTransactional = false
   @volatile private[this] var isRunning: Boolean = false
   protected[this] var id: String = super.toString
   protected[this] var dispatcher: MessageDispatcher = _
@@ -118,31 +118,62 @@ trait Actor extends Logging {
   // ==== API ====
   // =============
 
+  /**
+   * TODO: document
+   */
+  @volatile var timeout: Long = 5000L
+
+  /**
+   * TODO: document
+   */
   def !(message: AnyRef) = if (isRunning) {
     if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, true, false))
-    else mailbox.append(new MessageHandle(this, message, new NullFutureResult))
+    else mailbox.append(new MessageHandle(this, message, new NullFutureResult, activeTx))
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   
+  /**
+   * TODO: document
+   */
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
-    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
-    future.await_?
-    getResultOrThrowException(future)
+    if (TransactionManagement.isTransactionsEnabled) {
+      transactionalDispatch(message, timeout, false)
+    } else {
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
+      future.await
+      getResultOrThrowException(future)
+    }
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
+  /**
+   * TODO: document
+   */
   def !![T](message: AnyRef): Option[T] = !![T](message, timeout)
 
+  /**
+   * TODO: document
+   */
   def !?[T](message: AnyRef): T = if (isRunning) {
-    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
-    future.await_!
-    getResultOrThrowException(future).get
+    if (TransactionManagement.isTransactionsEnabled) {
+      transactionalDispatch(message, 0, true).get
+    } else {
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
+      future.awaitBlocking
+      getResultOrThrowException(future).get
+    }
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
+  /**
+   * TODO: document
+   */
   protected[this] def reply(message: AnyRef) = senderFuture match {
     case None => throw new IllegalStateException("No sender future in scope, can't reply. Have you used '!' (async, fire-and-forget)? If so, switch to '!!' which will return a future to wait on." )
     case Some(future) => future.completeWithResult(message)
   }
 
   // FIXME can be deadlock prone if cyclic linking? - HOWTO?
+  /**
+   * TODO: document
+   */
   protected[this] def link(actor: Actor) = synchronized { actor.synchronized {
     if (isRunning) {
       linkedActors.add(actor)
@@ -153,6 +184,9 @@ trait Actor extends Logging {
   }}
 
     // FIXME can be deadlock prone if cyclic linking? - HOWTO?
+  /**
+   * TODO: document
+   */
   protected[this] def unlink(actor: Actor) = synchronized { actor.synchronized {
     if (isRunning) {
       if (!linkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
@@ -162,6 +196,9 @@ trait Actor extends Logging {
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }}
   
+  /**
+   * TODO: document
+   */
   def start = synchronized  {
     if (!isRunning) {
       dispatcherType match {
@@ -181,6 +218,9 @@ trait Actor extends Logging {
     }
   }
 
+  /**
+   * TODO: document
+   */
   def stop = synchronized {
     if (isRunning) {
       dispatcher.unregisterHandler(this)
@@ -205,30 +245,57 @@ trait Actor extends Logging {
     link(actor)
   }
 
+  /**
+   * TODO: document
+   */
   def spawn(actorClass: Class[_]) = {
 
     // FIXME: should pass in dispatcher etc. - inherit
   }
 
+  /**
+   * TODO: document
+   */
   def spawnRemote(actorClass: Class[_]) = {
   }
 
+  /**
+   * TODO: document
+   */
   def spawnLink(actorClass: Class[_]) = {
   }
 
+  /**
+   * TODO: document
+   */
   def spawnLinkRemote(actorClass: Class[_]) = {
   }
 
+  /**
+   * TODO: document
+   */
   def makeRemote = isRemote = true
+
+  /**
+   * TODO: document
+   */
+  def makeTransactional = synchronized {
+    if (isRunning) throw new IllegalArgumentException("Can not make actor transactional after it has been started") 
+    else isTransactional = true
+  }
 
   // ================================
   // ==== IMPLEMENTATION DETAILS ====
   // ================================
 
-  private[kernel] def handle(message: AnyRef, future: CompletableFutureResult) = synchronized {
+  private[kernel] def handle(messageHandle: MessageHandle) = synchronized {
+    val message = messageHandle.message
+    val future = messageHandle.future
     try {
+      if (messageHandle.tx.isDefined) 
+        TransactionManagement.threadBoundTx.set(messageHandle.tx)
       senderFuture = Some(future)
-      if (base.isDefinedAt(message)) base(message)
+      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
       else throw new IllegalArgumentException("No handler matching message [" + message + "] in actor [" + this.getClass.getName + "]")
     } catch {
       case e =>
@@ -237,21 +304,49 @@ trait Actor extends Logging {
     }
   }
 
-  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = {
+  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult =
     if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, false, false))
     else {
       val future = new DefaultCompletableFutureResult(timeout)
-      mailbox.append(new MessageHandle(this, message, future))
+      mailbox.append(new MessageHandle(this, message, future, TransactionManagement.threadBoundTx.get))
       future
     }
+  
+  private def transactionalDispatch[T](message: AnyRef, timeout: Long, blocking: Boolean): Option[T] = {
+    // FIXME join TX with same id, do not COMMIT
+    println("------ Actor1: " + this)
+    tryToCommitTransaction
+    println("------ Actor2: " + this)
+    if (isInExistingTransaction) joinExistingTransaction
+    else if (isTransactional) startNewTransaction
+    println("------ Actor3: " + this)
+    incrementTransaction
+    try {
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
+      if (blocking) future.awaitBlocking
+      else future.await
+      getResultOrThrowException(future)      
+    } catch {
+      case e: TransactionAwareWrapperException =>
+        e.cause.printStackTrace
+        rollback(e.tx)
+        throw e.cause
+    } finally {
+      decrementTransaction
+      if (isTransactionAborted) removeTransactionIfTopLevel
+      else tryToPrecommitTransaction
+      TransactionManagement.threadBoundTx.set(None)
+    }
   }
+
 
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
     if (isRemote) getRemoteResultOrThrowException(future)
     else {
       if (future.exception.isDefined) {
         val (_, cause) = future.exception.get
-        throw cause
+        if (TransactionManagement.isTransactionsEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
+        else throw cause
       } else {
         future.result.asInstanceOf[Option[T]]
       }
@@ -262,7 +357,8 @@ trait Actor extends Logging {
   private def getRemoteResultOrThrowException[T](future: FutureResult): Option[T] =
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
-      throw cause // throw new TransactionAwareException(cause, activeTx)
+      if (TransactionManagement.isTransactionsEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
+      else throw cause
     } else {
       if (future.result.isDefined) {
         val (res, tx) = future.result.get.asInstanceOf[Tuple2[Option[T], Option[Transaction]]]
