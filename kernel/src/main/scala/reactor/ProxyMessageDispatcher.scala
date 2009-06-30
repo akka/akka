@@ -33,18 +33,20 @@ class ProxyMessageDispatcher extends MessageDispatcherBase {
             guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
             try {
               messageDemultiplexer.select
-            } catch {case e: InterruptedException => active = false}
+            } catch { case e: InterruptedException => active = false }
             val queue = messageDemultiplexer.acquireSelectedQueue
             for (index <- 0 until queue.size) {
               val handle = queue.remove
               handlerExecutor.execute(new Runnable {
                 val invocation = handle.message.asInstanceOf[Invocation]
                 override def run = {
+                  val future = handle.future
                   try {
                     val result = invocation.joinpoint.proceed
-                    handle.future.completeWithResult(result)
+                    if (future.isDefined) future.get.completeWithResult(result)
                   } catch {
-                    case e: Exception => handle.future.completeWithException(invocation.joinpoint.getTarget, e)
+                    case e: Exception =>
+                      if (future.isDefined) future.get.completeWithException(invocation.joinpoint.getTarget, e)
                   }
                   messageDemultiplexer.wakeUp
                 }

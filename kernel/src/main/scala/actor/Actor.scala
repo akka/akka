@@ -125,9 +125,9 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * TODO: document
    */
-  def !(message: AnyRef) = if (isRunning) {
-    if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, true, false))
-    else mailbox.append(new MessageHandle(this, message, new NullFutureResult, activeTx))
+  def !(message: AnyRef): Unit = if (isRunning) {
+    if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(message, timeout, false, true)
+    else postMessageToMailbox(message)
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   
   /**
@@ -135,7 +135,7 @@ trait Actor extends Logging with TransactionManagement {
    */
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
     if (TransactionManagement.isTransactionalityEnabled) {
-      transactionalDispatch(message, timeout, false)
+      transactionalDispatch(message, timeout, false, false)
     } else {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
       future.await
@@ -153,7 +153,7 @@ trait Actor extends Logging with TransactionManagement {
    */
   def !?[T](message: AnyRef): T = if (isRunning) {
     if (TransactionManagement.isTransactionalityEnabled) {
-      transactionalDispatch(message, 0, true).get
+      transactionalDispatch(message, 0, true, false).get
     } else {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
       future.awaitBlocking
@@ -165,7 +165,7 @@ trait Actor extends Logging with TransactionManagement {
    * TODO: document
    */
   protected[this] def reply(message: AnyRef) = senderFuture match {
-    case None => throw new IllegalStateException("No sender future in scope, can't reply. Have you used '!' (async, fire-and-forget)? If so, switch to '!!' which will return a future to wait on." )
+    case None => throw new IllegalStateException("No sender in scope, can't reply. Have you used '!' (async, fire-and-forget)? If so, switch to '!!' which will return a future to wait on." )
     case Some(future) => future.completeWithResult(message)
   }
 
@@ -293,34 +293,50 @@ trait Actor extends Logging with TransactionManagement {
     try {
       if (messageHandle.tx.isDefined) 
         TransactionManagement.threadBoundTx.set(messageHandle.tx)
-      senderFuture = Some(future)
+      senderFuture = future
       if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException("No handler matching message [" + message + "] in actor [" + this.getClass.getName + "]")
+      else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
     } catch {
       case e =>
         if (supervisor.isDefined) supervisor.get ! Exit(this, e)
-        future.completeWithException(this, e)
+        if (future.isDefined) future.get.completeWithException(this, e)
+        else e.printStackTrace
+    } finally {
+      TransactionManagement.threadBoundTx.set(None)      
     }
   }
 
+  private def postMessageToMailbox(message: AnyRef): Unit =
+    if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, true, false))
+    else mailbox.append(new MessageHandle(this, message, None, activeTx))
+
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult =
-    if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, false, false))
+    if (isRemote) { 
+      val future = NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, false, false))  
+      if (future.isDefined) future.get
+      else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
+    }
     else {
       val future = new DefaultCompletableFutureResult(timeout)
-      mailbox.append(new MessageHandle(this, message, future, TransactionManagement.threadBoundTx.get))
+      mailbox.append(new MessageHandle(this, message, Some(future), TransactionManagement.threadBoundTx.get))
       future
     }
   
-  private def transactionalDispatch[T](message: AnyRef, timeout: Long, blocking: Boolean): Option[T] = {
+  private def transactionalDispatch[T](message: AnyRef, timeout: Long, blocking: Boolean, oneWay: Boolean): Option[T] = {
     tryToCommitTransaction
     if (isInExistingTransaction) joinExistingTransaction
     else if (isTransactional) startNewTransaction
     incrementTransaction
     try {
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
-      if (blocking) future.awaitBlocking
-      else future.await
-      getResultOrThrowException(future)      
+      if (oneWay) {
+        postMessageToMailbox(message)
+        None
+      } else {
+        val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
+        if (blocking) future.awaitBlocking
+        else future.await
+        getResultOrThrowException(future)
+      }
     } catch {
       case e: TransactionAwareWrapperException =>
         e.cause.printStackTrace

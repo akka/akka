@@ -8,7 +8,6 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 import junit.framework.TestSuite;
-import se.scalablesolutions.akka.kernel.nio.ProxyServer;
 
 public class NioTest extends TestSuite {
 
@@ -22,10 +21,7 @@ public class NioTest extends TestSuite {
 
   @Test
   public void simpleRequestReply() {
-    ProxyServer server = new ProxyServer();
-    server.start();
 
-    
   }
 
 }

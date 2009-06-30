@@ -18,3 +18,5 @@ tm*.log
 tm*.lck
 tm.out
 *.tm.epoch
+_dump
+WEB-INF

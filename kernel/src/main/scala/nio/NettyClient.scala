@@ -5,11 +5,10 @@
 package se.scalablesolutions.akka.kernel.nio
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{Executors, ConcurrentMap, ConcurrentHashMap}
 
-import kernel.reactor.{NullFutureResult, DefaultCompletableFutureResult, CompletableFutureResult}
-import kernel.util.{HashCode, Logging};
+import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
+import kernel.util.Logging
 
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoder, ObjectDecoder}
 import org.jboss.netty.bootstrap.ClientBootstrap
@@ -58,17 +57,17 @@ object NettyClient extends Logging {
     }
   }
 
-  def send(request: RemoteRequest): CompletableFutureResult = if (isRunning) {
+  def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
     val escapedRequest = escapeRequest(request)
     if (escapedRequest.isOneWay) {
       connection.getChannel.write(escapedRequest)
-      new NullFutureResult
+      None
     } else {
       futures.synchronized {
         val futureResult = new DefaultCompletableFutureResult(100000)
         futures.put(request.id, futureResult)
         connection.getChannel.write(escapedRequest)
-        futureResult
+        Some(futureResult)
       }      
     }
   } else throw new IllegalStateException("Netty client is not running, make sure you have invoked 'connect' before using the client")
@@ -121,6 +120,7 @@ class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
       //if (reply.successful) future.completeWithResult((reply.message, tx))
         if (reply.successful) future.completeWithResult(reply.message)
         else future.completeWithException(null, reply.exception)
+	futures.remove(reply.id)
       } else throw new IllegalArgumentException("Unknown message received in NIO client handler: " + result)
     } catch {
       case e: Exception => log.error("Unexpected exception in NIO client handler: %s", e); throw e

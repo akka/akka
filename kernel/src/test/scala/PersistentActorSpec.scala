@@ -3,6 +3,9 @@ package se.scalablesolutions.akka.kernel.actor
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
 
+import junit.framework.TestCase
+import kernel.Kernel
+
 import kernel.reactor._
 
 import kernel.state.{CassandraStorageConfig, TransactionalState}
@@ -61,7 +64,7 @@ object PersistenceManager {
     isRunning = true
   }
 }
-class PersistentActorSpec {
+class PersistentActorSpec extends TestCase {
   PersistenceManager.init
 
   @Test

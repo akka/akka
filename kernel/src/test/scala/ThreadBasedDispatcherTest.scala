@@ -1,10 +1,8 @@
 package se.scalablesolutions.akka.kernel.reactor
 
-import java.util.concurrent.BrokenBarrierException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
@@ -62,7 +60,7 @@ class ThreadBasedDispatcherTest {
     dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageHandle(key, new Object, new NullFutureResult, None))
+      dispatcher.messageQueue.append(new MessageHandle(key, new Object, None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
@@ -86,8 +84,8 @@ class ThreadBasedDispatcherTest {
       }
     })
     dispatcher.start
-    dispatcher.messageQueue.append(new MessageHandle(key1, "Sending Message 1", new NullFutureResult, None))
-    dispatcher.messageQueue.append(new MessageHandle(key2, "Sending Message 2", new NullFutureResult, None))
+    dispatcher.messageQueue.append(new MessageHandle(key1, "Sending Message 1", None, None))
+    dispatcher.messageQueue.append(new MessageHandle(key2, "Sending Message 2", None, None))
     handlersBarrier.await(5, TimeUnit.SECONDS)
     assertFalse(threadingIssueDetected.get)
     //dispatcher.shutdown
@@ -122,8 +120,8 @@ class ThreadBasedDispatcherTest {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), new NullFutureResult, None))
-      dispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), new NullFutureResult, None))
+      dispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)

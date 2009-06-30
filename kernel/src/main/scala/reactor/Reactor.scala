@@ -36,14 +36,14 @@ trait MessageDemultiplexer {
 
 class MessageHandle(val sender: AnyRef,
                     val message: AnyRef,
-                    val future: CompletableFutureResult,
+                    val future: Option[CompletableFutureResult],
                     val tx: Option[Transaction]) {
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
     result = HashCode.hash(result, sender)
     result = HashCode.hash(result, message)
-    result = HashCode.hash(result, future)
+    result = if (future.isDefined) HashCode.hash(result, future.get) else result
     result = if (tx.isDefined) HashCode.hash(result, tx.get.id) else result
     result
   }
@@ -53,7 +53,8 @@ class MessageHandle(val sender: AnyRef,
     that.isInstanceOf[MessageHandle] &&
     that.asInstanceOf[MessageHandle].sender == sender &&
     that.asInstanceOf[MessageHandle].message == message &&
-    that.asInstanceOf[MessageHandle].future == future &&
+    that.asInstanceOf[MessageHandle].future.isDefined == future.isDefined &&
+    that.asInstanceOf[MessageHandle].future.get == future.get &&
     that.asInstanceOf[MessageHandle].tx.isDefined == tx.isDefined &&
     that.asInstanceOf[MessageHandle].tx.get.id == tx.get.id
 }

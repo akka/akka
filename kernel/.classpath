@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="src/test/scala"/>
-	<classpathentry including="**/*.java" kind="src" path="src/main/scala"/>
-	<classpathentry excluding="**/*.java" kind="src" path="src/main/resources"/>
+	<classpathentry including="**/*.scala" kind="src" output="target/test-classes" path="src/test/scala"/>
+	<classpathentry including="**/*.scala" kind="src" path="src/main/scala"/>
+	<classpathentry excluding="**/*.scala" kind="src" path="src/main/resources"/>
 	<classpathentry kind="var" path="M2_REPO/javax/activation/activation/1.1/activation-1.1.jar" sourcepath="M2_REPO/javax/activation/activation/1.1/activation-1.1-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/javax/xml/bind/jaxb-api/2.1/jaxb-api-2.1.jar" sourcepath="M2_REPO/javax/xml/bind/jaxb-api/2.1/jaxb-api-2.1-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/javax/annotation/jsr250-api/1.0/jsr250-api-1.0.jar" sourcepath="M2_REPO/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-sources.jar"/>
@@ -41,14 +41,13 @@
 	<classpathentry kind="var" path="M2_REPO/com/assembla/scala/mina/mina-integration-scala/2.0.0-M2-SNAPSHOT/mina-integration-scala-2.0.0-M2-SNAPSHOT.jar" sourcepath="M2_REPO/com/assembla/scala/mina/mina-integration-scala/2.0.0-M2-SNAPSHOT/mina-integration-scala-2.0.0-M2-SNAPSHOT-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/jboss/netty/netty/3.1.0.BETA2/netty-3.1.0.BETA2.jar" sourcepath="M2_REPO/org/jboss/netty/netty/3.1.0.BETA2/netty-3.1.0.BETA2-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/rome/rome/0.9/rome-0.9.jar" sourcepath="M2_REPO/rome/rome/0.9/rome-0.9-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/scala-lang/scala-library/2.7.3/scala-library-2.7.3.jar" sourcepath="M2_REPO/org/scala-lang/scala-library/2.7.3/scala-library-2.7.3-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/scala-tools/testing/scalatest/0.9.5/scalatest-0.9.5.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-api/1.4.3/slf4j-api-1.4.3.jar" sourcepath="M2_REPO/org/slf4j/slf4j-api/1.4.3/slf4j-api-1.4.3-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-log4j12/1.4.3/slf4j-log4j12-1.4.3.jar" sourcepath="M2_REPO/org/slf4j/slf4j-log4j12/1.4.3/slf4j-log4j12-1.4.3-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/stax/stax-api/1.0.1/stax-api-1.0.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/facebook/thrift/1.0/thrift-1.0.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/akka-util-java"/>
+	<classpathentry kind="con" path="ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

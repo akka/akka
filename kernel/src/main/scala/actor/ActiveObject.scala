@@ -145,7 +145,7 @@ object ActiveObject {
 
   private def localDispatch(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
-    if (isOneWay(rtti)) actor !! Invocation(joinpoint) // FIXME investigate why ! causes TX to race
+    if (isOneWay(rtti)) actor ! Invocation(joinpoint)
     else {
       val result = actor !! Invocation(joinpoint)
       if (result.isDefined) result.get
@@ -160,10 +160,12 @@ object ActiveObject {
       new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, None, oneWay, false))
     if (oneWay) null // for void methods
     else {
-      future.await
-      val result = getResultOrThrowException(future)
-      if (result.isDefined) result.get
-      else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
+      if (future.isDefined) {
+        future.get.await
+        val result = getResultOrThrowException(future.get)
+        if (result.isDefined) result.get
+        else throw new IllegalStateException("No result returned from call to [" + joinpoint + "]")
+      } else throw new IllegalStateException("No future returned from call to [" + joinpoint + "]")
     }
   }
 
@@ -173,7 +175,9 @@ object ActiveObject {
       throw cause
     } else future.result.asInstanceOf[Option[T]]
   
-  private def isOneWay(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
+  private def isOneWay(rtti: MethodRtti) =
+    rtti.getMethod.isAnnotationPresent(Annotations.oneway) // FIXME investigate why @oneway causes TX to race
+    //rtti.getMethod.getReturnType == java.lang.Void.TYPE
 }
 
 /**

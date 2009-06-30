@@ -117,15 +117,3 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
 
   private def currentTimeInNanos: Long = TIME_UNIT.toNanos(System.currentTimeMillis)
 }
-
-class NullFutureResult extends CompletableFutureResult {
-  def completeWithResult(result: AnyRef) = {}
-  def completeWithException(toBlame: AnyRef, exception: Throwable) = {}
-  def await = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  def awaitBlocking = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  def isCompleted: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  def isExpired: Boolean = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  def timeoutInNanos: Long = throw new UnsupportedOperationException("Not implemented for NullFutureResult")
-  def result: Option[AnyRef] = None
-  def exception: Option[Tuple2[AnyRef, Throwable]] = None
-}

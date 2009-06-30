@@ -60,7 +60,7 @@ object NettyServer extends Logging {
   }
 }
 
-@ChannelPipelineCoverage {val value = "all"}
+@ChannelPipelineCoverage { val value = "all" }
 class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
   private val activeObjectFactory = new ActiveObjectFactory
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]

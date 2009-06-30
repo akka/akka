@@ -9,17 +9,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/../config" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guiceyfruit-core:2.0-beta-7" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-all:2.0-beta-7" level="project" />
     <orderEntry type="module" module-name="akka-kernel" exported="" />
     <orderEntry type="module" module-name="akka-util-java" exported="" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-beta-4" level="project" />
@@ -31,7 +20,7 @@
     <orderEntry type="library" exported="" name="Maven: org.scala-lang:scala-compiler:2.7.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.scala-tools:vscaladoc:1.1-md-3" level="project" />
     <orderEntry type="library" exported="" name="Maven: markdownj:markdownj:1.0.2b4-0.3.0" level="project" />
-    <orderEntry type="library" name="Maven: junit:junit:4.5" level="project" />
+    <orderEntry type="library" exported="" name="Maven: junit:junit:4.5" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.scala-tools.testing:specs:1.4.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guiceyfruit-core:2.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-all:2.0" level="project" />

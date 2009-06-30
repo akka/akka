@@ -2,14 +2,6 @@
 <project relativePaths="true" version="4">
   <component name="AntConfiguration">
     <defaultAnt bundledAnt="true" />
-    <buildFile url="file://$PROJECT_DIR$/kernel/build.xml">
-      <additionalClassPath />
-      <antReference projectDefault="true" />
-      <customJdkName value="" />
-      <maximumHeapSize value="128" />
-      <maximumStackSize value="32" />
-      <properties />
-    </buildFile>
   </component>
   <component name="BuildJarProjectSettings">
     <option name="BUILD_JARS_ON_MAKE" value="false" />
@@ -17,77 +9,7 @@
   <component name="CodeStyleSettingsManager">
     <option name="PER_PROJECT_SETTINGS">
       <value>
-        <option name="USE_SAME_INDENTS" value="true" />
-        <option name="OTHER_INDENT_OPTIONS">
-          <value>
-            <option name="INDENT_SIZE" value="2" />
-            <option name="CONTINUATION_INDENT_SIZE" value="4" />
-            <option name="TAB_SIZE" value="4" />
-            <option name="USE_TAB_CHARACTER" value="false" />
-            <option name="SMART_TABS" value="false" />
-            <option name="LABEL_INDENT_SIZE" value="0" />
-            <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-          </value>
-        </option>
-        <option name="LINE_SEPARATOR" value="&#10;" />
-        <ScalaCodeStyleSettings>
-          <option name="CHECK_IMPLICITS" value="false" />
-        </ScalaCodeStyleSettings>
-        <ADDITIONAL_INDENT_OPTIONS fileType="">
-          <option name="INDENT_SIZE" value="2" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="2" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="clj">
-          <option name="INDENT_SIZE" value="2" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="2" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="groovy">
-          <option name="INDENT_SIZE" value="2" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="gsp">
-          <option name="INDENT_SIZE" value="2" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
         <ADDITIONAL_INDENT_OPTIONS fileType="java">
-          <option name="INDENT_SIZE" value="4" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="js">
-          <option name="INDENT_SIZE" value="4" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="jsp">
           <option name="INDENT_SIZE" value="4" />
           <option name="CONTINUATION_INDENT_SIZE" value="8" />
           <option name="TAB_SIZE" value="4" />
@@ -105,15 +27,6 @@
           <option name="LABEL_INDENT_SIZE" value="0" />
           <option name="LABEL_INDENT_ABSOLUTE" value="false" />
         </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="sql">
-          <option name="INDENT_SIZE" value="2" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
         <ADDITIONAL_INDENT_OPTIONS fileType="xml">
           <option name="INDENT_SIZE" value="4" />
           <option name="CONTINUATION_INDENT_SIZE" value="8" />
@@ -125,10 +38,10 @@
         </ADDITIONAL_INDENT_OPTIONS>
       </value>
     </option>
-    <option name="USE_PER_PROJECT_SETTINGS" value="true" />
+    <option name="USE_PER_PROJECT_SETTINGS" value="false" />
   </component>
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Eclipse" />
+    <option name="DEFAULT_COMPILER" value="Javac" />
     <option name="DEPLOY_AFTER_MAKE" value="0" />
     <resourceExtensions>
       <entry name=".+\.(properties|xml|html|dtd|tld)" />
@@ -150,6 +63,45 @@
   <component name="CopyrightManager" default="">
     <module2copyright />
   </component>
+  <component name="DaemonCodeAnalyzer">
+    <disable_hints />
+  </component>
+  <component name="DebuggerManager">
+    <breakpoint_any>
+      <breakpoint>
+        <option name="NOTIFY_CAUGHT" value="true" />
+        <option name="NOTIFY_UNCAUGHT" value="true" />
+        <option name="ENABLED" value="false" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint>
+        <option name="NOTIFY_CAUGHT" value="true" />
+        <option name="NOTIFY_UNCAUGHT" value="true" />
+        <option name="ENABLED" value="false" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+    </breakpoint_any>
+    <breakpoint_rules />
+    <ui_properties />
+  </component>
   <component name="DependencyValidationManager">
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
@@ -160,42 +112,12 @@
     <option name="ADDITIONAL_OPTIONS_STRING" value="" />
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
-  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
-    <file url="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" charset="MacRoman" />
-    <file url="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" charset="windows-1252" />
-    <file url="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java" charset="MacRoman" />
-    <file url="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemotePersistentStateTest.java" charset="windows-1252" />
-    <file url="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/HashTrie.scala" charset="windows-1252" />
-    <file url="file://$PROJECT_DIR$/kernel/src/main/scala/collection/Vector.scala" charset="windows-1252" />
-  </component>
-  <component name="FacetAutodetectingManager">
-    <autodetection-disabled>
-      <facet-type id="web">
-        <modules>
-          <module name="akka-kernel" />
-        </modules>
-      </facet-type>
-      <facet-type id="Scala">
-        <modules>
-          <module name="akka">
-            <files>
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectConsumer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectProducer.scala" />
-              <file url="file://$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala" />
-            </files>
-          </module>
-        </modules>
-      </facet-type>
-    </autodetection-disabled>
-  </component>
-  <component name="IdProvider" IDEtalkID="0E3A0445954D4D390C337AFB20B2746C" />
+  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
+  <component name="IdProvider" IDEtalkID="2862596AA5228405A3DA5AD8DF61584A" />
   <component name="InspectionProjectProfileManager">
     <option name="PROJECT_PROFILE" value="Project Default" />
-    <option name="USE_PROJECT_LEVEL_SETTINGS" value="false" />
-    <scopes />
+    <option name="USE_PROJECT_PROFILE" value="true" />
+    <version value="1.0" />
     <profiles>
       <profile version="1.0" is_locked="false">
         <option name="myName" value="Project Default" />
@@ -203,9 +125,9 @@
       </profile>
     </profiles>
     <list size="4">
-      <item index="0" class="java.lang.String" itemvalue="SERVER PROBLEM" />
-      <item index="1" class="java.lang.String" itemvalue="INFO" />
-      <item index="2" class="java.lang.String" itemvalue="WARNING" />
+      <item index="0" class="java.lang.String" itemvalue="WARNING" />
+      <item index="1" class="java.lang.String" itemvalue="SERVER PROBLEM" />
+      <item index="2" class="java.lang.String" itemvalue="INFO" />
       <item index="3" class="java.lang.String" itemvalue="ERROR" />
     </list>
   </component>
@@ -245,8 +167,14 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/fun-test-java/pom.xml" />
       </list>
     </option>
+  </component>
+  <component name="ModuleEditorState">
+    <option name="LAST_EDITED_MODULE_NAME" />
+    <option name="LAST_EDITED_TAB_NAME" />
   </component>
   <component name="Palette2">
     <group name="Swing">
@@ -374,18 +302,31 @@
   </component>
   <component name="ProjectFileVersion" converted="true" />
   <component name="ProjectKey">
-    <option name="state" value="project:///Users/jboner/src/scala/akka/akka.ipr" />
+    <option name="state" value="project://default" />
+  </component>
+  <component name="ProjectLevelVcsManager">
+    <OptionsSetting value="true" id="Add" />
+    <OptionsSetting value="true" id="Remove" />
+    <OptionsSetting value="true" id="Checkout" />
+    <OptionsSetting value="true" id="Update" />
+    <OptionsSetting value="true" id="Status" />
+    <OptionsSetting value="true" id="Edit" />
+    <ConfirmationsSetting value="0" id="Add" />
+    <ConfirmationsSetting value="0" id="Remove" />
   </component>
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/akka.iml" filepath="$PROJECT_DIR$/akka.iml" />
-      <module fileurl="file://$PROJECT_DIR$/fun-test-java/akka-funtest-java.iml" filepath="$PROJECT_DIR$/fun-test-java/akka-funtest-java.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" filepath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" />
       <module fileurl="file://$PROJECT_DIR$/kernel/akka-kernel.iml" filepath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
       <module fileurl="file://$PROJECT_DIR$/util-java/akka-util-java.iml" filepath="$PROJECT_DIR$/util-java/akka-util-java.iml" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
-    <output url="file://$PROJECT_DIR$/build" />
+  <component name="ProjectReloadState">
+    <option name="STATE" value="0" />
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_5" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="ResourceManagerContainer">
     <option name="myResourceBundles">
@@ -401,100 +342,140 @@
     <option name="GENERATE_IIOP_STUBS" value="false" />
     <option name="ADDITIONAL_OPTIONS_STRING" value="" />
   </component>
-  <component name="SvnBranchConfigurationManager">
-    <option name="myVersion" value="124" />
-    <option name="mySupportsUserInfoFilter" value="true" />
+  <component name="RunManager">
+    <configuration default="true" type="Remote" factoryName="Remote">
+      <option name="USE_SOCKET_TRANSPORT" value="true" />
+      <option name="SERVER_MODE" value="false" />
+      <option name="SHMEM_ADDRESS" value="javadebug" />
+      <option name="HOST" value="localhost" />
+      <option name="PORT" value="5005" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="true" type="Applet" factoryName="Applet">
+      <module name="" />
+      <option name="MAIN_CLASS_NAME" />
+      <option name="HTML_FILE_NAME" />
+      <option name="HTML_USED" value="false" />
+      <option name="WIDTH" value="400" />
+      <option name="HEIGHT" value="300" />
+      <option name="POLICY_FILE" value="$APPLICATION_HOME_DIR$/bin/appletviewer.policy" />
+      <option name="VM_PARAMETERS" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="true" type="JUnit" factoryName="JUnit" enabled="false" merge="false" runner="emma">
+      <module name="" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="PACKAGE_NAME" />
+      <option name="MAIN_CLASS_NAME" />
+      <option name="METHOD_NAME" />
+      <option name="TEST_OBJECT" value="class" />
+      <option name="VM_PARAMETERS" />
+      <option name="PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="ADDITIONAL_CLASS_PATH" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="moduleWithDependencies" />
+      </option>
+      <envs />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="true" type="Application" factoryName="Application" enabled="false" merge="false" runner="emma">
+      <option name="MAIN_CLASS_NAME" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="" />
+      <envs />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <list size="0" />
+    <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
+      <Host>localhost</Host>
+      <Port>5050</Port>
+    </configuration>
+  </component>
+  <component name="ShelveChangesManager" show_recycled="false" />
+  <component name="SvnConfiguration">
+    <option name="USER" value="" />
+    <option name="PASSWORD" value="" />
+    <option name="LAST_MERGED_REVISION" />
+    <option name="UPDATE_RUN_STATUS" value="false" />
+    <option name="MERGE_DRY_RUN" value="false" />
+    <option name="MERGE_DIFF_USE_ANCESTRY" value="true" />
+    <option name="UPDATE_LOCK_ON_DEMAND" value="false" />
+    <option name="IGNORE_SPACES_IN_MERGE" value="false" />
+    <option name="DETECT_NESTED_COPIES" value="false" />
+    <option name="IGNORE_SPACES_IN_ANNOTATE" value="true" />
+    <myIsUseDefaultProxy>false</myIsUseDefaultProxy>
   </component>
   <component name="VcsDirectoryMappings">
-    <mapping directory="" vcs="Git" />
+    <mapping directory="" vcs="" />
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
+  <component name="XPathView.XPathProjectComponent">
+    <history />
+    <find-history />
+  </component>
   <component name="libraryTable">
-    <library name="Maven: org.apache.cassandra:cassandra:0.3.0-dev">
+    <library name="Maven: org.guiceyfruit:guice-core:2.0-SNAPSHOT">
       <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.3.0-dev/cassandra-0.3.0-dev.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT.jar!/" />
       </CLASSES>
-      <JAVADOC />
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT-javadoc.jar!/" />
+      </JAVADOC>
       <SOURCES>
-        <root url="file://$PROJECT_DIR$/../../java/cassandra/src/java" />
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Akka Runtime Libs">
+    <library name="Maven: org.guiceyfruit:guice-jsr250:2.0-SNAPSHOT">
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/lib/grizzly-http-1.8.6.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.4.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/velocity-1.5.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/grizzly-rcm-1.8.6.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-dbcp-1.2.2.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/grizzly-portunif-1.8.6.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/grizzly-framework-1.8.6.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jdom-1.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jaxb-api-2.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/guice-jsr250-2.0-SNAPSHOT.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/zookeeper-3.1.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/scalatest-0.9.5.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/camel-core-2.0-SNAPSHOT.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jersey-server-1.0.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/asm-3.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/configgy-1.2.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-cli-1.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/akka-util-java.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/rome-0.9.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/log4j-1.2.15.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jsr311-api-1.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/grizzly-http-servlet-1.8.6.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-javaflow-1.0-SNAPSHOT.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/voldemort-0.4a.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/junit-4.5.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-httpclient-3.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/stax-api-1.0-2.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/scala-library-2.7.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/grizzly-servlet-webserver-1.8.6.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/cglib-2.2.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jetty-6.1.6rc0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/cassandra-0.3.0-dev.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jersey-json-1.0.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jersey-atom-1.0.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/grizzly-http-utils-1.8.6.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/voldemort-contrib-0.4a.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-lang-2.4.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/xerces.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/libfb303.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/protobuf-java-2.0.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/colt-1.2.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/je-3.3.62.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/asm-all-2.2.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/catalina-ant.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/mina-core-2.0.0-M2-SNAPSHOT.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/slf4j-log4j12-1.4.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jersey-core-1.0.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/JSAP-2.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/activation-1.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/guice-core-2.0-SNAPSHOT.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/pcj.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/libthrift.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-logging-1.0.4.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-codec-1.3.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jaxb-impl-2.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-collections-3.2.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jetty-util-6.1.6rc0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/servlet-api-2.5.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-pool-1.4.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/lucene-core-2.2.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jsr250-api-1.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/aopalliance-1.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/stringtemplate-3.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/jettison-1.0.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/high-scale-lib.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/google-collect-snapshot-20090211.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/mina-integration-scala-2.0.0-M2-SNAPSHOT.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/junit4runner-1.0.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-io-1.3.2.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/commons-math-1.1.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/antlr-3.1.3.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT.jar!/" />
       </CLASSES>
-      <JAVADOC />
-      <SOURCES />
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: javax.annotation:jsr250-api:1.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-sources.jar!/" />
+      </SOURCES>
     </library>
     <library name="Maven: org.guiceyfruit:guice-core:2.0-beta-4">
       <CLASSES>
@@ -516,17 +497,6 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-jsr250/2.0-beta-4/guice-jsr250-2.0-beta-4-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: javax.annotation:jsr250-api:1.0">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: org.scala-lang:scala-library:2.7.4">
@@ -769,6 +739,17 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.1.10/jaxb-impl-2.1.10-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.jboss.netty:netty:3.1.0.CR1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.9.9">
@@ -1024,6 +1005,17 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-servlet/2.0-beta-6/guice-servlet-2.0-beta-6-sources.jar!/" />
       </SOURCES>
     </library>
+    <library name="Maven: org.apache.cassandra:cassandra:0.3.0-dev">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.3.0-dev/cassandra-0.3.0-dev.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.3.0-dev/cassandra-0.3.0-dev-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.3.0-dev/cassandra-0.3.0-dev-sources.jar!/" />
+      </SOURCES>
+    </library>
     <library name="Maven: com.facebook:thrift:1.0">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/com/facebook/thrift/1.0/thrift-1.0.jar!/" />
@@ -1145,28 +1137,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.guiceyfruit:guice-core:2.0-SNAPSHOT">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-core/2.0-SNAPSHOT/guice-core-2.0-SNAPSHOT-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.guiceyfruit:guice-jsr250:2.0-SNAPSHOT">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/guiceyfruit/guice-jsr250/2.0-SNAPSHOT/guice-jsr250-2.0-SNAPSHOT-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: com.sun.xml.bind:jaxb-impl:2.1.6">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/com/sun/xml/bind/jaxb-impl/2.1.6/jaxb-impl-2.1.6.jar!/" />
@@ -1198,17 +1168,6 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.jboss.netty:netty:3.1.0.CR1">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.CR1/netty-3.1.0.CR1-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

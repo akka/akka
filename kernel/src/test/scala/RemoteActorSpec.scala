@@ -3,6 +3,7 @@ package se.scalablesolutions.akka.kernel.actor
 import concurrent.Lock
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
+import junit.framework.TestCase
 import kernel.nio.{NettyClient, NettyServer}
 import reactor._
 
@@ -28,7 +29,7 @@ class RemoteActorSpecActorBidirectional extends Actor {
   }
 }
 
-class RemoteActorSpec {
+class RemoteActorSpec extends TestCase {
 
   new Thread(new Runnable() {
      def run = {
@@ -42,7 +43,7 @@ class RemoteActorSpec {
   private val unit = TimeUnit.MILLISECONDS
 
   @Test
-  def sendOneWay = {
+  def testSendOneWay = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorUnidirectional
     actor.makeRemote
@@ -54,7 +55,7 @@ class RemoteActorSpec {
   }
 
   @Test
-  def sendReplySync = {
+  def testSendReplySync = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote
@@ -65,7 +66,7 @@ class RemoteActorSpec {
   }
 
   @Test
-  def sendReplyAsync = {
+  def testSendReplyAsync = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote
@@ -75,8 +76,8 @@ class RemoteActorSpec {
     actor.stop
   }
 
-   @Test
-  def sendReceiveException = {
+  @Test
+  def testSendReceiveException = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote
