@@ -11,7 +11,7 @@ import java.lang.annotation.Annotation
 import kernel.config.ActiveObjectGuiceConfigurator
 import kernel.config.ScalaConfig._
 import kernel.camel.{MessageDriven, ActiveObjectProducer}
-import kernel.nio.{RemoteRequest, NettyClient}
+import kernel.nio.{RemoteRequest, RemoteClient}
 import kernel.stm.{TransactionManagement, TransactionAwareWrapperException, ChangeSet, Transaction}
 
 import kernel.util.Helpers.ReadWriteLock
@@ -43,13 +43,13 @@ object Annotations {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
-  def newInstance[T](target: Class[T]): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), false)
+  def newInstance[T](target: Class[T], timeout: Long): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), false, timeout)
 
-  def newInstance[T](intf: Class[T], target: AnyRef): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), false)
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), false, timeout)
 
-  def newRemoteInstance[T](target: Class[T]): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), true)
+  def newRemoteInstance[T](target: Class[T], timeout: Long): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), true, timeout)
 
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), true)
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), true, timeout)
 
   /*
   def newInstanceAndLink[T](target: Class[T], supervisor: AnyRef): T = {
@@ -64,12 +64,12 @@ class ActiveObjectFactory {
   */
   // ================================================
 
-  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean): T = {
-    ActiveObject.newInstance(target, actor, remote)
+  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean, timeout: Long): T = {
+    ActiveObject.newInstance(target, actor, remote, timeout)
   }
 
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean): T = {
-    ActiveObject.newInstance(intf, target, actor, remote)
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean, timeout: Long): T = {
+    ActiveObject.newInstance(intf, target, actor, remote, timeout)
   }
 
   private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
@@ -85,30 +85,30 @@ object ActiveObject {
   val MATCH_ALL = "execution(* *.*(..))"
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
-  def newInstance[T](target: Class[T]): T = newInstance(target, new Dispatcher(target.getName), false)
+  def newInstance[T](target: Class[T], timeout: Long): T = newInstance(target, new Dispatcher(target.getName), false, timeout)
 
-  def newInstance[T](intf: Class[T], target: AnyRef): T = newInstance(intf, target, new Dispatcher(intf.getName), false)
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = newInstance(intf, target, new Dispatcher(intf.getName), false, timeout)
 
-  def newRemoteInstance[T](target: Class[T]): T = newInstance(target, new Dispatcher(target.getName), true)
+  def newRemoteInstance[T](target: Class[T], timeout: Long): T = newInstance(target, new Dispatcher(target.getName), true, timeout)
 
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef): T = newInstance(intf, target, new Dispatcher(intf.getName), true)
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = newInstance(intf, target, new Dispatcher(intf.getName), true, timeout)
 
   // ================================================
 
-  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean): T = {
-    if (remote) NettyClient.connect
+  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean, timeout: Long): T = {
+    if (remote) RemoteClient.connect
     val proxy = Proxy.newInstance(target, false, true)
     // FIXME switch to weaving in the aspect at compile time
     proxy.asInstanceOf[Advisable].aw_addAdvice(
-      MATCH_ALL, new TransactionalAroundAdvice(target, proxy, actor, remote))
+      MATCH_ALL, new ActorAroundAdvice(target, proxy, actor, remote, timeout))
     proxy.asInstanceOf[T]
   }
 
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean): T = {
-    if (remote) NettyClient.connect
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean, timeout: Long): T = {
+    if (remote) RemoteClient.connect
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     proxy.asInstanceOf[Advisable].aw_addAdvice(
-      MATCH_ALL, new TransactionalAroundAdvice(intf, target, actor, remote))
+      MATCH_ALL, new ActorAroundAdvice(intf, target, actor, remote, timeout))
     proxy.asInstanceOf[T]
   }
 
@@ -125,13 +125,18 @@ object ActiveObject {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable sealed class TransactionalAroundAdvice(
-    val target: Class[_], val targetInstance: AnyRef, actor: Actor, val isRemote: Boolean)
-    extends AroundAdvice {
+@serializable
+sealed class ActorAroundAdvice(val target: Class[_],
+                               val targetInstance: AnyRef,
+                               val actor: Actor,
+                               val isRemote: Boolean,
+                               val timeout: Long) extends AroundAdvice {
   val id = target.getName
+  actor.timeout = timeout
   actor.start
   
   import kernel.reactor._
+  // FIXME make configurable!!!!!! MUST
   private[this] var dispatcher = new ProxyMessageDispatcher
   private[this] var mailbox = dispatcher.messageQueue
   dispatcher.start
@@ -156,8 +161,9 @@ object ActiveObject {
   private def remoteDispatch(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay = isOneWay(rtti)
-    val future = NettyClient.send(
-      new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName, None, oneWay, false))
+    val future = RemoteClient.send(
+      new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName,
+                        timeout, None, oneWay, false, actor.registerSupervisorAsRemoteActor))
     if (oneWay) null // for void methods
     else {
       if (future.isDefined) {

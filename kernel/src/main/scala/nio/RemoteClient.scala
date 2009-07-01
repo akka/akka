@@ -7,27 +7,32 @@ package se.scalablesolutions.akka.kernel.nio
 import java.net.InetSocketAddress
 import java.util.concurrent.{Executors, ConcurrentMap, ConcurrentHashMap}
 
+import kernel.actor.{Exit, Actor}
 import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
 import kernel.util.Logging
 
+import org.jboss.netty.channel._
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoder, ObjectDecoder}
 import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel._
 
-object NettyClient extends Logging {
+// FIXME need to be able support multiple remote clients
+object RemoteClient extends Logging {
+  // FIXME make host options configurable
   private val HOSTNAME = "localhost"
   private val PORT = 9999
 
   @volatile private var isRunning = false 
   private val futures = new ConcurrentHashMap[Long, CompletableFutureResult]
+  private val supervisors = new ConcurrentHashMap[String, Actor]
 
+  // TODO is this Netty channelFactory and other options always the best or should it be configurable?
   private val channelFactory = new NioClientSocketChannelFactory(
     Executors.newCachedThreadPool,
     Executors.newCachedThreadPool)
 
   private val bootstrap = new ClientBootstrap(channelFactory)
-  private val handler = new ObjectClientHandler(futures)
+  private val handler = new ObjectClientHandler(futures, supervisors)
 
   bootstrap.getPipeline.addLast("handler", handler)
   bootstrap.setOption("tcpNoDelay", true)
@@ -38,12 +43,12 @@ object NettyClient extends Logging {
   def connect = synchronized {
     if (!isRunning) {
       connection = bootstrap.connect(new InetSocketAddress(HOSTNAME, PORT))
-      log.info("Starting NIO client at [%s:%s]", HOSTNAME, PORT)
+      log.info("Starting remote client connection to [%s:%s]", HOSTNAME, PORT)
 
       // Wait until the connection attempt succeeds or fails.
       connection.awaitUninterruptibly
       if (!connection.isSuccess) {
-        log.error("Connection has failed due to [%s]", connection.getCause)
+        log.error("Remote connection to [%s:%s] has failed due to [%s]", HOSTNAME, PORT, connection.getCause)
         connection.getCause.printStackTrace
       }
       isRunning = true
@@ -64,13 +69,23 @@ object NettyClient extends Logging {
       None
     } else {
       futures.synchronized {
-        val futureResult = new DefaultCompletableFutureResult(100000)
+        val futureResult = new DefaultCompletableFutureResult(request.timeout)
         futures.put(request.id, futureResult)
         connection.getChannel.write(escapedRequest)
         Some(futureResult)
       }      
     }
-  } else throw new IllegalStateException("Netty client is not running, make sure you have invoked 'connect' before using the client")
+  } else throw new IllegalStateException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.")
+
+  def registerSupervisorForActor(actor: Actor) =
+    if (!actor.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actor + " since it is not under supervision")
+    else supervisors.putIfAbsent(actor.supervisor.get.uuid, actor)
+
+  def deregisterSupervisorForActor(actor: Actor) =
+    if (!actor.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actor + " since it is not under supervision")
+    else supervisors.remove(actor.supervisor.get.uuid)
+  
+  def deregisterSupervisorWithUuid(uuid: String) = supervisors.remove(uuid)
 
   private def escapeRequest(request: RemoteRequest) = {
     if (request.message.isInstanceOf[Array[Object]]) {
@@ -89,7 +104,9 @@ object NettyClient extends Logging {
 }
 
 @ChannelPipelineCoverage { val value = "all" }
-class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResult]) extends SimpleChannelUpstreamHandler with Logging {
+class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResult],
+                          val supervisors: ConcurrentMap[String, Actor])
+ extends SimpleChannelUpstreamHandler with Logging {
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
@@ -115,20 +132,31 @@ class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
-//        val tx = reply.tx
         val future = futures.get(reply.id)
-      //if (reply.successful) future.completeWithResult((reply.message, tx))
+        //val tx = reply.tx
+        //if (reply.successful) future.completeWithResult((reply.message, tx))
         if (reply.successful) future.completeWithResult(reply.message)
-        else future.completeWithException(null, reply.exception)
-	futures.remove(reply.id)
-      } else throw new IllegalArgumentException("Unknown message received in NIO client handler: " + result)
+        else {
+          if (reply.supervisorUuid.isDefined) {
+            val supervisorUuid = reply.supervisorUuid.get
+            if (!supervisors.containsKey(supervisorUuid)) throw new IllegalStateException("Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
+            val supervisedActor = supervisors.get(supervisorUuid)
+            if (!supervisedActor.supervisor.isDefined) throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
+            else supervisedActor.supervisor.get ! Exit(supervisedActor, reply.exception)
+          }
+          future.completeWithException(null, reply.exception)
+        }
+	      futures.remove(reply.id)
+      } else throw new IllegalArgumentException("Unknown message received in remote client handler: " + result)
     } catch {
-      case e: Exception => log.error("Unexpected exception in NIO client handler: %s", e); throw e
+      case e: Exception =>
+        log.error("Unexpected exception in remote client handler: %s", e)
+        throw e
     }
   }                 
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) {
-    log.error("Unexpected exception from downstream: %s", event.getCause)
+    log.error("Unexpected exception from downstream in remote client: %s", event.getCause)
     event.getChannel.close
   }
 }

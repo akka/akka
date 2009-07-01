@@ -12,20 +12,30 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/scala" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/scala" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="$MODULE_DIR$/../util-java/target">
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../util-java/target/akka-util-java-0.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="module" module-name="akka-util-java" exported="" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-beta-4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-jsr250:2.0-beta-4" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.annotation:jsr250-api:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.scala-lang:scala-library:2.7.4" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.scala-lang:scala-library:2.7.5" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.aspectwerkz:aspectwerkz-nodeps-jdk5:2.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: net.lag:configgy:1.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.scala-lang:scala-compiler:2.7.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.scala-tools:vscaladoc:1.1-md-3" level="project" />
     <orderEntry type="library" exported="" name="Maven: markdownj:markdownj:1.0.2b4-0.3.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: junit:junit:4.5" level="project" />
+    <orderEntry type="library" name="Maven: junit:junit:4.5" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.scala-tools.testing:specs:1.4.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guiceyfruit-core:2.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-all:2.0" level="project" />
@@ -76,15 +86,6 @@
     <orderEntry type="library" exported="" name="Maven: log4j:log4j:1.2.13" level="project" />
     <orderEntry type="library" name="Maven: org.scala-tools.testing:scalatest:0.9.5" level="project" />
     <orderEntry type="library" name="Maven: com.jteigen.scalatest:junit4runner:1.0" level="project" />
-    <orderEntry type="module-library">
-      <library name="$MODULE_DIR$/../util-java/target">
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/../util-java/target/akka-util-java-0.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
   </component>
 </module>
 

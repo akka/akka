@@ -4,13 +4,13 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
-import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
+import java.util.HashMap
 
 trait MessageDispatcherBase extends MessageDispatcher {
   val messageQueue = new MessageQueue
 
   @volatile protected var active: Boolean = false
-  protected val messageHandlers = new ConcurrentHashMap[AnyRef, MessageHandler]
+  protected val messageHandlers = new HashMap[AnyRef, MessageHandler]
   protected var selectorThread: Thread = _
   protected val guard = new Object
 

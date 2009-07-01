@@ -1,20 +1,20 @@
 package se.scalablesolutions.akka.kernel.reactor
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.{Executors, CountDownLatch, CyclicBarrier, TimeUnit}
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert._
+import junit.framework.TestCase
 
-class ThreadBasedDispatcherTest {
+class ThreadBasedDispatcherTest extends TestCase {
   private var threadingIssueDetected: AtomicBoolean = null
 
   @Before
-  def setUp = {
+  override def setUp = {
     threadingIssueDetected = new AtomicBoolean(false)
   }
 
@@ -33,33 +33,37 @@ class ThreadBasedDispatcherTest {
     internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder
   }
 
-  class TestMessageHandle(handleLatch: CountDownLatch) extends MessageHandler {
-    val guardLock: Lock = new ReentrantLock
-
-    def handle(message: MessageHandle) {
-      try {
-        if (threadingIssueDetected.get) return
-        if (guardLock.tryLock) {
-          handleLatch.countDown
-        } else {
-          threadingIssueDetected.set(true)
-        }
-      } catch {
-        case e: Exception => threadingIssueDetected.set(true)
-      } finally {
-        guardLock.unlock
-      }
-    }
-  }
-
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
-    val handleLatch = new CountDownLatch(100)
+    val handleLatch = new CountDownLatch(10)
     val key = "key"
-    val dispatcher = new EventBasedSingleThreadDispatcher
-    dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
+    val pool = ThreadPoolBuilder.newBuilder
+      .newThreadPoolWithBoundedBlockingQueue(100)
+      .setCorePoolSize(2)
+      .setMaxPoolSize(4)
+      .setKeepAliveTimeInMillis(60000)
+      .setRejectionPolicy(new CallerRunsPolicy)
+      .build
+    val dispatcher = new EventBasedThreadPoolDispatcher(pool)
+    dispatcher.registerHandler(key, new MessageHandler {
+      def handle(message: MessageHandle) {
+        try {
+          if (threadingIssueDetected.get) return
+          if (guardLock.tryLock) {
+            Thread.sleep(100)
+            handleLatch.countDown
+          } else {
+            threadingIssueDetected.set(true)
+          }
+        } catch {
+          case e: Exception => threadingIssueDetected.set(true); e.printStackTrace
+        } finally {
+          guardLock.unlock
+        }
+      }
+    })
     dispatcher.start
-    for (i <- 0 until 100) {
+    for (i <- 0 until 10) {
       dispatcher.messageQueue.append(new MessageHandle(key, new Object, None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
@@ -70,7 +74,14 @@ class ThreadBasedDispatcherTest {
     val handlersBarrier = new CyclicBarrier(3)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = new EventBasedThreadPoolDispatcher
+    val pool = ThreadPoolBuilder.newBuilder
+      .newThreadPoolWithBoundedBlockingQueue(100)
+      .setCorePoolSize(2)
+      .setMaxPoolSize(4)
+      .setKeepAliveTimeInMillis(60000)
+      .setRejectionPolicy(new CallerRunsPolicy)
+      .build
+    val dispatcher = new EventBasedThreadPoolDispatcher(pool)
     dispatcher.registerHandler(key1, new MessageHandler {
       def handle(message: MessageHandle) = synchronized {
         try {handlersBarrier.await(1, TimeUnit.SECONDS)}
@@ -88,14 +99,20 @@ class ThreadBasedDispatcherTest {
     dispatcher.messageQueue.append(new MessageHandle(key2, "Sending Message 2", None, None))
     handlersBarrier.await(5, TimeUnit.SECONDS)
     assertFalse(threadingIssueDetected.get)
-    //dispatcher.shutdown
   }
 
   private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
     val handleLatch = new CountDownLatch(200)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = new EventBasedSingleThreadDispatcher
+    val pool = ThreadPoolBuilder.newBuilder
+      .newThreadPoolWithBoundedBlockingQueue(100)
+      .setCorePoolSize(2)
+      .setMaxPoolSize(4)
+      .setKeepAliveTimeInMillis(60000)
+      .setRejectionPolicy(new CallerRunsPolicy)
+      .build
+    val dispatcher = new EventBasedThreadPoolDispatcher(pool)
     dispatcher.registerHandler(key1, new MessageHandler {
       var currentValue = -1;
       def handle(message: MessageHandle) {
@@ -125,6 +142,5 @@ class ThreadBasedDispatcherTest {
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
-    dispatcher.shutdown
   }
 }

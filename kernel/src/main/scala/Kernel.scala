@@ -23,6 +23,7 @@ import java.io.{File, IOException}
 
 import javax.ws.rs.core.UriBuilder
 import javax.management.JMException
+import kernel.nio.{RemoteClient, RemoteServer}
 import kernel.state.CassandraNode
 import kernel.util.Logging
 
@@ -48,8 +49,11 @@ object Kernel extends Logging {
   private[this] var storageServer: VoldemortServer = _
 */
 
+  private[this] var remoteServer: RemoteServer = _
+
   def main(args: Array[String]): Unit = {
     log.info("Starting Akka kernel...")
+    startRemoteService
     startCassandra
     cassandraBenchmark
       
@@ -61,6 +65,21 @@ object Kernel extends Logging {
 
     //startZooKeeper
     //startVoldemort
+  }
+
+
+  private[akka] def startRemoteService = {
+    // FIXME manage remote serve thread for graceful shutdown
+    val remoteServerThread = new Thread(new Runnable() {
+       def run = {
+         val server = new RemoteServer
+         server.connect
+       }
+    })
+    remoteServerThread.start
+    
+    Thread.sleep(1000) // wait for server to start up
+    RemoteClient.connect
   }
 
   private[akka] def startJersey: SelectorThread = {

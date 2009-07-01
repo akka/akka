@@ -16,12 +16,10 @@ object TransactionManagement {
   private val txEnabled = new AtomicBoolean(true)
 
   def isTransactionalityEnabled = txEnabled.get
-  def enableTransactions = txEnabled.set(true)
+  def disableTransactions = txEnabled.set(false)
 
-  private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = {
-    val tl = new ThreadLocal[Option[Transaction]]
-    tl.set(None)
-    tl
+  private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = new ThreadLocal[Option[Transaction]]() {
+    override protected def initialValue: Option[Transaction] = None
   }
 }
 
@@ -64,7 +62,14 @@ trait TransactionManagement extends Logging {
       tx.rollback(id)
   }
 
-  protected def isInExistingTransaction = TransactionManagement.threadBoundTx.get.isDefined
+  protected def isInExistingTransaction =
+    // FIXME should not need to have this runtime "fix" - investigate what is causing this to happen
+//    if (TransactionManagement.threadBoundTx.get == null) {
+//      TransactionManagement.threadBoundTx.set(None)
+//      false
+//    } else {
+      TransactionManagement.threadBoundTx.get.isDefined
+//    }
 
   protected def isTransactionAborted = activeTx.isDefined && activeTx.get.isAborted
 

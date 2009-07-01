@@ -1,12 +1,8 @@
 package se.scalablesolutions.akka.kernel.actor
 
-import concurrent.Lock
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
 import junit.framework.TestCase
-import kernel.nio.{NettyClient, NettyServer}
-import reactor._
-
+import kernel.nio.{RemoteServer, RemoteClient}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
@@ -33,12 +29,12 @@ class RemoteActorSpec extends TestCase {
 
   new Thread(new Runnable() {
      def run = {
-       val server = new NettyServer
+       val server = new RemoteServer
        server.connect
      }
   }).start
   Thread.sleep(1000)
-  NettyClient.connect
+  RemoteClient.connect
   
   private val unit = TimeUnit.MILLISECONDS
 

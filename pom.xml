@@ -14,7 +14,7 @@
   <properties>
     <akka.version>0.1</akka.version>
     <akka.groupId>se.scalablesolutions.akka</akka.groupId>
-    <scala.version>2.7.4</scala.version>
+    <scala.version>2.7.5</scala.version>
   </properties>
 
   <modules>

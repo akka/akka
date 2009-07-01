@@ -10,27 +10,12 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
+import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.ExecutorService
+import java.util.{HashSet, LinkedList, Queue}
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, RejectedExecutionHandler, ThreadPoolExecutor}
-
-class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
-  import java.util.concurrent.Executors
-  import java.util.HashSet
-  
-  // FIXME: make configurable using configgy + JMX
+class EventBasedThreadPoolDispatcher(private val threadPool: ExecutorService) extends MessageDispatcherBase {
   private val busyHandlers = new HashSet[AnyRef]
-
-  private val minNrThreads, maxNrThreads = 10
-  private val timeOut = 1000L // ????
-  private val timeUnit = TimeUnit.MILLISECONDS
-  private val threadFactory = new MonitorableThreadFactory("akka:kernel")
-  private val rejectedExecutionHandler = new RejectedExecutionHandler() {
-    def rejectedExecution(runnable: Runnable, threadPoolExecutor: ThreadPoolExecutor) {
-      
-    }
-  }
-  private val queue = new LinkedBlockingQueue[Runnable]
-  private val handlerExecutor = new ThreadPoolExecutor(minNrThreads, maxNrThreads, timeOut, timeUnit, queue, threadFactory, rejectedExecutionHandler)
 
   def start = if (!active) {
     active = true
@@ -48,7 +33,7 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
               val message = queue.peek
               val messageHandler = getIfNotBusy(message.sender)
               if (messageHandler.isDefined) {
-                handlerExecutor.execute(new Runnable {
+                threadPool.execute(new Runnable {
                   override def run = {
                     messageHandler.get.handle(message)
                     free(message.sender)
@@ -67,22 +52,21 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
     selectorThread.start
   }
 
-  override protected def doShutdown = handlerExecutor.shutdownNow
+  override protected def doShutdown = threadPool.shutdownNow
 
-  private def getIfNotBusy(key: AnyRef): Option[MessageHandler] = synchronized {
+  private def getIfNotBusy(key: AnyRef): Option[MessageHandler] = guard.synchronized {
     if (!busyHandlers.contains(key) && messageHandlers.containsKey(key)) {
       busyHandlers.add(key)
       Some(messageHandlers.get(key))
     } else None
   }
 
-  private def free(key: AnyRef) = synchronized { busyHandlers.remove(key) }
+  private def free(key: AnyRef) = guard.synchronized {
+    busyHandlers.remove(key)
+  }
 }
 
 class EventBasedThreadPoolDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
-  import java.util.concurrent.locks.ReentrantLock
-  import java.util.{LinkedList, Queue}
-
   private val selectedQueue: Queue[MessageHandle] = new LinkedList[MessageHandle]
   private val selectedQueueLock = new ReentrantLock
 
@@ -99,7 +83,7 @@ class EventBasedThreadPoolDemultiplexer(private val messageQueue: MessageQueue) 
   }
 
   def releaseSelectedQueue = {
-    selectedQueue.clear
+    //selectedQueue.clear
     selectedQueueLock.unlock
   }
 

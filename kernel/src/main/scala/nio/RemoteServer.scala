@@ -24,11 +24,12 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder
 
-class NettyServer extends Logging {
-  def connect = NettyServer.connect
+class RemoteServer extends Logging {
+  def connect = RemoteServer.connect
 }
 
-object NettyServer extends Logging {
+object RemoteServer extends Logging {
+  // FIXME make all remote server option configurable
   private val HOSTNAME = "localhost"
   private val PORT = 9999
   private val CONNECTION_TIMEOUT_MILLIS = 100  
@@ -53,7 +54,7 @@ object NettyServer extends Logging {
 
   def connect = synchronized {
     if (!isRunning) {
-      log.info("Starting NIO server at [%s:%s]", HOSTNAME, PORT)
+      log.info("Starting remote server at [%s:%s]", HOSTNAME, PORT)
       bootstrap.bind(new InetSocketAddress(HOSTNAME, PORT))
       isRunning = true
     }
@@ -65,9 +66,6 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
   private val activeObjectFactory = new ActiveObjectFactory
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
-
-  private val MESSAGE_HANDLE = classOf[Actor].getDeclaredMethod(
-    "handle", Array[Class[_]](classOf[MessageHandle]))
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
@@ -87,56 +85,50 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) ={
     val message = event.getMessage
-    if (message == null) throw new IllegalStateException("Message in MessageEvent is null: " + event)
+    if (message == null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
     if (message.isInstanceOf[RemoteRequest]) handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     event.getCause.printStackTrace
-    log.error("Unexpected exception from downstream: %s", event.getCause)
+    log.error("Unexpected exception from remote downstream: %s", event.getCause)
     event.getChannel.close
   }
 
   private def handleRemoteRequest(request: RemoteRequest, channel: Channel) = {
-    try {
-      log.debug(request.toString)
-      if (request.isActor) dispatchToActor(request, channel)
-      else dispatchToActiveObject(request, channel)
-     } catch {
-      case e: Exception =>
-        log.error("Could not invoke remote active object or actor [%s :: %s] due to: %s", request.method, request.target, e)
-        e.printStackTrace
-    }    
+    log.debug(request.toString)
+    if (request.isActor) dispatchToActor(request, channel)
+    else dispatchToActiveObject(request, channel)
   }
 
   private def dispatchToActor(request: RemoteRequest, channel: Channel) = {
-    log.debug("Dispatching to actor [%s]", request.target)
-    val actor = createActor(request.target)
+    log.debug("Dispatching to remote actor [%s]", request.target)
+    val actor = createActor(request.target, request.timeout)
     actor.start
     if (request.isOneWay) actor ! request.message
     else {
       try {
         val resultOrNone = actor !! request.message
-        val result = if (resultOrNone.isDefined) resultOrNone else null
+        val result: AnyRef = if (resultOrNone.isDefined) resultOrNone.get else null
         log.debug("Returning result from actor invocation [%s]", result)
         //channel.write(request.newReplyWithMessage(result, TransactionManagement.threadBoundTx.get))
         channel.write(request.newReplyWithMessage(result, null))
       } catch {
-        case e: InvocationTargetException =>
-          log.error("Could not invoke remote actor [%s] due to: %s", request.target, e.getCause)
-          e.getCause.printStackTrace
-          channel.write(request.newReplyWithException(e.getCause))
+        case e: Throwable =>
+          log.error("Could not invoke remote actor [%s] due to: %s", request.target, e)
+          e.printStackTrace
+          channel.write(request.newReplyWithException(e))
       }
     }    
   }
 
   private def dispatchToActiveObject(request: RemoteRequest, channel: Channel) = {
-    log.debug("Dispatching to [%s :: %s]", request.method, request.target)
-    val activeObject = createActiveObject(request.target)
+    log.debug("Dispatching to remote active object [%s :: %s]", request.method, request.target)
+    val activeObject = createActiveObject(request.target, request.timeout)
 
     val args = request.message.asInstanceOf[scala.List[AnyRef]]
-    val argClazzes = args.map(_.getClass)
-    val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClazzes)
+    val argClasses = args.map(_.getClass)
+    val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.timeout)
 
     continueTransaction(request)
     try {
@@ -144,7 +136,7 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
       if (request.isOneWay) messageReceiver.invoke(activeObject, unescapedArgs)
       else {
         val result = messageReceiver.invoke(activeObject, unescapedArgs)
-        log.debug("Returning result from active object invocation [%s]", result)
+        log.debug("Returning result from remote active object invocation [%s]", result)
         //channel.write(request.newReplyWithMessage(result, TransactionManagement.threadBoundTx.get))
         channel.write(request.newReplyWithMessage(result, null))
       }
@@ -153,6 +145,10 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
         log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.method, request.target, e.getCause)
         e.getCause.printStackTrace
         channel.write(request.newReplyWithException(e.getCause))
+      case e: Throwable =>
+        log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.method, request.target, e)
+        e.printStackTrace
+        channel.write(request.newReplyWithException(e))
     }
   }
 
@@ -164,14 +160,14 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     } else TransactionManagement.threadBoundTx.set(None)     
   }
   
-  private def unescapeArgs(args: scala.List[AnyRef], argClasses: scala.List[Class[_]]) = {
+  private def unescapeArgs(args: scala.List[AnyRef], argClasses: scala.List[Class[_]], timeout: Long) = {
     val unescapedArgs = new Array[AnyRef](args.size)
     val unescapedArgClasses = new Array[Class[_]](args.size)
 
     val escapedArgs = for (i <- 0 until args.size) {
       if (args(i).isInstanceOf[ProxyWrapper]) {
         val proxyName = args(i).asInstanceOf[ProxyWrapper].proxyName
-        val activeObject = createActiveObject(proxyName)
+        val activeObject = createActiveObject(proxyName, timeout)
         unescapedArgs(i) = activeObject
         unescapedArgClasses(i) = Class.forName(proxyName)       
       } else {
@@ -182,13 +178,13 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     (unescapedArgs, unescapedArgClasses)
   }
 
-  private def createActiveObject(name: String): AnyRef = {
+  private def createActiveObject(name: String, timeout: Long): AnyRef = {
     val activeObjectOrNull = activeObjects.get(name)
     if (activeObjectOrNull == null) {
       val clazz = Class.forName(name)
       try {
         val actor = new Dispatcher(clazz.getName)
-        val newInstance = activeObjectFactory.newInstance(clazz, actor, false).asInstanceOf[AnyRef]
+        val newInstance = activeObjectFactory.newInstance(clazz, actor, false, timeout).asInstanceOf[AnyRef]
         activeObjects.put(name, newInstance)
         newInstance
       } catch {
@@ -200,12 +196,13 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     } else activeObjectOrNull
   }
 
-  private def createActor(name: String): Actor = {
+  private def createActor(name: String, timeout: Long): Actor = {
     val actorOrNull = actors.get(name)
     if (actorOrNull == null) {
       val clazz = Class.forName(name)
       try {
         val newInstance = clazz.newInstance.asInstanceOf[Actor]
+        newInstance.timeout = timeout
         actors.put(name, newInstance)
         newInstance
       } catch {

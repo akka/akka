@@ -84,34 +84,3 @@ class MessageQueue {
     queue.notifyAll
   }
 }
-
-class MonitorableThreadFactory(val name: String) extends ThreadFactory {
-  def newThread(runnable: Runnable) =
-    //new MonitorableThread(runnable, name)
-    new Thread(runnable)
-}
-
-object MonitorableThread {
-  val DEFAULT_NAME = "MonitorableThread"
-  val created = new AtomicInteger
-  val alive = new AtomicInteger
-  @volatile val debugLifecycle = false
-}
-class MonitorableThread(runnable: Runnable, name: String)
-  extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) {//with Logging {
-  setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-    def uncaughtException(thread: Thread, cause: Throwable) = {} //log.error("UNCAUGHT in thread [%s] cause [%s]", thread.getName, cause)
-  })
-
-  override def run = {
-    val debug = MonitorableThread.debugLifecycle
-    //if (debug) log.debug("Created %s", getName)
-    try {
-       MonitorableThread.alive.incrementAndGet
-       super.run
-     } finally {
-        MonitorableThread.alive.decrementAndGet
-        //if (debug) log.debug("Exiting %s", getName)
-      }
-   }
-}

@@ -8,9 +8,10 @@ import java.util.concurrent.CopyOnWriteArraySet
 
 import kernel.reactor._
 import kernel.config.ScalaConfig._
-import kernel.nio.{NettyClient, RemoteRequest}
+import kernel.nio.{RemoteClient, RemoteRequest}
 import kernel.stm.{TransactionAwareWrapperException, TransactionManagement, Transaction}
 import kernel.util.Logging
+import org.codehaus.aspectwerkz.proxy.Uuid
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -22,8 +23,8 @@ case class Exit(dead: Actor, killer: Throwable) extends LifecycleMessage
 sealed abstract class DispatcherType
 object DispatcherType {
   case object EventBasedThreadPooledProxyInvokingDispatcher extends DispatcherType
-  case object EventBasedSingleThreadingDispatcher extends DispatcherType
-  case object EventBasedThreadPoolingDispatcher extends DispatcherType
+  case object EventBasedSingleThreadDispatcher extends DispatcherType
+  case object EventBasedThreadPoolDispatcher extends DispatcherType
   case object ThreadBasedDispatcher extends DispatcherType
 }
 
@@ -33,16 +34,14 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
 
 trait Actor extends Logging with TransactionManagement {  
   val id: String = this.getClass.toString
-
-  @volatile private[this] var isRemote = false
-  @volatile private[this] var isTransactional = false
+  val uuid = Uuid.newUuid.toString
   @volatile private[this] var isRunning: Boolean = false
-  protected[this] var dispatcher: MessageDispatcher = _
+
+  protected[Actor] var mailbox: MessageQueue = _
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
 
-  protected[actor] var mailbox: MessageQueue = _
-  protected[actor] var supervisor: Option[Actor] = None
+  protected[kernel] var supervisor: Option[Actor] = None
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
 
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
@@ -53,22 +52,83 @@ trait Actor extends Logging with TransactionManagement {
   // ====================================
 
   /**
-   * TODO: document
+   * User overridable callback/setting.
+   *
+   * Defines the default timeout for '!!' invocations, e.g. the timeout for the future returned by the call to '!!'.
    */
-  protected var faultHandler: Option[FaultHandlingStrategy] = None
+  @volatile var timeout: Long = 5000L
 
   /**
-   * Set dispatcher type to either ThreadBasedDispatcher, EventBasedSingleThreadingDispatcher or EventBasedThreadPoolingDispatcher.
-   * Default is EventBasedThreadPoolingDispatcher.
+   * User overridable callback/setting.
+   *
+   * Setting 'isRemote' to true means that an actor will be moved to and invoked on a remote host.
+   * See also 'makeRemote'.
    */
-  protected[this] var dispatcherType: DispatcherType = DispatcherType.EventBasedThreadPoolingDispatcher
-  
+  @volatile private[this] var isRemote = false
+
   /**
+   * User overridable callback/setting.
+   *
+   * Setting 'isTransactional' to true means that the actor will **start** a new transaction if non exists.
+   * However, it will always participate in an existing transaction.
+   * If transactionality want to be completely turned off then do it by invoking: 
+   * <pre/>
+   *  TransactionManagement.disableTransactions
+   * </pre>
+   * See also 'makeTransactional'.
+   */
+  @volatile private[this] var isTransactional = false
+
+  /**
+   * User overridable callback/setting.
+   *
+   * User can (and is encouraged to) override the default configuration so it fits the specific use-case that the actor is used for.
+   * <p/>
+   * It is beneficial to have actors share the same dispatcher, easily +100 actors can share the same.
+   * <br/>
+   * But if you are running many many actors then it can be a good idea to have split them up in terms of dispatcher sharing.
+   * <br/>
+   * Default is that all actors that are created and spawned from within this actor is sharing the same dispatcher as its creator.
+   * <p/>
+   * There are currently two different dispatchers available (but the interface can easily be implemented for custom implementation):
+   * <pre/>
+   *  // default - executorService can be build up using the ThreadPoolBuilder
+   *  new EventBasedThreadPoolDispatcher(executor: ExecutorService)
+   * 
+   *  new EventBasedSingleThreadDispatcher
+   * </pre>
+   */
+  protected[Actor] var dispatcher: MessageDispatcher = {
+    val threadPool = ThreadPoolBuilder.newBuilder.newThreadPoolWithLinkedBlockingQueueWithCapacity(0).build
+    val dispatcher = new EventBasedThreadPoolDispatcher(threadPool)
+    mailbox = dispatcher.messageQueue
+    dispatcher.registerHandler(this, new ActorMessageHandler(this))
+    dispatcher
+  }
+
+  /**
+   * User overridable callback/setting.
+   *
    * Set trapExit to true if actor should be able to trap linked actors exit messages.
    */
   protected[this] var trapExit: Boolean = false
 
   /**
+   * User overridable callback/setting.
+   *
+   * If 'trapExit' is set for the actor to act as supervisor, then a faultHandler must be defined.
+   * Can be one of:
+   * <pre/>
+   *  AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
+   * 
+   *  OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
+   * </pre>
+   */
+  protected var faultHandler: Option[FaultHandlingStrategy] = None
+
+  /**
+   * User overridable callback/setting.
+   *
    * Partial function implementing the server logic.
    * To be implemented by subclassing server.
    * <p/>
@@ -90,24 +150,32 @@ trait Actor extends Logging with TransactionManagement {
   protected def receive: PartialFunction[Any, Unit]
 
   /**
+   * User overridable callback/setting.
+   *
    * Optional callback method that is called during initialization.
    * To be implemented by subclassing actor.
    */
   protected def init(config: AnyRef) {}
 
   /**
+   * User overridable callback/setting.
+   *
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
   protected def preRestart(reason: AnyRef, config: Option[AnyRef]) {}
 
   /**
+   * User overridable callback/setting.
+   *
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
   protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {}
 
   /**
+   * User overridable callback/setting.
+   *
    * Optional callback method that is called during termination.
    * To be implemented by subclassing actor.
    */
@@ -118,10 +186,25 @@ trait Actor extends Logging with TransactionManagement {
   // =============
 
   /**
-   * TODO: document
+   * Starts up the actor and its message queue.
    */
-  @volatile var timeout: Long = 5000L
+  def start = synchronized  {
+    if (!isRunning) {
+      dispatcher.start
+      isRunning = true
+    }
+  }
 
+  /**
+   * Stops the actor and its message queue.
+   */
+  def stop = synchronized {
+    if (isRunning) {
+      dispatcher.unregisterHandler(this)
+      isRunning = false
+    } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+  
   /**
    * TODO: document
    */
@@ -171,112 +254,118 @@ trait Actor extends Logging with TransactionManagement {
 
   // FIXME can be deadlock prone if cyclic linking? - HOWTO?
   /**
-   * TODO: document
+   * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will receive a notification nif the linked actor has crashed.
+   * If the 'trapExit' flag has been set then it will 'trap' the failure and automatically restart the linked actors according to the restart strategy defined by the 'faultHandler'.
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  protected[this] def link(actor: Actor) = synchronized { actor.synchronized {
+  protected[this] def link(actor: Actor) = synchronized { 
     if (isRunning) {
       linkedActors.add(actor)
       if (actor.supervisor.isDefined) throw new IllegalStateException("Actor can only have one supervisor [" + actor + "], e.g. link(actor) fails")
       actor.supervisor = Some(this)
       log.debug("Linking actor [%s] to actor [%s]", actor, this)
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-  }}
+  }
 
     // FIXME can be deadlock prone if cyclic linking? - HOWTO?
   /**
-   * TODO: document
+   * Unlink the actor. 
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  protected[this] def unlink(actor: Actor) = synchronized { actor.synchronized {
+  protected[this] def unlink(actor: Actor) = synchronized { 
     if (isRunning) {
       if (!linkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
       linkedActors.remove(actor)
       actor.supervisor = None
       log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-  }}
-  
-  /**
-   * TODO: document
-   */
-  def start = synchronized  {
-    if (!isRunning) {
-      dispatcherType match {
-        case DispatcherType.EventBasedSingleThreadingDispatcher =>
-          dispatcher = new EventBasedSingleThreadDispatcher
-        case DispatcherType.EventBasedThreadPoolingDispatcher =>
-          dispatcher = new EventBasedThreadPoolDispatcher
-        case DispatcherType.EventBasedThreadPooledProxyInvokingDispatcher =>
-          dispatcher = new ProxyMessageDispatcher
-        case DispatcherType.ThreadBasedDispatcher =>
-          throw new UnsupportedOperationException("ThreadBasedDispatcher is not yet implemented. Please help out and send in a patch.")
-      }
-      mailbox = dispatcher.messageQueue
-      dispatcher.registerHandler(this, new ActorMessageHandler(this))
-      dispatcher.start
-      isRunning = true
-    }
-  }
-
-  /**
-   * TODO: document
-   */
-  def stop = synchronized {
-    if (isRunning) {
-      dispatcher.unregisterHandler(this)
-      isRunning = false
-    } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
   
   /**
-   * Atomically start and link actor.
+   * Atomically start and link an actor.
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  def spawnLink(actor: Actor) = actor.synchronized {
+  protected[this] def startLink(actor: Actor) = synchronized {
     actor.start
     link(actor)
   }
 
   /**
-   * Atomically start and link a remote actor.
+   * Atomically start, link and make an actor remote.
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  def spawnLinkRemote(actor: Actor) = actor.synchronized {
+  protected[this] def startLinkRemote(actor: Actor) = synchronized {
     actor.makeRemote
     actor.start
     link(actor)
   }
 
   /**
-   * TODO: document
+   * Atomically create (from actor class) and start an actor.
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  def spawn(actorClass: Class[_]) = {
-
-    // FIXME: should pass in dispatcher etc. - inherit
+  protected[this] def spawn(actorClass: Class[_]): Actor = synchronized {
+    val actor = actorClass.newInstance.asInstanceOf[Actor]   
+    actor.dispatcher = dispatcher
+    actor.mailbox = mailbox
+    actor.start
+    actor
   }
 
   /**
-   * TODO: document
+   * Atomically create (from actor class), start and make an actor remote.
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  def spawnRemote(actorClass: Class[_]) = {
+  protected[this] def spawnRemote(actorClass: Class[_]): Actor = synchronized {
+    val actor = actorClass.newInstance.asInstanceOf[Actor]   
+    actor.makeRemote
+    actor.dispatcher = dispatcher
+    actor.mailbox = mailbox
+    actor.start
+    actor
   }
 
   /**
-   * TODO: document
+   * Atomically create (from actor class), start and link an actor.
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  def spawnLink(actorClass: Class[_]) = {
+  protected[this] def spawnLink(actorClass: Class[_]): Actor = synchronized {
+    val actor = spawn(actorClass)
+    link(actor)
+    actor
   }
 
   /**
-   * TODO: document
+   * Atomically create (from actor class), start, link and make an actor remote.
+   * <p/>
+   * To be invoked from within the actor itself. 
    */
-  def spawnLinkRemote(actorClass: Class[_]) = {
+  protected[this] def spawnLinkRemote(actorClass: Class[_]): Actor = synchronized {
+    val actor = spawn(actorClass)
+    actor.makeRemote
+    link(actor)
+    actor
   }
 
   /**
-   * TODO: document
+   * Invoking 'makeRemote' means that an actor will be moved to andinvoked on a remote host
    */
   def makeRemote = isRemote = true
 
   /**
-   * TODO: document
+   * Invoking 'makeTransactional' means that the actor will **start** a new transaction if non exists.
+   * However, it will always participate in an existing transaction.
+   * If transactionality want to be completely turned off then do it by invoking: 
+   * <pre/>
+   *  TransactionManagement.disableTransactions
+   * </pre>
    */
   def makeTransactional = synchronized {
     if (isRunning) throw new IllegalArgumentException("Can not make actor transactional after it has been started") 
@@ -287,32 +376,16 @@ trait Actor extends Logging with TransactionManagement {
   // ==== IMPLEMENTATION DETAILS ====
   // ================================
 
-  private[kernel] def handle(messageHandle: MessageHandle) = synchronized {
-    val message = messageHandle.message
-    val future = messageHandle.future
-    try {
-      if (messageHandle.tx.isDefined) 
-        TransactionManagement.threadBoundTx.set(messageHandle.tx)
-      senderFuture = future
-      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
-    } catch {
-      case e =>
-        if (supervisor.isDefined) supervisor.get ! Exit(this, e)
-        if (future.isDefined) future.get.completeWithException(this, e)
-        else e.printStackTrace
-    } finally {
-      TransactionManagement.threadBoundTx.set(None)      
-    }
-  }
-
   private def postMessageToMailbox(message: AnyRef): Unit =
-    if (isRemote) NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, true, false))
-    else mailbox.append(new MessageHandle(this, message, None, activeTx))
+    if (isRemote) {
+      val supervisorUuid = registerSupervisorAsRemoteActor
+      RemoteClient.send(new RemoteRequest(true, message, null, this.getClass.getName, timeout, null, true, false, supervisorUuid))
+    } else mailbox.append(new MessageHandle(this, message, None, activeTx))
 
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult =
-    if (isRemote) { 
-      val future = NettyClient.send(new RemoteRequest(true, message, null, this.getClass.getName, null, false, false))  
+    if (isRemote) {
+      val supervisorUuid = registerSupervisorAsRemoteActor
+      val future = RemoteClient.send(new RemoteRequest(true, message, null, this.getClass.getName, timeout, null, false, false, supervisorUuid))  
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     }
@@ -351,30 +424,32 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
-    if (isRemote) getRemoteResultOrThrowException(future)
-    else {
-      if (future.exception.isDefined) {
-        val (_, cause) = future.exception.get
-        if (TransactionManagement.isTransactionalityEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
-        else throw cause
-      } else {
-        future.result.asInstanceOf[Option[T]]
-      }
-    }
-
-  // FIXME: UGLY - Either: make the remote tx work
-  // FIXME:        OR: remove this method along with the tx tuple making in NettyClient.messageReceived and ActiveObject.getResultOrThrowException
-  private def getRemoteResultOrThrowException[T](future: FutureResult): Option[T] =
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
       if (TransactionManagement.isTransactionalityEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
       else throw cause
     } else {
-      if (future.result.isDefined) {
-        val (res, tx) = future.result.get.asInstanceOf[Tuple2[Option[T], Option[Transaction]]]
-        res
-      } else None
+      future.result.asInstanceOf[Option[T]]
     }
+
+  private[kernel] def handle(messageHandle: MessageHandle) = synchronized {
+    val message = messageHandle.message
+    val future = messageHandle.future
+    try {
+      if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
+      senderFuture = future
+      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
+      else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
+    } catch {
+      case e =>
+        // FIXME to fix supervisor restart of actor for oneway calls, inject a supervisor proxy that can send notification back to client
+        if (supervisor.isDefined) supervisor.get ! Exit(this, e)
+        if (future.isDefined) future.get.completeWithException(this, e)
+        else e.printStackTrace
+    } finally {
+      TransactionManagement.threadBoundTx.set(None)
+    }
+  }
 
   private def base: PartialFunction[Any, Unit] = lifeCycle orElse (hotswap getOrElse receive)
 
@@ -386,12 +461,16 @@ trait Actor extends Logging with TransactionManagement {
     case Exit(dead, reason) => handleTrapExit(dead, reason)
   }
 
-  private[kernel] def handleTrapExit(dead: Actor, reason: Throwable): Unit = if (trapExit) {
-    if (faultHandler.isDefined) {
-      faultHandler.get match {
-        case AllForOneStrategy(maxNrOfRetries, withinTimeRange) => restartLinkedActors(reason)
-        case OneForOneStrategy(maxNrOfRetries, withinTimeRange) => dead.restart(reason)
-      }
+  private[kernel] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
+    if (trapExit) {
+      if (faultHandler.isDefined) {
+        faultHandler.get match {
+          case AllForOneStrategy(maxNrOfRetries, withinTimeRange) => restartLinkedActors(reason)
+          case OneForOneStrategy(maxNrOfRetries, withinTimeRange) => dead.restart(reason)
+        }
+      } else throw new IllegalStateException("No 'faultHandler' defined for actor with the 'trapExit' flag set to true " + toString)
+    } else {
+      if (supervisor.isDefined) supervisor.get ! Exit(dead, reason) // if 'trapExit' is not defined then pass the Exit on
     }
   }
 
@@ -405,12 +484,12 @@ trait Actor extends Logging with TransactionManagement {
         scope match {
           case Permanent => {
             preRestart(reason, config)
-            log.debug("Restarting actor [%s] configured as PERMANENT.", id)
-            // FIXME SWAP actor
+            log.info("Restarting actor [%s] configured as PERMANENT.", id)
             postRestart(reason, config)
           }
 
           case Temporary =>
+          // FIXME handle temporary actors
 //            if (reason == 'normal) {
 //              log.debug("Restarting actor [%s] configured as TEMPORARY (since exited naturally).", id)
 //              scheduleRestart
@@ -421,6 +500,13 @@ trait Actor extends Logging with TransactionManagement {
         }
       }
     }
+  }
+
+  private[kernel] def registerSupervisorAsRemoteActor: Option[String] = {
+    if (supervisor.isDefined) {
+      RemoteClient.registerSupervisorForActor(this)
+      Some(supervisor.get.uuid)
+    } else None
   }
 
   override def toString(): String = "Actor[" + id + "]"

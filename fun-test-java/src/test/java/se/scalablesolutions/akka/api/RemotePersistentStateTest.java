@@ -4,14 +4,11 @@
 
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.config.*;
+import se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory;
+import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJava;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+
 import se.scalablesolutions.akka.kernel.Kernel;
-import se.scalablesolutions.akka.kernel.state.TransactionalMap;
-import se.scalablesolutions.akka.kernel.state.CassandraPersistentTransactionalMap;
-import se.scalablesolutions.akka.kernel.actor.*;
-import se.scalablesolutions.akka.kernel.nio.NettyServer;
 import junit.framework.TestCase;
 
 public class RemotePersistentStateTest extends TestCase {
@@ -22,7 +19,7 @@ public class RemotePersistentStateTest extends TestCase {
     Kernel.startCassandra();
     new Thread(new Runnable() {
        public void run() {
-         NettyServer server = new NettyServer();
+         se.scalablesolutions.akka.kernel.nio.RemoteServer server = new se.scalablesolutions.akka.kernel.nio.RemoteServer();
          server.connect();
        }
     }).start();

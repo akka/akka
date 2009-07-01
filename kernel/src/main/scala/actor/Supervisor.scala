@@ -8,7 +8,7 @@ import kernel.util.Logging
 import kernel.config.ScalaConfig._
 import kernel.util.Helpers._
 import scala.collection.mutable.HashMap
-
+   
 /**
  * Messages that the supervisor responds to and returns.
  *
@@ -35,11 +35,11 @@ case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends 
  *      SupervisorConfig(
  *        RestartStrategy(OneForOne, 3, 10),
  *        Worker(
- *          myFirstActorInstance,
+ *          myFirstActor,
  *          LifeCycle(Permanent, 1000))
  *        ::
  *        Worker(
- *          mySecondActorInstance,
+ *          mySecondActor,
  *          LifeCycle(Permanent, 1000))
  *        :: Nil)
  *    }
@@ -87,15 +87,21 @@ abstract class SupervisorFactory extends Logging {
   }
 }
 
-// FIXME remove Supervisor - all Actors can be supervisors - move SupervisorFactory config into actor
 /**
+ * <b>NOTE:</b>
+ * <p/> 
+ * The supervisor class is only used for the configuration system when configuring supervisor hierarchies declaratively.
+ * Should not be used in development. Instead wire the actors together using 'link', 'spawnLink' etc. and set the 'trapExit'
+ * flag in the actors that should trap error signals and trigger restart.
+ * <p/> 
+ * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up actors.  
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging {
-  makeTransactional
+class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging {  
   trapExit = true
   faultHandler = Some(handler)
-
+  
   def startSupervisor = {
     start
     this ! StartSupervisor
@@ -119,7 +125,7 @@ class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging {
         server match {
           case Worker(actor, lifecycle) =>
             actor.lifeCycleConfig = Some(lifecycle)
-            spawnLink(actor)
+            startLink(actor)
 
            case SupervisorConfig(_, _) => // recursive configuration
              val supervisor = factory.newSupervisorFor(server.asInstanceOf[SupervisorConfig])

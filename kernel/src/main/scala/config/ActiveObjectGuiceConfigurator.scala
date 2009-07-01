@@ -22,7 +22,6 @@ import scala.collection.mutable.HashMap
 import java.lang.reflect.Method
 import javax.servlet.ServletContext
 
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -57,15 +56,6 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     proxy.asInstanceOf[T]
   }
 
- /*
-  override def getActiveObjectProxy(clazz: Class[_]): ActiveObjectProxy = synchronized {
-    log.debug("Looking up active object proxy [%s]", clazz.getName)
-    if (injector == null) throw new IllegalStateException("inject() and/or supervise() must be called before invoking getActiveObjectProxy(clazz)")
-    val activeObjectOption: Option[Tuple3[Class[_], Class[_], ActiveObjectProxy]] = activeObjectRegistry.get(clazz)
-    if (activeObjectOption.isDefined) activeObjectOption.get._3
-    else throw new IllegalStateException("Class [" + clazz.getName + "] has not been put under supervision (by passing in the config to the 'supervise') method")
-  }
-  */
   override def getExternalDependency[T](clazz: Class[T]): T = synchronized {
     injector.getInstance(clazz).asInstanceOf[T]
   }
@@ -109,7 +99,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
     val actor = new Dispatcher(targetClass.getName)
-    val proxy = activeObjectFactory.newInstance(targetClass, actor, false).asInstanceOf[AnyRef]
+    val proxy = activeObjectFactory.newInstance(targetClass, actor, false, component.timeout).asInstanceOf[AnyRef]
     workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
@@ -120,7 +110,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
     val actor = new Dispatcher(targetClass.getName)
-    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor, false).asInstanceOf[AnyRef]
+    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor, false, component.timeout).asInstanceOf[AnyRef]
     workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)

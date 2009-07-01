@@ -7,8 +7,9 @@ import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import org.junit.{Test, Before}
 import org.junit.Assert._
+import junit.framework.TestCase
 
-class EventBasedDispatcherTest {
+class EventBasedDispatcherTest extends TestCase {
   private var threadingIssueDetected: AtomicBoolean = null
 
   class TestMessageHandle(handleLatch: CountDownLatch) extends MessageHandler {
@@ -31,7 +32,7 @@ class EventBasedDispatcherTest {
   }
 
   @Before
-  def setUp = {
+  override def setUp = {
     threadingIssueDetected = new AtomicBoolean(false)
   }
 
