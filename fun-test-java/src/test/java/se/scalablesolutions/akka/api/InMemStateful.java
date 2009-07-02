@@ -2,6 +2,8 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.state;
 import se.scalablesolutions.akka.annotation.transactional;
+import se.scalablesolutions.akka.annotation.prerestart;
+import se.scalablesolutions.akka.annotation.postrestart;
 import se.scalablesolutions.akka.kernel.state.*;
 
 public class InMemStateful {
@@ -75,6 +77,16 @@ public class InMemStateful {
   @transactional
   public void thisMethodHangs(String key, String msg, InMemFailer failer) {
     setMapState(key, msg);
+  }
+
+  @prerestart
+  public void preRestart() {
+    System.out.println("################ PRE RESTART");
+  }
+
+  @postrestart
+  public void postRestart() {
+    System.out.println("################ POST RESTART");
   }
 
   /*

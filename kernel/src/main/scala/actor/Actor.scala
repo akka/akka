@@ -35,9 +35,6 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
 }
 
 trait Actor extends Logging with TransactionManagement {  
-  val id: String = this.getClass.toString
-  val uuid = Uuid.newUuid.toString
-
   @volatile private[this] var isRunning: Boolean = false
   private[this] val remoteFlagLock = new ReadWriteLock
   private[this] val transactionalFlagLock = new ReadWriteLock
@@ -90,6 +87,13 @@ trait Actor extends Logging with TransactionManagement {
     dispatcher.registerHandler(this, new ActorMessageHandler(this))
     dispatcher
   }
+
+  /**
+   * User overridable callback/setting.
+   *
+   * Identifier for actor, does not have to be a unique one. Simply the one used in logging etc.
+   */
+  protected[this] var id: String = this.getClass.toString
 
   /**
    * User overridable callback/setting.

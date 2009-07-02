@@ -59,7 +59,7 @@ object TransactionIdFactory {
 
   def begin(participant: String) = synchronized {
     ensureIsActiveOrNew
-    if (status == TransactionStatus.New) log.debug("TX BEGIN - Server [%s] is starting NEW transaction [%s]", participant, toString)
+    if (status == TransactionStatus.New) log.debug("TX BEGIN - Server with UUID [%s] is starting NEW transaction [%s]", participant, toString)
     else log.debug("Server [%s] is participating in transaction", participant)
     participants ::= participant
     status = TransactionStatus.Active
@@ -67,14 +67,14 @@ object TransactionIdFactory {
 
   def precommit(participant: String) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.debug("TX PRECOMMIT - Pre-committing transaction [%s] for server [%s]", toString, participant)
+      log.debug("TX PRECOMMIT - Pre-committing transaction [%s] for server with UUID [%s]", toString, participant)
       precommitted ::= participant
     }
   }
 
   def commit(participant: String) = synchronized {
     if (status == TransactionStatus.Active) {
-      log.debug("TX COMMIT - Committing transaction [%s] for server [%s]", toString, participant)
+      log.debug("TX COMMIT - Committing transaction [%s] for server with UUID [%s]", toString, participant)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
           for (part <- participants) yield {
@@ -92,7 +92,7 @@ object TransactionIdFactory {
 
   def rollback(participant: String) = synchronized {
     ensureIsActiveOrAborted
-    log.debug("TX ROLLBACK - Server [%s] has initiated transaction rollback for [%s]", participant, toString)
+    log.debug("TX ROLLBACK - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
     transactionals.items.foreach(_.rollback)
     status = TransactionStatus.Aborted
     reset
@@ -100,7 +100,7 @@ object TransactionIdFactory {
 
   def join(participant: String) = synchronized {
     ensureIsActive
-    log.debug("TX JOIN - Server [%s] is joining transaction [%s]" , participant, toString)
+    log.debug("TX JOIN - Server with UUID [%s] is joining transaction [%s]" , participant, toString)
     participants ::= participant
   }
 

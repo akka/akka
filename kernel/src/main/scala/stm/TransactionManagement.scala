@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.kernel.stm
 import java.util.concurrent.atomic.AtomicBoolean
 
 import kernel.util.Logging
+import org.codehaus.aspectwerkz.proxy.Uuid
 
 class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause) {
   override def toString(): String = "TransactionAwareWrapperException[" + cause + ", " + tx + "]"
@@ -25,14 +26,14 @@ object TransactionManagement {
 
 // FIXME: STM that allows concurrent updates, detects collision, rolls back and restarts
 trait TransactionManagement extends Logging {
-  val id: String
+  val uuid = Uuid.newUuid.toString
 
   import TransactionManagement.threadBoundTx
   private[kernel] var activeTx: Option[Transaction] = None
 
   protected def startNewTransaction = {
     val newTx = new Transaction
-    newTx.begin(id)
+    newTx.begin(uuid)
     val tx = Some(newTx)
     activeTx = tx
     threadBoundTx.set(tx)
@@ -42,16 +43,16 @@ trait TransactionManagement extends Logging {
     val cflowTx = threadBoundTx.get
     if (!activeTx.isDefined && cflowTx.isDefined) {
       val currentTx = cflowTx.get
-      currentTx.join(id)
+      currentTx.join(uuid)
       activeTx = Some(currentTx)
     }
   }
 
-  protected def tryToPrecommitTransaction = if (activeTx.isDefined) activeTx.get.precommit(id)
+  protected def tryToPrecommitTransaction = if (activeTx.isDefined) activeTx.get.precommit(uuid)
 
   protected def tryToCommitTransaction: Boolean = if (activeTx.isDefined) {
     val tx = activeTx.get
-    tx.commit(id)
+    tx.commit(uuid)
     removeTransactionIfTopLevel
     true
   } else false
@@ -59,7 +60,7 @@ trait TransactionManagement extends Logging {
   protected def rollback(tx: Option[Transaction]) = tx match {
     case None => {} // no tx; nothing to do
     case Some(tx) =>
-      tx.rollback(id)
+      tx.rollback(uuid)
   }
 
   protected def isInExistingTransaction =

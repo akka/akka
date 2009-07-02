@@ -4,10 +4,11 @@
 
 package se.scalablesolutions.akka.kernel.actor
 
+import java.lang.reflect.Method
 import java.net.InetSocketAddress
 import kernel.config.ScalaConfig._
 import kernel.nio.{RemoteRequest, RemoteClient}
-import kernel.reactor.FutureResult
+import kernel.reactor.{MessageDispatcher, FutureResult}
 import kernel.util.HashCode
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
@@ -22,7 +23,8 @@ object Annotations {
   val transactional = classOf[transactional]
   val oneway =        classOf[oneway]
   val immutable =     classOf[immutable]
-  val state =         classOf[state]
+  val prerestart =     classOf[prerestart]
+  val postrestart =    classOf[postrestart]
 }
 
 /**
@@ -32,7 +34,7 @@ object Annotations {
  */
 class ActiveObjectFactory {
 
-// FIXME add versions with a MessageDispatcher -- How to pass the current on???????
+  // FIXME How to pass the MessageDispatcher on from active object to child???????
 
   // FIXME call backs to @prerestart @postrestart methods
 
@@ -43,16 +45,51 @@ class ActiveObjectFactory {
   // FIXME Configgy for config
 
   def newInstance[T](target: Class[T], timeout: Long): T =
-    ActiveObject.newInstance(target, new Dispatcher(target.getName), None, timeout)
+    ActiveObject.newInstance(target, new Dispatcher, None, timeout)
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
-    ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), None, timeout)
+    ActiveObject.newInstance(intf, target, new Dispatcher, None, timeout)
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
-    ActiveObject.newInstance(target, new Dispatcher(target.getName), Some(new InetSocketAddress(hostname, port)), timeout)
+    ActiveObject.newInstance(target, new Dispatcher, Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int): T =
-    ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), Some(new InetSocketAddress(hostname, port)), timeout)
+    ActiveObject.newInstance(intf, target, new Dispatcher, Some(new InetSocketAddress(hostname, port)), timeout)
+
+  def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    ActiveObject.newInstance(target, actor, None, timeout)
+  }
+  
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    ActiveObject.newInstance(intf, target, actor, None, timeout)
+  }
+
+  def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    ActiveObject.newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    ActiveObject.newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  private[kernel] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    ActiveObject.newInstance(target, actor, remoteAddress, timeout)
+  }
+
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    ActiveObject.newInstance(intf, target, actor, remoteAddress, timeout)
+  }
+  
+  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
+    ActiveObject.supervise(restartStrategy, components)
 
   /*
   def newInstanceAndLink[T](target: Class[T], supervisor: AnyRef): T = {
@@ -65,17 +102,6 @@ class ActiveObjectFactory {
     ActiveObject.newInstance(intf, target, actor)
   }
   */
-
-  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    ActiveObject.newInstance(target, actor, remoteAddress, timeout)
-  }
-
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    ActiveObject.newInstance(intf, target, actor, remoteAddress, timeout)
-  }
-  
-  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
-    ActiveObject.supervise(restartStrategy, components)
 }
 
 /**
@@ -88,29 +114,55 @@ object ActiveObject {
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
   def newInstance[T](target: Class[T], timeout: Long): T =
-    newInstance(target, new Dispatcher(target.getName), None, timeout)
+    newInstance(target, new Dispatcher, None, timeout)
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
-    newInstance(intf, target, new Dispatcher(intf.getName), None, timeout)
+    newInstance(intf, target, new Dispatcher, None, timeout)
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
-    newInstance(target, new Dispatcher(target.getName), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(target, new Dispatcher, Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int): T =
-    newInstance(intf, target, new Dispatcher(intf.getName), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(intf, target, new Dispatcher, Some(new InetSocketAddress(hostname, port)), timeout)
 
-  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+  def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    newInstance(target, actor, None, timeout)
+  }
+
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    newInstance(intf, target, actor, None, timeout)
+  }
+
+  def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
+    val actor = new Dispatcher
+    actor.dispatcher = dispatcher
+    newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  private[kernel] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(target, false, true)
+    actor.initialize(target, proxy)
     // FIXME switch to weaving in the aspect at compile time
     proxy.asInstanceOf[Advisable].aw_addAdvice(
       MATCH_ALL, new ActorAroundAdvice(target, proxy, actor, remoteAddress, timeout))
     proxy.asInstanceOf[T]
   }
 
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
+    actor.initialize(target.getClass, target)
     proxy.asInstanceOf[Advisable].aw_addAdvice(
       MATCH_ALL, new ActorAroundAdvice(intf, target, actor, remoteAddress, timeout))
     proxy.asInstanceOf[T]
@@ -132,7 +184,7 @@ object ActiveObject {
 @serializable
 sealed class ActorAroundAdvice(val target: Class[_],
                                val targetInstance: AnyRef,
-                               val actor: Actor,
+                               val actor: Dispatcher,
                                val remoteAddress: Option[InetSocketAddress],
                                val timeout: Long) extends AroundAdvice {
   val id = target.getName
@@ -213,16 +265,44 @@ sealed class ActorAroundAdvice(val target: Class[_],
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[kernel] class Dispatcher(val targetName: String) extends Actor {
+private[kernel] class Dispatcher extends Actor {
+  private val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
+  
   makeTransactional
 
-  // FIXME implement the pre/post restart methods and call annotated methods on the POJO
-  
+  private[actor] var target: Option[AnyRef] = None
+  private var preRestart: Option[Method] = None
+  private var postRestart: Option[Method] = None
+
+  private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
+    id = targetClass.getName
+    target = Some(targetInstance)
+    val methods = targetInstance.getClass.getDeclaredMethods.toList
+
+    preRestart = methods.find( m => m.isAnnotationPresent(Annotations.prerestart) && m.getName.startsWith("aw$original"))
+    if (preRestart.isDefined) preRestart.get.setAccessible(true)
+    if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
+      throw new IllegalStateException("Method annotated with @prerestart in [" + targetClass.getName + "] must have a zero argument definition")
+
+    postRestart = methods.find( m => m.isAnnotationPresent(Annotations.postrestart) && m.getName.startsWith("aw$original"))
+    if (postRestart.isDefined) postRestart.get.setAccessible(true)
+    if (postRestart.isDefined && postRestart.get.getParameterTypes.length != 0)
+      throw new IllegalStateException("Method annotated with @postrestart in [" + targetClass.getName + "] must have a zero argument definition")
+  }
+
   override def receive: PartialFunction[Any, Unit] = {
     case Invocation(joinpoint: JoinPoint) =>
        reply(joinpoint.proceed)
     case unexpected =>
       throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
+  }
+
+  override protected def preRestart(reason: AnyRef, config: Option[AnyRef]) {
+    if (preRestart.isDefined) preRestart.get.invoke(target.get, ZERO_ITEM_CLASS_ARRAY)
+  }
+
+  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+    if (postRestart.isDefined) postRestart.get.invoke(target.get, ZERO_ITEM_CLASS_ARRAY)
   }
 }
 
