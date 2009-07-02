@@ -4,27 +4,15 @@
 
 package se.scalablesolutions.akka.kernel.actor
 
-import java.util.{List => JList, ArrayList}
-import java.lang.reflect.{Method, Field}
-import java.lang.annotation.Annotation
-
-import kernel.config.ActiveObjectGuiceConfigurator
+import java.net.InetSocketAddress
 import kernel.config.ScalaConfig._
-import kernel.camel.{MessageDriven, ActiveObjectProducer}
 import kernel.nio.{RemoteRequest, RemoteClient}
-import kernel.stm.{TransactionManagement, TransactionAwareWrapperException, ChangeSet, Transaction}
-
-import kernel.util.Helpers.ReadWriteLock
-import kernel.util.{HashCode, ResultOrFailure}
-import kernel.state.{Transactional, TransactionalMap, TransactionalRef, TransactionalVector}
+import kernel.reactor.FutureResult
+import kernel.util.HashCode
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
-
-import org.apache.camel.{Processor, Exchange}
-
-import scala.collection.mutable.HashMap
 
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
@@ -43,13 +31,28 @@ object Annotations {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
-  def newInstance[T](target: Class[T], timeout: Long): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), false, timeout)
 
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), false, timeout)
+// FIXME add versions with a MessageDispatcher -- How to pass the current on???????
 
-  def newRemoteInstance[T](target: Class[T], timeout: Long): T = ActiveObject.newInstance(target, new Dispatcher(target.getName), true, timeout)
+  // FIXME call backs to @prerestart @postrestart methods
 
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), true, timeout)
+  // FIXME dispatcher.newThreadPoolWith....build
+
+  // FIXME JMX enable configuration
+
+  // FIXME Configgy for config
+
+  def newInstance[T](target: Class[T], timeout: Long): T =
+    ActiveObject.newInstance(target, new Dispatcher(target.getName), None, timeout)
+
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
+    ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), None, timeout)
+
+  def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
+    ActiveObject.newInstance(target, new Dispatcher(target.getName), Some(new InetSocketAddress(hostname, port)), timeout)
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int): T =
+    ActiveObject.newInstance(intf, target, new Dispatcher(intf.getName), Some(new InetSocketAddress(hostname, port)), timeout)
 
   /*
   def newInstanceAndLink[T](target: Class[T], supervisor: AnyRef): T = {
@@ -62,16 +65,15 @@ class ActiveObjectFactory {
     ActiveObject.newInstance(intf, target, actor)
   }
   */
-  // ================================================
 
-  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean, timeout: Long): T = {
-    ActiveObject.newInstance(target, actor, remote, timeout)
+  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    ActiveObject.newInstance(target, actor, remoteAddress, timeout)
   }
 
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean, timeout: Long): T = {
-    ActiveObject.newInstance(intf, target, actor, remote, timeout)
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    ActiveObject.newInstance(intf, target, actor, remoteAddress, timeout)
   }
-
+  
   private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
     ActiveObject.supervise(restartStrategy, components)
 }
@@ -85,30 +87,32 @@ object ActiveObject {
   val MATCH_ALL = "execution(* *.*(..))"
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
-  def newInstance[T](target: Class[T], timeout: Long): T = newInstance(target, new Dispatcher(target.getName), false, timeout)
+  def newInstance[T](target: Class[T], timeout: Long): T =
+    newInstance(target, new Dispatcher(target.getName), None, timeout)
 
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = newInstance(intf, target, new Dispatcher(intf.getName), false, timeout)
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
+    newInstance(intf, target, new Dispatcher(intf.getName), None, timeout)
 
-  def newRemoteInstance[T](target: Class[T], timeout: Long): T = newInstance(target, new Dispatcher(target.getName), true, timeout)
+  def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
+    newInstance(target, new Dispatcher(target.getName), Some(new InetSocketAddress(hostname, port)), timeout)
 
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T = newInstance(intf, target, new Dispatcher(intf.getName), true, timeout)
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int): T =
+    newInstance(intf, target, new Dispatcher(intf.getName), Some(new InetSocketAddress(hostname, port)), timeout)
 
-  // ================================================
-
-  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remote: Boolean, timeout: Long): T = {
-    if (remote) RemoteClient.connect
+  private[kernel] def newInstance[T](target: Class[T], actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(target, false, true)
     // FIXME switch to weaving in the aspect at compile time
     proxy.asInstanceOf[Advisable].aw_addAdvice(
-      MATCH_ALL, new ActorAroundAdvice(target, proxy, actor, remote, timeout))
+      MATCH_ALL, new ActorAroundAdvice(target, proxy, actor, remoteAddress, timeout))
     proxy.asInstanceOf[T]
   }
 
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remote: Boolean, timeout: Long): T = {
-    if (remote) RemoteClient.connect
+  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Actor, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     proxy.asInstanceOf[Advisable].aw_addAdvice(
-      MATCH_ALL, new ActorAroundAdvice(intf, target, actor, remote, timeout))
+      MATCH_ALL, new ActorAroundAdvice(intf, target, actor, remoteAddress, timeout))
     proxy.asInstanceOf[T]
   }
 
@@ -129,22 +133,16 @@ object ActiveObject {
 sealed class ActorAroundAdvice(val target: Class[_],
                                val targetInstance: AnyRef,
                                val actor: Actor,
-                               val isRemote: Boolean,
+                               val remoteAddress: Option[InetSocketAddress],
                                val timeout: Long) extends AroundAdvice {
   val id = target.getName
   actor.timeout = timeout
   actor.start
   
-  import kernel.reactor._
-  // FIXME make configurable!!!!!! MUST
-  private[this] var dispatcher = new ProxyMessageDispatcher
-  private[this] var mailbox = dispatcher.messageQueue
-  dispatcher.start
-
   def invoke(joinpoint: JoinPoint): AnyRef = dispatch(joinpoint)
 
   private def dispatch(joinpoint: JoinPoint) = {
-    if (isRemote) remoteDispatch(joinpoint)
+    if (remoteAddress.isDefined) remoteDispatch(joinpoint)
     else localDispatch(joinpoint)
   }
 
@@ -161,7 +159,7 @@ sealed class ActorAroundAdvice(val target: Class[_],
   private def remoteDispatch(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay = isOneWay(rtti)
-    val future = RemoteClient.send(
+    val future = RemoteClient.clientFor(remoteAddress.get).send(
       new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName,
                         timeout, None, oneWay, false, actor.registerSupervisorAsRemoteActor))
     if (oneWay) null // for void methods

@@ -186,10 +186,16 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
   def submit[T](callable: Callable[T]) = executor.submit(callable)
   def submit[T](runnable: Runnable, t: T) = executor.submit(runnable, t)
   def submit(runnable: Runnable) = executor.submit(runnable)
+  def invokeAll[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAll(callables)
+  def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAll(callables, l, timeUnit)
+  def invokeAny[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAny(callables)
+  def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
+/*
   def invokeAll[T](callables: Collection[Callable[T]]) = executor.invokeAll(callables)
   def invokeAll[T](callables: Collection[Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAll(callables, l, timeUnit)
   def invokeAny[T](callables: Collection[Callable[T]]) = executor.invokeAny(callables)
   def invokeAny[T](callables: Collection[Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
+*/
 }
 
 /**

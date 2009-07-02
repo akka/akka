@@ -7,17 +7,11 @@ package se.scalablesolutions.akka.kernel.nio
 import java.lang.reflect.InvocationTargetException
 import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
+
 import kernel.actor._
-import kernel.reactor.{MessageHandle, DefaultCompletableFutureResult, CompletableFutureResult}
 import kernel.stm.TransactionManagement
 import kernel.util.Logging
-import java.util.ArrayList
-import java.util.List
-import java.util.concurrent.atomic.AtomicLong
-import java.util.logging.Level
-import java.util.logging.Logger
 
-import org.codehaus.aspectwerkz.intercept.Advisable
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
@@ -25,14 +19,14 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder
 
 class RemoteServer extends Logging {
-  def connect = RemoteServer.connect
+  def start = RemoteServer.start
 }
 
 object RemoteServer extends Logging {
   // FIXME make all remote server option configurable
-  private val HOSTNAME = "localhost"
-  private val PORT = 9999
-  private val CONNECTION_TIMEOUT_MILLIS = 100  
+  val HOSTNAME = "localhost"
+  val PORT = 9999
+  val CONNECTION_TIMEOUT_MILLIS = 100  
 
   @volatile private var isRunning = false
 
@@ -52,7 +46,7 @@ object RemoteServer extends Logging {
   bootstrap.setOption("child.reuseAddress", true)
   bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT_MILLIS)
 
-  def connect = synchronized {
+  def start = synchronized {
     if (!isRunning) {
       log.info("Starting remote server at [%s:%s]", HOSTNAME, PORT)
       bootstrap.bind(new InetSocketAddress(HOSTNAME, PORT))
@@ -183,8 +177,7 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     if (activeObjectOrNull == null) {
       val clazz = Class.forName(name)
       try {
-        val actor = new Dispatcher(clazz.getName)
-        val newInstance = activeObjectFactory.newInstance(clazz, actor, false, timeout).asInstanceOf[AnyRef]
+        val newInstance = activeObjectFactory.newInstance(clazz, timeout).asInstanceOf[AnyRef]
         activeObjects.put(name, newInstance)
         newInstance
       } catch {

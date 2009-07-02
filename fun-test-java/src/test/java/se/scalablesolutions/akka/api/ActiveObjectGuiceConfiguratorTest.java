@@ -5,11 +5,11 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJava;
-
-import se.scalablesolutions.akka.annotation.*;
-import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJava;
+import se.scalablesolutions.akka.kernel.config.*;
+import se.scalablesolutions.akka.kernel.reactor.*;
+import se.scalablesolutions.akka.kernel.nio.RemoteServer;
 import se.scalablesolutions.akka.kernel.state.TransactionalMap;
 import se.scalablesolutions.akka.kernel.state.InMemoryTransactionalMap;
 
@@ -19,27 +19,51 @@ import com.google.inject.Scopes;
 
 import junit.framework.TestCase;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+
 public class ActiveObjectGuiceConfiguratorTest extends TestCase {
   static String messageLog = "";
-
+    static {
+      new Thread(new Runnable() {
+         public void run() {
+           RemoteServer server = new RemoteServer();
+           server.start();
+         }
+      }).start();
+      try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
+    }
+  
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
   protected void setUp() {
+    ThreadPoolBuilder builder = new ThreadPoolBuilder();
+    MessageDispatcher dispatcher = new EventBasedThreadPoolDispatcher(builder
+       .newThreadPoolWithBoundedBlockingQueue(100)
+       .setCorePoolSize(16)
+       .setMaxPoolSize(128)
+       .setKeepAliveTimeInMillis(60000)
+       .setRejectionPolicy(new ThreadPoolExecutor.CallerRunsPolicy())
+       .build());
+
     conf.addExternalGuiceModule(new AbstractModule() {
       protected void configure() {
         bind(Ext.class).to(ExtImpl.class).in(Scopes.SINGLETON);
       }
     }).configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000), new Component[]{
-            new Component(
+             new Component(
                 Foo.class,
                 new LifeCycle(new Permanent(), 1000),
-                10000),
+                1000,
+                dispatcher),
+                //new RemoteAddress("localhost", 9999)),
             new Component(
                 Bar.class,
                 BarImpl.class,
                 new LifeCycle(new Permanent(), 1000),
-                10000)
+                1000,
+                dispatcher)
         }).inject().supervise();
 
   }

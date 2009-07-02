@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.api;
 import se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory;
 import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJava;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.kernel.nio.RemoteServer;
 
 import se.scalablesolutions.akka.kernel.Kernel;
 import junit.framework.TestCase;
@@ -17,12 +18,7 @@ public class RemotePersistentStateTest extends TestCase {
   static {
     System.setProperty("storage-config", "config");
     Kernel.startCassandra();
-    new Thread(new Runnable() {
-       public void run() {
-         se.scalablesolutions.akka.kernel.nio.RemoteServer server = new se.scalablesolutions.akka.kernel.nio.RemoteServer();
-         server.connect();
-       }
-    }).start();
+    Kernel.startRemoteService();
   }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
@@ -32,9 +28,8 @@ public class RemotePersistentStateTest extends TestCase {
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {
-          new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 10000000),
-          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000)
-          //new Component(PersistentClasher.class, new LifeCycle(new Permanent(), 1000), 100000)
+          new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 1000, new RemoteAddress("localhost", 9999)),
+          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000, new RemoteAddress("localhost", 9999))
         }).supervise();
   }
 

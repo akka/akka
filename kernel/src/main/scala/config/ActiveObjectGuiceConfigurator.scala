@@ -5,22 +5,18 @@
 package se.scalablesolutions.akka.kernel.config
 
 import com.google.inject._
-import com.google.inject.jsr250.ResourceProviderFactory
 
 import ScalaConfig._
-import kernel.actor.{Actor, Supervisor, ActiveObjectFactory, Dispatcher}
-import kernel.camel.ActiveObjectComponent
+import kernel.actor.{Supervisor, ActiveObjectFactory, Dispatcher}
 import kernel.util.Logging
 
-import org.codehaus.aspectwerkz.intercept.Advisable
-
-import org.apache.camel.impl.{JndiRegistry, DefaultCamelContext}
+import org.apache.camel.impl.{DefaultCamelContext}
 import org.apache.camel.{CamelContext, Endpoint, Routes}
 
 import scala.collection.mutable.HashMap
 
+import java.net.InetSocketAddress
 import java.lang.reflect.Method
-import javax.servlet.ServletContext
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -29,7 +25,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
   private var injector: Injector = _
-  private var supervisor: Supervisor  = _
+  private var supervisor: Option[Supervisor]  = None
   private var restartStrategy: RestartStrategy  = _
   private var components: List[Component] = _
   private var workers: List[Worker] = Nil
@@ -99,7 +95,12 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
     val actor = new Dispatcher(targetClass.getName)
-    val proxy = activeObjectFactory.newInstance(targetClass, actor, false, component.timeout).asInstanceOf[AnyRef]
+    actor.start
+    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
+    val remoteAddress =
+      if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+      else None
+    val proxy = activeObjectFactory.newInstance(targetClass, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
@@ -110,7 +111,12 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
     val actor = new Dispatcher(targetClass.getName)
-    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor, false, component.timeout).asInstanceOf[AnyRef]
+    actor.start
+    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
+    val remoteAddress =
+      if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+      else None
+    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     workers ::= Worker(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
@@ -124,10 +130,10 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
 
   override def supervise: ActiveObjectConfigurator = synchronized {
     if (injector == null) inject
-    supervisor = activeObjectFactory.supervise(restartStrategy, workers)
+    supervisor = Some(activeObjectFactory.supervise(restartStrategy, workers))
     //camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
     //camelContext.start
-    supervisor.startSupervisor
+    supervisor.get.startSupervisor
     ActiveObjectConfigurator.registerConfigurator(this)
     this
   }
@@ -170,7 +176,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
 
   def stop = synchronized {
     camelContext.stop
-    supervisor.stop
+    if (supervisor.isDefined) supervisor.get.stop
   }
 
   def registerMethodForUri(method: Method, componentName: String) =

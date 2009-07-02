@@ -4,8 +4,10 @@
 
 package se.scalablesolutions.akka.kernel.config
 
-import kernel.actor.Actor
 import reflect.BeanProperty
+
+import kernel.actor.Actor
+import kernel.reactor.MessageDispatcher
 
 /**
  * Configuration classes - not to be used as messages.
@@ -32,17 +34,43 @@ object ScalaConfig {
   case object Transient extends Scope
   case object Temporary extends Scope
 
+  case class RemoteAddress(hostname: String, port: Int)
+
   class Component(_intf: Class[_],
-                       val target: Class[_],
-                       val lifeCycle: LifeCycle,
-                       val timeout: Int) extends Server {
+                  val target: Class[_],
+                  val lifeCycle: LifeCycle,
+                  val timeout: Int,
+                  _dispatcher: MessageDispatcher, // optional
+                  _remoteAddress: RemoteAddress   // optional
+          ) extends Server {
     val intf: Option[Class[_]] = if (_intf == null) None else Some(_intf)
+    val dispatcher: Option[MessageDispatcher] = if (_dispatcher == null) None else Some(_dispatcher)
+    val remoteAddress: Option[RemoteAddress] = if (_remoteAddress == null) None else Some(_remoteAddress)
   }
   object Component {
     def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
-      new Component(intf, target, lifeCycle, timeout)
+      new Component(intf, target, lifeCycle, timeout, null, null)
+
     def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
-      new Component(null, target, lifeCycle, timeout)
+      new Component(null, target, lifeCycle, timeout, null, null)
+
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
+      new Component(intf, target, lifeCycle, timeout, dispatcher, null)
+
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
+      new Component(null, target, lifeCycle, timeout, dispatcher, null)
+
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
+      new Component(intf, target, lifeCycle, timeout, null, remoteAddress)
+
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
+      new Component(null, target, lifeCycle, timeout, null, remoteAddress)
+
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
+      new Component(intf, target, lifeCycle, timeout, dispatcher, remoteAddress)
+
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
+      new Component(null, target, lifeCycle, timeout, dispatcher, remoteAddress)
   }
 }
 
@@ -86,15 +114,42 @@ object JavaConfig {
     override def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.OneForOne
   }
 
+  class RemoteAddress(@BeanProperty val hostname: String, @BeanProperty val port: Int)
+  
   abstract class Server extends ConfigElement
   class Component(@BeanProperty val intf: Class[_],
                   @BeanProperty val target: Class[_],
                   @BeanProperty val lifeCycle: LifeCycle,
-                  @BeanProperty val timeout: Int) extends Server {
+                  @BeanProperty val timeout: Int,
+                  @BeanProperty val dispatcher: MessageDispatcher, // optional
+                  @BeanProperty val remoteAddress: RemoteAddress   // optional
+          ) extends Server {
+
+    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
+      this(intf, target, lifeCycle, timeout, null, null)
+
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
-      this(null, target, lifeCycle, timeout)
-    def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.Component(
-      intf, target, lifeCycle.transform, timeout)
+      this(null, target, lifeCycle, timeout, null, null)
+
+    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
+      this(intf, target, lifeCycle, timeout, null, remoteAddress)
+
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
+      this(null, target, lifeCycle, timeout, null, remoteAddress)
+
+    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
+      this(intf, target, lifeCycle, timeout, dispatcher, null)
+
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
+      this(null, target, lifeCycle, timeout, dispatcher, null)
+
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
+      this(null, target, lifeCycle, timeout, dispatcher, remoteAddress)
+
+    def transform =
+      se.scalablesolutions.akka.kernel.config.ScalaConfig.Component(intf, target, lifeCycle.transform, timeout, dispatcher,
+        if (remoteAddress != null) se.scalablesolutions.akka.kernel.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
+
     def newWorker(actor: Actor) =
       se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker(actor, lifeCycle.transform)
   }

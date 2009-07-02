@@ -25,11 +25,10 @@ class RemoteSupervisorSpec extends Suite {
   new Thread(new Runnable() {
      def run = {
        val server = new RemoteServer
-       server.connect
+       server.start
      }
   }).start
   Thread.sleep(1000)
-  RemoteClient.connect
 
   var pingpong1: RemotePingPong1Actor = _
   var pingpong2: RemotePingPong2Actor = _
@@ -466,7 +465,7 @@ class RemoteSupervisorSpec extends Suite {
     // implementation of the Actors we want to use.
 
     pingpong1 = new RemotePingPong1Actor
-    pingpong1.makeRemote
+    pingpong1.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
     object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
@@ -483,7 +482,7 @@ class RemoteSupervisorSpec extends Suite {
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
     pingpong1 = new RemotePingPong1Actor
-    pingpong1.makeRemote
+    pingpong1.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
     object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
@@ -500,11 +499,11 @@ class RemoteSupervisorSpec extends Suite {
 
   def getMultipleActorsAllForOneConf: Supervisor = {
     pingpong1 = new RemotePingPong1Actor
-    pingpong1.makeRemote
+    pingpong1.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     pingpong2 = new RemotePingPong2Actor
-    pingpong2.makeRemote
+    pingpong2.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     pingpong3 = new RemotePingPong3Actor
-    pingpong3.makeRemote
+    pingpong3.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
     object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
@@ -529,11 +528,11 @@ class RemoteSupervisorSpec extends Suite {
 
   def getMultipleActorsOneForOneConf: Supervisor = {
     pingpong1 = new RemotePingPong1Actor
-    pingpong1.makeRemote
+    pingpong1.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     pingpong2 = new RemotePingPong2Actor
-    pingpong2.makeRemote
+    pingpong2.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     pingpong3 = new RemotePingPong3Actor
-    pingpong3.makeRemote
+    pingpong3.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
     object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {
@@ -558,11 +557,11 @@ class RemoteSupervisorSpec extends Suite {
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
     pingpong1 = new RemotePingPong1Actor
-    pingpong1.makeRemote
+    pingpong1.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     pingpong2 = new RemotePingPong2Actor
-    pingpong2.makeRemote
+    pingpong2.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     pingpong3 = new RemotePingPong3Actor
-    pingpong3.makeRemote
+    pingpong3.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
     object factory extends SupervisorFactory {
       override def getSupervisorConfig: SupervisorConfig = {

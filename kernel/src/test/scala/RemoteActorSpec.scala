@@ -30,11 +30,10 @@ class RemoteActorSpec extends TestCase {
   new Thread(new Runnable() {
      def run = {
        val server = new RemoteServer
-       server.connect
+       server.start
      }
   }).start
   Thread.sleep(1000)
-  RemoteClient.connect
   
   private val unit = TimeUnit.MILLISECONDS
 
@@ -42,7 +41,7 @@ class RemoteActorSpec extends TestCase {
   def testSendOneWay = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorUnidirectional
-    actor.makeRemote
+    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
     val result = actor ! "OneWay"
     Thread.sleep(100)
@@ -54,7 +53,7 @@ class RemoteActorSpec extends TestCase {
   def testSendReplySync = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorBidirectional
-    actor.makeRemote
+    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
     val result: String = actor !? "Hello"
     assertEquals("World", result)
@@ -65,7 +64,7 @@ class RemoteActorSpec extends TestCase {
   def testSendReplyAsync = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorBidirectional
-    actor.makeRemote
+    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
     val result = actor !! "Hello"
     assertEquals("World", result.get.asInstanceOf[String])
@@ -76,7 +75,7 @@ class RemoteActorSpec extends TestCase {
   def testSendReceiveException = {
     implicit val timeout = 5000L
     val actor = new RemoteActorSpecActorBidirectional
-    actor.makeRemote
+    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
     try {
       actor !! "Failure"

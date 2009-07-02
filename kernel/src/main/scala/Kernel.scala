@@ -55,7 +55,7 @@ object Kernel extends Logging {
     log.info("Starting Akka kernel...")
     startRemoteService
     startCassandra
-    cassandraBenchmark
+    //cassandraBenchmark
       
     //val threadSelector = startJersey
     // TODO: handle shutdown of Jersey in separate thread
@@ -72,14 +72,12 @@ object Kernel extends Logging {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
        def run = {
-         val server = new RemoteServer
-         server.connect
+         RemoteServer.start
        }
     })
     remoteServerThread.start
     
     Thread.sleep(1000) // wait for server to start up
-    RemoteClient.connect
   }
 
   private[akka] def startJersey: SelectorThread = {

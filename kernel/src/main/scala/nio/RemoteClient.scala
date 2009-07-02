@@ -16,12 +16,25 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoder, ObjectDecoder}
 import org.jboss.netty.bootstrap.ClientBootstrap
 
-// FIXME need to be able support multiple remote clients
-object RemoteClient extends Logging {
-  // FIXME make host options configurable
-  private val HOSTNAME = "localhost"
-  private val PORT = 9999
+import scala.collection.mutable.HashMap
 
+object RemoteClient extends Logging {
+  private val clients = new HashMap[String, RemoteClient]
+  def clientFor(address: InetSocketAddress): RemoteClient = synchronized {
+    val hostname = address.getHostName
+    val port = address.getPort
+    val hash = hostname + ":" + port
+    if (clients.contains(hash)) clients(hash)
+    else {
+      val client = new RemoteClient(hostname, port)
+      client.connect
+      clients + hash -> client
+      client
+    }
+  }
+}
+
+class RemoteClient(hostname: String, port: Int) extends Logging {
   @volatile private var isRunning = false 
   private val futures = new ConcurrentHashMap[Long, CompletableFutureResult]
   private val supervisors = new ConcurrentHashMap[String, Actor]
@@ -42,13 +55,13 @@ object RemoteClient extends Logging {
 
   def connect = synchronized {
     if (!isRunning) {
-      connection = bootstrap.connect(new InetSocketAddress(HOSTNAME, PORT))
-      log.info("Starting remote client connection to [%s:%s]", HOSTNAME, PORT)
+      connection = bootstrap.connect(new InetSocketAddress(hostname, port))
+      log.info("Starting remote client connection to [%s:%s]", hostname, port)
 
       // Wait until the connection attempt succeeds or fails.
       connection.awaitUninterruptibly
       if (!connection.isSuccess) {
-        log.error("Remote connection to [%s:%s] has failed due to [%s]", HOSTNAME, PORT, connection.getCause)
+        log.error("Remote connection to [%s:%s] has failed due to [%s]", hostname, port, connection.getCause)
         connection.getCause.printStackTrace
       }
       isRunning = true
