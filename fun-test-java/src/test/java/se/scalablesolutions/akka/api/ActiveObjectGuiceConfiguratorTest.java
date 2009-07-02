@@ -37,14 +37,14 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
   protected void setUp() {
-    ThreadPoolBuilder builder = new ThreadPoolBuilder();
-    MessageDispatcher dispatcher = new EventBasedThreadPoolDispatcher(builder
-       .newThreadPoolWithBoundedBlockingQueue(100)
+    EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher();
+    dispatcher
+       .withNewThreadPoolWithBoundedBlockingQueue(100)
        .setCorePoolSize(16)
        .setMaxPoolSize(128)
        .setKeepAliveTimeInMillis(60000)
        .setRejectionPolicy(new ThreadPoolExecutor.CallerRunsPolicy())
-       .build());
+       .buildThreadPool();
 
     conf.addExternalGuiceModule(new AbstractModule() {
       protected void configure() {

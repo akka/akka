@@ -15,11 +15,12 @@ do
   CLASSPATH=$CLASSPATH:$FILE
 done
 CLASSPATH=$CLASSPATH:$BASE_DIR/config
-CLASSPATH=$CLASSPATH:$BASE_DIR/kernel/build/classes
+CLASSPATH=$CLASSPATH:$BASE_DIR/kernel/target/classes
 
 STORAGE_OPTS=" \
         -Dcassandra \
-        -Dstorage-config=$BASE_DIR/config/storage-conf.xml"
+        -Dstorage-config=$BASE_DIR/config/ \
+        -Dpidfile=akka.pid"
 
 JVM_OPTS=" \
         -server \
@@ -39,4 +40,4 @@ JVM_OPTS=" \
         -Dcom.sun.management.jmxremote.ssl=false \
         -Dcom.sun.management.jmxremote.authenticate=false"
 
-java $JVM_OPTS $STORAGE_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}
+/System/Library/Frameworks/JavaVM.framework/Versions/1.6.0/Home/bin/java $JVM_OPTS $STORAGE_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}

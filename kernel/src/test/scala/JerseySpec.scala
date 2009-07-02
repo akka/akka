@@ -32,9 +32,9 @@ class JerseySpec extends Spec with ShouldMatchers {
 
   describe("A Jersey REST service") {
     it("should ...") {
+      /*
       val selector = startJersey
       selector.start
-      /*
       val conf = new ActiveObjectGuiceConfigurator
       conf.configureActiveObjects(
         RestartStrategy(AllForOne, 3, 5000),

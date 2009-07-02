@@ -33,21 +33,10 @@ import kernel.util.Logging
 object Kernel extends Logging {
 
   val SERVER_URL = "localhost"
-
-  val JERSEY_SERVER_URL = "http://" + SERVER_URL + "/"
-  val JERSEY_SERVER_PORT = 9998
-  val JERSEY_REST_CLASSES_ROOT_PACKAGE = "se.scalablesolutions.akka.kernel"
-  val JERSEY_BASE_URI = UriBuilder.fromUri(JERSEY_SERVER_URL).port(getPort(JERSEY_SERVER_PORT)).build()
-
-/*  
-  val VOLDEMORT_SERVER_URL = "tcp://" + SERVER_URL
-  val VOLDEMORT_SERVER_PORT = 6666
-  val VOLDEMORT_BOOTSTRAP_URL = VOLDEMORT_SERVER_URL + ":" + VOLDEMORT_SERVER_PORT
-  val ZOO_KEEPER_SERVER_URL = SERVER_URL
-  val ZOO_KEEPER_SERVER_PORT = 9898
-  private[this] var storageFactory: StoreClientFactory = _
-  private[this] var storageServer: VoldemortServer = _
-*/
+  /*
+    private[this] var storageFactory: StoreClientFactory = _
+    private[this] var storageServer: VoldemortServer = _
+  */
 
   private[this] var remoteServer: RemoteServer = _
 
@@ -57,12 +46,7 @@ object Kernel extends Logging {
     startCassandra
     //cassandraBenchmark
       
-    //val threadSelector = startJersey
-    // TODO: handle shutdown of Jersey in separate thread
-    // TODO: spawn main in new thread an communicate using socket
-    //System.in.read
-    //threadSelector.stopEndpoint
-
+    //startJersey
     //startZooKeeper
     //startVoldemort
   }
@@ -76,20 +60,25 @@ object Kernel extends Logging {
        }
     })
     remoteServerThread.start
-    
     Thread.sleep(1000) // wait for server to start up
-  }
-
-  private[akka] def startJersey: SelectorThread = {
-    val initParams = new java.util.HashMap[String, String]
-    initParams.put(
-      "com.sun.jersey.config.property.packages",
-      JERSEY_REST_CLASSES_ROOT_PACKAGE)
-    GrizzlyWebContainerFactory.create(JERSEY_BASE_URI, initParams)
   }
 
   private[akka] def startCassandra = {
     CassandraNode.start
+  }
+
+  private[akka] def startJersey = {
+    val JERSEY_SERVER_URL = "http://" + SERVER_URL + "/"
+    val JERSEY_SERVER_PORT = 9998
+    val JERSEY_REST_CLASSES_ROOT_PACKAGE = "se.scalablesolutions.akka.kernel"
+    val JERSEY_BASE_URI = UriBuilder.fromUri(JERSEY_SERVER_URL).port(getPort(JERSEY_SERVER_PORT)).build()
+    val initParams = new java.util.HashMap[String, String]
+    initParams.put("com.sun.jersey.config.property.packages", JERSEY_REST_CLASSES_ROOT_PACKAGE)
+    val threadSelector = GrizzlyWebContainerFactory.create(JERSEY_BASE_URI, initParams)
+    // TODO: handle shutdown of Jersey in separate thread
+    // TODO: spawn main in new thread an communicate using socket
+    System.in.read
+    threadSelector.stopEndpoint
   }
 
   private def cassandraBenchmark = {
@@ -134,7 +123,11 @@ java.lang.ClassCastException: [B cannot be cast to org.apache.cassandra.db.Write
 
     System.exit(0)
   }
+  
 //  private[akka] def startVoldemort = {
+//  val VOLDEMORT_SERVER_URL = "tcp://" + SERVER_URL
+//  val VOLDEMORT_SERVER_PORT = 6666
+//  val VOLDEMORT_BOOTSTRAP_URL = VOLDEMORT_SERVER_URL + ":" + VOLDEMORT_SERVER_PORT
 //    // Start Voldemort server
 //    val config = VoldemortConfig.loadFromVoldemortHome(Boot.HOME)
 //    storageServer = new VoldemortServer(config)
@@ -166,6 +159,8 @@ java.lang.ClassCastException: [B cannot be cast to org.apache.cassandra.db.Write
 //    storageFactory.getStoreClient(storageName)
 
   // private[akka] def startZooKeeper = {
+  //  val ZOO_KEEPER_SERVER_URL = SERVER_URL
+  //  val ZOO_KEEPER_SERVER_PORT = 9898
   //   try {
   //     ManagedUtil.registerLog4jMBeans
   //     ServerConfig.parse(args)

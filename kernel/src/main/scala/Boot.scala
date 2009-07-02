@@ -17,7 +17,7 @@ import kernel.util.Logging
 object Boot extends Logging {
 
   val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new IllegalStateException("AKKA_HOME system variable needs to be set") }
-  val CLASSES = HOME + "/classes"
+  val CLASSES = HOME + "/kernel/target/classes" // FIXME fix classes dir for dist wrap
   val LIB = HOME + "/lib"
   val CONFIG = HOME + "/config"
 

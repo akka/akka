@@ -23,8 +23,8 @@ object Annotations {
   val transactional = classOf[transactional]
   val oneway =        classOf[oneway]
   val immutable =     classOf[immutable]
-  val prerestart =     classOf[prerestart]
-  val postrestart =    classOf[postrestart]
+  val prerestart =    classOf[prerestart]
+  val postrestart =   classOf[postrestart]
 }
 
 /**
@@ -35,14 +35,6 @@ object Annotations {
 class ActiveObjectFactory {
 
   // FIXME How to pass the MessageDispatcher on from active object to child???????
-
-  // FIXME call backs to @prerestart @postrestart methods
-
-  // FIXME dispatcher.newThreadPoolWith....build
-
-  // FIXME JMX enable configuration
-
-  // FIXME Configgy for config
 
   def newInstance[T](target: Class[T], timeout: Long): T =
     ActiveObject.newInstance(target, new Dispatcher, None, timeout)

@@ -37,14 +37,13 @@ class ThreadBasedDispatcherTest extends TestCase {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(10)
     val key = "key"
-    val pool = ThreadPoolBuilder.newBuilder
-      .newThreadPoolWithBoundedBlockingQueue(100)
+    val dispatcher = new EventBasedThreadPoolDispatcher
+    dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
       .setCorePoolSize(2)
       .setMaxPoolSize(4)
       .setKeepAliveTimeInMillis(60000)
       .setRejectionPolicy(new CallerRunsPolicy)
-      .build
-    val dispatcher = new EventBasedThreadPoolDispatcher(pool)
+      .buildThreadPool
     dispatcher.registerHandler(key, new MessageHandler {
       def handle(message: MessageHandle) {
         try {
@@ -74,14 +73,13 @@ class ThreadBasedDispatcherTest extends TestCase {
     val handlersBarrier = new CyclicBarrier(3)
     val key1 = "key1"
     val key2 = "key2"
-    val pool = ThreadPoolBuilder.newBuilder
-      .newThreadPoolWithBoundedBlockingQueue(100)
+    val dispatcher = new EventBasedThreadPoolDispatcher
+    dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
       .setCorePoolSize(2)
       .setMaxPoolSize(4)
       .setKeepAliveTimeInMillis(60000)
       .setRejectionPolicy(new CallerRunsPolicy)
-      .build
-    val dispatcher = new EventBasedThreadPoolDispatcher(pool)
+      .buildThreadPool
     dispatcher.registerHandler(key1, new MessageHandler {
       def handle(message: MessageHandle) = synchronized {
         try {handlersBarrier.await(1, TimeUnit.SECONDS)}
@@ -105,14 +103,13 @@ class ThreadBasedDispatcherTest extends TestCase {
     val handleLatch = new CountDownLatch(200)
     val key1 = "key1"
     val key2 = "key2"
-    val pool = ThreadPoolBuilder.newBuilder
-      .newThreadPoolWithBoundedBlockingQueue(100)
+    val dispatcher = new EventBasedThreadPoolDispatcher
+    dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
       .setCorePoolSize(2)
       .setMaxPoolSize(4)
       .setKeepAliveTimeInMillis(60000)
       .setRejectionPolicy(new CallerRunsPolicy)
-      .build
-    val dispatcher = new EventBasedThreadPoolDispatcher(pool)
+      .buildThreadPool
     dispatcher.registerHandler(key1, new MessageHandler {
       var currentValue = -1;
       def handle(message: MessageHandle) {

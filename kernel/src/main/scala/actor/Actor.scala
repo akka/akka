@@ -81,8 +81,7 @@ trait Actor extends Logging with TransactionManagement {
    * </pre>
    */
   protected[kernel] var dispatcher: MessageDispatcher = {
-    val threadPool = ThreadPoolBuilder.newBuilder.newThreadPoolWithLinkedBlockingQueueWithCapacity(0).build
-    val dispatcher = new EventBasedThreadPoolDispatcher(threadPool)
+    val dispatcher = new EventBasedThreadPoolDispatcher
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageHandler(this))
     dispatcher
