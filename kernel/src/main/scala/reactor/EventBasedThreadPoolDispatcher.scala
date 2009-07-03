@@ -60,7 +60,6 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   private val NR_START_THREADS = 16
   private val NR_MAX_THREADS = 128
   private val KEEP_ALIVE_TIME = 60000L // default is one minute
-  private val MILLISECONDS = TimeUnit.MILLISECONDS
 
   private var inProcessOfBuilding = false
   private var executor: ExecutorService = _
@@ -114,14 +113,15 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   override protected def doShutdown = executor.shutdownNow
 
   private def getIfNotBusy(key: AnyRef): Option[MessageHandler] = guard.synchronized {
-    if (!busyHandlers.contains(key) && messageHandlers.containsKey(key)) {
+    if (CONCURRENT_MODE && messageHandlers.containsKey(key)) Some(messageHandlers.get(key))
+    else if (!busyHandlers.contains(key) && messageHandlers.containsKey(key)) {
       busyHandlers.add(key)
       Some(messageHandlers.get(key))
     } else None
   }
 
   private def free(key: AnyRef) = guard.synchronized {
-    busyHandlers.remove(key)
+    if (!CONCURRENT_MODE) busyHandlers.remove(key)
   }
 
 
@@ -297,16 +297,16 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
   def submit[T](callable: Callable[T]) = executor.submit(callable)
   def submit[T](runnable: Runnable, t: T) = executor.submit(runnable, t)
   def submit(runnable: Runnable) = executor.submit(runnable)
-  /*
   def invokeAll[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAll(callables)
   def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAll(callables, l, timeUnit)
   def invokeAny[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAny(callables)
     def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
-  */
+/*
   def invokeAll[T](callables: Collection[Callable[T]]) = executor.invokeAll(callables)
   def invokeAll[T](callables: Collection[Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAll(callables, l, timeUnit)
   def invokeAny[T](callables: Collection[Callable[T]]) = executor.invokeAny(callables)
   def invokeAny[T](callables: Collection[Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
+  */
 }
 
 /**

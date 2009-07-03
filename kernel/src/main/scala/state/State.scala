@@ -186,7 +186,7 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 }
 
 /**
- * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage. 
+ * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -194,43 +194,44 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
 
   override def getRange(start: Int, count: Int) = {
     verifyTransaction
-    CassandraNode.getMapStorageRangeFor(uuid, start, count)
+    CassandraStorage.getMapStorageRangeFor(uuid, start, count)
   }
 
   // ---- For Transactional ----
   override def commit = {
+    CassandraStorage.insertMapStorageEntriesFor(uuid, changeSet.toList)
     // FIXME: should use batch function once the bug is resolved
-    for (entry <- changeSet) {
-      val (key, value) = entry
-      CassandraNode.insertMapStorageEntryFor(uuid, key, value)
-    }
+//    for (entry <- changeSet) {
+//      val (key, value) = entry
+//      CassandraStorage.insertMapStorageEntryFor(uuid, key, value)
+//    }
   }
 
   // ---- Overriding scala.collection.mutable.Map behavior ----
   override def clear = {
     verifyTransaction
-    CassandraNode.removeMapStorageFor(uuid)
+    CassandraStorage.removeMapStorageFor(uuid)
   }
   override def contains(key: String): Boolean = {
     verifyTransaction
-    CassandraNode.getMapStorageEntryFor(uuid, key).isDefined
+    CassandraStorage.getMapStorageEntryFor(uuid, key).isDefined
   }
   override def size: Int = {
     verifyTransaction
-    CassandraNode.getMapStorageSizeFor(uuid)
+    CassandraStorage.getMapStorageSizeFor(uuid)
   }
 
   // ---- For scala.collection.mutable.Map ----
   override def get(key: String): Option[AnyRef] = {
     verifyTransaction
-    val result = CassandraNode.getMapStorageEntryFor(uuid, key)
+    val result = CassandraStorage.getMapStorageEntryFor(uuid, key)
     result
   }
   
   override def elements: Iterator[Tuple2[String, AnyRef]]  = {
     //verifyTransaction
     new Iterator[Tuple2[String, AnyRef]] {
-      private val originalList: List[Tuple2[String, AnyRef]] = CassandraNode.getMapStorageFor(uuid)
+      private val originalList: List[Tuple2[String, AnyRef]] = CassandraStorage.getMapStorageFor(uuid)
       private var elements = originalList.reverse
       override def next: Tuple2[String, AnyRef]= synchronized {
         val element = elements.head
@@ -335,15 +336,15 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   // ---- For TransactionalVector ----
   override def get(index: Int): AnyRef = {
     verifyTransaction
-    CassandraNode.getVectorStorageEntryFor(uuid, index)
+    CassandraStorage.getVectorStorageEntryFor(uuid, index)
   }
   override def getRange(start: Int, count: Int): List[AnyRef] = {
     verifyTransaction
-    CassandraNode.getVectorStorageRangeFor(uuid, start, count)
+    CassandraStorage.getVectorStorageRangeFor(uuid, start, count)
   }
   override def length: Int = {
     verifyTransaction
-    CassandraNode.getVectorStorageSizeFor(uuid)
+    CassandraStorage.getVectorStorageSizeFor(uuid)
   }
   override def apply(index: Int): AnyRef = get(index)
   override def first: AnyRef = get(0)
@@ -358,7 +359,7 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
     for (element <- changeSet) {
-      CassandraNode.insertVectorStorageEntryFor(uuid, element)
+      CassandraStorage.insertVectorStorageEntryFor(uuid, element)
     }
   }
 }
@@ -397,11 +398,11 @@ class TransactionalRef[T] extends Transactional {
 }
 
 class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
-  override def commit = if (ref.isDefined) CassandraNode.insertRefStorageFor(uuid, ref.get)
+  override def commit = if (ref.isDefined) CassandraStorage.insertRefStorageFor(uuid, ref.get)
 
   override def get: Option[AnyRef] = {
     verifyTransaction
-    CassandraNode.getRefStorageFor(uuid)
+    CassandraStorage.getRefStorageFor(uuid)
   }
   override def isDefined: Boolean = get.isDefined
   override def getOrElse(default: => AnyRef): AnyRef = {

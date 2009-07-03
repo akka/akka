@@ -4,9 +4,13 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
+import java.util.concurrent.TimeUnit
 import java.util.HashMap
 
 trait MessageDispatcherBase extends MessageDispatcher {
+  val CONCURRENT_MODE = kernel.Kernel.config.getBool("akka.actor.concurrent-mode", false)
+  val MILLISECONDS = TimeUnit.MILLISECONDS
+
   val messageQueue = new MessageQueue
 
   @volatile protected var active: Boolean = false

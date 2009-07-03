@@ -5,11 +5,16 @@
 package se.scalablesolutions.akka.kernel.state
 
 import java.io.File
-import java.lang.reflect.Constructor
 import kernel.util.{Serializer, JavaSerializationSerializer, Logging}
 
 import org.apache.cassandra.config.DatabaseDescriptor
 import org.apache.cassandra.service._
+
+import org.apache.thrift.server.TThreadPoolServer
+import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.transport.TServerSocket
+import org.apache.thrift.transport.TTransportFactory
+import org.apache.thrift.TProcessorFactory
 
 /**
  * NOTE: requires command line options:
@@ -18,18 +23,30 @@ import org.apache.cassandra.service._
  * <p/>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final object CassandraNode extends Logging {
-
+final object CassandraStorage extends Logging {
   val TABLE_NAME = "akka"
   val MAP_COLUMN_FAMILY = "map"
   val VECTOR_COLUMN_FAMILY = "vector"
   val REF_COLUMN_FAMILY = "ref:item"
+  val IS_ASCENDING = true
 
-  // TODO: make pluggable (Avro, JSON, Thrift, Protobuf etc.)
-  private[this] var serializer: Serializer = new JavaSerializationSerializer
+  val RUN_THRIFT_SERVICE = kernel.Kernel.config.getBool("akka.storage.cassandra.thrift-server.service", false)
+  val BLOCKING_CALL = kernel.Kernel.config.getInt("akka.storage.cassandra.blocking", 0)
+  
+  private[this] val serializer: Serializer = {
+    kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "serialization") match {
+      case "serialization" => new JavaSerializationSerializer
+      case "json" => throw new UnsupportedOperationException("json storage protocol is not yet supported")
+      case "avro" => throw new UnsupportedOperationException("avro storage protocol is not yet supported")
+      case "thrift" => throw new UnsupportedOperationException("thrift storage protocol is not yet supported")
+      case "protobuf" => throw new UnsupportedOperationException("protobuf storage protocol is not yet supported")
+    }
+  }
   
   // TODO: is this server thread-safe or needed to be wrapped up in an actor?
   private[this] val server = classOf[CassandraServer].newInstance.asInstanceOf[CassandraServer]
+
+  private[this] var thriftServer: CassandraThriftServer = _
   
   def start = {
     try {
@@ -40,9 +57,16 @@ final object CassandraNode extends Logging {
         log.error("Could not start up persistent storage")
         throw e
     }
+    if (RUN_THRIFT_SERVICE) {
+      thriftServer = new CassandraThriftServer(server)
+      thriftServer.start
+    }
   }
 
-  def stop = {}
+  def stop = {
+    //server.storageService.shutdown
+    if (RUN_THRIFT_SERVICE) thriftServer.stop
+  }
 
   // ===============================================================
   // For Ref
@@ -55,7 +79,7 @@ final object CassandraNode extends Logging {
       REF_COLUMN_FAMILY,
       serializer.out(element),
       System.currentTimeMillis,
-      false) // FIXME: what is this flag for?
+      BLOCKING_CALL)
   }
 
   def getRefStorageFor(name: String): Option[AnyRef] = {
@@ -80,7 +104,7 @@ final object CassandraNode extends Logging {
       VECTOR_COLUMN_FAMILY + ":" + getVectorStorageSizeFor(name),
       serializer.out(element),
       System.currentTimeMillis,
-      false) // FIXME: what is this flag for?
+      BLOCKING_CALL)
   }
 
   def getVectorStorageEntryFor(name: String, index: Int): AnyRef = {                                                                                
@@ -95,7 +119,7 @@ final object CassandraNode extends Logging {
   }
 
   def getVectorStorageRangeFor(name: String, start: Int, count: Int): List[AnyRef]  =
-    server.get_slice(TABLE_NAME, name, VECTOR_COLUMN_FAMILY, start, count)
+    server.get_slice(TABLE_NAME, name, VECTOR_COLUMN_FAMILY, IS_ASCENDING, count)
       .toArray.toList.asInstanceOf[List[Tuple2[String, AnyRef]]].map(tuple => tuple._2)
 
   def getVectorStorageSizeFor(name: String): Int =
@@ -112,7 +136,7 @@ final object CassandraNode extends Logging {
       MAP_COLUMN_FAMILY + ":" + key,
       serializer.out(value),
       System.currentTimeMillis,
-      false) // FIXME: what is this flag for?
+      BLOCKING_CALL)
   }
 
   def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[String, AnyRef]]) = {
@@ -127,7 +151,7 @@ final object CassandraNode extends Logging {
       TABLE_NAME, 
       name,
       columns),
-      false) // non-blocking
+      BLOCKING_CALL)
   }
 
   def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
@@ -154,28 +178,20 @@ final object CassandraNode extends Logging {
     server.get_column_count(TABLE_NAME, name, MAP_COLUMN_FAMILY)
 
   def removeMapStorageFor(name: String) =
-    server.remove(TABLE_NAME, name, MAP_COLUMN_FAMILY, System.currentTimeMillis, false)
+    server.remove(TABLE_NAME, name, MAP_COLUMN_FAMILY, System.currentTimeMillis, BLOCKING_CALL)
 
-  def getMapStorageRangeFor(name: String, start: Int, count: Int): List[Tuple2[String, AnyRef]] =
-    server.get_slice(TABLE_NAME, name, MAP_COLUMN_FAMILY, start, count)
-      .toArray.toList.asInstanceOf[List[Tuple2[String, AnyRef]]]
+  def getMapStorageRangeFor(name: String, start: Int, count: Int): List[Tuple2[String, AnyRef]] = {
+    server.get_slice(TABLE_NAME, name, MAP_COLUMN_FAMILY, IS_ASCENDING, count)
+            .toArray.toList.asInstanceOf[List[Tuple2[String, AnyRef]]]
+  }
 }
 
-/*
- * This code is only for starting up the Cassandra Thrift server, perhaps later
-  
-import scala.actors.Actor._
-
-import com.facebook.thrift.protocol.TBinaryProtocol
-import com.facebook.thrift.protocol.TProtocolFactory
-import com.facebook.thrift.server.TThreadPoolServer
-import com.facebook.thrift.transport.TServerSocket
-import com.facebook.thrift.transport.TTransportException
-import com.facebook.thrift.transport.TTransportFactory
-import com.facebook.thrift.TProcessorFactory
+class CassandraThriftServer(server: CassandraServer) extends Logging {
+  case object Start
+  case object Stop
 
   private[this] val serverEngine: TThreadPoolServer = try {
-    val pidFile = System.getProperty("pidfile")
+    val pidFile = kernel.Kernel.config.getString("akka.storage.cassandra.thrift-server.pidfile", "akka.pid")
     if (pidFile != null) new File(pidFile).deleteOnExit();
     val listenPort = DatabaseDescriptor.getThriftPort
 
@@ -197,17 +213,19 @@ import com.facebook.thrift.TProcessorFactory
       log.error("Could not start up persistent storage node.")
       throw e
   }
+
+  import scala.actors.Actor._
   private[this] val serverDaemon = actor {
     receive {
-     case Start => 
-        log.info("Persistent storage node starting up...")
+     case Start =>
+        log.info("Cassandra thrift service is starting up...")
         serverEngine.serve
-      case Stop =>      
-        log.info("Persistent storage node shutting down...")
+      case Stop =>
+        log.info("Cassandra thrift service is shutting down...")
         serverEngine.stop
-      //case Insert(..) => 
-      //  server.
     }
   }
-*/
 
+  def start = serverDaemon ! Start
+  def stop = serverDaemon ! Stop
+}

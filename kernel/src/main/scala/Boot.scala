@@ -5,8 +5,7 @@
 package se.scalablesolutions.akka
 
 import java.io.File
-import java.lang.reflect.Method
-import java.net.{URL, URLClassLoader}
+import java.net.URLClassLoader
 import kernel.util.Logging
 
 /**

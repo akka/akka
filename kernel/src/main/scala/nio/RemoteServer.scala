@@ -23,10 +23,9 @@ class RemoteServer extends Logging {
 }
 
 object RemoteServer extends Logging {
-  // FIXME make all remote server option configurable
-  val HOSTNAME = "localhost"
-  val PORT = 9999
-  val CONNECTION_TIMEOUT_MILLIS = 100  
+  val HOSTNAME = kernel.Kernel.config.getString("akka.remote.hostname", "localhost")
+  val PORT = kernel.Kernel.config.getInt("akka.remote.port", 9999)
+  val CONNECTION_TIMEOUT_MILLIS = kernel.Kernel.config.getInt("akka.remote.connection-timeout", 1000)  
 
   @volatile private var isRunning = false
 
@@ -77,7 +76,7 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     //e.getChannel.write(firstMessage)
   }
 
-  override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) ={
+  override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
     if (message == null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
     if (message.isInstanceOf[RemoteRequest]) handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)

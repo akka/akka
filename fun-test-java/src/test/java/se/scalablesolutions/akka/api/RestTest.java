@@ -6,6 +6,7 @@ package se.scalablesolutions.akka.api;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory;
 import com.sun.grizzly.http.SelectorThread;
 import com.sun.grizzly.http.servlet.ServletAdapter;
 import com.sun.grizzly.tcp.Adapter;
@@ -20,9 +21,11 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
+import java.util.HashMap;
 
-import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJava;
-import se.scalablesolutions.akka.kernel.config.JavaConfig;
+import se.scalablesolutions.akka.kernel.config.*;
+import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 
 public class RestTest extends TestSuite {
 
@@ -33,31 +36,21 @@ public class RestTest extends TestSuite {
 
   @BeforeClass
   public static void initialize() throws IOException {
+      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
     conf.configureActiveObjects(
-        new JavaConfig.RestartStrategy(new JavaConfig.AllForOne(), 3, 5000),
-        new JavaConfig.Component[] {
-          new JavaConfig.Component(
+        new RestartStrategy(new AllForOne(), 3, 5000),
+        new Component[] {
+          new Component(
               JerseyFoo.class,
-              new JavaConfig.LifeCycle(new JavaConfig.Permanent(), 1000), 10000000)
+              new LifeCycle(new Permanent(), 1000),
+              10000000)
           }).inject().supervise();
     selector = startJersey();
   }
 
-  @AfterClass
-  public static void cleanup() throws IOException {
-    conf.stop();
-    selector.stopEndpoint();
-    System.exit(0);
-  }
-
   @Test
-  public void dummy() {
-    assertTrue(true);
-  }
-
-  //@Test
   public void simpleRequest() throws IOException, InstantiationException {
-    selector.start();
+    //selector.start();
     Client client = Client.create();
     WebResource webResource = client.resource(URI);
     String responseMsg = webResource.path("/foo").get(String.class);

@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory;
 import se.scalablesolutions.akka.kernel.config.ActiveObjectGuiceConfiguratorForJava;
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 import se.scalablesolutions.akka.kernel.nio.RemoteServer;
 import junit.framework.TestCase;
 
@@ -21,6 +20,7 @@ public class RemoteInMemoryStateTest extends TestCase {
        }
     }).start();
     try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
+      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
   }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
   final private ActiveObjectFactory factory = new ActiveObjectFactory();
@@ -32,7 +32,7 @@ public class RemoteInMemoryStateTest extends TestCase {
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
@@ -41,7 +41,7 @@ public class RemoteInMemoryStateTest extends TestCase {
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
     InMemFailer failer = factory.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -51,7 +51,7 @@ public class RemoteInMemoryStateTest extends TestCase {
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
     stateful.setVectorState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getVectorState());
   }
@@ -61,7 +61,7 @@ public class RemoteInMemoryStateTest extends TestCase {
     stateful.setVectorState("init"); // set init state
     InMemFailer failer = factory.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -71,7 +71,7 @@ public class RemoteInMemoryStateTest extends TestCase {
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
     stateful.setRefState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getRefState());
   }
@@ -81,7 +81,7 @@ public class RemoteInMemoryStateTest extends TestCase {
     stateful.setRefState("init"); // set init state
     InMemFailer failer = factory.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -93,7 +93,7 @@ public class RemoteInMemoryStateTest extends TestCase {
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.thisMethodHangs("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.thisMethodHangs("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected

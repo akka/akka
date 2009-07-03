@@ -14,7 +14,7 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
 }
 
 object TransactionManagement {
-  private val txEnabled = new AtomicBoolean(true)
+  private val txEnabled = new AtomicBoolean(kernel.Kernel.config.getBool("akka.stm.service", true))
 
   def isTransactionalityEnabled = txEnabled.get
   def disableTransactions = txEnabled.set(false)

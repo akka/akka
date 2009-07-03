@@ -4,127 +4,160 @@
 
 package se.scalablesolutions.akka.kernel
 
-//import org.apache.zookeeper.jmx.ManagedUtil
-//import org.apache.zookeeper.server.persistence.FileTxnSnapLog
-//import org.apache.zookeeper.server.ServerConfig
-//import org.apache.zookeeper.server.NIOServerCnxn
-
-//import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
-//import voldemort.server.{VoldemortConfig, VoldemortServer}
-//import voldemort.versioning.Versioned
-
 import com.sun.grizzly.http.SelectorThread
-import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory
-
-import java.io.IOException
-import java.net.URI
-import java.util.{Map, HashMap}
-import java.io.{File, IOException}
+import com.sun.grizzly.http.servlet.ServletAdapter
+import com.sun.grizzly.standalone.StaticStreamAlgorithm
 
 import javax.ws.rs.core.UriBuilder
-import javax.management.JMException
-import kernel.nio.{RemoteClient, RemoteServer}
-import kernel.state.CassandraNode
+
+import net.lag.configgy.{Config, Configgy, RuntimeEnvironment}
+
+import kernel.jersey.AkkaServlet
+import kernel.nio.RemoteServer
+import kernel.state.CassandraStorage
 import kernel.util.Logging
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
+  val config = setupConfig
+  
+  val RUN_REST_SERVICE = config.getBool("akka.rest.service", true)
+  val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
+  val STORAGE_SYSTEM = config.getString("akka.storage.system", "cassandra")
 
-  val SERVER_URL = "localhost"
-  /*
-    private[this] var storageFactory: StoreClientFactory = _
-    private[this] var storageServer: VoldemortServer = _
-  */
-
-  private[this] var remoteServer: RemoteServer = _
+  // FIXME add API to shut server down gracefully
+  private var remoteServer: RemoteServer = _
+  private var jerseySelectorThread: SelectorThread = _
+  private val startTime = System.currentTimeMillis
 
   def main(args: Array[String]): Unit = {
+    printBanner
     log.info("Starting Akka kernel...")
-    startRemoteService
-    startCassandra
-    //cassandraBenchmark
-      
-    //startJersey
+    if (RUN_REMOTE_SERVICE) startRemoteService
+    STORAGE_SYSTEM match {
+      case "cassandra" => startCassandra
+      case "terracotta" => throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
+      case "redis" => throw new UnsupportedOperationException("redis storage backend is not yet supported")
+      case "voldemort" => throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
+      case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
+      case "tokyo-tyrant" => throw new UnsupportedOperationException("tokyo-tyrart storage backend is not yet supported")
+      case "hazelcast" => throw new UnsupportedOperationException("hazelcast storage backend is not yet supported")
+    }
+    if (RUN_REST_SERVICE) startJersey
+
     //startZooKeeper
     //startVoldemort
+    //cassandraBenchmark
     log.info("Akka kernel started successfully")
   }
 
+  def uptime = (System.currentTimeMillis - startTime) / 1000
+
+  def setupConfig: Config = {
+    try {
+      Configgy.configure(akka.Boot.CONFIG + "/akka.conf")
+      val runtime = new RuntimeEnvironment(getClass)
+      //runtime.load(args)
+      val config = Configgy.config
+      config.registerWithJmx("com.scalablesolutions.akka.config")
+      // config.subscribe { c => configure(c.getOrElse(new Config)) }
+      config
+    } catch {
+      case e: net.lag.configgy.ParseException => throw new Error("Could not retreive the akka.conf config file. Make sure you have set the AKKA_HOME environment variable to the root of the distribution.")
+    }
+  }
 
   private[akka] def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
-       def run = {
-         RemoteServer.start
-       }
-    })
+       def run = RemoteServer.start
+    }, "akka remote service")
     remoteServerThread.start
-    Thread.sleep(1000) // wait for server to start up
   }
 
-  private[akka] def startCassandra = {
-    CassandraNode.start
+  private[akka] def startCassandra = if (kernel.Kernel.config.getBool("akka.storage.cassandra.service", true)) {
+    System.setProperty("cassandra", "")
+    System.setProperty("storage-config", akka.Boot.CONFIG + "/")
+    CassandraStorage.start
   }
 
   private[akka] def startJersey = {
-    val JERSEY_SERVER_URL = "http://" + SERVER_URL + "/"
-    val JERSEY_SERVER_PORT = 9998
-    val JERSEY_REST_CLASSES_ROOT_PACKAGE = "se.scalablesolutions.akka.kernel"
-    val JERSEY_BASE_URI = UriBuilder.fromUri(JERSEY_SERVER_URL).port(getPort(JERSEY_SERVER_PORT)).build()
-    val initParams = new java.util.HashMap[String, String]
-    initParams.put("com.sun.jersey.config.property.packages", JERSEY_REST_CLASSES_ROOT_PACKAGE)
-    val threadSelector = GrizzlyWebContainerFactory.create(JERSEY_BASE_URI, initParams)
-    // TODO: handle shutdown of Jersey in separate thread
-    // TODO: spawn main in new thread an communicate using socket
-    System.in.read
-    threadSelector.stopEndpoint
+    val JERSEY_HOSTNAME = kernel.Kernel.config.getString("akka.rest.hostname", "localhost")
+    val JERSEY_URL = "http://" + JERSEY_HOSTNAME + "/"
+    val JERSEY_PORT = kernel.Kernel.config.getInt("akka.rest.port", 9998)
+    
+    val uri = UriBuilder.fromUri(JERSEY_URL).port(JERSEY_PORT).build()
+    val adapter = new ServletAdapter
+    val servlet = classOf[AkkaServlet].newInstance
+    adapter.setServletInstance(servlet)
+    adapter.setContextPath(uri.getPath)
+
+    val scheme = uri.getScheme
+    if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException("The URI scheme, of the URI " + JERSEY_URL + ", must be equal (ignoring case) to 'http'")
+
+    jerseySelectorThread = new SelectorThread
+    jerseySelectorThread.setAlgorithmClassName(classOf[StaticStreamAlgorithm].getName)
+    jerseySelectorThread.setPort(JERSEY_PORT)
+    jerseySelectorThread.setAdapter(adapter)
+    jerseySelectorThread.listen
+    log.info("REST service started successfully. Listening to port [" + JERSEY_PORT + "]")
   }
 
+  private def printBanner = {
+    log.info(
+"""==============================
+        __    __
+ _____  |  | _|  | _______
+ \__  \ |  |/ /  |/ /\__  \
+  / __ \|    <|    <  / __ \_
+ (____  /__|_ \__|_ \(____  /
+      \/     \/    \/     \/
+""")
+    log.info("     Running version " + kernel.Kernel.config.getString("akka.version", "awesome"))
+    log.info("==============================")
+  }
+  
   private def cassandraBenchmark = {
     val NR_ENTRIES = 100000
- 
+
     println("=================================================")
     var start = System.currentTimeMillis
-    for (i <- 1 to NR_ENTRIES) CassandraNode.insertMapStorageEntryFor("test", i.toString, "data")
+    for (i <- 1 to NR_ENTRIES) CassandraStorage.insertMapStorageEntryFor("test", i.toString, "data")
     var end = System.currentTimeMillis
     println("Writes per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
 
-    /*
-FIXME: batch_insert fails with the following exception: 
-
-ERROR - Exception was generated at : 04/27/2009 15:26:35 on thread main
-[B cannot be cast to org.apache.cassandra.db.WriteResponse
-java.lang.ClassCastException: [B cannot be cast to org.apache.cassandra.db.WriteResponse
-    at org.apache.cassandra.service.WriteResponseResolver.resolve(WriteResponseResolver.java:50)
-    at org.apache.cassandra.service.WriteResponseResolver.resolve(WriteResponseResolver.java:31)
-    at org.apache.cassandra.service.QuorumResponseHandler.get(QuorumResponseHandler.java:101)
-    at org.apache.cassandra.service.StorageProxy.insertBlocking(StorageProxy.java:135)
-    at org.apache.cassandra.service.CassandraServer.batch_insert_blocking(CassandraServer.java:489)
-    at se.scalablesolutions.akka.kernel.CassandraNode$.insertHashEntries(CassandraNode.scala:59)
-    at se.scalablesolutions.akka.kernel.Kernel$.cassandraBenchmark(Kernel.scala:91)
-    at se.scalablesolutions.akka.kernel.Kernel$.main(Kernel.scala:52)
-    at se.scalablesolutions.akka.kernel.Kernel.main(Kernel.scala)
- 
-    println("=================================================")
-    var start = System.currentTimeMillis
-    println(start)
-    val entries = new scala.collection.mutable.ArrayBuffer[Tuple2[String, String]]
-    for (i <- 1 to NR_ENTRIES) entries += (i.toString, "data")
-    CassandraNode.insertHashEntries("test", entries.toList)
-    var end = System.currentTimeMillis
-    println("Writes per second - batch: " + NR_ENTRIES / ((end - start).toDouble / 1000))
-    */
     println("=================================================")
     start = System.currentTimeMillis
-    for (i <- 1 to NR_ENTRIES) CassandraNode.getMapStorageEntryFor("test", i.toString)
+    val entries = new scala.collection.mutable.ArrayBuffer[Tuple2[String, String]]
+    for (i <- 1 to NR_ENTRIES) entries += (i.toString, "data")
+    CassandraStorage.insertMapStorageEntriesFor("test", entries.toList)
+    end = System.currentTimeMillis
+    println("Writes per second - batch: " + NR_ENTRIES / ((end - start).toDouble / 1000))
+    
+    println("=================================================")
+    start = System.currentTimeMillis
+    for (i <- 1 to NR_ENTRIES) CassandraStorage.getMapStorageEntryFor("test", i.toString)
     end = System.currentTimeMillis
     println("Reads per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
 
     System.exit(0)
   }
+}
+
+
+
   
+/*
+  //import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
+  //import voldemort.server.{VoldemortConfig, VoldemortServer}
+  //import voldemort.versioning.Versioned
+
+    private[this] var storageFactory: StoreClientFactory = _
+    private[this] var storageServer: VoldemortServer = _
+  */
+
 //  private[akka] def startVoldemort = {
 //  val VOLDEMORT_SERVER_URL = "tcp://" + SERVER_URL
 //  val VOLDEMORT_SERVER_PORT = 6666
@@ -159,7 +192,11 @@ java.lang.ClassCastException: [B cannot be cast to org.apache.cassandra.db.Write
 //  private[akka] def getStorageFor(storageName: String): StoreClient[String, String] =
 //    storageFactory.getStoreClient(storageName)
 
-  // private[akka] def startZooKeeper = {
+   // private[akka] def startZooKeeper = {
+  //import org.apache.zookeeper.jmx.ManagedUtil
+  //import org.apache.zookeeper.server.persistence.FileTxnSnapLog
+  //import org.apache.zookeeper.server.ServerConfig
+  //import org.apache.zookeeper.server.NIOServerCnxn
   //  val ZOO_KEEPER_SERVER_URL = SERVER_URL
   //  val ZOO_KEEPER_SERVER_PORT = 9898
   //   try {
@@ -191,22 +228,3 @@ java.lang.ClassCastException: [B cannot be cast to org.apache.cassandra.db.Write
   //     // if (zooKeeper.isRunning) zooKeeper.shutdown
   //   } catch { case e => log.fatal("Unexpected exception: s%",e) }
   // }
-
-  private def getPort(defaultPort: Int) = {
-    val port = System.getenv("JERSEY_HTTP_PORT")
-    if (null != port) Integer.parseInt(port)
-    else defaultPort;
-  }
-}
-
-//import javax.ws.rs.{Produces, Path, GET}
-//  @GET
-//  @Produces("application/json")
-//  @Path("/network/{id: [0-9]+}/{nid}")
-//  def getUserByNetworkId(@PathParam {val value = "id"} id: Int, @PathParam {val value = "nid"} networkId: String): User = {
-//    val q = em.createQuery("SELECT u FROM User u WHERE u.networkId = :id AND u.networkUserId = :nid")
-//    q.setParameter("id", id)
-//    q.setParameter("nid", networkId)
-//    q.getSingleResult.asInstanceOf[User]
-//  }
-

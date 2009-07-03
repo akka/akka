@@ -24,21 +24,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class ActiveObjectGuiceConfiguratorTest extends TestCase {
   static String messageLog = "";
-    static {
-      new Thread(new Runnable() {
-         public void run() {
-           RemoteServer server = new RemoteServer();
-           server.start();
-         }
-      }).start();
-      try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
-    }
-  
-  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
-  protected void setUp() {
-    EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher();
-    dispatcher
+    final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
+
+    protected void setUp() {
+      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
+      EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher();
+        dispatcher
        .withNewThreadPoolWithBoundedBlockingQueue(100)
        .setCorePoolSize(16)
        .setMaxPoolSize(128)

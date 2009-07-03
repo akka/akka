@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.1
+VERSION=0.5
 
 #if [ $# -gt 1 ];
 #then
@@ -29,16 +29,9 @@ CLASSPATH=$CLASSPATH:$BASE_DIR/lib/scala-library-2.7.5.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/configgy-1.3.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/config
 
-STORAGE_OPTS=" \
-        -Dcassandra \
-        -Dstorage-config=$BASE_DIR/config/ \
-        -Dpidfile=akka.pid"
-
 # To have Akka dump the generated classes, add the '-Daspectwerkz.transform.dump=*' option and it will dump classes to $BASE_DIR/_dump
 JVM_OPTS=" \
         -server \
-        -Xdebug \
-        -Xrunjdwp:transport=dt_socket,server=y,address=8888,suspend=n \
         -Xms128M \
         -Xmx1G \
         -XX:SurvivorRatio=8 \
@@ -54,6 +47,6 @@ JVM_OPTS=" \
         -Dcom.sun.management.jmxremote.authenticate=false"
 
 echo "Starting up with options: 
-"$JAVA_HOME/bin/java $JVM_OPTS $STORAGE_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}
+"$JAVA_HOME/bin/java $JVM_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}
 
-$JAVA_HOME/bin/java $JVM_OPTS $STORAGE_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}
+$JAVA_HOME/bin/java $JVM_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}

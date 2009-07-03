@@ -28,7 +28,7 @@ object RemoteClient extends Logging {
     else {
       val client = new RemoteClient(hostname, port)
       client.connect
-      clients + hash -> client
+      clients += hash -> client
       client
     }
   }

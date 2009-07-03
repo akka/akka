@@ -17,7 +17,9 @@ import org.apache.camel.{Endpoint, Routes}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectGuiceConfiguratorForJava {
-  val INSTANCE = new ActiveObjectGuiceConfigurator
+  private val INSTANCE = new ActiveObjectGuiceConfigurator
+
+  def getInstance = INSTANCE
   
   /**
    * Returns the active abject that has been put under supervision for the class specified.

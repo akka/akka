@@ -4,24 +4,12 @@
 
 package se.scalablesolutions.akka.kernel.config
 
-import ScalaConfig.{RestartStrategy, Component}
 import javax.servlet.ServletContext
+
+import scala.collection.mutable.HashSet
+
+import ScalaConfig.{RestartStrategy, Component}
 import kernel.util.Logging
-
-object ActiveObjectConfigurator extends Logging {
-
-  private var configuration: ActiveObjectConfigurator = _
-
-  // FIXME: cheating with only having one single, scope per ServletContext
-  def registerConfigurator(conf: ActiveObjectConfigurator) = {
-    configuration = conf
-  }
-
-  def getConfiguratorFor(ctx: ServletContext): ActiveObjectConfigurator = {
-    configuration
-    //configurations.getOrElse(ctx, throw new IllegalArgumentException("No configuration for servlet context [" + ctx + "]"))
-  }
-}
 
 trait ActiveObjectConfigurator {
   /**
@@ -31,6 +19,8 @@ trait ActiveObjectConfigurator {
    * @return the active object for the class
    */
   def getActiveObject[T](clazz: Class[T]): T
+
+  def isActiveObjectDefined[T](clazz: Class[T]): Boolean
 
   def getExternalDependency[T](clazz: Class[T]): T
 
@@ -46,3 +36,29 @@ trait ActiveObjectConfigurator {
 
   def stop
 }
+
+object ActiveObjectConfigurator extends Logging {
+
+  private val configuration = new HashSet[ActiveObjectConfigurator]
+
+  // FIXME: cheating with only having one single, scope per ServletContext
+  def registerConfigurator(conf: ActiveObjectConfigurator) = synchronized {
+    configuration + conf
+  }
+
+  def getConfiguratorsFor(ctx: ServletContext): List[ActiveObjectConfigurator] = synchronized {
+    configuration.toList
+    //configurations.getOrElse(ctx, throw new IllegalArgumentException("No configuration for servlet context [" + ctx + "]"))
+  }
+}
+
+class ActiveObjectConfiguratorRepository extends Logging {
+  def registerConfigurator(conf: ActiveObjectConfigurator) = {
+    ActiveObjectConfigurator.registerConfigurator(conf)
+  }
+
+  def getConfiguratorsFor(ctx: ServletContext): List[ActiveObjectConfigurator] = {
+    ActiveObjectConfigurator.getConfiguratorsFor(ctx)
+  }
+}
+

@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.api;
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 import se.scalablesolutions.akka.kernel.actor.*;
-
+import se.scalablesolutions.akka.kernel.Kernel;
 import junit.framework.TestCase;
 
 public class InMemNestedStateTest extends TestCase {
@@ -26,6 +26,7 @@ public class InMemNestedStateTest extends TestCase {
             new Component(InMemFailer.class, new LifeCycle(new Permanent(), 1000), 1000)
             //new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000)
         }).inject().supervise();
+      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
   }
 
   protected void tearDown() {
@@ -37,7 +38,7 @@ public class InMemNestedStateTest extends TestCase {
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
     nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
     assertEquals("new state", nested.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
@@ -49,7 +50,7 @@ public class InMemNestedStateTest extends TestCase {
     nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -62,7 +63,7 @@ public class InMemNestedStateTest extends TestCase {
     stateful.setVectorState("init"); // set init state
     InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
     nested.setVectorState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
     assertEquals("new state", stateful.getVectorState());
     assertEquals("new state", nested.getVectorState());
   }
@@ -74,7 +75,7 @@ public class InMemNestedStateTest extends TestCase {
     nested.setVectorState("init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -87,7 +88,7 @@ public class InMemNestedStateTest extends TestCase {
     InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
     stateful.setRefState("init"); // set init state
     nested.setRefState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
     assertEquals("new state", stateful.getRefState());
     assertEquals("new state", nested.getRefState());
   }
@@ -99,7 +100,7 @@ public class InMemNestedStateTest extends TestCase {
     nested.setRefState("init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected

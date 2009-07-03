@@ -52,6 +52,10 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     proxy.asInstanceOf[T]
   }
 
+  override def isActiveObjectDefined[T](clazz: Class[T]): Boolean = synchronized {
+    activeObjectRegistry.get(clazz).isDefined
+  }
+
   override def getExternalDependency[T](clazz: Class[T]): T = synchronized {
     injector.getInstance(clazz).asInstanceOf[T]
   }
@@ -95,8 +99,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
     val actor = new Dispatcher
-    actor.start
-    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
+    if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
     val remoteAddress =
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
@@ -111,8 +114,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
     val actor = new Dispatcher
-    actor.start
-    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
+    if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
     val remoteAddress =
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None

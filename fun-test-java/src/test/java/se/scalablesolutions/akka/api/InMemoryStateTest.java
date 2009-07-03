@@ -4,19 +4,21 @@
 
 package se.scalablesolutions.akka.api;
 
+import junit.framework.TestCase;
+
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 import se.scalablesolutions.akka.kernel.actor.*;
-
-import junit.framework.TestCase;
+import se.scalablesolutions.akka.kernel.Kernel;
 
 public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
 
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
-  final private ActiveObjectFactory factory = new ActiveObjectFactory();
+
 
   protected void setUp() {
+    se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
@@ -27,14 +29,14 @@ public class InMemoryStateTest extends TestCase {
         }).inject().supervise();
   }
 
-  protected void tearDown() {
+    protected void tearDown() {
     conf.stop();
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
@@ -43,7 +45,7 @@ public class InMemoryStateTest extends TestCase {
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -53,7 +55,7 @@ public class InMemoryStateTest extends TestCase {
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getVectorState());
   }
@@ -63,7 +65,7 @@ public class InMemoryStateTest extends TestCase {
     stateful.setVectorState("init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -73,7 +75,7 @@ public class InMemoryStateTest extends TestCase {
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
     stateful.setRefState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactional
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getRefState());
   }
@@ -83,7 +85,7 @@ public class InMemoryStateTest extends TestCase {
     stateful.setRefState("init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -95,7 +97,7 @@ public class InMemoryStateTest extends TestCase {
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
     InMemFailer failer = conf.getActiveObject(InMemFailer.class);
     try {
-      stateful.thisMethodHangs("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactional method
+      stateful.thisMethodHangs("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected

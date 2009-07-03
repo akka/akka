@@ -25,6 +25,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="Scala 2.7.5" level="application" />
     <orderEntry type="module" module-name="akka-util-java" exported="" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-beta-4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-jsr250:2.0-beta-4" level="project" />
@@ -52,6 +53,13 @@
     <orderEntry type="library" exported="" name="Maven: javax.activation:activation:1.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.6" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.CR1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.apache:zookeeper:3.1.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.apache.cassandra:cassandra:0.4.0-dev" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.facebook:thrift:1.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.facebook:fb303:1.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.apache.commons:commons-collections:3.2.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: high-scale-lib:high-scale-lib:1.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.apache.commons:commons-lang:2.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.9.9" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.9.9" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-framework:1.9.9" level="project" />
@@ -75,12 +83,6 @@
     <orderEntry type="library" exported="" name="Maven: org.jvnet:mimepull:1.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.jersey.contribs:jersey-guice:1.0.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-servlet:2.0-beta-6" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.apache.cassandra:cassandra:0.3.0-dev" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.facebook:thrift:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.facebook:fb303:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.apache.commons:commons-collections:3.2.1" level="project" />
-    <orderEntry type="library" exported="" name="Maven: high-scale-lib:high-scale-lib:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.apache.commons:commons-lang:2.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.slf4j:slf4j-log4j12:1.4.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.slf4j:slf4j-api:1.4.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: log4j:log4j:1.2.13" level="project" />

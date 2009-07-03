@@ -34,6 +34,10 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
   def handle(handle: MessageHandle) = actor.handle(handle)
 }
 
+object Actor {
+  val timeout = kernel.Kernel.config.getInt("akka.actor.timeout", 5000)
+}
+
 trait Actor extends Logging with TransactionManagement {  
   @volatile private[this] var isRunning: Boolean = false
   private[this] val remoteFlagLock = new ReadWriteLock
@@ -59,7 +63,7 @@ trait Actor extends Logging with TransactionManagement {
    *
    * Defines the default timeout for '!!' invocations, e.g. the timeout for the future returned by the call to '!!'.
    */
-  @volatile var timeout: Long = 5000L
+  @volatile var timeout: Long = Actor.timeout
 
   /**
    * User overridable callback/setting.
@@ -397,8 +401,7 @@ trait Actor extends Logging with TransactionManagement {
       val future = RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(true, message, null, this.getClass.getName, timeout, null, false, false, supervisorUuid))
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
-    }
-    else {
+    } else {
       val future = new DefaultCompletableFutureResult(timeout)
       mailbox.append(new MessageHandle(this, message, Some(future), TransactionManagement.threadBoundTx.get))
       future
@@ -524,6 +527,13 @@ trait Actor extends Logging with TransactionManagement {
       RemoteClient.clientFor(remoteAddress.get).registerSupervisorForActor(this)
       Some(supervisor.get.uuid)
     } else None
+  }
+
+
+  private[kernel] def swapDispatcher(disp: MessageDispatcher) = {
+    dispatcher = disp
+    mailbox = dispatcher.messageQueue
+    dispatcher.registerHandler(this, new ActorMessageHandler(this))
   }
 
   override def toString(): String = "Actor[" + id + "]"

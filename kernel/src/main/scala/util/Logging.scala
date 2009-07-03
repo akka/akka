@@ -22,7 +22,7 @@ import java.net.UnknownHostException;
 trait Logging {
   @transient var log = {
     val log = Logger.get(this.getClass.getName)
-    log.setLevel(Level.ALL)
+    //0log.setLevel(Level.ALL)
     log
   }
 }

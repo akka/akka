@@ -20,11 +20,11 @@ class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectEx
 
 object Annotations {
   import se.scalablesolutions.akka.annotation._
-  val transactional = classOf[transactional]
-  val oneway =        classOf[oneway]
-  val immutable =     classOf[immutable]
-  val prerestart =    classOf[prerestart]
-  val postrestart =   classOf[postrestart]
+  val oneway =              classOf[oneway]
+  val transactionrequired = classOf[transactionrequired]
+  val prerestart =          classOf[prerestart]
+  val postrestart =         classOf[postrestart]
+  val immutable =           classOf[immutable]
 }
 
 /**
@@ -259,14 +259,14 @@ sealed class ActorAroundAdvice(val target: Class[_],
  */
 private[kernel] class Dispatcher extends Actor {
   private val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
-  
-  makeTransactional
 
   private[actor] var target: Option[AnyRef] = None
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
+    if (targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactional
+    
     id = targetClass.getName
     target = Some(targetInstance)
     val methods = targetInstance.getClass.getDeclaredMethods.toList

@@ -22,6 +22,7 @@ object Log {
 @RunWith(classOf[JUnit4Runner])
 class RemoteSupervisorSpec extends Suite {
 
+  Kernel.config
   new Thread(new Runnable() {
      def run = {
        val server = new RemoteServer
@@ -244,6 +245,7 @@ class RemoteSupervisorSpec extends Suite {
     }
   }
 
+  /*
   def testOneWayKillSingleActorOneForOne = {
     Log.messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
@@ -277,7 +279,8 @@ class RemoteSupervisorSpec extends Suite {
       Log.oneWayLog
     }
   }
-
+*/
+  
   /*
   def testOneWayKillSingleActorAllForOne = {
     Log.messageLog = ""
