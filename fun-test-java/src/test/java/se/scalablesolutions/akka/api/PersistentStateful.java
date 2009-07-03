@@ -20,7 +20,10 @@ public class PersistentStateful {
     return (String) vectorState.get(index);
   }
 
-  
+  public int getVectorLength() {
+    return vectorState.length();
+  }
+
   public String getRefState() {
     if (refState.isDefined()) {
       return (String) refState.get().get();

@@ -536,5 +536,5 @@ trait Actor extends Logging with TransactionManagement {
     dispatcher.registerHandler(this, new ActorMessageHandler(this))
   }
 
-  override def toString(): String = "Actor[" + id + "]"
+  override def toString(): String = "Actor[" + uuid + ":" + id + "]"
 }

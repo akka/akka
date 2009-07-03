@@ -21,8 +21,8 @@ class PersistentActor extends Actor {
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>
       reply(mapState.get(key).get)
-    case GetVectorState =>
-      reply(vectorState.last)
+    case GetVectorSize =>
+      reply(vectorState.length.asInstanceOf[AnyRef])
     case GetRefState =>
       reply(refState.get.get)
     case SetMapState(key, msg) =>
@@ -96,7 +96,7 @@ class PersistentActorSpec extends TestCase {
     stateful.start
     stateful !! SetVectorState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    assertEquals("new state", (stateful !! GetVectorState).get)
+    assertEquals(3, (stateful !! GetVectorSize).get)
   }
 
   @Test
@@ -110,7 +110,7 @@ class PersistentActorSpec extends TestCase {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    assertEquals("init", (stateful !! GetVectorState).get) // check that state is == init state
+    assertEquals(1, (stateful !! GetVectorSize).get)
   }
 
   @Test

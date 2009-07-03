@@ -20,6 +20,9 @@ public class PersistentStatefulNested {
     return (String) vectorState.get(index);
   }
 
+  public int getVectorLength() {
+    return vectorState.length();
+  }
 
   public String getRefState() {
     if (refState.isDefined()) {

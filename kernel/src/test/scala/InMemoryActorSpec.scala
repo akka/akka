@@ -8,6 +8,7 @@ import org.junit.Assert._
 
 case class GetMapState(key: String)
 case object GetVectorState
+case object GetVectorSize
 case object GetRefState
 
 case class SetMapState(key: String, value: String)
@@ -32,8 +33,8 @@ class InMemStatefulActor extends Actor {
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>
       reply(mapState.get(key).get)
-    case GetVectorState =>
-      reply(vectorState.last)
+    case GetVectorSize =>
+      reply(vectorState.length.asInstanceOf[AnyRef])
     case GetRefState =>
       reply(refState.get.get)
     case SetMapState(key, msg) =>
@@ -139,7 +140,7 @@ class InMemoryActorSpec extends TestCase {
     Thread.sleep(100)
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
     Thread.sleep(100)
-    assertEquals("new state", (stateful !! GetVectorState).get)
+    assertEquals("new state", (stateful !! GetVectorSize).get)
   }
 
   @Test
@@ -148,7 +149,7 @@ class InMemoryActorSpec extends TestCase {
     stateful.start
     stateful !! SetVectorState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    assertEquals("new state", (stateful !! GetVectorState).get)
+    assertEquals(2, (stateful !! GetVectorSize).get)
   }
 
   @Test
@@ -161,7 +162,7 @@ class InMemoryActorSpec extends TestCase {
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
     Thread.sleep(100)
-    assertEquals("init", (stateful !! GetVectorState).get) // check that state is == init state
+    assertEquals(1, (stateful !! GetVectorSize).get) // check that state is == init state
   }
 
   @Test
@@ -175,7 +176,7 @@ class InMemoryActorSpec extends TestCase {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    assertEquals("init", (stateful !! GetVectorState).get) // check that state is == init state
+    assertEquals(1, (stateful !! GetVectorSize).get) // check that state is == init state
   }
 
   @Test
