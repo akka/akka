@@ -6,23 +6,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/voldemort-contrib-0.4a.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/mina-integration-scala-2.0.0-M2-SNAPSHOT.jar" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/voldemort-0.4a.jar" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/ThreadBasedDispatcherTest.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/ThreadBasedDispatcherTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/NioTest.java" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/bin/start-akka-server.sh" afterPath="$PROJECT_DIR$/bin/start-akka-server.sh" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/mina-core-2.0.0-M2-SNAPSHOT.jar" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Boot.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Boot.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadPoolBuilder.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/JerseySpec.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/JerseySpec.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/scala-library-2.7.3.jar" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/bin/start-akka-server.sh" afterPath="$PROJECT_DIR$/bin/start-akka-server.sh" />
     </list>
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
     <ignored path="akka.iws" />
@@ -171,7 +159,7 @@
       <file leaf-file-name="Kernel.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="69" column="31" selection-start="1854" selection-end="1854" vertical-scroll-proportion="0.0">
+            <state line="51" column="46" selection-start="1482" selection-end="1482" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -180,16 +168,16 @@
       <file leaf-file-name="Boot.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Boot.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="19" column="86" selection-start="680" selection-end="680" vertical-scroll-proportion="0.0">
+            <state line="10" column="190" selection-start="203" selection-end="203" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="CassandraNode.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="CassandraNode.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/CassandraNode.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="20" column="13" selection-start="536" selection-end="536" vertical-scroll-proportion="0.015429122">
+            <state line="20" column="13" selection-start="536" selection-end="536" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -204,10 +192,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="pom.xml" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="pom.xml" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/kernel/pom.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="2" column="158" selection-start="219" selection-end="219" vertical-scroll-proportion="0.0">
+            <state line="2" column="158" selection-start="219" selection-end="219" vertical-scroll-proportion="0.030858245">
               <folding />
             </state>
           </provider>
@@ -249,8 +237,8 @@
         <option value="$PROJECT_DIR$/kernel/src/test/scala/JerseySpec.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/Boot.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/Boot.scala" />
       </list>
     </option>
   </component>
@@ -1716,9 +1704,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/CassandraNode.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="20" column="13" selection-start="536" selection-end="536" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="69" column="31" selection-start="1854" selection-end="1854" vertical-scroll-proportion="0.0">
+        <state line="51" column="46" selection-start="1482" selection-end="1482" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -1730,23 +1725,16 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/pom.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="2" column="158" selection-start="219" selection-end="219" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Boot.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="19" column="86" selection-start="680" selection-end="680" vertical-scroll-proportion="0.0">
+        <state line="10" column="190" selection-start="203" selection-end="203" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/CassandraNode.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/pom.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="20" column="13" selection-start="536" selection-end="536" vertical-scroll-proportion="0.015429122">
+        <state line="2" column="158" selection-start="219" selection-end="219" vertical-scroll-proportion="0.030858245">
           <folding />
         </state>
       </provider>

@@ -49,6 +49,7 @@ object Kernel extends Logging {
     //startJersey
     //startZooKeeper
     //startVoldemort
+    log.info("Akka kernel started successfully")
   }
 
 
