@@ -57,6 +57,8 @@ class MessageHandle(val sender: AnyRef,
     that.asInstanceOf[MessageHandle].future.get == future.get &&
     that.asInstanceOf[MessageHandle].tx.isDefined == tx.isDefined &&
     that.asInstanceOf[MessageHandle].tx.get.id == tx.get.id
+
+  override def toString(): String = "MessageHandle[message = " + message + ", sender = " + sender + ", future = " + future + ", tx = " + tx + "]"
 }
 
 class MessageQueue {

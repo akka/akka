@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import kernel.state.Transactional
 import kernel.util.Logging
 
-import scala.collection.mutable.{HashSet, HashMap}
+class TransactionRollbackException(msg: String) extends RuntimeException(msg)
 
 @serializable sealed abstract class TransactionStatus
 object TransactionStatus {
@@ -72,7 +72,7 @@ object TransactionIdFactory {
     }
   }
 
-  def commit(participant: String) = synchronized {
+  def commit(participant: String): Boolean = synchronized {
     if (status == TransactionStatus.Active) {
       log.debug("TX COMMIT - Committing transaction [%s] for server with UUID [%s]", toString, participant)
       val haveAllPreCommitted =
@@ -85,9 +85,13 @@ object TransactionIdFactory {
       if (haveAllPreCommitted) {
         transactionals.items.foreach(_.commit)
         status = TransactionStatus.Completed
-      } else rollback(participant)
+        reset
+        true
+      } else false
+    } else {
+      reset
+      true
     }
-    reset
   }
 
   def rollback(participant: String) = synchronized {
@@ -95,6 +99,13 @@ object TransactionIdFactory {
     log.debug("TX ROLLBACK - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
     transactionals.items.foreach(_.rollback)
     status = TransactionStatus.Aborted
+    reset
+  }
+
+  def rollbackForRescheduling(participant: String) = synchronized {
+    ensureIsActiveOrAborted
+    log.debug("TX ROLLBACK for recheduling - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
+    transactionals.items.foreach(_.rollback)
     reset
   }
 

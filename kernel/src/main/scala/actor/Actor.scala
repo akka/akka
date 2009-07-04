@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArraySet
 import kernel.nio.{RemoteServer, RemoteClient, RemoteRequest}
 import kernel.reactor._
 import kernel.config.ScalaConfig._
-import kernel.stm.{TransactionAwareWrapperException, TransactionManagement}
+import kernel.stm.{TransactionRollbackException, TransactionAwareWrapperException, TransactionManagement}
 import kernel.util.Helpers.ReadWriteLock
 import kernel.util.Logging
 import org.codehaus.aspectwerkz.proxy.Uuid
@@ -35,17 +35,16 @@ class ActorMessageHandler(val actor: Actor) extends MessageHandler {
 }
 
 object Actor {
-  val timeout = kernel.Kernel.config.getInt("akka.actor.timeout", 5000)
+  val TIMEOUT = kernel.Kernel.config.getInt("akka.actor.timeout", 5000)
 }
 
-trait Actor extends Logging with TransactionManagement {  
+trait Actor extends Logging with TransactionManagement {
   @volatile private[this] var isRunning: Boolean = false
   private[this] val remoteFlagLock = new ReadWriteLock
   private[this] val transactionalFlagLock = new ReadWriteLock
 
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
   private var config: Option[AnyRef] = None
-
   @volatile protected[this] var isTransactional = false
   @volatile protected[this] var remoteAddress: Option[InetSocketAddress] = None
   @volatile protected[kernel] var supervisor: Option[Actor] = None
@@ -53,6 +52,9 @@ trait Actor extends Logging with TransactionManagement {
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
+
+  protected[this] var latestMessage: Option[MessageHandle] = None
+  protected[this] var messageToReschedule: Option[MessageHandle] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -63,7 +65,7 @@ trait Actor extends Logging with TransactionManagement {
    *
    * Defines the default timeout for '!!' invocations, e.g. the timeout for the future returned by the call to '!!'.
    */
-  @volatile var timeout: Long = Actor.timeout
+  @volatile var timeout: Long = Actor.TIMEOUT
 
   /**
    * User overridable callback/setting.
@@ -80,7 +82,7 @@ trait Actor extends Logging with TransactionManagement {
    * <pre/>
    *  // default - executorService can be build up using the ThreadPoolBuilder
    *  new EventBasedThreadPoolDispatcher(executor: ExecutorService)
-   * 
+   *
    *  new EventBasedSingleThreadDispatcher
    * </pre>
    */
@@ -112,7 +114,7 @@ trait Actor extends Logging with TransactionManagement {
    * Can be one of:
    * <pre/>
    *  AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
-   * 
+   *
    *  OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
    * </pre>
    */
@@ -196,15 +198,15 @@ trait Actor extends Logging with TransactionManagement {
       isRunning = false
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
-  
+
   /**
-   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics. 
+   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    */
   def !(message: AnyRef): Unit = if (isRunning) {
     if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(message, timeout, false, true)
     else postMessageToMailbox(message)
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-  
+
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
    * It waits on the reply either until it receives it (returns Some(replyMessage) or until the timeout expires (returns None).
@@ -236,7 +238,7 @@ trait Actor extends Logging with TransactionManagement {
   def !![T](message: AnyRef): Option[T] = !![T](message, timeout)
 
   /**
-   * Sends a message asynchronously, but waits on a future indefinitely. E.g. emulates a synchronous call.  
+   * Sends a message asynchronously, but waits on a future indefinitely. E.g. emulates a synchronous call.
    * E.g. send-and-receive-eventually semantics.
    */
   def !?[T](message: AnyRef): T = if (isRunning) {
@@ -288,7 +290,7 @@ trait Actor extends Logging with TransactionManagement {
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will receive a notification nif the linked actor has crashed.
    * If the 'trapExit' flag has been set then it will 'trap' the failure and automatically restart the linked actors according to the restart strategy defined by the 'faultHandler'.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def link(actor: Actor) = {
     if (isRunning) {
@@ -300,9 +302,9 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   /**
-   * Unlink the actor. 
+   * Unlink the actor.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def unlink(actor: Actor) = {
     if (isRunning) {
@@ -312,11 +314,11 @@ trait Actor extends Logging with TransactionManagement {
       log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
-  
+
   /**
    * Atomically start and link an actor.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def startLink(actor: Actor) = {
     actor.start
@@ -326,7 +328,7 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Atomically start, link and make an actor remote.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def startLinkRemote(actor: Actor) = {
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
@@ -337,10 +339,10 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Atomically create (from actor class) and start an actor.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def spawn(actorClass: Class[_]): Actor = {
-    val actor = actorClass.newInstance.asInstanceOf[Actor]   
+    val actor = actorClass.newInstance.asInstanceOf[Actor]
     actor.dispatcher = dispatcher
     actor.mailbox = mailbox
     actor.start
@@ -350,10 +352,10 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Atomically create (from actor class), start and make an actor remote.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def spawnRemote(actorClass: Class[_]): Actor = {
-    val actor = actorClass.newInstance.asInstanceOf[Actor]   
+    val actor = actorClass.newInstance.asInstanceOf[Actor]
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.dispatcher = dispatcher
     actor.mailbox = mailbox
@@ -364,7 +366,7 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Atomically create (from actor class), start and link an actor.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def spawnLink(actorClass: Class[_]): Actor = {
     val actor = spawn(actorClass)
@@ -375,7 +377,7 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Atomically create (from actor class), start, link and make an actor remote.
    * <p/>
-   * To be invoked from within the actor itself. 
+   * To be invoked from within the actor itself.
    */
   protected[this] def spawnLinkRemote(actorClass: Class[_]): Actor = {
     val actor = spawn(actorClass)
@@ -392,7 +394,11 @@ trait Actor extends Logging with TransactionManagement {
     if (remoteAddress.isDefined) {
       val supervisorUuid = registerSupervisorAsRemoteActor
       RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(true, message, null, this.getClass.getName, timeout, null, true, false, supervisorUuid))
-    } else mailbox.append(new MessageHandle(this, message, None, activeTx))
+    } else {
+      val handle = new MessageHandle(this, message, None, activeTx)
+      mailbox.append(handle)
+      latestMessage = Some(handle)
+    }
   }
 
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
@@ -403,13 +409,31 @@ trait Actor extends Logging with TransactionManagement {
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = new DefaultCompletableFutureResult(timeout)
-      mailbox.append(new MessageHandle(this, message, Some(future), TransactionManagement.threadBoundTx.get))
+      val handle = new MessageHandle(this, message, Some(future), TransactionManagement.threadBoundTx.get)
+      mailbox.append(handle)
+      latestMessage = Some(handle)
       future
     }
   }
-  
+
   private def transactionalDispatch[T](message: AnyRef, timeout: Long, blocking: Boolean, oneWay: Boolean): Option[T] = {
-    tryToCommitTransaction
+    import TransactionManagement._
+    if (!tryToCommitTransaction) {
+      var nrRetries = 0           // FIXME only if top-level
+      var failed = true
+      do {
+        Thread.sleep(TIME_WAITING_FOR_COMPLETION)
+        nrRetries += 1
+        log.debug("Pending transaction [%s] not completed, waiting %s milliseconds. Attempt %s", activeTx.get, TIME_WAITING_FOR_COMPLETION, nrRetries)
+        failed = !tryToCommitTransaction
+      } while(nrRetries < NR_OF_TIMES_WAITING_FOR_COMPLETION && failed)
+      if (failed) {
+        log.debug("Pending transaction [%s] still not completed, aborting and rescheduling message [%s]", activeTx.get, latestMessage)
+        rollback(activeTx)
+        if (RESTART_TRANSACTION_ON_COLLISION) messageToReschedule = Some(latestMessage.get)
+        else throw new TransactionRollbackException("Conflicting transactions, rolling back transaction for message [" + latestMessage + "]")
+      }
+    }
     if (isInExistingTransaction) joinExistingTransaction
     else if (isTransactional) startNewTransaction
     incrementTransaction
@@ -433,6 +457,13 @@ trait Actor extends Logging with TransactionManagement {
       if (isTransactionAborted) removeTransactionIfTopLevel
       else tryToPrecommitTransaction
       TransactionManagement.threadBoundTx.set(None)
+      if (messageToReschedule.isDefined) {
+        val handle = messageToReschedule.get
+        val newTx = startNewTransaction
+        val clone = new MessageHandle(handle.sender, handle.message, handle.future, newTx)
+        log.debug("Rescheduling message %s", clone)
+        mailbox.append(clone) // FIXME append or prepend rescheduled messages?
+      }
     }
   }
 
@@ -481,7 +512,7 @@ trait Actor extends Logging with TransactionManagement {
     if (trapExit) {
       if (faultHandler.isDefined) {
         faultHandler.get match {
-          // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy          
+          // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
           case AllForOneStrategy(maxNrOfRetries, withinTimeRange) => restartLinkedActors(reason)
           case OneForOneStrategy(maxNrOfRetries, withinTimeRange) => dead.restart(reason)
         }

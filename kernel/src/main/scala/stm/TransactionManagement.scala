@@ -14,10 +14,13 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
 }
 
 object TransactionManagement {
-  private val txEnabled = new AtomicBoolean(kernel.Kernel.config.getBool("akka.stm.service", true))
+  val TIME_WAITING_FOR_COMPLETION = kernel.Kernel.config.getInt("akka.stm.wait-for-completion", 100)
+  val NR_OF_TIMES_WAITING_FOR_COMPLETION = kernel.Kernel.config.getInt("akka.stm.wait-nr-of-times", 3)
+  val TRANSACTION_ENABLED = new AtomicBoolean(kernel.Kernel.config.getBool("akka.stm.service", true))
+  val RESTART_TRANSACTION_ON_COLLISION = kernel.Kernel.config.getBool("akka.stm.restart-transaction", true)
 
-  def isTransactionalityEnabled = txEnabled.get
-  def disableTransactions = txEnabled.set(false)
+  def isTransactionalityEnabled = TRANSACTION_ENABLED.get
+  def disableTransactions = TRANSACTION_ENABLED.set(false)
 
   private[kernel] val threadBoundTx: ThreadLocal[Option[Transaction]] = new ThreadLocal[Option[Transaction]]() {
     override protected def initialValue: Option[Transaction] = None
@@ -31,12 +34,13 @@ trait TransactionManagement extends Logging {
   import TransactionManagement.threadBoundTx
   private[kernel] var activeTx: Option[Transaction] = None
 
-  protected def startNewTransaction = {
+  protected def startNewTransaction: Option[Transaction] = {
     val newTx = new Transaction
     newTx.begin(uuid)
     val tx = Some(newTx)
     activeTx = tx
     threadBoundTx.set(tx)
+    tx
   }
 
   protected def joinExistingTransaction = {
@@ -52,10 +56,11 @@ trait TransactionManagement extends Logging {
 
   protected def tryToCommitTransaction: Boolean = if (activeTx.isDefined) {
     val tx = activeTx.get
-    tx.commit(uuid)
-    removeTransactionIfTopLevel
-    true
-  } else false
+    if (tx.commit(uuid)) {
+      removeTransactionIfTopLevel
+      true
+    } else false
+  } else true
 
   protected def rollback(tx: Option[Transaction]) = tx match {
     case None => {} // no tx; nothing to do
@@ -63,14 +68,13 @@ trait TransactionManagement extends Logging {
       tx.rollback(uuid)
   }
 
-  protected def isInExistingTransaction =
-    // FIXME should not need to have this runtime "fix" - investigate what is causing this to happen
-//    if (TransactionManagement.threadBoundTx.get == null) {
-//      TransactionManagement.threadBoundTx.set(None)
-//      false
-//    } else {
-      TransactionManagement.threadBoundTx.get.isDefined
-//    }
+  protected def rollbackForRescheduling(tx: Option[Transaction]) = tx match {
+    case None => {} // no tx; nothing to do
+    case Some(tx) =>
+      tx.rollbackForRescheduling(uuid)
+  }
+
+  protected def isInExistingTransaction = TransactionManagement.threadBoundTx.get.isDefined
 
   protected def isTransactionAborted = activeTx.isDefined && activeTx.get.isAborted
 
