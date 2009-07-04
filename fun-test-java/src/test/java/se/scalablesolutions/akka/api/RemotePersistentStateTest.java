@@ -15,8 +15,6 @@ public class RemotePersistentStateTest extends TestCase {
   static String messageLog = "";
 
   static {
-      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
-    System.setProperty("storage-config", "config");
     Kernel.startCassandra();
     Kernel.startRemoteService();
   }
@@ -28,8 +26,8 @@ public class RemotePersistentStateTest extends TestCase {
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {
-          new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 1000, new RemoteAddress("localhost", 9999)),
-          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000, new RemoteAddress("localhost", 9999))
+          new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 1000000, new RemoteAddress("localhost", 9999)),
+          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000000, new RemoteAddress("localhost", 9999))
         }).supervise();
   }
 
@@ -43,13 +41,13 @@ public class RemotePersistentStateTest extends TestCase {
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
-
+  
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
    stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
    PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
    try {
-     stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
+     stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "MapShouldRollBack", failer); // call failing transactionrequired method
      fail("should have thrown an exception");
    } catch (RuntimeException e) {
    } // expected
@@ -58,22 +56,21 @@ public class RemotePersistentStateTest extends TestCase {
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-    stateful.setVectorState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
-    assertEquals("init", stateful.getVectorState(0));
-    assertEquals("new state", stateful.getVectorState(1));
+    int init = stateful.getVectorLength();
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "VectorShouldNotRollback"); // transactionrequired
+    assertEquals(init + 1, stateful.getVectorLength());
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-   stateful.setVectorState("init"); // set init state
+   int init = stateful.getVectorLength();
    PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
    try {
      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
      fail("should have thrown an exception");
    } catch (RuntimeException e) {
    } // expected
-   assertEquals("init", stateful.getVectorState(0)); // check that state is == init state
+   assertEquals(init, stateful.getVectorLength());
  }
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
@@ -94,4 +91,5 @@ public class RemotePersistentStateTest extends TestCase {
    } // expected
    assertEquals("init", stateful.getRefState()); // check that state is == init state
  }
+ 
 }

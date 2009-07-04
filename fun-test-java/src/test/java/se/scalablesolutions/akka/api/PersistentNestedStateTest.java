@@ -70,8 +70,8 @@ public class PersistentNestedStateTest extends TestCase {
     PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
     nested.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
-    assertEquals(3, stateful.getVectorLength()); // BAD: keeps one element since last test
-    assertEquals(3, nested.getVectorLength());
+    assertEquals(2, stateful.getVectorLength()); // BAD: keeps one element since last test
+    assertEquals(2, nested.getVectorLength());
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {

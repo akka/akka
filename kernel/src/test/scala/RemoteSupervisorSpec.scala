@@ -10,7 +10,7 @@ import kernel.config.ScalaConfig._
 
 import com.jteigen.scalatest.JUnit4Runner
 import org.junit.runner.RunWith
-import org.scalatest._
+import org.scalatest.Suite
 
 object Log {
   var messageLog: String = ""
@@ -20,7 +20,7 @@ object Log {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @RunWith(classOf[JUnit4Runner])
-class RemoteSupervisorSpec extends Suite {
+class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
 
   Kernel.config
   new Thread(new Runnable() {

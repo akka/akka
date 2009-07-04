@@ -32,7 +32,8 @@ final object CassandraStorage extends Logging {
 
   val RUN_THRIFT_SERVICE = kernel.Kernel.config.getBool("akka.storage.cassandra.thrift-server.service", false)
   val BLOCKING_CALL = kernel.Kernel.config.getInt("akka.storage.cassandra.blocking", 0)
-  
+
+  @volatile private[this] var isRunning = false
   private[this] val serializer: Serializer = {
     kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "serialization") match {
       case "serialization" => new JavaSerializationSerializer
@@ -48,22 +49,25 @@ final object CassandraStorage extends Logging {
 
   private[this] var thriftServer: CassandraThriftServer = _
   
-  def start = {
-    try {
-      server.start
-      log.info("Persistent storage has started up successfully");
-    } catch {
-      case e =>
-        log.error("Could not start up persistent storage")
-        throw e
-    }
-    if (RUN_THRIFT_SERVICE) {
-      thriftServer = new CassandraThriftServer(server)
-      thriftServer.start
+  def start = synchronized {
+    if (!isRunning) {
+      try {
+        server.start
+        log.info("Persistent storage has started up successfully");
+      } catch {
+        case e =>
+          log.error("Could not start up persistent storage")
+          throw e
+      }
+      if (RUN_THRIFT_SERVICE) {
+        thriftServer = new CassandraThriftServer(server)
+        thriftServer.start
+      }
+      isRunning
     }
   }
 
-  def stop = {
+  def stop = if (isRunning) {
     //server.storageService.shutdown
     if (RUN_THRIFT_SERVICE) thriftServer.stop
   }

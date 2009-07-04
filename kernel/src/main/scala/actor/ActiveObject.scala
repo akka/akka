@@ -192,9 +192,9 @@ sealed class ActorAroundAdvice(val target: Class[_],
 
   private def localDispatch(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
-    if (isOneWay(rtti)) actor ! Invocation(joinpoint)
+    if (isOneWay(rtti)) actor ! Invocation(joinpoint, true)
     else {
-      val result = actor !! Invocation(joinpoint)
+      val result = actor !! Invocation(joinpoint, false)
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
     }
@@ -233,22 +233,24 @@ sealed class ActorAroundAdvice(val target: Class[_],
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable private[kernel] case class Invocation(val joinpoint: JoinPoint) {
+@serializable private[kernel] case class Invocation(val joinpoint: JoinPoint, val isOneWay: Boolean) {
 
   override def toString: String = synchronized {
-    "Invocation [joinpoint: " + joinpoint.toString + "]"
+    "Invocation [joinpoint: " + joinpoint.toString + ", isOneWay: " + isOneWay + "]"
   }
 
   override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
     result = HashCode.hash(result, joinpoint)
+    result = HashCode.hash(result, isOneWay)
     result
   }
 
   override def equals(that: Any): Boolean = synchronized {
     that != null &&
     that.isInstanceOf[Invocation] &&
-    that.asInstanceOf[Invocation].joinpoint == joinpoint
+    that.asInstanceOf[Invocation].joinpoint == joinpoint &&
+    that.asInstanceOf[Invocation].isOneWay == isOneWay
   }
 }
 
@@ -283,8 +285,9 @@ private[kernel] class Dispatcher extends Actor {
   }
 
   override def receive: PartialFunction[Any, Unit] = {
-    case Invocation(joinpoint: JoinPoint) =>
-       reply(joinpoint.proceed)
+    case Invocation(joinpoint, oneWay) =>
+      if (oneWay) joinpoint.proceed
+      else reply(joinpoint.proceed)
     case unexpected =>
       throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }

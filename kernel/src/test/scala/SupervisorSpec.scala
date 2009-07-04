@@ -9,13 +9,13 @@ import kernel.config.ScalaConfig._
 
 import com.jteigen.scalatest.JUnit4Runner
 import org.junit.runner.RunWith
-import org.scalatest._
+import org.scalatest.Suite
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @RunWith(classOf[JUnit4Runner])
-class SupervisorSpec extends Suite {
+class SupervisorSpec extends junit.framework.TestCase with Suite {
 
   var messageLog: String = ""
   var oneWayLog: String = ""

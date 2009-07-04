@@ -2,14 +2,6 @@
 
 VERSION=0.5
 
-#if [ $# -gt 1 ];
-#then
-#  echo 'USAGE: bin/start-akka-server.sh'
-#  exit 1
-#fi
-
-JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Versions/1.6.0/Home
-
 BASE_DIR=$(dirname $0)/..
 
 echo 'Starting Akka Kernel from directory' $BASE_DIR

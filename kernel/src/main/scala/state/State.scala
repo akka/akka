@@ -87,7 +87,7 @@ trait Transactional {
 /**
  * Base trait for all state implementations (persistent or in-memory).
  *
- * TODO: Make this class inherit scala.collection.mutable.Map and/or java.util.Map
+ * FIXME: Create Java versions using pcollections
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -168,9 +168,9 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
   def getRange(start: Int, count: Int)
 
   // ---- For Transactional ----
-  override def begin = changeSet.clear
-  override def rollback = {}
-
+  override def begin = {}
+  override def rollback = changeSet.clear
+ 
   // ---- For scala.collection.mutable.Map ----
   override def put(key: K, value: V): Option[V] = {
     verifyTransaction
@@ -200,11 +200,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   // ---- For Transactional ----
   override def commit = {
     CassandraStorage.insertMapStorageEntriesFor(uuid, changeSet.toList)
-    // FIXME: should use batch function once the bug is resolved
-//    for (entry <- changeSet) {
-//      val (key, value) = entry
-//      CassandraStorage.insertMapStorageEntryFor(uuid, key, value)
-//    }
+    changeSet.clear
   }
 
   // ---- Overriding scala.collection.mutable.Map behavior ----
@@ -316,8 +312,8 @@ abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
   protected[kernel] var changeSet: List[T] = Nil
 
   // ---- For Transactional ----
-  override def begin = changeSet = Nil
-  override def rollback = {}
+  override def begin = {}
+  override def rollback = changeSet = Nil
 
   // ---- For TransactionalVector ----
   override def add(value: T) = {
@@ -358,9 +354,8 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   // ---- For Transactional ----
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
-    for (element <- changeSet) {
-      CassandraStorage.insertVectorStorageEntryFor(uuid, element)
-    }
+    for (element <- changeSet) CassandraStorage.insertVectorStorageEntryFor(uuid, element)
+    changeSet = Nil
   }
 }
 
@@ -398,8 +393,11 @@ class TransactionalRef[T] extends Transactional {
 }
 
 class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
-  override def commit = if (ref.isDefined) CassandraStorage.insertRefStorageFor(uuid, ref.get)
-
+  override def commit = if (ref.isDefined) {
+    CassandraStorage.insertRefStorageFor(uuid, ref.get)
+    ref = None 
+  }
+  override def rollback = ref = None
   override def get: Option[AnyRef] = {
     verifyTransaction
     CassandraStorage.getRefStorageFor(uuid)

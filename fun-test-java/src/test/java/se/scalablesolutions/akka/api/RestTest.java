@@ -16,6 +16,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.servlet.Servlet;
 
 import junit.framework.TestSuite;
+import junit.framework.TestCase;
 import org.junit.*;
 import static org.junit.Assert.*;
 
@@ -27,7 +28,7 @@ import java.util.HashMap;
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 
-public class RestTest extends TestSuite {
+public class RestTest extends TestCase {
 
   private static int PORT = 9998;
   private static URI URI = UriBuilder.fromUri("http://localhost/").port(PORT).build();

@@ -1,14 +1,10 @@
 package se.scalablesolutions.akka.kernel.actor
 
-import concurrent.Lock
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
-import reactor._
 
-import org.junit.{Test, Before}
 import org.junit.Assert._
 
-class ActorTest {
+class ActorSpec extends junit.framework.TestCase {
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
@@ -20,8 +16,7 @@ class ActorTest {
     }
   }
   
-  @Test
-  def sendOneWay = {
+  def testSendOneWay = {
     implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
@@ -36,8 +31,7 @@ class ActorTest {
     actor.stop
   }
 
-  @Test
-  def sendReplySync = {
+  def testSendReplySync = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
@@ -46,8 +40,7 @@ class ActorTest {
     actor.stop
   }
 
-  @Test
-  def sendReplyAsync = {
+  def testSendReplyAsync = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
@@ -56,8 +49,7 @@ class ActorTest {
     actor.stop
   }
 
-  @Test
-  def sendReceiveException = {
+  def testSendReceiveException = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start

@@ -96,7 +96,7 @@ class PersistentActorSpec extends TestCase {
     stateful.start
     stateful !! SetVectorState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    assertEquals(3, (stateful !! GetVectorSize).get)
+    assertEquals(2, (stateful !! GetVectorSize).get)
   }
 
   @Test
