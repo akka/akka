@@ -55,6 +55,6 @@ class Component(@BeanProperty val intf: Class[_],
                 @BeanProperty val target: Class[_],
                 @BeanProperty val lifeCycle: LifeCycle,
                 @BeanProperty val timeout: Int) extends Server {
-  def newWorker(proxy: ActiveObjectProxy) = se.scalablesolutions.akka.kernel.Worker(proxy.server, lifeCycle.transform)
+  def newWorker(proxy: ActiveObjectProxy) = se.scalablesolutions.akka.kernel.Supervise(proxy.server, lifeCycle.transform)
 }
 */

@@ -140,7 +140,7 @@ class InMemoryActorSpec extends TestCase {
     Thread.sleep(100)
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
     Thread.sleep(100)
-    assertEquals("new state", (stateful !! GetVectorSize).get)
+    assertEquals(2, (stateful !! GetVectorSize).get)
   }
 
   @Test
@@ -225,4 +225,5 @@ class InMemoryActorSpec extends TestCase {
     } catch {case e: RuntimeException => {}}
     assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
   }
+  
 }

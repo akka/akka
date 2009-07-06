@@ -48,9 +48,42 @@ class TxClasherActor extends Actor {
   }
 }
 
+class TxActorOneWay(clasher: Actor) extends Actor {
+  timeout = 1000000
+  makeTransactional
+
+  def receive: PartialFunction[Any, Unit] = {
+    case msg: AnyRef =>
+      clasher ! msg
+  }
+}
+
+class TxClasherActorOneWay extends Actor {
+  val vector = TransactionalState.newInMemoryVector[String]
+  timeout = 1000000
+  makeTransactional
+  var count = 0
+  def receive: PartialFunction[Any, Unit] = {
+    case "First" =>
+      if (count == 0) Thread.sleep(5000)
+      count += 1
+      println("FIRST")
+      vector.add("First")
+      println("--- VECTOR: " + vector)
+    case "Second" =>
+      println("SECOND")
+      vector.add("Second")
+      println("--- VECTOR: " + vector)
+    case "Index0" =>
+      reply(vector(0))
+    case "Index1" =>
+      reply(vector(1))
+  }
+}
+
 class TransactionClasherSpec extends TestCase {
   @Test
-  def testX = {
+  def testBangBangClash = {
     val clasher = new TxClasherActor
     clasher.start
     val txActor1 = new TxActor(clasher)
@@ -70,6 +103,27 @@ class TransactionClasherSpec extends TestCase {
     } catch { case e: TransactionRollbackException => {} }
   }
 
+  @Test
+  def testBangClash = {
+    val clasher = new TxClasherActorOneWay
+    clasher.start
+    val txActor1 = new TxActorOneWay(clasher)
+    txActor1.start
+    val txActor2 = new TxActorOneWay(clasher)
+    txActor2.start
+
+    val t1 = new Thread(new Runnable() {
+      def run = {
+        txActor1 ! "First"
+      }
+    }).start
+    Thread.sleep(1000)
+    try {
+      txActor2 ! "Second"
+      fail("Expected TransactionRollbackException")
+    } catch { case e: TransactionRollbackException => {} }
+  }
+ 
   /*
   @Test
   def testX = {

@@ -77,7 +77,7 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
     /**
      * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
      */
-    val messageDemultiplexer = new EventBasedThreadPoolDemultiplexer(messageQueue)
+    val messageDemultiplexer = new EventBasedThreadPoolDemultiplexer(queue)
     selectorThread = new Thread {
       override def run = {
         while (active) {
@@ -86,19 +86,19 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
               guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
             } catch {case e: InterruptedException => active = false}
-            val queue = messageDemultiplexer.acquireSelectedQueue
-            for (index <- 0 until queue.size) {
-              val message = queue.peek
+            val selectedQueue = messageDemultiplexer.acquireSelectedQueue
+            for (index <- 0 until selectedQueue.size) {
+              val message = selectedQueue.peek
               val messageHandler = getIfNotBusy(message.sender)
               if (messageHandler.isDefined) {
                 executor.execute(new Runnable {
                   override def run = {
-                    messageHandler.get.handle(message)
+                    messageHandler.get.invoke(message)
                     free(message.sender)
                     messageDemultiplexer.wakeUp
                   }
                 })
-                queue.remove
+                selectedQueue.remove
               }
             }
           } finally {
@@ -112,7 +112,7 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
 
   override protected def doShutdown = executor.shutdownNow
 
-  private def getIfNotBusy(key: AnyRef): Option[MessageHandler] = guard.synchronized {
+  private def getIfNotBusy(key: AnyRef): Option[MessageInvoker] = guard.synchronized {
     if (CONCURRENT_MODE && messageHandlers.containsKey(key)) Some(messageHandlers.get(key))
     else if (!busyHandlers.contains(key) && messageHandlers.containsKey(key)) {
       busyHandlers.add(key)
@@ -240,8 +240,8 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   private def ensureNotActive = if (active) throw new IllegalStateException("Can't build a new thread pool for a dispatcher that is already up and running")  
 }
 
-class EventBasedThreadPoolDemultiplexer(private val messageQueue: MessageQueue) extends MessageDemultiplexer {
-  private val selectedQueue: Queue[MessageHandle] = new LinkedList[MessageHandle]
+class EventBasedThreadPoolDemultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
+  private val selectedQueue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
   private val selectedQueueLock = new ReentrantLock
 
   def select = try {
@@ -251,7 +251,7 @@ class EventBasedThreadPoolDemultiplexer(private val messageQueue: MessageQueue) 
     selectedQueueLock.unlock
   }
 
-  def acquireSelectedQueue: Queue[MessageHandle] = {
+  def acquireSelectedQueue: Queue[MessageInvocation] = {
     selectedQueueLock.lock
     selectedQueue
   }

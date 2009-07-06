@@ -80,7 +80,7 @@ class ActiveObjectFactory {
     ActiveObject.newInstance(intf, target, actor, remoteAddress, timeout)
   }
   
-  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor =
+  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
     ActiveObject.supervise(restartStrategy, components)
 
   /*
@@ -160,7 +160,7 @@ object ActiveObject {
     proxy.asInstanceOf[T]
   }
 
-  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Worker]): Supervisor = {
+  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
     object factory extends SupervisorFactory {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
@@ -176,7 +176,7 @@ object ActiveObject {
 @serializable
 sealed class ActorAroundAdvice(val target: Class[_],
                                val targetInstance: AnyRef,
-                               val actor: Dispatcher,
+                               val actor: Dispatcher,                
                                val remoteAddress: Option[InetSocketAddress],
                                val timeout: Long) extends AroundAdvice {
   val id = target.getName
@@ -293,11 +293,11 @@ private[kernel] class Dispatcher extends Actor {
   }
 
   override protected def preRestart(reason: AnyRef, config: Option[AnyRef]) {
-    if (preRestart.isDefined) preRestart.get.invoke(target.get, ZERO_ITEM_CLASS_ARRAY)
+    if (preRestart.isDefined) preRestart.get.invoke(target.get, ZERO_ITEM_CLASS_ARRAY: _*)
   }
 
   override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
-    if (postRestart.isDefined) postRestart.get.invoke(target.get, ZERO_ITEM_CLASS_ARRAY)
+    if (postRestart.isDefined) postRestart.get.invoke(target.get, ZERO_ITEM_CLASS_ARRAY: _*)
   }
 }
 

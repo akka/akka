@@ -9,13 +9,13 @@ import org.junit.{Test, Before}
 import org.junit.Assert._
 import junit.framework.TestCase
 
-class EventBasedDispatcherTest extends TestCase {
+class EventBasedSingleThreadDispatcherTest extends TestCase {
   private var threadingIssueDetected: AtomicBoolean = null
 
-  class TestMessageHandle(handleLatch: CountDownLatch) extends MessageHandler {
+  class TestMessageHandle(handleLatch: CountDownLatch) extends MessageInvoker {
     val guardLock: Lock = new ReentrantLock
 
-    def handle(message: MessageHandle) {
+    def invoke(message: MessageInvocation) {
       try {
         if (threadingIssueDetected.get) return
         if (guardLock.tryLock) {
@@ -59,7 +59,7 @@ class EventBasedDispatcherTest extends TestCase {
     dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageHandle(key, new Object, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key, new Object, None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
@@ -73,8 +73,8 @@ class EventBasedDispatcherTest extends TestCase {
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
     dispatcher.start
-    dispatcher.messageQueue.append(new MessageHandle(key1, new Object, None, None))
-    dispatcher.messageQueue.append(new MessageHandle(key2, new Object, None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key2, new Object, None, None))
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
   }
@@ -84,9 +84,9 @@ class EventBasedDispatcherTest extends TestCase {
     val key1 = "key1"
     val key2 = "key2"
     val dispatcher = new EventBasedSingleThreadDispatcher
-    dispatcher.registerHandler(key1, new MessageHandler {
+    dispatcher.registerHandler(key1, new MessageInvoker {
       var currentValue = -1;
-      def handle(message: MessageHandle) {
+      def invoke(message: MessageInvocation) {
         if (threadingIssueDetected.get) return
         val messageValue = message.message.asInstanceOf[Int]
         if (messageValue.intValue == currentValue + 1) {
@@ -95,9 +95,9 @@ class EventBasedDispatcherTest extends TestCase {
         } else threadingIssueDetected.set(true)
       }
     })
-    dispatcher.registerHandler(key2, new MessageHandler {
+    dispatcher.registerHandler(key2, new MessageInvoker {
       var currentValue = -1;
-      def handle(message: MessageHandle) {
+      def invoke(message: MessageInvocation) {
         if (threadingIssueDetected.get) return
         val messageValue = message.message.asInstanceOf[Int]
         if (messageValue.intValue == currentValue + 1) {
@@ -108,8 +108,8 @@ class EventBasedDispatcherTest extends TestCase {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageHandle(key1, new Integer(i), None, None))
-      dispatcher.messageQueue.append(new MessageHandle(key2, new Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key2, new Integer(i), None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)

@@ -34,11 +34,11 @@ case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends 
  *    override protected def getSupervisorConfig: SupervisorConfig = {
  *      SupervisorConfig(
  *        RestartStrategy(OneForOne, 3, 10),
- *        Worker(
+ *        Supervise(
  *          myFirstActor,
  *          LifeCycle(Permanent, 1000))
  *        ::
- *        Worker(
+ *        Supervise(
  *          mySecondActor,
  *          LifeCycle(Permanent, 1000))
  *        :: Nil)
@@ -123,7 +123,7 @@ class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging {
     case SupervisorConfig(_, servers) =>
       servers.map(server =>
         server match {
-          case Worker(actor, lifecycle) =>
+          case Supervise(actor, lifecycle) =>
             actor.lifeCycleConfig = Some(lifecycle)
             startLink(actor)
 

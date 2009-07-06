@@ -39,8 +39,8 @@ object DataFlow {
   private class ReactiveEventBasedThread[MessageType, ReturnType](body: MessageType => ReturnType) extends Actor {
     def act = loop { 
       react {
-        case message: MessageType => sender ! body(message)
-        case 'exit => exit()
+        case 'exit   => exit()
+        case message => sender ! body(message.asInstanceOf[MessageType])
       }
     }
   }

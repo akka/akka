@@ -8,8 +8,6 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import kernel.state.Transactional
 import kernel.util.Logging
 
-class TransactionRollbackException(msg: String) extends RuntimeException(msg)
-
 @serializable sealed abstract class TransactionStatus
 object TransactionStatus {
   case object New extends TransactionStatus
@@ -39,22 +37,22 @@ object TransactionIdFactory {
 
   log.debug("Creating a new transaction with id [%s]", id)
 
-  private[this] val transactionals = new ChangeSet
+  @volatile private[this] var status: TransactionStatus = TransactionStatus.New
+
+  private[this] val transactionalItems = new ChangeSet
 
   private[this] var participants: List[String] = Nil
   private[this] var precommitted: List[String] = Nil
-  
+
   private[this] val depth = new AtomicInteger(0)
   
-  @volatile private[this] var status: TransactionStatus = TransactionStatus.New
-
   def increment = synchronized { depth.incrementAndGet }
   def decrement = synchronized { depth.decrementAndGet }
-  def topLevel_? = synchronized { depth.get == 0 }
+  def isTopLevel = synchronized { depth.get == 0 }
   
   def register(transactional: Transactional) = synchronized {
     ensureIsActiveOrNew
-    transactionals + transactional
+    transactionalItems + transactional
   }
 
   def begin(participant: String) = synchronized {
@@ -83,7 +81,7 @@ object TransactionIdFactory {
           }}.exists(_ == true)
         } else false
       if (haveAllPreCommitted) {
-        transactionals.items.foreach(_.commit)
+        transactionalItems.items.foreach(_.commit)
         status = TransactionStatus.Completed
         reset
         true
@@ -97,7 +95,7 @@ object TransactionIdFactory {
   def rollback(participant: String) = synchronized {
     ensureIsActiveOrAborted
     log.debug("TX ROLLBACK - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
-    transactionals.items.foreach(_.rollback)
+    transactionalItems.items.foreach(_.rollback)
     status = TransactionStatus.Aborted
     reset
   }
@@ -105,7 +103,7 @@ object TransactionIdFactory {
   def rollbackForRescheduling(participant: String) = synchronized {
     ensureIsActiveOrAborted
     log.debug("TX ROLLBACK for recheduling - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
-    transactionals.items.foreach(_.rollback)
+    transactionalItems.items.foreach(_.rollback)
     reset
   }
 
@@ -121,7 +119,7 @@ object TransactionIdFactory {
   def isAborted = status == TransactionStatus.Aborted
 
   private def reset = {
-    transactionals.clear
+    transactionalItems.clear
     participants = Nil
     precommitted = Nil    
   }
@@ -136,7 +134,7 @@ object TransactionIdFactory {
     throw new IllegalStateException("Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
   // For reinitialize transaction after sending it over the wire 
-  private[kernel] def reinit = {
+  private[kernel] def reinit = synchronized {
     import net.lag.logging.{Logger, Level}
     if (log == null) {
       log = Logger.get(this.getClass.getName)

@@ -14,14 +14,10 @@ import junit.framework.TestCase;
 public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
-  static {
-      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
-    System.setProperty("storage-config", "config");
-    Kernel.startCassandra();
-  }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
   protected void setUp() {
+    PersistenceManager.init();
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {

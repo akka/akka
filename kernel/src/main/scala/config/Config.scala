@@ -22,14 +22,16 @@ object ScalaConfig {
   abstract class Scope extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
-  case class Worker(actor: Actor, lifeCycle: LifeCycle) extends Server
+  case class Supervise(actor: Actor, lifeCycle: LifeCycle) extends Server
 
   case class RestartStrategy(scheme: FailOverScheme, maxNrOfRetries: Int, withinTimeRange: Int) extends ConfigElement
 
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
 
-  case class LifeCycle(scope: Scope, shutdownTime: Int) extends ConfigElement
+  case class LifeCycle(scope: Scope, shutdownTime: Int) extends ConfigElement {
+    def this(scope: Scope) = this(scope, 0)
+  }
   case object Permanent extends Scope
   case object Transient extends Scope
   case object Temporary extends Scope
@@ -87,9 +89,12 @@ object JavaConfig {
     def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.RestartStrategy(
       scheme.transform, maxNrOfRetries, withinTimeRange)
   }
+//  class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val shutdownTime: Int, val callbacks: RestartCallbacks) extends ConfigElement {
   class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val shutdownTime: Int) extends ConfigElement {
     def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.LifeCycle(scope.transform, shutdownTime)
   }
+
+  class RestartCallbacks(val preRestart: String, val postRestart: String)
 
   abstract class Scope extends ConfigElement {
     def transform: se.scalablesolutions.akka.kernel.config.ScalaConfig.Scope
@@ -115,7 +120,7 @@ object JavaConfig {
   }
 
   class RemoteAddress(@BeanProperty val hostname: String, @BeanProperty val port: Int)
-  
+
   abstract class Server extends ConfigElement
   class Component(@BeanProperty val intf: Class[_],
                   @BeanProperty val target: Class[_],
@@ -150,8 +155,8 @@ object JavaConfig {
       se.scalablesolutions.akka.kernel.config.ScalaConfig.Component(intf, target, lifeCycle.transform, timeout, dispatcher,
         if (remoteAddress != null) se.scalablesolutions.akka.kernel.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
 
-    def newWorker(actor: Actor) =
-      se.scalablesolutions.akka.kernel.config.ScalaConfig.Worker(actor, lifeCycle.transform)
+    def newSupervised(actor: Actor) =
+      se.scalablesolutions.akka.kernel.config.ScalaConfig.Supervise(actor, lifeCycle.transform)
   }
   
 }

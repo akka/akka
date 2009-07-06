@@ -1,0 +1,9 @@
+<!DOCTYPE aspectwerkz PUBLIC
+    "-//AspectWerkz//DTD 2.0//EN"
+    "http://aspectwerkz.codehaus.org/dtd/aspectwerkz_2_0.dtd">
+
+<aspectwerkz>
+  <system id="akka">
+    <aspect class="se.scalablesolutions.akka.kernel.config.ConfigurationAspect"/>
+  </system>
+</aspectwerkz>

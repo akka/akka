@@ -14,15 +14,10 @@ import junit.framework.TestCase;
 public class RemotePersistentStateTest extends TestCase {
   static String messageLog = "";
 
-  static {
-    Kernel.startCassandra();
-    Kernel.startRemoteService();
-  }
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
-  final private ActiveObjectFactory factory = new ActiveObjectFactory();
-
   protected void setUp() {
+    PersistenceManager.init();
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {

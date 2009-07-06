@@ -53,10 +53,10 @@ final object CassandraStorage extends Logging {
     if (!isRunning) {
       try {
         server.start
-        log.info("Persistent storage has started up successfully");
+        log.info("Cassandra persistent storage has started up successfully");
       } catch {
         case e =>
-          log.error("Could not start up persistent storage")
+          log.error("Could not start up Cassandra persistent storage")
           throw e
       }
       if (RUN_THRIFT_SERVICE) {
@@ -214,7 +214,7 @@ class CassandraThriftServer(server: CassandraServer) extends Logging {
       options)
   } catch {
     case e =>
-      log.error("Could not start up persistent storage node.")
+      log.error("Could not start up Cassandra thrift service")
       throw e
   }
 
@@ -222,9 +222,9 @@ class CassandraThriftServer(server: CassandraServer) extends Logging {
   private[this] val serverDaemon = actor {
     receive {
      case Start =>
-        log.info("Cassandra thrift service is starting up...")
         serverEngine.serve
-      case Stop =>
+        log.info("Cassandra thrift service has starting up successfully")
+     case Stop =>
         log.info("Cassandra thrift service is shutting down...")
         serverEngine.stop
     }

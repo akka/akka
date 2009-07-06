@@ -28,7 +28,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private var supervisor: Option[Supervisor]  = None
   private var restartStrategy: RestartStrategy  = _
   private var components: List[Component] = _
-  private var workers: List[Worker] = Nil
+  private var supervised: List[Supervise] = Nil
   private var bindings: List[DependencyBinding] = Nil
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
   private var activeObjectRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
@@ -104,7 +104,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = activeObjectFactory.newInstance(targetClass, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
-    workers ::= Worker(actor, component.lifeCycle)
+    supervised ::= Supervise(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
   }
@@ -112,14 +112,14 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private def newDelegatingProxy(component: Component): DependencyBinding = {
     val targetClass = component.intf.get
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
-    component.target.getConstructor(Array[Class[_]]()).setAccessible(true)
+    component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
     val actor = new Dispatcher
     if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
     val remoteAddress =
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
-    workers ::= Worker(actor, component.lifeCycle)
+    supervised ::= Supervise(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }
@@ -132,7 +132,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
 
   override def supervise: ActiveObjectConfigurator = synchronized {
     if (injector == null) inject
-    supervisor = Some(activeObjectFactory.supervise(restartStrategy, workers))
+    supervisor = Some(activeObjectFactory.supervise(restartStrategy, supervised))
     //camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
     //camelContext.start
     supervisor.get.startSupervisor

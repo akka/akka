@@ -17,13 +17,8 @@ public class PersistentNestedStateTest extends TestCase {
   final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
   final private ActiveObjectFactory factory = new ActiveObjectFactory();
 
-  static {
-      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
-    System.setProperty("storage-config", "config");
-    Kernel.startCassandra();
-  }
-  
   protected void setUp() {
+      PersistenceManager.init();
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{

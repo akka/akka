@@ -30,8 +30,8 @@ object DispatcherType {
   case object ThreadBasedDispatcher extends DispatcherType
 }
 
-class ActorMessageHandler(val actor: Actor) extends MessageHandler {
-  def handle(handle: MessageHandle) = actor.handle(handle)
+class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
+  def invoke(handle: MessageInvocation) = actor.invoke(handle)
 }
 
 object Actor {
@@ -52,9 +52,6 @@ trait Actor extends Logging with TransactionManagement {
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
-
-  protected[this] var latestMessage: Option[MessageHandle] = None
-  protected[this] var messageToReschedule: Option[MessageHandle] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -89,7 +86,7 @@ trait Actor extends Logging with TransactionManagement {
   protected[kernel] var dispatcher: MessageDispatcher = {
     val dispatcher = new EventBasedThreadPoolDispatcher
     mailbox = dispatcher.messageQueue
-    dispatcher.registerHandler(this, new ActorMessageHandler(this))
+    dispatcher.registerHandler(this, new ActorMessageInvoker(this))
     dispatcher
   }
 
@@ -202,10 +199,9 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    */
-  def !(message: AnyRef): Unit = if (isRunning) {
-    if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(message, timeout, false, true)
-    else postMessageToMailbox(message)
-  } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+  def !(message: AnyRef): Unit =
+    if (isRunning) postMessageToMailbox(message)
+    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
@@ -217,13 +213,9 @@ trait Actor extends Logging with TransactionManagement {
    * If not then the sender will unessecary block until the timeout expires.
    */
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
-    if (TransactionManagement.isTransactionalityEnabled) {
-      transactionalDispatch(message, timeout, false, false)
-    } else {
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
-      future.await
-      getResultOrThrowException(future)
-    }
+    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
+    future.await
+    getResultOrThrowException(future)
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
   /**
@@ -242,13 +234,9 @@ trait Actor extends Logging with TransactionManagement {
    * E.g. send-and-receive-eventually semantics.
    */
   def !?[T](message: AnyRef): T = if (isRunning) {
-    if (TransactionManagement.isTransactionalityEnabled) {
-      transactionalDispatch(message, 0, true, false).get
-    } else {
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
-      future.awaitBlocking
-      getResultOrThrowException(future).get
-    }
+    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
+    future.awaitBlocking
+    getResultOrThrowException(future).get
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
   /**
@@ -395,7 +383,7 @@ trait Actor extends Logging with TransactionManagement {
       val supervisorUuid = registerSupervisorAsRemoteActor
       RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(true, message, null, this.getClass.getName, timeout, null, true, false, supervisorUuid))
     } else {
-      val handle = new MessageHandle(this, message, None, activeTx)
+      val handle = new MessageInvocation(this, message, None, TransactionManagement.threadBoundTx.get)
       mailbox.append(handle)
       latestMessage = Some(handle)
     }
@@ -409,93 +397,83 @@ trait Actor extends Logging with TransactionManagement {
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = new DefaultCompletableFutureResult(timeout)
-      val handle = new MessageHandle(this, message, Some(future), TransactionManagement.threadBoundTx.get)
+      val handle = new MessageInvocation(this, message, Some(future), TransactionManagement.threadBoundTx.get)
       mailbox.append(handle)
       latestMessage = Some(handle)
       future
     }
   }
 
-  private def transactionalDispatch[T](message: AnyRef, timeout: Long, blocking: Boolean, oneWay: Boolean): Option[T] = {
-    import TransactionManagement._
-    if (!tryToCommitTransaction) {
-      var nrRetries = 0           // FIXME only if top-level
-      var failed = true
-      do {
-        Thread.sleep(TIME_WAITING_FOR_COMPLETION)
-        nrRetries += 1
-        log.debug("Pending transaction [%s] not completed, waiting %s milliseconds. Attempt %s", activeTx.get, TIME_WAITING_FOR_COMPLETION, nrRetries)
-        failed = !tryToCommitTransaction
-      } while(nrRetries < NR_OF_TIMES_WAITING_FOR_COMPLETION && failed)
-      if (failed) {
-        log.debug("Pending transaction [%s] still not completed, aborting and rescheduling message [%s]", activeTx.get, latestMessage)
-        rollback(activeTx)
-        if (RESTART_TRANSACTION_ON_COLLISION) messageToReschedule = Some(latestMessage.get)
-        else throw new TransactionRollbackException("Conflicting transactions, rolling back transaction for message [" + latestMessage + "]")
-      }
-    }
-    if (isInExistingTransaction) joinExistingTransaction
-    else if (isTransactional) startNewTransaction
-    incrementTransaction
-    try {
-      if (oneWay) {
-        postMessageToMailbox(message)
-        None
-      } else {
-        val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
-        if (blocking) future.awaitBlocking
-        else future.await
-        getResultOrThrowException(future)
-      }
-    } catch {
-      case e: TransactionAwareWrapperException =>
-        e.cause.printStackTrace
-        rollback(e.tx)
-        throw e.cause
-    } finally {
-      decrementTransaction
-      if (isTransactionAborted) removeTransactionIfTopLevel
-      else tryToPrecommitTransaction
-      TransactionManagement.threadBoundTx.set(None)
-      if (messageToReschedule.isDefined) {
-        val handle = messageToReschedule.get
-        val newTx = startNewTransaction
-        val clone = new MessageHandle(handle.sender, handle.message, handle.future, newTx)
-        log.debug("Rescheduling message %s", clone)
-        mailbox.append(clone) // FIXME append or prepend rescheduled messages?
-      }
-    }
-  }
-
-  private def getResultOrThrowException[T](future: FutureResult): Option[T] =
-    if (future.exception.isDefined) {
-      val (_, cause) = future.exception.get
-      if (TransactionManagement.isTransactionalityEnabled) throw new TransactionAwareWrapperException(cause, activeTx)
-      else throw cause
-    } else {
-      future.result.asInstanceOf[Option[T]]
-    }
-
   /**
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods
    */
-  private[kernel] def handle(messageHandle: MessageHandle) = synchronized {
+  private[kernel] def invoke(messageHandle: MessageInvocation) = synchronized {
+    if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
+    else dispatch(messageHandle)
+  }
+
+  private def dispatch[T](messageHandle: MessageInvocation) = {
+    if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
     val message = messageHandle.message
     val future = messageHandle.future
     try {
-      if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
       senderFuture = future
       if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
       else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
     } catch {
       case e =>
-        // FIXME to fix supervisor restart of actor for oneway calls, inject a supervisor proxy that can send notification back to client
+        // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (supervisor.isDefined) supervisor.get ! Exit(this, e)
         if (future.isDefined) future.get.completeWithException(this, e)
         else e.printStackTrace
     } finally {
       TransactionManagement.threadBoundTx.set(None)
     }
+  }
+
+  private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
+    if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
+    val message = messageHandle.message
+    val future = messageHandle.future
+    try {
+      if (!tryToCommitTransaction && isTransactionTopLevel) handleCollision
+
+      if (isInExistingTransaction) joinExistingTransaction
+      else if (isTransactional) startNewTransaction
+
+      incrementTransaction
+      senderFuture = future
+      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
+      else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
+    } catch {
+      case e =>
+        rollback(activeTx)
+        TransactionManagement.threadBoundTx.set(None) // need to clear threadBoundTx before call to supervisor 
+        // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
+        if (supervisor.isDefined) supervisor.get ! Exit(this, e)
+        if (future.isDefined) future.get.completeWithException(this, e)
+        else e.printStackTrace
+    } finally {
+      decrementTransaction
+      if (isTransactionAborted) removeTransactionIfTopLevel
+      else tryToPrecommitTransaction
+      rescheduleClashedMessages
+      TransactionManagement.threadBoundTx.set(None)
+    }
+  }
+
+  private def getResultOrThrowException[T](future: FutureResult): Option[T] =
+    if (future.exception.isDefined) {
+      val (_, cause) = future.exception.get
+      throw cause
+    } else future.result.asInstanceOf[Option[T]]
+
+  private def rescheduleClashedMessages = if (messageToReschedule.isDefined) {
+    val handle = messageToReschedule.get
+    val newTx = startNewTransaction
+    val clone = new MessageInvocation(handle.sender, handle.message, handle.future, newTx)
+    log.debug("Rescheduling message %s", clone)
+    mailbox.append(clone) // FIXME append or prepend rescheduled messages?
   }
 
   private def base: PartialFunction[Any, Unit] = lifeCycle orElse (hotswap getOrElse receive)
@@ -564,7 +542,7 @@ trait Actor extends Logging with TransactionManagement {
   private[kernel] def swapDispatcher(disp: MessageDispatcher) = {
     dispatcher = disp
     mailbox = dispatcher.messageQueue
-    dispatcher.registerHandler(this, new ActorMessageHandler(this))
+    dispatcher.registerHandler(this, new ActorMessageInvoker(this))
   }
 
   override def toString(): String = "Actor[" + uuid + ":" + id + "]"

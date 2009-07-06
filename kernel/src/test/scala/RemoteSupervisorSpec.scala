@@ -474,7 +474,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
-          Worker(
+          Supervise(
             pingpong1,
             LifeCycle(Permanent, 100))
           :: Nil)
@@ -491,7 +491,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
-          Worker(
+          Supervise(
             pingpong1,
             LifeCycle(Permanent, 100))
           :: Nil)
@@ -512,15 +512,15 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
-          Worker(
+          Supervise(
             pingpong1,
             LifeCycle(Permanent, 100))
           ::
-          Worker(
+          Supervise(
             pingpong2,
             LifeCycle(Permanent, 100))
           ::
-          Worker(
+          Supervise(
             pingpong3,
             LifeCycle(Permanent, 100))
           :: Nil)
@@ -541,15 +541,15 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
-          Worker(
+          Supervise(
             pingpong1,
             LifeCycle(Permanent, 100))
           ::
-          Worker(
+          Supervise(
             pingpong2,
             LifeCycle(Permanent, 100))
           ::
-          Worker(
+          Supervise(
             pingpong3,
             LifeCycle(Permanent, 100))
           :: Nil)
@@ -570,17 +570,17 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
-          Worker(
+          Supervise(
             pingpong1,
             LifeCycle(Permanent, 100))
           ::
           SupervisorConfig(
             RestartStrategy(AllForOne, 3, 100),
-            Worker(
+            Supervise(
               pingpong2,
               LifeCycle(Permanent, 100))
             ::
-            Worker(
+            Supervise(
               pingpong3,
               LifeCycle(Permanent, 100))
             :: Nil)

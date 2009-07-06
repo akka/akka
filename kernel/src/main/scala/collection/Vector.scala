@@ -300,18 +300,18 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     case vec: Vector[T] => {
       var back = length == vec.length
       var i = 0
-      
+
       while (i < length) {
         back &&= apply(i) == vec.apply(i)
         i += 1
       }
-      
+
       back
     }
-    
+
     case _ => false
   }
-  
+
   override def hashCode = foldLeft(0) { _ ^ _.hashCode }
 }
 
@@ -326,7 +326,7 @@ object Vector {
   private[collection] def array(elems: AnyRef*) = {
     val back = new Array[AnyRef](elems.length)
     Array.copy(elems, 0, back, 0, back.length)
-    
+
     back
   }
 }

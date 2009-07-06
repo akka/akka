@@ -28,6 +28,7 @@ import java.util.HashMap;
 import se.scalablesolutions.akka.kernel.config.*;
 import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
 
+/*
 public class RestTest extends TestCase {
 
   private static int PORT = 9998;
@@ -36,8 +37,8 @@ public class RestTest extends TestCase {
   private static ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
 
   @BeforeClass
-  public static void initialize() throws IOException {
-      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
+  protected void setUp() {
+    se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
     conf.configureActiveObjects(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {
@@ -50,8 +51,8 @@ public class RestTest extends TestCase {
   }
 
   @Test
-  public void simpleRequest() throws IOException, InstantiationException {
-    //selector.start();
+  public void testSimpleRequest() throws IOException, InstantiationException {
+    selector.listen();
     Client client = Client.create();
     WebResource webResource = client.resource(URI);
     String responseMsg = webResource.path("/foo").get(String.class);
@@ -79,7 +80,7 @@ public class RestTest extends TestCase {
     selectorThread.setAlgorithmClassName(StaticStreamAlgorithm.class.getName());
     selectorThread.setPort(port);
     selectorThread.setAdapter(adapter);
-    selectorThread.listen();
     return selectorThread;
   }
 }
+*/

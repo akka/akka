@@ -123,12 +123,12 @@ class ObjectServerHandler extends SimpleChannelUpstreamHandler with Logging {
     val argClasses = args.map(_.getClass)
     val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.timeout)
 
-    continueTransaction(request)
+    //continueTransaction(request)
     try {
-      val messageReceiver = activeObject.getClass.getDeclaredMethod(request.method, unescapedArgClasses)
-      if (request.isOneWay) messageReceiver.invoke(activeObject, unescapedArgs)
+      val messageReceiver = activeObject.getClass.getDeclaredMethod(request.method, unescapedArgClasses: _*)
+      if (request.isOneWay) messageReceiver.invoke(activeObject, unescapedArgs: _*)
       else {
-        val result = messageReceiver.invoke(activeObject, unescapedArgs)
+        val result = messageReceiver.invoke(activeObject, unescapedArgs: _*)
         log.debug("Returning result from remote active object invocation [%s]", result)
         //channel.write(request.newReplyWithMessage(result, TransactionManagement.threadBoundTx.get))
         channel.write(request.newReplyWithMessage(result, null))

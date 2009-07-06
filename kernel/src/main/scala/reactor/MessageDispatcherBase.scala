@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
+import java.util.{LinkedList, Queue}
 import java.util.concurrent.TimeUnit
 import java.util.HashMap
 
@@ -11,14 +12,16 @@ trait MessageDispatcherBase extends MessageDispatcher {
   val CONCURRENT_MODE = kernel.Kernel.config.getBool("akka.actor.concurrent-mode", false)
   val MILLISECONDS = TimeUnit.MILLISECONDS
 
-  val messageQueue = new MessageQueue
+  val queue = new ReactiveMessageQueue
 
   @volatile protected var active: Boolean = false
-  protected val messageHandlers = new HashMap[AnyRef, MessageHandler]
+  protected val messageHandlers = new HashMap[AnyRef, MessageInvoker]
   protected var selectorThread: Thread = _
   protected val guard = new Object
 
-  def registerHandler(key: AnyRef, handler: MessageHandler) = guard.synchronized {
+  def messageQueue = queue
+
+  def registerHandler(key: AnyRef, handler: MessageInvoker) = guard.synchronized {
     messageHandlers.put(key, handler)
   }
 
@@ -36,4 +39,30 @@ trait MessageDispatcherBase extends MessageDispatcher {
    * Subclass callback. Override if additional shutdown behavior is needed.
    */
   protected def doShutdown = {}
+}
+
+class ReactiveMessageQueue extends MessageQueue {
+  private[kernel] val queue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
+  @volatile private var interrupted = false
+
+  def append(handle: MessageInvocation) = queue.synchronized {
+    queue.offer(handle)
+    queue.notifyAll
+  }
+
+  def prepend(handle: MessageInvocation) = queue.synchronized {
+    queue.add(handle)
+    queue.notifyAll
+  }
+
+  def read(destination: Queue[MessageInvocation]) = queue.synchronized {
+    while (queue.isEmpty && !interrupted) queue.wait
+    if (!interrupted) while (!queue.isEmpty) destination.offer(queue.remove)
+    else interrupted = false
+  }
+
+  def interrupt = queue.synchronized {
+    interrupted = true
+    queue.notifyAll
+  }
 }

@@ -245,16 +245,6 @@
                     </classpathContainers>
                 </configuration>
             </plugin>
-            <!--plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <includes>
-                  <include>*Spec.scala</include>
-                </includes>
-                <junitArtifactName>junit:junit</junitArtifactName>
-              </configuration>
-            </plugin-->
         </plugins>
         <resources>
             <resource>
