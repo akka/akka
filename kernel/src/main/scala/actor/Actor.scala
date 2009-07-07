@@ -508,7 +508,7 @@ trait Actor extends Logging with TransactionManagement {
       case None => throw new IllegalStateException("Server [" + id + "] does not have a life-cycle defined.")
 
       // FIXME implement support for shutdown time
-      case Some(LifeCycle(scope, shutdownTime)) => {
+      case Some(LifeCycle(scope, shutdownTime, _)) => {
         scope match {
           case Permanent => {
             preRestart(reason, config)

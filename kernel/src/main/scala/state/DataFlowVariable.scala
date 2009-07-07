@@ -59,8 +59,8 @@ object DataFlow {
 
     private class In[T](dataFlow: DataFlowVariable[T]) extends Actor {
       def act = loop { react {
-        case Set(v) => 
-          if (dataFlow.value.compareAndSet(None, Some(v.asInstanceOf[T]))) { 
+        case Set(v) =>
+          if (dataFlow.value.compareAndSet(None, Some(v.asInstanceOf[T]))) {
             val iterator = dataFlow.blockedReaders.iterator
             while (iterator.hasNext) iterator.next ! Set(v)
             dataFlow.blockedReaders.clear

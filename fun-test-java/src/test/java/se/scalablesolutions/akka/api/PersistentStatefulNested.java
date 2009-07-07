@@ -46,10 +46,11 @@ public class PersistentStatefulNested {
   }
 
 
-  public void success(String key, String msg) {
+  public String success(String key, String msg) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
+    return msg;
   }
 
 

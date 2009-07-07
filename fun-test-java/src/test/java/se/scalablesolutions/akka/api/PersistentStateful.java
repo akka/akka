@@ -61,11 +61,12 @@ public class PersistentStateful {
     return msg;
   }
 
-  public void success(String key, String msg, PersistentStatefulNested nested) {
+  public String success(String key, String msg, PersistentStatefulNested nested) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
     nested.success(key, msg);
+    return msg;
   }
 
   

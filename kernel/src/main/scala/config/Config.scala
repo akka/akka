@@ -29,9 +29,18 @@ object ScalaConfig {
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
 
-  case class LifeCycle(scope: Scope, shutdownTime: Int) extends ConfigElement {
-    def this(scope: Scope) = this(scope, 0)
+  case class LifeCycle(scope: Scope,
+                       shutdownTime: Int,
+                       callbacks: Option[RestartCallbacks]  // optional
+          ) extends ConfigElement
+  object LifeCycle {
+    def apply(scope: Scope, shutdownTime: Int) = new LifeCycle(scope, shutdownTime, None)
+    def apply(scope: Scope) = new LifeCycle(scope, 0, None)
   }
+  case class RestartCallbacks(preRestart: String, postRestart: String) {
+    if (preRestart == null || postRestart == null) throw new IllegalArgumentException("Restart callback methods can't be null")
+  }
+
   case object Permanent extends Scope
   case object Transient extends Scope
   case object Temporary extends Scope
@@ -89,12 +98,18 @@ object JavaConfig {
     def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.RestartStrategy(
       scheme.transform, maxNrOfRetries, withinTimeRange)
   }
-//  class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val shutdownTime: Int, val callbacks: RestartCallbacks) extends ConfigElement {
-  class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val shutdownTime: Int) extends ConfigElement {
-    def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.LifeCycle(scope.transform, shutdownTime)
+  
+  class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val shutdownTime: Int,  @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
+    def this(scope: Scope, shutdownTime: Int) = this(scope, shutdownTime, null)
+    def transform = {
+      val callbackOption = if (callbacks == null) None else Some(callbacks.transform)
+      se.scalablesolutions.akka.kernel.config.ScalaConfig.LifeCycle(scope.transform, shutdownTime, callbackOption)
+    }
   }
 
-  class RestartCallbacks(val preRestart: String, val postRestart: String)
+  class RestartCallbacks(@BeanProperty val preRestart: String, @BeanProperty val postRestart: String) {
+    def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.RestartCallbacks(preRestart, postRestart)
+  }
 
   abstract class Scope extends ConfigElement {
     def transform: se.scalablesolutions.akka.kernel.config.ScalaConfig.Scope

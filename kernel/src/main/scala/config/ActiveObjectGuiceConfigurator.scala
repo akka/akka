@@ -98,7 +98,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
-    val actor = new Dispatcher
+    val actor = new Dispatcher(component.lifeCycle.callbacks)
     if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
     val remoteAddress =
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
@@ -113,7 +113,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     val targetClass = component.intf.get
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
-    val actor = new Dispatcher
+    val actor = new Dispatcher(component.lifeCycle.callbacks)
     if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
     val remoteAddress =
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))

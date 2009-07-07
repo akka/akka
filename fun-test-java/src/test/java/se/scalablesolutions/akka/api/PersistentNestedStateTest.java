@@ -34,12 +34,12 @@ public class PersistentNestedStateTest extends TestCase {
     conf.stop();
   }
 
-  public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+  public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {
     PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
     PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
     assertEquals("new state", nested.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
@@ -51,7 +51,7 @@ public class PersistentNestedStateTest extends TestCase {
     nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
     PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -64,7 +64,7 @@ public class PersistentNestedStateTest extends TestCase {
     stateful.setVectorState("init"); // set init state
     PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
     nested.setVectorState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
     assertEquals(2, stateful.getVectorLength()); // BAD: keeps one element since last test
     assertEquals(2, nested.getVectorLength());
   }
@@ -76,7 +76,7 @@ public class PersistentNestedStateTest extends TestCase {
     nested.setVectorState("init"); // set init state
     PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
@@ -89,7 +89,7 @@ public class PersistentNestedStateTest extends TestCase {
     PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
     stateful.setRefState("init"); // set init state
     nested.setRefState("init"); // set init state
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
+    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
     assertEquals("new state", stateful.getRefState());
     assertEquals("new state", nested.getRefState());
   }
@@ -101,7 +101,7 @@ public class PersistentNestedStateTest extends TestCase {
     nested.setRefState("init"); // set init state
     PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
     try {
-      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
+      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected

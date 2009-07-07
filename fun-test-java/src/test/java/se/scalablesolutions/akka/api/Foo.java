@@ -12,17 +12,18 @@ public class Foo {
   public String foo(String msg) {
     return msg + "return_foo ";
   }
-  @oneway
   public void bar(String msg) {
     bar.bar(msg);
   }
-  public void longRunning() {
+  public String longRunning() {
     try {
       Thread.sleep(10000);
     } catch (InterruptedException e) {
     }
+    return "test";
   }
-  public void throwsException() {
-    throw new RuntimeException("expected");
+  public String throwsException() {
+    if (true) throw new RuntimeException("expected");
+    return "test";
   }
 }
