@@ -13,6 +13,7 @@ import kernel.config.ScalaConfig._
 import kernel.stm.TransactionManagement
 import kernel.util.Helpers.ReadWriteLock
 import kernel.util.{Serializer, JSONSerializer, Logging}
+
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifecycleMessage

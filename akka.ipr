@@ -1202,17 +1202,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/testing/scalatest/0.9.5/scalatest-0.9.5-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: com.jteigen.scalatest:junit4runner:1.0">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.scala-lang:scala-library:2.7.5">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5.jar!/" />
@@ -1390,17 +1379,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/3.1.0/jackson-3.1.0-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: junit:junit:4.4">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.google.code:protobuf-java:2.0.3">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/google/code/protobuf-java/2.0.3/protobuf-java-2.0.3.jar!/" />
@@ -1443,6 +1421,17 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/jackson-mapper-asl/1.1.0/jackson-mapper-asl-1.1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: junit:junit:4.4">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

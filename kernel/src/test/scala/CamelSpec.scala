@@ -9,7 +9,7 @@ import annotation.oneway
 import kernel.config.ScalaConfig._
 
 import com.google.inject.{AbstractModule, Scopes}
-import com.jteigen.scalatest.JUnit4Runner
+//import com.jteigen.scalatest.JUnit4Runner
 
 import org.apache.camel.component.bean.ProxyHelper
 import org.junit.runner.RunWith
@@ -32,7 +32,7 @@ import org.apache.camel.impl.DefaultCamelContext
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@RunWith(classOf[JUnit4Runner])
+//@RunWith(classOf[JUnit4Runner])
 class CamelSpec extends Spec with ShouldMatchers {
 
   describe("A Camel routing scheme") {

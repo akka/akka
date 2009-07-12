@@ -82,7 +82,6 @@
     <orderEntry type="library" exported="" name="Maven: org.slf4j:slf4j-api:1.4.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: log4j:log4j:1.2.13" level="project" />
     <orderEntry type="library" name="Maven: org.scala-tools.testing:scalatest:0.9.5" level="project" />
-    <orderEntry type="library" name="Maven: com.jteigen.scalatest:junit4runner:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.jersey:jersey-client:1.1.0-ea" level="project" />
   </component>
 </module>

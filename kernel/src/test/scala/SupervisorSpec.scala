@@ -7,14 +7,14 @@ package se.scalablesolutions.akka.kernel
 import kernel.actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
 import kernel.config.ScalaConfig._
 
-import com.jteigen.scalatest.JUnit4Runner
+//import com.jteigen.scalatest.JUnit4Runner
 import org.junit.runner.RunWith
 import org.scalatest.Suite
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@RunWith(classOf[JUnit4Runner])
+//@RunWith(classOf[JUnit4Runner])
 class SupervisorSpec extends junit.framework.TestCase with Suite {
 
   var messageLog: String = ""

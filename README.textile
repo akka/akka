@@ -46,4 +46,9 @@ Akka has a microkernel that embeds the Actor management, Persistence service, RE
 
 h2. Documentation
 
-Akka has pretty thorough "reference documentation": https://github.com/jboner/akka/wikis. Covering examples, APIs and configuration.
+Akka has pretty thorough "reference documentation":https://github.com/jboner/akka/wikis. Covering examples, APIs and configuration.
+
+h2. Distribution
+
+The latest distribution can be found in the "downloads section":https://github.com/jboner/akka/downloads
+

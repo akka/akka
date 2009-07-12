@@ -150,12 +150,12 @@
             <version>0.9.5</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>com.jteigen.scalatest</groupId>
             <artifactId>junit4runner</artifactId>
             <version>1.0</version>
             <scope>test</scope>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
