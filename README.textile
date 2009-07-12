@@ -1,0 +1,49 @@
+h1. Akka Actor Kernel:
+__RESTful Distributed Persistent Transactional Actors__
+
+h1. Introduction
+
+The Akka kernel implements a unique hybrid of:
+* The Actor model (Actors and Active Objects)
+** Asynchronous, non-blocking highly concurrent components.
+** Supervision with "let-it-crash" semantics. Components are loosely coupled and restarted upon failure.
+* Software Transactional Memory (STM).
+* BASE persistence - Pluggable Eventually Consistent distributed scalable persistent storage.
+* Remoting - Distributed services.
+* REST - JAX-RS binding.
+
+h2. Here is a short overview
+
+h3. The Actor model and supervisor hierarchies
+
+"Actors":http://en.wikipedia.org/wiki/Actor_model with "Erlang OTP-style supervisors":http://www.erlang.org/doc/design_principles/sup_princ.html#5 and "embrace failure/let-it-crash" semantics to allow implementation of asynchronous, non-blocking and highly fault-tolerant systems. Sort of "SEDA":http://www.eecs.harvard.edu/~mdw/proj/seda/ in a box with highly configurable and monitorable (JMX and w3c) thread pools and message queues.
+
+h3. Software Transactional Memory (STM)
+
+"Software Transactional Memory (STM)":http://en.wikipedia.org/wiki/Software_transactional_memory for composable message flows. Distributed transactions will come very soon, backed up by "ZooKeeper":http://hadoop.apache.org/zookeeper/. The STM works with both persistent datastructures and in-memory datastructures (see below).
+
+h3. BASE: Eventually Consistent Distributed persistence
+
+Akka provides a "Eventually Consistent":http://www.allthingsdistributed.com/2008/12/eventually_consistent.html Transactional Persistent Map, Vector and Ref. Backed up by the "Cassandra":http://incubator.apache.org/cassandra/  highly scalable, eventually consistent, distributed, structured key-value store. Akka will add support for "Terracotta":http://terracotta.org, "Redis":http://code.google.com/p/redis/, "Memcached":http://www.danga.com/memcached/, "Voldemort":http://project-voldemort.com/, "Tokyo Cabinet/Tyrant":http://tokyocabinet.sourceforge.net/ and "Hazelcast":http://www.hazelcast.com/ shortly.
+
+New nodes can be added and removed on the fly to support true scaling of cluster. The addition of Terracotta and Hazelcast will allow for atomic (ACID) transactions (non-BASE).
+
+h3. REST
+
+Actors can be exposed as "REST":http://en.wikipedia.org/wiki/Representational_State_Transfer services through "JAX-RS":https://jersey.dev.java.net/.
+
+h3. Remoting
+
+Actors can be defined and started on remote nodes, supporting both remote failures and supervision/linking. Enabling another dimension of fault-tolerance.
+
+h3. Java and Scala API
+
+Both a Java API through Active Objects and annotations as well as a Scala API with Erlang-style Actors with pattern matching etc.
+
+h3. Microkernel
+
+Akka has a microkernel that embeds the Actor management, Persistence service, REST integration, JMX management and Remote service. Simply drop your application in the /deploy directory and start up the kernel and you should be able to access your Actors through REST.
+
+h2. Documentation
+
+Akka has pretty thorough "reference documentation": https://github.com/jboner/akka/wikis. Covering examples, APIs and configuration.

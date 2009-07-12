@@ -8,15 +8,15 @@ build
 target
 data
 out
+logs
 storage
 .manager
 manifest.mf
-akka.conf
 semantic.cache
-akka.log
 tm*.log
 tm*.lck
 tm.out
 *.tm.epoch
 _dump
 WEB-INF
+.DS_Store

@@ -14,12 +14,12 @@ import junit.framework.TestCase;
 public class PersistentNestedStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
+  final private ActiveObjectManager conf = new ActiveObjectManager();
   final private ActiveObjectFactory factory = new ActiveObjectFactory();
 
   protected void setUp() {
       PersistenceManager.init();
-    conf.configureActiveObjects(
+    conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
             // FIXME: remove string-name, add ctor to only accept target class
@@ -35,8 +35,8 @@ public class PersistentNestedStateTest extends TestCase {
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-    PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
+    PersistentStatefulNested nested = conf.getInstance(PersistentStatefulNested.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
@@ -45,11 +45,11 @@ public class PersistentNestedStateTest extends TestCase {
   }
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
+    PersistentStatefulNested nested = conf.getInstance(PersistentStatefulNested.class);
     nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+    PersistentFailer failer = conf.getInstance(PersistentFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
       fail("should have thrown an exception");
@@ -60,9 +60,9 @@ public class PersistentNestedStateTest extends TestCase {
   }
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
     stateful.setVectorState("init"); // set init state
-    PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
+    PersistentStatefulNested nested = conf.getInstance(PersistentStatefulNested.class);
     nested.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
     assertEquals(2, stateful.getVectorLength()); // BAD: keeps one element since last test
@@ -70,11 +70,11 @@ public class PersistentNestedStateTest extends TestCase {
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
     stateful.setVectorState("init"); // set init state
-    PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
+    PersistentStatefulNested nested = conf.getInstance(PersistentStatefulNested.class);
     nested.setVectorState("init"); // set init state
-    PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+    PersistentFailer failer = conf.getInstance(PersistentFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
       fail("should have thrown an exception");
@@ -85,8 +85,8 @@ public class PersistentNestedStateTest extends TestCase {
   }
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-    PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
+    PersistentStatefulNested nested = conf.getInstance(PersistentStatefulNested.class);
     stateful.setRefState("init"); // set init state
     nested.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactional
@@ -95,11 +95,11 @@ public class PersistentNestedStateTest extends TestCase {
   }
 
   public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
-    PersistentStatefulNested nested = conf.getActiveObject(PersistentStatefulNested.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
+    PersistentStatefulNested nested = conf.getInstance(PersistentStatefulNested.class);
     stateful.setRefState("init"); // set init state
     nested.setRefState("init"); // set init state
-    PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+    PersistentFailer failer = conf.getInstance(PersistentFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactional method
       fail("should have thrown an exception");

@@ -31,12 +31,15 @@ final object CassandraStorage extends Logging {
   val IS_ASCENDING = true
 
   val RUN_THRIFT_SERVICE = kernel.Kernel.config.getBool("akka.storage.cassandra.thrift-server.service", false)
-  val BLOCKING_CALL = kernel.Kernel.config.getInt("akka.storage.cassandra.blocking", 0)
+  val BLOCKING_CALL = {
+     if (kernel.Kernel.config.getBool("akka.storage.cassandra.blocking", true)) 0
+     else 1 
+  }
 
   @volatile private[this] var isRunning = false
   private[this] val serializer: Serializer = {
     kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "serialization") match {
-      case "serialization" => new JavaSerializationSerializer
+      case "serialization" => JavaSerializationSerializer
       case "json" => throw new UnsupportedOperationException("json storage protocol is not yet supported")
       case "avro" => throw new UnsupportedOperationException("avro storage protocol is not yet supported")
       case "thrift" => throw new UnsupportedOperationException("thrift storage protocol is not yet supported")
@@ -89,11 +92,11 @@ final object CassandraStorage extends Logging {
   def getRefStorageFor(name: String): Option[AnyRef] = {
     try {
       val column = server.get_column(TABLE_NAME, name, REF_COLUMN_FAMILY)
-      Some(serializer.in(column.value))
+      Some(serializer.in(column.value, None))
     } catch {
       case e =>
         e.printStackTrace
-        None //throw new Predef.NoSuchElementException(e.getMessage)
+        None 
     }
   }
 
@@ -114,7 +117,7 @@ final object CassandraStorage extends Logging {
   def getVectorStorageEntryFor(name: String, index: Int): AnyRef = {                                                                                
     try {
       val column = server.get_column(TABLE_NAME, name, VECTOR_COLUMN_FAMILY + ":" + index)
-      serializer.in(column.value)
+      serializer.in(column.value, None)
     } catch {
       case e =>
         e.printStackTrace
@@ -161,7 +164,7 @@ final object CassandraStorage extends Logging {
   def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
     try {
       val column = server.get_column(TABLE_NAME, name, MAP_COLUMN_FAMILY + ":" + key)
-      Some(serializer.in(column.value))
+      Some(serializer.in(column.value, None))
     } catch {
       case e =>
         e.printStackTrace
@@ -174,7 +177,7 @@ final object CassandraStorage extends Logging {
       .toArray.toList.asInstanceOf[List[org.apache.cassandra.service.column_t]]
     for {
       column <- columns
-      col = (column.columnName, serializer.in(column.value))
+      col = (column.columnName, serializer.in(column.value, None))
     } yield col
   }
   

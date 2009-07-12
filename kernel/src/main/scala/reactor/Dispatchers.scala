@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.kernel.reactor
 import kernel.actor.Actor
 
 /**
- * Dispatcher factory.
+ * Scala API. Dispatcher factory.
  * <p/>
  * Example usage:
  * <pre/>
@@ -23,7 +23,27 @@ import kernel.actor.Actor
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Dispatchers {
+object Dispatchers extends DispatcherFactory
+
+/**
+ * Java API. Dispatcher factory.
+ * <p/>
+ * Example usage:
+ * <pre/>
+ *   DispatcherFactory dispatcherFactory = new DispatcherFactory
+ *   MessageDispatcher dispatcher = dispatcherFactory.newEventBasedThreadPoolDispatcher
+ *     .withNewThreadPoolWithBoundedBlockingQueue(100)
+ *     .setCorePoolSize(16)
+ *     .setMaxPoolSize(128)
+ *     .setKeepAliveTimeInMillis(60000)
+ *     .setRejectionPolicy(new CallerRunsPolicy)
+ *     .buildThreadPool
+ * </pre>
+ * <p/>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class DispatcherFactory {
   
   /**
    * Creates an event based dispatcher serving multiple (millions) of actors through a thread pool.

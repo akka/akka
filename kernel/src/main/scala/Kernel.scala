@@ -9,6 +9,8 @@ import com.sun.grizzly.http.servlet.ServletAdapter
 import com.sun.grizzly.standalone.StaticStreamAlgorithm
 
 import javax.ws.rs.core.UriBuilder
+import java.io.File
+import java.net.URLClassLoader
 
 import net.lag.configgy.{Config, Configgy, RuntimeEnvironment}
 
@@ -21,36 +23,52 @@ import kernel.util.Logging
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
-  val config = setupConfig
+  @volatile private var hasBooted = false
   
-  val RUN_REST_SERVICE = config.getBool("akka.rest.service", true)
+  val config = setupConfig
+
+  val BOOT_CLASSES = config.getList("akka.boot")
+
   val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
   val STORAGE_SYSTEM = config.getString("akka.storage.system", "cassandra")
+
+  val RUN_REST_SERVICE = config.getBool("akka.rest.service", true)
+  val REST_HOSTNAME = kernel.Kernel.config.getString("akka.rest.hostname", "localhost")
+  val REST_URL = "http://" + REST_HOSTNAME
+  val REST_PORT = kernel.Kernel.config.getInt("akka.rest.port", 9998)
+
 
   // FIXME add API to shut server down gracefully
   private var remoteServer: RemoteServer = _
   private var jerseySelectorThread: SelectorThread = _
   private val startTime = System.currentTimeMillis
 
-  def main(args: Array[String]): Unit = {
-    printBanner
-    log.info("Starting Akka kernel...")
-    if (RUN_REMOTE_SERVICE) startRemoteService
-    STORAGE_SYSTEM match {
-      case "cassandra" => startCassandra
-      case "terracotta" => throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
-      case "redis" => throw new UnsupportedOperationException("redis storage backend is not yet supported")
-      case "voldemort" => throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
-      case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
-      case "tokyo-tyrant" => throw new UnsupportedOperationException("tokyo-tyrart storage backend is not yet supported")
-      case "hazelcast" => throw new UnsupportedOperationException("hazelcast storage backend is not yet supported")
-    }
-    if (RUN_REST_SERVICE) startJersey
+  def main(args: Array[String]) = boot
+  
+  def boot = synchronized {
+    if (!hasBooted) {
+      printBanner
+      log.info("Starting Akka kernel...")
 
-    //startZooKeeper
-    //startVoldemort
-    //cassandraBenchmark
-    log.info("Akka kernel started successfully")
+      if (RUN_REMOTE_SERVICE) startRemoteService
+
+      STORAGE_SYSTEM match {
+        case "cassandra" => startCassandra
+        case "terracotta" => throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
+        case "redis" => throw new UnsupportedOperationException("redis storage backend is not yet supported")
+        case "voldemort" => throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
+        case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
+        case "tokyo-tyrant" => throw new UnsupportedOperationException("tokyo-tyrart storage backend is not yet supported")
+        case "hazelcast" => throw new UnsupportedOperationException("hazelcast storage backend is not yet supported")
+      }
+
+      if (RUN_REST_SERVICE) startJersey
+
+      runApplicationBootClasses
+
+      log.info("Akka kernel started successfully")
+      hasBooted = true
+    }
   }
 
   def uptime = (System.currentTimeMillis - startTime) / 1000
@@ -62,6 +80,8 @@ object Kernel extends Logging {
       //runtime.load(args)
       val config = Configgy.config
       config.registerWithJmx("com.scalablesolutions.akka.config")
+
+      // FIXME fix Configgy JMX subscription to allow management
       // config.subscribe { c => configure(c.getOrElse(new Config)) }
       config
     } catch {
@@ -69,6 +89,24 @@ object Kernel extends Logging {
     }
   }
 
+  private[akka] def runApplicationBootClasses = {
+    val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new IllegalStateException("AKKA_HOME system variable needs to be set. Should point to the root of the Akka distribution.") }
+    val CLASSES = HOME + "/kernel/target/classes" // FIXME remove for dist
+    val LIB = HOME + "/lib"
+    val CONFIG = HOME + "/config"
+    val DEPLOY = HOME + "/deploy"
+    val DEPLOY_DIR = new File(DEPLOY)
+    if (!DEPLOY_DIR.exists) { log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1) }
+    val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
+    log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
+    val loader = new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+    if (BOOT_CLASSES.isEmpty) throw new IllegalStateException("No boot class specificed. Add an application boot class to the 'akka.conf' file such as 'boot = \"com.biz.myapp.Boot\"")
+    for (clazz <- BOOT_CLASSES) {
+      log.info("Booting with boot class [%s]", clazz)
+      loader.loadClass(clazz).newInstance
+    }
+  }
+  
   private[akka] def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
@@ -84,25 +122,21 @@ object Kernel extends Logging {
   }
 
   private[akka] def startJersey = {
-    val JERSEY_HOSTNAME = kernel.Kernel.config.getString("akka.rest.hostname", "localhost")
-    val JERSEY_URL = "http://" + JERSEY_HOSTNAME + "/"
-    val JERSEY_PORT = kernel.Kernel.config.getInt("akka.rest.port", 9998)
-    
-    val uri = UriBuilder.fromUri(JERSEY_URL).port(JERSEY_PORT).build()
+    val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
     val adapter = new ServletAdapter
-    val servlet = classOf[AkkaServlet].newInstance
+    val servlet = new AkkaServlet
     adapter.setServletInstance(servlet)
     adapter.setContextPath(uri.getPath)
 
     val scheme = uri.getScheme
-    if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException("The URI scheme, of the URI " + JERSEY_URL + ", must be equal (ignoring case) to 'http'")
+    if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException("The URI scheme, of the URI " + REST_URL + ", must be equal (ignoring case) to 'http'")
 
     jerseySelectorThread = new SelectorThread
     jerseySelectorThread.setAlgorithmClassName(classOf[StaticStreamAlgorithm].getName)
-    jerseySelectorThread.setPort(JERSEY_PORT)
+    jerseySelectorThread.setPort(REST_PORT)
     jerseySelectorThread.setAdapter(adapter)
     jerseySelectorThread.listen
-    log.info("REST service started successfully. Listening to port [" + JERSEY_PORT + "]")
+    log.info("REST service started successfully. Listening to port [" + REST_PORT + "]")
   }
 
   private def printBanner = {

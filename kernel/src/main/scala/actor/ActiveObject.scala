@@ -4,12 +4,13 @@
 
 package se.scalablesolutions.akka.kernel.actor
 
+import java.io.File
 import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.InetSocketAddress
 import kernel.config.ScalaConfig._
 import kernel.nio.{RemoteRequest, RemoteClient}
 import kernel.reactor.{MessageDispatcher, FutureResult}
-import kernel.util.HashCode
+import kernel.util.{HashCode, Serializer, JavaSerializationSerializer}
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -276,8 +277,8 @@ sealed class ActorAroundAdvice(val target: Class[_],
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay = isOneWay(rtti)
     val future = RemoteClient.clientFor(remoteAddress.get).send(
-      new RemoteRequest(false, rtti.getParameterValues, rtti.getMethod.getName, target.getName,
-                        timeout, None, oneWay, false, actor.registerSupervisorAsRemoteActor))
+      new RemoteRequest(rtti.getParameterValues, rtti.getMethod.getName, target.getName,
+                        timeout, actor.registerSupervisorAsRemoteActor, false, oneWay, false))
     if (oneWay) null // for void methods
     else {
       if (future.isDefined) {
@@ -340,7 +341,7 @@ private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extend
   private var postRestart: Option[Method] = None
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
-    if (targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactional
+    if (targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactionRequired
     id = targetClass.getName
     target = Some(targetInstance)
     val methods = targetInstance.getClass.getDeclaredMethods.toList
@@ -372,6 +373,7 @@ private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extend
 
   override def receive: PartialFunction[Any, Unit] = {
     case Invocation(joinpoint, oneWay) =>
+      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinpoint)
       if (oneWay) joinpoint.proceed
       else reply(joinpoint.proceed)
     case unexpected =>
@@ -388,6 +390,35 @@ private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extend
     try {
       if (postRestart.isDefined) postRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
     } catch { case e: InvocationTargetException => throw e.getCause }
+  }
+
+  private def serializeArguments(joinpoint: JoinPoint) = {
+    val args = joinpoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
+    var unserializable = false
+    var hasMutableArgument = false
+    for (arg <- args.toList) {
+      if (!arg.isInstanceOf[String] &&
+        !arg.isInstanceOf[Int] &&
+        !arg.isInstanceOf[Long] &&
+        !arg.isInstanceOf[Float] &&
+        !arg.isInstanceOf[Double] &&
+        !arg.isInstanceOf[Boolean] &&
+        !arg.isInstanceOf[Char] &&
+        !arg.isInstanceOf[java.lang.Integer] &&
+        !arg.isInstanceOf[java.lang.Long] &&
+        !arg.isInstanceOf[java.lang.Float] &&
+        !arg.isInstanceOf[java.lang.Double] &&
+        !arg.isInstanceOf[java.lang.Boolean] &&
+        !arg.isInstanceOf[java.lang.Character] &&
+        !arg.getClass.isAnnotationPresent(Annotations.immutable)) {
+        hasMutableArgument = true
+      }
+      if (arg.getClass.getName.contains("$$ProxiedByAWSubclassing$$")) unserializable = true
+    }
+    if (!unserializable && hasMutableArgument) {
+      val copyOfArgs = serializer.deepClone(args)
+      joinpoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs)
+    }    
   }
 }
 

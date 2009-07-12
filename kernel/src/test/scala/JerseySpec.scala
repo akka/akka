@@ -36,7 +36,7 @@ class JerseySpec extends Spec with ShouldMatchers {
       val selector = startJersey
       selector.start
       val conf = new ActiveObjectGuiceConfigurator
-      conf.configureActiveObjects(
+      conf.configure(
         RestartStrategy(AllForOne, 3, 5000),
             Component(
                 classOf[resource.JerseyFoo],
@@ -44,7 +44,7 @@ class JerseySpec extends Spec with ShouldMatchers {
                 1000) ::
             Nil).supervise
 
-      conf.getActiveObject(classOf[resource.JerseyFoo])
+      conf.getInstance(classOf[resource.JerseyFoo])
       */
 
       /*

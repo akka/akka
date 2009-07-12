@@ -4,7 +4,8 @@
 
 package se.scalablesolutions.akka.kernel.jersey
 
-import config.ActiveObjectConfigurator
+import kernel.Kernel
+import config.ConfiguratorRepository
 
 import com.sun.jersey.api.core.{DefaultResourceConfig, ResourceConfig}
 import com.sun.jersey.spi.container.servlet.ServletContainer
@@ -15,7 +16,8 @@ import java.util.HashSet
 class AkkaServlet extends ServletContainer {
 
   override def initiate(rc: ResourceConfig, wa: WebApplication) = {
-    val configurators = ActiveObjectConfigurator.getConfiguratorsFor(getServletContext);
+    Kernel.boot // will boot if not already booted by 'main'
+    val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext);
     val set = new HashSet[Class[_]]
     for {
       conf <- configurators
@@ -24,6 +26,6 @@ class AkkaServlet extends ServletContainer {
 
     wa.initiate(
       new DefaultResourceConfig(set),
-      new ActiveObjectComponentProviderFactory(configurators));
+      new ActorComponentProviderFactory(configurators));
   }
 }

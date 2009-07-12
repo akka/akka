@@ -41,7 +41,7 @@ object Boot extends Logging {
     if (toDeploy.isEmpty) log.warning("No jars could be found in the [" + DEPLOY + "] directory, nothing to deploy")
     val libs = for (f <- LIB_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL    
     val urls =  new File(CLASSES).toURL :: (libs ::: toDeploy)
-    
+
     val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
     val mainClass = loader.loadClass(args(0))
     val mainMethod = mainClass.getMethod("main", Array(args.getClass): _*)

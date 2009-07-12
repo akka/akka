@@ -9,9 +9,11 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Protobuf" level="application" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-jsr250:2.0-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.annotation:jsr250-api:1.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.google.code:protobuf-java:2.0.3" level="project" />
   </component>
 </module>
 

@@ -13,7 +13,8 @@ import org.junit.{Test, Before}
 import org.junit.Assert._
 
 class PersistentActor extends Actor {
-  makeTransactional
+  timeout = 100000
+  makeTransactionRequired
   private val mapState = TransactionalState.newPersistentMap(CassandraStorageConfig())
   private val vectorState = TransactionalState.newPersistentVector(CassandraStorageConfig())
   private val refState = TransactionalState.newPersistentRef(CassandraStorageConfig())
@@ -49,7 +50,7 @@ class PersistentActor extends Actor {
 }
 
 class PersistentFailerActor extends Actor {
-  makeTransactional
+  makeTransactionRequired
   def receive: PartialFunction[Any, Unit] = {
     case "Failure" =>
       throw new RuntimeException("expected")

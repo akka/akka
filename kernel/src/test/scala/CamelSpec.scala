@@ -41,7 +41,7 @@ class CamelSpec extends Spec with ShouldMatchers {
       val latch = new CountDownLatch(1);
 
       val conf = new ActiveObjectGuiceConfigurator
-      conf.configureActiveObjects(
+      conf.configure(
         RestartStrategy(AllForOne, 3, 5000),
             Component(
                 "camelfoo",

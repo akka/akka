@@ -45,7 +45,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
     Executors.newCachedThreadPool)
 
   private val bootstrap = new ClientBootstrap(channelFactory)
-  private val handler = new ObjectClientHandler(futures, supervisors)
+  private val handler = new RemoteClientHandler(futures, supervisors)
 
   bootstrap.getPipeline.addLast("handler", handler)
   bootstrap.setOption("tcpNoDelay", true)
@@ -117,7 +117,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
 }
 
 @ChannelPipelineCoverage { val value = "all" }
-class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResult],
+class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor])
  extends SimpleChannelUpstreamHandler with Logging {
 
@@ -129,8 +129,11 @@ class ObjectClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
   }
 
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    // Add encoder and decoder as soon as a new channel is created so that
-    // a Java object is serialized and deserialized.
+    //event.getChannel.getPipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4));
+    //event.getChannel.getPipeline.addLast("protobufDecoder", new ProtobufDecoder(LocalTimeProtocol.LocalTimes.getDefaultInstance()));
+    //event.getChannel.getPipeline.addLast("frameEncoder", new LengthFieldPrepender(4));
+    //event.getChannel.getPipeline.addLast("protobufEncoder", new ProtobufEncoder());
+
     event.getChannel.getPipeline.addFirst("encoder", new ObjectEncoder)
     event.getChannel.getPipeline.addFirst("decoder", new ObjectDecoder)
   }

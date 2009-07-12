@@ -15,21 +15,20 @@ object IdFactory {
 
 @serializable class ProxyWrapper(val proxyName: String)
 
-@serializable class RemoteRequest(val isActor: Boolean,
-                                  val message: AnyRef,
+@serializable class RemoteRequest(val message: AnyRef,
                                   val method: String,
                                   val target: String,
                                   val timeout: Long,
-                                  val tx: Option[Transaction],
+                                  val supervisorUuid: Option[String],
+                                  val isActor: Boolean,
                                   val isOneWay: Boolean,
-                                  val isEscaped: Boolean,
-                                  val supervisorUuid: Option[String]) {
+                                  val isEscaped: Boolean) {
   private[RemoteRequest] var _id = IdFactory.nextId
   def id = _id
 
   override def toString: String = synchronized {
     "RemoteRequest[isActor: " + isActor + " | message: " + message + " | timeout: " + timeout + " | method: " + method + 
-    " | target: " + target + " | tx: " + tx + " | isOneWay: " + isOneWay + " | supervisorUuid: " + supervisorUuid + "]"
+    " | target: " + target + " | isOneWay: " + isOneWay + " | supervisorUuid: " + supervisorUuid + "]"
   }
 
   override def hashCode(): Int = synchronized {
@@ -41,7 +40,6 @@ object IdFactory {
     result = HashCode.hash(result, timeout)
     result = HashCode.hash(result, isOneWay)
     result = HashCode.hash(result, isEscaped)
-    result = if (tx.isDefined) HashCode.hash(result, tx.get) else result
     result = if (supervisorUuid.isDefined) HashCode.hash(result, supervisorUuid.get) else result
     result
   }
@@ -56,18 +54,20 @@ object IdFactory {
     that.asInstanceOf[RemoteRequest].timeout == timeout &&
     that.asInstanceOf[RemoteRequest].isOneWay == isOneWay &&
     that.asInstanceOf[RemoteRequest].isEscaped == isEscaped &&
-    that.asInstanceOf[RemoteRequest].tx.isDefined == tx.isDefined &&
-    that.asInstanceOf[RemoteRequest].tx.get == tx.get &&
     that.asInstanceOf[RemoteRequest].supervisorUuid.isDefined == supervisorUuid.isDefined &&
     that.asInstanceOf[RemoteRequest].supervisorUuid.get == supervisorUuid.get
   }
 
-  def newReplyWithMessage(message: AnyRef, tx: Option[Transaction]) = synchronized { new RemoteReply(true, id, message, null, tx, supervisorUuid) }
+  def newReplyWithMessage(message: AnyRef, tx: Option[Transaction]) = synchronized {
+    new RemoteReply(true, id, message, null, supervisorUuid)
+  }
 
-  def newReplyWithException(error: Throwable) = synchronized { new RemoteReply(false, id, null, error, None, supervisorUuid) }
+  def newReplyWithException(error: Throwable) = synchronized {
+    new RemoteReply(false, id, null, error, supervisorUuid)
+  }
 
   def cloneWithNewMessage(message: AnyRef, isEscaped: Boolean) = synchronized {
-    val request = new RemoteRequest(isActor, message, method, target, timeout, tx, isOneWay, isEscaped, supervisorUuid)
+    val request = new RemoteRequest(message, method, target, timeout, supervisorUuid, isActor, isOneWay, isEscaped)
     request._id = id
     request
   }
@@ -77,11 +77,10 @@ object IdFactory {
                                 val id: Long,
                                 val message: AnyRef,
                                 val exception: Throwable,
-                                val tx: Option[Transaction],
                                 val supervisorUuid: Option[String]) {
   override def toString: String = synchronized {
     "RemoteReply[successful: " + successful + " | id: " + id + " | message: " + message +
-    " | exception: " + exception + " | tx: " + tx + " | supervisorUuid: " + supervisorUuid + "]"
+    " | exception: " + exception + " | supervisorUuid: " + supervisorUuid + "]"
   }
 
   override def hashCode(): Int = synchronized {
@@ -90,7 +89,6 @@ object IdFactory {
     result = HashCode.hash(result, id)
     result = HashCode.hash(result, message)
     result = HashCode.hash(result, exception)
-    result = if (tx.isDefined) HashCode.hash(result, tx.get) else result
     result = if (supervisorUuid.isDefined) HashCode.hash(result, supervisorUuid.get) else result
     result
   }
@@ -102,8 +100,6 @@ object IdFactory {
     that.asInstanceOf[RemoteReply].id == id &&
     that.asInstanceOf[RemoteReply].message == message &&
     that.asInstanceOf[RemoteReply].exception == exception &&
-    that.asInstanceOf[RemoteRequest].tx.isDefined == tx.isDefined &&
-    that.asInstanceOf[RemoteRequest].tx.get == tx.get &&
     that.asInstanceOf[RemoteRequest].supervisorUuid.isDefined == supervisorUuid.isDefined &&
     that.asInstanceOf[RemoteRequest].supervisorUuid.get == supervisorUuid.get
   }

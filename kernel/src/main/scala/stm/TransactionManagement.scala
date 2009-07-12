@@ -32,7 +32,7 @@ object TransactionManagement {
 }
 
 trait TransactionManagement extends Logging {
-  val uuid = Uuid.newUuid.toString
+  var uuid = Uuid.newUuid.toString
   
   protected[this] var latestMessage: Option[MessageInvocation] = None
   protected[this] var messageToReschedule: Option[MessageInvocation] = None

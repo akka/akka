@@ -14,7 +14,7 @@ object Log {
 
 class TxActor(clasher: Actor) extends Actor {
   timeout = 1000000
-  makeTransactional
+  makeTransactionRequired
 
   def receive: PartialFunction[Any, Unit] = {
     case msg: AnyRef =>
@@ -26,7 +26,7 @@ class TxActor(clasher: Actor) extends Actor {
 class TxClasherActor extends Actor {
   val vector = TransactionalState.newInMemoryVector[String]
   timeout = 1000000
-  makeTransactional
+  makeTransactionRequired
   var count = 0
   def receive: PartialFunction[Any, Unit] = {
     case "First" =>
@@ -50,7 +50,7 @@ class TxClasherActor extends Actor {
 
 class TxActorOneWay(clasher: Actor) extends Actor {
   timeout = 1000000
-  makeTransactional
+  makeTransactionRequired
 
   def receive: PartialFunction[Any, Unit] = {
     case msg: AnyRef =>
@@ -61,7 +61,7 @@ class TxActorOneWay(clasher: Actor) extends Actor {
 class TxClasherActorOneWay extends Actor {
   val vector = TransactionalState.newInMemoryVector[String]
   timeout = 1000000
-  makeTransactional
+  makeTransactionRequired
   var count = 0
   def receive: PartialFunction[Any, Unit] = {
     case "First" =>

@@ -43,16 +43,16 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
    * @param clazz the class for the active object
    * @return the active object for the class
    */
-  override def getActiveObject[T](clazz: Class[T]): T = synchronized {
+  override def getInstance[T](clazz: Class[T]): T = synchronized {
     log.debug("Retrieving active object [%s]", clazz.getName)
-    if (injector == null) throw new IllegalStateException("inject() and/or supervise() must be called before invoking getActiveObject(clazz)")
+    if (injector == null) throw new IllegalStateException("inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
-        activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException("Class [" + clazz.getName + "] has not been put under supervision (by passing in the config to the 'configureActiveObjects' and then invoking 'supervise') method"))
+        activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException("Class [" + clazz.getName + "] has not been put under supervision (by passing in the config to the 'configure' and then invoking 'supervise') method"))
     injector.injectMembers(targetInstance)
     proxy.asInstanceOf[T]
   }
 
-  override def isActiveObjectDefined[T](clazz: Class[T]): Boolean = synchronized {
+  override def isDefined(clazz: Class[_]): Boolean = synchronized {
     activeObjectRegistry.get(clazz).isDefined
   }
 
@@ -78,9 +78,8 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     camelContext.getEndpoints(uri)
   }
 
-  override def configureActiveObjects(
-      restartStrategy: RestartStrategy,
-      components: List[Component]): ActiveObjectConfigurator = synchronized {
+  override def configure(restartStrategy: RestartStrategy, components: List[Component]):
+    ActiveObjectConfigurator = synchronized {
     this.restartStrategy = restartStrategy
     this.components = components.toArray.toList.asInstanceOf[List[Component]]
     bindings = for (component <- this.components) yield {
@@ -136,7 +135,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     //camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
     //camelContext.start
     supervisor.get.startSupervisor
-    ActiveObjectConfigurator.registerConfigurator(this)
+    ConfiguratorRepository.registerConfigurator(this)
     this
   }
 

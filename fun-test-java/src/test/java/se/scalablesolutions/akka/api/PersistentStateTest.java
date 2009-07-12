@@ -14,11 +14,11 @@ import junit.framework.TestCase;
 public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
+  final private ActiveObjectManager conf = new ActiveObjectManager();
 
   protected void setUp() {
     PersistenceManager.init();
-    conf.configureActiveObjects(
+    conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {
           new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 10000000),
@@ -32,16 +32,16 @@ public class PersistentStateTest extends TestCase {
   }
 
   public void testShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
-   PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+   PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
    stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-   PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+   PersistentFailer failer = conf.getInstance(PersistentFailer.class);
    try {
      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
      fail("should have thrown an exception");
@@ -51,7 +51,7 @@ public class PersistentStateTest extends TestCase {
  }
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
     stateful.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("init", stateful.getVectorState(0));
@@ -59,9 +59,9 @@ public class PersistentStateTest extends TestCase {
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
-   PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+   PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
    stateful.setVectorState("init"); // set init state
-   PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+   PersistentFailer failer = conf.getInstance(PersistentFailer.class);
    try {
      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
      fail("should have thrown an exception");
@@ -71,16 +71,16 @@ public class PersistentStateTest extends TestCase {
  }
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+    PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
     stateful.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getRefState());
   }
 
   public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
-   PersistentStateful stateful = conf.getActiveObject(PersistentStateful.class);
+   PersistentStateful stateful = conf.getInstance(PersistentStateful.class);
    stateful.setRefState("init"); // set init state
-   PersistentFailer failer = conf.getActiveObject(PersistentFailer.class);
+   PersistentFailer failer = conf.getInstance(PersistentFailer.class);
    try {
      stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
      fail("should have thrown an exception");

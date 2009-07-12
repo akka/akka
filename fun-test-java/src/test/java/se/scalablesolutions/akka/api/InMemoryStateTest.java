@@ -14,12 +14,12 @@ import se.scalablesolutions.akka.kernel.Kernel;
 public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
+  final private ActiveObjectManager conf = new ActiveObjectManager();
 
 
   protected void setUp() {
     se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
-    conf.configureActiveObjects(
+    conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
             // FIXME: remove string-name, add ctor to only accept target class
@@ -38,16 +38,16 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -57,7 +57,7 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
@@ -65,9 +65,9 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -77,7 +77,7 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
@@ -85,9 +85,9 @@ public class InMemoryStateTest extends TestCase {
   }
 
   public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setRefState("init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -97,9 +97,9 @@ public class InMemoryStateTest extends TestCase {
   }
   /*
    public void testNestedNonTransactionalMethodHangs() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.thisMethodHangs("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -110,10 +110,10 @@ public class InMemoryStateTest extends TestCase {
   */
   // public void testShouldRollbackStateForStatefulServerInCaseOfMessageClash()
   // {
-  // InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+  // InMemStateful stateful = conf.getInstance(InMemStateful.class);
   // stateful.setState("stateful", "init"); // set init state
   //
-  // InMemClasher clasher = conf.getActiveObject(InMemClasher.class);
+  // InMemClasher clasher = conf.getInstance(InMemClasher.class);
   // clasher.setState("clasher", "init"); // set init state
   //
   // // try {

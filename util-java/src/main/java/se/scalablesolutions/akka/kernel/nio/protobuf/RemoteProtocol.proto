@@ -1,0 +1,49 @@
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+ 
+package se.scalablesolutions.akka.kernel.nio.protobuf;
+
+/*
+  Compile with:
+  cd ./util-java/src/main/java
+  protoc se/scalablesolutions/akka/kernel/nio/protobuf/RemoteProtocol.proto --java_out .
+*/
+
+option optimize_for = SPEED;
+
+/*
+val message: Array[Byte],
+val method: String,
+val target: String,
+val timeout: Long,
+val supervisorUuid: String
+val isOneWay: Boolean,
+val isActor: Boolean,
+val isEscaped: Boolean,
+*/
+message RemoteRequest {
+  required bytes message = 1;
+  required string method = 2;
+  required string target = 3;
+  required uint64 timeout = 4;
+  required string supervisorUuid = 5;
+  required bool isActor = 6;
+  required bool isOneWay = 7;
+  required bool isEscaped = 8;
+}
+
+/*
+val isSuccessful: Boolean,
+val id: Long,
+val message: Array[Byte],
+val exception: Throwable,
+val supervisorUuid: String
+*/
+message RemoteReply {
+  required bool isSuccessful = 1;
+  required uint64 id = 2;
+  required bytes message = 3;
+  required string exception = 4;
+  required string supervisorUuid = 5;
+}

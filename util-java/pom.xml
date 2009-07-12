@@ -1,46 +1,68 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-util-java</artifactId>
-  <name>Akka Java Utilities Module</name>
+    <artifactId>akka-util-java</artifactId>
+    <name>Akka Java Utilities Module</name>
 
-  <packaging>jar</packaging>
+    <packaging>jar</packaging>
 
-  <parent>
-    <artifactId>akka</artifactId>
-    <groupId>${akka.groupId}</groupId>
-    <version>${akka.version}</version>
-  </parent>
+    <parent>
+        <artifactId>akka</artifactId>
+        <groupId>${akka.groupId}</groupId>
+        <version>${akka.version}</version>
+    </parent>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.guiceyfruit</groupId>
-      <artifactId>guice-core</artifactId>
-      <version>2.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.guiceyfruit</groupId>
-      <artifactId>guice-jsr250</artifactId>
-      <version>2.0-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.guiceyfruit</groupId>
+            <artifactId>guice-core</artifactId>
+            <version>2.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.guiceyfruit</groupId>
+            <artifactId>guice-jsr250</artifactId>
+            <version>2.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.google.code</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+    </dependencies>
 
-  <build>
-    <sourceDirectory>src/main/java</sourceDirectory>
-    <testSourceDirectory>src/test/java</testSourceDirectory>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-          <includes>
-            <include>**/*</include>
-          </includes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+    <build>
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                    <includes>
+                        <include>**/*</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>install</phase>
+                        <configuration>
+                            <tasks>
+                                <copy file="target/akka-util-java-${akka.version}.jar"
+                                      tofile="../lib/akka-util-java-${akka.version}.jar"/>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                          <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

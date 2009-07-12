@@ -6,7 +6,11 @@ package se.scalablesolutions.akka.kernel.actor
 
 import kernel.util.Logging
 import kernel.config.ScalaConfig._
+import kernel.config.{ConfiguratorRepository, Configurator}
 import kernel.util.Helpers._
+
+import java.util.concurrent.ConcurrentHashMap
+
 import scala.collection.mutable.HashMap
    
 /**
@@ -97,12 +101,22 @@ abstract class SupervisorFactory extends Logging {
  * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up actors.  
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging {  
+ */                                  
+class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging with Configurator {  
   trapExit = true
   faultHandler = Some(handler)
+
+  val actors = new ConcurrentHashMap[String, Actor]
   
+  def getInstance[T](clazz: Class[T]) = actors.get(clazz.getName).asInstanceOf[T]
+
+  def getComponentInterfaces: List[Class[_]] = actors.values.toArray.toList.map(_.getClass)
+
+  def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
+
   def startSupervisor = {
+    ConfiguratorRepository.registerConfigurator(this)
+    actors.values.toArray.toList.foreach(println)
     start
     this ! StartSupervisor
   }
@@ -124,6 +138,7 @@ class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging {
       servers.map(server =>
         server match {
           case Supervise(actor, lifecycle) =>
+            actors.put(actor.getClass.getName, actor)
             actor.lifeCycleConfig = Some(lifecycle)
             startLink(actor)
 

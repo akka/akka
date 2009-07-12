@@ -10,14 +10,11 @@ import java.util.concurrent.CopyOnWriteArraySet
 import kernel.nio.{RemoteServer, RemoteClient, RemoteRequest}
 import kernel.reactor._
 import kernel.config.ScalaConfig._
-import kernel.stm.{TransactionRollbackException, TransactionAwareWrapperException, TransactionManagement}
+import kernel.stm.TransactionManagement
 import kernel.util.Helpers.ReadWriteLock
-import kernel.util.Logging
-import org.codehaus.aspectwerkz.proxy.Uuid
-
+import kernel.util.{Serializer, JSONSerializer, Logging}
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
-case class Stop(reason: AnyRef) extends LifecycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifecycleMessage
 case class Restart(reason: AnyRef) extends LifecycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifecycleMessage
@@ -36,6 +33,7 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 
 object Actor {
   val TIMEOUT = kernel.Kernel.config.getInt("akka.actor.timeout", 5000)
+  val SERIALIZE_MESSAGES = kernel.Kernel.config.getBool("akka.actor.serialize-messages", false)
 }
 
 trait Actor extends Logging with TransactionManagement {
@@ -52,6 +50,9 @@ trait Actor extends Logging with TransactionManagement {
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
+
+  // FIXME switch to JSON serialization
+  protected[this] val serializer: Serializer = JSONSerializer
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -74,13 +75,14 @@ trait Actor extends Logging with TransactionManagement {
    * But if you are running many many actors then it can be a good idea to have split them up in terms of dispatcher sharing.
    * <br/>
    * Default is that all actors that are created and spawned from within this actor is sharing the same dispatcher as its creator.
-   * <p/>
-   * There are currently two different dispatchers available (but the interface can easily be implemented for custom implementation):
-   * <pre/>
-   *  // default - executorService can be build up using the ThreadPoolBuilder
-   *  new EventBasedThreadPoolDispatcher(executor: ExecutorService)
-   *
-   *  new EventBasedSingleThreadDispatcher
+   * <pre>
+   *   dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher
+   *     .withNewThreadPoolWithBoundedBlockingQueue(100)
+   *     .setCorePoolSize(16)
+   *     .setMaxPoolSize(128)
+   *     .setKeepAliveTimeInMillis(60000)
+   *     .setRejectionPolicy(new CallerRunsPolicy)
+   *     .buildThreadPool
    * </pre>
    */
   protected[kernel] var dispatcher: MessageDispatcher = {
@@ -170,7 +172,7 @@ trait Actor extends Logging with TransactionManagement {
    * Optional callback method that is called during termination.
    * To be implemented by subclassing actor.
    */
-  protected def shutdown(reason: AnyRef) {}
+  protected def shutdown {}
 
   // =============
   // ==== API ====
@@ -193,6 +195,7 @@ trait Actor extends Logging with TransactionManagement {
     if (isRunning) {
       dispatcher.unregisterHandler(this)
       isRunning = false
+      shutdown
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -248,6 +251,14 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   /**
+   * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
+   */
+  def setDispatcher(disp: MessageDispatcher) = synchronized {
+    if (!isRunning) dispatcher = disp
+    else throw new IllegalArgumentException("Can not swap dispatcher for " + toString + " after it has been started")
+  }
+  
+  /**
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
    */
   def makeRemote(hostname: String, port: Int): Unit = remoteFlagLock.withWriteLock {
@@ -262,15 +273,15 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   /**
-   * Invoking 'makeTransactional' means that the actor will **start** a new transaction if non exists.
+   * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    * If transactionality want to be completely turned off then do it by invoking:
    * <pre/>
    *  TransactionManagement.disableTransactions
    * </pre>
    */
-  def makeTransactional = synchronized {
-    if (isRunning) throw new IllegalArgumentException("Can not make actor transactional after it has been started")
+  def makeTransactionRequired = synchronized {
+    if (isRunning) throw new IllegalArgumentException("Can not make actor transaction required after it has been started")
     else isTransactional = true
   }
 
@@ -381,7 +392,7 @@ trait Actor extends Logging with TransactionManagement {
   private def postMessageToMailbox(message: AnyRef): Unit = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (remoteAddress.isDefined) {
       val supervisorUuid = registerSupervisorAsRemoteActor
-      RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(true, message, null, this.getClass.getName, timeout, null, true, false, supervisorUuid))
+      RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(message, null, this.getClass.getName, timeout, supervisorUuid, true, true, false))
     } else {
       val handle = new MessageInvocation(this, message, None, TransactionManagement.threadBoundTx.get)
       mailbox.append(handle)
@@ -392,7 +403,7 @@ trait Actor extends Logging with TransactionManagement {
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (remoteAddress.isDefined) {
       val supervisorUuid = registerSupervisorAsRemoteActor
-      val future = RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(true, message, null, this.getClass.getName, timeout, null, false, false, supervisorUuid))
+      val future = RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(message, null, this.getClass.getName, timeout, supervisorUuid, true, false, false))
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
@@ -414,7 +425,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
     if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
-    val message = messageHandle.message
+    val message = messageHandle.message//serializeMessage(messageHandle.message)
     val future = messageHandle.future
     try {
       senderFuture = future
@@ -433,7 +444,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
     if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
-    val message = messageHandle.message
+    val message = messageHandle.message//serializeMessage(messageHandle.message)
     val future = messageHandle.future
     try {
       if (!tryToCommitTransaction && isTransactionTopLevel) handleCollision
@@ -482,7 +493,6 @@ trait Actor extends Logging with TransactionManagement {
     case Init(config) =>       init(config)
     case HotSwap(code) =>      hotswap = code
     case Restart(reason) =>    restart(reason)
-    case Stop(reason) =>       shutdown(reason); stop
     case Exit(dead, reason) => handleTrapExit(dead, reason)
   }
 
@@ -545,5 +555,25 @@ trait Actor extends Logging with TransactionManagement {
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))
   }
 
+  /*
+  private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
+    if (!message.isInstanceOf[String] &&
+      !message.isInstanceOf[Int] &&
+      !message.isInstanceOf[Long] &&
+      !message.isInstanceOf[Float] &&
+      !message.isInstanceOf[Double] &&
+      !message.isInstanceOf[Boolean] &&
+      !message.isInstanceOf[Char] &&
+      !message.isInstanceOf[java.lang.Integer] &&
+      !message.isInstanceOf[java.lang.Long] &&
+      !message.isInstanceOf[java.lang.Float] &&
+      !message.isInstanceOf[java.lang.Double] &&
+      !message.isInstanceOf[java.lang.Boolean] &&
+      !message.isInstanceOf[java.lang.Character] &&
+      !message.getClass.isAnnotationPresent(Annotations.immutable)) {
+      serializer.deepClone(message)
+    } else message
+  } else message
+    */
   override def toString(): String = "Actor[" + uuid + ":" + id + "]"
 }

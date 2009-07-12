@@ -27,8 +27,8 @@ class ActiveObjectEndpoint(val uri: String, val component: DefaultComponent, val
   val activeObjectName = uri.substring(uri.indexOf(':') + 1, lastSep)
   val activeObjectClass = Thread.currentThread.getContextClassLoader.loadClass(activeObjectName)
   val methodName = uri.substring(lastSep + 1, uri.length) 
-  val activeObject = conf.getActiveObject(activeObjectClass).asInstanceOf[MessageDriven]
-//  val activeObjectProxy = conf.getActiveObjectProxy(activeObjectName)
+  val activeObject = conf.getInstance(activeObjectClass).asInstanceOf[MessageDriven]
+//  val activeObjectProxy = conf.getInstanceProxy(activeObjectName)
   
 //  val genericServer = supervisor.getServerOrElse(
 //    activeObjectName,

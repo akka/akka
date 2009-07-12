@@ -13,11 +13,11 @@ import junit.framework.TestCase;
 public class InMemNestedStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectGuiceConfiguratorForJava conf = new ActiveObjectGuiceConfiguratorForJava();
+  final private ActiveObjectManager conf = new ActiveObjectManager();
   final private ActiveObjectFactory factory = new ActiveObjectFactory();
 
   protected void setUp() {
-    conf.configureActiveObjects(
+    conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
             // FIXME: remove string-name, add ctor to only accept target class
@@ -34,9 +34,9 @@ public class InMemNestedStateTest extends TestCase {
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
-    InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
+    InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
@@ -44,11 +44,11 @@ public class InMemNestedStateTest extends TestCase {
   }
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
+    InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -59,9 +59,9 @@ public class InMemNestedStateTest extends TestCase {
   }
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
-    InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
+    InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
     assertEquals("new state", stateful.getVectorState());
@@ -69,11 +69,11 @@ public class InMemNestedStateTest extends TestCase {
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
-    InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
+    InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setVectorState("init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -84,8 +84,8 @@ public class InMemNestedStateTest extends TestCase {
   }
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
-    InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
+    InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     stateful.setRefState("init"); // set init state
     nested.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
@@ -94,11 +94,11 @@ public class InMemNestedStateTest extends TestCase {
   }
 
   public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = conf.getActiveObject(InMemStateful.class);
-    InMemStatefulNested nested = conf.getActiveObject(InMemStatefulNested.class);
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
+    InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     stateful.setRefState("init"); // set init state
     nested.setRefState("init"); // set init state
-    InMemFailer failer = conf.getActiveObject(InMemFailer.class);
+    InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
       fail("should have thrown an exception");
