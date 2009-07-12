@@ -13,6 +13,7 @@ package se.scalablesolutions.akka.kernel.nio.protobuf;
 option optimize_for = SPEED;
 
 /*
+val id: Long,
 val message: Array[Byte],
 val method: String,
 val target: String,
@@ -31,6 +32,8 @@ message RemoteRequest {
   required bool isActor = 6;
   required bool isOneWay = 7;
   required bool isEscaped = 8;
+  required uint64 id = 9;
+  required string messageType = 10;
 }
 
 /*
@@ -46,4 +49,5 @@ message RemoteReply {
   required bytes message = 3;
   required string exception = 4;
   required string supervisorUuid = 5;
+  required string messageType = 6;
 }

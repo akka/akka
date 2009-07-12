@@ -1401,17 +1401,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.google.code:protobuf-java:2.0.3">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/google/code/protobuf-java/2.0.3/protobuf-java-2.0.3.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/google/code/protobuf-java/2.0.3/protobuf-java-2.0.3-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/google/code/protobuf-java/2.0.3/protobuf-java-2.0.3-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.codehaus.jackson:jackson-core-asl:1.1.0">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/jackson-core-asl/1.1.0/jackson-core-asl-1.1.0.jar!/" />
@@ -1443,6 +1432,17 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/jackson-mapper-asl/1.1.0/jackson-mapper-asl-1.1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: com.google.protobuf:protobuf-java:2.1.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

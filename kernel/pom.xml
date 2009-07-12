@@ -71,6 +71,11 @@
             <artifactId>jackson-mapper-asl</artifactId>
             <version>1.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>2.1.0</version>
+        </dependency>
 
         <!-- For Cassandra -->
         <dependency>

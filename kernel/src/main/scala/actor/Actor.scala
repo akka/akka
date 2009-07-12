@@ -7,12 +7,15 @@ package se.scalablesolutions.akka.kernel.actor
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArraySet
 
-import kernel.nio.{RemoteServer, RemoteClient, RemoteRequest}
 import kernel.reactor._
 import kernel.config.ScalaConfig._
 import kernel.stm.TransactionManagement
 import kernel.util.Helpers.ReadWriteLock
 import kernel.util.{Serializer, JSONSerializer, Logging}
+import kernel.nio._
+import kernel.nio.protobuf._
+
+import nio.protobuf.RemoteProtocol.RemoteRequest
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifecycleMessage
@@ -51,7 +54,6 @@ trait Actor extends Logging with TransactionManagement {
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
 
-  // FIXME switch to JSON serialization
   protected[this] val serializer: Serializer = JSONSerializer
 
   // ====================================
@@ -391,8 +393,19 @@ trait Actor extends Logging with TransactionManagement {
 
   private def postMessageToMailbox(message: AnyRef): Unit = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (remoteAddress.isDefined) {
-      val supervisorUuid = registerSupervisorAsRemoteActor
-      RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(message, null, this.getClass.getName, timeout, supervisorUuid, true, true, false))
+      val request = RemoteRequest.newBuilder
+              .setId(RemoteRequestIdFactory.nextId)
+              .setMessage(serializer.out(message))
+              .setMessageType(message.getClass.getName)
+              .setMethod(null)
+              .setTarget(this.getClass.getName)
+              .setTimeout(timeout)
+              .setSupervisorUuid(registerSupervisorAsRemoteActor)
+              .setIsActor(true)
+              .setIsOneWay(true)
+              .setIsEscaped(false)
+              .build
+      RemoteClient.clientFor(remoteAddress.get).send(request)
     } else {
       val handle = new MessageInvocation(this, message, None, TransactionManagement.threadBoundTx.get)
       mailbox.append(handle)
@@ -402,8 +415,19 @@ trait Actor extends Logging with TransactionManagement {
 
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (remoteAddress.isDefined) {
-      val supervisorUuid = registerSupervisorAsRemoteActor
-      val future = RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(message, null, this.getClass.getName, timeout, supervisorUuid, true, false, false))
+      val request = RemoteRequest.newBuilder
+              .setId(RemoteRequestIdFactory.nextId)
+              .setMessage(serializer.out(message))
+              .setMethod(null)
+              .setMessageType(message.getClass.getName)
+              .setTarget(this.getClass.getName)
+              .setTimeout(timeout)
+              .setSupervisorUuid(registerSupervisorAsRemoteActor)
+              .setIsActor(true)
+              .setIsOneWay(false)
+              .setIsEscaped(false)
+              .build
+      val future = RemoteClient.clientFor(remoteAddress.get).send(request)
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {

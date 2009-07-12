@@ -10,8 +10,7 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 
 import kernel.actor._
 import kernel.stm.TransactionManagement
-import kernel.util.Logging
-
+import kernel.util.{JSONSerializer, Logging}
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
@@ -21,7 +20,7 @@ import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder
-
+import protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
 class RemoteServer extends Logging {
   def start = RemoteServer.start
 }
@@ -107,19 +106,36 @@ class AkkaServerHandler extends SimpleChannelUpstreamHandler with Logging {
     log.debug("Dispatching to remote actor [%s]", request.target)
     val actor = createActor(request.target, request.timeout)
     actor.start
-    if (request.isOneWay) actor ! request.message
+    val messageBytes = request.getMessage
+    val messageType = request.getMessageType
+    val messageClass = Class.forName(messageType)
+    val message = JSONSerializer.in(messageBytes, messageClass)
+    if (request.isOneWay) actor ! message
     else {
       try {
-        val resultOrNone = actor !! request.message
+        val resultOrNone = actor !! message
         val result: AnyRef = if (resultOrNone.isDefined) resultOrNone.get else null
         log.debug("Returning result from actor invocation [%s]", result)
-        //channel.write(request.newReplyWithMessage(result, TransactionManagement.threadBoundTx.get))
-        channel.write(request.newReplyWithMessage(result, null))
+        val replyMessage = JSONSerializer.out(result)
+        val reply = RemoteReply.newBuilder
+                .setId(request.getId)
+                .setMessage(replyMessage)
+                .setMessageType(result.getClass.getName)
+                .setIsSuccessful(true)
+                .setSupervisorUuid(request.getSupervisorUuid)
+                .build
+        channel.write(reply)
       } catch {
         case e: Throwable =>
           log.error("Could not invoke remote actor [%s] due to: %s", request.target, e)
           e.printStackTrace
-          channel.write(request.newReplyWithException(e))
+          val reply = RemoteReply.newBuilder
+                  .setId(request.getId)
+                  .setException(e.toString)
+                  .setIsSuccessful(false)
+                  .setSupervisorUuid(request.getSupervisorUuid)
+                  .build
+          channel.write(reply)
       }
     }    
   }

@@ -7,10 +7,13 @@ package se.scalablesolutions.akka.kernel.actor
 import java.io.File
 import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.InetSocketAddress
+
 import kernel.config.ScalaConfig._
-import kernel.nio.{RemoteRequest, RemoteClient}
 import kernel.reactor.{MessageDispatcher, FutureResult}
-import kernel.util.{HashCode, Serializer, JavaSerializationSerializer}
+import kernel.util.{HashCode, Serializer, JSONSerializer}
+import kernel.nio.RemoteRequestIdFactory
+import kernel.config.JavaConfig.RestartCallbacks
+import kernel.nio.protobuf.RemoteProtocol.RemoteRequest
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -34,6 +37,8 @@ object Annotations {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
+
+  protected[this] val serializer: Serializer = JSONSerializer
 
   // FIXME How to pass the MessageDispatcher on from active object to child???????
 
@@ -276,9 +281,20 @@ sealed class ActorAroundAdvice(val target: Class[_],
   private def remoteDispatch(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay = isOneWay(rtti)
-    val future = RemoteClient.clientFor(remoteAddress.get).send(
-      new RemoteRequest(rtti.getParameterValues, rtti.getMethod.getName, target.getName,
-                        timeout, actor.registerSupervisorAsRemoteActor, false, oneWay, false))
+    val message = rtti.getParameterValues
+    val request = RemoteRequest.newBuilder
+            .setId(RemoteRequestIdFactory.nextId)
+            .setMessage(serializer.out(message))
+            .setMessageType(message.getClass.getName)
+            .setMethod(rtti.getMethod.getName)
+            .setTarget(target.getName)
+            .setTimeout(timeout)
+            .setSupervisorUuid(actor.registerSupervisorAsRemoteActor)
+            .setIsActor(false)
+            .setIsOneWay(oneWay)
+            .setIsEscaped(false)
+            .build
+    val future = RemoteClient.clientFor(remoteAddress.get).send(request)
     if (oneWay) null // for void methods
     else {
       if (future.isDefined) {

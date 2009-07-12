@@ -9,13 +9,13 @@ import java.util.concurrent.{Executors, ConcurrentMap, ConcurrentHashMap}
 
 import kernel.actor.{Exit, Actor}
 import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
-import kernel.util.Logging
-
+import kernel.util.{JSONSerializer, Logging}
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoder, ObjectDecoder}
 import org.jboss.netty.bootstrap.ClientBootstrap
 
+import protobuf.RemoteProtocol.RemoteReply
 import scala.collection.mutable.HashMap
 
 object RemoteClient extends Logging {
@@ -76,7 +76,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   }
 
   def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
-    val escapedRequest = escapeRequest(request)
+    val escapedRequest = request//escapeRequest(request)
     if (escapedRequest.isOneWay) {
       connection.getChannel.write(escapedRequest)
       None
@@ -148,21 +148,23 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
-        val future = futures.get(reply.id)
-        //val tx = reply.tx
-        //if (reply.successful) future.completeWithResult((reply.message, tx))
-        if (reply.successful) future.completeWithResult(reply.message)
+        val future = futures.get(reply.getId)
+        val messageBytes = reply.getMessage
+        val messageType = reply.getMessageType
+        val messageClass = Class.forName(messageType)
+        val message = JSONSerializer.in(messageBytes, messageClass)
+        if (reply.successful) future.completeWithResult(message)
         else {
-          if (reply.supervisorUuid.isDefined) {
-            val supervisorUuid = reply.supervisorUuid.get
+          val supervisorUuid = reply.getSupervisorUuid
+          if (supervisorUuid != null) {
             if (!supervisors.containsKey(supervisorUuid)) throw new IllegalStateException("Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
             if (!supervisedActor.supervisor.isDefined) throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-            else supervisedActor.supervisor.get ! Exit(supervisedActor, reply.exception)
+            else supervisedActor.supervisor.get ! Exit(supervisedActor, new RuntimeException(reply.getException))
           }
-          future.completeWithException(null, reply.exception)
+          future.completeWithException(null, new RuntimeException(reply.getException))
         }
-	      futures.remove(reply.id)
+	      futures.remove(reply.getId)
       } else throw new IllegalArgumentException("Unknown message received in remote client handler: " + result)
     } catch {
       case e: Exception =>
