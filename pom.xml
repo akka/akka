@@ -30,6 +30,19 @@
             <id>repo1.maven</id>
             <name>Maven Main Repository</name>
             <url>http://repo1.maven.org/maven2</url>
+            <!--<snapshots>
+            	<enabled>true</enabled>
+            </snapshots>-->
+        </repository>
+        <repository>
+            <id>project.embedded</id>
+            <name>Project Embedded Repository</name>
+            <url>file://${basedir}/embedded-repo</url>
+        </repository>
+        <repository>
+            <id>project.embedded.module</id>
+            <name>Project Embedded Repository</name>
+            <url>file://${basedir}/../embedded-repo</url>
         </repository>
         <repository>
             <id>scala-tools-snapshots</id>
@@ -69,17 +82,33 @@
             </releases>
         </repository>
         <repository>
-            <id>repository.jboss.org</id>
-            <name>JBoss Repository for Maven</name>
-            <url>http://repository.jboss.org/maven2</url>
+            <id>guiceyfruit.snapshot</id>
+            <name>GuiceyFruit Snapshot Repository</name>
+            <url>http://guiceyfruit.googlecode.com/svn/repo/snapshots/</url>
             <snapshots>
-                <enabled>false</enabled>
+                <enabled>true</enabled>
             </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
         </repository>
+        <repository>
+  			<id>google-maven-repository</id>
+  			<name>Google Maven Repository</name>
+  			<url>http://google-maven-repository.googlecode.com/svn/repository/</url>
+		</repository>
         <repository>
             <id>repository.codehaus.org</id>
             <name>Codehaus Maven Repository</name>
             <url>http://repository.codehaus.org</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>repository.jboss.org</id>
+            <name>JBoss Repository for Maven</name>
+            <url>http://repository.jboss.org/maven2</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
