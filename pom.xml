@@ -35,11 +35,6 @@
             </snapshots>-->
         </repository>
         <repository>
-            <id>project.embedded</id>
-            <name>Project Embedded Repository</name>
-            <url>file://${basedir}/embedded-repo</url>
-        </repository>
-        <repository>
             <id>project.embedded.module</id>
             <name>Project Embedded Repository</name>
             <url>file://${basedir}/../embedded-repo</url>
