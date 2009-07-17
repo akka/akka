@@ -1202,17 +1202,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/testing/scalatest/0.9.5/scalatest-0.9.5-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: com.jteigen.scalatest:junit4runner:1.0">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/com/jteigen/scalatest/junit4runner/1.0/junit4runner-1.0-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.scala-lang:scala-library:2.7.5">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5.jar!/" />
@@ -1443,6 +1432,17 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: sbinary:sbinary:0.3-alpha">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/sbinary/sbinary/0.3-alpha/sbinary-0.3-alpha.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/sbinary/sbinary/0.3-alpha/sbinary-0.3-alpha-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/sbinary/sbinary/0.3-alpha/sbinary-0.3-alpha-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

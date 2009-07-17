@@ -19,7 +19,7 @@ import com.google.inject.{AbstractModule, Scopes}
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 
-import com.jteigen.scalatest.JUnit4Runner
+//simport com.jteigen.scalatest.JUnit4Runner
 import org.junit.runner.RunWith
 import org.junit.Test
 import org.junit.Assert._
@@ -27,7 +27,7 @@ import org.junit.Assert._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@RunWith(classOf[JUnit4Runner])
+//@RunWith(classOf[JUnit4Runner])
 class JerseySpec extends Spec with ShouldMatchers {
 
   describe("A Jersey REST service") {

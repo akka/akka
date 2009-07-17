@@ -76,6 +76,11 @@
             <artifactId>protobuf-java</artifactId>
             <version>2.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>sbinary</groupId>
+            <artifactId>sbinary</artifactId>
+            <version>0.3</version>
+        </dependency>
 
         <!-- For Cassandra -->
         <dependency>
@@ -155,12 +160,12 @@
             <version>0.9.5</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>com.jteigen.scalatest</groupId>
             <artifactId>junit4runner</artifactId>
             <version>1.0</version>
             <scope>test</scope>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

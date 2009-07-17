@@ -39,7 +39,7 @@ public final class RemoteProtocol {
     public boolean hasMessage() { return hasMessage; }
     public com.google.protobuf.ByteString getMessage() { return message_; }
     
-    // required string method = 2;
+    // optional string method = 2;
     public static final int METHOD_FIELD_NUMBER = 2;
     private boolean hasMethod;
     private java.lang.String method_ = "";
@@ -60,7 +60,7 @@ public final class RemoteProtocol {
     public boolean hasTimeout() { return hasTimeout; }
     public long getTimeout() { return timeout_; }
     
-    // required string supervisorUuid = 5;
+    // optional string supervisorUuid = 5;
     public static final int SUPERVISORUUID_FIELD_NUMBER = 5;
     private boolean hasSupervisorUuid;
     private java.lang.String supervisorUuid_ = "";
@@ -105,10 +105,8 @@ public final class RemoteProtocol {
     @Override
     public final boolean isInitialized() {
       if (!hasMessage) return false;
-      if (!hasMethod) return false;
       if (!hasTarget) return false;
       if (!hasTimeout) return false;
-      if (!hasSupervisorUuid) return false;
       if (!hasIsActor) return false;
       if (!hasIsOneWay) return false;
       if (!hasIsEscaped) return false;
@@ -471,7 +469,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string method = 2;
+      // optional string method = 2;
       public boolean hasMethod() {
         return result.hasMethod();
       }
@@ -531,7 +529,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string supervisorUuid = 5;
+      // optional string supervisorUuid = 5;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
       }
@@ -690,42 +688,46 @@ public final class RemoteProtocol {
     public boolean hasId() { return hasId; }
     public long getId() { return id_; }
     
-    // required bytes message = 3;
+    // optional bytes message = 3;
     public static final int MESSAGE_FIELD_NUMBER = 3;
     private boolean hasMessage;
     private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasMessage() { return hasMessage; }
     public com.google.protobuf.ByteString getMessage() { return message_; }
     
-    // required string exception = 4;
+    // optional string exception = 4;
     public static final int EXCEPTION_FIELD_NUMBER = 4;
     private boolean hasException;
     private java.lang.String exception_ = "";
     public boolean hasException() { return hasException; }
     public java.lang.String getException() { return exception_; }
     
-    // required string supervisorUuid = 5;
+    // optional string supervisorUuid = 5;
     public static final int SUPERVISORUUID_FIELD_NUMBER = 5;
     private boolean hasSupervisorUuid;
     private java.lang.String supervisorUuid_ = "";
     public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
     public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
     
-    // required string messageType = 6;
+    // optional string messageType = 6;
     public static final int MESSAGETYPE_FIELD_NUMBER = 6;
     private boolean hasMessageType;
     private java.lang.String messageType_ = "";
     public boolean hasMessageType() { return hasMessageType; }
     public java.lang.String getMessageType() { return messageType_; }
     
+    // required bool isActor = 7;
+    public static final int ISACTOR_FIELD_NUMBER = 7;
+    private boolean hasIsActor;
+    private boolean isActor_ = false;
+    public boolean hasIsActor() { return hasIsActor; }
+    public boolean getIsActor() { return isActor_; }
+    
     @Override
     public final boolean isInitialized() {
       if (!hasIsSuccessful) return false;
       if (!hasId) return false;
-      if (!hasMessage) return false;
-      if (!hasException) return false;
-      if (!hasSupervisorUuid) return false;
-      if (!hasMessageType) return false;
+      if (!hasIsActor) return false;
       return true;
     }
     
@@ -749,6 +751,9 @@ public final class RemoteProtocol {
       }
       if (hasMessageType()) {
         output.writeString(6, getMessageType());
+      }
+      if (hasIsActor()) {
+        output.writeBool(7, getIsActor());
       }
       getUnknownFields().writeTo(output);
     }
@@ -783,6 +788,10 @@ public final class RemoteProtocol {
       if (hasMessageType()) {
         size += com.google.protobuf.CodedOutputStream
           .computeStringSize(6, getMessageType());
+      }
+      if (hasIsActor()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(7, getIsActor());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -943,6 +952,9 @@ public final class RemoteProtocol {
         if (other.hasMessageType()) {
           setMessageType(other.getMessageType());
         }
+        if (other.hasIsActor()) {
+          setIsActor(other.getIsActor());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -1001,6 +1013,10 @@ public final class RemoteProtocol {
               setMessageType(input.readString());
               break;
             }
+            case 56: {
+              setIsActor(input.readBool());
+              break;
+            }
           }
         }
       }
@@ -1042,7 +1058,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bytes message = 3;
+      // optional bytes message = 3;
       public boolean hasMessage() {
         return result.hasMessage();
       }
@@ -1063,7 +1079,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string exception = 4;
+      // optional string exception = 4;
       public boolean hasException() {
         return result.hasException();
       }
@@ -1084,7 +1100,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string supervisorUuid = 5;
+      // optional string supervisorUuid = 5;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
       }
@@ -1105,7 +1121,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string messageType = 6;
+      // optional string messageType = 6;
       public boolean hasMessageType() {
         return result.hasMessageType();
       }
@@ -1123,6 +1139,24 @@ public final class RemoteProtocol {
       public Builder clearMessageType() {
         result.hasMessageType = false;
         result.messageType_ = "";
+        return this;
+      }
+      
+      // required bool isActor = 7;
+      public boolean hasIsActor() {
+        return result.hasIsActor();
+      }
+      public boolean getIsActor() {
+        return result.getIsActor();
+      }
+      public Builder setIsActor(boolean value) {
+        result.hasIsActor = true;
+        result.isActor_ = value;
+        return this;
+      }
+      public Builder clearIsActor() {
+        result.hasIsActor = false;
+        result.isActor_ = false;
         return this;
       }
     }
@@ -1155,14 +1189,14 @@ public final class RemoteProtocol {
       "rotobuf/RemoteProtocol.proto\022-se.scalabl" +
       "esolutions.akka.kernel.nio.protobuf\"\300\001\n\r" +
       "RemoteRequest\022\017\n\007message\030\001 \002(\014\022\016\n\006method" +
-      "\030\002 \002(\t\022\016\n\006target\030\003 \002(\t\022\017\n\007timeout\030\004 \002(\004\022" +
-      "\026\n\016supervisorUuid\030\005 \002(\t\022\017\n\007isActor\030\006 \002(\010" +
+      "\030\002 \001(\t\022\016\n\006target\030\003 \002(\t\022\017\n\007timeout\030\004 \002(\004\022" +
+      "\026\n\016supervisorUuid\030\005 \001(\t\022\017\n\007isActor\030\006 \002(\010" +
       "\022\020\n\010isOneWay\030\007 \002(\010\022\021\n\tisEscaped\030\010 \002(\010\022\n\n" +
-      "\002id\030\t \002(\004\022\023\n\013messageType\030\n \002(\t\"\200\001\n\013Remot" +
+      "\002id\030\t \002(\004\022\023\n\013messageType\030\n \002(\t\"\221\001\n\013Remot" +
       "eReply\022\024\n\014isSuccessful\030\001 \002(\010\022\n\n\002id\030\002 \002(\004" +
-      "\022\017\n\007message\030\003 \002(\014\022\021\n\texception\030\004 \002(\t\022\026\n\016" +
-      "supervisorUuid\030\005 \002(\t\022\023\n\013messageType\030\006 \002(" +
-      "\tB\002H\001";
+      "\022\017\n\007message\030\003 \001(\014\022\021\n\texception\030\004 \001(\t\022\026\n\016" +
+      "supervisorUuid\030\005 \001(\t\022\023\n\013messageType\030\006 \001(" +
+      "\t\022\017\n\007isActor\030\007 \002(\010B\002H\001";
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
@@ -1181,7 +1215,7 @@ public final class RemoteProtocol {
           internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteReply_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteReply_descriptor,
-              new java.lang.String[] { "IsSuccessful", "Id", "Message", "Exception", "SupervisorUuid", "MessageType", },
+              new java.lang.String[] { "IsSuccessful", "Id", "Message", "Exception", "SupervisorUuid", "MessageType", "IsActor", },
               se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.class,
               se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder.class);
           return null;

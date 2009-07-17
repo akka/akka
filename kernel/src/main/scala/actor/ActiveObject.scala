@@ -4,16 +4,16 @@
 
 package se.scalablesolutions.akka.kernel.actor
 
+import com.google.protobuf.ByteString
 import java.io.File
 import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.InetSocketAddress
 
 import kernel.config.ScalaConfig._
 import kernel.reactor.{MessageDispatcher, FutureResult}
-import kernel.util.{HashCode, Serializer, JSONSerializer}
-import kernel.nio.RemoteRequestIdFactory
-import kernel.config.JavaConfig.RestartCallbacks
-import kernel.nio.protobuf.RemoteProtocol.RemoteRequest
+import kernel.util.{HashCode, Serializer, JavaJSONSerializer}
+import kernel.nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import kernel.nio.{RemoteClient, RemoteServer, RemoteRequestIdFactory}
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -37,8 +37,6 @@ object Annotations {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectFactory {
-
-  protected[this] val serializer: Serializer = JSONSerializer
 
   // FIXME How to pass the MessageDispatcher on from active object to child???????
 
@@ -257,6 +255,8 @@ sealed class ActorAroundAdvice(val target: Class[_],
                                val actor: Dispatcher,                
                                val remoteAddress: Option[InetSocketAddress],
                                val timeout: Long) extends AroundAdvice {
+  private val serializer: Serializer = JavaJSONSerializer
+
   val id = target.getName
   actor.timeout = timeout
   actor.start
@@ -281,19 +281,24 @@ sealed class ActorAroundAdvice(val target: Class[_],
   private def remoteDispatch(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay = isOneWay(rtti)
-    val message = rtti.getParameterValues
+    val (message: AnyRef, isEscaped) = escapeArguments(rtti.getParameterValues)
+    val supervisorId = {
+      val id = actor.registerSupervisorAsRemoteActor
+      if (id.isDefined) id.get
+      else null
+    }
     val request = RemoteRequest.newBuilder
-            .setId(RemoteRequestIdFactory.nextId)
-            .setMessage(serializer.out(message))
-            .setMessageType(message.getClass.getName)
-            .setMethod(rtti.getMethod.getName)
-            .setTarget(target.getName)
-            .setTimeout(timeout)
-            .setSupervisorUuid(actor.registerSupervisorAsRemoteActor)
-            .setIsActor(false)
-            .setIsOneWay(oneWay)
-            .setIsEscaped(false)
-            .build
+      .setId(RemoteRequestIdFactory.nextId)
+      .setMessage(ByteString.copyFrom(serializer.out(message)))
+      .setMessageType(message.getClass.getName)
+      .setMethod(rtti.getMethod.getName)
+      .setTarget(target.getName)
+      .setTimeout(timeout)
+      .setSupervisorUuid(supervisorId)
+      .setIsActor(false)
+      .setIsOneWay(oneWay)
+      .setIsEscaped(false)
+      .build
     val future = RemoteClient.clientFor(remoteAddress.get).send(request)
     if (oneWay) null // for void methods
     else {
@@ -315,6 +320,18 @@ sealed class ActorAroundAdvice(val target: Class[_],
   private def isOneWay(rtti: MethodRtti) =
     rtti.getMethod.getReturnType == java.lang.Void.TYPE ||
     rtti.getMethod.isAnnotationPresent(Annotations.oneway)
+
+  private def escapeArguments(args: Array[Object]): Tuple2[Array[Object], Boolean] = {
+    var isEscaped = false
+    val escapedArgs = for (arg <- args) yield {
+      val clazz = arg.getClass
+      if (clazz.getName.contains("$$ProxiedByAW")) {
+        isEscaped = true
+        "$$ProxiedByAW" + clazz.getSuperclass.getName
+      } else arg
+    }
+    (escapedArgs, isEscaped)
+  }
 }
 
 /**
@@ -414,12 +431,14 @@ private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extend
     var hasMutableArgument = false
     for (arg <- args.toList) {
       if (!arg.isInstanceOf[String] &&
+        !arg.isInstanceOf[Byte] &&
         !arg.isInstanceOf[Int] &&
         !arg.isInstanceOf[Long] &&
         !arg.isInstanceOf[Float] &&
         !arg.isInstanceOf[Double] &&
         !arg.isInstanceOf[Boolean] &&
         !arg.isInstanceOf[Char] &&
+        !arg.isInstanceOf[java.lang.Byte] &&
         !arg.isInstanceOf[java.lang.Integer] &&
         !arg.isInstanceOf[java.lang.Long] &&
         !arg.isInstanceOf[java.lang.Float] &&

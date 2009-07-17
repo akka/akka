@@ -13,7 +13,6 @@ package se.scalablesolutions.akka.kernel.nio.protobuf;
 option optimize_for = SPEED;
 
 /*
-val id: Long,
 val message: Array[Byte],
 val method: String,
 val target: String,
@@ -22,13 +21,15 @@ val supervisorUuid: String
 val isOneWay: Boolean,
 val isActor: Boolean,
 val isEscaped: Boolean,
+val id: Long,
+val messageType: String,
 */
 message RemoteRequest {
   required bytes message = 1;
-  required string method = 2;
+  optional string method = 2;
   required string target = 3;
   required uint64 timeout = 4;
-  required string supervisorUuid = 5;
+  optional string supervisorUuid = 5;
   required bool isActor = 6;
   required bool isOneWay = 7;
   required bool isEscaped = 8;
@@ -42,12 +43,14 @@ val id: Long,
 val message: Array[Byte],
 val exception: Throwable,
 val supervisorUuid: String
+val isActor: Boolean,
 */
 message RemoteReply {
   required bool isSuccessful = 1;
   required uint64 id = 2;
-  required bytes message = 3;
-  required string exception = 4;
-  required string supervisorUuid = 5;
-  required string messageType = 6;
+  optional bytes message = 3;
+  optional string exception = 4;
+  optional string supervisorUuid = 5;
+  optional string messageType = 6;
+  required bool isActor = 7;
 }
