@@ -45,8 +45,8 @@ object CassandraStorage extends Logging {
       case "java-json" =>  Serializer.JavaJSON
       //case "sbinary" =>    Serializer.SBinary
       case "java" =>       Serializer.Java
-      case "avro" => throw new UnsupportedOperationException("Avro serialization protocol is not yet supported")
-      case unknown => throw new UnsupportedOperationException("unknwon storage protocol [" + unknown + "]")
+      case "avro" =>       throw new UnsupportedOperationException("Avro serialization protocol is not yet supported")
+      case unknown =>      throw new UnsupportedOperationException("Unknown storage serialization protocol [" + unknown + "]")
     }
   }
   

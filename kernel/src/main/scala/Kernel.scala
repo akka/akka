@@ -69,7 +69,7 @@ object Kernel extends Logging {
       hasBooted = true
     }
   }
-
+  
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
   def setupConfig: Config = {

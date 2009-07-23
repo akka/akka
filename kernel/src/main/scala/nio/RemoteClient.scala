@@ -170,6 +170,7 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
 
   private def parseException(reply: RemoteReply) = {
     val exception = reply.getException
+    println("-------------- " + exception)
     val exceptionType = Class.forName(exception.substring(0, exception.indexOf('$')))
     val exceptionMessage = exception.substring(exception.indexOf('$') + 1, exception.length)
     exceptionType

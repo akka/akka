@@ -142,7 +142,7 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
     log.debug("Dispatching to remote active object [%s :: %s]", request.getMethod, request.getTarget)
     val activeObject = createActiveObject(request.getTarget, request.getTimeout)
 
-    val args = RemoteProtocolBuilder.getMessage(request).asInstanceOf[scala.List[AnyRef]]
+    val args = RemoteProtocolBuilder.getMessage(request).asInstanceOf[Array[AnyRef]].toList
     val argClasses = args.map(_.getClass)
     val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.getTimeout)
 
@@ -168,7 +168,6 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
           .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
-          .setException(e.getCause.toString)
           .setIsSuccessful(false)
           .setIsActor(false)
          if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
@@ -201,9 +200,9 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
 
     val escapedArgs = for (i <- 0 until args.size) {
       val arg = args(i)
-      if (arg.isInstanceOf[String] && arg.asInstanceOf[String] == "$$ProxiedByAW") {
+      if (arg.isInstanceOf[String] && arg.asInstanceOf[String].startsWith("$$ProxiedByAW")) {
         val argString = arg.asInstanceOf[String]
-        val proxyName = argString.substring(argString.indexOf("$$ProxiedByAW"), argString.length)
+        val proxyName = argString.replace("$$ProxiedByAW", "") //argString.substring(argString.indexOf("$$ProxiedByAW"), argString.length)
         val activeObject = createActiveObject(proxyName, timeout)
         unescapedArgs(i) = activeObject
         unescapedArgClasses(i) = Class.forName(proxyName)       

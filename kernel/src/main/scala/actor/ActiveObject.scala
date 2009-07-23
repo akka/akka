@@ -279,21 +279,17 @@ sealed class ActorAroundAdvice(val target: Class[_],
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay = isOneWay(rtti)
     val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
-    val supervisorId = {
-      val id = actor.registerSupervisorAsRemoteActor
-      if (id.isDefined) id.get
-      else null
-    }
     val requestBuilder = RemoteRequest.newBuilder
       .setId(RemoteRequestIdFactory.nextId)
       .setMethod(rtti.getMethod.getName)
       .setTarget(target.getName)
       .setTimeout(timeout)
-      .setSupervisorUuid(supervisorId)
       .setIsActor(false)
       .setIsOneWay(oneWay)
       .setIsEscaped(false)
     RemoteProtocolBuilder.setMessage(message, requestBuilder)
+    val id = actor.registerSupervisorAsRemoteActor
+    if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
     val remoteMessage = requestBuilder.build
     val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage)
     if (oneWay) null // for void methods
