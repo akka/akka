@@ -19,7 +19,7 @@ import com.google.inject.{AbstractModule, Scopes}
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 
-//import com.jteigen.scalatest.JUnit4Runner
+//simport com.jteigen.scalatest.JUnit4Runner
 import org.junit.runner.RunWith
 import org.junit.Test
 import org.junit.Assert._

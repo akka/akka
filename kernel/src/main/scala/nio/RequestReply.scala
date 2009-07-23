@@ -8,13 +8,13 @@ import java.util.concurrent.atomic.AtomicLong
 import kernel.stm.Transaction
 import kernel.util.HashCode
 
-object IdFactory {
+// FIXME: will not work - can clash with other host's requests - need te prepend with hostname
+object RemoteRequestIdFactory {
   private val id = new AtomicLong
   def nextId = id.getAndIncrement
 }
 
-@serializable class ProxyWrapper(val proxyName: String)
-
+/*
 @serializable class RemoteRequest(val message: AnyRef,
                                   val method: String,
                                   val target: String,
@@ -104,3 +104,4 @@ object IdFactory {
     that.asInstanceOf[RemoteRequest].supervisorUuid.get == supervisorUuid.get
   }
 }
+*/

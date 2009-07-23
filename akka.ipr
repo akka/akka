@@ -1379,15 +1379,15 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/3.1.0/jackson-3.1.0-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.google.code:protobuf-java:2.0.3">
+    <library name="Maven: junit:junit:4.4">
       <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/google/code/protobuf-java/2.0.3/protobuf-java-2.0.3.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/google/code/protobuf-java/2.0.3/protobuf-java-2.0.3-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/google/code/protobuf-java/2.0.3/protobuf-java-2.0.3-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: org.codehaus.jackson:jackson-core-asl:1.1.0">
@@ -1423,15 +1423,37 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/jackson/jackson-mapper-asl/1.1.0/jackson-mapper-asl-1.1.0-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: junit:junit:4.4">
+    <library name="Maven: com.google.protobuf:protobuf-java:2.1.0">
       <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.4/junit-4.4-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: sbinary:sbinary:0.3">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/sbinary/sbinary/0.3/sbinary-0.3.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/sbinary/sbinary/0.3/sbinary-0.3-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/sbinary/sbinary/0.3/sbinary-0.3-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: com.twitter:scala-json:1.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/twitter/scala-json/1.0/scala-json-1.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/com/twitter/scala-json/1.0/scala-json-1.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/twitter/scala-json/1.0/scala-json-1.0-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

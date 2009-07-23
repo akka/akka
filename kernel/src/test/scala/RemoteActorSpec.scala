@@ -40,7 +40,7 @@ class RemoteActorSpec extends TestCase {
 
   @Test
   def testSendOneWay = {
-    implicit val timeout = 5000L
+    implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorUnidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
@@ -52,7 +52,7 @@ class RemoteActorSpec extends TestCase {
 
   @Test
   def testSendReplySync = {
-    implicit val timeout = 5000L
+    implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
@@ -63,7 +63,7 @@ class RemoteActorSpec extends TestCase {
 
   @Test
   def testSendReplyAsync = {
-    implicit val timeout = 5000L
+    implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
@@ -74,7 +74,7 @@ class RemoteActorSpec extends TestCase {
 
   @Test
   def testSendReceiveException = {
-    implicit val timeout = 5000L
+    implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start

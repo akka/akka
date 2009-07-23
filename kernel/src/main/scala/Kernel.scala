@@ -53,13 +53,12 @@ object Kernel extends Logging {
       if (RUN_REMOTE_SERVICE) startRemoteService
 
       STORAGE_SYSTEM match {
-        case "cassandra" => startCassandra
-        case "terracotta" => throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
-        case "redis" => throw new UnsupportedOperationException("redis storage backend is not yet supported")
-        case "voldemort" => throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
+        case "cassandra" =>     startCassandra
+        case "terracotta" =>    throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
+        case "redis" =>         throw new UnsupportedOperationException("redis storage backend is not yet supported")
+        case "voldemort" =>     throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
         case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
-        case "tokyo-tyrant" => throw new UnsupportedOperationException("tokyo-tyrart storage backend is not yet supported")
-        case "hazelcast" => throw new UnsupportedOperationException("hazelcast storage backend is not yet supported")
+        case _ =>               throw new UnsupportedOperationException("Unknown storage system [" + STORAGE_SYSTEM + "]")
       }
 
       if (RUN_REST_SERVICE) startJersey
@@ -70,7 +69,7 @@ object Kernel extends Logging {
       hasBooted = true
     }
   }
-
+  
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
   def setupConfig: Config = {
@@ -115,7 +114,7 @@ object Kernel extends Logging {
     remoteServerThread.start
   }
 
-  private[akka] def startCassandra = if (kernel.Kernel.config.getBool("akka.storage.cassandra.service", true)) {
+  private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
     System.setProperty("cassandra", "")
     System.setProperty("storage-config", akka.Boot.CONFIG + "/")
     CassandraStorage.start

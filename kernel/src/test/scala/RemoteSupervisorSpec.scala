@@ -591,7 +591,8 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
    }
 
 }
-class RemotePingPong1Actor extends Actor {
+
+@serializable class RemotePingPong1Actor extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
     case Ping =>
       Log.messageLog += "ping"
@@ -608,7 +609,7 @@ class RemotePingPong1Actor extends Actor {
   }
 }
 
-class RemotePingPong2Actor extends Actor {
+@serializable class RemotePingPong2Actor extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
     case Ping =>
       Log.messageLog += "ping"
@@ -621,7 +622,7 @@ class RemotePingPong2Actor extends Actor {
   }
 }
 
-class RemotePingPong3Actor extends Actor {
+@serializable class RemotePingPong3Actor extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
     case Ping =>
       Log.messageLog += "ping"

@@ -4,15 +4,18 @@
 
 package se.scalablesolutions.akka.kernel.actor
 
+import com.google.protobuf.ByteString
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArraySet
 
-import kernel.nio.{RemoteServer, RemoteClient, RemoteRequest}
 import kernel.reactor._
 import kernel.config.ScalaConfig._
 import kernel.stm.TransactionManagement
 import kernel.util.Helpers.ReadWriteLock
-import kernel.util.{Serializer, JSONSerializer, Logging}
+import kernel.nio.protobuf.RemoteProtocol.RemoteRequest
+import kernel.util.Logging
+import serialization.{Serializer, Serializable, SerializationProtocol}
+import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -28,19 +31,29 @@ object DispatcherType {
   case object ThreadBasedDispatcher extends DispatcherType
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
   def invoke(handle: MessageInvocation) = actor.invoke(handle)
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object Actor {
   val TIMEOUT = kernel.Kernel.config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = kernel.Kernel.config.getBool("akka.actor.serialize-messages", false)
 }
 
-trait Actor extends Logging with TransactionManagement {
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+@serializable trait Actor extends Logging with TransactionManagement {
   @volatile private[this] var isRunning: Boolean = false
   private[this] val remoteFlagLock = new ReadWriteLock
   private[this] val transactionalFlagLock = new ReadWriteLock
+
 
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
   private var config: Option[AnyRef] = None
@@ -51,9 +64,6 @@ trait Actor extends Logging with TransactionManagement {
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
-
-  // FIXME switch to JSON serialization
-  protected[this] val serializer: Serializer = JSONSerializer
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -311,6 +321,7 @@ trait Actor extends Logging with TransactionManagement {
       if (!linkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
       linkedActors.remove(actor)
       actor.supervisor = None
+
       log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
@@ -392,8 +403,17 @@ trait Actor extends Logging with TransactionManagement {
 
   private def postMessageToMailbox(message: AnyRef): Unit = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (remoteAddress.isDefined) {
-      val supervisorUuid = registerSupervisorAsRemoteActor
-      RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(message, null, this.getClass.getName, timeout, supervisorUuid, true, true, false))
+      val requestBuilder = RemoteRequest.newBuilder
+        .setId(RemoteRequestIdFactory.nextId)
+        .setTarget(this.getClass.getName)
+        .setTimeout(timeout)
+        .setIsActor(true)
+        .setIsOneWay(true)
+        .setIsEscaped(false)
+      val id = registerSupervisorAsRemoteActor
+      if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
+      RemoteProtocolBuilder.setMessage(message, requestBuilder)
+      RemoteClient.clientFor(remoteAddress.get).send(requestBuilder.build)
     } else {
       val handle = new MessageInvocation(this, message, None, TransactionManagement.threadBoundTx.get)
       mailbox.append(handle)
@@ -403,8 +423,17 @@ trait Actor extends Logging with TransactionManagement {
 
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (remoteAddress.isDefined) {
-      val supervisorUuid = registerSupervisorAsRemoteActor
-      val future = RemoteClient.clientFor(remoteAddress.get).send(new RemoteRequest(message, null, this.getClass.getName, timeout, supervisorUuid, true, false, false))
+      val requestBuilder = RemoteRequest.newBuilder
+        .setId(RemoteRequestIdFactory.nextId)
+        .setTarget(this.getClass.getName)
+        .setTimeout(timeout)
+        .setIsActor(true)
+        .setIsOneWay(false)
+        .setIsEscaped(false)
+      RemoteProtocolBuilder.setMessage(message, requestBuilder)
+      val id = registerSupervisorAsRemoteActor
+      if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
+      val future = RemoteClient.clientFor(remoteAddress.get).send(requestBuilder.build)
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
@@ -426,7 +455,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
     if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
-    val message = messageHandle.message//serializeMessage(messageHandle.message)
+    val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
     try {
       senderFuture = future
@@ -445,7 +474,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
     if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
-    val message = messageHandle.message//serializeMessage(messageHandle.message)
+    val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
     try {
       if (!tryToCommitTransaction && isTransactionTopLevel) handleCollision
@@ -556,25 +585,31 @@ trait Actor extends Logging with TransactionManagement {
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))
   }
 
-  /*
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
     if (!message.isInstanceOf[String] &&
+      !message.isInstanceOf[Byte] &&
       !message.isInstanceOf[Int] &&
       !message.isInstanceOf[Long] &&
       !message.isInstanceOf[Float] &&
       !message.isInstanceOf[Double] &&
       !message.isInstanceOf[Boolean] &&
       !message.isInstanceOf[Char] &&
-      !message.isInstanceOf[java.lang.Integer] &&
-      !message.isInstanceOf[java.lang.Long] &&
-      !message.isInstanceOf[java.lang.Float] &&
-      !message.isInstanceOf[java.lang.Double] &&
-      !message.isInstanceOf[java.lang.Boolean] &&
-      !message.isInstanceOf[java.lang.Character] &&
+      !message.isInstanceOf[Tuple2[_,_]] &&
+      !message.isInstanceOf[Tuple3[_,_,_]] &&
+      !message.isInstanceOf[Tuple4[_,_,_,_]] &&
+      !message.isInstanceOf[Tuple5[_,_,_,_,_]] &&
+      !message.isInstanceOf[Tuple6[_,_,_,_,_,_]] &&
+      !message.isInstanceOf[Tuple7[_,_,_,_,_,_,_]] &&
+      !message.isInstanceOf[Tuple8[_,_,_,_,_,_,_,_]] &&
+      !message.isInstanceOf[Array[_]] &&
+      !message.isInstanceOf[List[_]] &&
+      !message.isInstanceOf[scala.collection.immutable.Map[_,_]] &&
+      !message.isInstanceOf[scala.collection.immutable.Set[_]] &&
+      !message.isInstanceOf[scala.collection.immutable.Tree[_,_]] &&
       !message.getClass.isAnnotationPresent(Annotations.immutable)) {
-      serializer.deepClone(message)
+      Serializer.Java.deepClone(message)
     } else message
   } else message
-    */
+
   override def toString(): String = "Actor[" + uuid + ":" + id + "]"
 }

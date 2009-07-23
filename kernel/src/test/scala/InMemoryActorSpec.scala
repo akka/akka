@@ -76,6 +76,7 @@ class InMemStatefulActor extends Actor {
   }
 }
 
+@serializable
 class InMemFailerActor extends Actor {
   makeTransactionRequired
   def receive: PartialFunction[Any, Unit] = {

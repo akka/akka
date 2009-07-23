@@ -5,7 +5,9 @@
 package se.scalablesolutions.akka.kernel.state
 
 import java.io.File
-import kernel.util.{Serializer, JavaSerializationSerializer, Logging}
+
+import kernel.util.Logging
+import serialization.{Serializer, Serializable, SerializationProtocol}
 
 import org.apache.cassandra.config.DatabaseDescriptor
 import org.apache.cassandra.service._
@@ -23,7 +25,7 @@ import org.apache.thrift.TProcessorFactory
  * <p/>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final object CassandraStorage extends Logging {
+object CassandraStorage extends Logging {
   val TABLE_NAME = "akka"
   val MAP_COLUMN_FAMILY = "map"
   val VECTOR_COLUMN_FAMILY = "vector"
@@ -38,12 +40,13 @@ final object CassandraStorage extends Logging {
 
   @volatile private[this] var isRunning = false
   private[this] val serializer: Serializer = {
-    kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "serialization") match {
-      case "serialization" => JavaSerializationSerializer
-      case "json" => throw new UnsupportedOperationException("json storage protocol is not yet supported")
-      case "avro" => throw new UnsupportedOperationException("avro storage protocol is not yet supported")
-      case "thrift" => throw new UnsupportedOperationException("thrift storage protocol is not yet supported")
-      case "protobuf" => throw new UnsupportedOperationException("protobuf storage protocol is not yet supported")
+    kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "java") match {
+      case "scala-json" => Serializer.ScalaJSON
+      case "java-json" =>  Serializer.JavaJSON
+      //case "sbinary" =>    Serializer.SBinary
+      case "java" =>       Serializer.Java
+      case "avro" =>       throw new UnsupportedOperationException("Avro serialization protocol is not yet supported")
+      case unknown =>      throw new UnsupportedOperationException("Unknown storage serialization protocol [" + unknown + "]")
     }
   }
   

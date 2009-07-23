@@ -4,13 +4,15 @@
 
 package se.scalablesolutions.akka.kernel.actor
 
-import java.io.File
 import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.InetSocketAddress
-import kernel.config.ScalaConfig._
-import kernel.nio.{RemoteRequest, RemoteClient}
+
 import kernel.reactor.{MessageDispatcher, FutureResult}
-import kernel.util.{HashCode, Serializer, JavaSerializationSerializer}
+import kernel.nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import kernel.nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
+import kernel.config.ScalaConfig._
+import kernel.util._
+import serialization.Serializer
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
@@ -276,9 +278,20 @@ sealed class ActorAroundAdvice(val target: Class[_],
   private def remoteDispatch(joinpoint: JoinPoint): AnyRef = {
     val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay = isOneWay(rtti)
-    val future = RemoteClient.clientFor(remoteAddress.get).send(
-      new RemoteRequest(rtti.getParameterValues, rtti.getMethod.getName, target.getName,
-                        timeout, actor.registerSupervisorAsRemoteActor, false, oneWay, false))
+    val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
+    val requestBuilder = RemoteRequest.newBuilder
+      .setId(RemoteRequestIdFactory.nextId)
+      .setMethod(rtti.getMethod.getName)
+      .setTarget(target.getName)
+      .setTimeout(timeout)
+      .setIsActor(false)
+      .setIsOneWay(oneWay)
+      .setIsEscaped(false)
+    RemoteProtocolBuilder.setMessage(message, requestBuilder)
+    val id = actor.registerSupervisorAsRemoteActor
+    if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
+    val remoteMessage = requestBuilder.build
+    val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage)
     if (oneWay) null // for void methods
     else {
       if (future.isDefined) {
@@ -299,6 +312,18 @@ sealed class ActorAroundAdvice(val target: Class[_],
   private def isOneWay(rtti: MethodRtti) =
     rtti.getMethod.getReturnType == java.lang.Void.TYPE ||
     rtti.getMethod.isAnnotationPresent(Annotations.oneway)
+
+  private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
+    var isEscaped = false
+    val escapedArgs = for (arg <- args) yield {
+      val clazz = arg.getClass
+      if (clazz.getName.contains("$$ProxiedByAW")) {
+        isEscaped = true
+        "$$ProxiedByAW" + clazz.getSuperclass.getName
+      } else arg
+    }
+    (escapedArgs, isEscaped)
+  }
 }
 
 /**
@@ -398,12 +423,14 @@ private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extend
     var hasMutableArgument = false
     for (arg <- args.toList) {
       if (!arg.isInstanceOf[String] &&
+        !arg.isInstanceOf[Byte] &&
         !arg.isInstanceOf[Int] &&
         !arg.isInstanceOf[Long] &&
         !arg.isInstanceOf[Float] &&
         !arg.isInstanceOf[Double] &&
         !arg.isInstanceOf[Boolean] &&
         !arg.isInstanceOf[Char] &&
+        !arg.isInstanceOf[java.lang.Byte] &&
         !arg.isInstanceOf[java.lang.Integer] &&
         !arg.isInstanceOf[java.lang.Long] &&
         !arg.isInstanceOf[java.lang.Float] &&
@@ -416,7 +443,8 @@ private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extend
       if (arg.getClass.getName.contains("$$ProxiedByAWSubclassing$$")) unserializable = true
     }
     if (!unserializable && hasMutableArgument) {
-      val copyOfArgs = serializer.deepClone(args)
+      // FIXME: can we have another default deep cloner?
+      val copyOfArgs = Serializer.Java.deepClone(args)
       joinpoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs)
     }    
   }

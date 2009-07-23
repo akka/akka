@@ -12,38 +12,27 @@ package se.scalablesolutions.akka.kernel.nio.protobuf;
 
 option optimize_for = SPEED;
 
-/*
-val message: Array[Byte],
-val method: String,
-val target: String,
-val timeout: Long,
-val supervisorUuid: String
-val isOneWay: Boolean,
-val isActor: Boolean,
-val isEscaped: Boolean,
-*/
 message RemoteRequest {
-  required bytes message = 1;
-  required string method = 2;
-  required string target = 3;
-  required uint64 timeout = 4;
-  required string supervisorUuid = 5;
-  required bool isActor = 6;
-  required bool isOneWay = 7;
-  required bool isEscaped = 8;
+  required uint64 id = 1;
+  required uint32 protocol = 2;
+  required bytes message = 3;
+  optional bytes messageManifest = 4;
+  optional string method = 5;
+  required string target = 6;
+  required uint64 timeout = 7;
+  optional string supervisorUuid = 8;
+  required bool isActor = 9;
+  required bool isOneWay = 10;
+  required bool isEscaped = 11;
 }
 
-/*
-val isSuccessful: Boolean,
-val id: Long,
-val message: Array[Byte],
-val exception: Throwable,
-val supervisorUuid: String
-*/
 message RemoteReply {
-  required bool isSuccessful = 1;
-  required uint64 id = 2;
-  required bytes message = 3;
-  required string exception = 4;
-  required string supervisorUuid = 5;
+  required uint64 id = 1;
+  optional uint32 protocol = 2;
+  optional bytes message = 3;
+  optional bytes messageManifest = 4;
+  optional string exception = 5;
+  optional string supervisorUuid = 6;
+  required bool isActor = 7;
+  required bool isSuccessful = 8;
 }

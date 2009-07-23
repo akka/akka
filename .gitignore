@@ -6,10 +6,12 @@ reports
 dist
 build
 target
+deploy
 data
 out
 logs
 storage
+lib/akka*
 .manager
 manifest.mf
 semantic.cache
@@ -20,3 +22,4 @@ tm.out
 _dump
 WEB-INF
 .DS_Store
+
