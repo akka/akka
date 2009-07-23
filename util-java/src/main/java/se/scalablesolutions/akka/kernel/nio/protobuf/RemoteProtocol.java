@@ -32,121 +32,131 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteRequest_fieldAccessorTable;
     }
     
-    // required bytes message = 1;
-    public static final int MESSAGE_FIELD_NUMBER = 1;
-    private boolean hasMessage;
-    private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
-    public boolean hasMessage() { return hasMessage; }
-    public com.google.protobuf.ByteString getMessage() { return message_; }
-    
-    // optional string method = 2;
-    public static final int METHOD_FIELD_NUMBER = 2;
-    private boolean hasMethod;
-    private java.lang.String method_ = "";
-    public boolean hasMethod() { return hasMethod; }
-    public java.lang.String getMethod() { return method_; }
-    
-    // required string target = 3;
-    public static final int TARGET_FIELD_NUMBER = 3;
-    private boolean hasTarget;
-    private java.lang.String target_ = "";
-    public boolean hasTarget() { return hasTarget; }
-    public java.lang.String getTarget() { return target_; }
-    
-    // required uint64 timeout = 4;
-    public static final int TIMEOUT_FIELD_NUMBER = 4;
-    private boolean hasTimeout;
-    private long timeout_ = 0L;
-    public boolean hasTimeout() { return hasTimeout; }
-    public long getTimeout() { return timeout_; }
-    
-    // optional string supervisorUuid = 5;
-    public static final int SUPERVISORUUID_FIELD_NUMBER = 5;
-    private boolean hasSupervisorUuid;
-    private java.lang.String supervisorUuid_ = "";
-    public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
-    public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
-    
-    // required bool isActor = 6;
-    public static final int ISACTOR_FIELD_NUMBER = 6;
-    private boolean hasIsActor;
-    private boolean isActor_ = false;
-    public boolean hasIsActor() { return hasIsActor; }
-    public boolean getIsActor() { return isActor_; }
-    
-    // required bool isOneWay = 7;
-    public static final int ISONEWAY_FIELD_NUMBER = 7;
-    private boolean hasIsOneWay;
-    private boolean isOneWay_ = false;
-    public boolean hasIsOneWay() { return hasIsOneWay; }
-    public boolean getIsOneWay() { return isOneWay_; }
-    
-    // required bool isEscaped = 8;
-    public static final int ISESCAPED_FIELD_NUMBER = 8;
-    private boolean hasIsEscaped;
-    private boolean isEscaped_ = false;
-    public boolean hasIsEscaped() { return hasIsEscaped; }
-    public boolean getIsEscaped() { return isEscaped_; }
-    
-    // required uint64 id = 9;
-    public static final int ID_FIELD_NUMBER = 9;
+    // required uint64 id = 1;
+    public static final int ID_FIELD_NUMBER = 1;
     private boolean hasId;
     private long id_ = 0L;
     public boolean hasId() { return hasId; }
     public long getId() { return id_; }
     
-    // required string messageType = 10;
-    public static final int MESSAGETYPE_FIELD_NUMBER = 10;
-    private boolean hasMessageType;
-    private java.lang.String messageType_ = "";
-    public boolean hasMessageType() { return hasMessageType; }
-    public java.lang.String getMessageType() { return messageType_; }
+    // required uint32 protocol = 2;
+    public static final int PROTOCOL_FIELD_NUMBER = 2;
+    private boolean hasProtocol;
+    private int protocol_ = 0;
+    public boolean hasProtocol() { return hasProtocol; }
+    public int getProtocol() { return protocol_; }
+    
+    // required bytes message = 3;
+    public static final int MESSAGE_FIELD_NUMBER = 3;
+    private boolean hasMessage;
+    private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
+    public boolean hasMessage() { return hasMessage; }
+    public com.google.protobuf.ByteString getMessage() { return message_; }
+    
+    // optional bytes messageManifest = 4;
+    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 4;
+    private boolean hasMessageManifest;
+    private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+    public boolean hasMessageManifest() { return hasMessageManifest; }
+    public com.google.protobuf.ByteString getMessageManifest() { return messageManifest_; }
+    
+    // optional string method = 5;
+    public static final int METHOD_FIELD_NUMBER = 5;
+    private boolean hasMethod;
+    private java.lang.String method_ = "";
+    public boolean hasMethod() { return hasMethod; }
+    public java.lang.String getMethod() { return method_; }
+    
+    // required string target = 6;
+    public static final int TARGET_FIELD_NUMBER = 6;
+    private boolean hasTarget;
+    private java.lang.String target_ = "";
+    public boolean hasTarget() { return hasTarget; }
+    public java.lang.String getTarget() { return target_; }
+    
+    // required uint64 timeout = 7;
+    public static final int TIMEOUT_FIELD_NUMBER = 7;
+    private boolean hasTimeout;
+    private long timeout_ = 0L;
+    public boolean hasTimeout() { return hasTimeout; }
+    public long getTimeout() { return timeout_; }
+    
+    // optional string supervisorUuid = 8;
+    public static final int SUPERVISORUUID_FIELD_NUMBER = 8;
+    private boolean hasSupervisorUuid;
+    private java.lang.String supervisorUuid_ = "";
+    public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
+    public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
+    
+    // required bool isActor = 9;
+    public static final int ISACTOR_FIELD_NUMBER = 9;
+    private boolean hasIsActor;
+    private boolean isActor_ = false;
+    public boolean hasIsActor() { return hasIsActor; }
+    public boolean getIsActor() { return isActor_; }
+    
+    // required bool isOneWay = 10;
+    public static final int ISONEWAY_FIELD_NUMBER = 10;
+    private boolean hasIsOneWay;
+    private boolean isOneWay_ = false;
+    public boolean hasIsOneWay() { return hasIsOneWay; }
+    public boolean getIsOneWay() { return isOneWay_; }
+    
+    // required bool isEscaped = 11;
+    public static final int ISESCAPED_FIELD_NUMBER = 11;
+    private boolean hasIsEscaped;
+    private boolean isEscaped_ = false;
+    public boolean hasIsEscaped() { return hasIsEscaped; }
+    public boolean getIsEscaped() { return isEscaped_; }
     
     @Override
     public final boolean isInitialized() {
+      if (!hasId) return false;
+      if (!hasProtocol) return false;
       if (!hasMessage) return false;
       if (!hasTarget) return false;
       if (!hasTimeout) return false;
       if (!hasIsActor) return false;
       if (!hasIsOneWay) return false;
       if (!hasIsEscaped) return false;
-      if (!hasId) return false;
-      if (!hasMessageType) return false;
       return true;
     }
     
     @Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (hasId()) {
+        output.writeUInt64(1, getId());
+      }
+      if (hasProtocol()) {
+        output.writeUInt32(2, getProtocol());
+      }
       if (hasMessage()) {
-        output.writeBytes(1, getMessage());
+        output.writeBytes(3, getMessage());
+      }
+      if (hasMessageManifest()) {
+        output.writeBytes(4, getMessageManifest());
       }
       if (hasMethod()) {
-        output.writeString(2, getMethod());
+        output.writeString(5, getMethod());
       }
       if (hasTarget()) {
-        output.writeString(3, getTarget());
+        output.writeString(6, getTarget());
       }
       if (hasTimeout()) {
-        output.writeUInt64(4, getTimeout());
+        output.writeUInt64(7, getTimeout());
       }
       if (hasSupervisorUuid()) {
-        output.writeString(5, getSupervisorUuid());
+        output.writeString(8, getSupervisorUuid());
       }
       if (hasIsActor()) {
-        output.writeBool(6, getIsActor());
+        output.writeBool(9, getIsActor());
       }
       if (hasIsOneWay()) {
-        output.writeBool(7, getIsOneWay());
+        output.writeBool(10, getIsOneWay());
       }
       if (hasIsEscaped()) {
-        output.writeBool(8, getIsEscaped());
-      }
-      if (hasId()) {
-        output.writeUInt64(9, getId());
-      }
-      if (hasMessageType()) {
-        output.writeString(10, getMessageType());
+        output.writeBool(11, getIsEscaped());
       }
       getUnknownFields().writeTo(output);
     }
@@ -158,45 +168,49 @@ public final class RemoteProtocol {
       if (size != -1) return size;
     
       size = 0;
+      if (hasId()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(1, getId());
+      }
+      if (hasProtocol()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(2, getProtocol());
+      }
       if (hasMessage()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getMessage());
+          .computeBytesSize(3, getMessage());
+      }
+      if (hasMessageManifest()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getMessageManifest());
       }
       if (hasMethod()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(2, getMethod());
+          .computeStringSize(5, getMethod());
       }
       if (hasTarget()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(3, getTarget());
+          .computeStringSize(6, getTarget());
       }
       if (hasTimeout()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(4, getTimeout());
+          .computeUInt64Size(7, getTimeout());
       }
       if (hasSupervisorUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(5, getSupervisorUuid());
+          .computeStringSize(8, getSupervisorUuid());
       }
       if (hasIsActor()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(6, getIsActor());
+          .computeBoolSize(9, getIsActor());
       }
       if (hasIsOneWay()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(7, getIsOneWay());
+          .computeBoolSize(10, getIsOneWay());
       }
       if (hasIsEscaped()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(8, getIsEscaped());
-      }
-      if (hasId()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(9, getId());
-      }
-      if (hasMessageType()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(10, getMessageType());
+          .computeBoolSize(11, getIsEscaped());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -339,8 +353,17 @@ public final class RemoteProtocol {
       
       public Builder mergeFrom(se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteRequest other) {
         if (other == se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteRequest.getDefaultInstance()) return this;
+        if (other.hasId()) {
+          setId(other.getId());
+        }
+        if (other.hasProtocol()) {
+          setProtocol(other.getProtocol());
+        }
         if (other.hasMessage()) {
           setMessage(other.getMessage());
+        }
+        if (other.hasMessageManifest()) {
+          setMessageManifest(other.getMessageManifest());
         }
         if (other.hasMethod()) {
           setMethod(other.getMethod());
@@ -362,12 +385,6 @@ public final class RemoteProtocol {
         }
         if (other.hasIsEscaped()) {
           setIsEscaped(other.getIsEscaped());
-        }
-        if (other.hasId()) {
-          setId(other.getId());
-        }
-        if (other.hasMessageType()) {
-          setMessageType(other.getMessageType());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -403,44 +420,48 @@ public final class RemoteProtocol {
               }
               break;
             }
-            case 10: {
-              setMessage(input.readBytes());
-              break;
-            }
-            case 18: {
-              setMethod(input.readString());
-              break;
-            }
-            case 26: {
-              setTarget(input.readString());
-              break;
-            }
-            case 32: {
-              setTimeout(input.readUInt64());
-              break;
-            }
-            case 42: {
-              setSupervisorUuid(input.readString());
-              break;
-            }
-            case 48: {
-              setIsActor(input.readBool());
-              break;
-            }
-            case 56: {
-              setIsOneWay(input.readBool());
-              break;
-            }
-            case 64: {
-              setIsEscaped(input.readBool());
-              break;
-            }
-            case 72: {
+            case 8: {
               setId(input.readUInt64());
               break;
             }
-            case 82: {
-              setMessageType(input.readString());
+            case 16: {
+              setProtocol(input.readUInt32());
+              break;
+            }
+            case 26: {
+              setMessage(input.readBytes());
+              break;
+            }
+            case 34: {
+              setMessageManifest(input.readBytes());
+              break;
+            }
+            case 42: {
+              setMethod(input.readString());
+              break;
+            }
+            case 50: {
+              setTarget(input.readString());
+              break;
+            }
+            case 56: {
+              setTimeout(input.readUInt64());
+              break;
+            }
+            case 66: {
+              setSupervisorUuid(input.readString());
+              break;
+            }
+            case 72: {
+              setIsActor(input.readBool());
+              break;
+            }
+            case 80: {
+              setIsOneWay(input.readBool());
+              break;
+            }
+            case 88: {
+              setIsEscaped(input.readBool());
               break;
             }
           }
@@ -448,7 +469,43 @@ public final class RemoteProtocol {
       }
       
       
-      // required bytes message = 1;
+      // required uint64 id = 1;
+      public boolean hasId() {
+        return result.hasId();
+      }
+      public long getId() {
+        return result.getId();
+      }
+      public Builder setId(long value) {
+        result.hasId = true;
+        result.id_ = value;
+        return this;
+      }
+      public Builder clearId() {
+        result.hasId = false;
+        result.id_ = 0L;
+        return this;
+      }
+      
+      // required uint32 protocol = 2;
+      public boolean hasProtocol() {
+        return result.hasProtocol();
+      }
+      public int getProtocol() {
+        return result.getProtocol();
+      }
+      public Builder setProtocol(int value) {
+        result.hasProtocol = true;
+        result.protocol_ = value;
+        return this;
+      }
+      public Builder clearProtocol() {
+        result.hasProtocol = false;
+        result.protocol_ = 0;
+        return this;
+      }
+      
+      // required bytes message = 3;
       public boolean hasMessage() {
         return result.hasMessage();
       }
@@ -469,7 +526,28 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string method = 2;
+      // optional bytes messageManifest = 4;
+      public boolean hasMessageManifest() {
+        return result.hasMessageManifest();
+      }
+      public com.google.protobuf.ByteString getMessageManifest() {
+        return result.getMessageManifest();
+      }
+      public Builder setMessageManifest(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasMessageManifest = true;
+        result.messageManifest_ = value;
+        return this;
+      }
+      public Builder clearMessageManifest() {
+        result.hasMessageManifest = false;
+        result.messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        return this;
+      }
+      
+      // optional string method = 5;
       public boolean hasMethod() {
         return result.hasMethod();
       }
@@ -490,7 +568,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required string target = 3;
+      // required string target = 6;
       public boolean hasTarget() {
         return result.hasTarget();
       }
@@ -511,7 +589,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required uint64 timeout = 4;
+      // required uint64 timeout = 7;
       public boolean hasTimeout() {
         return result.hasTimeout();
       }
@@ -529,7 +607,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string supervisorUuid = 5;
+      // optional string supervisorUuid = 8;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
       }
@@ -550,7 +628,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bool isActor = 6;
+      // required bool isActor = 9;
       public boolean hasIsActor() {
         return result.hasIsActor();
       }
@@ -568,7 +646,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bool isOneWay = 7;
+      // required bool isOneWay = 10;
       public boolean hasIsOneWay() {
         return result.hasIsOneWay();
       }
@@ -586,7 +664,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bool isEscaped = 8;
+      // required bool isEscaped = 11;
       public boolean hasIsEscaped() {
         return result.hasIsEscaped();
       }
@@ -601,45 +679,6 @@ public final class RemoteProtocol {
       public Builder clearIsEscaped() {
         result.hasIsEscaped = false;
         result.isEscaped_ = false;
-        return this;
-      }
-      
-      // required uint64 id = 9;
-      public boolean hasId() {
-        return result.hasId();
-      }
-      public long getId() {
-        return result.getId();
-      }
-      public Builder setId(long value) {
-        result.hasId = true;
-        result.id_ = value;
-        return this;
-      }
-      public Builder clearId() {
-        result.hasId = false;
-        result.id_ = 0L;
-        return this;
-      }
-      
-      // required string messageType = 10;
-      public boolean hasMessageType() {
-        return result.hasMessageType();
-      }
-      public java.lang.String getMessageType() {
-        return result.getMessageType();
-      }
-      public Builder setMessageType(java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasMessageType = true;
-        result.messageType_ = value;
-        return this;
-      }
-      public Builder clearMessageType() {
-        result.hasMessageType = false;
-        result.messageType_ = "";
         return this;
       }
     }
@@ -674,19 +713,19 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteReply_fieldAccessorTable;
     }
     
-    // required bool isSuccessful = 1;
-    public static final int ISSUCCESSFUL_FIELD_NUMBER = 1;
-    private boolean hasIsSuccessful;
-    private boolean isSuccessful_ = false;
-    public boolean hasIsSuccessful() { return hasIsSuccessful; }
-    public boolean getIsSuccessful() { return isSuccessful_; }
-    
-    // required uint64 id = 2;
-    public static final int ID_FIELD_NUMBER = 2;
+    // required uint64 id = 1;
+    public static final int ID_FIELD_NUMBER = 1;
     private boolean hasId;
     private long id_ = 0L;
     public boolean hasId() { return hasId; }
     public long getId() { return id_; }
+    
+    // optional uint32 protocol = 2;
+    public static final int PROTOCOL_FIELD_NUMBER = 2;
+    private boolean hasProtocol;
+    private int protocol_ = 0;
+    public boolean hasProtocol() { return hasProtocol; }
+    public int getProtocol() { return protocol_; }
     
     // optional bytes message = 3;
     public static final int MESSAGE_FIELD_NUMBER = 3;
@@ -695,26 +734,26 @@ public final class RemoteProtocol {
     public boolean hasMessage() { return hasMessage; }
     public com.google.protobuf.ByteString getMessage() { return message_; }
     
-    // optional string exception = 4;
-    public static final int EXCEPTION_FIELD_NUMBER = 4;
+    // optional bytes messageManifest = 4;
+    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 4;
+    private boolean hasMessageManifest;
+    private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+    public boolean hasMessageManifest() { return hasMessageManifest; }
+    public com.google.protobuf.ByteString getMessageManifest() { return messageManifest_; }
+    
+    // optional string exception = 5;
+    public static final int EXCEPTION_FIELD_NUMBER = 5;
     private boolean hasException;
     private java.lang.String exception_ = "";
     public boolean hasException() { return hasException; }
     public java.lang.String getException() { return exception_; }
     
-    // optional string supervisorUuid = 5;
-    public static final int SUPERVISORUUID_FIELD_NUMBER = 5;
+    // optional string supervisorUuid = 6;
+    public static final int SUPERVISORUUID_FIELD_NUMBER = 6;
     private boolean hasSupervisorUuid;
     private java.lang.String supervisorUuid_ = "";
     public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
     public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
-    
-    // optional string messageType = 6;
-    public static final int MESSAGETYPE_FIELD_NUMBER = 6;
-    private boolean hasMessageType;
-    private java.lang.String messageType_ = "";
-    public boolean hasMessageType() { return hasMessageType; }
-    public java.lang.String getMessageType() { return messageType_; }
     
     // required bool isActor = 7;
     public static final int ISACTOR_FIELD_NUMBER = 7;
@@ -723,37 +762,47 @@ public final class RemoteProtocol {
     public boolean hasIsActor() { return hasIsActor; }
     public boolean getIsActor() { return isActor_; }
     
+    // required bool isSuccessful = 8;
+    public static final int ISSUCCESSFUL_FIELD_NUMBER = 8;
+    private boolean hasIsSuccessful;
+    private boolean isSuccessful_ = false;
+    public boolean hasIsSuccessful() { return hasIsSuccessful; }
+    public boolean getIsSuccessful() { return isSuccessful_; }
+    
     @Override
     public final boolean isInitialized() {
-      if (!hasIsSuccessful) return false;
       if (!hasId) return false;
       if (!hasIsActor) return false;
+      if (!hasIsSuccessful) return false;
       return true;
     }
     
     @Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (hasIsSuccessful()) {
-        output.writeBool(1, getIsSuccessful());
-      }
       if (hasId()) {
-        output.writeUInt64(2, getId());
+        output.writeUInt64(1, getId());
+      }
+      if (hasProtocol()) {
+        output.writeUInt32(2, getProtocol());
       }
       if (hasMessage()) {
         output.writeBytes(3, getMessage());
       }
+      if (hasMessageManifest()) {
+        output.writeBytes(4, getMessageManifest());
+      }
       if (hasException()) {
-        output.writeString(4, getException());
+        output.writeString(5, getException());
       }
       if (hasSupervisorUuid()) {
-        output.writeString(5, getSupervisorUuid());
-      }
-      if (hasMessageType()) {
-        output.writeString(6, getMessageType());
+        output.writeString(6, getSupervisorUuid());
       }
       if (hasIsActor()) {
         output.writeBool(7, getIsActor());
+      }
+      if (hasIsSuccessful()) {
+        output.writeBool(8, getIsSuccessful());
       }
       getUnknownFields().writeTo(output);
     }
@@ -765,33 +814,37 @@ public final class RemoteProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasIsSuccessful()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(1, getIsSuccessful());
-      }
       if (hasId()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(2, getId());
+          .computeUInt64Size(1, getId());
+      }
+      if (hasProtocol()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(2, getProtocol());
       }
       if (hasMessage()) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(3, getMessage());
       }
+      if (hasMessageManifest()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getMessageManifest());
+      }
       if (hasException()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(4, getException());
+          .computeStringSize(5, getException());
       }
       if (hasSupervisorUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(5, getSupervisorUuid());
-      }
-      if (hasMessageType()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(6, getMessageType());
+          .computeStringSize(6, getSupervisorUuid());
       }
       if (hasIsActor()) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(7, getIsActor());
+      }
+      if (hasIsSuccessful()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(8, getIsSuccessful());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -856,12 +909,12 @@ public final class RemoteProtocol {
                .buildParsed();
     }
     
-    public static Builder newBuilder() { return new Builder(); }
-    public Builder newBuilderForType() { return new Builder(); }
+    public static se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder newBuilder() { return new se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder(); }
+    public se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder newBuilderForType() { return new se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply prototype) {
-      return new Builder().mergeFrom(prototype);
+      return new se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder toBuilder() { return newBuilder(this); }
     
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
@@ -934,14 +987,17 @@ public final class RemoteProtocol {
       
       public Builder mergeFrom(se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply other) {
         if (other == se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.getDefaultInstance()) return this;
-        if (other.hasIsSuccessful()) {
-          setIsSuccessful(other.getIsSuccessful());
-        }
         if (other.hasId()) {
           setId(other.getId());
         }
+        if (other.hasProtocol()) {
+          setProtocol(other.getProtocol());
+        }
         if (other.hasMessage()) {
           setMessage(other.getMessage());
+        }
+        if (other.hasMessageManifest()) {
+          setMessageManifest(other.getMessageManifest());
         }
         if (other.hasException()) {
           setException(other.getException());
@@ -949,11 +1005,11 @@ public final class RemoteProtocol {
         if (other.hasSupervisorUuid()) {
           setSupervisorUuid(other.getSupervisorUuid());
         }
-        if (other.hasMessageType()) {
-          setMessageType(other.getMessageType());
-        }
         if (other.hasIsActor()) {
           setIsActor(other.getIsActor());
+        }
+        if (other.hasIsSuccessful()) {
+          setIsSuccessful(other.getIsSuccessful());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -990,11 +1046,11 @@ public final class RemoteProtocol {
               break;
             }
             case 8: {
-              setIsSuccessful(input.readBool());
+              setId(input.readUInt64());
               break;
             }
             case 16: {
-              setId(input.readUInt64());
+              setProtocol(input.readUInt32());
               break;
             }
             case 26: {
@@ -1002,19 +1058,23 @@ public final class RemoteProtocol {
               break;
             }
             case 34: {
-              setException(input.readString());
+              setMessageManifest(input.readBytes());
               break;
             }
             case 42: {
-              setSupervisorUuid(input.readString());
+              setException(input.readString());
               break;
             }
             case 50: {
-              setMessageType(input.readString());
+              setSupervisorUuid(input.readString());
               break;
             }
             case 56: {
               setIsActor(input.readBool());
+              break;
+            }
+            case 64: {
+              setIsSuccessful(input.readBool());
               break;
             }
           }
@@ -1022,25 +1082,7 @@ public final class RemoteProtocol {
       }
       
       
-      // required bool isSuccessful = 1;
-      public boolean hasIsSuccessful() {
-        return result.hasIsSuccessful();
-      }
-      public boolean getIsSuccessful() {
-        return result.getIsSuccessful();
-      }
-      public Builder setIsSuccessful(boolean value) {
-        result.hasIsSuccessful = true;
-        result.isSuccessful_ = value;
-        return this;
-      }
-      public Builder clearIsSuccessful() {
-        result.hasIsSuccessful = false;
-        result.isSuccessful_ = false;
-        return this;
-      }
-      
-      // required uint64 id = 2;
+      // required uint64 id = 1;
       public boolean hasId() {
         return result.hasId();
       }
@@ -1055,6 +1097,24 @@ public final class RemoteProtocol {
       public Builder clearId() {
         result.hasId = false;
         result.id_ = 0L;
+        return this;
+      }
+      
+      // optional uint32 protocol = 2;
+      public boolean hasProtocol() {
+        return result.hasProtocol();
+      }
+      public int getProtocol() {
+        return result.getProtocol();
+      }
+      public Builder setProtocol(int value) {
+        result.hasProtocol = true;
+        result.protocol_ = value;
+        return this;
+      }
+      public Builder clearProtocol() {
+        result.hasProtocol = false;
+        result.protocol_ = 0;
         return this;
       }
       
@@ -1079,7 +1139,28 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string exception = 4;
+      // optional bytes messageManifest = 4;
+      public boolean hasMessageManifest() {
+        return result.hasMessageManifest();
+      }
+      public com.google.protobuf.ByteString getMessageManifest() {
+        return result.getMessageManifest();
+      }
+      public Builder setMessageManifest(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasMessageManifest = true;
+        result.messageManifest_ = value;
+        return this;
+      }
+      public Builder clearMessageManifest() {
+        result.hasMessageManifest = false;
+        result.messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        return this;
+      }
+      
+      // optional string exception = 5;
       public boolean hasException() {
         return result.hasException();
       }
@@ -1100,7 +1181,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string supervisorUuid = 5;
+      // optional string supervisorUuid = 6;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
       }
@@ -1121,27 +1202,6 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string messageType = 6;
-      public boolean hasMessageType() {
-        return result.hasMessageType();
-      }
-      public java.lang.String getMessageType() {
-        return result.getMessageType();
-      }
-      public Builder setMessageType(java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasMessageType = true;
-        result.messageType_ = value;
-        return this;
-      }
-      public Builder clearMessageType() {
-        result.hasMessageType = false;
-        result.messageType_ = "";
-        return this;
-      }
-      
       // required bool isActor = 7;
       public boolean hasIsActor() {
         return result.hasIsActor();
@@ -1157,6 +1217,24 @@ public final class RemoteProtocol {
       public Builder clearIsActor() {
         result.hasIsActor = false;
         result.isActor_ = false;
+        return this;
+      }
+      
+      // required bool isSuccessful = 8;
+      public boolean hasIsSuccessful() {
+        return result.hasIsSuccessful();
+      }
+      public boolean getIsSuccessful() {
+        return result.getIsSuccessful();
+      }
+      public Builder setIsSuccessful(boolean value) {
+        result.hasIsSuccessful = true;
+        result.isSuccessful_ = value;
+        return this;
+      }
+      public Builder clearIsSuccessful() {
+        result.hasIsSuccessful = false;
+        result.isSuccessful_ = false;
         return this;
       }
     }
@@ -1187,16 +1265,17 @@ public final class RemoteProtocol {
     java.lang.String descriptorData =
       "\nBse/scalablesolutions/akka/kernel/nio/p" +
       "rotobuf/RemoteProtocol.proto\022-se.scalabl" +
-      "esolutions.akka.kernel.nio.protobuf\"\300\001\n\r" +
-      "RemoteRequest\022\017\n\007message\030\001 \002(\014\022\016\n\006method" +
-      "\030\002 \001(\t\022\016\n\006target\030\003 \002(\t\022\017\n\007timeout\030\004 \002(\004\022" +
-      "\026\n\016supervisorUuid\030\005 \001(\t\022\017\n\007isActor\030\006 \002(\010" +
-      "\022\020\n\010isOneWay\030\007 \002(\010\022\021\n\tisEscaped\030\010 \002(\010\022\n\n" +
-      "\002id\030\t \002(\004\022\023\n\013messageType\030\n \002(\t\"\221\001\n\013Remot" +
-      "eReply\022\024\n\014isSuccessful\030\001 \002(\010\022\n\n\002id\030\002 \002(\004" +
-      "\022\017\n\007message\030\003 \001(\014\022\021\n\texception\030\004 \001(\t\022\026\n\016" +
-      "supervisorUuid\030\005 \001(\t\022\023\n\013messageType\030\006 \001(" +
-      "\t\022\017\n\007isActor\030\007 \002(\010B\002H\001";
+      "esolutions.akka.kernel.nio.protobuf\"\326\001\n\r" +
+      "RemoteRequest\022\n\n\002id\030\001 \002(\004\022\020\n\010protocol\030\002 " +
+      "\002(\r\022\017\n\007message\030\003 \002(\014\022\027\n\017messageManifest\030" +
+      "\004 \001(\014\022\016\n\006method\030\005 \001(\t\022\016\n\006target\030\006 \002(\t\022\017\n" +
+      "\007timeout\030\007 \002(\004\022\026\n\016supervisorUuid\030\010 \001(\t\022\017" +
+      "\n\007isActor\030\t \002(\010\022\020\n\010isOneWay\030\n \002(\010\022\021\n\tisE" +
+      "scaped\030\013 \002(\010\"\247\001\n\013RemoteReply\022\n\n\002id\030\001 \002(\004" +
+      "\022\020\n\010protocol\030\002 \001(\r\022\017\n\007message\030\003 \001(\014\022\027\n\017m" +
+      "essageManifest\030\004 \001(\014\022\021\n\texception\030\005 \001(\t\022" +
+      "\026\n\016supervisorUuid\030\006 \001(\t\022\017\n\007isActor\030\007 \002(\010" +
+      "\022\024\n\014isSuccessful\030\010 \002(\010B\002H\001";
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
@@ -1207,7 +1286,7 @@ public final class RemoteProtocol {
           internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteRequest_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteRequest_descriptor,
-              new java.lang.String[] { "Message", "Method", "Target", "Timeout", "SupervisorUuid", "IsActor", "IsOneWay", "IsEscaped", "Id", "MessageType", },
+              new java.lang.String[] { "Id", "Protocol", "Message", "MessageManifest", "Method", "Target", "Timeout", "SupervisorUuid", "IsActor", "IsOneWay", "IsEscaped", },
               se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteRequest.class,
               se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteRequest.Builder.class);
           internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteReply_descriptor =
@@ -1215,7 +1294,7 @@ public final class RemoteProtocol {
           internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteReply_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_se_scalablesolutions_akka_kernel_nio_protobuf_RemoteReply_descriptor,
-              new java.lang.String[] { "IsSuccessful", "Id", "Message", "Exception", "SupervisorUuid", "MessageType", "IsActor", },
+              new java.lang.String[] { "Id", "Protocol", "Message", "MessageManifest", "Exception", "SupervisorUuid", "IsActor", "IsSuccessful", },
               se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.class,
               se.scalablesolutions.akka.kernel.nio.protobuf.RemoteProtocol.RemoteReply.Builder.class);
           return null;

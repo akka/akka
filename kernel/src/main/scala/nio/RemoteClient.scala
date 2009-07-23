@@ -7,10 +7,11 @@ package se.scalablesolutions.akka.kernel.nio
 import java.net.InetSocketAddress
 import java.util.concurrent.{Executors, ConcurrentMap, ConcurrentHashMap}
 
-import kernel.nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 import kernel.actor.{Exit, Actor}
 import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
-import kernel.util.{Serializer, ScalaJSONSerializer, JavaJSONSerializer, Logging}
+import serialization.{Serializer, Serializable, SerializationProtocol}
+import kernel.util.Logging
 
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
@@ -18,9 +19,11 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 
-import protobuf.RemoteProtocol
 import scala.collection.mutable.HashMap
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object RemoteClient extends Logging {
   private val clients = new HashMap[String, RemoteClient]
   def clientFor(address: InetSocketAddress): RemoteClient = synchronized {
@@ -37,6 +40,9 @@ object RemoteClient extends Logging {
   }
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 class RemoteClient(hostname: String, port: Int) extends Logging {
   @volatile private var isRunning = false 
   private val futures = new ConcurrentHashMap[Long, CompletableFutureResult]
@@ -107,7 +113,7 @@ class RemoteClientPipelineFactory(futures: ConcurrentMap[Long, CompletableFuture
   def getPipeline: ChannelPipeline = {
     val p = Channels.pipeline()
     p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4));
-    p.addLast("protobufDecoder", new ProtobufDecoder(RemoteProtocol.RemoteReply.getDefaultInstance));
+    p.addLast("protobufDecoder", new ProtobufDecoder(RemoteReply.getDefaultInstance));
     p.addLast("frameEncoder", new LengthFieldPrepender(4));
     p.addLast("protobufEncoder", new ProtobufEncoder());
     p.addLast("handler", new RemoteClientHandler(futures, supervisors))
@@ -135,12 +141,7 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
         log.debug("Received RemoteReply[\n%s]", reply.toString)
         val future = futures.get(reply.getId)
         if (reply.getIsSuccessful) {
-          val messageBytes = reply.getMessage.toByteArray
-          val messageType = reply.getMessageType
-          val messageClass = Class.forName(messageType)
-          val message =
-            if (reply.isActor) ScalaJSONSerializer.in(messageBytes, Some(messageClass))
-            else JavaJSONSerializer.in(messageBytes, Some(messageClass))          
+          val message = RemoteProtocolBuilder.getMessage(reply)
           future.completeWithResult(message)
         } else {
           if (reply.hasSupervisorUuid) {
@@ -148,15 +149,9 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
             if (!supervisors.containsKey(supervisorUuid)) throw new IllegalStateException("Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
             if (!supervisedActor.supervisor.isDefined) throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-            else supervisedActor.supervisor.get ! Exit(supervisedActor, new RuntimeException(reply.getException))
+            else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply))
           }
-          val exception = reply.getException
-          val exceptionType = Class.forName(exception.substring(0, exception.indexOf('$')))
-          val exceptionMessage = exception.substring(exception.indexOf('$') + 1, exception.length)
-          val exceptionInstance = exceptionType
-            .getConstructor(Array[Class[_]](classOf[String]): _*)
-            .newInstance(exceptionMessage).asInstanceOf[Throwable]
-          future.completeWithException(null, exceptionInstance)
+          future.completeWithException(null, parseException(reply))
         }
 	      futures.remove(reply.getId)
       } else throw new IllegalArgumentException("Unknown message received in remote client handler: " + result)
@@ -171,5 +166,14 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
     log.error("Unexpected exception from downstream in remote client: %s", event.getCause)
     event.getCause.printStackTrace
     event.getChannel.close
+  }
+
+  private def parseException(reply: RemoteReply) = {
+    val exception = reply.getException
+    val exceptionType = Class.forName(exception.substring(0, exception.indexOf('$')))
+    val exceptionMessage = exception.substring(exception.indexOf('$') + 1, exception.length)
+    exceptionType
+      .getConstructor(Array[Class[_]](classOf[String]): _*)
+      .newInstance(exceptionMessage).asInstanceOf[Throwable]
   }
 }

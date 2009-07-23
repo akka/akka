@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 
 import junit.framework.TestCase
 import kernel.Kernel
-
 import kernel.reactor._
 
 import kernel.state.{CassandraStorageConfig, TransactionalState}
@@ -49,7 +48,7 @@ class PersistentActor extends Actor {
   }
 }
 
-class PersistentFailerActor extends Actor {
+@serializable class PersistentFailerActor extends Actor {
   makeTransactionRequired
   def receive: PartialFunction[Any, Unit] = {
     case "Failure" =>
@@ -61,7 +60,7 @@ object PersistenceManager {
   @volatile var isRunning = false
   def init = if (!isRunning) {
     System.setProperty("storage-config", "config")
-    Kernel.startCassandra
+    Kernel.boot
     isRunning = true
   }
 }

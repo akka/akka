@@ -41,7 +41,8 @@
     <orderEntry type="library" exported="" name="Maven: org.apache:zookeeper:3.1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-core-asl:1.1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-mapper-asl:1.1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: sbinary:sbinary:0.3-alpha" level="project" />
+    <orderEntry type="library" exported="" name="Maven: sbinary:sbinary:0.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.twitter:scala-json:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.apache.cassandra:cassandra:0.4.0-dev" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.facebook:thrift:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.facebook:fb303:1.0" level="project" />

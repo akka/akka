@@ -9,9 +9,10 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 
 import kernel.actor._
-import kernel.util.{Serializer, ScalaJSONSerializer, JavaJSONSerializer, Logging}
+import kernel.util._
 import protobuf.RemoteProtocol
 import protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
+import serialization.{Serializer, Serializable, SerializationProtocol}
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -19,12 +20,16 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 
-import com.google.protobuf.ByteString
-
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 class RemoteServer extends Logging {
   def start = RemoteServer.start
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object RemoteServer extends Logging {
   val HOSTNAME = kernel.Kernel.config.getString("akka.remote.hostname", "localhost")
   val PORT = kernel.Kernel.config.getInt("akka.remote.port", 9999)
@@ -104,21 +109,18 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
     log.debug("Dispatching to remote actor [%s]", request.getTarget)
     val actor = createActor(request.getTarget, request.getTimeout)
     actor.start
-    val messageClass = Class.forName(request.getMessageType)
-    val message = ScalaJSONSerializer.in(request.getMessage.toByteArray, Some(messageClass))
+    val message = RemoteProtocolBuilder.getMessage(request)
     if (request.getIsOneWay) actor ! message
     else {
       try {
         val resultOrNone = actor !! message
         val result: AnyRef = if (resultOrNone.isDefined) resultOrNone.get else null
         log.debug("Returning result from actor invocation [%s]", result)
-        val replyMessage = ScalaJSONSerializer.out(result)
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
-          .setMessage(ByteString.copyFrom(replyMessage))
-          .setMessageType(result.getClass.getName)
           .setIsSuccessful(true)
           .setIsActor(true)
+        RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         channel.write(replyBuilder.build)
       } catch {
@@ -140,7 +142,7 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
     log.debug("Dispatching to remote active object [%s :: %s]", request.getMethod, request.getTarget)
     val activeObject = createActiveObject(request.getTarget, request.getTimeout)
 
-    val args: scala.List[AnyRef] = JavaJSONSerializer.in(request.getMessage.toByteArray, Some(classOf[scala.List[AnyRef]]))
+    val args = RemoteProtocolBuilder.getMessage(request).asInstanceOf[scala.List[AnyRef]]
     val argClasses = args.map(_.getClass)
     val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.getTimeout)
 
@@ -151,13 +153,11 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
       else {
         val result = messageReceiver.invoke(activeObject, unescapedArgs: _*)
         log.debug("Returning result from remote active object invocation [%s]", result)
-        val replyMessage = JavaJSONSerializer.out(result)
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
-          .setMessage(ByteString.copyFrom(replyMessage))
-          .setMessageType(result.getClass.getName)
           .setIsSuccessful(true)
           .setIsActor(false)
+        RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         channel.write(replyBuilder.build)
       }
