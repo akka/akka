@@ -1,9 +1,12 @@
 package sample.scala
 
-import javax.ws.rs.{Path, GET, Produces}
+import javax.ws.rs.{Path, GET, Produces,QueryParam,DefaultValue}
 import se.scalablesolutions.akka.kernel.state.{TransactionalState, TransactionalMap, CassandraStorageConfig}
 import se.scalablesolutions.akka.kernel.actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
 import se.scalablesolutions.akka.kernel.config.ScalaConfig._
+
+import _root_.scala.xml.{NodeSeq}
+import se.scalablesolutions.akka.kernel.util.{Logging}
 
 class Boot {
   object factory extends SupervisorFactory {
@@ -38,22 +41,33 @@ class SimpleService extends Actor {
   private val storage = TransactionalState.newPersistentMap(CassandraStorageConfig())
 
   @GET
-  @Produces(Array("application/xml"))
-  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
+  @Produces(Array("text/html"))
+  def count(@DefaultValue("unknown") @QueryParam("who") who : String) = {
+      log.info(who)
+
+    (this !! Tick).getOrElse(view(<error>Error in counter</error>))
+  }
 
   override def receive: PartialFunction[Any, Unit] = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
-      reply(<success>Tick: {counter + 1}</success>)
+      reply(view(<success>Tick: {counter + 1}</success>))
     } else {
       storage.put(KEY, new Integer(0))
       hasStartedTicking = true
-      reply(<success>Tick: 0</success>)
+      reply(view(<lift:success>Tick: 0</lift:success>))
     }
   }
   
   override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) = {
     println("Restarting due to: " + reason.asInstanceOf[Exception].getMessage)
   }
+
+  def view(data : NodeSeq) : NodeSeq = <lift:surround with="default" at="content"> { data } <lift:Howdy.greet/></lift:surround>
+}
+
+class Howdy
+{
+    def greet = <h2>Hello mommy</h2>
 }

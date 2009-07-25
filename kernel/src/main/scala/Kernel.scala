@@ -125,8 +125,16 @@ object Kernel extends Logging {
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
     val adapter = new ServletAdapter
     val servlet = new AkkaServlet
+
+    adapter.addInitParameter("bootloader", config.getString("akka.lift.bootloader").getOrElse(null))
+    adapter.addInitParameter("com.sun.jersey.config.feature.Redirect", "true")
+    adapter.addInitParameter("com.sun.jersey.config.feature.ImplicitViewables", "true")
     adapter.setServletInstance(servlet)
     adapter.setContextPath(uri.getPath)
+
+        //TODO add initialization of Lift (LiftFilter needs initialization)
+
+    log.debug("REST service context path: [" + uri.getPath + "]")
 
     val scheme = uri.getScheme
     if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException("The URI scheme, of the URI " + REST_URL + ", must be equal (ignoring case) to 'http'")
@@ -136,6 +144,7 @@ object Kernel extends Logging {
     jerseySelectorThread.setPort(REST_PORT)
     jerseySelectorThread.setAdapter(adapter)
     jerseySelectorThread.listen
+
     log.info("REST service started successfully. Listening to port [" + REST_PORT + "]")
   }
 

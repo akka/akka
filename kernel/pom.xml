@@ -130,6 +130,11 @@
             <artifactId>jersey-scala</artifactId>
             <version>1.1.2-ea-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-lift</artifactId>
+            <version>1.1.2-ea-SNAPSHOT</version>
+        </dependency>
 
         <!-- For third-party logging -->
         <dependency>
