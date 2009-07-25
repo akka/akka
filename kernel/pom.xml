@@ -125,6 +125,11 @@
             <artifactId>jsr311-api</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-scala</artifactId>
+            <version>1.1.2-ea-SNAPSHOT</version>
+        </dependency>
 
         <!-- For third-party logging -->
         <dependency>
@@ -192,7 +197,7 @@
                 <configuration>
                     <args>
                         <arg>-target:jvm-1.5</arg>
-                        <arg>-unchecked</arg>
+                        <!--<arg>-unchecked</arg>-->
                     </args>
                     <scalaVersion>${scala.version}</scalaVersion>
                     <vscaladocVersion>1.1</vscaladocVersion>

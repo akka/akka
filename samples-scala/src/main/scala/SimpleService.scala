@@ -38,20 +38,18 @@ class SimpleService extends Actor {
   private val storage = TransactionalState.newPersistentMap(CassandraStorageConfig())
 
   @GET
-  @Produces(Array("application/json"))
-  def count = (this !! Tick).getOrElse("Error in counter")
+  @Produces(Array("application/xml"))
+  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
 
   override def receive: PartialFunction[Any, Unit] = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
-      //reply(<h1>Tick: { counter + 1 } </h1>)
-      reply("Tick: " + (counter + 1) + "\n")
+      reply(<success>Tick: {counter + 1}</success>)
     } else {
       storage.put(KEY, new Integer(0))
       hasStartedTicking = true
-      //reply(<h1>Tick: 0</h1>)
-      reply("Tick: 0\n")
+      reply(<success>Tick: 0</success>)
     }
   }
   
