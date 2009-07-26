@@ -74,10 +74,10 @@ class Chat extends Actor with Logging{
     makeTransactionRequired
 
     case class Chat(val who : String, val what : String,val msg : String)
-    case object Suspend
+    //case object Suspend
 
-    private var hasStarted = false;
-    private val storage = TransactionalState.newPersistentMap(CassandraStorageConfig())
+    //private var hasStarted = false;
+    //private val storage = TransactionalState.newPersistentMap(CassandraStorageConfig())
 
     override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) = {
         println("Restarting due to: " + reason.asInstanceOf[Exception].getMessage)
