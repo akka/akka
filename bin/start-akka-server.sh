@@ -15,6 +15,7 @@ mkdir $BASE_DIR/storage/commitlog
 mkdir $BASE_DIR/storage/data
 mkdir $BASE_DIR/storage/system
 
+CLASSPATH=$BASE_DIR/config:$BASE_DIR/deploy/root:$BASE_DIR/deploy/root/META-INF:$BASE_DIR/deploy/root/WEB-INF/classes
 CLASSPATH=$CLASSPATH:$BASE_DIR/config
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/akka-kernel-0.5.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/akka-util-java-0.5.jar
@@ -35,11 +36,12 @@ CLASSPATH=$CLASSPATH:$BASE_DIR/lib/commons-logging-1.0.4.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/commons-math-1.1.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/configgy-1.3.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/google-collect-snapshot-20090211.jar
-CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-framework-1.8.6.3.jar
-CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-http-1.8.6.3.jar
-CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-http-servlet-1.8.6.3.jar
-CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-http-utils-1.8.6.3.jar
-CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-servlet-webserver-1.8.6.3.jar
+#CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-framework-1.8.6.3.jar
+#CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-http-1.8.6.3.jar
+#CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-http-servlet-1.8.6.3.jar
+#CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-http-utils-1.8.6.3.jar
+#CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-servlet-webserver-1.8.6.3.jar
+CLASSPATH=$CLASSPATH:$BASE_DIR/lib/grizzly-comet-webserver-1.9.15b.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/guice-core-2.0-SNAPSHOT.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/guice-jsr250-2.0-SNAPSHOT.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/high-scale-lib.jar
@@ -50,7 +52,10 @@ CLASSPATH=$CLASSPATH:$BASE_DIR/lib/jersey-core-1.0.3.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/jersey-json-1.0.3.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/jersey-server-1.0.3.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/jersey-scala-1.1.2-ea-SNAPSHOT.jar
-CLASSPATH=$CLASSPATH:$BASE_DIR/lib/jersey-lift-1.1.2-ea-SNAPSHOT.jar
+CLASSPATH=$CLASSPATH:$BASE_DIR/lib/atmosphere-core-0.3-SNAPSHOT.jar
+CLASSPATH=$CLASSPATH:$BASE_DIR/lib/atmosphere-portable-runtime-0.3-SNAPSHOT.jar
+CLASSPATH=$CLASSPATH:$BASE_DIR/lib/atmosphere-compat-0.3-SNAPSHOT.jar
+#CLASSPATH=$CLASSPATH:$BASE_DIR/lib/atmosphere-grizzly-adapter-0.3-SNAPSHOT.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/JSAP-2.1.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/jsr250-api-1.0.jar
 CLASSPATH=$CLASSPATH:$BASE_DIR/lib/jsr311-api-1.0.jar

@@ -105,10 +105,15 @@
         </dependency>
 
         <!-- For Jersey -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.sun.grizzly</groupId>
             <artifactId>grizzly-servlet-webserver</artifactId>
             <version>1.9.9</version>
+        </dependency>-->
+        <dependency>
+            <groupId>com.sun.grizzly</groupId>
+            <artifactId>grizzly-comet-webserver</artifactId>
+            <version>1.9.15b</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
@@ -130,11 +135,32 @@
             <artifactId>jersey-scala</artifactId>
             <version>1.1.2-ea-SNAPSHOT</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>com.sun.jersey.contribs</groupId>
             <artifactId>jersey-lift</artifactId>
             <version>1.1.2-ea-SNAPSHOT</version>
+        </dependency>-->
+        
+        <dependency>
+            <groupId>org.atmosphere</groupId>
+            <artifactId>atmosphere-core</artifactId>
+            <version>0.3-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>org.atmosphere</groupId>
+            <artifactId>atmosphere-portable-runtime</artifactId>
+            <version>0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.atmosphere</groupId>
+            <artifactId>atmosphere-compat</artifactId>
+            <version>0.3-SNAPSHOT</version>
+        </dependency>
+        <!--<dependency>
+            <groupId>org.atmosphere</groupId>
+            <artifactId>atmosphere-grizzly-adapter</artifactId>
+            <version>0.3-SNAPSHOT<</version>
+        </dependency>-->
 
         <!-- For third-party logging -->
         <dependency>
@@ -195,7 +221,7 @@
                     <execution>
                         <goals>
                             <goal>compile</goal>
-                            <goal>testCompile</goal>
+                            <!--<goal>testCompile</goal>-->
                         </goals>
                     </execution>
                 </executions>
