@@ -61,6 +61,8 @@
       <artifactId>zookeeper</artifactId>
       <version>3.1.0</version>
     </dependency>
+
+    <!-- For Protocol/Serialization -->
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-core-asl</artifactId>
