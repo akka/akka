@@ -9,8 +9,10 @@ import javax.ws.rs.core.MultivaluedMap
 
 import _root_.scala.xml.{NodeSeq}
 import se.scalablesolutions.akka.kernel.util.{Logging}
-import org.atmosphere.core.annotation.{Broadcast, BroadcastFilter, Suspend}
+import org.atmosphere.core.annotation.{Broadcast, BroadcastFilter => FilterBroadcast, Suspend}
 import org.atmosphere.util.{XSSHtmlFilter}
+import org.atmosphere.cpr.{BroadcastFilter}
+
 
 
 class Boot {
@@ -96,8 +98,8 @@ class Chat extends Actor with Logging{
              log.info("Chat(" + who + ", " + what + ", " + msg + ")")
              
              what match {
-                 case "login" => reply(<h3>System Message: {who} has joined.</h3>)
-                 case "post"  => reply(<p>{who} says: {msg}</p>)
+                 case "login" => reply("System Message__"+who+" has joined.")
+                 case "post"  => reply("" + who + "__" + msg)
                  case _       => throw new WebApplicationException(422)
              }
         }
@@ -107,6 +109,31 @@ class Chat extends Actor with Logging{
         @Consumes(Array("application/x-www-form-urlencoded"))
         @POST
         @Produces(Array("text/html"))
-        //@BroadcastFilter(Array(classOf[XSSHtmlFilter]))//,classOf[JsonpFilter]))
-        def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))).getOrElse(<p>Error</p>)
+        @FilterBroadcast(Array(classOf[XSSHtmlFilter],classOf[JsonpFilter]))
+        def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))).getOrElse("System__error")
     }
+
+
+   class JsonpFilter extends BroadcastFilter[String]
+   {
+
+       val BEGIN_SCRIPT_TAG = "<script type='text/javascript'>\n"
+       val END_SCRIPT_TAG = "</script>\n"
+
+      def filter(m : String) = {
+          var name = m
+          var message = ""
+
+          if (m.indexOf("__") > 0) {
+              name = m.substring(0, m.indexOf("__"))
+              message = m.substring(m.indexOf("__") + 2)
+          }
+
+          val result: String = (BEGIN_SCRIPT_TAG + "window.parent.app.update({ name: \""
+                  + name + "\", message: \""
+                  + message + "\" });\n"
+                  + END_SCRIPT_TAG)
+
+          result
+      }
+  }
