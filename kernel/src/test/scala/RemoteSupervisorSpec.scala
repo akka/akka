@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.kernel
 
+import akka.serialization.BinaryString
 import kernel.nio.{RemoteClient, RemoteServer}
 import kernel.actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
 import kernel.config.ScalaConfig._
@@ -41,7 +42,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
 
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
   }
 
@@ -51,7 +52,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     intercept(classOf[RuntimeException]) {
-      pingpong1 !! Die
+      pingpong1 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("DIE") {
@@ -65,21 +66,21 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("ping") {
       Log.messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong1 !! Die
+      pingpong1 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingDIE") {
       Log.messageLog
     }
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingDIEping") {
@@ -93,7 +94,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     intercept(classOf[RuntimeException]) {
-      pingpong1 !! Die
+      pingpong1 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("DIE") {
@@ -107,21 +108,21 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("ping") {
       Log.messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong1 !! Die
+      pingpong1 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingDIE") {
       Log.messageLog
     }
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingDIEping") {
@@ -135,7 +136,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     intercept(classOf[RuntimeException]) {
-      pingpong3 !! Die
+      pingpong3 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("DIE") {
@@ -149,37 +150,37 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 !! Ping).getOrElse("nil")
+      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 !! Ping).getOrElse("nil")
+      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingping") {
       Log.messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 !! Die
+      pingpong2 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingpingpingDIE") {
       Log.messageLog
     }
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 !! Ping).getOrElse("nil")
+      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 !! Ping).getOrElse("nil")
+      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingpingDIEpingpingping") {
@@ -193,7 +194,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     intercept(classOf[RuntimeException]) {
-      pingpong2 !! Die
+      pingpong2 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("DIEDIEDIE") {
@@ -207,37 +208,37 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 !! Ping).getOrElse("nil")
+      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 !! Ping).getOrElse("nil")
+      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingping") {
       Log.messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 !! Die
+      pingpong2 !! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingpingpingDIEDIEDIE") {
       Log.messageLog
     }
     expect("pong") {
-      (pingpong1 !! Ping).getOrElse("nil")
+      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 !! Ping).getOrElse("nil")
+      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 !! Ping).getOrElse("nil")
+      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingpingDIEDIEDIEpingpingping") {
@@ -251,7 +252,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     val sup = getSingleActorOneForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
-    pingpong1 ! Die
+    pingpong1 ! BinaryString("Die")
     Thread.sleep(500)
     expect("DIE") {
       Log.messageLog
@@ -268,7 +269,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     expect("oneway") {
       Log.oneWayLog
     }
-    pingpong1 ! Die
+    pingpong1 ! BinaryString("Die")
     Thread.sleep(500)
     expect("DIE") {
       Log.messageLog
@@ -288,7 +289,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     intercept(classOf[RuntimeException]) {
-      pingpong1 ! Die
+      pingpong1 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("DIE") {
@@ -302,21 +303,21 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
+      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("ping") {
       Log.messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong1 ! Die
+      pingpong1 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingDIE") {
       Log.messageLog
     }
     expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
+      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingDIEping") {
@@ -330,7 +331,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     intercept(classOf[RuntimeException]) {
-      pingpong3 ! Die
+      pingpong3 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("DIE") {
@@ -344,37 +345,37 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
+      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
+      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
+      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingping") {
       Log.messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 ! Die
+      pingpong2 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingpingpingDIE") {
       Log.messageLog
     }
     expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
+      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
+      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
+      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingpingDIEpingpingping") {
@@ -388,7 +389,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     intercept(classOf[RuntimeException]) {
-      pingpong2 ! Die
+      pingpong2 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("DIEDIEDIE") {
@@ -402,37 +403,37 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     sup ! StartSupervisor
     Thread.sleep(500)
     expect("pong") {
-      pingpong1 ! Ping
+      pingpong1 ! BinaryString("Ping")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
+      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
+      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingping") {
       Log.messageLog
     }
     intercept(classOf[RuntimeException]) {
-      pingpong2 ! Die
+      pingpong2 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingpingpingDIEDIEDIE") {
       Log.messageLog
     }
     expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
+      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
+      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
+      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingpingpingDIEDIEDIEpingpingping") {
@@ -447,7 +448,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
      val sup = getNestedSupervisorsAllForOneConf
      sup ! StartSupervisor
      intercept(classOf[RuntimeException]) {
-       pingpong1 !! Die
+       pingpong1 !! BinaryString("Die")
      }
      Thread.sleep(500)
      expect("DIEDIEDIE") {
@@ -594,14 +595,14 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
 
 @serializable class RemotePingPong1Actor extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
-    case Ping =>
+    case BinaryString("Ping") =>
       Log.messageLog += "ping"
       reply("pong")
 
     case OneWay =>
       Log.oneWayLog += "oneway"
 
-    case Die =>
+    case BinaryString("Die") =>
       throw new RuntimeException("DIE")
   }
   override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
@@ -611,10 +612,10 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
 
 @serializable class RemotePingPong2Actor extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
-    case Ping =>
+    case BinaryString("Ping") =>
       Log.messageLog += "ping"
       reply("pong")
-    case Die =>
+    case BinaryString("Die") =>
       throw new RuntimeException("DIE")
   }
   override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
@@ -624,10 +625,10 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
 
 @serializable class RemotePingPong3Actor extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
-    case Ping =>
+    case BinaryString("Ping") =>
       Log.messageLog += "ping"
       reply("pong")
-    case Die =>
+    case BinaryString("Die") =>
       throw new RuntimeException("DIE")
   }
 

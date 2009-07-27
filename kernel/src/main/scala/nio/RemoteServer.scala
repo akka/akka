@@ -62,6 +62,9 @@ object RemoteServer extends Logging {
   }
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 class RemoteServerPipelineFactory extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline  = {
     val p = Channels.pipeline()
@@ -74,6 +77,9 @@ class RemoteServerPipelineFactory extends ChannelPipelineFactory {
   }
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 @ChannelPipelineCoverage { val value = "all" }
 class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
   private val activeObjectFactory = new ActiveObjectFactory

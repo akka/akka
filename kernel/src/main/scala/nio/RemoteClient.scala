@@ -108,6 +108,9 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   def deregisterSupervisorWithUuid(uuid: String) = supervisors.remove(uuid)
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 class RemoteClientPipelineFactory(futures: ConcurrentMap[Long, CompletableFutureResult],
                                 supervisors: ConcurrentMap[String, Actor]) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
@@ -121,6 +124,9 @@ class RemoteClientPipelineFactory(futures: ConcurrentMap[Long, CompletableFuture
   }
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 @ChannelPipelineCoverage { val value = "all" }
 class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor])
@@ -170,7 +176,6 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
 
   private def parseException(reply: RemoteReply) = {
     val exception = reply.getException
-    println("-------------- " + exception)
     val exceptionType = Class.forName(exception.substring(0, exception.indexOf('$')))
     val exceptionMessage = exception.substring(exception.indexOf('$') + 1, exception.length)
     exceptionType

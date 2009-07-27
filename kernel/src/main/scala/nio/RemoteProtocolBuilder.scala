@@ -14,7 +14,7 @@ object RemoteProtocolBuilder {
   def getMessage(request: RemoteRequest): AnyRef = {
     request.getProtocol match {
       case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary]
+        val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(request.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = Serializer.Java.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
@@ -35,7 +35,7 @@ object RemoteProtocolBuilder {
   def getMessage(reply: RemoteReply): AnyRef = {
     reply.getProtocol match {
       case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary]
+        val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(reply.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = Serializer.Java.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
@@ -54,8 +54,8 @@ object RemoteProtocolBuilder {
   }
 
   def setMessage(message: AnyRef, builder: RemoteRequest.Builder) = {
-    if (message.isInstanceOf[Serializable.SBinary]) {
-      val serializable = message.asInstanceOf[Serializable.SBinary]
+    if (message.isInstanceOf[Serializable.SBinary[_]]) {
+      val serializable = message.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
       builder.setProtocol(SerializationProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
@@ -82,8 +82,8 @@ object RemoteProtocolBuilder {
   }
 
   def setMessage(message: AnyRef, builder: RemoteReply.Builder) = {
-    if (message.isInstanceOf[Serializable.SBinary]) {
-      val serializable = message.asInstanceOf[Serializable.SBinary]
+    if (message.isInstanceOf[Serializable.SBinary[_]]) {
+      val serializable = message.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
       builder.setProtocol(SerializationProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
