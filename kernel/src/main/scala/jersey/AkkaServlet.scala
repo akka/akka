@@ -32,7 +32,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
 
   override def initiate(rc: ResourceConfig, wa: WebApplication) = {
     //  super.initiate(rc, wa)
-      log.info("Initializing akka servlet")
+    //  log.info("Initializing akka servlet")
     Kernel.boot // will boot if not already booted by 'main'
     val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext)
     val set = new HashSet[Class[_]]
@@ -48,7 +48,6 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
 
     override def onMessage(event : AtmosphereEvent[HttpServletRequest,HttpServletResponse]) : AtmosphereEvent[_,_] =
     {
-        log.info("AkkaServlet:onMessage")
         var isUsingStream = false
         try {
             event.getResponse.getWriter
@@ -71,9 +70,9 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     {
         event.getRequest.setAttribute(classOf[org.atmosphere.cpr.AtmosphereEvent[_,_]].getName, event)
         event.getRequest.setAttribute(classOf[AkkaServlet].getName, this)
-        log.info("AkkaServlet:onEvent:beforeService")
+
         service(event.getRequest, event.getResponse)
-        log.info("AkkaServlet:onEvent:afterService")
+
         event
     }
 }
@@ -82,22 +81,23 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
   {
       override def init(sconf : ServletConfig) = {
 
-        log.info("initializing Akka comet servlet")
+        //log.info("initializing Akka comet servlet")
         val cfg = new AtmosphereConfig
 
-        atmosphereHandlers = new java.util.HashMap[String, AtmosphereHandlerWrapper] {
+        /*atmosphereHandlers = new java.util.HashMap[String, AtmosphereHandlerWrapper] {
             override def get(s : Object) : AtmosphereHandlerWrapper = {
                 log.info("get handler for: " + s)
                 
                 super.get("")
             }
-        }
+        }*/
 
         atmosphereHandlers.put("", new AtmosphereHandlerWrapper(new AkkaServlet,new JerseyBroadcaster()))
 
         super.setCometSupport(new GrizzlyCometSupport(cfg))
         getCometSupport.init(sconf)
 
+        //Would call super.initAtmosphereServletProcessor(sconf) if they'd let me, but they don't so I roll my own
         for(e <- atmosphereHandlers.entrySet){
             val h = e.getValue.atmosphereHandler
             if(h.isInstanceOf[AtmosphereServletProcessor])
@@ -106,8 +106,5 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
 
       }
 
-      override def loadAtmosphereDotXml(is : InputStream, urlc :URLClassLoader)
-      {
-          log.info("hiding Atmosphere.xml")
-      }
+      override def loadAtmosphereDotXml(is : InputStream, urlc :URLClassLoader) = () //Hide it
   }

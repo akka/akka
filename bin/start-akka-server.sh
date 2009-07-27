@@ -18,6 +18,8 @@ mkdir $BASE_DIR/storage/system
 LIB_DIR=$BASE_DIR/lib
 
 CLASSPATH=$BASE_DIR/config
+CLASSPATH=$CLASSPATH:$LIB_DIR/fscontext.jar
+CLASSPATH=$CLASSPATH:$LIB_DIR/providerutil.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/akka-kernel-0.5.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/akka-util-java-0.5.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/akka-util-java.jar
@@ -99,9 +101,9 @@ JVM_OPTS=" \
         -XX:+HeapDumpOnOutOfMemoryError \
         -Dcom.sun.management.jmxremote.port=8080 \
         -Dcom.sun.management.jmxremote.ssl=false \
+        -Djava.naming.factory.initial=com.sun.jndi.fscontext.RefFSContextFactory \
         -Dcom.sun.management.jmxremote.authenticate=false"
-
-#       -Djava.naming.factory.initial=com.sun.enterprise.naming.SerialInitContextFactory
+ 
 
 #$JAVA_HOME/bin/java $JVM_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}
 $JAVA_HOME/bin/java $JVM_OPTS -cp $CLASSPATH se.scalablesolutions.akka.kernel.Kernel ${1}
