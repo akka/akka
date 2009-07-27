@@ -81,16 +81,7 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
   {
       override def init(sconf : ServletConfig) = {
 
-        //log.info("initializing Akka comet servlet")
         val cfg = new AtmosphereConfig
-
-        /*atmosphereHandlers = new java.util.HashMap[String, AtmosphereHandlerWrapper] {
-            override def get(s : Object) : AtmosphereHandlerWrapper = {
-                log.info("get handler for: " + s)
-                
-                super.get("")
-            }
-        }*/
 
         atmosphereHandlers.put("", new AtmosphereHandlerWrapper(new AkkaServlet,new JerseyBroadcaster()))
 
