@@ -1,5 +1,0 @@
-<atmosphere-handlers>
-    <atmosphere-handler context-root="" class-name="org.atmosphere.handler.ReflectorServletProcessor">
-        <property name="servletClass" value="se.scalablesolutions.akka.kernel.jersey.AkkaServlet"/>
-    </atmosphere-handler>
-</atmosphere-handlers>

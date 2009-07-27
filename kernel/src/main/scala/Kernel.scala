@@ -36,7 +36,6 @@ object Kernel extends Logging {
   val REST_HOSTNAME = kernel.Kernel.config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
   val REST_PORT = kernel.Kernel.config.getInt("akka.rest.port", 9998)
-  val REST_ROOT = System.getenv("AKKA_HOME") + "/deploy/root/"
 
   // FIXME add API to shut server down gracefully
   private var remoteServer: RemoteServer = _
@@ -129,16 +128,13 @@ object Kernel extends Logging {
 
 
     val adapter = new ServletAdapter()
-    //val servlet = org.atmosphere.cpr.AtmosphereServlet
-    //val servlet = new AkkaServlet()
-    //adapter.addInitParameter("bootloader", config.getString("akka.lift.bootloader").getOrElse(null))
     adapter.addInitParameter("com.sun.jersey.spi.container.ResourceFilters","org.atmosphere.core.AtmosphereFilter")
     adapter.addInitParameter("com.sun.jersey.config.feature.Redirect", "true")
     adapter.addInitParameter("com.sun.jersey.config.feature.ImplicitViewables", "true")
 
     adapter.setServletInstance(new AkkaCometServlet)
     adapter.setContextPath(uri.getPath)
-    adapter.setRootFolder(REST_ROOT)
+    adapter.setRootFolder(System.getenv("AKKA_HOME") + "/deploy/root")
     log.info("REST service root path: [" + adapter.getRootFolder + "] and context path [" + adapter.getContextPath + "] ")
 
     

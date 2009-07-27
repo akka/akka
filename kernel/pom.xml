@@ -113,7 +113,8 @@
         <dependency>
             <groupId>com.sun.grizzly</groupId>
             <artifactId>grizzly-comet-webserver</artifactId>
-            <version>1.9.15b</version>
+            <!--<version>1.9.15b</version>-->
+            <version>1.8.6.3</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
@@ -221,7 +222,7 @@
                     <execution>
                         <goals>
                             <goal>compile</goal>
-                            <!--<goal>testCompile</goal>-->
+                            <goal>testCompile</goal>
                         </goals>
                     </execution>
                 </executions>
