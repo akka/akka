@@ -23,8 +23,8 @@ object RemoteProtocolBuilder {
         val manifest = Serializer.Java.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
         Serializer.JavaJSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
       case SerializationProtocol.PROTOBUF =>
-        val manifest = Serializer.Java.in(request.getMessageManifest.toByteArray, None).asInstanceOf[Message]
-        Serializer.Protobuf.in(request.getMessage.toByteArray, manifest)
+        val messageClass = Serializer.Java.in(request.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
+        Serializer.Protobuf.in(request.getMessage.toByteArray, Some(messageClass))
       case SerializationProtocol.JAVA =>
         Serializer.Java.in(request.getMessage.toByteArray, None)
       case SerializationProtocol.AVRO =>
@@ -44,8 +44,8 @@ object RemoteProtocolBuilder {
         val manifest = Serializer.Java.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
         Serializer.JavaJSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
       case SerializationProtocol.PROTOBUF =>
-        val manifest = Serializer.Java.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[Message]
-        Serializer.Protobuf.in(reply.getMessage.toByteArray, manifest)
+        val messageClass = Serializer.Java.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
+        Serializer.Protobuf.in(reply.getMessage.toByteArray, Some(messageClass))
       case SerializationProtocol.JAVA =>
         Serializer.Java.in(reply.getMessage.toByteArray, None)
       case SerializationProtocol.AVRO =>
@@ -59,11 +59,11 @@ object RemoteProtocolBuilder {
       builder.setProtocol(SerializationProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
-    } else if (message.isInstanceOf[Serializable.Protobuf]) {
-      val serializable = message.asInstanceOf[Serializable.Protobuf]
+    } else if (message.isInstanceOf[Message]) {
+      val serializable = message.asInstanceOf[Message]
       builder.setProtocol(SerializationProtocol.PROTOBUF)
-      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
-      builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getSchema)))
+      builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
+      builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getClass)))
     } else if (message.isInstanceOf[Serializable.ScalaJSON[_]]) {
       val serializable = message.asInstanceOf[Serializable.ScalaJSON[_]]
       builder.setProtocol(SerializationProtocol.SCALA_JSON)
@@ -87,11 +87,11 @@ object RemoteProtocolBuilder {
       builder.setProtocol(SerializationProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
-    } else if (message.isInstanceOf[Serializable.Protobuf]) {
-      val serializable = message.asInstanceOf[Serializable.Protobuf]
+    } else if (message.isInstanceOf[Message]) {
+      val serializable = message.asInstanceOf[Message]
       builder.setProtocol(SerializationProtocol.PROTOBUF)
-      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
-      builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getSchema)))
+      builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
+      builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getClass)))
     } else if (message.isInstanceOf[Serializable.ScalaJSON[_]]) {
       val serializable = message.asInstanceOf[Serializable.ScalaJSON[_]]
       builder.setProtocol(SerializationProtocol.SCALA_JSON)

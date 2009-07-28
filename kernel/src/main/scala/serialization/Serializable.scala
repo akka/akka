@@ -106,8 +106,9 @@ object Serializable {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait Protobuf extends Serializable {
-    def toBytes: Array[Byte]
-    def getSchema: Message
+  trait Protobuf[T] extends Serializable {
+    def fromBytes(bytes: Array[Byte]): T = getMessage.toBuilder.mergeFrom(bytes).asInstanceOf[T]
+    def toBytes: Array[Byte] = getMessage.toByteArray
+    def getMessage: Message
   }
 }

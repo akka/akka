@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.serialization
 
 import com.google.protobuf.Message
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
-import reflect.Manifest
+import reflect.{BeanProperty, Manifest}
 import sbinary.DefaultProtocol
 import org.codehaus.jackson.map.ObjectMapper
 import com.twitter.commons.Json
@@ -15,20 +15,33 @@ import com.twitter.commons.Json
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Serializer {
-  def deepClone[T <: AnyRef](obj: T): T
+  def deepClone(obj: AnyRef): AnyRef
   def out(obj: AnyRef): Array[Byte]
   def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+}
+
+// For Java API
+class SerializerFactory {
+  import Serializer._
+  def getJava: Java.type = Java
+  def getJavaJSON: JavaJSON.type = JavaJSON
+  def getScalaJSON: ScalaJSON.type = ScalaJSON
+  def getSBinary: SBinary.type = SBinary
+  def getProtobuf: Protobuf.type = Protobuf  
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Serializer {
+  val EMPTY_CLASS_ARRAY = Array[Class[_]]()
+  val EMPTY_ANY_REF_ARRAY = Array[AnyRef]()
+
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object Java extends Serializer {
-    def deepClone[T <: AnyRef](obj: T): T = in(out(obj), None).asInstanceOf[T]
+    def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
     def out(obj: AnyRef): Array[Byte] = {
       val bos = new ByteArrayOutputStream
@@ -49,15 +62,25 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object Protobuf {
-    //def deepClone[T <: AnyRef](obj: T): T = in(out(obj), None).asInstanceOf[T]
+  object Protobuf extends Serializer {
+    def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
 
     def out(obj: AnyRef): Array[Byte] = {
-      throw new UnsupportedOperationException
+      if (!obj.isInstanceOf[Message]) throw new IllegalArgumentException("Can't serialize a non-protobuf message using protobuf [" + obj + "]")
+      obj.asInstanceOf[Message].toByteArray
+    }
+    
+    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
+      if (!clazz.isDefined) throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf") 
+      // TODO: should we cache this method lookup?
+      val message = clazz.get.getDeclaredMethod("getDefaultInstance", EMPTY_CLASS_ARRAY: _*).invoke(null, EMPTY_ANY_REF_ARRAY: _*).asInstanceOf[Message]
+      message.toBuilder().mergeFrom(bytes).build                                                                                  
     }
 
-    def in(bytes: Array[Byte], schema: Message): AnyRef = {
-      throw new UnsupportedOperationException
+    // For Java
+    def in(bytes: Array[Byte], clazz: Class[_]): AnyRef = {
+      if (clazz == null) throw new IllegalArgumentException("Protobuf message can't be null")
+      in(bytes, Some(clazz))
     }
   }
 
@@ -67,7 +90,7 @@ object Serializer {
   object JavaJSON extends Serializer {
     private val mapper = new ObjectMapper
 
-    def deepClone[T <: AnyRef](obj: T): T = in(out(obj), Some(obj.getClass)).asInstanceOf[T]
+    def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
 
     def out(obj: AnyRef): Array[Byte] = {
       val bos = new ByteArrayOutputStream
@@ -90,7 +113,7 @@ object Serializer {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ScalaJSON extends Serializer {
-    def deepClone[T <: AnyRef](obj: T): T = in(out(obj), None).asInstanceOf[T]
+    def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
     def out(obj: AnyRef): Array[Byte] = Json.build(obj).toString.getBytes("UTF-8")
 

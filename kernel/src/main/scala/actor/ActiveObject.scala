@@ -445,7 +445,7 @@ private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extend
     if (!unserializable && hasMutableArgument) {
       // FIXME: can we have another default deep cloner?
       val copyOfArgs = Serializer.Java.deepClone(args)
-      joinpoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs)
+      joinpoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
     }    
   }
 }
