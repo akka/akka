@@ -8,7 +8,7 @@ import java.util.concurrent._
 import locks.ReentrantLock
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
-import java.util.{Collection, HashSet, LinkedList, Queue}
+import java.util.{Collection, HashSet, HashMap, LinkedList, List}
 
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
@@ -66,7 +66,7 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   private var threadPoolBuilder: ThreadPoolExecutor = _
   private val threadFactory = new MonitorableThreadFactory("akka")
   private var boundedExecutorBound = -1
-  private val busyHandlers = new HashSet[AnyRef]
+  private val busyInvokers = new HashSet[AnyRef]
 
   // build default thread pool
   withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
@@ -82,27 +82,27 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
       override def run = {
         while (active) {
           try {
-            try {
-              guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
+            //try {
+            //  guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
-            } catch {case e: InterruptedException => active = false}
-            val selectedQueue = messageDemultiplexer.acquireSelectedQueue
-            for (index <- 0 until selectedQueue.size) {
-              val message = selectedQueue.peek
-              val messageHandler = getIfNotBusy(message.sender)
-              if (messageHandler.isDefined) {
-                executor.execute(new Runnable {
-                  override def run = {
-                    messageHandler.get.invoke(message)
-                    free(message.sender)
-                    messageDemultiplexer.wakeUp
-                  }
-                })
-                selectedQueue.remove
-              }
+            //} catch { case e: InterruptedException => active = false }
+            val selectedInvocations = messageDemultiplexer.acquireSelectedInvocations
+            val reservedInvocations = reserve(selectedInvocations)
+            val it = reservedInvocations.entrySet.iterator
+            while (it.hasNext) {
+              val entry = it.next
+              val invocation = entry.getKey
+              val invoker = entry.getValue
+              threadPoolBuilder.execute(new Runnable() {
+                def run = {
+                  invoker.invoke(invocation)
+                  free(invocation.sender)
+                  messageDemultiplexer.wakeUp
+                }
+              })
             }
           } finally {
-            messageDemultiplexer.releaseSelectedQueue
+            messageDemultiplexer.releaseSelectedInvocations
           }
         }
       }
@@ -112,19 +112,25 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
 
   override protected def doShutdown = executor.shutdownNow
 
-  private def getIfNotBusy(key: AnyRef): Option[MessageInvoker] = guard.synchronized {
-    if (CONCURRENT_MODE && messageHandlers.containsKey(key)) Some(messageHandlers.get(key))
-    else if (!busyHandlers.contains(key) && messageHandlers.containsKey(key)) {
-      busyHandlers.add(key)
-      Some(messageHandlers.get(key))
-    } else None
+  private def reserve(invocations: List[MessageInvocation]): HashMap[MessageInvocation, MessageInvoker] = synchronized {
+   // if (CONCURRENT_MODE && messageHandlers.containsKey(key)) Some(messageHandlers.get(key))
+    val result = new HashMap[MessageInvocation, MessageInvoker]
+    val iterator = invocations.iterator
+    while (iterator.hasNext) {
+      val invocation = iterator.next
+      if (!busyInvokers.contains(invocation.sender)) {
+        result.put(invocation, messageHandlers.get(invocation.sender))
+        busyInvokers.add(invocation.sender)
+        iterator.remove
+      }
+    }
+    result
   }
 
-  private def free(key: AnyRef) = guard.synchronized {
-    if (!CONCURRENT_MODE) busyHandlers.remove(key)
+  private def free(invoker: AnyRef) = synchronized {
+    if (!CONCURRENT_MODE) busyInvokers.remove(invoker)
   }
-
-
+  
   // ============ Code for configuration of thread pool =============
 
   def buildThreadPool = synchronized {
@@ -241,25 +247,22 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
 }
 
 class EventBasedThreadPoolDemultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
-  private val selectedQueue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
-  private val selectedQueueLock = new ReentrantLock
+  private val selectedInvocations: List[MessageInvocation] = new LinkedList[MessageInvocation]
+  private val selectedInvocationsLock = new ReentrantLock
 
   def select = try {
-    selectedQueueLock.lock
-    messageQueue.read(selectedQueue)
+    selectedInvocationsLock.lock
+    messageQueue.read(selectedInvocations)
   } finally {
-    selectedQueueLock.unlock
+    selectedInvocationsLock.unlock
   }
 
-  def acquireSelectedQueue: Queue[MessageInvocation] = {
-    selectedQueueLock.lock
-    selectedQueue
+  def acquireSelectedInvocations: List[MessageInvocation] = {
+    selectedInvocationsLock.lock
+    selectedInvocations
   }
 
-  def releaseSelectedQueue = {
-    //selectedQueue.clear
-    selectedQueueLock.unlock
-  }
+  def releaseSelectedInvocations = selectedInvocationsLock.unlock
 
   def wakeUp = messageQueue.interrupt
 }

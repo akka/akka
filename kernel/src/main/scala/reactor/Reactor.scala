@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
-import java.util.Queue
+import java.util.List
 import kernel.stm.Transaction
 import kernel.util.HashCode
 
@@ -27,8 +27,8 @@ trait MessageDispatcher {
 
 trait MessageDemultiplexer {
   def select
-  def acquireSelectedQueue: Queue[MessageInvocation]
-  def releaseSelectedQueue
+  def acquireSelectedInvocations: List[MessageInvocation]
+  def releaseSelectedInvocations
   def wakeUp
 }
 

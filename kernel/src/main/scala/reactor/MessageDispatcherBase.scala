@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
-import java.util.{LinkedList, Queue}
+import java.util.{LinkedList, Queue, List}
 import java.util.concurrent.TimeUnit
 import java.util.HashMap
 
@@ -21,11 +21,11 @@ trait MessageDispatcherBase extends MessageDispatcher {
 
   def messageQueue = queue
 
-  def registerHandler(key: AnyRef, handler: MessageInvoker) = guard.synchronized {
+  def registerHandler(key: AnyRef, handler: MessageInvoker) = synchronized {
     messageHandlers.put(key, handler)
   }
 
-  def unregisterHandler(key: AnyRef) = guard.synchronized {
+  def unregisterHandler(key: AnyRef) = synchronized {
     messageHandlers.remove(key)
   }
 
@@ -55,9 +55,9 @@ class ReactiveMessageQueue extends MessageQueue {
     queue.notifyAll
   }
 
-  def read(destination: Queue[MessageInvocation]) = queue.synchronized {
+  def read(destination: List[MessageInvocation]) = queue.synchronized {
     while (queue.isEmpty && !interrupted) queue.wait
-    if (!interrupted) while (!queue.isEmpty) destination.offer(queue.remove)
+    if (!interrupted) while (!queue.isEmpty) destination.add(queue.remove)
     else interrupted = false
   }
 

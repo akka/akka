@@ -62,9 +62,9 @@
     <orderEntry type="library" exported="" name="Maven: org.apache.cassandra:cassandra:0.4.0-dev" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.facebook:thrift:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.facebook:fb303:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.apache.commons:commons-collections:3.2.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: commons-collections:commons-collections:3.2.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: high-scale-lib:high-scale-lib:1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.apache.commons:commons-lang:2.4" level="project" />
+    <orderEntry type="library" exported="" name="Maven: commons-lang:commons-lang:2.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.9.9" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.9.9" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-framework:1.9.9" level="project" />
@@ -83,6 +83,7 @@
     <orderEntry type="library" exported="" name="Maven: org.slf4j:slf4j-log4j12:1.4.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.slf4j:slf4j-api:1.4.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: log4j:log4j:1.2.13" level="project" />
+    <orderEntry type="library" exported="" name="Maven: commons-logging:commons-logging:1.0.4" level="project" />
     <orderEntry type="library" name="Maven: org.scala-tools.testing:scalatest:0.9.5" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.jersey:jersey-client:1.1.0-ea" level="project" />
   </component>

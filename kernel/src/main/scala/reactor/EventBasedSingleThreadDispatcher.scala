@@ -10,6 +10,8 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
+import java.util.{LinkedList, Queue, List}
+
 class EventBasedSingleThreadDispatcher extends MessageDispatcherBase {
   def start = if (!active) {
     active = true
@@ -20,11 +22,12 @@ class EventBasedSingleThreadDispatcher extends MessageDispatcherBase {
           try {
             messageDemultiplexer.select
           } catch { case e: InterruptedException => active = false }
-          val selectedQueue = messageDemultiplexer.acquireSelectedQueue
-          for (index <- 0 until selectedQueue.size) {
-            val handle = selectedQueue.remove
-            val handler = messageHandlers.get(handle.sender)
-            if (handler != null) handler.invoke(handle)
+          val selectedInvocations = messageDemultiplexer.acquireSelectedInvocations.iterator
+          while (selectedInvocations.hasNext) {
+            val invocation = selectedInvocations.next
+            val invoker = messageHandlers.get(invocation.sender)
+            if (invoker != null) invoker.invoke(invocation)
+            selectedInvocations.remove
           }
         }
       }
@@ -34,15 +37,14 @@ class EventBasedSingleThreadDispatcher extends MessageDispatcherBase {
 }
 
 class EventBasedSingleThreadDemultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
-  import java.util.{LinkedList, Queue}
 
-  private val selectedQueue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
+  private val selectedQueue: List[MessageInvocation] = new LinkedList[MessageInvocation]
 
   def select = messageQueue.read(selectedQueue)
 
-  def acquireSelectedQueue: Queue[MessageInvocation] = selectedQueue
+  def acquireSelectedInvocations: List[MessageInvocation] = selectedQueue
 
-  def releaseSelectedQueue = throw new UnsupportedOperationException("EventBasedSingleThreadDemultiplexer can't release its queue")
+  def releaseSelectedInvocations = throw new UnsupportedOperationException("EventBasedSingleThreadDemultiplexer can't release its queue")
 
   def wakeUp = throw new UnsupportedOperationException("EventBasedSingleThreadDemultiplexer can't be woken up")
 }
