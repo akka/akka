@@ -45,11 +45,12 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     wa.initiate(rc,new ActorComponentProviderFactory(configurators))
   }
 
+    //Borrowed from AbstractReflectorAtmosphereHandler
     override def onMessage(event : AtmosphereEvent[HttpServletRequest,HttpServletResponse]) : AtmosphereEvent[_,_] =
     {
         //log.info("onMessage: " + event.getMessage.toString)
 
-        if(event.getMessage ne null)
+        if(event.getMessage != null)
         {
             var isUsingStream = false
             try {
@@ -58,16 +59,19 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
                 case e: IllegalStateException => isUsingStream = true
             }
 
+            val data = event.getMessage.toString
+
             if (isUsingStream){
-                event.getResponse.getOutputStream.write(event.getMessage.toString.getBytes);
+                if(data != null)
+                  event.getResponse.getOutputStream.write(data.getBytes)
                 event.getResponse.getOutputStream.flush
             } else {
-                event.getResponse.getWriter.write(event.getMessage.toString)
+                event.getResponse.getWriter.write(data)
                 event.getResponse.getWriter.flush
             }
         }
         else
-            log.info(new NullPointerException, "Null event message :/")
+            log.info("Null event message :/ req[ " + event.getRequest + "] res[" +event.getResponse + "]")
 
         event
     }
@@ -84,14 +88,15 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     }
 }
 
-class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
+class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet
 {
       override def init(sconf : ServletConfig) = {
         val servlet = new AkkaServlet
+        this.config = new AtmosphereConfig
 
-        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet,new JerseyBroadcaster()))
-
-        setCometSupport(new GrizzlyCometSupport(new AtmosphereConfig{ ah = servlet }))
+        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet,new JerseyBroadcaster))
+    
+        setCometSupport(new GrizzlyCometSupport(config))
         getCometSupport.init(sconf)
 
         servlet.init(sconf)
