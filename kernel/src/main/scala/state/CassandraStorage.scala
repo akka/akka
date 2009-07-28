@@ -43,9 +43,10 @@ object CassandraStorage extends Logging {
     kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "java") match {
       case "scala-json" => Serializer.ScalaJSON
       case "java-json" =>  Serializer.JavaJSON
-      //case "sbinary" =>    Serializer.SBinary
+      case "protobuf" =>   Serializer.Protobuf
       case "java" =>       Serializer.Java
-      case "avro" =>       throw new UnsupportedOperationException("Avro serialization protocol is not yet supported")
+      case "sbinary" =>    throw new UnsupportedOperationException("SBinary serialization protocol is not yet supported for storage")
+      case "avro" =>       throw new UnsupportedOperationException("Avro serialization protocol is not yet supported for storage")
       case unknown =>      throw new UnsupportedOperationException("Unknown storage serialization protocol [" + unknown + "]")
     }
   }
