@@ -21,11 +21,11 @@ trait MessageDispatcherBase extends MessageDispatcher {
 
   def messageQueue = queue
 
-  def registerHandler(key: AnyRef, handler: MessageInvoker) = synchronized {
+  def registerHandler(key: AnyRef, handler: MessageInvoker) = guard.synchronized {
     messageHandlers.put(key, handler)
   }
 
-  def unregisterHandler(key: AnyRef) = synchronized {
+  def unregisterHandler(key: AnyRef) = guard.synchronized {
     messageHandlers.remove(key)
   }
 

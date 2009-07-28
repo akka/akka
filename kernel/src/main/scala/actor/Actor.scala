@@ -265,8 +265,11 @@ object Actor {
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
   def setDispatcher(disp: MessageDispatcher) = synchronized {
-    if (!isRunning) dispatcher = disp
-    else throw new IllegalArgumentException("Can not swap dispatcher for " + toString + " after it has been started")
+    if (!isRunning) {
+      dispatcher = disp
+      mailbox = dispatcher.messageQueue
+      dispatcher.registerHandler(this, new ActorMessageInvoker(this))
+    } else throw new IllegalArgumentException("Can not swap dispatcher for " + toString + " after it has been started")
   }
   
   /**
@@ -579,7 +582,7 @@ object Actor {
   }
 
 
-  private[kernel] def swapDispatcher(disp: MessageDispatcher) = {
+  private[kernel] def swapDispatcher(disp: MessageDispatcher) = synchronized {
     dispatcher = disp
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))

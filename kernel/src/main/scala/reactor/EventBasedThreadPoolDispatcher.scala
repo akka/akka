@@ -82,10 +82,10 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
       override def run = {
         while (active) {
           try {
-            //try {
-            //  guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
+            try {
+              guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
-            //} catch { case e: InterruptedException => active = false }
+            } catch { case e: InterruptedException => active = false }
             val selectedInvocations = messageDemultiplexer.acquireSelectedInvocations
             val reservedInvocations = reserve(selectedInvocations)
             val it = reservedInvocations.entrySet.iterator
@@ -112,14 +112,21 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
 
   override protected def doShutdown = executor.shutdownNow
 
-  private def reserve(invocations: List[MessageInvocation]): HashMap[MessageInvocation, MessageInvoker] = synchronized {
-   // if (CONCURRENT_MODE && messageHandlers.containsKey(key)) Some(messageHandlers.get(key))
+  private def reserve(invocations: List[MessageInvocation]): HashMap[MessageInvocation, MessageInvoker] = guard.synchronized {
     val result = new HashMap[MessageInvocation, MessageInvoker]
     val iterator = invocations.iterator
     while (iterator.hasNext) {
       val invocation = iterator.next
-      if (!busyInvokers.contains(invocation.sender)) {
-        result.put(invocation, messageHandlers.get(invocation.sender))
+      if (CONCURRENT_MODE) {
+        val invoker = messageHandlers.get(invocation.sender)
+        if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
+        if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
+        result.put(invocation, invoker)        
+      } else if (!busyInvokers.contains(invocation.sender)) {
+        val invoker = messageHandlers.get(invocation.sender)
+        if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
+        if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
+        result.put(invocation, invoker)
         busyInvokers.add(invocation.sender)
         iterator.remove
       }
@@ -127,7 +134,7 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
     result
   }
 
-  private def free(invoker: AnyRef) = synchronized {
+  private def free(invoker: AnyRef) = guard.synchronized {
     if (!CONCURRENT_MODE) busyInvokers.remove(invoker)
   }
   
