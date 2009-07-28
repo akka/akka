@@ -68,20 +68,20 @@ object Serializable {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait JSON[T] extends Serializable {
-    def body: T
+  trait JSON extends Serializable {
     def toJSON: String
   }
-
+  
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  abstract class JavaJSON[T] extends JSON[T]{
-    private val mapper = new ObjectMapper
+  abstract class JavaJSON extends JSON {
 
     def toJSON: String = {
       val out = new StringWriter
-      mapper.writeValue(out, body)
+      // FIXME: is this mapper expensive to create? Should I cache it away?
+      val mapper = new ObjectMapper
+      mapper.writeValue(out, this)
       out.close
       out.toString
     }
@@ -89,7 +89,8 @@ object Serializable {
     def toBytes: Array[Byte] = {
       val bos = new ByteArrayOutputStream
       val out = new ObjectOutputStream(bos)
-      mapper.writeValue(out, body)
+      val mapper = new ObjectMapper
+      mapper.writeValue(out, this)
       out.close
       bos.toByteArray
     }
@@ -98,9 +99,9 @@ object Serializable {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait ScalaJSON[T] extends JSON[T] {
-    def toJSON: String = Json.build(body).toString
-    def toBytes: Array[Byte] = Json.build(body).toString.getBytes
+  trait ScalaJSON extends JSON {
+    def toJSON: String = Json.build(this).toString
+    def toBytes: Array[Byte] = toJSON.getBytes("UTF-8")
   }
   
   /**

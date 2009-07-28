@@ -64,16 +64,16 @@ object RemoteProtocolBuilder {
       builder.setProtocol(SerializationProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
       builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getClass)))
-    } else if (message.isInstanceOf[Serializable.ScalaJSON[_]]) {
-      val serializable = message.asInstanceOf[Serializable.ScalaJSON[_]]
+    } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.ScalaJSON]
       builder.setProtocol(SerializationProtocol.SCALA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
-      builder.setMessageManifest(ByteString.copyFrom(serializable.body.asInstanceOf[AnyRef].getClass.getName.getBytes))
-    } else if (message.isInstanceOf[Serializable.JavaJSON[_]]) {
-      val serializable = message.asInstanceOf[Serializable.JavaJSON[_]]
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
+    } else if (message.isInstanceOf[Serializable.JavaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.JavaJSON]
       builder.setProtocol(SerializationProtocol.JAVA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
-      builder.setMessageManifest(ByteString.copyFrom(serializable.body.asInstanceOf[AnyRef].getClass.getName.getBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
     } else {
       // default, e.g. if no protocol used explicitly then use Java serialization
       builder.setProtocol(SerializationProtocol.JAVA)
@@ -92,16 +92,16 @@ object RemoteProtocolBuilder {
       builder.setProtocol(SerializationProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
       builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getClass)))
-    } else if (message.isInstanceOf[Serializable.ScalaJSON[_]]) {
-      val serializable = message.asInstanceOf[Serializable.ScalaJSON[_]]
+    } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.ScalaJSON]
       builder.setProtocol(SerializationProtocol.SCALA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
-      builder.setMessageManifest(ByteString.copyFrom(serializable.body.asInstanceOf[AnyRef].getClass.getName.getBytes))
-    } else if (message.isInstanceOf[Serializable.JavaJSON[_]]) {
-      val serializable = message.asInstanceOf[Serializable.JavaJSON[_]]
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
+    } else if (message.isInstanceOf[Serializable.JavaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.JavaJSON]
       builder.setProtocol(SerializationProtocol.JAVA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
-      builder.setMessageManifest(ByteString.copyFrom(serializable.body.asInstanceOf[AnyRef].getClass.getName.getBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
     } else {
       // default, e.g. if no protocol used explicitly then use Java serialization
       builder.setProtocol(SerializationProtocol.JAVA)

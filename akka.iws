@@ -6,12 +6,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.proto" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
     </list>
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
@@ -148,48 +146,10 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="BarImpl.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/BarImpl.java">
+      <file leaf-file-name="Serializable.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="13" column="0" selection-start="223" selection-end="223" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="InMemoryStateTest.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="47" column="60" selection-start="0" selection-end="7595" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ProtobufSerializationTest.java" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="28" column="30" selection-start="1262" selection-end="1262" vertical-scroll-proportion="0.43201542">
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Option.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/Option.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="27" column="45" selection-start="1026" selection-end="1026" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ProtobufProtocol.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="4" column="35" selection-start="120" selection-end="136" vertical-scroll-proportion="0.0">
+            <state line="65" column="97" selection-start="1684" selection-end="1882" vertical-scroll-proportion="0.6060606">
               <folding />
             </state>
           </provider>
@@ -198,7 +158,25 @@
       <file leaf-file-name="RemoteProtocolBuilder.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="26" column="29" selection-start="1370" selection-end="1370" vertical-scroll-proportion="0.0">
+            <state line="60" column="28" selection-start="3316" selection-end="3316" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Foo.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="25" column="13" selection-start="599" selection-end="599" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Binary.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Binary.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="13" column="11" selection-start="436" selection-end="436" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -207,34 +185,7 @@
       <file leaf-file-name="Serializer.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="29" column="9" selection-start="850" selection-end="850" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObject.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="453" column="140" selection-start="20663" selection-end="20663" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Serializable.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="7" column="0" selection-start="145" selection-end="179" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ProtobufProtocol.proto" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.proto">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="9" column="47" selection-start="192" selection-end="192" vertical-scroll-proportion="0.0">
+            <state line="109" column="123" selection-start="3649" selection-end="3649" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -253,22 +204,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/kernel/src/test/scala/Messages.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Binary.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
         <option value="$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSchema.proto" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufTest.java" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/TestProtocol.proto" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufPrototype.proto" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala" />
+        <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala" />
       </list>
     </option>
   </component>
@@ -2102,23 +2053,9 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0-sources.jar!/com/google/protobuf/Message.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="216" column="46" selection-start="8964" selection-end="8964" vertical-scroll-proportion="-2.9109793">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Bar.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="4" column="17" selection-start="110" selection-end="110" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="5" column="13" selection-start="139" selection-end="139" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -2158,20 +2095,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="7" column="0" selection-start="145" selection-end="179" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="26" column="29" selection-start="1370" selection-end="1370" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="453" column="140" selection-start="20663" selection-end="20663" vertical-scroll-proportion="0.0">
@@ -2200,19 +2123,47 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala">
+    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="29" column="9" selection-start="850" selection-end="850" vertical-scroll-proportion="0.0">
+        <state line="16" column="0" selection-start="296" selection-end="642" vertical-scroll-proportion="0.24686596">
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Binary.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="11" selection-start="436" selection-end="436" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="28" column="30" selection-start="1262" selection-end="1262" vertical-scroll-proportion="0.43201542">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state line="109" column="123" selection-start="3649" selection-end="3649" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="60" column="28" selection-start="3316" selection-end="3316" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="25" column="13" selection-start="599" selection-end="599" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="65" column="97" selection-start="1684" selection-end="1882" vertical-scroll-proportion="0.6060606">
+          <folding />
         </state>
       </provider>
     </entry>

@@ -107,8 +107,13 @@ object Serializer {
       in.close
       obj
     }
-  }
 
+    def in(json: String, clazz: Class[_]): AnyRef = {
+      if (clazz == null) throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
+      mapper.readValue(json, clazz).asInstanceOf[AnyRef]
+    }
+  }
+  
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
@@ -118,6 +123,8 @@ object Serializer {
     def out(obj: AnyRef): Array[Byte] = Json.build(obj).toString.getBytes("UTF-8")
 
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = Json.parse(new String(bytes, "UTF-8")).asInstanceOf[AnyRef]
+    
+    def in(json: String): AnyRef = Json.parse(json).asInstanceOf[AnyRef]
   }
 
   /**

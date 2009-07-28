@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.api;
 import com.google.inject.Inject;
 import se.scalablesolutions.akka.annotation.oneway;
 
-public class Foo extends se.scalablesolutions.akka.serialization.Serializable.JavaJSON<Foo> {
+public class Foo extends se.scalablesolutions.akka.serialization.Serializable.JavaJSON {
   @Inject
   private Bar bar;
   public Foo body() { return this; }
