@@ -128,20 +128,21 @@ object Kernel extends Logging {
 
 
     val adapter = new ServletAdapter()
-    adapter.addInitParameter("com.sun.jersey.spi.container.ResourceFilters","org.atmosphere.core.AtmosphereFilter")
-    adapter.addInitParameter("com.sun.jersey.config.feature.Redirect", "true")
-    adapter.addInitParameter("com.sun.jersey.config.feature.ImplicitViewables", "true")
 
+    adapter.setHandleStaticResources(true)
     adapter.setServletInstance(new AkkaCometServlet)
     adapter.setContextPath(uri.getPath)
     adapter.setRootFolder(System.getenv("AKKA_HOME") + "/deploy/root")
     log.info("REST service root path: [" + adapter.getRootFolder + "] and context path [" + adapter.getContextPath + "] ")
 
-    
+    val ah = new com.sun.grizzly.arp.DefaultAsyncHandler
+    ah.addAsyncFilter(new com.sun.grizzly.comet.CometAsyncFilter)
     jerseySelectorThread = new SelectorThread
     jerseySelectorThread.setAlgorithmClassName(classOf[StaticStreamAlgorithm].getName)
     jerseySelectorThread.setPort(REST_PORT)
     jerseySelectorThread.setAdapter(adapter)
+    jerseySelectorThread.setEnableAsyncExecution(true)
+    jerseySelectorThread.setAsyncHandler(ah)
     jerseySelectorThread.listen
 
     log.info("REST service started successfully. Listening to port [" + REST_PORT + "]")

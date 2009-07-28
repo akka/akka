@@ -76,10 +76,6 @@ class Chat extends Actor with Logging{
     makeTransactionRequired
 
     case class Chat(val who : String, val what : String,val msg : String)
-    //case object Suspend
-
-    //private var hasStarted = false;
-    //private val storage = TransactionalState.newPersistentMap(CassandraStorageConfig())
 
     override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) = {
         println("Restarting due to: " + reason.asInstanceOf[Exception].getMessage)
@@ -103,6 +99,7 @@ class Chat extends Actor with Logging{
                  case _       => throw new WebApplicationException(422)
              }
         }
+        case x => log.info("recieve unknown: " + x)
        }
 
         @Broadcast
@@ -114,7 +111,7 @@ class Chat extends Actor with Logging{
     }
 
 
-   class JsonpFilter extends BroadcastFilter[String]
+   class JsonpFilter extends BroadcastFilter[String] with Logging
    {
 
        val BEGIN_SCRIPT_TAG = "<script type='text/javascript'>\n"
@@ -129,11 +126,9 @@ class Chat extends Actor with Logging{
               message = m.substring(m.indexOf("__") + 2)
           }
 
-          val result: String = (BEGIN_SCRIPT_TAG + "window.parent.app.update({ name: \""
+          (BEGIN_SCRIPT_TAG + "window.parent.app.update({ name: \""
                   + name + "\", message: \""
                   + message + "\" });\n"
                   + END_SCRIPT_TAG)
-
-          result
       }
   }

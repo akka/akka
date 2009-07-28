@@ -102,6 +102,7 @@ JVM_OPTS=" \
         -Dcom.sun.management.jmxremote.port=8080 \
         -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.naming.factory.initial=com.sun.jndi.fscontext.RefFSContextFactory \
+        -Dcom.sun.grizzly.cometSupport=true \
         -Dcom.sun.management.jmxremote.authenticate=false"
  
 

@@ -8,14 +8,16 @@ import kernel.Kernel
 import config.ConfiguratorRepository
 import util.Logging
 
-import com.sun.jersey.api.core.{DefaultResourceConfig, ResourceConfig}
+import com.sun.jersey.api.core.{DefaultResourceConfig, ResourceConfig,ClasspathResourceConfig}
 import com.sun.jersey.spi.container.servlet.ServletContainer
 import com.sun.jersey.spi.container.WebApplication
+
+import com.sun.jersey.server.impl.component.{IoCResourceFactory}
 
 import javax.servlet.{ServletConfig}
 import javax.servlet.http.{HttpServletRequest,HttpServletResponse}
 
-import org.atmosphere.cpr.{AtmosphereServlet,AtmosphereServletProcessor,AtmosphereEvent}
+import org.atmosphere.cpr.{AtmosphereServlet,AtmosphereServletProcessor,AtmosphereEvent,DefaultBroadcaster}
 import org.atmosphere.cpr.AtmosphereServlet.{AtmosphereHandlerWrapper}
 import org.atmosphere.container.GrizzlyCometSupport
 import org.atmosphere.handler.ReflectorServletProcessor
@@ -31,45 +33,50 @@ import scala.collection.jcl.Conversions._
 class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with Logging {
 
   override def initiate(rc: ResourceConfig, wa: WebApplication) = {
-    //  super.initiate(rc, wa)
-    //  log.info("Initializing akka servlet")
+
     Kernel.boot // will boot if not already booted by 'main'
     val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext)
-    val set = new HashSet[Class[_]]
-    for {
-      conf <- configurators
-      clazz <- conf.getComponentInterfaces
-    } set.add(clazz)
+  
+    rc.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
+    rc.getProperties.put("com.sun.jersey.spi.container.ResourceFilters","org.atmosphere.core.AtmosphereFilter")
+    //rc.getFeatures.put("com.sun.jersey.config.feature.Redirect", true)
+    //rc.getFeatures.put("com.sun.jersey.config.feature.ImplicitViewables",true)
 
-    wa.initiate(
-      new DefaultResourceConfig(set),
-      new ActorComponentProviderFactory(configurators))
+    wa.initiate(rc,new ActorComponentProviderFactory(configurators))
   }
 
     override def onMessage(event : AtmosphereEvent[HttpServletRequest,HttpServletResponse]) : AtmosphereEvent[_,_] =
     {
-        var isUsingStream = false
-        try {
-            event.getResponse.getWriter
-        } catch {
-            case e: IllegalStateException => isUsingStream = true
-        }
+        //log.info("onMessage: " + event.getMessage.toString)
 
-        if (isUsingStream){
-            event.getResponse.getOutputStream.write(event.getMessage.toString.getBytes);
-            event.getResponse.getOutputStream.flush
-        } else {
-            event.getResponse.getWriter.write(event.getMessage.toString)
-            event.getResponse.getWriter.flush
+        if(event.getMessage ne null)
+        {
+            var isUsingStream = false
+            try {
+                event.getResponse.getWriter
+            } catch {
+                case e: IllegalStateException => isUsingStream = true
+            }
+
+            if (isUsingStream){
+                event.getResponse.getOutputStream.write(event.getMessage.toString.getBytes);
+                event.getResponse.getOutputStream.flush
+            } else {
+                event.getResponse.getWriter.write(event.getMessage.toString)
+                event.getResponse.getWriter.flush
+            }
         }
+        else
+            log.info(new NullPointerException, "Null event message :/")
 
         event
     }
 
     override def onEvent(event : AtmosphereEvent[HttpServletRequest,HttpServletResponse]) : AtmosphereEvent[_,_] =
     {
-        event.getRequest.setAttribute(classOf[org.atmosphere.cpr.AtmosphereEvent[_,_]].getName, event)
-        event.getRequest.setAttribute(classOf[AkkaServlet].getName, this)
+        //log.info("onEvent: " + event.getMessage)
+        event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_EVENT, event)
+        event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_HANDLER, this)
 
         service(event.getRequest, event.getResponse)
 
@@ -78,24 +85,17 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
 }
 
 class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
-  {
+{
       override def init(sconf : ServletConfig) = {
+        val servlet = new AkkaServlet
 
-        val cfg = new AtmosphereConfig
+        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet,new JerseyBroadcaster()))
 
-        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(new AkkaServlet,new JerseyBroadcaster()))
-
-        super.setCometSupport(new GrizzlyCometSupport(cfg))
+        setCometSupport(new GrizzlyCometSupport(new AtmosphereConfig{ ah = servlet }))
         getCometSupport.init(sconf)
 
-        //Would call super.initAtmosphereServletProcessor(sconf) if they'd let me, but they don't so I roll my own
-        for(e <- atmosphereHandlers.entrySet){
-            val h = e.getValue.atmosphereHandler
-            if(h.isInstanceOf[AtmosphereServletProcessor])
-                    (h.asInstanceOf[AtmosphereServletProcessor]).init(sconf)
-        }
-
+        servlet.init(sconf)
       }
 
       override def loadAtmosphereDotXml(is : InputStream, urlc :URLClassLoader) = () //Hide it
-  }
+}

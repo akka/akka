@@ -4,17 +4,20 @@
 
 package se.scalablesolutions.akka.kernel.jersey
 
-import com.sun.jersey.core.spi.component.ioc.IoCComponentProviderFactory
-import com.sun.jersey.core.spi.component.ComponentContext
+import kernel.Kernel
+import javax.ws.rs.core.Context
+
+import com.sun.jersey.core.spi.component.ioc.{IoCComponentProvider,IoCComponentProviderFactory}
+import com.sun.jersey.core.spi.component.{ComponentContext}
 
 import config.Configurator
 
+
 class ActorComponentProviderFactory(val configurators: List[Configurator])
-    extends IoCComponentProviderFactory {
+extends IoCComponentProviderFactory {
+  override def getComponentProvider(clazz: Class[_]): IoCComponentProvider = getComponentProvider(null, clazz)
 
-  override def getComponentProvider(clazz: Class[_]): ActorComponentProvider = getComponentProvider(null, clazz)
-
-  override def getComponentProvider(context: ComponentContext, clazz: Class[_]): ActorComponentProvider = {
-    new ActorComponentProvider(clazz, configurators)
+  override def getComponentProvider(context: ComponentContext, clazz: Class[_]): IoCComponentProvider = {
+      configurators.find(_.isDefined(clazz)).map(_ => new ActorComponentProvider(clazz, configurators)).getOrElse(null)
   }
 }
