@@ -6,8 +6,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala" />
     </list>
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
     <ignored path="akka.iws" />
@@ -41,7 +46,7 @@
         <option name="CONDITION" value="" />
         <option name="LOG_MESSAGE" value="" />
       </breakpoint>
-      <breakpoint url="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" line="24" class="Class at MessageDispatcherBase.scala:24" package="">
+      <breakpoint url="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" line="23" class="Class at MessageDispatcherBase.scala:24" package="">
         <option name="ENABLED" value="true" />
         <option name="LOG_ENABLED" value="false" />
         <option name="LOG_EXPRESSION_ENABLED" value="false" />
@@ -130,10 +135,19 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="EventBasedThreadPoolDispatcher.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="EventBasedThreadPoolDispatcher.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="116" column="198" selection-start="4159" selection-end="4159" vertical-scroll-proportion="0.6734993">
+            <state line="59" column="25" selection-start="1920" selection-end="1920" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Dispatchers.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="52" column="78" selection-start="1532" selection-end="1532" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -157,19 +171,37 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Serializer.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala">
+      <file leaf-file-name="MessageDispatcherBase.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="60" column="6" selection-start="1648" selection-end="1648" vertical-scroll-proportion="0.0">
+            <state line="13" column="0" selection-start="398" selection-end="398" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="InMemoryStateTest.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
+      <file leaf-file-name="Actor.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="58" column="104" selection-start="2489" selection-end="2489" vertical-scroll-proportion="0.0">
+            <state line="447" column="40" selection-start="16604" selection-end="16604" vertical-scroll-proportion="0.024922118">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="EventBasedThreadPoolDispatcherTest.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="2" column="189" selection-start="113" selection-end="113" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Future.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/Future.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="14" column="13" selection-start="411" selection-end="411" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -178,43 +210,16 @@
       <file leaf-file-name="Reactor.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="34" column="6" selection-start="695" selection-end="695" vertical-scroll-proportion="0.0">
+            <state line="43" column="0" selection-start="1056" selection-end="1056" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MessageDispatcherBase.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala">
+      <file leaf-file-name="ActiveObjectGuiceConfiguratorTest.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="23" column="12" selection-start="676" selection-end="676" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="584" column="77" selection-start="22633" selection-end="22633" vertical-scroll-proportion="-21.153847">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObjectGuiceConfigurator.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="100" column="53" selection-start="4167" selection-end="4167" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Supervisor.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Supervisor.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="104" column="6" selection-start="3515" selection-end="3515" vertical-scroll-proportion="0.0">
+            <state line="23" column="77" selection-start="822" selection-end="822" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -233,10 +238,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" />
-        <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSchema.proto" />
-        <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufTest.java" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/TestProtocol.proto" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufPrototype.proto" />
@@ -245,10 +246,14 @@
         <option value="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" />
+        <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" />
       </list>
     </option>
   </component>
@@ -547,6 +552,14 @@
         </PATH_ELEMENT>
         <PATH_ELEMENT>
           <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="scala" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -897,6 +910,40 @@
         </PATH_ELEMENT>
         <PATH_ELEMENT>
           <option name="myItemId" value="InMemoryStateTest" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-fun-test-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="fun-test-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="test" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="api" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="ActiveObjectGuiceConfiguratorTest" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -2206,36 +2253,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="4" column="35" selection-start="120" selection-end="136" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="16" column="0" selection-start="296" selection-end="642" vertical-scroll-proportion="0.24686596">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Binary.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="13" column="11" selection-start="436" selection-end="436" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="60" column="28" selection-start="3316" selection-end="3316" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="25" column="13" selection-start="599" selection-end="599" vertical-scroll-proportion="0.0">
@@ -2257,20 +2274,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="34" column="6" selection-start="695" selection-end="695" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="23" column="12" selection-start="676" selection-end="676" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="58" column="104" selection-start="2489" selection-end="2489" vertical-scroll-proportion="0.0">
@@ -2281,13 +2284,6 @@
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="100" column="53" selection-start="4167" selection-end="4167" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="584" column="77" selection-start="22633" selection-end="22633" vertical-scroll-proportion="-21.153847">
           <folding />
         </state>
       </provider>
@@ -2313,9 +2309,58 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="0" selection-start="398" selection-end="398" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="23" column="77" selection-start="822" selection-end="822" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="2" column="189" selection-start="113" selection-end="113" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/Future.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="14" column="13" selection-start="411" selection-end="411" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="43" column="0" selection-start="1056" selection-end="1056" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="52" column="78" selection-start="1532" selection-end="1532" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="116" column="198" selection-start="4159" selection-end="4159" vertical-scroll-proportion="0.6734993">
+        <state line="59" column="25" selection-start="1920" selection-end="1920" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="447" column="40" selection-start="16604" selection-end="16604" vertical-scroll-proportion="0.024922118">
           <folding />
         </state>
       </provider>
