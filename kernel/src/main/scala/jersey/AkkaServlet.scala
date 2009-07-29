@@ -94,7 +94,7 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet
         val servlet = new AkkaServlet
         this.config = new AtmosphereConfig { ah = servlet }
 
-        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet,new DefaultBroadcaster))
+        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet,new JerseyBroadcaster))
     
         setCometSupport(new GrizzlyCometSupport(config))
         getCometSupport.init(sconf)
