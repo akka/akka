@@ -36,7 +36,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
 
     Kernel.boot // will boot if not already booted by 'main'
     val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext)
-  
+
     rc.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
     rc.getProperties.put("com.sun.jersey.spi.container.ResourceFilters","org.atmosphere.core.AtmosphereFilter")
     //rc.getFeatures.put("com.sun.jersey.config.feature.Redirect", true)
@@ -50,7 +50,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     {
         //log.info("onMessage: " + event.getMessage.toString)
 
-        if(event.getMessage != null)
+        if(event.getMessage ne null)
         {
             var isUsingStream = false
             try {
@@ -92,9 +92,9 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet
 {
       override def init(sconf : ServletConfig) = {
         val servlet = new AkkaServlet
-        this.config = new AtmosphereConfig
+        this.config = new AtmosphereConfig { ah = servlet }
 
-        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet,new JerseyBroadcaster))
+        atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet,new DefaultBroadcaster))
     
         setCometSupport(new GrizzlyCometSupport(config))
         getCometSupport.init(sconf)

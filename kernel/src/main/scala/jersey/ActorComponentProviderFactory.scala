@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.kernel.jersey
 
 import kernel.Kernel
+import util.Logging
 import javax.ws.rs.core.Context
 
 import com.sun.jersey.core.spi.component.ioc.{IoCComponentProvider,IoCComponentProviderFactory}
@@ -14,10 +15,11 @@ import config.Configurator
 
 
 class ActorComponentProviderFactory(val configurators: List[Configurator])
-extends IoCComponentProviderFactory {
+extends IoCComponentProviderFactory with Logging {
   override def getComponentProvider(clazz: Class[_]): IoCComponentProvider = getComponentProvider(null, clazz)
 
   override def getComponentProvider(context: ComponentContext, clazz: Class[_]): IoCComponentProvider = {
+      //log.info("ProviderFactory: resolve => " + clazz.getName)
       configurators.find(_.isDefined(clazz)).map(_ => new ActorComponentProvider(clazz, configurators)).getOrElse(null)
   }
 }

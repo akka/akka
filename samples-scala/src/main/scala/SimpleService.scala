@@ -90,9 +90,6 @@ class Chat extends Actor with Logging{
 
     override def receive: PartialFunction[Any, Unit] = {
         case Chat(who,what,msg) => {
-
-             log.info("Chat(" + who + ", " + what + ", " + msg + ")")
-             
              what match {
                  case "login" => reply("System Message__"+who+" has joined.")
                  case "post"  => reply("" + who + "__" + msg)
@@ -106,29 +103,6 @@ class Chat extends Actor with Logging{
         @Consumes(Array("application/x-www-form-urlencoded"))
         @POST
         @Produces(Array("text/html"))
-        @FilterBroadcast(Array(classOf[XSSHtmlFilter],classOf[JsonpFilter]))
+        @FilterBroadcast(Array(classOf[XSSHtmlFilter]))
         def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))).getOrElse("System__error")
     }
-
-
-   class JsonpFilter extends BroadcastFilter[String] with Logging
-   {
-
-       val BEGIN_SCRIPT_TAG = "<script type='text/javascript'>\n"
-       val END_SCRIPT_TAG = "</script>\n"
-
-      def filter(m : String) = {
-          var name = m
-          var message = ""
-
-          if (m.indexOf("__") > 0) {
-              name = m.substring(0, m.indexOf("__"))
-              message = m.substring(m.indexOf("__") + 2)
-          }
-
-          (BEGIN_SCRIPT_TAG + "window.parent.app.update({ name: \""
-                  + name + "\", message: \""
-                  + message + "\" });\n"
-                  + END_SCRIPT_TAG)
-      }
-  }
