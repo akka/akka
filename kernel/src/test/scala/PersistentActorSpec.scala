@@ -59,8 +59,7 @@ class PersistentActor extends Actor {
 object PersistenceManager {
   @volatile var isRunning = false
   def init = if (!isRunning) {
-    System.setProperty("storage-config", "config")
-    Kernel.boot
+    Kernel.startCassandra
     isRunning = true
   }
 }
