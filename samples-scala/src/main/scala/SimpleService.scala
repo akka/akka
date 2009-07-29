@@ -21,6 +21,9 @@ class Boot {
             SupervisorConfig(
                 RestartStrategy(OneForOne, 3, 100),
                   Supervise(
+                    new SimpleService,
+                      LifeCycle(Permanent, 100))
+                :: Supervise(
                     new Chat,
                       LifeCycle(Permanent, 100))
                 :: Nil)
