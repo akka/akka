@@ -117,6 +117,7 @@ object Kernel extends Logging {
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
     System.setProperty("cassandra", "")
     System.setProperty("storage-config", akka.Boot.CONFIG + "/")
+    println("------------------------- " + akka.Boot.CONFIG + "/")
     CassandraStorage.start
   }
 

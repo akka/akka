@@ -1,2 +1,2 @@
 #!/bin/sh
-sctags.sh -E -R . -f TAGS
+sctags.bat -E -R . -f TAGS
