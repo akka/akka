@@ -49,14 +49,16 @@
     <orderEntry type="library" exported="" name="Maven: commons-collections:commons-collections:3.2.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: high-scale-lib:high-scale-lib:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: commons-lang:commons-lang:2.4" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.9.9" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.9.9" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-framework:1.9.9" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-utils:1.9.9" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-rcm:1.9.9" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-portunif:1.9.9" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http-servlet:1.9.9" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-comet-webserver:1.8.6.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.8.6.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.8.6.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-framework:1.8.6.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http-utils:1.8.6.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-rcm:1.8.6.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-portunif:1.8.6.3" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http-servlet:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.servlet:servlet-api:2.5" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-comet:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.jersey:jersey-server:1.0.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.jersey:jersey-core:1.0.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.ws.rs:jsr311-api:1.0" level="project" />
@@ -64,6 +66,10 @@
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jettison:jettison:1.0.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: stax:stax-api:1.0.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-asl:0.9.4" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.jersey.contribs:jersey-scala:1.1.2-ea-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.atmosphere:atmosphere-core:0.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.atmosphere:atmosphere-portable-runtime:0.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.atmosphere:atmosphere-compat:0.3-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.slf4j:slf4j-log4j12:1.4.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.slf4j:slf4j-api:1.4.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: log4j:log4j:1.2.13" level="project" />

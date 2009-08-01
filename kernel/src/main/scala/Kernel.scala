@@ -116,7 +116,6 @@ object Kernel extends Logging {
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
     System.setProperty("cassandra", "")
     System.setProperty("storage-config", akka.Boot.CONFIG + "/")
-    println("------------------------- " + akka.Boot.CONFIG + "/")
     CassandraStorage.start
   }
 
@@ -126,9 +125,7 @@ object Kernel extends Logging {
     val scheme = uri.getScheme
     if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException("The URI scheme, of the URI " + REST_URL + ", must be equal (ignoring case) to 'http'")
 
-
-    val adapter = new ServletAdapter()
-
+    val adapter = new ServletAdapter
     adapter.setHandleStaticResources(true)
     adapter.setServletInstance(new AkkaCometServlet)
     adapter.setContextPath(uri.getPath)
