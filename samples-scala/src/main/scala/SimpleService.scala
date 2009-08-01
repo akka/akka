@@ -21,6 +21,9 @@ class Boot {
             SupervisorConfig(
                 RestartStrategy(OneForOne, 3, 100),
                   Supervise(
+                    new SimpleService,
+                      LifeCycle(Permanent, 100)) ::
+                  Supervise(
                     new Chat,
                       LifeCycle(Permanent, 100))
                 :: Nil)
@@ -84,51 +87,40 @@ class Chat extends Actor with Logging{
     @Suspend
     @GET
     @Produces(Array("text/html"))
-    def suspend() = "<!-- Comet is a programming technique that enables web " +
-    "servers to send data to the client without having any need " +
-    "for the client to request it. -->\n"
+    @FilterBroadcast(Array(classOf[XSSHtmlFilter],classOf[JsonpFilter]))
+    def suspend() = <!-- Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. -->
 
     override def receive: PartialFunction[Any, Unit] = {
         case Chat(who,what,msg) => {
-
-             //log.info("Chat(" + who + ", " + what + ", " + msg + ")")
-             
-             what match {
-                 case "login" => reply("System Message__"+who+" has joined.")
-                 case "post"  => reply("" + who + "__" + msg)
-                 case _       => throw new WebApplicationException(422)
-             }
-        }
+                what match {
+                    case "login" => reply("System Message__"+who+" has joined.")
+                    case "post"  => reply("" + who + "__" + msg)
+                    case _       => throw new WebApplicationException(422)
+                }
+            }
         case x => log.info("recieve unknown: " + x)
-       }
-
-        @Broadcast
-        @Consumes(Array("application/x-www-form-urlencoded"))
-        @POST
-        @Produces(Array("text/html"))
-        @FilterBroadcast(Array(classOf[XSSHtmlFilter],classOf[JsonpFilter]))
-        def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))).getOrElse("System__error")
     }
 
+    @Broadcast
+    @Consumes(Array("application/x-www-form-urlencoded"))
+    @POST
+    @Produces(Array("text/html"))
+    @FilterBroadcast(Array(classOf[XSSHtmlFilter],classOf[JsonpFilter]))
+    def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))).getOrElse("System__error")
+}
 
-   class JsonpFilter extends BroadcastFilter[String] with Logging
-   {
 
-       val BEGIN_SCRIPT_TAG = "<script type='text/javascript'>\n"
-       val END_SCRIPT_TAG = "</script>\n"
+class JsonpFilter extends BroadcastFilter[String] with Logging
+{
+    def filter(m : String) = {
+        var name = m
+        var message = ""
 
-      def filter(m : String) = {
-          var name = m
-          var message = ""
+        if (m.indexOf("__") > 0) {
+            name = m.substring(0, m.indexOf("__"))
+            message = m.substring(m.indexOf("__") + 2)
+        }
 
-          if (m.indexOf("__") > 0) {
-              name = m.substring(0, m.indexOf("__"))
-              message = m.substring(m.indexOf("__") + 2)
-          }
-
-          (BEGIN_SCRIPT_TAG + "window.parent.app.update({ name: \""
-                  + name + "\", message: \""
-                  + message + "\" });\n"
-                  + END_SCRIPT_TAG)
-      }
-  }
+        ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" + name + "\", message: \""+ message + "\" }); \n</script>\n")
+    }
+}

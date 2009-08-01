@@ -38,6 +38,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext)
 
     rc.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
+    log.info("ResourceFilters: " + rc.getProperty("com.sun.jersey.spi.container.ResourceFilters"));
     rc.getProperties.put("com.sun.jersey.spi.container.ResourceFilters","org.atmosphere.core.AtmosphereFilter")
     //rc.getFeatures.put("com.sun.jersey.config.feature.Redirect", true)
     //rc.getFeatures.put("com.sun.jersey.config.feature.ImplicitViewables",true)
@@ -48,30 +49,23 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     //Borrowed from AbstractReflectorAtmosphereHandler
     override def onMessage(event : AtmosphereEvent[HttpServletRequest,HttpServletResponse]) : AtmosphereEvent[_,_] =
     {
-        //log.info("onMessage: " + event.getMessage.toString)
-
-        if(event.getMessage ne null)
-        {
-            var isUsingStream = false
-            try {
-                event.getResponse.getWriter
-            } catch {
-                case e: IllegalStateException => isUsingStream = true
-            }
-
-            val data = event.getMessage.toString
-
-            if (isUsingStream){
-                if(data != null)
-                  event.getResponse.getOutputStream.write(data.getBytes)
-                event.getResponse.getOutputStream.flush
-            } else {
-                event.getResponse.getWriter.write(data)
-                event.getResponse.getWriter.flush
-            }
+        var isUsingStream = false
+        try {
+            event.getResponse.getWriter
+        } catch {
+            case e: IllegalStateException => isUsingStream = true
         }
-        else
-            log.info("Null event message :/ req[ " + event.getRequest + "] res[" +event.getResponse + "]")
+
+        val data = if(event.getMessage ne null) event.getMessage.toString else null
+
+        if (isUsingStream){
+            if(data != null)
+              event.getResponse.getOutputStream.write(data.getBytes)
+            event.getResponse.getOutputStream.flush
+        } else {
+            event.getResponse.getWriter.write(data)
+            event.getResponse.getWriter.flush
+        }
 
         event
     }

@@ -1,0 +1,9 @@
+<atmosphere-handlers>
+    <!-- Associate a context-root (servlet-mapping) to an AtmosphereHandler. 
+    Request sent using that context-root will be mapped to its associated AtmosphereHandler 
+    -->
+    <atmosphere-handler context-root="" class-name="se.scalablesolutions.akka.kernel.jersey.AkkaServlet" broadcaster="org.atmosphere.core.JerseyBroadcaster">
+        <!-- Define some AtmosphereHandler properties -->
+        <property name="com.sun.jersey.spi.container.ResourceFilters" value="org.atmosphere.core.AtmosphereFilter"/>
+    </atmosphere-handler>
+</atmosphere-handlers>

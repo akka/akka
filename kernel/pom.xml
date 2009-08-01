@@ -119,12 +119,12 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>1.0.3</version>
+            <version>1.1.1-ea</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-json</artifactId>
-            <version>1.0.3</version>
+            <version>1.1.1-ea</version>
         </dependency>
         <dependency>
             <groupId>javax.ws.rs</groupId>
@@ -145,17 +145,17 @@
         <dependency>
             <groupId>org.atmosphere</groupId>
             <artifactId>atmosphere-core</artifactId>
-            <version>0.3-SNAPSHOT</version>
+            <version>0.3</version>
         </dependency>
         <dependency>
             <groupId>org.atmosphere</groupId>
             <artifactId>atmosphere-portable-runtime</artifactId>
-            <version>0.3-SNAPSHOT</version>
+            <version>0.3</version>
         </dependency>
         <dependency>
             <groupId>org.atmosphere</groupId>
             <artifactId>atmosphere-compat</artifactId>
-            <version>0.3-SNAPSHOT</version>
+            <version>0.3</version>
         </dependency>
         <!--<dependency>
             <groupId>org.atmosphere</groupId>
