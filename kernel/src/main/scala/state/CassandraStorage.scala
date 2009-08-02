@@ -30,6 +30,7 @@ object CassandraStorage extends Logging {
   val MAP_COLUMN_FAMILY = "map"
   val VECTOR_COLUMN_FAMILY = "vector"
   val REF_COLUMN_FAMILY = "ref:item"
+
   val IS_ASCENDING = true
 
   val RUN_THRIFT_SERVICE = kernel.Kernel.config.getBool("akka.storage.cassandra.thrift-server.service", false)
@@ -49,7 +50,7 @@ object CassandraStorage extends Logging {
       case unknown =>      throw new UnsupportedOperationException("Unknown storage serialization protocol [" + unknown + "]")
     }
   }
-  
+ 
   // TODO: is this server thread-safe or needed to be wrapped up in an actor?
   private[this] val server = classOf[CassandraServer].newInstance.asInstanceOf[CassandraServer]
 

@@ -24,7 +24,9 @@ import kernel.util.Logging
  */
 object Kernel extends Logging {
   @volatile private var hasBooted = false
-  
+
+  Boot.HOME
+
   val config = setupConfig
 
   val BOOT_CLASSES = config.getList("akka.boot")
@@ -117,8 +119,7 @@ object Kernel extends Logging {
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
     System.setProperty("cassandra", "")
     System.setProperty("storage-config", akka.Boot.CONFIG + "/")
-    println("------------------------- " + akka.Boot.CONFIG + "/")
-    CassandraStorage.start
+   CassandraStorage.start
   }
 
   private[akka] def startJersey = {

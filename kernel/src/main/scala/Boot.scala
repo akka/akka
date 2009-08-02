@@ -15,7 +15,11 @@ import kernel.util.Logging
  */
 object Boot extends Logging {
 
-  val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new IllegalStateException("AKKA_HOME system variable needs to be set. Should point to the root of the Akka distribution.") }
+  val HOME = {
+    val home = System.getenv("AKKA_HOME")
+    if (home == null) throw new IllegalStateException("No 'AKKA_HOME' environment variable set. You have to set 'AKKA_HOME' to the root of the Akka distribution.")
+    else home
+  }
   val CLASSES = HOME + "/kernel/target/classes" // FIXME remove for dist
   val LIB = HOME + "/lib"
   val CONFIG = HOME + "/config"

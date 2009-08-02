@@ -54,7 +54,6 @@ object Actor {
   private[this] val remoteFlagLock = new ReadWriteLock
   private[this] val transactionalFlagLock = new ReadWriteLock
 
-
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
   private var config: Option[AnyRef] = None
   @volatile protected[this] var isTransactional = false

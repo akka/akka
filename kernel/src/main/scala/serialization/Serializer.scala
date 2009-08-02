@@ -138,6 +138,8 @@ object Serializer {
     def out[T](t : T)(implicit bin : Writes[T]): Array[Byte] = toByteArray[T](t)
 
     def in[T](array : Array[Byte], clazz: Option[Class[T]])(implicit bin : Reads[T]): T = fromByteArray[T](array)
+ 
+    def in[T](array : Array[Byte])(implicit bin : Reads[T]): T = fromByteArray[T](array)
   }
 }
 
