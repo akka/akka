@@ -16,7 +16,7 @@ import net.lag.configgy.{Config, Configgy, RuntimeEnvironment}
 
 import kernel.jersey.AkkaServlet
 import kernel.nio.RemoteServer
-import kernel.state.CassandraStorage
+import kernel.state.EmbeddedCassandraStorage
 import kernel.util.Logging
 
 /**
@@ -119,7 +119,7 @@ object Kernel extends Logging {
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
     System.setProperty("cassandra", "")
     System.setProperty("storage-config", akka.Boot.CONFIG + "/")
-   CassandraStorage.start
+   EmbeddedCassandraStorage.start
   }
 
   private[akka] def startJersey = {
@@ -159,7 +159,7 @@ object Kernel extends Logging {
 
     println("=================================================")
     var start = System.currentTimeMillis
-    for (i <- 1 to NR_ENTRIES) CassandraStorage.insertMapStorageEntryFor("test", i.toString, "data")
+    for (i <- 1 to NR_ENTRIES) EmbeddedCassandraStorage.insertMapStorageEntryFor("test", i.toString, "data")
     var end = System.currentTimeMillis
     println("Writes per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
 
@@ -167,13 +167,13 @@ object Kernel extends Logging {
     start = System.currentTimeMillis
     val entries = new scala.collection.mutable.ArrayBuffer[Tuple2[String, String]]
     for (i <- 1 to NR_ENTRIES) entries += (i.toString, "data")
-    CassandraStorage.insertMapStorageEntriesFor("test", entries.toList)
+    EmbeddedCassandraStorage.insertMapStorageEntriesFor("test", entries.toList)
     end = System.currentTimeMillis
     println("Writes per second - batch: " + NR_ENTRIES / ((end - start).toDouble / 1000))
     
     println("=================================================")
     start = System.currentTimeMillis
-    for (i <- 1 to NR_ENTRIES) CassandraStorage.getMapStorageEntryFor("test", i.toString)
+    for (i <- 1 to NR_ENTRIES) EmbeddedCassandraStorage.getMapStorageEntryFor("test", i.toString)
     end = System.currentTimeMillis
     println("Reads per second: " + NR_ENTRIES / ((end - start).toDouble / 1000))
 

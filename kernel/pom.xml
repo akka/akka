@@ -125,6 +125,11 @@
       <artifactId>cassidy</artifactId>
       <version>0.1</version>
     </dependency>
+    <dependency>
+      <groupId>commons-pool</groupId>
+      <artifactId>commons-pool</artifactId>
+      <version>1.5.1</version>
+    </dependency>
 
     <!-- For Jersey -->
     <dependency>

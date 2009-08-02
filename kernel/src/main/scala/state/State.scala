@@ -13,7 +13,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 sealed abstract class TransactionalStateConfig
 abstract class PersistentStorageConfig  extends TransactionalStateConfig
-case class CassandraStorageConfig extends PersistentStorageConfig
+case class EmbeddedCassandraStorageConfig extends PersistentStorageConfig
 case class TerracottaStorageConfig extends PersistentStorageConfig
 case class TokyoCabinetStorageConfig extends PersistentStorageConfig
 
@@ -22,7 +22,7 @@ case class TokyoCabinetStorageConfig extends PersistentStorageConfig
  * <p/>
  * Example Scala usage:
  * <pre>
- * val myMap = TransactionalState.newPersistentMap(CassandraStorageConfig)
+ * val myMap = TransactionalState.newPersistentMap(EmbeddedCassandraStorageConfig)
  * </pre>
  */
 object TransactionalState extends TransactionalState
@@ -33,24 +33,24 @@ object TransactionalState extends TransactionalState
  * Example Java usage:
  * <pre>
  * TransactionalState state = new TransactionalState();
- * TransactionalMap myMap = state.newPersistentMap(new CassandraStorageConfig());
+ * TransactionalMap myMap = state.newPersistentMap(new EmbeddedCassandraStorageConfig());
  * </pre>
  */
 class TransactionalState {
   def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[String, AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
+    case EmbeddedCassandraStorageConfig() => new CassandraPersistentTransactionalMap
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
   def newPersistentVector(config: PersistentStorageConfig): TransactionalVector[AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
+    case EmbeddedCassandraStorageConfig() => new CassandraPersistentTransactionalVector
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
   def newPersistentRef(config: PersistentStorageConfig): TransactionalRef[AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalRef
+    case EmbeddedCassandraStorageConfig() => new CassandraPersistentTransactionalRef
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
@@ -208,7 +208,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   override def getRange(start: Int, count: Int) = {
     verifyTransaction
     try {
-      CassandraStorage.getMapStorageRangeFor(uuid, start, count)
+      EmbeddedCassandraStorage.getMapStorageRangeFor(uuid, start, count)
     } catch {
       case e: Exception => Nil
     }
@@ -216,7 +216,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
 
   // ---- For Transactional ----
   override def commit = {
-    CassandraStorage.insertMapStorageEntriesFor(uuid, changeSet.toList)
+    EmbeddedCassandraStorage.insertMapStorageEntriesFor(uuid, changeSet.toList)
     changeSet.clear
   }
 
@@ -224,7 +224,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   override def clear = {
     verifyTransaction
     try {
-      CassandraStorage.removeMapStorageFor(uuid)
+      EmbeddedCassandraStorage.removeMapStorageFor(uuid)
     } catch {
       case e: Exception => {}
     }
@@ -233,7 +233,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   override def contains(key: String): Boolean = {
     try {
       verifyTransaction
-      CassandraStorage.getMapStorageEntryFor(uuid, key).isDefined
+      EmbeddedCassandraStorage.getMapStorageEntryFor(uuid, key).isDefined
     } catch {
       case e: Exception => false
     }
@@ -242,7 +242,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   override def size: Int = {
     verifyTransaction
     try {
-      CassandraStorage.getMapStorageSizeFor(uuid)
+      EmbeddedCassandraStorage.getMapStorageSizeFor(uuid)
     } catch {
       case e: Exception => 0
     }
@@ -254,7 +254,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
    // if (changeSet.contains(key)) changeSet.get(key)
    // else {
       val result = try {
-        CassandraStorage.getMapStorageEntryFor(uuid, key)
+        EmbeddedCassandraStorage.getMapStorageEntryFor(uuid, key)
       } catch {
         case e: Exception => None
       }
@@ -266,7 +266,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
     //verifyTransaction
     new Iterator[Tuple2[String, AnyRef]] {
       private val originalList: List[Tuple2[String, AnyRef]] = try {
-        CassandraStorage.getMapStorageFor(uuid)
+        EmbeddedCassandraStorage.getMapStorageFor(uuid)
       } catch {
         case e: Throwable => Nil
       }
@@ -388,17 +388,17 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   override def get(index: Int): AnyRef = {
     verifyTransaction
     if (changeSet.size > index) changeSet(index)
-    else CassandraStorage.getVectorStorageEntryFor(uuid, index)
+    else EmbeddedCassandraStorage.getVectorStorageEntryFor(uuid, index)
   }
 
   override def getRange(start: Int, count: Int): List[AnyRef] = {
     verifyTransaction
-    CassandraStorage.getVectorStorageRangeFor(uuid, start, count)
+    EmbeddedCassandraStorage.getVectorStorageRangeFor(uuid, start, count)
   }
 
   override def length: Int = {
     verifyTransaction
-    CassandraStorage.getVectorStorageSizeFor(uuid)
+    EmbeddedCassandraStorage.getVectorStorageSizeFor(uuid)
   }
 
   override def apply(index: Int): AnyRef = get(index)
@@ -415,7 +415,7 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   // ---- For Transactional ----
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
-    for (element <- changeSet) CassandraStorage.insertVectorStorageEntryFor(uuid, element)
+    for (element <- changeSet) EmbeddedCassandraStorage.insertVectorStorageEntryFor(uuid, element)
     changeSet.clear
   }
 }
@@ -460,7 +460,7 @@ class TransactionalRef[T] extends Transactional {
 
 class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
   override def commit = if (ref.isDefined) {
-    CassandraStorage.insertRefStorageFor(uuid, ref.get)
+    EmbeddedCassandraStorage.insertRefStorageFor(uuid, ref.get)
     ref = None 
   }
 
@@ -468,7 +468,7 @@ class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
 
   override def get: Option[AnyRef] = {
     verifyTransaction
-    CassandraStorage.getRefStorageFor(uuid)
+    EmbeddedCassandraStorage.getRefStorageFor(uuid)
   }
 
   override def isDefined: Boolean = get.isDefined
