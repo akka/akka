@@ -1,13 +1,16 @@
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
 package sample.scala
 
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
-import se.scalablesolutions.akka.kernel.state.{TransactionalState, TransactionalMap, CassandraStorageConfig}
-import se.scalablesolutions.akka.kernel.actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
+import se.scalablesolutions.akka.kernel.state.{TransactionalState, CassandraStorageConfig}
+import se.scalablesolutions.akka.kernel.actor.{SupervisorFactory, Actor}
 import se.scalablesolutions.akka.kernel.config.ScalaConfig._
 import javax.ws.rs.core.MultivaluedMap
 
 
-import _root_.scala.xml.{NodeSeq}
 import se.scalablesolutions.akka.kernel.util.{Logging}
 import org.atmosphere.core.annotation.{Broadcast, BroadcastFilter => FilterBroadcast, Suspend}
 import org.atmosphere.util.{XSSHtmlFilter}
@@ -20,8 +23,11 @@ class Boot {
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 100),
         Supervise(
-          new Chat,
-          LifeCycle(Permanent, 100))
+          new SimpleService,
+          LifeCycle(Permanent, 100)) ::
+                Supervise(
+                  new Chat,
+                  LifeCycle(Permanent, 100))
                 :: Nil)
     }
   }
@@ -53,7 +59,7 @@ class SimpleService extends Actor {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
-      reply(<success>Tick:{ counter + 1 }</success>)
+      reply(<success>Tick:{counter + 1}</success>)
     } else {
       storage.put(KEY, new Integer(0))
       hasStartedTicking = true
@@ -75,11 +81,14 @@ class Chat extends Actor with Logging {
           "servers to send data to the client without having any need " +
           "for the client to request it. -->\n"
 
+  @Suspend
+  @GET
+  @Produces(Array("text/html"))
+  @FilterBroadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
+  def suspend() = <!-- Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. -->
+
   override def receive: PartialFunction[Any, Unit] = {
     case Chat(who, what, msg) => {
-
-      //log.info("Chat(" + who + ", " + what + ", " + msg + ")")
-
       what match {
         case "login" => reply("System Message__" + who + " has joined.")
         case "post" => reply("" + who + "__" + msg)
@@ -99,9 +108,6 @@ class Chat extends Actor with Logging {
 
 
 class JsonpFilter extends BroadcastFilter[String] with Logging {
-  val BEGIN_SCRIPT_TAG = "<script type='text/javascript'>\n"
-  val END_SCRIPT_TAG = "</script>\n"
-
   def filter(m: String) = {
     var name = m
     var message = ""
@@ -111,9 +117,6 @@ class JsonpFilter extends BroadcastFilter[String] with Logging {
       message = m.substring(m.indexOf("__") + 2)
     }
 
-    (BEGIN_SCRIPT_TAG + "window.parent.app.update({ name: \""
-            + name + "\", message: \""
-            + message + "\" });\n"
-            + END_SCRIPT_TAG)
+    ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" + name + "\", message: \"" + message + "\" }); \n</script>\n")
   }
 }

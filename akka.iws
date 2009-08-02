@@ -6,17 +6,27 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/akka-kernel.iml" afterPath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" afterPath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/pom.xml" afterPath="$PROJECT_DIR$/kernel/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" afterPath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" afterPath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" afterPath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-server-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-server-1.1.1-ea.jar" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-client-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-client-1.1.1-ea.jar" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/atmosphere-compat-0.3.jar" afterPath="$PROJECT_DIR$/lib/atmosphere-compat-0.3.jar" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/atmosphere-compat-0.3-SNAPSHOT.jar" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-json-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-json-1.1.1-ea.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/lib/akka-util-java-0.5.jar" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/atmosphere-core-0.3.jar" afterPath="$PROJECT_DIR$/lib/atmosphere-core-0.3.jar" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/bin/start-akka-server.sh" afterPath="$PROJECT_DIR$/bin/start-akka-server.sh" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-core-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-core-1.1.1-ea.jar" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/atmosphere-core-0.3-SNAPSHOT.jar" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deploy/root/page.html" afterPath="$PROJECT_DIR$/deploy/root/page.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/pom.xml" afterPath="$PROJECT_DIR$/kernel/pom.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/atmosphere-portable-runtime-0.3.jar" afterPath="$PROJECT_DIR$/lib/atmosphere-portable-runtime-0.3.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/lib/akka-kernel-0.5.jar" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" afterPath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/atmosphere-portable-runtime-0.3-SNAPSHOT.jar" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deploy/akka-samples-scala-0.5.jar" afterPath="$PROJECT_DIR$/deploy/akka-samples-scala-0.5.jar" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" afterPath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deploy/akka-samples-java-0.5.jar" afterPath="$PROJECT_DIR$/deploy/akka-samples-java-0.5.jar" />
     </list>
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
     <ignored path=".idea/workspace.xml" />
@@ -139,15 +149,6 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="State.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/State.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="167" column="119" selection-start="5039" selection-end="5039" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="MessageDispatcherBase.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala">
           <provider selected="true" editor-type-id="text-editor">
@@ -157,28 +158,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="Actor.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="459" column="72" selection-start="17077" selection-end="17077" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AkkaServlet.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="72" column="6" selection-start="2710" selection-end="2710" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SimpleService.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="55" column="112" selection-start="1863" selection-end="1863" vertical-scroll-proportion="0.27741936">
+            <state line="12" column="28" selection-start="307" selection-end="307" vertical-scroll-proportion="0.022160664">
               <folding />
             </state>
           </provider>
@@ -242,7 +225,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala" />
         <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java" />
@@ -255,9 +237,10 @@
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
         <option value="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" />
+        <option value="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
       </list>
     </option>
   </component>
@@ -329,76 +312,6 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="akka-util-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="util-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-util-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="util-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="protobuf" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-util-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="util-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
           <option name="myItemId" value="akka-samples-scala" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
         </PATH_ELEMENT>
@@ -447,6 +360,88 @@
         <PATH_ELEMENT>
           <option name="myItemId" value="akka" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-samples-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-samples-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="samples-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-samples-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="samples-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="main" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="SimpleService" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-samples-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="samples-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="main" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
       <PATH>
@@ -2010,7 +2005,6 @@
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32749078" sideWeight="0.5" order="6" side_tool="false" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.1744773" sideWeight="0.6721939" order="1" side_tool="false" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39668366" sideWeight="0.5" order="3" side_tool="false" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.31887755" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.16818425" sideWeight="0.24354243" order="0" side_tool="true" x="1609" y="144" width="252" height="862" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3265306" sideWeight="0.5" order="13" side_tool="false" />
       <window_info id="Web Preview" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32822478" sideWeight="0.5" order="16" side_tool="false" />
@@ -2022,6 +2016,7 @@
       <window_info id="Clojure REPL" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32749078" sideWeight="0.5" order="8" side_tool="false" />
       <window_info id="Data Sources" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3294881" sideWeight="0.6875" order="3" side_tool="false" />
       <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.26479077" sideWeight="0.24617347" order="2" side_tool="true" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.31887755" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3265306" sideWeight="0.0" order="14" side_tool="false" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" />
       <window_info id="FindBugs-IDEA" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32976654" sideWeight="0.5" order="12" side_tool="false" />
@@ -2065,13 +2060,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="58" column="104" selection-start="2489" selection-end="2489" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="100" column="53" selection-start="4167" selection-end="4167" vertical-scroll-proportion="0.0">
@@ -2121,6 +2109,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="127" column="36" selection-start="5206" selection-end="5206" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="2" column="189" selection-start="113" selection-end="113" vertical-scroll-proportion="0.0">
@@ -2149,30 +2144,30 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
+    <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="459" column="72" selection-start="17077" selection-end="17077" vertical-scroll-proportion="0.0">
+        <state line="4" column="0" selection-start="51" selection-end="51" vertical-scroll-proportion="-2.4615386">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
+    <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="127" column="36" selection-start="5206" selection-end="5206" vertical-scroll-proportion="0.0">
+        <state line="4" column="0" selection-start="51" selection-end="51" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="72" column="6" selection-start="2710" selection-end="2710" vertical-scroll-proportion="0.0">
+        <state line="39" column="40" selection-start="1505" selection-end="1505" vertical-scroll-proportion="-24.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="55" column="112" selection-start="1863" selection-end="1863" vertical-scroll-proportion="0.27741936">
+        <state line="12" column="28" selection-start="307" selection-end="307" vertical-scroll-proportion="0.022160664">
           <folding />
         </state>
       </provider>

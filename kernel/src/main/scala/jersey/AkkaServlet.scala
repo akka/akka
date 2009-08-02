@@ -25,6 +25,9 @@ import java.io.InputStream
 
 import scala.collection.jcl.Conversions._
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with Logging {
   override def initiate(rc: ResourceConfig, wa: WebApplication) = {
 
@@ -32,7 +35,8 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext)
 
     rc.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
-    rc.getProperties.put("com.sun.jersey.spi.container.ResourceFilters", "org.atmosphere.core.AtmosphereFilter")
+    log.info("Starting AkkaServlet with ResourceFilters: " + rc.getProperty("com.sun.jersey.spi.container.ResourceFilters"));
+    rc.getProperties.put("com.sun.jersey.spi.container.ResourceFilters","org.atmosphere.core.AtmosphereFilter")
     //rc.getFeatures.put("com.sun.jersey.config.feature.Redirect", true)
     //rc.getFeatures.put("com.sun.jersey.config.feature.ImplicitViewables",true)
 
@@ -61,13 +65,33 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     event
   }
 
-  override def onEvent(event: AtmosphereEvent[HttpServletRequest, HttpServletResponse]): AtmosphereEvent[_, _] = {
-    //log.info("onEvent: " + event.getMessage)
-    event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_EVENT, event)
-    event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_HANDLER, this)
-    service(event.getRequest, event.getResponse)
-    event
-  }
+    //Borrowed from AbstractReflectorAtmosphereHandler
+    override def onMessage(event: AtmosphereEvent[HttpServletRequest,HttpServletResponse]): AtmosphereEvent[_,_] = {
+        var isUsingStream = false
+        try {
+            event.getResponse.getWriter
+        } catch {
+            case e: IllegalStateException => isUsingStream = true
+        }
+
+        val data = if (event.getMessage ne null) event.getMessage.toString else null
+
+        if (isUsingStream){
+            if (data != null) event.getResponse.getOutputStream.write(data.getBytes)
+            event.getResponse.getOutputStream.flush
+        } else {
+            event.getResponse.getWriter.write(data)
+            event.getResponse.getWriter.flush
+        }
+        event
+    }
+
+    override def onEvent(event: AtmosphereEvent[HttpServletRequest,HttpServletResponse]): AtmosphereEvent[_,_] = {
+        event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_EVENT, event)
+        event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_HANDLER, this)
+        service(event.getRequest, event.getResponse)
+        event
+    }
 }
 
 class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet {
