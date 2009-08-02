@@ -14,7 +14,7 @@ import java.net.URLClassLoader
 
 import net.lag.configgy.{Config, Configgy, RuntimeEnvironment}
 
-import kernel.jersey.{AkkaServlet,AkkaCometServlet}
+import kernel.jersey.AkkaCometServlet
 import kernel.nio.RemoteServer
 import kernel.state.CassandraStorage
 import kernel.util.Logging

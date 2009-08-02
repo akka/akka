@@ -6,27 +6,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-server-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-server-1.1.1-ea.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-client-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-client-1.1.1-ea.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/atmosphere-compat-0.3.jar" afterPath="$PROJECT_DIR$/lib/atmosphere-compat-0.3.jar" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/atmosphere-compat-0.3-SNAPSHOT.jar" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-json-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-json-1.1.1-ea.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/lib/akka-util-java-0.5.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/atmosphere-core-0.3.jar" afterPath="$PROJECT_DIR$/lib/atmosphere-core-0.3.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/bin/start-akka-server.sh" afterPath="$PROJECT_DIR$/bin/start-akka-server.sh" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/jersey-core-1.1.1-ea.jar" afterPath="$PROJECT_DIR$/lib/jersey-core-1.1.1-ea.jar" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/atmosphere-core-0.3-SNAPSHOT.jar" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deploy/root/page.html" afterPath="$PROJECT_DIR$/deploy/root/page.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/pom.xml" afterPath="$PROJECT_DIR$/kernel/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/atmosphere-portable-runtime-0.3.jar" afterPath="$PROJECT_DIR$/lib/atmosphere-portable-runtime-0.3.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/lib/akka-kernel-0.5.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" afterPath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/akka-kernel.iml" afterPath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" afterPath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/lib/atmosphere-portable-runtime-0.3-SNAPSHOT.jar" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deploy/akka-samples-scala-0.5.jar" afterPath="$PROJECT_DIR$/deploy/akka-samples-scala-0.5.jar" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" afterPath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" afterPath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" afterPath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deploy/akka-samples-java-0.5.jar" afterPath="$PROJECT_DIR$/deploy/akka-samples-java-0.5.jar" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
     </list>
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
     <ignored path=".idea/workspace.xml" />
@@ -158,19 +146,37 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Actor.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="12" column="28" selection-start="307" selection-end="307" vertical-scroll-proportion="0.022160664">
+            <state line="33" column="131" selection-start="1265" selection-end="1265" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Kernel.scala" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="AkkaServlet.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="60" column="80" selection-start="2412" selection-end="2412" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SimpleService.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="15" column="40" selection-start="609" selection-end="609" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Kernel.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="127" column="36" selection-start="5206" selection-end="5206" vertical-scroll-proportion="0.0">
+            <state line="20" column="24" selection-start="528" selection-end="528" vertical-scroll-proportion="0.39889196">
               <folding />
             </state>
           </provider>
@@ -237,10 +243,10 @@
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
-        <option value="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" />
         <option value="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala" />
+        <option value="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
       </list>
     </option>
   </component>
@@ -2109,13 +2115,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="127" column="36" selection-start="5206" selection-end="5206" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="2" column="189" selection-start="113" selection-end="113" vertical-scroll-proportion="0.0">
@@ -2144,13 +2143,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="4" column="0" selection-start="51" selection-end="51" vertical-scroll-proportion="-2.4615386">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="4" column="0" selection-start="51" selection-end="51" vertical-scroll-proportion="0.0">
@@ -2158,16 +2150,30 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="39" column="40" selection-start="1505" selection-end="1505" vertical-scroll-proportion="-24.0">
+        <state line="33" column="131" selection-start="1265" selection-end="1265" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/jersey/AkkaServlet.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="12" column="28" selection-start="307" selection-end="307" vertical-scroll-proportion="0.022160664">
+        <state line="60" column="80" selection-start="2412" selection-end="2412" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="15" column="40" selection-start="609" selection-end="609" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="20" column="24" selection-start="528" selection-end="528" vertical-scroll-proportion="0.39889196">
           <folding />
         </state>
       </provider>

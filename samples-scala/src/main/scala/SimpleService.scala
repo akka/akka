@@ -4,18 +4,17 @@
 
 package sample.scala
 
-import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
 import se.scalablesolutions.akka.kernel.state.{TransactionalState, CassandraStorageConfig}
 import se.scalablesolutions.akka.kernel.actor.{SupervisorFactory, Actor}
 import se.scalablesolutions.akka.kernel.config.ScalaConfig._
+import se.scalablesolutions.akka.kernel.util.Logging
+
 import javax.ws.rs.core.MultivaluedMap
+import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
 
-
-import se.scalablesolutions.akka.kernel.util.{Logging}
 import org.atmosphere.core.annotation.{Broadcast, BroadcastFilter => FilterBroadcast, Suspend}
-import org.atmosphere.util.{XSSHtmlFilter}
-import org.atmosphere.cpr.{BroadcastFilter}
-
+import org.atmosphere.util.XSSHtmlFilter
+import org.atmosphere.cpr.BroadcastFilter
 
 class Boot {
   object factory extends SupervisorFactory {
@@ -77,15 +76,8 @@ class Chat extends Actor with Logging {
   @Suspend
   @GET
   @Produces(Array("text/html"))
-  def suspend() = "<!-- Comet is a programming technique that enables web " +
-          "servers to send data to the client without having any need " +
-          "for the client to request it. -->\n"
-
-  @Suspend
-  @GET
-  @Produces(Array("text/html"))
   @FilterBroadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
-  def suspend() = <!-- Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. -->
+  def suspend = <!-- Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. -->
 
   override def receive: PartialFunction[Any, Unit] = {
     case Chat(who, what, msg) => {
@@ -117,6 +109,9 @@ class JsonpFilter extends BroadcastFilter[String] with Logging {
       message = m.substring(m.indexOf("__") + 2)
     }
 
-    ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" + name + "\", message: \"" + message + "\" }); \n</script>\n")
+    ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" +
+            name + "\", message: \"" +
+            message +
+     "\" }); \n</script>\n")
   }
 }
