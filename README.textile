@@ -1,58 +1,53 @@
-h1. Akka Actor Kernel:
-__RESTful Distributed Persistent Transactional Actors__
+h1. Akka: RESTful Distributed Persistent Transactional Actors
 
-h1. Introduction
+h3. "http://akkasource.org":http://akkasource.org
 
-The Akka kernel implements a unique hybrid of:
-* The Actor model (Actors and Active Objects)
-** Asynchronous, non-blocking highly concurrent components.
+Akka implements a unique hybrid of:
+* The Actor model (Actors and Active Objects), which gives you:
+** Concurrency (high-level and simple)
+** Asynchronous, non-blocking and highly performant components.
 ** Supervision with "let-it-crash" semantics. Components are loosely coupled and restarted upon failure.
 * Software Transactional Memory (STM).
-* BASE persistence - Pluggable Eventually Consistent distributed scalable persistent storage.
-* Remoting - Distributed services.
-* REST - JAX-RS binding.
+* BASE and ACID persistence - Pluggable Eventually Consistent or ACID distributed scalable persistent storage.
+* Remoting - Distributed services with supervision and error management
+* REST (JAX-RS) and Comet bindings.
+* Monitoring and Management
 
-h2. Here is a short overview
+Akka can be used in two different ways:
+* As a library: used by a web app, to be put into ‘WEB-INF/lib’
+* As a kernel: stand-alone kernel, embedding the servlet container
 
-h3. The Actor model and supervisor hierarchies
+See the "Use-case and Deployment Scenarios":http://wiki.github.com/jboner/akka/use-case-and-deployment-scenarios for details.
 
-"Actors":http://en.wikipedia.org/wiki/Actor_model with "Erlang OTP-style supervisors":http://www.erlang.org/doc/design_principles/sup_princ.html#5 and "embrace failure/let-it-crash" semantics to allow implementation of asynchronous, non-blocking and highly fault-tolerant systems. Sort of "SEDA":http://www.eecs.harvard.edu/~mdw/proj/seda/ in a box with highly configurable and monitorable (JMX and w3c) thread pools and message queues.
+h1. What's Akka all about? Why should I care?  
 
-h3. Software Transactional Memory (STM)
+If you are new to Akka then I suggest you start with either the:
 
-"Software Transactional Memory (STM)":http://en.wikipedia.org/wiki/Software_transactional_memory for composable message flows. Distributed transactions will come very soon, backed up by "ZooKeeper":http://hadoop.apache.org/zookeeper/. The STM works with both persistent datastructures and in-memory datastructures (see below).
+* "High Level View":http://wiki.github.com/jboner/akka/modules-the-high-level-view; which is outlining the different modules in Akka.
+* "Use-case and Deployment Scenarios":http://wiki.github.com/jboner/akka/use-case-and-deployment-scenarios; outlining how and in which use-case and deployment scenarios can I use Akka?
+* "Examples":http://wiki.github.com/jboner/akka/examples; showing how to build a RESTful, transactional, persistent Active Object and Actor.
 
-h3. BASE: Eventually Consistent Distributed persistence
+After that you can dive into the "Reference Manual":http://wiki.github.com/jboner/akka/akka-reference-manual.
 
-Akka provides a "Eventually Consistent":http://www.allthingsdistributed.com/2008/12/eventually_consistent.html Transactional Persistent Map, Vector and Ref. Backed up by the "Cassandra":http://incubator.apache.org/cassandra/  highly scalable, eventually consistent, distributed, structured key-value store. Akka will add support for "Terracotta":http://terracotta.org, "Redis":http://code.google.com/p/redis/, "Memcached":http://www.danga.com/memcached/, "Voldemort":http://project-voldemort.com/, "Tokyo Cabinet/Tyrant":http://tokyocabinet.sourceforge.net/ and "Hazelcast":http://www.hazelcast.com/ shortly.
-
-New nodes can be added and removed on the fly to support true scaling of cluster. The addition of Terracotta and Hazelcast will allow for atomic (ACID) transactions (non-BASE).
-
-h3. REST
-
-Actors can be exposed as "REST":http://en.wikipedia.org/wiki/Representational_State_Transfer services through "JAX-RS":https://jersey.dev.java.net/.
-
-h3. Remoting
-
-Actors can be defined and started on remote nodes, supporting both remote failures and supervision/linking. Enabling another dimension of fault-tolerance.
-
-h3. Java and Scala API
-
-Both a Java API through Active Objects and annotations as well as a Scala API with Erlang-style Actors with pattern matching etc.
-
-h3. Microkernel
-
-Akka has a microkernel that embeds the Actor management, Persistence service, REST integration, JMX management and Remote service. Simply drop your application in the /deploy directory and start up the kernel and you should be able to access your Actors through REST.
-
-h2. Documentation
+h1. Documentation
 
 Akka has pretty thorough "reference documentation":https://github.com/jboner/akka/wikis. Covering examples, APIs and configuration.
 
-h2. Distribution
+h1. Distribution
 
 The latest distribution can be found in the "downloads section":https://github.com/jboner/akka/downloads
 
-h2. License
+h1. Mailing List
+
+If you have questions and/or feedback: please sign up to the Akka User mailing list: 
+"http://groups.google.com/group/akka-user":http://groups.google.com/group/akka-user
+
+h1.  Professional Support
+
+Scalable Solutions AB is providing a variety of professional support packages for Akka, please visit their website for details: 
+"http://scalablesolutions.se":http://scalablesolutions.se
+
+h1. License
 
 <pre>
 This software is licensed under the Apache 2 license, quoted below.
