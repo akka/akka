@@ -41,8 +41,6 @@ class MessageInvocation(val sender: AnyRef,
     var result = HashCode.SEED
     result = HashCode.hash(result, sender)
     result = HashCode.hash(result, message)
-    result = if (future.isDefined) HashCode.hash(result, future.get) else result
-    result = if (tx.isDefined) HashCode.hash(result, tx.get.id) else result
     result
   }
 
@@ -50,11 +48,7 @@ class MessageInvocation(val sender: AnyRef,
     that != null &&
     that.isInstanceOf[MessageInvocation] &&
     that.asInstanceOf[MessageInvocation].sender == sender &&
-    that.asInstanceOf[MessageInvocation].message == message &&
-    that.asInstanceOf[MessageInvocation].future.isDefined == future.isDefined &&
-    that.asInstanceOf[MessageInvocation].future.get == future.get &&
-    that.asInstanceOf[MessageInvocation].tx.isDefined == tx.isDefined &&
-    that.asInstanceOf[MessageInvocation].tx.get.id == tx.get.id
+    that.asInstanceOf[MessageInvocation].message == message
 
   override def toString(): String = "MessageInvocation[message = " + message + ", sender = " + sender + ", future = " + future + ", tx = " + tx + "]"
 }

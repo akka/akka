@@ -14,7 +14,7 @@ import java.net.URLClassLoader
 
 import net.lag.configgy.{Config, Configgy, RuntimeEnvironment}
 
-import kernel.jersey.AkkaServlet
+import kernel.jersey.AkkaCometServlet
 import kernel.nio.RemoteServer
 import kernel.state.CassandraStorage
 import kernel.util.Logging
@@ -38,7 +38,6 @@ object Kernel extends Logging {
   val REST_HOSTNAME = kernel.Kernel.config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
   val REST_PORT = kernel.Kernel.config.getInt("akka.rest.port", 9998)
-
 
   // FIXME add API to shut server down gracefully
   private var remoteServer: RemoteServer = _
@@ -92,8 +91,8 @@ object Kernel extends Logging {
 
   private[akka] def runApplicationBootClasses = {
     val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new IllegalStateException("AKKA_HOME system variable needs to be set. Should point to the root of the Akka distribution.") }
-    val CLASSES = HOME + "/kernel/target/classes" // FIXME remove for dist
-    val LIB = HOME + "/lib"
+    //val CLASSES = HOME + "/kernel/target/classes" // FIXME remove for dist
+    //val LIB = HOME + "/lib"
     val CONFIG = HOME + "/config"
     val DEPLOY = HOME + "/deploy"
     val DEPLOY_DIR = new File(DEPLOY)
@@ -119,24 +118,32 @@ object Kernel extends Logging {
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
     System.setProperty("cassandra", "")
     System.setProperty("storage-config", akka.Boot.CONFIG + "/")
-   CassandraStorage.start
+    CassandraStorage.start
   }
 
   private[akka] def startJersey = {
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
-    val adapter = new ServletAdapter
-    val servlet = new AkkaServlet
-    adapter.setServletInstance(servlet)
-    adapter.setContextPath(uri.getPath)
 
     val scheme = uri.getScheme
     if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException("The URI scheme, of the URI " + REST_URL + ", must be equal (ignoring case) to 'http'")
 
+    val adapter = new ServletAdapter
+    adapter.setHandleStaticResources(true)
+    adapter.setServletInstance(new AkkaCometServlet)
+    adapter.setContextPath(uri.getPath)
+    adapter.setRootFolder(System.getenv("AKKA_HOME") + "/deploy/root")
+    log.info("REST service root path: [" + adapter.getRootFolder + "] and context path [" + adapter.getContextPath + "] ")
+
+    val ah = new com.sun.grizzly.arp.DefaultAsyncHandler
+    ah.addAsyncFilter(new com.sun.grizzly.comet.CometAsyncFilter)
     jerseySelectorThread = new SelectorThread
     jerseySelectorThread.setAlgorithmClassName(classOf[StaticStreamAlgorithm].getName)
     jerseySelectorThread.setPort(REST_PORT)
     jerseySelectorThread.setAdapter(adapter)
+    jerseySelectorThread.setEnableAsyncExecution(true)
+    jerseySelectorThread.setAsyncHandler(ah)
     jerseySelectorThread.listen
+
     log.info("REST service started successfully. Listening to port [" + REST_PORT + "]")
   }
 

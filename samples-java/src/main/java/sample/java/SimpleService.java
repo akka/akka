@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
 package sample.java;
 
 import javax.ws.rs.Path;

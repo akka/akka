@@ -56,11 +56,12 @@ import java.util.{Collection, HashSet, HashMap, LinkedList, List}
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
+class EventBasedThreadPoolDispatcher(private val concurrentMode: Boolean) extends MessageDispatcherBase {
+  def this() = this(false)
+  
   private val NR_START_THREADS = 16
   private val NR_MAX_THREADS = 128
   private val KEEP_ALIVE_TIME = 60000L // default is one minute
-
   private var inProcessOfBuilding = false
   private var executor: ExecutorService = _
   private var threadPoolBuilder: ThreadPoolExecutor = _
@@ -117,7 +118,7 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
     val iterator = invocations.iterator
     while (iterator.hasNext) {
       val invocation = iterator.next
-      if (CONCURRENT_MODE) {
+      if (concurrentMode) {
         val invoker = messageHandlers.get(invocation.sender)
         if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
         if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
@@ -135,7 +136,7 @@ class EventBasedThreadPoolDispatcher extends MessageDispatcherBase {
   }
 
   private def free(invoker: AnyRef) = guard.synchronized {
-    if (!CONCURRENT_MODE) busyInvokers.remove(invoker)
+    if (!concurrentMode) busyInvokers.remove(invoker)
   }
   
   // ============ Code for configuration of thread pool =============

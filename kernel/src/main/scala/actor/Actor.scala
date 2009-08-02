@@ -96,7 +96,7 @@ object Actor {
    * </pre>
    */
   protected[kernel] var dispatcher: MessageDispatcher = {
-    val dispatcher = new EventBasedThreadPoolDispatcher
+    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))
     dispatcher

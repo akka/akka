@@ -9,9 +9,8 @@ import java.util.concurrent.TimeUnit
 import java.util.HashMap
 
 trait MessageDispatcherBase extends MessageDispatcher {
-  val CONCURRENT_MODE = kernel.Kernel.config.getBool("akka.actor.concurrent-mode", false)
+  //val CONCURRENT_MODE = kernel.Kernel.config.getBool("akka.actor.concurrent-mode", false)
   val MILLISECONDS = TimeUnit.MILLISECONDS
-
   val queue = new ReactiveMessageQueue
 
   @volatile protected var active: Boolean = false
