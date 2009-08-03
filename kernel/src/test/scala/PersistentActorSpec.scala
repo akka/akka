@@ -7,16 +7,16 @@ import junit.framework.TestCase
 import kernel.Kernel
 import kernel.reactor._
 
-import kernel.state.{EmbeddedCassandraStorageConfig, TransactionalState}
+import kernel.state.{CassandraStorageConfig, TransactionalState}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
 class PersistentActor extends Actor {
   timeout = 100000
   makeTransactionRequired
-  private val mapState = TransactionalState.newPersistentMap(EmbeddedCassandraStorageConfig())
-  private val vectorState = TransactionalState.newPersistentVector(EmbeddedCassandraStorageConfig())
-  private val refState = TransactionalState.newPersistentRef(EmbeddedCassandraStorageConfig())
+  private val mapState = TransactionalState.newPersistentMap(CassandraStorageConfig())
+  private val vectorState = TransactionalState.newPersistentVector(CassandraStorageConfig())
+  private val refState = TransactionalState.newPersistentRef(CassandraStorageConfig())
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>

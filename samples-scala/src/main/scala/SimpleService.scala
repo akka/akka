@@ -1,7 +1,7 @@
 package sample.scala
 
 import javax.ws.rs.{Path, GET, Produces}
-import se.scalablesolutions.akka.kernel.state.{TransactionalState, TransactionalMap, EmbeddedCassandraStorageConfig}
+import se.scalablesolutions.akka.kernel.state.{TransactionalState, TransactionalMap, CassandraStorageConfig}
 import se.scalablesolutions.akka.kernel.actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
 import se.scalablesolutions.akka.kernel.config.ScalaConfig._
 
@@ -35,7 +35,7 @@ class SimpleService extends Actor {
   case object Tick
   private val KEY = "COUNTER";
   private var hasStartedTicking = false;
-  private val storage = TransactionalState.newPersistentMap(EmbeddedCassandraStorageConfig())
+  private val storage = TransactionalState.newPersistentMap(CassandraStorageConfig())
 
   @GET
   @Produces(Array("application/json"))
