@@ -32,6 +32,11 @@
       <version>2.1</version>
     </dependency>
     <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>scala-stats</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
       <groupId>net.lag</groupId>
       <artifactId>configgy</artifactId>
       <version>1.3</version>
