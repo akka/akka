@@ -11,6 +11,8 @@ import org.codehaus.aspectwerkz.proxy.Uuid
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
+import org.multiverse.standard.manuallyinstrumented.Ref
+
 sealed abstract class TransactionalStateConfig
 abstract class PersistentStorageConfig  extends TransactionalStateConfig
 case class CassandraStorageConfig extends PersistentStorageConfig
@@ -70,10 +72,6 @@ trait Transactional {
   // FIXME: won't work across the cluster
   val uuid = Uuid.newUuid.toString
 
-  private[kernel] def begin
-  private[kernel] def commit
-  private[kernel] def rollback
-
   protected def verifyTransaction = {
     val cflowTx = TransactionManagement.threadBoundTx.get
     if (!cflowTx.isDefined) {
@@ -103,62 +101,32 @@ trait TransactionalMap[K, V] extends Transactional with scala.collection.mutable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
-  protected[kernel] var state = new HashTrie[K, V]
-  protected[kernel] var snapshot = state
-
-  // ---- For Transactional ----
-  override def begin = snapshot = state
-  override def commit = snapshot = state
-  override def rollback = state = snapshot
+  protected[this] var ref = new TransactionalRef(new HashTrie[K, V])
 
   // ---- Overriding scala.collection.mutable.Map behavior ----
-  override def contains(key: K): Boolean = {
-    verifyTransaction
-    state.contains(key)
-  }
+  override def contains(key: K): Boolean = ref.get.contains(key)
 
-  override def clear = {
-    verifyTransaction
-    state = new HashTrie[K, V]
-  }
+  override def clear = ref.set(new HashTrie[K, V])
 
-  override def size: Int = {
-    verifyTransaction
-    state.size
-  }
+  override def size: Int = ref.get.size
 
   // ---- For scala.collection.mutable.Map ----
-  override def remove(key: K) = {
-    verifyTransaction
-    state = state - key
-  }
+  override def remove(key: K) = ref.set(ref.get - key)
 
-  override def elements: Iterator[(K, V)] = {
-//    verifyTransaction
-    state.elements
-  }
-
-  override def get(key: K): Option[V] = {
-    verifyTransaction
-    state.get(key)
-  }
+  override def elements: Iterator[(K, V)] = ref.get.elements
+ 
+  override def get(key: K): Option[V] = ref.get.get(key)
 
   override def put(key: K, value: V): Option[V] = {
-    verifyTransaction
-    val oldValue = state.get(key)
-    state = state.update(key, value)
+    val map = ref.get
+    val oldValue = map.get(key)
+    ref.set(map.update(key, value))
     oldValue
   }
 
-  override def -=(key: K) = {
-    verifyTransaction
-    remove(key)
-  }
+  override def -=(key: K) = remove(key)
 
-  override def update(key: K, value: V) = {
-    verifyTransaction
-    put(key, value)
-  }
+  override def update(key: K, value: V) = put(key, value)
 }
 
 /**
@@ -176,10 +144,9 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 
   def getRange(start: Int, count: Int)
 
-  // ---- For Transactional ----
-  override def begin = {}
-
-  override def rollback = changeSet.clear
+  def begin
+  def commit
+  def rollback = changeSet.clear
  
   // ---- For scala.collection.mutable.Map ----
   override def put(key: K, value: V): Option[V] = {
@@ -305,16 +272,15 @@ abstract class TransactionalVector[T] extends Transactional with RandomAccessSeq
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
-  private[kernel] var state: Vector[T] = EmptyVector
-  private[kernel] var snapshot = state
+  private[kernel] var state = new Ref[Vector[T]](EmptyVector) 
 
   def add(elem: T) = {
-    verifyTransaction
-    state = state + elem
+    state.get.set(elem) 
   }
 
   def get(index: Int): T = {
-    verifyTransaction
+
+
     state(index)
   }
 
@@ -427,55 +393,52 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalRef[T] extends Transactional {
-  private[kernel] var ref: Option[T] = None
-  private[kernel] var snapshot: Option[T] = None
+class TransactionalRef[T](elem: T) extends Transactional {
+  def this() = this(null)
 
-  override def begin = if (ref.isDefined) snapshot = Some(ref.get)
+  private[kernel] val ref = new Ref[T](elem)
 
-  override def commit = if (ref.isDefined) snapshot = Some(ref.get)
-
-  override def rollback = if (snapshot.isDefined) ref = Some(snapshot.get)
-
-  def swap(elem: T) = {
-    verifyTransaction
-    ref = Some(elem)
-  }
+  def swap(elem: T) = ref.set(elem)
 
   def get: Option[T] = {
-    verifyTransaction
-    ref
+    if (ref.isNull) None
+    else Some(ref.get)
   }
 
   def getOrElse(default: => T): T = {
-    verifyTransaction
-    ref.getOrElse(default)
+    if (ref.isNull) default
+    else ref.get
   }
 
-  def isDefined: Boolean = {
-    verifyTransaction
-    ref.isDefined
-  }
+  def isDefined: Boolean = !ref.isNull)
 }
 
-class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
-  override def commit = if (ref.isDefined) {
+/**
+ * Implements a transactional reference.
+ *
+ * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class CassandraPersistentTransactionalRef extends TransactionalRef[String] {
+  def commit = if (isDefined) {
     CassandraStorage.insertRefStorageFor(uuid, ref.get)
-    ref = None 
+    ref.clear
   }
 
-  override def rollback = ref = None
+  def rollback = ref.clear
 
   override def get: Option[AnyRef] = {
     verifyTransaction
-    CassandraStorage.getRefStorageFor(uuid)
+    if (isDefined) super.get
+    else CassandraStorage.getRefStorageFor(uuid)
   }
 
   override def isDefined: Boolean = get.isDefined
 
   override def getOrElse(default: => AnyRef): AnyRef = {
     val ref = get
-    if (ref.isDefined) ref
+    if (ref.isDefined) ref.get
     else default
   }
 }
