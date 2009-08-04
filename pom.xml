@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache. isorg/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
@@ -6,8 +6,8 @@
 
   <name>Akka Actor Kernel</name>
   <artifactId>akka</artifactId>
-  <groupId>${akka.groupId}</groupId>
-  <version>${akka.version}</version>
+  <groupId>se.scalablesolutions.akka</groupId>
+  <version>0.5</version>
   <inceptionYear>2009</inceptionYear>
   <packaging>pom</packaging>
 
@@ -30,9 +30,6 @@
       <id>repo1.maven</id>
       <name>Maven Main Repository</name>
       <url>http://repo1.maven.org/maven2</url>
-      <!--<snapshots>
-          <enabled>true</enabled>
-          </snapshots>-->
     </repository>
     <repository>
       <id>project.embedded.module</id>

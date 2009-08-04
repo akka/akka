@@ -10,15 +10,15 @@
 
   <parent>
     <artifactId>akka</artifactId>
-    <groupId>${akka.groupId}</groupId>
-    <version>${akka.version}</version>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <version>0.5</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>${akka.groupId}</groupId>
       <artifactId>akka-kernel</artifactId>
-      <version>${akka.version}</version>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.5</version>
     </dependency>
     <dependency>
       <groupId>com.sun.grizzly</groupId>
