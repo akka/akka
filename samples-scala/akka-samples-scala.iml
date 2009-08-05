@@ -50,6 +50,7 @@
     <orderEntry type="library" exported="" name="Maven: high-scale-lib:high-scale-lib:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: commons-lang:commons-lang:2.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: se.foldleft:cassidy:0.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: commons-pool:commons-pool:1.5.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-comet-webserver:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.8.6.3" level="project" />
