@@ -32,11 +32,6 @@
     <orderEntry type="library" exported="" name="Maven: asm:asm:3.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: aopalliance:aopalliance:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.apache.camel:camel-core:2.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: commons-logging:commons-logging-api:1.1" level="project" />
-    <orderEntry type="library" exported="" name="Maven: javax.xml.bind:jaxb-api:2.1" level="project" />
-    <orderEntry type="library" exported="" name="Maven: javax.xml.stream:stax-api:1.0-2" level="project" />
-    <orderEntry type="library" exported="" name="Maven: javax.activation:activation:1.1" level="project" />
-    <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.6" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.CR1" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.apache:zookeeper:3.1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-core-asl:1.1.0" level="project" />
@@ -49,6 +44,7 @@
     <orderEntry type="library" exported="" name="Maven: commons-collections:commons-collections:3.2.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: high-scale-lib:high-scale-lib:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: commons-lang:commons-lang:2.4" level="project" />
+    <orderEntry type="library" exported="" name="Maven: se.foldleft:cassidy:0.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-comet-webserver:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.8.6.3" level="project" />
@@ -65,6 +61,10 @@
     <orderEntry type="library" exported="" name="Maven: com.sun.jersey:jersey-json:1.1.1-ea" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jettison:jettison:1.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: stax:stax-api:1.0.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.12" level="project" />
+    <orderEntry type="library" exported="" name="Maven: javax.xml.bind:jaxb-api:2.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: javax.xml.stream:stax-api:1.0-2" level="project" />
+    <orderEntry type="library" exported="" name="Maven: javax.activation:activation:1.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-asl:0.9.4" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.jersey.contribs:jersey-scala:1.1.2-ea-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.atmosphere:atmosphere-core:0.3" level="project" />
