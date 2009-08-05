@@ -23,7 +23,7 @@ class Boot {
     LiftRules.addToPackages("sample.lift")
     
     LiftRules.httpAuthProtectedResource.prepend {
-      case (ParsePath("secure-basic" :: Nil, _, _, _)) => Full(AuthRole("admin"))
+      case (ParsePath("liftcount" :: Nil, _, _, _)) => Full(AuthRole("admin"))
     }
 
     LiftRules.authentication = HttpBasicAuthentication("lift") {
