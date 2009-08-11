@@ -7,6 +7,8 @@ package se.scalablesolutions.akka.kernel.state
 import org.apache.commons.pool._
 import org.apache.commons.pool.impl._
 
+import org.apache.thrift.transport._
+
 trait Pool[T] extends java.io.Closeable {
   def borrowObject: T
   def returnObject(t: T): Unit
@@ -86,7 +88,7 @@ trait TransportFactory[T <: TTransport] extends PoolItemFactory[T] {
 
 case class SocketProvider(val host: String, val port: Int) extends TransportFactory[TSocket] {
   def createTransport = {
-    val t =   new TSocket(host,port)
+    val t =   new TSocket(host, port)
     t.open
     t
   }

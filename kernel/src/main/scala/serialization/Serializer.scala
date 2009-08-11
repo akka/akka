@@ -77,7 +77,6 @@ object Serializer {
       message.toBuilder().mergeFrom(bytes).build                                                                                  
     }
 
-    // For Java
     def in(bytes: Array[Byte], clazz: Class[_]): AnyRef = {
       if (clazz == null) throw new IllegalArgumentException("Protobuf message can't be null")
       in(bytes, Some(clazz))

@@ -26,6 +26,38 @@
     <module>samples-java</module>
   </modules>
 
+  <organization>
+    <name>Scalable Solutions AB</name>
+    <url>http://scalablesolutions.se</url>
+  </organization>
+
+  <scm>
+    <connection>scm:git:git://github.com/jboner/akka.git</connection>
+    <developerConnection>scm:git:git@github.com:jboner/akka.git</developerConnection>
+    <url>http://github.com/jboner/akka</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>the Apache License, ASL Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>jboner</id>
+      <name>Jonas Bon&#233;r</name>
+      <timezone>+1</timezone>
+      <email>jonas AT jonasboner DOTCOM</email>
+      <roles>
+        <role>Founder</role>
+        <role>Hacker</role>
+        <role>Despot</role>
+      </roles>
+    </developer>
+  </developers>
+
   <repositories>
     <repository>
       <id>repo1.maven</id>

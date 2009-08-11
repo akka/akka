@@ -32,8 +32,9 @@
     <orderEntry type="library" exported="" name="Maven: asm:asm:3.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: aopalliance:aopalliance:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.apache.camel:camel-core:2.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.CR1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.GA" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.apache:zookeeper:3.1.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.scala-tools:javautils:2.7.4-0.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-core-asl:1.1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-mapper-asl:1.1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: sbinary:sbinary:0.3" level="project" />
