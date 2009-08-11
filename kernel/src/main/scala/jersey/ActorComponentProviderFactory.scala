@@ -19,7 +19,6 @@ extends IoCComponentProviderFactory with Logging {
   override def getComponentProvider(clazz: Class[_]): IoCComponentProvider = getComponentProvider(null, clazz)
 
   override def getComponentProvider(context: ComponentContext, clazz: Class[_]): IoCComponentProvider = {
-      //log.info("ProviderFactory: resolve => " + clazz.getName)
-      configurators.find(_.isDefined(clazz)).map(_ => new ActorComponentProvider(clazz, configurators)).getOrElse(null)
+    configurators.find(_.isDefined(clazz)).map(_ => new ActorComponentProvider(clazz, configurators)).getOrElse(null)
   }
 }

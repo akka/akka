@@ -125,11 +125,6 @@
       <artifactId>commons-lang</artifactId>
       <version>2.4</version>
     </dependency>
-    <dependency>
-      <groupId>se.foldleft</groupId>
-      <artifactId>cassidy</artifactId>
-      <version>0.1</version>
-    </dependency>
 
     <!-- For Jersey -->
     <dependency>

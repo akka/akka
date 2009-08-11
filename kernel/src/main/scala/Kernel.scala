@@ -12,12 +12,13 @@ import javax.ws.rs.core.UriBuilder
 import java.io.File
 import java.net.URLClassLoader
 
-import net.lag.configgy.{Config, Configgy, RuntimeEnvironment}
+import net.lag.configgy.{Config, Configgy, RuntimeEnvironment, ParseException}
 
 import kernel.jersey.AkkaCometServlet
 import kernel.nio.RemoteServer
 import kernel.state.CassandraStorage
 import kernel.util.Logging
+import kernel.management.Management
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -32,6 +33,7 @@ object Kernel extends Logging {
   val BOOT_CLASSES = config.getList("akka.boot")
 
   val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
+  val RUN_MANAGEMENT_SERVICE = config.getBool("akka.management.service", true)
   val STORAGE_SYSTEM = config.getString("akka.storage.system", "cassandra")
 
   val RUN_REST_SERVICE = config.getBool("akka.rest.service", true)
@@ -43,6 +45,7 @@ object Kernel extends Logging {
   private var remoteServer: RemoteServer = _
   private var jerseySelectorThread: SelectorThread = _
   private val startTime = System.currentTimeMillis
+  private var applicationLoader: Option[ClassLoader] = None
 
   def main(args: Array[String]) = boot
   
@@ -51,11 +54,15 @@ object Kernel extends Logging {
       printBanner
       log.info("Starting Akka kernel...")
 
+      runApplicationBootClasses
+
       if (RUN_REMOTE_SERVICE) startRemoteService
+      if (RUN_MANAGEMENT_SERVICE) startManagementService
 
       STORAGE_SYSTEM match {
         case "cassandra" =>     startCassandra
         case "terracotta" =>    throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
+        case "mongodb" =>       throw new UnsupportedOperationException("mongodb storage backend is not yet supported")
         case "redis" =>         throw new UnsupportedOperationException("redis storage backend is not yet supported")
         case "voldemort" =>     throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
         case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
@@ -63,8 +70,6 @@ object Kernel extends Logging {
       }
 
       if (RUN_REST_SERVICE) startJersey
-
-      runApplicationBootClasses
 
       log.info("Akka kernel started successfully")
       hasBooted = true
@@ -79,17 +84,18 @@ object Kernel extends Logging {
       val runtime = new RuntimeEnvironment(getClass)
       //runtime.load(args)
       val config = Configgy.config
-      config.registerWithJmx("com.scalablesolutions.akka.config")
+      config.registerWithJmx("se.scalablesolutions.akka")
 
       // FIXME fix Configgy JMX subscription to allow management
       // config.subscribe { c => configure(c.getOrElse(new Config)) }
       config
     } catch {
-      case e: net.lag.configgy.ParseException => throw new Error("Could not retreive the akka.conf config file. Make sure you have set the AKKA_HOME environment variable to the root of the distribution.")
+      case e: ParseException => throw new Error("Could not retreive the akka.conf config file. Make sure you have set the AKKA_HOME environment variable to the root of the distribution.")
     }
   }
 
   private[akka] def runApplicationBootClasses = {
+    new management.RestfulJMXBoot // add the REST/JMX service
     val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new IllegalStateException("AKKA_HOME system variable needs to be set. Should point to the root of the Akka distribution.") }
     //val CLASSES = HOME + "/kernel/target/classes" // FIXME remove for dist
     //val LIB = HOME + "/lib"
@@ -105,14 +111,20 @@ object Kernel extends Logging {
       log.info("Booting with boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
+    applicationLoader = Some(loader)
   }
   
   private[akka] def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
-       def run = RemoteServer.start
-    }, "akka remote service")
+       def run = RemoteServer.start(applicationLoader)
+    }, "Akka Remote Service")
     remoteServerThread.start
+  }
+
+  private[akka] def startManagementService = {
+    Management.startJMX("se.scalablesolutions.akka")
+    log.info("Management service started successfully.")
   }
 
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {

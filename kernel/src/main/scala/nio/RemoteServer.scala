@@ -13,6 +13,7 @@ import kernel.util._
 import protobuf.RemoteProtocol
 import protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
 import serialization.{Serializer, Serializable, SerializationProtocol}
+import kernel.management.Management
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -20,22 +21,28 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 
+import com.twitter.service.Stats
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteServer extends Logging {
-  def start = RemoteServer.start
+  def start = RemoteServer.start(None)
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteServer extends Logging {
-  val HOSTNAME = kernel.Kernel.config.getString("akka.remote.hostname", "localhost")
-  val PORT = kernel.Kernel.config.getInt("akka.remote.port", 9999)
-  val CONNECTION_TIMEOUT_MILLIS = kernel.Kernel.config.getInt("akka.remote.connection-timeout", 1000)  
+  import kernel.Kernel.config
+  val HOSTNAME = config.getString("akka.remote.hostname", "localhost")
+  val PORT = config.getInt("akka.remote.port", 9999)
+  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.connection-timeout", 1000)  
+
+  val name = "RemoteServer@" + HOSTNAME
 
   @volatile private var isRunning = false
+  @volatile private var isConfigured = false
 
   private val factory = new NioServerSocketChannelFactory(
     Executors.newCachedThreadPool,
@@ -44,18 +51,15 @@ object RemoteServer extends Logging {
   private val activeObjectFactory = new ActiveObjectFactory
 
   private val bootstrap = new ServerBootstrap(factory)
-  // FIXME provide different codecs (Thrift, Avro, Protobuf, JSON)
 
-  private val handler = new RemoteServerHandler
-  bootstrap.setPipelineFactory(new RemoteServerPipelineFactory)
-  bootstrap.setOption("child.tcpNoDelay", true)
-  bootstrap.setOption("child.keepAlive", true)
-  bootstrap.setOption("child.reuseAddress", true)
-  bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT_MILLIS)
-
-  def start = synchronized {
+  def start(loader: Option[ClassLoader]) = synchronized {
     if (!isRunning) {
       log.info("Starting remote server at [%s:%s]", HOSTNAME, PORT)
+      bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, loader))
+      bootstrap.setOption("child.tcpNoDelay", true)
+      bootstrap.setOption("child.keepAlive", true)
+      bootstrap.setOption("child.reuseAddress", true)
+      bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT_MILLIS)
       bootstrap.bind(new InetSocketAddress(HOSTNAME, PORT))
       isRunning = true
     }
@@ -65,14 +69,14 @@ object RemoteServer extends Logging {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServerPipelineFactory extends ChannelPipelineFactory {
+class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline  = {
     val p = Channels.pipeline()
     p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
     p.addLast("protobufDecoder", new ProtobufDecoder(RemoteProtocol.RemoteRequest.getDefaultInstance))
     p.addLast("frameEncoder", new LengthFieldPrepender(4))
     p.addLast("protobufEncoder", new ProtobufEncoder)
-    p.addLast("handler", new RemoteServerHandler)
+    p.addLast("handler", new RemoteServerHandler(name, loader))
     p
   }
 }
@@ -81,7 +85,12 @@ class RemoteServerPipelineFactory extends ChannelPipelineFactory {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelPipelineCoverage { val value = "all" }
-class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
+class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader]) extends SimpleChannelUpstreamHandler with Logging {
+  val NR_OF_BYTES_SENT = Stats.getCounter("NrOfBytesSent_" + name)
+  val NR_OF_BYTES_RECEIVED = Stats.getCounter("NrOfBytesReceived_" + name)
+  val NR_OF_MESSAGES_SENT = Stats.getCounter("NrOfMessagesSent_" + name)
+  val NR_OF_MESSAGES_RECEIVED = Stats.getCounter("NrOfMessagesReceived_" + name)
+
   private val activeObjectFactory = new ActiveObjectFactory
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
@@ -106,6 +115,10 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
   }
 
   private def handleRemoteRequest(request: RemoteRequest, channel: Channel) = {
+    if (Management.RECORD_STATS) {
+      NR_OF_MESSAGES_RECEIVED.incr
+      NR_OF_BYTES_RECEIVED.incr(request.getSerializedSize)
+    }
     log.debug("Received RemoteRequest[\n%s]", request.toString)
     if (request.getIsActor) dispatchToActor(request, channel)
     else dispatchToActiveObject(request, channel)
@@ -128,7 +141,12 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
           .setIsActor(true)
         RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        channel.write(replyBuilder.build)
+        val replyMessage = replyBuilder.build
+        channel.write(replyMessage)
+        if (Management.RECORD_STATS) {
+          NR_OF_MESSAGES_SENT.incr
+          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
+        }
       } catch {
         case e: Throwable =>
           log.error("Could not invoke remote actor [%s] due to: %s", request.getTarget, e)
@@ -139,7 +157,12 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
             .setIsSuccessful(false)
             .setIsActor(true)
           if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-          channel.write(replyBuilder.build)
+          val replyMessage = replyBuilder.build
+          channel.write(replyMessage)
+          if (Management.RECORD_STATS) {
+            NR_OF_MESSAGES_SENT.incr
+            NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
+          }
       }
     }    
   }
@@ -165,7 +188,12 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
           .setIsActor(false)
         RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        channel.write(replyBuilder.build)
+        val replyMessage = replyBuilder.build
+        channel.write(replyMessage)
+        if (Management.RECORD_STATS) {
+          NR_OF_MESSAGES_SENT.incr
+          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
+        }
       }
     } catch {
       case e: InvocationTargetException =>
@@ -176,8 +204,13 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
           .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
           .setIsSuccessful(false)
           .setIsActor(false)
-         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        channel.write(replyBuilder.build)
+        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
+        val replyMessage = replyBuilder.build
+        channel.write(replyMessage)
+        if (Management.RECORD_STATS) {
+          NR_OF_MESSAGES_SENT.incr
+          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
+        }
       case e: Throwable =>
         log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.getMethod, request.getTarget, e)
         e.printStackTrace
@@ -186,8 +219,13 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
           .setException(e.getClass.getName + "$" + e.getMessage)
           .setIsSuccessful(false)
           .setIsActor(false)
-          if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        channel.write(replyBuilder.build)
+        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
+        val replyMessage = replyBuilder.build
+        channel.write(replyMessage)
+        if (Management.RECORD_STATS) {
+          NR_OF_MESSAGES_SENT.incr
+          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
+        }
     }
   }
 
@@ -223,8 +261,9 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
   private def createActiveObject(name: String, timeout: Long): AnyRef = {
     val activeObjectOrNull = activeObjects.get(name)
     if (activeObjectOrNull == null) {
-      val clazz = Class.forName(name)
       try {
+        val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
+                    else Class.forName(name)
         val newInstance = activeObjectFactory.newInstance(clazz, timeout).asInstanceOf[AnyRef]
         activeObjects.put(name, newInstance)
         newInstance
@@ -240,8 +279,9 @@ class RemoteServerHandler extends SimpleChannelUpstreamHandler with Logging {
   private def createActor(name: String, timeout: Long): Actor = {
     val actorOrNull = actors.get(name)
     if (actorOrNull == null) {
-      val clazz = Class.forName(name)
       try {
+        val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
+                    else Class.forName(name)
         val newInstance = clazz.newInstance.asInstanceOf[Actor]
         newInstance.timeout = timeout
         actors.put(name, newInstance)

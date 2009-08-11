@@ -8,14 +8,17 @@ import com.google.protobuf.ByteString
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArraySet
 
-import kernel.reactor._
-import kernel.config.ScalaConfig._
-import kernel.stm.TransactionManagement
-import kernel.util.Helpers.ReadWriteLock
-import kernel.nio.protobuf.RemoteProtocol.RemoteRequest
-import kernel.util.Logging
+import reactor._
+import config.ScalaConfig._
+import stm.TransactionManagement
+import util.Helpers.ReadWriteLock
+import nio.protobuf.RemoteProtocol.RemoteRequest
+import util.Logging
 import serialization.{Serializer, Serializable, SerializationProtocol}
 import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
+import management.Management
+
+import com.twitter.service.Stats
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -42,14 +45,16 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor {
-  val TIMEOUT = kernel.Kernel.config.getInt("akka.actor.timeout", 5000)
-  val SERIALIZE_MESSAGES = kernel.Kernel.config.getBool("akka.actor.serialize-messages", false)
+  val TIMEOUT = Kernel.config.getInt("akka.actor.timeout", 5000)
+  val SERIALIZE_MESSAGES = Kernel.config.getBool("akka.actor.serialize-messages", false)
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable trait Actor extends Logging with TransactionManagement {
+trait Actor extends Logging with TransactionManagement {
+  Stats.getCounter("NrOfActors").incr
+
   @volatile private[this] var isRunning: Boolean = false
   private[this] val remoteFlagLock = new ReadWriteLock
   private[this] val transactionalFlagLock = new ReadWriteLock
@@ -63,6 +68,8 @@ object Actor {
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
+
+  val name = this.getClass.getName
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -96,7 +103,7 @@ object Actor {
    * </pre>
    */
   protected[kernel] var dispatcher: MessageDispatcher = {
-    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher
+    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher(getClass.getName)
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))
     dispatcher
@@ -529,6 +536,8 @@ object Actor {
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
+    if (Management.RECORD_STATS) Stats.getCounter("NrOfFailures_" + dead.name).incr
+
     if (trapExit) {
       if (faultHandler.isDefined) {
         faultHandler.get match {
@@ -546,6 +555,7 @@ object Actor {
     linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach(_.restart(reason))
 
   private[Actor] def restart(reason: AnyRef) = synchronized {
+    if (Management.RECORD_STATS) Stats.getCounter("NrOfRestarts_" + name).incr
     lifeCycleConfig match {
       case None => throw new IllegalStateException("Server [" + id + "] does not have a life-cycle defined.")
 

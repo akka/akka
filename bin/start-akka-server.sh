@@ -3,7 +3,6 @@
 VERSION=0.5
 
 BASE_DIR=$(dirname $0)/..
-
 echo 'Starting Akka Kernel from directory' $BASE_DIR
 
 echo 'Resetting persistent storage in' $BASE_DIR/storage
@@ -20,7 +19,6 @@ LIB_DIR=$BASE_DIR/lib
 CLASSPATH=$BASE_DIR/config
 CLASSPATH=$CLASSPATH:$LIB_DIR/akka-kernel-0.5.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/akka-util-java-0.5.jar
-
 CLASSPATH=$CLASSPATH:$LIB_DIR/antlr-3.1.3.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/aopalliance-1.0.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/asm-3.1.jar
@@ -63,6 +61,7 @@ CLASSPATH=$CLASSPATH:$LIB_DIR/netty-3.1.0.CR1.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/providerutil.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/protobuf-java-2.1.0.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/scala-library-2.7.5.jar
+CLASSPATH=$CLASSPATH:$LIB_DIR/scala-stats-1.0.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/servlet-api-2.5.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/slf4j-api-1.4.3.jar
 CLASSPATH=$CLASSPATH:$LIB_DIR/slf4j-log4j12-1.4.3.jar
@@ -74,7 +73,7 @@ CLASSPATH=$CLASSPATH:$LIB_DIR/zookeeper-3.1.0.jar
 JVM_OPTS=" \
         -server \
         -Xms128M \
-        -Xmx2G \
+        -Xmx1G \
         -XX:SurvivorRatio=8 \
         -XX:TargetSurvivorRatio=90 \
         -XX:+AggressiveOpts \
@@ -91,4 +90,5 @@ JVM_OPTS=" \
  
 
 #$JAVA_HOME/bin/java $JVM_OPTS -cp $CLASSPATH se.scalablesolutions.akka.Boot se.scalablesolutions.akka.kernel.Kernel ${1}
+echo $JAVA_HOME/bin/java $JVM_OPTS -cp $CLASSPATH se.scalablesolutions.akka.kernel.Kernel ${1}
 $JAVA_HOME/bin/java $JVM_OPTS -cp $CLASSPATH se.scalablesolutions.akka.kernel.Kernel ${1}

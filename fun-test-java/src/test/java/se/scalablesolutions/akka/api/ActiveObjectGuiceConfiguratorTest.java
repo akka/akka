@@ -21,7 +21,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
     protected void setUp() {
       se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
-      EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher();
+      EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher("name");
         dispatcher
        .withNewThreadPoolWithBoundedBlockingQueue(100)
        .setCorePoolSize(16)

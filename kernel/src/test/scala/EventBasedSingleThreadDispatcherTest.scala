@@ -55,7 +55,7 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(100)
     val key = "key"
-    val dispatcher = new EventBasedSingleThreadDispatcher
+    val dispatcher = new EventBasedSingleThreadDispatcher("name")
     dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
@@ -69,7 +69,7 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
     val handleLatch = new CountDownLatch(2)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = new EventBasedSingleThreadDispatcher
+    val dispatcher = new EventBasedSingleThreadDispatcher("name")
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
     dispatcher.start
@@ -83,7 +83,7 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
     val handleLatch = new CountDownLatch(200)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = new EventBasedSingleThreadDispatcher
+    val dispatcher = new EventBasedSingleThreadDispatcher("name")
     dispatcher.registerHandler(key1, new MessageInvoker {
       var currentValue = -1;
       def invoke(message: MessageInvocation) {

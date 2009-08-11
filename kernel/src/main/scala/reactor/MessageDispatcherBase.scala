@@ -4,19 +4,30 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
+import kernel.management.Management
+
 import java.util.{LinkedList, Queue, List}
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{TimeUnit, BlockingQueue}
 import java.util.HashMap
 
-trait MessageDispatcherBase extends MessageDispatcher {
+import com.twitter.service.Stats
+
+abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher {
+
   //val CONCURRENT_MODE = kernel.Kernel.config.getBool("akka.actor.concurrent-mode", false)
   val MILLISECONDS = TimeUnit.MILLISECONDS
-  val queue = new ReactiveMessageQueue
-
+  val queue = new ReactiveMessageQueue(name)
+  var blockingQueue: BlockingQueue[Runnable] = _
   @volatile protected var active: Boolean = false
   protected val messageHandlers = new HashMap[AnyRef, MessageInvoker]
   protected var selectorThread: Thread = _
   protected val guard = new Object
+
+  if (Management.RECORD_STATS) {
+    Stats.makeGauge("SizeOfBlockingQueue_" + name) {
+      guard.synchronized { blockingQueue.size.toDouble }
+    }
+  }
 
   def messageQueue = queue
 
@@ -40,9 +51,15 @@ trait MessageDispatcherBase extends MessageDispatcher {
   protected def doShutdown = {}
 }
 
-class ReactiveMessageQueue extends MessageQueue {
+class ReactiveMessageQueue(name: String) extends MessageQueue {
   private[kernel] val queue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
   @volatile private var interrupted = false
+
+  if (Management.RECORD_STATS) {
+    Stats.makeGauge("SizeOfReactiveQueue_" + name) {
+      queue.synchronized { queue.size.toDouble }
+    }
+  }
 
   def append(handle: MessageInvocation) = queue.synchronized {
     queue.offer(handle)
