@@ -5,14 +5,7 @@
     <commander_bookmark type="package" url="file://$PROJECT_DIR$/kernel/src/main/scala/actor" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/pom.xml" afterPath="$PROJECT_DIR$/fun-test-java/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/AllTest.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/AllTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" afterPath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/AllTest.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/AllTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-lift/akka-samples-lift.iml" afterPath="$PROJECT_DIR$/samples-lift/akka-samples-lift.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-    </list>
+    <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test" />
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
