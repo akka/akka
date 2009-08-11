@@ -16,7 +16,7 @@ object AllTest extends TestCase {
     suite.addTestSuite(classOf[EventBasedThreadPoolDispatcherTest])
     suite.addTestSuite(classOf[ActorSpec])
     suite.addTestSuite(classOf[RemoteActorSpec])
-    suite.addTestSuite(classOf[PersistentActorSpec])
+    //suite.addTestSuite(classOf[PersistentActorSpec])
     suite.addTestSuite(classOf[InMemoryActorSpec])
     //suite.addTestSuite(classOf[TransactionClasherSpec])
     suite

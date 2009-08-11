@@ -85,6 +85,7 @@
         <configuration>
           <excludes>
             <exclude>**/Abstract*</exclude>
+            <exclude>**/*Persistent*</exclude>
           </excludes>
         </configuration>
       </plugin>
