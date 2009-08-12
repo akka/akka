@@ -16,6 +16,7 @@ abstract class PersistentStorageConfig  extends TransactionalStateConfig
 case class CassandraStorageConfig extends PersistentStorageConfig
 case class TerracottaStorageConfig extends PersistentStorageConfig
 case class TokyoCabinetStorageConfig extends PersistentStorageConfig
+case class MongoStorageConfig extends PersistentStorageConfig
 
 /**
  * Scala API.
@@ -39,12 +40,14 @@ object TransactionalState extends TransactionalState
 class TransactionalState {
   def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[AnyRef, AnyRef] = config match {
     case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
+    case MongoStorageConfig() => new MongoPersistentTransactionalMap
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
   def newPersistentVector(config: PersistentStorageConfig): TransactionalVector[AnyRef] = config match {
     case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
+    case MongoStorageConfig() => new MongoPersistentTransactionalVector
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
@@ -194,16 +197,23 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 }
 
 /**
- * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
+ * Implementation of <tt>PersistentTransactionalMap</tt> for every concrete 
+ * storage will have the same workflow. This abstracts the workflow.
+ *
+ * Subclasses just need to provide the actual concrete instance for the
+ * abstract val <tt>storage</tt>.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[AnyRef, AnyRef] {
+abstract class TemplatePersistentTransactionalMap extends PersistentTransactionalMap[AnyRef, AnyRef] {
+
+  // to be concretized in subclasses
+  val storage: MapStorage
 
   override def remove(key: AnyRef) = {
     verifyTransaction
     if (changeSet.contains(key)) changeSet -= key
-    else CassandraStorage.removeMapStorageFor(uuid, key)
+    else storage.removeMapStorageFor(uuid, key)
   }
 
   override def getRange(start: Option[AnyRef], count: Int) =
@@ -212,7 +222,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
   def getRange(start: Option[AnyRef], finish: Option[AnyRef], count: Int) = {
     verifyTransaction
     try {
-      CassandraStorage.getMapStorageRangeFor(uuid, start, finish, count)
+      storage.getMapStorageRangeFor(uuid, start, finish, count)
     } catch {
       case e: Exception => Nil
     }
@@ -220,7 +230,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
 
   // ---- For Transactional ----
   override def commit = {
-    CassandraStorage.insertMapStorageEntriesFor(uuid, changeSet.toList)
+    storage.insertMapStorageEntriesFor(uuid, changeSet.toList)
     changeSet.clear
   }
 
@@ -228,7 +238,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
   override def clear = {
     verifyTransaction
     try {
-      CassandraStorage.removeMapStorageFor(uuid)
+      storage.removeMapStorageFor(uuid)
     } catch {
       case e: Exception => {}
     }
@@ -237,7 +247,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
   override def contains(key: AnyRef): Boolean = {
     try {
       verifyTransaction
-      CassandraStorage.getMapStorageEntryFor(uuid, key).isDefined
+      storage.getMapStorageEntryFor(uuid, key).isDefined
     } catch {
       case e: Exception => false
     }
@@ -246,7 +256,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
   override def size: Int = {
     verifyTransaction
     try {
-      CassandraStorage.getMapStorageSizeFor(uuid)
+      storage.getMapStorageSizeFor(uuid)
     } catch {
       case e: Exception => 0
     }
@@ -258,7 +268,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
    // if (changeSet.contains(key)) changeSet.get(key)
    // else {
       val result = try {
-        CassandraStorage.getMapStorageEntryFor(uuid, key)
+        storage.getMapStorageEntryFor(uuid, key)
       } catch {
         case e: Exception => None
       }
@@ -270,7 +280,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
     //verifyTransaction
     new Iterator[Tuple2[AnyRef, AnyRef]] {
       private val originalList: List[Tuple2[AnyRef, AnyRef]] = try {
-        CassandraStorage.getMapStorageFor(uuid)
+        storage.getMapStorageFor(uuid)
       } catch {
         case e: Throwable => Nil
       }
@@ -283,6 +293,25 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Any
       override def hasNext: Boolean = synchronized { !elements.isEmpty }
     }
   }
+}
+
+
+/**
+ * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
+ */
+class CassandraPersistentTransactionalMap extends TemplatePersistentTransactionalMap {
+  val storage = CassandraStorage
+}
+
+/**
+ * Implements a persistent transactional map based on the MongoDB distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
+ */
+class MongoPersistentTransactionalMap extends TemplatePersistentTransactionalMap {
+  val storage = MongoStorage
 }
 
 /**
@@ -382,17 +411,19 @@ abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
 }
 
 /**
- * Implements a persistent transactional vector based on the Cassandra distributed P2P key-value storage.
+ * Implements a template for a concrete persistent transactional vector based storage.
  *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class CassandraPersistentTransactionalVector extends PersistentTransactionalVector[AnyRef] {
+abstract class TemplatePersistentTransactionalVector extends PersistentTransactionalVector[AnyRef] {
+
+  val storage: VectorStorage
 
   // ---- For TransactionalVector ----
   override def get(index: Int): AnyRef = {
     verifyTransaction
     if (changeSet.size > index) changeSet(index)
-    else CassandraStorage.getVectorStorageEntryFor(uuid, index)
+    else storage.getVectorStorageEntryFor(uuid, index)
   }
 
   override def getRange(start: Int, count: Int): List[AnyRef] =
@@ -400,12 +431,12 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   
   def getRange(start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
     verifyTransaction
-    CassandraStorage.getVectorStorageRangeFor(uuid, start, finish, count)
+    storage.getVectorStorageRangeFor(uuid, start, finish, count)
   }
 
   override def length: Int = {
     verifyTransaction
-    CassandraStorage.getVectorStorageSizeFor(uuid)
+    storage.getVectorStorageSizeFor(uuid)
   }
 
   override def apply(index: Int): AnyRef = get(index)
@@ -422,9 +453,27 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   // ---- For Transactional ----
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
-    for (element <- changeSet) CassandraStorage.insertVectorStorageEntryFor(uuid, element)
+    for (element <- changeSet) storage.insertVectorStorageEntryFor(uuid, element)
     changeSet.clear
   }
+}
+
+/**
+ * Implements a persistent transactional vector based on the Cassandra distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
+ */
+class CassandraPersistentTransactionalVector extends TemplatePersistentTransactionalVector {
+  val storage = CassandraStorage
+}
+
+/**
+ * Implements a persistent transactional vector based on the MongoDB distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
+ */
+class MongoPersistentTransactionalVector extends TemplatePersistentTransactionalVector {
+  val storage = MongoStorage
 }
 
 /**

@@ -20,7 +20,7 @@ import org.apache.thrift.protocol._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object CassandraStorage extends Logging {
+object CassandraStorage extends MapStorage with VectorStorage with Logging {
   val KEYSPACE = "akka"
   val MAP_COLUMN_PARENT = new ColumnParent("map", null)
   val VECTOR_COLUMN_PARENT = new ColumnParent("vector", null)
@@ -112,7 +112,7 @@ object CassandraStorage extends Logging {
   // For Vector
   // ===============================================================
 
-  def insertVectorStorageEntryFor(name: String, element: AnyRef) = if (sessions.isDefined) {
+  override def insertVectorStorageEntryFor(name: String, element: AnyRef) = if (sessions.isDefined) {
     sessions.get.withSession {
       _ ++| (name,
         new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(getVectorStorageSizeFor(name))),
@@ -122,7 +122,10 @@ object CassandraStorage extends Logging {
     }
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getVectorStorageEntryFor(name: String, index: Int): AnyRef = if (sessions.isDefined) {
+  override def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
+  }
+
+  override def getVectorStorageEntryFor(name: String, index: Int): AnyRef = if (sessions.isDefined) {
     val column: Option[Column] = sessions.get.withSession {
       _ | (name, new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)))
     }
@@ -130,7 +133,7 @@ object CassandraStorage extends Logging {
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = if (sessions.isDefined) {
+  override def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = if (sessions.isDefined) {
     val startBytes = if (start.isDefined) intToBytes(start.get) else null
     val finishBytes = if (finish.isDefined) intToBytes(finish.get) else null
     val columns: List[Column] = sessions.get.withSession {
@@ -144,7 +147,7 @@ object CassandraStorage extends Logging {
     columns.map(column => serializer.in(column.value, None))
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getVectorStorageSizeFor(name: String): Int = if (sessions.isDefined) {
+  override def getVectorStorageSizeFor(name: String): Int = if (sessions.isDefined) {
     sessions.get.withSession {
       _ |# (name, VECTOR_COLUMN_PARENT)
     }
@@ -154,7 +157,7 @@ object CassandraStorage extends Logging {
   // For Map
   // ===============================================================
 
-  def insertMapStorageEntryFor(name: String, key: AnyRef, element: AnyRef) = if (sessions.isDefined) {
+  override def insertMapStorageEntryFor(name: String, key: AnyRef, element: AnyRef) = if (sessions.isDefined) {
     sessions.get.withSession {
       _ ++| (name,
         new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)),
@@ -164,7 +167,7 @@ object CassandraStorage extends Logging {
     }
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) = if (sessions.isDefined) {
+  override def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) = if (sessions.isDefined) {
     val cf2columns: java.util.Map[String, java.util.List[Column]] = new java.util.HashMap
     for (entry <- entries) {
       val columns: java.util.List[Column] = new java.util.ArrayList
@@ -176,7 +179,7 @@ object CassandraStorage extends Logging {
     }
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = if (sessions.isDefined) {
+  override def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = if (sessions.isDefined) {
     try {
       val column: Option[Column] = sessions.get.withSession {
         _ | (name, new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)))
@@ -190,7 +193,7 @@ object CassandraStorage extends Logging {
     }
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = if (sessions.isDefined) {
+  override def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = if (sessions.isDefined) {
     throw new UnsupportedOperationException
     /*
     val columns = server.get_columns_since(name, MAP_COLUMN_FAMILY, -1)
@@ -202,15 +205,15 @@ object CassandraStorage extends Logging {
   */
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getMapStorageSizeFor(name: String): Int = if (sessions.isDefined) {
+  override def getMapStorageSizeFor(name: String): Int = if (sessions.isDefined) {
     sessions.get.withSession {
       _ |# (name, MAP_COLUMN_PARENT)
     }
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
+  override def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
 
-  def removeMapStorageFor(name: String, key: AnyRef): Unit = if (sessions.isDefined) {
+  override def removeMapStorageFor(name: String, key: AnyRef): Unit = if (sessions.isDefined) {
     val keyBytes = if (key == null) null else serializer.out(key)
     sessions.get.withSession {
       _ -- (name,
@@ -220,7 +223,7 @@ object CassandraStorage extends Logging {
     }
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int):
+  override def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int):
   List[Tuple2[AnyRef, AnyRef]] = if (sessions.isDefined) {
     val startBytes = if (start.isDefined) serializer.out(start.get) else null
     val finishBytes = if (finish.isDefined) serializer.out(finish.get) else null
