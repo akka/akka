@@ -24,29 +24,26 @@ import kernel.management.Management
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
-  @volatile private var hasBooted = false
-
   Boot.HOME
-
+  val version = "0.6"
   val config = setupConfig
 
   val BOOT_CLASSES = config.getList("akka.boot")
-
   val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
   val RUN_MANAGEMENT_SERVICE = config.getBool("akka.management.service", true)
   val STORAGE_SYSTEM = config.getString("akka.storage.system", "cassandra")
-
   val RUN_REST_SERVICE = config.getBool("akka.rest.service", true)
   val REST_HOSTNAME = kernel.Kernel.config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
   val REST_PORT = kernel.Kernel.config.getInt("akka.rest.port", 9998)
 
   // FIXME add API to shut server down gracefully
+  @volatile private var hasBooted = false
   private var remoteServer: RemoteServer = _
   private var jerseySelectorThread: SelectorThread = _
   private val startTime = System.currentTimeMillis
   private var applicationLoader: Option[ClassLoader] = None
-
+  
   def main(args: Array[String]) = boot
   
   def boot = synchronized {
@@ -81,7 +78,6 @@ object Kernel extends Logging {
   def setupConfig: Config = {
     try {
       Configgy.configure(akka.Boot.CONFIG + "/akka.conf")
-      val runtime = new RuntimeEnvironment(getClass)
       //runtime.load(args)
       val config = Configgy.config
       config.registerWithJmx("se.scalablesolutions.akka")
@@ -123,7 +119,7 @@ object Kernel extends Logging {
   }
 
   private[akka] def startManagementService = {
-    Management.startJMX("se.scalablesolutions.akka")
+    Management("se.scalablesolutions.akka.management")
     log.info("Management service started successfully.")
   }
 

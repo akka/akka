@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
-import kernel.management.Management
+import kernel.management.{Management, ThreadPoolMBean}
 
 import java.util.concurrent._
 import locks.ReentrantLock
@@ -79,6 +79,7 @@ class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: B
   
   def start = if (!active) {
     active = true
+    Management.registerMBean(new ThreadPoolMBean(threadPoolBuilder), "ThreadPool_" + name)
 
     /**
      * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].

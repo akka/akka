@@ -7,7 +7,9 @@ package se.scalablesolutions.akka.kernel.management
 import com.twitter.service.Stats
 
 import scala.collection.jcl
+import scala.collection.mutable.ArrayBuffer
 
+import java.util.concurrent.ThreadPoolExecutor
 import java.lang.management.ManagementFactory
 import javax.{management => jmx}
 import javax.management.remote.{JMXConnectorServerFactory, JMXServiceURL}
@@ -18,29 +20,51 @@ import kernel.util.Logging
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Management {
+object Management extends Logging {
   val RECORD_STATS = config.getBool("akka.management.record-stats", true)
+  private var name = "se.scalablesolutions.akka"
+  private val mbeanServer = ManagementFactory.getPlatformMBeanServer
 
-  def startJMX(packageName: String): Unit = 
-    startJMX(packageName, ManagementFactory.getPlatformMBeanServer)
+  def apply() = {}
+  def apply(packageName: String) = name = packageName
 
-  def startJMX(packageName: String, mbeanServer: jmx.MBeanServer): Unit = {
-    mbeanServer.registerMBean(new StatisticsMBean, new jmx.ObjectName(packageName + ":type=Stats"))
-    mbeanServer.registerMBean(new ManagementMBean, new jmx.ObjectName(packageName + ":type=Management"))
-    java.rmi.registry.LocateRegistry.createRegistry(1099)
-    JMXConnectorServerFactory.newJMXConnectorServer(
-      new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi"), 
-      null, 
-      mbeanServer).start
+  java.rmi.registry.LocateRegistry.createRegistry(1099)
+  JMXConnectorServerFactory.newJMXConnectorServer(
+    new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi"), 
+    null, 
+    mbeanServer).start
+  
+  registerMBean(new StatisticsMBean, "Stats")
+  
+  def registerMBean(mbean: jmx.DynamicMBean, mbeanType: String) = {
+    val objectName = new jmx.ObjectName(name + ":type=" + mbeanType)
+    try { mbeanServer.getMBeanInfo(objectName) } catch {
+      case e: jmx.InstanceNotFoundException => 
+        mbeanServer.registerMBean(mbean, objectName)
+    }
+  }
+
+  def getStats(reset: Boolean) = {
+    var statistics = new ArrayBuffer[Tuple2[String, String]]
+    statistics += (("current time", (System.currentTimeMillis / 1000).toString))
+    statistics += (("akka version", Kernel.version))
+    statistics += (("uptime", Kernel.uptime.toString))
+    for ((key, value) <- Stats.getJvmStats) statistics += (key, value.toString)
+    for ((key, value) <- Stats.getCounterStats) statistics += (key, value.toString)
+    for ((key, value) <- Stats.getTimingStats(reset)) statistics += (key, value.toString)
+    for ((key, value) <- Stats.getGaugeStats(reset)) statistics += (key, value.toString)
+    val report = {for ((key, value) <- statistics) yield "STAT %s %s".format(key, value)}.mkString("", "\r\n", "\r\n")
+    log.info("=========================================\n\t--- Statistics Report ---\n%s=========================================", report)
+    report
   }
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class StatisticsMBean extends jmx.DynamicMBean with Logging {
+class StatisticsMBean extends jmx.DynamicMBean {
   def getMBeanInfo = new jmx.MBeanInfo(
-    "se.scalablesolutions.akka.management.Stats", 
+    "se.scalablesolutions.akka.kernel.management.StatisticsMBean", 
     "runtime statistics", 
     getAttributeInfo,
     null, null, null, 
@@ -92,52 +116,72 @@ class StatisticsMBean extends jmx.DynamicMBean with Logging {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ManagementMBean extends jmx.DynamicMBean with Logging {
+class ThreadPoolMBean(threadPool: ThreadPoolExecutor) extends jmx.DynamicMBean {
  val operations: Array[jmx.MBeanOperationInfo] = Array(
-    new jmx.MBeanOperationInfo("dosomething", "TODO",
-      Array(
-        new jmx.MBeanParameterInfo("key", "java.lang.String", "TODO"),
-        new jmx.MBeanParameterInfo("value", "java.lang.String", "TODO")
-      ), "void", jmx.MBeanOperationInfo.ACTION)
+    new jmx.MBeanOperationInfo("purge", "",
+      Array(), "void", jmx.MBeanOperationInfo.ACTION),
+    new jmx.MBeanOperationInfo("shutdown", "",
+      Array(), "void", jmx.MBeanOperationInfo.ACTION),
+    new jmx.MBeanOperationInfo("setCorePoolSize", "",
+      Array(new jmx.MBeanParameterInfo("corePoolSize", "java.lang.Integer", "")), "void", jmx.MBeanOperationInfo.ACTION),
+    new jmx.MBeanOperationInfo("setMaximumPoolSize", "",
+      Array(new jmx.MBeanParameterInfo("maximumPoolSize", "java.lang.Integer", "")), "void", jmx.MBeanOperationInfo.ACTION),
   )
 
   def getMBeanInfo = new jmx.MBeanInfo(
-    "se.scalablesolutions.akka.management.Management", 
+    "se.scalablesolutions.akka.kernel.management.ThreadPoolMBean", 
     "runtime management", 
-    Array[jmx.MBeanAttributeInfo](),
+    getAttributeInfo,
     null, operations, null, 
     new jmx.ImmutableDescriptor("immutableInfo=false"))
 
-  def getAttribute(name: String): AnyRef = throw new UnsupportedOperationException
+  def getAttribute(name: String): AnyRef = name match {
+    case "getActiveCount" => threadPool.getActiveCount.asInstanceOf[AnyRef]
+    case "getCompletedTaskCount" => threadPool.getCompletedTaskCount.asInstanceOf[AnyRef]
+    case "getCorePoolSize" => threadPool.getCorePoolSize.asInstanceOf[AnyRef]
+    case "getLargestPoolSize" => threadPool.getLargestPoolSize.asInstanceOf[AnyRef]
+    case "getMaximumPoolSize" => threadPool.getMaximumPoolSize.asInstanceOf[AnyRef]
+    case "getPoolSize" => threadPool.getPoolSize.asInstanceOf[AnyRef]
+    case "getTaskCount" => threadPool.getTaskCount.asInstanceOf[AnyRef]
+  }
 
-  def getAttributes(names: Array[String]): jmx.AttributeList = throw new UnsupportedOperationException
+  private def getAttributeInfo: Array[jmx.MBeanAttributeInfo] = {
+    Array(
+      new jmx.MBeanAttributeInfo("getCorePoolSize", "java.lang.Int", "", true, false, false),
+      new jmx.MBeanAttributeInfo("getMaximumPoolSize", "java.lang.Int", "", true, false, false),
+      new jmx.MBeanAttributeInfo("getActiveCount", "java.lang.Int", "", true, false, false),
+      new jmx.MBeanAttributeInfo("getCompletedTaskCount", "java.lang.Long", "", true, false, false),
+      new jmx.MBeanAttributeInfo("getLargestPoolSize", "java.lang.Int", "", true, false, false),
+      new jmx.MBeanAttributeInfo("getPoolSize", "java.lang.Int", "", true, false, false),
+      new jmx.MBeanAttributeInfo("getTaskCount", "java.lang.Long", "", true, false, false))
+  }
+
+  def getAttributes(names: Array[String]): jmx.AttributeList = {
+    val rv = new jmx.AttributeList
+    for (name <- names) rv.add(new jmx.Attribute(name, getAttribute(name)))
+    rv
+  }
 
   def invoke(actionName: String, params: Array[Object], signature: Array[String]): AnyRef = {
-    actionName match {
-      case "dosomething" =>
-        params match {
-          case Array(name: String, value: String) =>
-            try {
-              {}
-            } catch {
-              case e: Exception =>
-                log.warning("Exception: %s", e.getMessage)
-                throw e
-            }
-          case _ => throw new jmx.MBeanException(new Exception("Bad signature " + params.toList.toString))
-        }
-      case _ => throw new jmx.MBeanException(new Exception("No such method"))
-    }
-    null
+    try {
+      actionName match {
+        case "purge" => threadPool.purge
+        case "shutdown" => threadPool.shutdown
+        case "setCorePoolSize" =>
+          params match {
+            case Array(corePoolSize: java.lang.Integer) => threadPool.setCorePoolSize(corePoolSize.intValue)
+            case _ => throw new Exception("Bad signature " + params.toList.toString)
+          }
+        case "setMaximumPoolSize" =>
+          params match {
+            case Array(maximumPoolSize: java.lang.Integer) => threadPool.setMaximumPoolSize(maximumPoolSize.intValue)
+            case _ => throw new Exception("Bad signature " + params.toList.toString)
+          }
+      }
+    } catch { case e: Exception => throw new jmx.MBeanException(e) }
+    "Success"
   }
 
-  def setAttribute(attr: jmx.Attribute): Unit = attr.getValue match {
-    case s: String => println("Setting: " + s)
-    case _ => throw new jmx.InvalidAttributeValueException()
-  }
- 
-  def setAttributes(attrs: jmx.AttributeList): jmx.AttributeList = {
-    for (attr <- jcl.Buffer(attrs.asList)) setAttribute(attr)
-    attrs
-  }
+  def setAttribute(attr: jmx.Attribute): Unit = throw new UnsupportedOperationException
+  def setAttributes(attrs: jmx.AttributeList): jmx.AttributeList = throw new UnsupportedOperationException
 }
