@@ -59,12 +59,17 @@
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.1.0.CR1</version>
+      <version>3.1.0.GA</version>
     </dependency>
     <dependency>
       <groupId>org.apache</groupId>
       <artifactId>zookeeper</artifactId>
       <version>3.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-tools</groupId>
+      <artifactId>javautils</artifactId>
+      <version>2.7.4-0.1</version>
     </dependency>
 
     <!-- For Protocol/Serialization -->
@@ -124,6 +129,12 @@
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
       <version>2.4</version>
+    </dependency>
+    </dependency>
+    <dependency>
+      <groupId>commons-pool</groupId>
+      <artifactId>commons-pool</artifactId>
+      <version>1.5.1</version>
     </dependency>
 
     <!-- For Jersey -->

@@ -141,6 +141,7 @@ class ActiveObjectFactory {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActiveObject {
+
   val MATCH_ALL = "execution(* *.*(..))"
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 

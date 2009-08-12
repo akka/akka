@@ -37,7 +37,7 @@ object TransactionalState extends TransactionalState
  * </pre>
  */
 class TransactionalState {
-  def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[String, AnyRef] = config match {
+  def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[AnyRef, AnyRef] = config match {
     case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
@@ -174,7 +174,7 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
   // FIXME: need to handle remove in another changeSet
   protected[kernel] val changeSet = new HashMap[K, V]
 
-  def getRange(start: Int, count: Int)
+  def getRange(start: Option[AnyRef], count: Int)
 
   // ---- For Transactional ----
   override def begin = {}
@@ -188,11 +188,6 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
     None // always return None to speed up writes (else need to go to DB to get
   }
 
-  override def remove(key: K) = {
-    verifyTransaction
-    changeSet -= key
-  }
-
   override def -=(key: K) = remove(key)
 
   override def update(key: K, value: V) = put(key, value)
@@ -203,12 +198,21 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[String, AnyRef] {
+class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[AnyRef, AnyRef] {
 
-  override def getRange(start: Int, count: Int) = {
+  override def remove(key: AnyRef) = {
+    verifyTransaction
+    if (changeSet.contains(key)) changeSet -= key
+    else CassandraStorage.removeMapStorageFor(uuid, key)
+  }
+
+  override def getRange(start: Option[AnyRef], count: Int) =
+    getRange(start, None, count)
+
+  def getRange(start: Option[AnyRef], finish: Option[AnyRef], count: Int) = {
     verifyTransaction
     try {
-      CassandraStorage.getMapStorageRangeFor(uuid, start, count)
+      CassandraStorage.getMapStorageRangeFor(uuid, start, finish, count)
     } catch {
       case e: Exception => Nil
     }
@@ -230,7 +234,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
     }
   }
 
-  override def contains(key: String): Boolean = {
+  override def contains(key: AnyRef): Boolean = {
     try {
       verifyTransaction
       CassandraStorage.getMapStorageEntryFor(uuid, key).isDefined
@@ -249,7 +253,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   }
 
   // ---- For scala.collection.mutable.Map ----
-  override def get(key: String): Option[AnyRef] = {
+  override def get(key: AnyRef): Option[AnyRef] = {
     verifyTransaction
    // if (changeSet.contains(key)) changeSet.get(key)
    // else {
@@ -262,16 +266,16 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
     //}
   }
   
-  override def elements: Iterator[Tuple2[String, AnyRef]]  = {
+  override def elements: Iterator[Tuple2[AnyRef, AnyRef]]  = {
     //verifyTransaction
-    new Iterator[Tuple2[String, AnyRef]] {
-      private val originalList: List[Tuple2[String, AnyRef]] = try {
+    new Iterator[Tuple2[AnyRef, AnyRef]] {
+      private val originalList: List[Tuple2[AnyRef, AnyRef]] = try {
         CassandraStorage.getMapStorageFor(uuid)
       } catch {
         case e: Throwable => Nil
       }
       private var elements = originalList.reverse
-      override def next: Tuple2[String, AnyRef]= synchronized {
+      override def next: Tuple2[AnyRef, AnyRef]= synchronized {
         val element = elements.head
         elements = elements.tail
         element
@@ -391,9 +395,12 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
     else CassandraStorage.getVectorStorageEntryFor(uuid, index)
   }
 
-  override def getRange(start: Int, count: Int): List[AnyRef] = {
+  override def getRange(start: Int, count: Int): List[AnyRef] =
+    getRange(Some(start), None, count)
+  
+  def getRange(start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
     verifyTransaction
-    CassandraStorage.getVectorStorageRangeFor(uuid, start, count)
+    CassandraStorage.getVectorStorageRangeFor(uuid, start, finish, count)
   }
 
   override def length: Int = {

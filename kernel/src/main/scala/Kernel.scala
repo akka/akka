@@ -45,11 +45,11 @@ object Kernel extends Logging {
   private var applicationLoader: Option[ClassLoader] = None
   
   def main(args: Array[String]) = boot
-  
+
   def boot = synchronized {
     if (!hasBooted) {
       printBanner
-      log.info("Starting Akka kernel...")
+      log.info("Starting Akka...")
 
       runApplicationBootClasses
 
@@ -68,7 +68,9 @@ object Kernel extends Logging {
 
       if (RUN_REST_SERVICE) startJersey
 
-      log.info("Akka kernel started successfully")
+      runApplicationBootClasses
+
+      log.info("Akka started successfully")
       hasBooted = true
     }
   }
@@ -77,17 +79,27 @@ object Kernel extends Logging {
 
   def setupConfig: Config = {
     try {
-      Configgy.configure(akka.Boot.CONFIG + "/akka.conf")
-      //runtime.load(args)
-      val config = Configgy.config
-      config.registerWithJmx("se.scalablesolutions.akka")
-
-      // FIXME fix Configgy JMX subscription to allow management
-      // config.subscribe { c => configure(c.getOrElse(new Config)) }
-      config
+      Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
+      log.info("Config loaded from the application classpath.")
     } catch {
-      case e: ParseException => throw new Error("Could not retreive the akka.conf config file. Make sure you have set the AKKA_HOME environment variable to the root of the distribution.")
+      case e: ParseException =>
+        try {
+          if (HOME.isDefined) {
+            val configFile = HOME.get + "/config/akka.conf"
+            log.info("AKKA_HOME is defined to [%s], loading config from [%s].", HOME.get, configFile)
+            Configgy.configure(configFile)
+          } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+        } catch {
+          case e: ParseException => throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+        }
     }
+    //val runtime = new RuntimeEnvironment(getClass)
+    //runtime.load(args)
+    val config = Configgy.config
+    config.registerWithJmx("com.scalablesolutions.akka.config")
+    // FIXME fix Configgy JMX subscription to allow management
+    // config.subscribe { c => configure(c.getOrElse(new Config)) }
+    config
   }
 
   private[akka] def runApplicationBootClasses = {
@@ -104,7 +116,7 @@ object Kernel extends Logging {
     val loader = new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
     if (BOOT_CLASSES.isEmpty) throw new IllegalStateException("No boot class specificed. Add an application boot class to the 'akka.conf' file such as 'boot = \"com.biz.myapp.Boot\"")
     for (clazz <- BOOT_CLASSES) {
-      log.info("Booting with boot class [%s]", clazz)
+      log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
     applicationLoader = Some(loader)
@@ -125,7 +137,8 @@ object Kernel extends Logging {
 
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
     System.setProperty("cassandra", "")
-    System.setProperty("storage-config", akka.Boot.CONFIG + "/")
+    if (HOME.isDefined) System.setProperty("storage-config", HOME.get + "/config/")
+    else if (System.getProperty("storage-config", "NIL") == "NIL") throw new IllegalStateException("AKKA_HOME and -Dstorage-config=... is not set. Can't start up Cassandra. Either set AKKA_HOME or set the -Dstorage-config=... variable to the directory with the Cassandra storage-conf.xml file.")
     CassandraStorage.start
   }
 
@@ -139,7 +152,7 @@ object Kernel extends Logging {
     adapter.setHandleStaticResources(true)
     adapter.setServletInstance(new AkkaCometServlet)
     adapter.setContextPath(uri.getPath)
-    adapter.setRootFolder(System.getenv("AKKA_HOME") + "/deploy/root")
+    if (HOME.isDefined) adapter.setRootFolder(HOME.get + "/deploy/root")
     log.info("REST service root path: [" + adapter.getRootFolder + "] and context path [" + adapter.getContextPath + "] ")
 
     val ah = new com.sun.grizzly.arp.DefaultAsyncHandler
@@ -165,7 +178,7 @@ object Kernel extends Logging {
  (____  /__|_ \__|_ \(____  /
       \/     \/    \/     \/
 """)
-    log.info("     Running version " + kernel.Kernel.config.getString("akka.version", "awesome"))
+    log.info("     Running version " + config.getString("akka.version", "Awesome"))
     log.info("==============================")
   }
   
