@@ -118,6 +118,11 @@
       </releases>
     </repository>
     <repository>
+      <id>guice-maven</id>
+      <name>guice maven</name>
+      <url>http://guice-maven.googlecode.com/svn/trunk</url>
+    </repository>
+    <repository>
       <id>google-maven-repository</id>
       <name>Google Maven Repository</name>
       <url>http://google-maven-repository.googlecode.com/svn/repository/</url>
@@ -142,6 +147,10 @@
 
   <pluginRepositories>
     <pluginRepository>
+      <id>onejar-maven-plugin.googlecode.com</id>
+      <url>http://onejar-maven-plugin.googlecode.com/svn/mavenrepo</url>
+    </pluginRepository>
+    <pluginRepository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
@@ -149,7 +158,24 @@
   </pluginRepositories>
 
   <build>
+    <sourceDirectory>src/main/scala</sourceDirectory>
+    <testSourceDirectory>src/test/scala</testSourceDirectory>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-webdav</artifactId>
+        <version>1.0-beta-2</version>
+      </extension>
+    </extensions>
     <plugins>
+      <plugin>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>maven-jetty-plugin</artifactId>
+        <configuration>
+          <contextPath>/</contextPath>
+          <scanIntervalSeconds>5</scanIntervalSeconds>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -183,7 +209,236 @@
           </tasks>
         </configuration>
       </plugin>
+      <!-- Helps with importing Maven projects into Eclipse correctly -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.0.2</version>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.10.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <jvmArgs>
+            <jvmArg>-Xmx1024m</jvmArg>
+          </jvmArgs>
+          <args>
+            <!-- arg>-unchecked</arg -->
+            <arg>-deprecation</arg>
+            <arg>-Xno-varargs-conversion</arg>
+          </args>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
+      </plugin>
+      <plugin>
+        <inherited>true</inherited>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-changes-plugin</artifactId>
+        <version>2.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <lift_version>${pom.version}</lift_version>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <!--plugin>
+        <groupId>org.dstovall</groupId>
+        <artifactId>onejar-maven-plugin</artifactId>
+        <version>1.4.1</version>
+        <executions>
+          <execution>
+            <configuration>
+              <mainClass>se.scalablesolutions.akka.kernel.Kernel</mainClass>
+              <onejarVersion>0.96</onejarVersion>
+              <attachToBuild>true</attachToBuild>
+              <classifier>onejar</classifier>
+            </configuration>
+            <goals>
+              <goal>one-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin-->
     </plugins>
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>config</directory>
+        <includes>
+          <include>akka.conf</include>
+          <include>akka-reference.conf</include>
+        </includes>
+      </resource>
+    </resources>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>2.0.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+              <_versionpolicy>[$(@),$(version;=+;$(@)))</_versionpolicy>
+            </instructions>
+          </configuration>
+          <executions>
+            <execution>
+              <id>create-bundle</id>
+              <phase>package</phase>
+              <goals>
+                <goal>bundle</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>bundle-install</id>
+              <phase>install</phase>
+              <goals>
+                <goal>install</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
-
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.9</version>
+        <configuration>
+          <jvmArgs>
+            <jvmArg>-Xmx1024m</jvmArg>
+            <jvmArg>-DpackageLinkDefs=file://${basedir}/../vscaladocs-packageLinkDefs.properties</jvmArg>
+          </jvmArgs>
+          <args>
+          <arg>-unchecked</arg></args>
+          <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-changes-plugin</artifactId>
+        <version>2.0-beta-3</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>changes-report</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+        <configuration>
+          <xmlPath>${basedir}/src/changes/changes.xml</xmlPath>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <configuration><!--showSuccess>false</showSuccess--></configuration>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>report-only</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
+  <distributionManagement>
+  </distributionManagement>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <!--
+          <build>
+          <plugins>
+          <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <configuration>
+          <descriptorRefs>
+          <descriptorRef>project</descriptorRef>
+          </descriptorRefs>
+          <tarLongFileMode>gnu</tarLongFileMode>
+          </configuration>
+          <executions>
+          <execution>
+          <id>make-assembly</id>
+          <phase>package</phase>
+          <goals>
+          <goal>attached</goal>
+          </goals>
+          </execution>
+          </executions>
+          </plugin>
+          </plugins>
+          </build>
+      -->
+      <distributionManagement>
+        <repository>
+          <id>scala-tools.org</id>
+          <url>http://nexus.scala-tools.org/content/repositories/releases</url>
+        </repository>
+        <site>
+          <id>scala-tools.org</id>
+          <url>file://${user.home}/.m2/mvnsites/akka</url>
+        </site>
+      </distributionManagement>
+    </profile>
+    <profile>
+      <id>hudson</id>
+      <distributionManagement>
+        <repository>
+          <id>hudson.scala-tools.org</id>
+          <url>file:///home/scala-tools.org/www/repo-snapshots</url>
+        </repository>
+        <snapshotRepository>
+          <id>hudson.scala-tools.org</id>
+          <url>file:///home/scala-tools.org/www/repo-snapshots</url>
+          <uniqueVersion>false</uniqueVersion>
+        </snapshotRepository>
+        <site>
+          <id>hudson.scala-tools.org</id>
+          <url>file:///home/scala-tools.org/www/mvnsites-snapshots/akka</url>
+        </site>
+      </distributionManagement>
+    </profile>
+  </profiles>
 </project>

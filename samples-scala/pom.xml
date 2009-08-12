@@ -11,6 +11,7 @@
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.5</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <dependencies>
@@ -33,53 +34,7 @@
 
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
-    <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
-      <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <args>
-            <arg>-target:jvm-1.5</arg>
-            <arg>-unchecked</arg>
-          </args>
-          <scalaVersion>2.7.5</scalaVersion>
-          <vscaladocVersion>1.1</vscaladocVersion>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <configuration>
-          <downloadSources>true</downloadSources>
-          <buildcommands>
-            <buildcommand>
-              ch.epfl.lamp.sdt.core.scalabuilder
-            </buildcommand>
-          </buildcommands>
-          <additionalProjectnatures>
-            <projectnature>
-              ch.epfl.lamp.sdt.core.scalanature
-            </projectnature>
-          </additionalProjectnatures>
-          <classpathContainers>
-            <classpathContainer>
-              org.eclipse.jdt.launching.JRE_CONTAINER
-            </classpathContainer>
-            <classpathContainer>
-              ch.epfl.lamp.sdt.launching.SCALA_CONTAINER
-            </classpathContainer>
-          </classpathContainers>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
@@ -98,21 +53,5 @@
         </executions>
       </plugin>
     </plugins>
-    <resources>
-      <resource>
-        <filtering>false</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <filtering>false</filtering>
-        <directory>src/main/scala</directory>
-        <includes>
-          <include>**</include>
-        </includes>
-        <excludes>
-          <exclude>**/*.scala</exclude>
-        </excludes>
-      </resource>
-    </resources>
   </build>
 </project>

@@ -11,6 +11,7 @@
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.5</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <dependencies>

@@ -24,10 +24,15 @@ import kernel.management.Management
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
-  Boot.HOME
   val version = "0.6"
-  val config = setupConfig
+  val HOME = {
+    val home = System.getenv("AKKA_HOME")
+    if (home == null) None
+    else Some(home)
+  }
 
+  val config = setupConfig
+  
   val BOOT_CLASSES = config.getList("akka.boot")
   val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
   val RUN_MANAGEMENT_SERVICE = config.getBool("akka.management.service", true)
@@ -93,10 +98,8 @@ object Kernel extends Logging {
           case e: ParseException => throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
         }
     }
-    //val runtime = new RuntimeEnvironment(getClass)
-    //runtime.load(args)
     val config = Configgy.config
-    config.registerWithJmx("com.scalablesolutions.akka.config")
+    config.registerWithJmx("com.scalablesolutions.akka")
     // FIXME fix Configgy JMX subscription to allow management
     // config.subscribe { c => configure(c.getOrElse(new Config)) }
     config
@@ -104,19 +107,20 @@ object Kernel extends Logging {
 
   private[akka] def runApplicationBootClasses = {
     new management.RestfulJMXBoot // add the REST/JMX service
-    val HOME = try { System.getenv("AKKA_HOME") } catch { case e: NullPointerException => throw new IllegalStateException("AKKA_HOME system variable needs to be set. Should point to the root of the Akka distribution.") }
-    //val CLASSES = HOME + "/kernel/target/classes" // FIXME remove for dist
-    //val LIB = HOME + "/lib"
-    val CONFIG = HOME + "/config"
-    val DEPLOY = HOME + "/deploy"
-    val DEPLOY_DIR = new File(DEPLOY)
-    if (!DEPLOY_DIR.exists) { log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1) }
-    val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
-    log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
-    val loader = new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
-    if (BOOT_CLASSES.isEmpty) throw new IllegalStateException("No boot class specificed. Add an application boot class to the 'akka.conf' file such as 'boot = \"com.biz.myapp.Boot\"")
+    val loader =
+      if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) getClass.getClassLoader
+      else if (HOME.isDefined) {
+        val CONFIG = HOME.get + "/config"
+        val DEPLOY = HOME.get + "/deploy"
+        val DEPLOY_DIR = new File(DEPLOY)
+        if (!DEPLOY_DIR.exists) { log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1) }
+        val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
+        log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
+        new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+      } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
     for (clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
+      log.info("--------------- LOADER [%s]", loader)
       loader.loadClass(clazz).newInstance
     }
     applicationLoader = Some(loader)
