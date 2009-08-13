@@ -104,6 +104,7 @@ object MongoStorage extends MapStorage
   override def getMapStorageRangeFor(name: String, start: Option[AnyRef], 
                             finish: Option[AnyRef], 
                             count: Int): List[Tuple2[AnyRef, AnyRef]] = {
+    // @fixme: currently ignores finish
     val m = 
       nullSafeFindOne(name) match {
         case None => 
@@ -113,7 +114,7 @@ object MongoStorage extends MapStorage
       }
     val s = start.get.asInstanceOf[Int]
     val n = 
-      List(m.keySet.toArray: _*).asInstanceOf[List[String]].slice(s, s + count)
+      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + count)
     val vals = 
       for(s <- n) 
         yield (s, serializer.in(m.get(s).asInstanceOf[Array[Byte]], None))

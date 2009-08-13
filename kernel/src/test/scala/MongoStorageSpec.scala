@@ -7,7 +7,8 @@ import org.junit.Assert._
 
 class MongoStorageSpec extends TestCase {
 
-  val changeSet = new scala.collection.mutable.ArrayBuffer[AnyRef]
+  val changeSetV = new scala.collection.mutable.ArrayBuffer[AnyRef]
+  val changeSetM = new scala.collection.mutable.HashMap[AnyRef, AnyRef]
 
   override def setUp = {
     MongoStorage.coll.drop
@@ -15,32 +16,29 @@ class MongoStorageSpec extends TestCase {
 
   @Test
   def testVectorInsertForTransactionId = {
-    changeSet += "debasish"   // string
-    changeSet += List(1, 2, 3) // Scala List
-    val l = new java.util.ArrayList[Int]  // Java List
-    l.add(100)
-    l.add(200)
-    changeSet += l
-    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSet.toList)
+    changeSetV += "debasish"   // string
+    changeSetV += List(1, 2, 3) // Scala List
+    changeSetV += List(100, 200)
+    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSetV.toList)
     assertEquals(
       3,
       MongoStorage.getVectorStorageSizeFor("U-A1"))
-    changeSet.clear
+    changeSetV.clear
 
-    // changeSet should be reinitialized
-    changeSet += List(12, 23, 45)
-    changeSet += "maulindu"
-    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSet.toList)
+    // changeSetV should be reinitialized
+    changeSetV += List(12, 23, 45)
+    changeSetV += "maulindu"
+    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSetV.toList)
     assertEquals(
       5,
       MongoStorage.getVectorStorageSizeFor("U-A1"))
 
-    // add more to the same changeSet
-    changeSet += "ramanendu"
-    changeSet += Map(1 -> "dg", 2 -> "mc")
+    // add more to the same changeSetV
+    changeSetV += "ramanendu"
+    changeSetV += Map(1 -> "dg", 2 -> "mc")
 
     // add for a diff transaction
-    MongoStorage.insertVectorStorageEntriesFor("U-A2", changeSet.toList)
+    MongoStorage.insertVectorStorageEntriesFor("U-A2", changeSetV.toList)
     assertEquals(
       4,
       MongoStorage.getVectorStorageSizeFor("U-A2"))
@@ -70,9 +68,9 @@ class MongoStorageSpec extends TestCase {
       MongoStorage.getVectorStorageSizeFor("U-A1"))
 
     // get some stuff
-    changeSet += "debasish"
-    changeSet += List(12, 13, 14)
-    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSet.toList)
+    changeSetV += "debasish"
+    changeSetV += List(12, 13, 14)
+    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSetV.toList)
 
     assertEquals(
       2,
@@ -86,15 +84,11 @@ class MongoStorageSpec extends TestCase {
       List(12, 13, 14),
       MongoStorage.getVectorStorageEntryFor("U-A1", 1).asInstanceOf[List[Int]])
 
-    changeSet.clear
-    changeSet += Map(1->1, 2->4, 3->9)
-    changeSet += BigInt(2310)
-    val l = new java.util.ArrayList[Int]
-    l.add(100)
-    l.add(200)
-    l.add(300)
-    changeSet += l
-    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSet.toList)
+    changeSetV.clear
+    changeSetV += Map(1->1, 2->4, 3->9)
+    changeSetV += BigInt(2310)
+    changeSetV += List(100, 200, 300)
+    MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSetV.toList)
 
     assertEquals(
       5,
@@ -118,5 +112,105 @@ class MongoStorageSpec extends TestCase {
       MongoStorage.getVectorStorageRangeFor("U-A1", Some(2), None, 12)
       fail("should throw an exception")
     } catch {case e: Predef.NoSuchElementException => {}}
+  }
+
+  @Test
+  def testMapInsertForTransactionId = {
+    case class Foo(no: Int, name: String)
+    fillMap
+    
+    // add some more to changeSet
+    changeSetM += "5" -> Foo(12, "dg")
+    changeSetM += "6" -> java.util.Calendar.getInstance.getTime
+
+    // insert all into Mongo
+    MongoStorage.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
+    assertEquals(
+      6,
+      MongoStorage.getMapStorageSizeFor("U-M1"))
+
+    // individual insert api
+    MongoStorage.insertMapStorageEntryFor("U-M1", "7", "akka")
+    MongoStorage.insertMapStorageEntryFor("U-M1", "8", List(23, 25))
+    assertEquals(
+      8,
+      MongoStorage.getMapStorageSizeFor("U-M1"))
+
+    // add the same changeSet for another transaction
+    MongoStorage.insertMapStorageEntriesFor("U-M2", changeSetM.toList)
+    assertEquals(
+      6,
+      MongoStorage.getMapStorageSizeFor("U-M2"))
+
+    // the first transaction should remain the same
+    assertEquals(
+      8,
+      MongoStorage.getMapStorageSizeFor("U-M1"))
+    changeSetM.clear
+  }
+
+  @Test
+  def testMapContents = {
+    fillMap
+    MongoStorage.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
+    MongoStorage.getMapStorageEntryFor("U-M1", "2") match {
+      case Some(x) => assertEquals("peter", x.asInstanceOf[String])
+      case None => fail("should fetch peter")
+    }
+    MongoStorage.getMapStorageEntryFor("U-M1", "4") match {
+      case Some(x) => assertEquals(3, x.asInstanceOf[List[Int]].size)
+      case None => fail("should fetch list")
+    }
+    MongoStorage.getMapStorageEntryFor("U-M1", "3") match {
+      case Some(x) => assertEquals(2, x.asInstanceOf[List[Int]].size)
+      case None => fail("should fetch list")
+    }
+
+    // get the entire map
+    val l: List[Tuple2[AnyRef, AnyRef]] = 
+      MongoStorage.getMapStorageFor("U-M1")
+
+    assertEquals(4, l.size)
+    assertTrue(l.map(_._1).contains("1"))
+    assertTrue(l.map(_._1).contains("2"))
+    assertTrue(l.map(_._1).contains("3"))
+    assertTrue(l.map(_._1).contains("4"))
+
+    assertTrue(l.map(_._2).contains("john"))
+
+    // trying to fetch for a non-existent transaction will throw
+    try {
+      MongoStorage.getMapStorageFor("U-M2")
+      fail("should throw an exception")
+    } catch {case e: Predef.NoSuchElementException => {}}
+
+    changeSetM.clear
+  }
+
+  @Test
+  def testMapContentsByRange = {
+    fillMap
+    changeSetM += "5" -> Map(1 -> "dg", 2 -> "mc")
+    MongoStorage.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
+
+    val l: List[Tuple2[AnyRef, AnyRef]] = 
+      MongoStorage.getMapStorageRangeFor(
+        "U-M1", Some(Integer.valueOf(2)), None, 3)
+
+    assertEquals(3, l.size)
+    assertEquals("3", l(0)._1.asInstanceOf[String])
+    assertEquals(List(100, 200), l(0)._2.asInstanceOf[List[Int]])
+    assertEquals("4", l(1)._1.asInstanceOf[String])
+    assertEquals(List(10, 20, 30), l(1)._2.asInstanceOf[List[Int]])
+    
+    changeSetM.clear
+  }
+
+  private def fillMap = {
+    changeSetM += "1" -> "john"
+    changeSetM += "2" -> "peter"
+    changeSetM += "3" -> List(100, 200)
+    changeSetM += "4" -> List(10, 20, 30)
+    changeSetM
   }
 }
