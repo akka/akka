@@ -3,6 +3,7 @@ package se.scalablesolutions.akka.kernel.state
 import com.mongodb._
 import se.scalablesolutions.akka.kernel.util.Logging
 import serialization.{Serializer}
+import kernel.Kernel.config
 
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
 
@@ -23,18 +24,28 @@ object MongoStorage extends MapStorage
   
   val KEY = "key"
   val VALUE = "value"
-  val db = new Mongo("mydb"); // @fixme: need to externalize
   val COLLECTION = "akka_coll"
+  val MONGODB_SERVER_HOSTNAME = 
+    config.getString("akka.storage.mongodb.hostname", "127.0.0.1")
+  val MONGODB_SERVER_DBNAME = 
+    config.getString("akka.storage.mongodb.dbname", "testdb")
+  val MONGODB_SERVER_PORT = 
+    config.getInt("akka.storage.mongodb.port", 27017)
+
+  val db = new Mongo(MONGODB_SERVER_HOSTNAME,
+    MONGODB_SERVER_PORT, MONGODB_SERVER_DBNAME)
   val coll = db.getCollection(COLLECTION)
-  
+
   // @fixme: make this pluggable
   private[this] val serializer: Serializer = Serializer.ScalaJSON
   
-  override def insertMapStorageEntryFor(name: String, key: AnyRef, value: AnyRef) {
+  override def insertMapStorageEntryFor(name: String, 
+    key: AnyRef, value: AnyRef) {
     insertMapStorageEntriesFor(name, List((key, value)))
   }
 
-  override def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) {
+  override def insertMapStorageEntriesFor(name: String, 
+    entries: List[Tuple2[AnyRef, AnyRef]]) {
     import java.util.{Map, HashMap}
     
     val m: Map[AnyRef, AnyRef] = new HashMap
@@ -79,7 +90,8 @@ object MongoStorage extends MapStorage
     }
   }
   
-  override def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
+  override def getMapStorageEntryFor(name: String, 
+    key: AnyRef): Option[AnyRef] = {
     getValueForKey(name, key.asInstanceOf[String])
   }
   
@@ -206,7 +218,8 @@ object MongoStorage extends MapStorage
     }
   }
   
-  override def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
+  override def getVectorStorageRangeFor(name: String, 
+    start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
     try {
       val o =
       nullSafeFindOne(name) match {
