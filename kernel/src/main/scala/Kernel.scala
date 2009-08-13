@@ -24,7 +24,7 @@ import kernel.management.Management
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
-  val version = "0.6"
+  val VERSION = "0.6"
   val HOME = {
     val home = System.getenv("AKKA_HOME")
     if (home == null) None
@@ -33,6 +33,9 @@ object Kernel extends Logging {
 
   val config = setupConfig
   
+  val CONFIG_VERSION = config.getString("akka.version", "0")
+  if (VERSION != CONFIG_VERSION) throw new IllegalStateException("Akka JAR version [" + VERSION + "] is different than the provided config ('akka.conf') version [" + CONFIG_VERSION + "]")
+
   val BOOT_CLASSES = config.getList("akka.boot")
   val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
   val RUN_MANAGEMENT_SERVICE = config.getBool("akka.management.service", true)
@@ -73,8 +76,7 @@ object Kernel extends Logging {
 
       if (RUN_REST_SERVICE) startJersey
 
-      runApplicationBootClasses
-
+      Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
       log.info("Akka started successfully")
       hasBooted = true
     }
@@ -83,21 +85,22 @@ object Kernel extends Logging {
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
   def setupConfig: Config = {
-    try {
-      Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
-      log.info("Config loaded from the application classpath.")
-    } catch {
-      case e: ParseException =>
+      if (HOME.isDefined) {
         try {
-          if (HOME.isDefined) {
-            val configFile = HOME.get + "/config/akka.conf"
-            log.info("AKKA_HOME is defined to [%s], loading config from [%s].", HOME.get, configFile)
-            Configgy.configure(configFile)
-          } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+          val configFile = HOME.get + "/config/akka.conf"
+          Configgy.configure(configFile)
+          log.info("AKKA_HOME is defined to [%s], config loaded from [%s].", HOME.get, configFile)
         } catch {
-          case e: ParseException => throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+          case e: ParseException => throw new IllegalStateException("'akka.conf' config file can not be found in [" + HOME + "/config/akka.conf] - aborting. Either add it in the 'config' directory or add it to the classpath.")
         }
-    }
+      } else {
+        try {
+          Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
+          log.info("Config loaded from the application classpath.")
+        } catch {
+          case e: ParseException => throw new IllegalStateException("'$AKKA_HOME/config/akka.conf' could not be found and no 'akka.conf' can be found on the classpath - aborting. . Either add it in the '$AKKA_HOME/config' directory or add it to the classpath.")
+        }
+      }
     val config = Configgy.config
     config.registerWithJmx("com.scalablesolutions.akka")
     // FIXME fix Configgy JMX subscription to allow management
@@ -108,19 +111,20 @@ object Kernel extends Logging {
   private[akka] def runApplicationBootClasses = {
     new management.RestfulJMXBoot // add the REST/JMX service
     val loader =
-      if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) getClass.getClassLoader
-      else if (HOME.isDefined) {
+      if (HOME.isDefined) {
         val CONFIG = HOME.get + "/config"
         val DEPLOY = HOME.get + "/deploy"
         val DEPLOY_DIR = new File(DEPLOY)
         if (!DEPLOY_DIR.exists) { log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1) }
         val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
+        //val toDeploy = DEPLOY_DIR.toURL :: (for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL)
         log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
         new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+      } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) { 
+        getClass.getClassLoader
       } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
     for (clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
-      log.info("--------------- LOADER [%s]", loader)
       loader.loadClass(clazz).newInstance
     }
     applicationLoader = Some(loader)
@@ -182,7 +186,7 @@ object Kernel extends Logging {
  (____  /__|_ \__|_ \(____  /
       \/     \/    \/     \/
 """)
-    log.info("     Running version " + config.getString("akka.version", "Awesome"))
+    log.info("     Running version " + VERSION)
     log.info("==============================")
   }
   

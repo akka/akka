@@ -47,7 +47,7 @@ object Management extends Logging {
   def getStats(reset: Boolean) = {
     var statistics = new ArrayBuffer[Tuple2[String, String]]
     statistics += (("current time", (System.currentTimeMillis / 1000).toString))
-    statistics += (("akka version", Kernel.version))
+    statistics += (("akka version", Kernel.VERSION))
     statistics += (("uptime", Kernel.uptime.toString))
     for ((key, value) <- Stats.getJvmStats) statistics += (key, value.toString)
     for ((key, value) <- Stats.getCounterStats) statistics += (key, value.toString)

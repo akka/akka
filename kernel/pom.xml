@@ -33,6 +33,11 @@
       <version>2.1</version>
     </dependency>
     <dependency>
+      <groupId>org.codehaus.aspectwerkz</groupId>
+      <artifactId>aspectwerkz-jdk5</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>scala-stats</artifactId>
       <version>1.0</version>
@@ -235,6 +240,41 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.dstovall</groupId>
+        <artifactId>onejar-maven-plugin</artifactId>
+        <version>1.4.1</version>
+        <executions>
+          <execution>
+            <configuration>
+              <mainClass>se.scalablesolutions.akka.kernel.Kernel</mainClass>
+              <onejarVersion>0.96</onejarVersion>
+              <attachToBuild>true</attachToBuild>
+              <classifier>onejar</classifier>
+            </configuration>
+            <goals>
+              <goal>one-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>../config</directory>
+        <includes>
+          <include>akka.conf</include>
+          <include>akka-reference.conf</include>
+        </includes>
+      </resource>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>META-INF/*</include>
+        </includes>
+      </resource>
+    </resources>
   </build>
 </project>
