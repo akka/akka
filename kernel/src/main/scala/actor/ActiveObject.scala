@@ -220,6 +220,7 @@ object ActiveObject {
   }
 
   private[kernel] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(target, false, true)
     actor.initialize(target, proxy)
@@ -230,6 +231,7 @@ object ActiveObject {
   }
 
   private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     actor.initialize(target.getClass, target)

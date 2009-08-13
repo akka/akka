@@ -105,6 +105,13 @@
       <version>1.0</version>
     </dependency>
 
+    <!-- For Mongo -->
+    <dependency>
+      <groupId>com.mongodb</groupId>
+      <artifactId>mongo</artifactId>
+      <version>0.6</version>
+    </dependency>
+
     <!-- For Cassandra -->
     <dependency>
       <groupId>org.apache.cassandra</groupId>
