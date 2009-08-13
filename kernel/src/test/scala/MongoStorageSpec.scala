@@ -193,6 +193,7 @@ class MongoStorageSpec extends TestCase {
     changeSetM += "5" -> Map(1 -> "dg", 2 -> "mc")
     MongoStorage.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
 
+    // specify start and count
     val l: List[Tuple2[AnyRef, AnyRef]] = 
       MongoStorage.getMapStorageRangeFor(
         "U-M1", Some(Integer.valueOf(2)), None, 3)
@@ -203,6 +204,61 @@ class MongoStorageSpec extends TestCase {
     assertEquals("4", l(1)._1.asInstanceOf[String])
     assertEquals(List(10, 20, 30), l(1)._2.asInstanceOf[List[Int]])
     
+    // specify start, finish and count where finish - start == count
+    assertEquals(3,
+      MongoStorage.getMapStorageRangeFor(
+        "U-M1", Some(Integer.valueOf(2)), Some(Integer.valueOf(5)), 3).size)
+
+    // specify start, finish and count where finish - start > count
+    assertEquals(3,
+      MongoStorage.getMapStorageRangeFor(
+        "U-M1", Some(Integer.valueOf(2)), Some(Integer.valueOf(9)), 3).size)
+
+    // do not specify start or finish 
+    assertEquals(3,
+      MongoStorage.getMapStorageRangeFor(
+        "U-M1", None, None, 3).size)
+
+    // specify finish and count 
+    assertEquals(3,
+      MongoStorage.getMapStorageRangeFor(
+        "U-M1", None, Some(Integer.valueOf(3)), 3).size)
+
+    // specify start, finish and count where finish < start
+    assertEquals(3,
+      MongoStorage.getMapStorageRangeFor(
+        "U-M1", Some(Integer.valueOf(2)), Some(Integer.valueOf(1)), 3).size)
+
+    changeSetM.clear
+  }
+
+  @Test
+  def testMapStorageRemove = {
+    fillMap
+    changeSetM += "5" -> Map(1 -> "dg", 2 -> "mc")
+
+    MongoStorage.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
+    assertEquals(5,
+      MongoStorage.getMapStorageSizeFor("U-M1"))
+
+    // remove key "3"
+    MongoStorage.removeMapStorageFor("U-M1", "3")
+    assertEquals(4,
+      MongoStorage.getMapStorageSizeFor("U-M1"))
+
+    try {
+      MongoStorage.getMapStorageEntryFor("U-M1", "3")
+      fail("should throw exception")
+    } catch { case e => {}}
+
+    // remove the whole stuff
+    MongoStorage.removeMapStorageFor("U-M1")
+
+    try {
+      MongoStorage.getMapStorageFor("U-M1")
+      fail("should throw exception")
+    } catch { case e: NoSuchElementException => {}}
+
     changeSetM.clear
   }
 

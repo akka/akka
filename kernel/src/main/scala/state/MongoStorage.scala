@@ -65,16 +65,22 @@ object MongoStorage extends MapStorage
   }
 
   override def removeMapStorageFor(name: String, key: AnyRef) = {
+    nullSafeFindOne(name) match {
+      case None => 
+      case Some(dbo) => {
+        val orig = dbo.get(VALUE).asInstanceOf[DBObject].toMap
+        orig.remove(key.asInstanceOf[String])
+
+        // remove existing reference
+        removeMapStorageFor(name)
+        // and insert
+        coll.insert(new BasicDBObject().append(KEY, name).append(VALUE, orig))
+      }
+    }
   }
   
   override def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
-    try {
-      getValueForKey(name, key.asInstanceOf[String])
-    } catch {
-      case e =>
-        e.printStackTrace
-        None
-    }
+    getValueForKey(name, key.asInstanceOf[String])
   }
   
   override def getMapStorageSizeFor(name: String): Int = {
@@ -104,7 +110,6 @@ object MongoStorage extends MapStorage
   override def getMapStorageRangeFor(name: String, start: Option[AnyRef], 
                             finish: Option[AnyRef], 
                             count: Int): List[Tuple2[AnyRef, AnyRef]] = {
-    // @fixme: currently ignores finish
     val m = 
       nullSafeFindOne(name) match {
         case None => 
@@ -112,9 +117,22 @@ object MongoStorage extends MapStorage
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
       }
-    val s = start.get.asInstanceOf[Int]
+
+    /**
+     * <tt>count</tt> is the max number of results to return. Start with 
+     * <tt>start</tt> or 0 (if <tt>start</tt> is not defined) and go until
+     * you hit <tt>finish</tt> or <tt>count</tt>.
+     */
+    val s = if (start.isDefined) start.get.asInstanceOf[Int] else 0
+    val cnt = 
+      if (finish.isDefined) {
+        val f = finish.get.asInstanceOf[Int]
+        if (f >= s) Math.min(count, (f - s)) else count
+      }
+      else count
+
     val n = 
-      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + count)
+      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
     val vals = 
       for(s <- n) 
         yield (s, serializer.in(m.get(s).asInstanceOf[Array[Byte]], None))
@@ -137,7 +155,7 @@ object MongoStorage extends MapStorage
     }
   }
   
-  def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
+  override def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
     val q = new BasicDBObject
     q.put(KEY, name)
     
