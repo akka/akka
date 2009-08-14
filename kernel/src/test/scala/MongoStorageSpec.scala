@@ -269,4 +269,38 @@ class MongoStorageSpec extends TestCase {
     changeSetM += "4" -> List(10, 20, 30)
     changeSetM
   }
+
+  @Test
+  def testRefStorage = {
+    MongoStorage.getRefStorageFor("U-R1") match {
+      case None =>
+      case Some(o) => fail("should be None")
+    }
+
+    val m = Map("1"->1, "2"->4, "3"->9)
+    MongoStorage.insertRefStorageFor("U-R1", m)
+    MongoStorage.getRefStorageFor("U-R1") match {
+      case None => fail("should not be empty")
+      case Some(r) => {
+        val a = r.asInstanceOf[Map[String, Int]]
+        assertEquals(a.size, 3)
+        assertEquals(a.get("1").get, 1)
+        assertEquals(a.get("2").get, 4)
+        assertEquals(a.get("3").get, 9)
+      }
+    }
+
+    // insert another one
+    // the previous one should be replaced
+    val b = List("100", "jonas")
+    MongoStorage.insertRefStorageFor("U-R1", b)
+    MongoStorage.getRefStorageFor("U-R1") match {
+      case None => fail("should not be empty")
+      case Some(r) => {
+        val a = r.asInstanceOf[List[String]]
+        assertEquals("100", a(0))
+        assertEquals("jonas", a(1))
+      }
+    }
+  }
 }

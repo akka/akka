@@ -25,3 +25,9 @@ trait VectorStorage extends Storage {
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef]
   def getVectorStorageSizeFor(name: String): Int 
 }
+
+// for Ref
+trait RefStorage extends Storage {
+  def insertRefStorageFor(name: String, element: AnyRef)
+  def getRefStorageFor(name: String): Option[AnyRef]
+}

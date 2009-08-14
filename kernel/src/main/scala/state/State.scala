@@ -54,6 +54,7 @@ class TransactionalState {
 
   def newPersistentRef(config: PersistentStorageConfig): TransactionalRef[AnyRef] = config match {
     case CassandraStorageConfig() => new CassandraPersistentTransactionalRef
+    case MongoStorageConfig() => new MongoPersistentTransactionalRef
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
@@ -514,9 +515,11 @@ class TransactionalRef[T] extends Transactional {
   }
 }
 
-class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
+abstract class TemplatePersistentTransactionalRef extends TransactionalRef[AnyRef] {
+  val storage: RefStorage
+
   override def commit = if (ref.isDefined) {
-    CassandraStorage.insertRefStorageFor(uuid, ref.get)
+    storage.insertRefStorageFor(uuid, ref.get)
     ref = None 
   }
 
@@ -524,7 +527,7 @@ class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
 
   override def get: Option[AnyRef] = {
     verifyTransaction
-    CassandraStorage.getRefStorageFor(uuid)
+    storage.getRefStorageFor(uuid)
   }
 
   override def isDefined: Boolean = get.isDefined
@@ -534,4 +537,12 @@ class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
     if (ref.isDefined) ref
     else default
   }
+}
+
+class CassandraPersistentTransactionalRef extends TemplatePersistentTransactionalRef {
+  val storage = CassandraStorage
+}
+
+class MongoPersistentTransactionalRef extends TemplatePersistentTransactionalRef {
+  val storage = MongoStorage
 }

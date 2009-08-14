@@ -8,7 +8,7 @@ import kernel.Kernel.config
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
 
 object MongoStorage extends MapStorage 
-    with VectorStorage with Logging {
+    with VectorStorage with RefStorage with Logging {
       
   // enrich with null safe findOne
   class RichDBCollection(value: DBCollection) {
@@ -254,5 +254,28 @@ object MongoStorage extends MapStorage
     val o = new BasicDBObject
     o.put(KEY, name)
     coll.findOneNS(o)
+  }
+
+  override def insertRefStorageFor(name: String, element: AnyRef) = {
+    nullSafeFindOne(name) match {
+      case None =>
+      case Some(dbo) => {
+        val q = new BasicDBObject
+        q.put(KEY, name)
+        coll.remove(q)
+      }
+    }
+    coll.insert(
+      new BasicDBObject()
+        .append(KEY, name)
+        .append(VALUE, serializer.out(element)))
+  }
+
+  override def getRefStorageFor(name: String): Option[AnyRef] = {
+    nullSafeFindOne(name) match {
+      case None => None
+      case Some(dbo) =>
+        Some(serializer.in(dbo.get(VALUE).asInstanceOf[Array[Byte]], None))
+    }
   }
 }

@@ -20,7 +20,8 @@ import org.apache.thrift.protocol._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object CassandraStorage extends MapStorage with VectorStorage with Logging {
+object CassandraStorage extends MapStorage 
+  with VectorStorage with RefStorage with Logging {
   val KEYSPACE = "akka"
   val MAP_COLUMN_PARENT = new ColumnParent("map", null)
   val VECTOR_COLUMN_PARENT = new ColumnParent("vector", null)
@@ -84,7 +85,7 @@ object CassandraStorage extends MapStorage with VectorStorage with Logging {
   // For Ref
   // ===============================================================
 
-  def insertRefStorageFor(name: String, element: AnyRef) = if (sessions.isDefined) {
+  override def insertRefStorageFor(name: String, element: AnyRef) = if (sessions.isDefined) {
     sessions.get.withSession {
       _ ++| (name,
         new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY),
@@ -94,7 +95,7 @@ object CassandraStorage extends MapStorage with VectorStorage with Logging {
     }
   } else throw new IllegalStateException("CassandraStorage is not started")
 
-  def getRefStorageFor(name: String): Option[AnyRef] = if (sessions.isDefined) {
+  override def getRefStorageFor(name: String): Option[AnyRef] = if (sessions.isDefined) {
     try {
       val column: Option[Column] = sessions.get.withSession {
         _ | (name, new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY))
