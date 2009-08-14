@@ -42,8 +42,9 @@
     <orderEntry type="library" exported="" name="Maven: javax.xml.stream:stax-api:1.0-2" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.activation:activation:1.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.xml.bind:jaxb-impl:2.1.6" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.CR1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.jboss.netty:netty:3.1.0.GA" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.apache:zookeeper:3.1.0" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.scala-tools:javautils:2.7.4-0.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-core-asl:1.1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.codehaus.jackson:jackson-mapper-asl:1.1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: sbinary:sbinary:0.3" level="project" />
@@ -54,6 +55,8 @@
     <orderEntry type="library" exported="" name="Maven: commons-collections:commons-collections:3.2.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: high-scale-lib:high-scale-lib:1.0" level="project" />
     <orderEntry type="library" exported="" name="Maven: commons-lang:commons-lang:2.4" level="project" />
+    <orderEntry type="library" exported="" name="Maven: se.foldleft:cassidy:0.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: commons-pool:commons-pool:1.5.1" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-comet-webserver:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-servlet-webserver:1.8.6.3" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.sun.grizzly:grizzly-http:1.8.6.3" level="project" />

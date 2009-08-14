@@ -26,7 +26,6 @@ class RemoteActorSpecActorBidirectional extends Actor {
 }
 
 class RemoteActorSpec extends TestCase {
-
   kernel.Kernel.config
   new Thread(new Runnable() {
      def run = {

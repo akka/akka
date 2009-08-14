@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--*****************************************************************************************************************************
+	AspectWerkz DTD 2.0
+
+This DTD is provided as is. Some elements might have been deprecated since 0.7.4  (see comments)
+
+This DTD might be incomplete - drop a mail on the user / dev mailing list
+
+This DTD might clash with some of existing XML files since it imposes for some elements an order
+(see aspect: introductions then pointcuts then advices)
+
+The "unspecified" order of the aspectwerkz childs might change to the one similar of aspects
+(transformation scope, introduction-def, advice-def, advices-def, abstract-aspect, aspect, package)
+
+To use this DTD, start your defintion file with
+	<!DOCTYPE aspectwerkz PUBLIC
+	    "-//AspectWerkz//DTD 2.0//EN"
+	    "http://aspectwerkz.codehaus.org/dtd/aspectwerkz_2_0.dtd">
+
+You can also use the "aliasing DTD" that matchs always the latest release of AspectWerkz
+<!DOCTYPE aspectwerkz PUBLIC
+    "-//AspectWerkz//DTD//EN"
+    "http://aspectwerkz.codehaus.org/dtd/aspectwerkz2.dtd">
+
+To not use this DTD, start your definition file with
+	<?xml version="1.0"?>
+
+Change from 1.0 to 2.0
+    most of the changes implies non backward compatibility
+    aspect/introduce element only allows to introduce interface. Use new <mixin element.
+    introduce@deploymentModel is removed
+    new system/mixin top level element
+    deployment-scope
+    advisable
+******************************************************************************************************************************-->
+
+
+<!--*****************************************************************************************************************************
+aspectwerkz
+*********************************************************************************************************************************
+Aspectwerkz defines the root element
+One system defines a namespace. Usually systems are used with several aop.xml file to isolate system
+following classloader hierarchies.
+******************************************************************************************************************************-->
+<!ELEMENT aspectwerkz (system*)>
+<!--*****************************************************************************************************************************
+system
+*********************************************************************************************************************************
+System allows isolation of AspectWerkz model
+For now we only support a single system.
+A system contains use-aspect syntax OR *-def *-ref syntax. The DTD cannot represent that.
+Attributes:
+    id: unique name of the AspectWerkz system (replaces <aspectwerkz id=..> in 0.8.1 DTD)
+    base-package: provides the global package prefix
+Notes:
+    Due to package nesting, we cannot define an order here
+******************************************************************************************************************************-->
+<!ELEMENT system (
+    (exclude | include | prepare | pointcut | deployment-scope | advisable)*,
+    (aspect | mixin | package)*
+)>
+<!ATTLIST system
+id CDATA #REQUIRED
+base-package CDATA #IMPLIED
+>
+<!--*****************************************************************************************************************************
+exclude
+*********************************************************************************************************************************
+Declares one global package prefix. Any class in the scope cannot have aspects on it within this system
+Attributes:
+	package: package prefix
+Note: package does not support pattern, excepted ending ".*" like "foo.*", which is equivalent to "foo."
+During weaving, a class is considered to be in the transformation scope with a classFQN.startsWith( ) test.
+Note: if a class is both in exclude and include, it is considered excluded.
+******************************************************************************************************************************-->
+<!ELEMENT exclude EMPTY>
+<!ATTLIST exclude
+package CDATA #REQUIRED
+>
+<!--*****************************************************************************************************************************
+include
+*********************************************************************************************************************************
+Declares one global package prefix. Any class not in the scope cannot have aspects on it within this system
+Attributes:
+	package: package prefix
+Note: package does not support pattern, excepted ending ".*" like "foo.*", which is equivalent to "foo."
+During weaving, a class is considered to be in the transformation scope with a classFQN.startsWith( ) test.
+******************************************************************************************************************************-->
+<!ELEMENT include EMPTY>
+<!ATTLIST include
+package CDATA #REQUIRED
+>
+<!--*****************************************************************************************************************************
+prepare
+*********************************************************************************************************************************
+deprecated
+******************************************************************************************************************************-->
+<!ELEMENT prepare EMPTY>
+<!ATTLIST prepare
+package CDATA #REQUIRED
+>
+<!--*****************************************************************************************************************************
+package
+*********************************************************************************************************************************
+Declares a package prefix which applies to all FQN (aspect) and patterns (pointcuts, class)
+contained in the package element.
+TODO REMOVE or IMPL - Package elements can be nested to ease writing of package and subpackage
+TODO REMOVE or IMPL - (package@name "bar" nested in package@name "foo" means "foo.bar").
+Attributes:
+	name: package prefix
+Notes:
+    Does not support pattern, excepted ending ".*" like "foo.*" which is equivalent to "foo." and to "foo"
+******************************************************************************************************************************-->
+<!ELEMENT package (
+    (aspect | mixin)*
+)>
+<!ATTLIST package
+name CDATA #REQUIRED
+>
+<!--*****************************************************************************************************************************
+aspect
+*********************************************************************************************************************************
+Declares aspect.
+Attributes:
+    name: unique name of the aspect in the system. Defaults to FQN (see class)
+    class: FQN of Aspect (can have metdata or not)
+    container: FQN of AspectContainer, defaults to regular org.codehaus.aspectwerkz.aspect.DefaultAspectContainerStrategy
+    deployment-model: aspect life cycle, defaults to perJVM
+        valid values are: perJVM | perClass | perInstance | perthis(...pc expr) | pertarget(...pc expr)
+******************************************************************************************************************************-->
+<!ELEMENT aspect (
+    param*,
+    (pointcut | deployment-scope | advice | introduce)*
+ )>
+<!ATTLIST aspect
+name CDATA #IMPLIED
+class CDATA #REQUIRED
+container CDATA #IMPLIED
+deployment-model CDATA #IMPLIED
+>
+<!--*****************************************************************************************************************************
+param
+*********************************************************************************************************************************
+Declares param for a aspect element
+******************************************************************************************************************************-->
+<!ELEMENT param EMPTY>
+<!ATTLIST param
+name CDATA #REQUIRED
+value CDATA #REQUIRED
+>
+<!--*****************************************************************************************************************************
+pointcut
+*********************************************************************************************************************************
+Attributes:
+	name
+	expression (required unless element data is used)
+Element data: equivalent to expression, but ignored if pointcut@expression is already specified
+******************************************************************************************************************************-->
+<!ELEMENT pointcut (#PCDATA)>
+<!ATTLIST pointcut
+name CDATA #REQUIRED
+expression CDATA #IMPLIED
+>
+<!--*****************************************************************************************************************************
+deployment-scope
+*********************************************************************************************************************************
+Attributes:
+	name
+	expression (required unless element data is used)
+Element data: equivalent to expression, but ignored if deployment-scope@expression is already specified
+******************************************************************************************************************************-->
+<!ELEMENT deployment-scope (#PCDATA)>
+<!ATTLIST deployment-scope
+name CDATA #REQUIRED
+expression CDATA #IMPLIED
+>
+<!--*****************************************************************************************************************************
+advisable
+*********************************************************************************************************************************
+Attributes:
+	pointcut-type: the pointcut type: call, get, set, execution, handler, all, or any piped list like get|set
+	expression: the pointcut expression, can be within/withincode/or more fine grained, as long as consistent with pointcut-type
+******************************************************************************************************************************-->
+<!ELEMENT advisable EMPTY>
+<!ATTLIST advisable
+pointcut-type CDATA #REQUIRED
+expression CDATA #REQUIRED
+>
+<!--*****************************************************************************************************************************
+advice
+*********************************************************************************************************************************
+Allow for advice declaration for use in several aspects
+Use nested bind-to element for multiple binding
+Attributes:
+	name: method name implementing the advice
+	type: advice type (around | before | after | after finally | after returning | after throwing), "after xxx(TYPE varName)"
+    bind-to: pointcut expression
+******************************************************************************************************************************-->
+<!ELEMENT advice (
+    bind-to*
+)>
+<!ATTLIST advice
+name CDATA #REQUIRED
+type CDATA #REQUIRED
+bind-to CDATA #IMPLIED
+attribute CDATA #IMPLIED
+>
+<!--*****************************************************************************************************************************
+bind-to
+*********************************************************************************************************************************
+Allow to bind an advice several times instead of using an OR expression
+******************************************************************************************************************************-->
+<!ELEMENT bind-to EMPTY>
+<!ATTLIST bind-to
+pointcut CDATA #REQUIRED
+>
+<!--*****************************************************************************************************************************
+introduce
+*********************************************************************************************************************************
+Attributes:
+    class: interface introduction only
+    bind-to: pointcut expression (only within/hasField/hasMethod makes sense)
+******************************************************************************************************************************-->
+<!ELEMENT introduce (
+    bind-to*
+)>
+<!ATTLIST introduce
+class CDATA #REQUIRED
+bind-to CDATA #IMPLIED
+>
+<!--*****************************************************************************************************************************
+mixin
+*********************************************************************************************************************************
+Declares mixin.
+Attributes:
+    class: FQN of mixin
+    bind-to: pointcut where to bind the mixin, optional (can be specified in annotations)
+    deployment-model: mixin life cycle, defaults to perInstance
+    transient: true | false, defaults to false, to control mixin persistence alongside target instances
+    factory: FQN of MixinFactory, implements org.codehaus.aspectwerkz.aspect.MixinFactory, defaults to regular DefaultMixinFactory
+    TODO nested pc + package support ??
+Elements:
+    param: name value pairs
+******************************************************************************************************************************-->
+<!ELEMENT mixin (param*)>
+<!ATTLIST mixin
+class CDATA #REQUIRED
+bind-to CDATA #IMPLIED
+deployment-model (perClass | perInstance | perJVM) #IMPLIED
+transient (false | true) #IMPLIED
+factory CDATA #IMPLIED
+>

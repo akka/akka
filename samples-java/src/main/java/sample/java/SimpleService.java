@@ -29,7 +29,7 @@ public class SimpleService {
 
   private boolean hasStartedTicking = false;
   private TransactionalState factory = new TransactionalState();
-  private TransactionalMap<String, Object> storage = factory.newPersistentMap(new CassandraStorageConfig());
+  private TransactionalMap<Object, Object> storage = factory.newPersistentMap(new CassandraStorageConfig());
 
   @GET
   @Produces({"application/json"})

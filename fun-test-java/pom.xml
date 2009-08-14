@@ -10,15 +10,15 @@
 
   <parent>
     <artifactId>akka</artifactId>
-    <groupId>${akka.groupId}</groupId>
-    <version>${akka.version}</version>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <version>0.5</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>${akka.groupId}</groupId>
       <artifactId>akka-kernel</artifactId>
-      <version>${akka.version}</version>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.5</version>
     </dependency>
     <dependency>
       <groupId>com.sun.grizzly</groupId>
@@ -65,7 +65,7 @@
   </dependencies>
 
   <build>
-    <sourceDirectory>src/main</sourceDirectory>
+    <sourceDirectory>src/main/java</sourceDirectory>
     <testSourceDirectory>src/test/java</testSourceDirectory>
     <plugins>
       <plugin>
@@ -84,7 +84,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>**/Abstract*</exclude>
+            <exclude>**/*Persistent*</exclude>
           </excludes>
         </configuration>
       </plugin>

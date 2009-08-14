@@ -18,7 +18,7 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
   <body>
     <release version="0.6" date="" description="">
       <action dev="Debasish Ghosh" type="add">MongoDB as Akka storage backend </action>
-      <action dev="Tim Perrett" type="add">Support for using the Lift Web framework 
+      <action dev="Tim Perrett" type="add">Support for using the Lift Web framework with Actors</action>
       <action dev="Viktor Klang" type="add">Support for using Scala XML tags in RESTful Actors (scala-jersey)</action>
       <action dev="Viktor Klang" type="add">Support for Comet Actors using Atmosphere</action>
       <action dev="Jonas Bon&#233;r" type="add">Statistics recorder with JMX and REST APIs</action>

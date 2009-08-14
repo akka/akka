@@ -37,7 +37,7 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(10)
     val key = "key"
-    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher
+    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
             .setMaxPoolSize(4)
@@ -76,7 +76,7 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
     val handlersBarrier = new CyclicBarrier(3)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher
+    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
             .setMaxPoolSize(4)
@@ -121,7 +121,7 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
     val handleLatch = new CountDownLatch(200)
     val key1 = "key1"
     val key2 = "key2"
-    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher
+    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
             .setMaxPoolSize(4)

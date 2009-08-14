@@ -49,13 +49,13 @@ class DispatcherFactory {
    * Creates an event based dispatcher serving multiple (millions) of actors through a thread pool.
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newEventBasedThreadPoolDispatcher = new EventBasedThreadPoolDispatcher
-  def newConcurrentEventBasedThreadPoolDispatcher = new EventBasedThreadPoolDispatcher(true)
+  def newEventBasedThreadPoolDispatcher(name: String) = new EventBasedThreadPoolDispatcher(name)
+  def newConcurrentEventBasedThreadPoolDispatcher(name: String) = new EventBasedThreadPoolDispatcher(name, true)
 
   /**
    * Creates an event based dispatcher serving multiple (millions) of actors through a single thread.
    */
-  def newEventBasedSingleThreadDispatcher = new EventBasedSingleThreadDispatcher
+  def newEventBasedSingleThreadDispatcher(name: String) = new EventBasedSingleThreadDispatcher(name)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.

@@ -18,6 +18,7 @@ abstract class PersistentStorageConfig  extends TransactionalStateConfig
 case class CassandraStorageConfig extends PersistentStorageConfig
 case class TerracottaStorageConfig extends PersistentStorageConfig
 case class TokyoCabinetStorageConfig extends PersistentStorageConfig
+case class MongoStorageConfig extends PersistentStorageConfig
 
 /**
  * Scala API.
@@ -39,14 +40,16 @@ object TransactionalState extends TransactionalState
  * </pre>
  */
 class TransactionalState {
-  def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[String, AnyRef] = config match {
+  def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[AnyRef, AnyRef] = config match {
     case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
+    case MongoStorageConfig() => new MongoPersistentTransactionalMap
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
   def newPersistentVector(config: PersistentStorageConfig): TransactionalVector[AnyRef] = config match {
     case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
+    case MongoStorageConfig() => new MongoPersistentTransactionalVector
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
@@ -142,7 +145,7 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
   // FIXME: need to handle remove in another changeSet
   protected[kernel] val changeSet = new HashMap[K, V]
 
-  def getRange(start: Int, count: Int)
+  def getRange(start: Option[AnyRef], count: Int)
 
   def begin
   def commit
@@ -155,27 +158,38 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
     None // always return None to speed up writes (else need to go to DB to get
   }
 
-  override def remove(key: K) = {
-    verifyTransaction
-    changeSet -= key
-  }
-
   override def -=(key: K) = remove(key)
 
   override def update(key: K, value: V) = put(key, value)
 }
 
 /**
- * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
+ * Implementation of <tt>PersistentTransactionalMap</tt> for every concrete 
+ * storage will have the same workflow. This abstracts the workflow.
+ *
+ * Subclasses just need to provide the actual concrete instance for the
+ * abstract val <tt>storage</tt>.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[String, AnyRef] {
+abstract class TemplatePersistentTransactionalMap extends PersistentTransactionalMap[AnyRef, AnyRef] {
 
-  override def getRange(start: Int, count: Int) = {
+  // to be concretized in subclasses
+  val storage: MapStorage
+
+  override def remove(key: AnyRef) = {
+    verifyTransaction
+    if (changeSet.contains(key)) changeSet -= key
+    else storage.removeMapStorageFor(uuid, key)
+  }
+
+  override def getRange(start: Option[AnyRef], count: Int) =
+    getRange(start, None, count)
+
+  def getRange(start: Option[AnyRef], finish: Option[AnyRef], count: Int) = {
     verifyTransaction
     try {
-      CassandraStorage.getMapStorageRangeFor(uuid, start, count)
+      storage.getMapStorageRangeFor(uuid, start, finish, count)
     } catch {
       case e: Exception => Nil
     }
@@ -183,7 +197,7 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
 
   // ---- For Transactional ----
   override def commit = {
-    CassandraStorage.insertMapStorageEntriesFor(uuid, changeSet.toList)
+    storage.insertMapStorageEntriesFor(uuid, changeSet.toList)
     changeSet.clear
   }
 
@@ -191,16 +205,16 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   override def clear = {
     verifyTransaction
     try {
-      CassandraStorage.removeMapStorageFor(uuid)
+      storage.removeMapStorageFor(uuid)
     } catch {
       case e: Exception => {}
     }
   }
 
-  override def contains(key: String): Boolean = {
+  override def contains(key: AnyRef): Boolean = {
     try {
       verifyTransaction
-      CassandraStorage.getMapStorageEntryFor(uuid, key).isDefined
+      storage.getMapStorageEntryFor(uuid, key).isDefined
     } catch {
       case e: Exception => false
     }
@@ -209,19 +223,19 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
   override def size: Int = {
     verifyTransaction
     try {
-      CassandraStorage.getMapStorageSizeFor(uuid)
+      storage.getMapStorageSizeFor(uuid)
     } catch {
       case e: Exception => 0
     }
   }
 
   // ---- For scala.collection.mutable.Map ----
-  override def get(key: String): Option[AnyRef] = {
+  override def get(key: AnyRef): Option[AnyRef] = {
     verifyTransaction
    // if (changeSet.contains(key)) changeSet.get(key)
    // else {
       val result = try {
-        CassandraStorage.getMapStorageEntryFor(uuid, key)
+        storage.getMapStorageEntryFor(uuid, key)
       } catch {
         case e: Exception => None
       }
@@ -229,16 +243,16 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
     //}
   }
   
-  override def elements: Iterator[Tuple2[String, AnyRef]]  = {
+  override def elements: Iterator[Tuple2[AnyRef, AnyRef]]  = {
     //verifyTransaction
-    new Iterator[Tuple2[String, AnyRef]] {
-      private val originalList: List[Tuple2[String, AnyRef]] = try {
-        CassandraStorage.getMapStorageFor(uuid)
+    new Iterator[Tuple2[AnyRef, AnyRef]] {
+      private val originalList: List[Tuple2[AnyRef, AnyRef]] = try {
+        storage.getMapStorageFor(uuid)
       } catch {
         case e: Throwable => Nil
       }
       private var elements = originalList.reverse
-      override def next: Tuple2[String, AnyRef]= synchronized {
+      override def next: Tuple2[AnyRef, AnyRef]= synchronized {
         val element = elements.head
         elements = elements.tail
         element
@@ -246,6 +260,25 @@ class CassandraPersistentTransactionalMap extends PersistentTransactionalMap[Str
       override def hasNext: Boolean = synchronized { !elements.isEmpty }
     }
   }
+}
+
+
+/**
+ * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
+ */
+class CassandraPersistentTransactionalMap extends TemplatePersistentTransactionalMap {
+  val storage = CassandraStorage
+}
+
+/**
+ * Implements a persistent transactional map based on the MongoDB distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
+ */
+class MongoPersistentTransactionalMap extends TemplatePersistentTransactionalMap {
+  val storage = MongoStorage
 }
 
 /**
@@ -344,27 +377,32 @@ abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
 }
 
 /**
- * Implements a persistent transactional vector based on the Cassandra distributed P2P key-value storage.
+ * Implements a template for a concrete persistent transactional vector based storage.
  *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class CassandraPersistentTransactionalVector extends PersistentTransactionalVector[AnyRef] {
+abstract class TemplatePersistentTransactionalVector extends PersistentTransactionalVector[AnyRef] {
+
+  val storage: VectorStorage
 
   // ---- For TransactionalVector ----
   override def get(index: Int): AnyRef = {
     verifyTransaction
     if (changeSet.size > index) changeSet(index)
-    else CassandraStorage.getVectorStorageEntryFor(uuid, index)
+    else storage.getVectorStorageEntryFor(uuid, index)
   }
 
-  override def getRange(start: Int, count: Int): List[AnyRef] = {
+  override def getRange(start: Int, count: Int): List[AnyRef] =
+    getRange(Some(start), None, count)
+  
+  def getRange(start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
     verifyTransaction
-    CassandraStorage.getVectorStorageRangeFor(uuid, start, count)
+    storage.getVectorStorageRangeFor(uuid, start, finish, count)
   }
 
   override def length: Int = {
     verifyTransaction
-    CassandraStorage.getVectorStorageSizeFor(uuid)
+    storage.getVectorStorageSizeFor(uuid)
   }
 
   override def apply(index: Int): AnyRef = get(index)
@@ -381,9 +419,27 @@ class CassandraPersistentTransactionalVector extends PersistentTransactionalVect
   // ---- For Transactional ----
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
-    for (element <- changeSet) CassandraStorage.insertVectorStorageEntryFor(uuid, element)
+    for (element <- changeSet) storage.insertVectorStorageEntryFor(uuid, element)
     changeSet.clear
   }
+}
+
+/**
+ * Implements a persistent transactional vector based on the Cassandra distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
+ */
+class CassandraPersistentTransactionalVector extends TemplatePersistentTransactionalVector {
+  val storage = CassandraStorage
+}
+
+/**
+ * Implements a persistent transactional vector based on the MongoDB distributed P2P key-value storage.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
+ */
+class MongoPersistentTransactionalVector extends TemplatePersistentTransactionalVector {
+  val storage = MongoStorage
 }
 
 /**
