@@ -1,0 +1,45 @@
+<!-- mini guide
+<action
+invoke with 'mvn changes:changes-report'
+dev="Name of developer who committed the change"
+type="add|fix|remove|update"
+issue="(optional) Id of the issue related to this change"
+due-to="(optional)Name of the person 'non-committer' to be credited for this change"
+>
+description
+</action>
+see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
+-->
+<document>
+  <properties>
+    <title>Akka Release Notes</title>
+    <author></author>
+  </properties>
+  <body>
+    <release version="0.6" date="" description="">
+      <action dev="Debasish Ghosh" type="add">MongoDB as Akka storage backend </action>
+      <action dev="Tim Perrett" type="add">Support for using the Lift Web framework 
+      <action dev="Viktor Klang" type="add">Support for using Scala XML tags in RESTful Actors (scala-jersey)</action>
+      <action dev="Viktor Klang" type="add">Support for Comet Actors using Atmosphere</action>
+      <action dev="Jonas Bon&#233;r" type="add">Statistics recorder with JMX and REST APIs</action>
+      <action dev="Jonas Bon&#233;r" type="add">Management service with JMX and REST APIs</action>
+      <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Java objects (using Jackson)</action>
+      <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using scala-json)</action>
+      <action dev="Jonas Bon&#233;r" type="add">Protobuf serialization for Java and Scala objects</action>
+      <action dev="Jonas Bon&#233;r" type="add">SBinary serialization for Scala objects</action>
+      <action dev="Jonas Bon&#233;r" type="add">Protobuf as remote protocol</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added CassandraSession API (with socket pooling) wrapping Cassandra's Thrift API in Scala and Java APIs</action>
+      <action dev="Jonas Bon&#233;r" type="add">CassandraStorage is now works with external Cassandra cluster</action>
+      <action dev="Jonas Bon&#233;r" type="remove">Removed embedded Cassandra mode</action>
+      <action dev="Jonas Bon&#233;r" type="add">ActorRegistry for retrieving Actor instances</action>
+      <action dev="Jonas Bon&#233;r" type="fix">Concurrent mode is now per actor basis</action>
+      <action dev="Jonas Bon&#233;r" type="fix">Made Akka Web App aware, does not require AKKA_HOME when using it as a library</action>
+      <action dev="Jonas Bon&#233;r" type="fix">Fixed dispatcher bug</action>
+      <action dev="Jonas Bon&#233;r" type="fix">Cleaned up Maven scripts and distribution in general</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added mailing list: akka-user@googlegroups.com</action>
+      <action dev="Jonas Bon&#233;r" type="add">Improved and restructured documentation</action>
+      <action dev="Jonas Bon&#233;r" type="add">New URL: http://akkasource.org</action>
+    </release>
+    <release version="0.5" date="2009-07-12" description="First public release" />
+  </body>
+</document>
