@@ -7,12 +7,12 @@
   <name>Akka Actor Kernel</name>
   <artifactId>akka</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
-  <version>0.5</version>
+  <version>0.6</version>
   <inceptionYear>2009</inceptionYear>
   <packaging>pom</packaging>
 
   <properties>
-    <akka.version>0.5</akka.version>
+    <akka.version>0.6</akka.version>
     <akka.groupId>se.scalablesolutions.akka</akka.groupId>
     <scala.version>2.7.5</scala.version>
   </properties>

@@ -11,7 +11,7 @@
   <parent>
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.5</version>
+    <version>0.6</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -20,7 +20,7 @@
     <dependency>
       <artifactId>akka-util-java</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.5</version>
+      <version>0.6</version>
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>

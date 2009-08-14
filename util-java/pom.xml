@@ -10,7 +10,7 @@
   <parent>
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.5</version>
+    <version>0.6</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
