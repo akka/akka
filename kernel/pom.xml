@@ -11,7 +11,8 @@
   <parent>
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.5</version>
+    <version>0.6</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <!-- Core deps -->
@@ -19,7 +20,7 @@
     <dependency>
       <artifactId>akka-util-java</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.5</version>
+      <version>0.6</version>
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
@@ -32,14 +33,19 @@
       <version>2.1</version>
     </dependency>
     <dependency>
+      <groupId>org.codehaus.aspectwerkz</groupId>
+      <artifactId>aspectwerkz-jdk5</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>scala-stats</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
       <groupId>net.lag</groupId>
       <artifactId>configgy</artifactId>
       <version>1.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.guiceyfruit</groupId>
-      <artifactId>guiceyfruit-core</artifactId>
-      <version>2.0</version>
     </dependency>
     <dependency>
       <groupId>org.guiceyfruit</groupId>
@@ -105,7 +111,7 @@
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>cassandra</artifactId>
-      <version>0.4.0-dev</version>
+      <version>0.4.0-trunk</version>
     </dependency>
     <dependency>
       <groupId>com.facebook</groupId>
@@ -118,32 +124,12 @@
       <version>1.0</version>
     </dependency>
     <dependency>
-      <groupId>commons-collections</groupId>
-      <artifactId>commons-collections</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>high-scale-lib</groupId>
-      <artifactId>high-scale-lib</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>2.4</version>
-    </dependency>
-    <dependency>
-      <groupId>se.foldleft</groupId>
-      <artifactId>cassidy</artifactId>
-      <version>0.1</version>
-    </dependency>
-    <dependency>
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
       <version>1.5.1</version>
     </dependency>
 
-    <!-- For Jersey -->
+    <!-- For Jersey & Atmosphere -->
     <dependency>
       <groupId>com.sun.grizzly</groupId>
       <artifactId>grizzly-comet-webserver</artifactId>
@@ -214,73 +200,40 @@
       <version>0.9.5</version>
       <scope>test</scope>
     </dependency>
-    <!--dependency>
-        <groupId>com.jteigen.scalatest</groupId>
-        <artifactId>junit4runner</artifactId>
-        <version>1.0</version>
-        <scope>test</scope>
-        </dependency-->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.5</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-client</artifactId>
-      <version>1.1.0-ea</version>
-    </dependency>
   </dependencies>
 
   <build>
-    <sourceDirectory>src/main/scala</sourceDirectory>
-    <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
       <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.2-beta-2</version>
         <executions>
           <execution>
+            <id>create-executable-jar</id>
+            <phase>install</phase>
             <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
+              <goal>single</goal>
             </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>
+                  jar-with-dependencies
+                </descriptorRef>
+              </descriptorRefs>
+              <archive>
+                <manifest>
+                  <mainClass>se.scalablesolutions.akka.kernel.Kernel</mainClass>
+                </manifest>
+              </archive>
+           </configuration>
           </execution>
         </executions>
-        <configuration>
-          <args>
-            <arg>-target:jvm-1.5</arg>
-            <!--<arg>-unchecked</arg>-->
-          </args>
-          <scalaVersion>2.7.5</scalaVersion>
-          <vscaladocVersion>1.1</vscaladocVersion>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <configuration>
-          <downloadSources>true</downloadSources>
-          <buildcommands>
-            <buildcommand>
-              ch.epfl.lamp.sdt.core.scalabuilder
-            </buildcommand>
-          </buildcommands>
-          <additionalProjectnatures>
-            <projectnature>
-              ch.epfl.lamp.sdt.core.scalanature
-            </projectnature>
-          </additionalProjectnatures>
-          <classpathContainers>
-            <classpathContainer>
-              org.eclipse.jdt.launching.JRE_CONTAINER
-            </classpathContainer>
-            <classpathContainer>
-              ch.epfl.lamp.sdt.launching.SCALA_CONTAINER
-            </classpathContainer>
-          </classpathContainers>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -289,8 +242,8 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-kernel-${akka.version}.jar"
-                      tofile="../lib/akka-kernel-${akka.version}.jar"/>
+                <copy file="target/akka-kernel-${akka.version}-jar-with-dependencies.jar"
+                      tofile="../dist/akka-${akka.version}.jar"/>
               </tasks>
             </configuration>
             <goals>
@@ -303,30 +256,19 @@
     <resources>
       <resource>
         <filtering>false</filtering>
-        <directory>src/main/resources</directory>
+        <directory>../config</directory>
+        <includes>
+          <include>akka.conf</include>
+          <include>akka-reference.conf</include>
+        </includes>
       </resource>
       <resource>
         <filtering>false</filtering>
-        <directory>src/main/scala</directory>
+        <directory>src/main/resources</directory>
         <includes>
-          <include>**</include>
+          <include>META-INF/*</include>
         </includes>
-        <excludes>
-          <exclude>**/*.scala</exclude>
-        </excludes>
       </resource>
     </resources>
   </build>
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <configuration>
-          <vscaladocVersion>1.1</vscaladocVersion>
-          <scalaVersion>${scala.version}</scalaVersion>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
 </project>

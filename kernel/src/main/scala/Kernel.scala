@@ -14,40 +14,44 @@ import java.net.URLClassLoader
 
 import net.lag.configgy.{Config, Configgy, RuntimeEnvironment, ParseException}
 
-import kernel.jersey.AkkaCometServlet
+import kernel.rest.AkkaCometServlet
 import kernel.nio.RemoteServer
 import kernel.state.CassandraStorage
 import kernel.util.Logging
+import kernel.management.Management
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
-  @volatile private var hasBooted = false
-
+  val VERSION = "0.6"
   val HOME = {
     val home = System.getenv("AKKA_HOME")
-    if (home == null || home == "") None 
+    if (home == null) None
     else Some(home)
   }
 
   val config = setupConfig
+  
+  val CONFIG_VERSION = config.getString("akka.version", "0")
+  if (VERSION != CONFIG_VERSION) throw new IllegalStateException("Akka JAR version [" + VERSION + "] is different than the provided config ('akka.conf') version [" + CONFIG_VERSION + "]")
 
   val BOOT_CLASSES = config.getList("akka.boot")
-
   val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
+  val RUN_MANAGEMENT_SERVICE = config.getBool("akka.management.service", true)
   val STORAGE_SYSTEM = config.getString("akka.storage.system", "cassandra")
-
   val RUN_REST_SERVICE = config.getBool("akka.rest.service", true)
   val REST_HOSTNAME = kernel.Kernel.config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
   val REST_PORT = kernel.Kernel.config.getInt("akka.rest.port", 9998)
 
   // FIXME add API to shut server down gracefully
+  @volatile private var hasBooted = false
   private var remoteServer: RemoteServer = _
   private var jerseySelectorThread: SelectorThread = _
   private val startTime = System.currentTimeMillis
-
+  private var applicationLoader: Option[ClassLoader] = None
+  
   def main(args: Array[String]) = boot
 
   def boot = synchronized {
@@ -55,21 +59,24 @@ object Kernel extends Logging {
       printBanner
       log.info("Starting Akka...")
 
+      runApplicationBootClasses
+
       if (RUN_REMOTE_SERVICE) startRemoteService
+      if (RUN_MANAGEMENT_SERVICE) startManagementService
 
       STORAGE_SYSTEM match {
         case "cassandra" =>     startCassandra
         case "terracotta" =>    throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
+        case "mongodb" =>       throw new UnsupportedOperationException("mongodb storage backend is not yet supported")
         case "redis" =>         throw new UnsupportedOperationException("redis storage backend is not yet supported")
         case "voldemort" =>     throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
         case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
         case _ =>               throw new UnsupportedOperationException("Unknown storage system [" + STORAGE_SYSTEM + "]")
       }
 
-      if (RUN_REST_SERVICE) startJersey
+      if (RUN_REST_SERVICE) startREST
 
-      runApplicationBootClasses
-
+      Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
       log.info("Akka started successfully")
       hasBooted = true
     }
@@ -78,52 +85,62 @@ object Kernel extends Logging {
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
   def setupConfig: Config = {
-    try {
-      Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
-      log.info("Config loaded from the application classpath.")
-    } catch {
-      case e: ParseException =>
+      if (HOME.isDefined) {
         try {
-          if (HOME.isDefined) {
-            val configFile = HOME.get + "/config/akka.conf"
-            log.info("AKKA_HOME is defined to [%s], loading config from [%s].", HOME.get, configFile)
-            Configgy.configure(configFile)
-          } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+          val configFile = HOME.get + "/config/akka.conf"
+          Configgy.configure(configFile)
+          log.info("AKKA_HOME is defined to [%s], config loaded from [%s].", HOME.get, configFile)
         } catch {
-          case e: ParseException => throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+          case e: ParseException => throw new IllegalStateException("'akka.conf' config file can not be found in [" + HOME + "/config/akka.conf] - aborting. Either add it in the 'config' directory or add it to the classpath.")
         }
-    }
-    //val runtime = new RuntimeEnvironment(getClass)
-    //runtime.load(args)
+      } else {
+        try {
+          Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
+          log.info("Config loaded from the application classpath.")
+        } catch {
+          case e: ParseException => throw new IllegalStateException("'$AKKA_HOME/config/akka.conf' could not be found and no 'akka.conf' can be found on the classpath - aborting. . Either add it in the '$AKKA_HOME/config' directory or add it to the classpath.")
+        }
+      }
     val config = Configgy.config
-    config.registerWithJmx("com.scalablesolutions.akka.config")
+    config.registerWithJmx("com.scalablesolutions.akka")
     // FIXME fix Configgy JMX subscription to allow management
     // config.subscribe { c => configure(c.getOrElse(new Config)) }
     config
   }
 
-  private[akka] def runApplicationBootClasses: Unit = {
+  private[akka] def runApplicationBootClasses = {
+    new management.RestfulJMXBoot // add the REST/JMX service
     val loader =
-      if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) getClass.getClassLoader
-      else if (HOME.isDefined) {
+      if (HOME.isDefined) {
         val CONFIG = HOME.get + "/config"
         val DEPLOY = HOME.get + "/deploy"
         val DEPLOY_DIR = new File(DEPLOY)
         if (!DEPLOY_DIR.exists) { log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1) }
         val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
+        //val toDeploy = DEPLOY_DIR.toURL :: (for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL)
         log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
         new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+      } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) { 
+        getClass.getClassLoader
       } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
     for (clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
+    applicationLoader = Some(loader)
   }
   
   private[akka] def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
-    val remoteServerThread = new Thread(new Runnable() { def run = RemoteServer.start }, "akka remote service")
+    val remoteServerThread = new Thread(new Runnable() {
+       def run = RemoteServer.start(applicationLoader)
+    }, "Akka Remote Service")
     remoteServerThread.start
+  }
+
+  private[akka] def startManagementService = {
+    Management("se.scalablesolutions.akka.management")
+    log.info("Management service started successfully.")
   }
 
   private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
@@ -133,7 +150,7 @@ object Kernel extends Logging {
     CassandraStorage.start
   }
 
-  private[akka] def startJersey = {
+  private[akka] def startREST = {
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
 
     val scheme = uri.getScheme
@@ -169,7 +186,7 @@ object Kernel extends Logging {
  (____  /__|_ \__|_ \(____  /
       \/     \/    \/     \/
 """)
-    log.info("     Running version " + config.getString("akka.version", "Awesome"))
+    log.info("     Running version " + VERSION)
     log.info("==============================")
   }
   

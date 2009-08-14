@@ -49,7 +49,7 @@ class ThreadBasedDispatcherTest extends TestCase {
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(100)
-    val dispatcher = new ThreadBasedDispatcher(new TestMessageHandle(handleLatch))
+    val dispatcher = new ThreadBasedDispatcher("name", new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
       dispatcher.messageQueue.append(new MessageInvocation("id", new Object, None, None))
@@ -60,7 +60,7 @@ class ThreadBasedDispatcherTest extends TestCase {
 
   private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
     val handleLatch = new CountDownLatch(100)
-    val dispatcher = new ThreadBasedDispatcher(new MessageInvoker {
+    val dispatcher = new ThreadBasedDispatcher("name", new MessageInvoker {
       var currentValue = -1;
       def invoke(message: MessageInvocation) {
         if (threadingIssueDetected.get) return

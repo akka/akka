@@ -12,6 +12,7 @@ import kernel.actor.{Exit, Actor}
 import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
 import serialization.{Serializer, Serializable, SerializationProtocol}
 import kernel.util.Logging
+import kernel.management.Management
 
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
@@ -20,6 +21,8 @@ import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, Length
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 
 import scala.collection.mutable.HashMap
+
+import com.twitter.service.Stats
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -44,6 +47,10 @@ object RemoteClient extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteClient(hostname: String, port: Int) extends Logging {
+  val name = "RemoteClient@" + hostname
+  val NR_OF_BYTES_SENT = Stats.getCounter("NrOfBytesSent_" + name)
+  val NR_OF_MESSAGES_SENT = Stats.getCounter("NrOfMessagesSent_" + name)
+
   @volatile private var isRunning = false 
   private val futures = new ConcurrentHashMap[Long, CompletableFutureResult]
   private val supervisors = new ConcurrentHashMap[String, Actor]
@@ -55,7 +62,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
 
   private val bootstrap = new ClientBootstrap(channelFactory)
 
-  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(futures, supervisors))
+  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors))
   bootstrap.setOption("tcpNoDelay", true)
   bootstrap.setOption("keepAlive", true)
 
@@ -84,6 +91,10 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   }
 
   def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
+    if (Management.RECORD_STATS) {
+      NR_OF_BYTES_SENT.incr(request.getSerializedSize)
+      NR_OF_MESSAGES_SENT.incr
+    }
     if (request.getIsOneWay) {
       connection.getChannel.write(request)
       None
@@ -111,15 +122,16 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteClientPipelineFactory(futures: ConcurrentMap[Long, CompletableFutureResult],
-                                supervisors: ConcurrentMap[String, Actor]) extends ChannelPipelineFactory {
+class RemoteClientPipelineFactory(name: String, 
+                                  futures: ConcurrentMap[Long, CompletableFutureResult],
+                                  supervisors: ConcurrentMap[String, Actor]) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val p = Channels.pipeline()
     p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4));
     p.addLast("protobufDecoder", new ProtobufDecoder(RemoteReply.getDefaultInstance));
     p.addLast("frameEncoder", new LengthFieldPrepender(4));
     p.addLast("protobufEncoder", new ProtobufEncoder());
-    p.addLast("handler", new RemoteClientHandler(futures, supervisors))
+    p.addLast("handler", new RemoteClientHandler(name, futures, supervisors))
     p
   }
 }
@@ -128,9 +140,13 @@ class RemoteClientPipelineFactory(futures: ConcurrentMap[Long, CompletableFuture
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelPipelineCoverage { val value = "all" }
-class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResult],
+class RemoteClientHandler(val name: String,
+                          val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor])
  extends SimpleChannelUpstreamHandler with Logging {
+
+  val NR_OF_BYTES_RECEIVED = Stats.getCounter("NrOfBytesReceived_" + name)
+  val NR_OF_MESSAGES_RECEIVED = Stats.getCounter("NrOfMessagesReceived_" + name)
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
@@ -144,6 +160,10 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
+        if (Management.RECORD_STATS) {
+          NR_OF_MESSAGES_RECEIVED.incr
+          NR_OF_BYTES_RECEIVED.incr(reply.getSerializedSize)
+        }
         log.debug("Received RemoteReply[\n%s]", reply.toString)
         val future = futures.get(reply.getId)
         if (reply.getIsSuccessful) {
@@ -159,7 +179,7 @@ class RemoteClientHandler(val futures: ConcurrentMap[Long, CompletableFutureResu
           }
           future.completeWithException(null, parseException(reply))
         }
-	      futures.remove(reply.getId)
+        futures.remove(reply.getId)
       } else throw new IllegalArgumentException("Unknown message received in remote client handler: " + result)
     } catch {
       case e: Exception =>

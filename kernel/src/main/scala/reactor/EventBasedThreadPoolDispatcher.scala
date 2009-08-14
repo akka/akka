@@ -4,11 +4,15 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
+import kernel.management.{Management, ThreadPoolMBean}
+
 import java.util.concurrent._
 import locks.ReentrantLock
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 import java.util.{Collection, HashSet, HashMap, LinkedList, List}
+
+import com.twitter.service.Stats
 
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
@@ -56,16 +60,17 @@ import java.util.{Collection, HashSet, HashMap, LinkedList, List}
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class EventBasedThreadPoolDispatcher(private val concurrentMode: Boolean) extends MessageDispatcherBase {
-  def this() = this(false)
+class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: Boolean) extends MessageDispatcherBase(name) {
+  def this(name: String) = this(name, false)
   
+  val NR_OF_PROCESSED_MESSAGES = Stats.getCounter("NrOfProcessedMessages_" + name)
   private val NR_START_THREADS = 16
   private val NR_MAX_THREADS = 128
   private val KEEP_ALIVE_TIME = 60000L // default is one minute
   private var inProcessOfBuilding = false
   private var executor: ExecutorService = _
   private var threadPoolBuilder: ThreadPoolExecutor = _
-  private val threadFactory = new MonitorableThreadFactory("akka")
+  private val threadFactory = new MonitorableThreadFactory("akka:" + name)
   private var boundedExecutorBound = -1
   private val busyInvokers = new HashSet[AnyRef]
 
@@ -74,6 +79,7 @@ class EventBasedThreadPoolDispatcher(private val concurrentMode: Boolean) extend
   
   def start = if (!active) {
     active = true
+    Management.registerMBean(new ThreadPoolMBean(threadPoolBuilder), "ThreadPool_" + name)
 
     /**
      * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
@@ -89,6 +95,7 @@ class EventBasedThreadPoolDispatcher(private val concurrentMode: Boolean) extend
             } catch { case e: InterruptedException => active = false }
             val selectedInvocations = messageDemultiplexer.acquireSelectedInvocations
             val reservedInvocations = reserve(selectedInvocations)
+            if (Management.RECORD_STATS) NR_OF_PROCESSED_MESSAGES.incr(reservedInvocations.size)
             val it = reservedInvocations.entrySet.iterator
             while (it.hasNext) {
               val entry = it.next
@@ -157,6 +164,7 @@ class EventBasedThreadPoolDispatcher(private val concurrentMode: Boolean) extend
     ensureNotActive
     verifyNotInConstructionPhase
     inProcessOfBuilding = false
+    blockingQueue = queue
     threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, queue)
     this
   }
@@ -169,7 +177,8 @@ class EventBasedThreadPoolDispatcher(private val concurrentMode: Boolean) extend
   def withNewThreadPoolWithBoundedBlockingQueue(bound: Int): EventBasedThreadPoolDispatcher = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, new LinkedBlockingQueue[Runnable], threadFactory)
+    blockingQueue = new LinkedBlockingQueue[Runnable]
+    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory)
     boundedExecutorBound = bound
     this
   }
@@ -177,28 +186,32 @@ class EventBasedThreadPoolDispatcher(private val concurrentMode: Boolean) extend
   def withNewThreadPoolWithLinkedBlockingQueueWithCapacity(capacity: Int): EventBasedThreadPoolDispatcher = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, new LinkedBlockingQueue[Runnable](capacity), threadFactory, new CallerRunsPolicy)
+    blockingQueue = new LinkedBlockingQueue[Runnable](capacity) 
+    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this
   }
 
   def withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity: EventBasedThreadPoolDispatcher = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, new LinkedBlockingQueue[Runnable], threadFactory, new CallerRunsPolicy)
+    blockingQueue = new LinkedBlockingQueue[Runnable]
+    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this
   }
 
   def withNewThreadPoolWithSynchronousQueueWithFairness(fair: Boolean): EventBasedThreadPoolDispatcher = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, new SynchronousQueue[Runnable](fair), threadFactory, new CallerRunsPolicy)
+    blockingQueue = new SynchronousQueue[Runnable](fair)
+    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this
   }
 
   def withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(capacity: Int, fair: Boolean): EventBasedThreadPoolDispatcher = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, new ArrayBlockingQueue[Runnable](capacity, fair), threadFactory, new CallerRunsPolicy)
+    blockingQueue = new ArrayBlockingQueue[Runnable](capacity, fair)
+    threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this
   }
 
@@ -311,13 +324,7 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
   def invokeAll[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAll(callables)
   def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAll(callables, l, timeUnit)
   def invokeAny[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAny(callables)
-    def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
-/*
-  def invokeAll[T](callables: Collection[Callable[T]]) = executor.invokeAll(callables)
-  def invokeAll[T](callables: Collection[Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAll(callables, l, timeUnit)
-  def invokeAny[T](callables: Collection[Callable[T]]) = executor.invokeAny(callables)
-  def invokeAny[T](callables: Collection[Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
-  */
+  def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
 }
 
 /**

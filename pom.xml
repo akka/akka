@@ -7,12 +7,12 @@
   <name>Akka Actor Kernel</name>
   <artifactId>akka</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
-  <version>0.5</version>
+  <version>0.6</version>
   <inceptionYear>2009</inceptionYear>
   <packaging>pom</packaging>
 
   <properties>
-    <akka.version>0.5</akka.version>
+    <akka.version>0.6</akka.version>
     <akka.groupId>se.scalablesolutions.akka</akka.groupId>
     <scala.version>2.7.5</scala.version>
   </properties>
@@ -118,6 +118,11 @@
       </releases>
     </repository>
     <repository>
+      <id>guice-maven</id>
+      <name>guice maven</name>
+      <url>http://guice-maven.googlecode.com/svn/trunk</url>
+    </repository>
+    <repository>
       <id>google-maven-repository</id>
       <name>Google Maven Repository</name>
       <url>http://google-maven-repository.googlecode.com/svn/repository/</url>
@@ -142,6 +147,10 @@
 
   <pluginRepositories>
     <pluginRepository>
+      <id>onejar-maven-plugin.googlecode.com</id>
+      <url>http://onejar-maven-plugin.googlecode.com/svn/mavenrepo</url>
+    </pluginRepository>
+    <pluginRepository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
@@ -149,41 +158,213 @@
   </pluginRepositories>
 
   <build>
+    <sourceDirectory>src/main/scala</sourceDirectory>
+    <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
+      <plugin>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>maven-jetty-plugin</artifactId>
+        <configuration>
+          <contextPath>/</contextPath>
+          <scanIntervalSeconds>5</scanIntervalSeconds>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.0.2</version>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.10.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <jvmArgs>
+            <jvmArg>-Xmx1024m</jvmArg>
+          </jvmArgs>
+          <args>
+            <!--arg>-unchecked</arg>
+            <arg>-deprecation</arg>
+            <arg>-Xno-varargs-conversion</arg-->
+          </args>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
+      </plugin>
+      <plugin>
+        <inherited>true</inherited>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-changes-plugin</artifactId>
+        <version>2.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <akka_version>${akka.version}</akka_version>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <configuration>
-          <tasks>
-            <!-- To start an akka server, use: mvn antrun:run -->
-            <!--echo message="akka kernel starting..."/>
-
-<property name="compile_classpath" refid="maven.compile.classpath"/>
-<property name="runtime_classpath" refid="maven.runtime.classpath"/>
-<property name="test_classpath"    refid="maven.test.classpath"/>
-
-<java classname="com.scalablesolutions.akka.kernel.Kernel" fork="true">
-<classpath>
-<pathelement path="${runtime_classpath}"/>
-<pathelement path="${compile_classpath}"/>
-</classpath>
-<jvmarg value="-server"/>
-<jvmarg value="-Xms256M"/>
-<jvmarg value="-Xmx256M"/>
-<jvmarg value="-verbosegc"/>
-<for profiling/performance...
-<jvmarg value="-javaagent:tmp/shiftone-jrat.jar"/>
-<jvmarg value="-agentlib:hprof=heap=sites"/>
-<jvmarg value="-agentlib:hprof=cpu=samples"/>
-<jvmarg value="-agentlib:hprof=cpu=times,thread=y"/>
-<arg value="com.scalablesolutions.akka.kernel.Kernel"/>
-<arg value="."/>
-</java>
-<echo message="akka server is shutdown"/-->
-          </tasks>
-        </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>2.0.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+              <_versionpolicy>[$(@),$(version;=+;$(@)))</_versionpolicy>
+            </instructions>
+          </configuration>
+          <executions>
+            <execution>
+              <id>create-bundle</id>
+              <phase>package</phase>
+              <goals>
+                <goal>bundle</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>bundle-install</id>
+              <phase>install</phase>
+              <goals>
+                <goal>install</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
-
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>taglist-maven-plugin</artifactId>
+        <version>2.3</version>
+        <configuration>
+          <tags>
+            <tag>FIXME</tag>
+            <tag>TODO</tag>
+            <tag>XXX</tag>
+            <tag>@todo</tag>
+            <tag>@deprecated</tag>
+          </tags>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.9</version>
+        <configuration>
+          <jvmArgs>
+            <jvmArg>-Xmx1024m</jvmArg>
+            <jvmArg>-DpackageLinkDefs=file://${basedir}/../vscaladocs-packageLinkDefs.properties</jvmArg>
+          </jvmArgs>
+          <args>
+            <arg>-unchecked</arg>
+          </args>
+          <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-changes-plugin</artifactId>
+        <version>2.0-beta-3</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>changes-report</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+        <configuration>
+          <xmlPath>${basedir}/changes.xml</xmlPath>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <configuration><!--showSuccess>false</showSuccess--></configuration>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>report-only</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
+  <distributionManagement>
+  </distributionManagement>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <distributionManagement>
+        <repository>
+          <id>scala-tools.org</id>
+          <url>http://nexus.scala-tools.org/content/repositories/releases</url>
+        </repository>
+        <site>
+          <id>scala-tools.org</id>
+          <url>file://${user.home}/.m2/mvnsites/akka</url>
+        </site>
+      </distributionManagement>
+    </profile>
+    <profile>
+      <id>hudson</id>
+      <distributionManagement>
+        <repository>
+          <id>hudson.scala-tools.org</id>
+          <url>file:///home/scala-tools.org/www/repo-snapshots</url>
+        </repository>
+        <snapshotRepository>
+          <id>hudson.scala-tools.org</id>
+          <url>file:///home/scala-tools.org/www/repo-snapshots</url>
+          <uniqueVersion>false</uniqueVersion>
+        </snapshotRepository>
+        <site>
+          <id>hudson.scala-tools.org</id>
+          <url>file:///home/scala-tools.org/www/mvnsites-snapshots/akka</url>
+        </site>
+      </distributionManagement>
+    </profile>
+  </profiles>
 </project>

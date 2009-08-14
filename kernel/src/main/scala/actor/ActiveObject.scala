@@ -14,9 +14,11 @@ import kernel.config.ScalaConfig._
 import kernel.util._
 import serialization.Serializer
 
-import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice}
+import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice, Advice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
+import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
+import org.codehaus.aspectwerkz.aspect.management.Aspects
 
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
@@ -218,23 +220,27 @@ object ActiveObject {
   }
 
   private[kernel] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(target, false, true)
     actor.initialize(target, proxy)
-    // FIXME switch to weaving in the aspect at compile time
-    proxy.asInstanceOf[Advisable].aw_addAdvice(
-      MATCH_ALL, new ActorAroundAdvice(target, proxy, actor, remoteAddress, timeout))
+    actor.timeout = timeout
+    actor.start
+    AspectInitRegistry.register(proxy, AspectInit(target, actor, remoteAddress, timeout))
     proxy.asInstanceOf[T]
   }
 
   private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     actor.initialize(target.getClass, target)
-    proxy.asInstanceOf[Advisable].aw_addAdvice(
-      MATCH_ALL, new ActorAroundAdvice(intf, target, actor, remoteAddress, timeout))
+    actor.timeout = timeout
+    actor.start
+    AspectInitRegistry.register(proxy, AspectInit(intf, actor, remoteAddress, timeout))
     proxy.asInstanceOf[T]
   }
+
 
   private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
     object factory extends SupervisorFactory {
@@ -246,20 +252,46 @@ object ActiveObject {
   }
 }
 
+object AspectInitRegistry {
+  private val inits = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
+  def initFor(target: AnyRef) = {
+    val init = inits.get(target)
+    inits.remove(target)
+    init
+  }  
+  def register(target: AnyRef, init: AspectInit) = inits.put(target, init)
+}
+
+sealed case class AspectInit(
+  val target: Class[_],
+  val actor: Dispatcher,          
+  val remoteAddress: Option[InetSocketAddress],
+  val timeout: Long)
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable
-sealed class ActorAroundAdvice(val target: Class[_],
-                               val targetInstance: AnyRef,
-                               val actor: Dispatcher,                
-                               val remoteAddress: Option[InetSocketAddress],
-                               val timeout: Long) extends AroundAdvice {
-  val id = target.getName
-  actor.timeout = timeout
-  actor.start
-  
-  def invoke(joinpoint: JoinPoint): AnyRef = dispatch(joinpoint)
+@Aspect("perInstance")
+sealed class ActiveObjectAspect {
+  @volatile var isInitialized = false
+  var target: Class[_] = _
+  var actor: Dispatcher = _            
+  var remoteAddress: Option[InetSocketAddress] = _
+  var timeout: Long = _
+
+  @Around("execution(* *..*(..))")
+  def invoke(joinpoint: JoinPoint): AnyRef = {
+    if (!isInitialized) {
+      val init = AspectInitRegistry.initFor(joinpoint.getThis)
+      target = init.target
+      actor = init.actor            
+      remoteAddress = init.remoteAddress
+      timeout = init.timeout
+      isInitialized = true
+    }
+    dispatch(joinpoint)
+  }
 
   private def dispatch(joinpoint: JoinPoint) = {
     if (remoteAddress.isDefined) remoteDispatch(joinpoint)

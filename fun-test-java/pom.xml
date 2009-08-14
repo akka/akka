@@ -65,7 +65,7 @@
   </dependencies>
 
   <build>
-    <sourceDirectory>src/main</sourceDirectory>
+    <sourceDirectory>src/main/java</sourceDirectory>
     <testSourceDirectory>src/test/java</testSourceDirectory>
     <plugins>
       <plugin>
@@ -84,7 +84,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>**/Abstract*</exclude>
             <exclude>**/*Persistent*</exclude>
           </excludes>
         </configuration>
