@@ -14,7 +14,7 @@ import java.net.URLClassLoader
 
 import net.lag.configgy.{Config, Configgy, RuntimeEnvironment, ParseException}
 
-import kernel.jersey.AkkaCometServlet
+import kernel.rest.AkkaCometServlet
 import kernel.nio.RemoteServer
 import kernel.state.CassandraStorage
 import kernel.util.Logging
@@ -74,7 +74,7 @@ object Kernel extends Logging {
         case _ =>               throw new UnsupportedOperationException("Unknown storage system [" + STORAGE_SYSTEM + "]")
       }
 
-      if (RUN_REST_SERVICE) startJersey
+      if (RUN_REST_SERVICE) startREST
 
       Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
       log.info("Akka started successfully")
@@ -150,7 +150,7 @@ object Kernel extends Logging {
     CassandraStorage.start
   }
 
-  private[akka] def startJersey = {
+  private[akka] def startREST = {
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
 
     val scheme = uri.getScheme

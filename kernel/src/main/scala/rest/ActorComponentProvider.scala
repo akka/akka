@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.jersey
+package se.scalablesolutions.akka.kernel.rest
 
 import com.sun.jersey.core.spi.component.ioc.IoCFullyManagedComponentProvider
 
