@@ -31,7 +31,9 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Jonas Bon&#233;r" type="add">Added CassandraSession API (with socket pooling) wrapping Cassandra's Thrift API in Scala and Java APIs</action>
       <action dev="Jonas Bon&#233;r" type="add">CassandraStorage is now works with external Cassandra cluster</action>
       <action dev="Jonas Bon&#233;r" type="remove">Removed embedded Cassandra mode</action>
+      <action dev="Jonas Bon&#233;r" type="remove">Removed startup scripts and lib dir</action>
       <action dev="Jonas Bon&#233;r" type="add">ActorRegistry for retrieving Actor instances</action>
+      <action dev="Jonas Bon&#233;r" type="add">Now start up kernel with 'java -jar dist/akka-0.6.jar'</action>
       <action dev="Jonas Bon&#233;r" type="fix">Concurrent mode is now per actor basis</action>
       <action dev="Jonas Bon&#233;r" type="fix">Made Akka Web App aware, does not require AKKA_HOME when using it as a library</action>
       <action dev="Jonas Bon&#233;r" type="fix">Fixed dispatcher bug</action>

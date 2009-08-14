@@ -195,9 +195,9 @@
             <jvmArg>-Xmx1024m</jvmArg>
           </jvmArgs>
           <args>
-            <arg>-unchecked</arg>
+            <!--arg>-unchecked</arg>
             <arg>-deprecation</arg>
-            <arg>-Xno-varargs-conversion</arg>
+            <arg>-Xno-varargs-conversion</arg-->
           </args>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
@@ -226,7 +226,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <lift_version>${pom.version}</lift_version>
+              <akka_version>${akka.version}</akka_version>
             </manifestEntries>
           </archive>
         </configuration>
@@ -234,35 +234,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <configuration>
-          <tasks>
-            <!-- To start an akka server, use: mvn antrun:run -->
-            <!--echo message="akka kernel starting..."/>
-
-<property name="compile_classpath" refid="maven.compile.classpath"/>
-<property name="runtime_classpath" refid="maven.runtime.classpath"/>
-<property name="test_classpath"    refid="maven.test.classpath"/>
-
-<java classname="com.scalablesolutions.akka.kernel.Kernel" fork="true">
-<classpath>
-<pathelement path="${runtime_classpath}"/>
-<pathelement path="${compile_classpath}"/>
-</classpath>
-<jvmarg value="-server"/>
-<jvmarg value="-Xms256M"/>
-<jvmarg value="-Xmx256M"/>
-<jvmarg value="-verbosegc"/>
-<for profiling/performance...
-<jvmarg value="-javaagent:tmp/shiftone-jrat.jar"/>
-<jvmarg value="-agentlib:hprof=heap=sites"/>
-<jvmarg value="-agentlib:hprof=cpu=samples"/>
-<jvmarg value="-agentlib:hprof=cpu=times,thread=y"/>
-<arg value="com.scalablesolutions.akka.kernel.Kernel"/>
-<arg value="."/>
-</java>
-<echo message="akka server is shutdown"/-->
-          </tasks>
-        </configuration>
       </plugin>
     </plugins>
     <pluginManagement>
@@ -327,7 +298,8 @@
             <jvmArg>-DpackageLinkDefs=file://${basedir}/../vscaladocs-packageLinkDefs.properties</jvmArg>
           </jvmArgs>
           <args>
-          <arg>-unchecked</arg></args>
+            <arg>-unchecked</arg>
+          </args>
           <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
@@ -365,30 +337,6 @@
   <profiles>
     <profile>
       <id>release</id>
-      <!--
-          <build>
-          <plugins>
-          <plugin>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <configuration>
-          <descriptorRefs>
-          <descriptorRef>project</descriptorRef>
-          </descriptorRefs>
-          <tarLongFileMode>gnu</tarLongFileMode>
-          </configuration>
-          <executions>
-          <execution>
-          <id>make-assembly</id>
-          <phase>package</phase>
-          <goals>
-          <goal>attached</goal>
-          </goals>
-          </execution>
-          </executions>
-          </plugin>
-          </plugins>
-          </build>
-      -->
       <distributionManagement>
         <repository>
           <id>scala-tools.org</id>
