@@ -47,11 +47,6 @@
       <artifactId>configgy</artifactId>
       <version>1.3</version>
     </dependency>
-    <!--dependency>
-      <groupId>org.guiceyfruit</groupId>
-      <artifactId>guiceyfruit-core</artifactId>
-      <version>2.0</version>
-    </dependency-->
     <dependency>
       <groupId>org.guiceyfruit</groupId>
       <artifactId>guice-core</artifactId>
@@ -128,21 +123,6 @@
       <artifactId>fb303</artifactId>
       <version>1.0</version>
     </dependency>
-    <!--dependency>
-      <groupId>commons-collections</groupId>
-      <artifactId>commons-collections</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>high-scale-lib</groupId>
-      <artifactId>high-scale-lib</artifactId>
-      <version>1.0</version>
-    </dependency-->
-    <!--dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>2.4</version>
-    </dependency-->
     <dependency>
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
@@ -231,36 +211,43 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.2-beta-2</version>
+        <executions>
+          <execution>
+            <id>create-executable-jar</id>
+            <phase>install</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>
+                  jar-with-dependencies
+                </descriptorRef>
+              </descriptorRefs>
+              <archive>
+                <manifest>
+                  <mainClass>se.scalablesolutions.akka.kernel.Kernel</mainClass>
+                </manifest>
+              </archive>
+           </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-kernel-${akka.version}.jar"
-                      tofile="../lib/akka-kernel-${akka.version}.jar"/>
+                <copy file="target/akka-kernel-${akka.version}-jar-with-dependencies.jar"
+                      tofile="../dist/akka-${akka.version}.jar"/>
               </tasks>
             </configuration>
             <goals>
               <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.dstovall</groupId>
-        <artifactId>onejar-maven-plugin</artifactId>
-        <version>1.4.1</version>
-        <executions>
-          <execution>
-            <configuration>
-              <mainClass>se.scalablesolutions.akka.kernel.Kernel</mainClass>
-              <onejarVersion>0.96</onejarVersion>
-              <attachToBuild>true</attachToBuild>
-              <classifier>onejar</classifier>
-            </configuration>
-            <goals>
-              <goal>one-jar</goal>
             </goals>
           </execution>
         </executions>
