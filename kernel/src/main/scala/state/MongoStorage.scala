@@ -7,6 +7,16 @@ import kernel.Kernel.config
 
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
 
+/**
+ * A module for supporting MongoDB based persistence.
+ * <p/>
+ * The module offers functionality for:
+ * <li>Persistent Maps</li>
+ * <li>Persistent Vectors</li>
+ * <li>Persistent Refs</li>
+ * <p/>
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
+ */
 object MongoStorage extends MapStorage 
     with VectorStorage with RefStorage with Logging {
       
