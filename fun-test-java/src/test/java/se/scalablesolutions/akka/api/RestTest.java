@@ -67,7 +67,7 @@ public class RestTest extends TestCase {
 */
   private static SelectorThread startJersey() {
     try {
-      Servlet servlet = new se.scalablesolutions.akka.kernel.jersey.AkkaServlet();
+      Servlet servlet = new se.scalablesolutions.akka.kernel.rest.AkkaServlet();
       ServletAdapter adapter = new ServletAdapter();
       adapter.setServletInstance(servlet);
       adapter.setContextPath(URI.getPath());
