@@ -10,6 +10,8 @@ import kernel.reactor.MessageInvocation
 import kernel.util.Logging
 import org.codehaus.aspectwerkz.proxy.Uuid // FIXME is java.util.UUID better?
 
+import org.multiverse.utils.TransactionThreadLocal._
+
 class TransactionRollbackException(msg: String) extends RuntimeException(msg)
 
 class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause) {
@@ -46,6 +48,7 @@ trait TransactionManagement extends Logging {
     val tx = Some(newTx)
     activeTx = tx
     threadBoundTx.set(tx)
+    setThreadLocalTransaction(tx.get.transaction)
     tx
   }
 
@@ -110,6 +113,7 @@ trait TransactionManagement extends Logging {
   protected def removeTransactionIfTopLevel = if (isTransactionTopLevel) {
     activeTx = None
     threadBoundTx.set(None)
+    setThreadLocalTransaction(null)
   }
 
   protected def reenteringExistingTransaction= if (activeTx.isDefined) {
