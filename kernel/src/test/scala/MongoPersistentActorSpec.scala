@@ -84,14 +84,14 @@ class BankAccountActor extends Actor {
       reply(txnLog.length.asInstanceOf[AnyRef])
   }
 }
-
+/*
 @serializable class PersistentFailerActor extends Actor {
   makeTransactionRequired
   def receive: PartialFunction[Any, Unit] = {
     case "Failure" =>
       throw new RuntimeException("expected")
   }
-}
+}*/
 
 class MongoPersistentActorSpec extends TestCase {
   @Test
