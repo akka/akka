@@ -235,7 +235,11 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
     if (tx.isDefined) {
       tx.get.reinit
       TransactionManagement.threadBoundTx.set(tx)
-    } else TransactionManagement.threadBoundTx.set(None)     
+      setThreadLocalTransaction(tx.transaction)
+    } else {
+      TransactionManagement.threadBoundTx.set(None)     
+      setThreadLocalTransaction(null)
+    }
   }
   */
   private def unescapeArgs(args: scala.List[AnyRef], argClasses: scala.List[Class[_]], timeout: Long) = {

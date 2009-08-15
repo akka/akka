@@ -24,7 +24,7 @@ class TxActor(clasher: Actor) extends Actor {
 }
 
 class TxClasherActor extends Actor {
-  val vector = TransactionalState.newInMemoryVector[String]
+  val vector = TransactionalState.newVector[String]
   timeout = 1000000
   makeTransactionRequired
   var count = 0
@@ -59,7 +59,7 @@ class TxActorOneWay(clasher: Actor) extends Actor {
 }
 
 class TxClasherActorOneWay extends Actor {
-  val vector = TransactionalState.newInMemoryVector[String]
+  val vector = TransactionalState.newVector[String]
   timeout = 1000000
   makeTransactionRequired
   var count = 0

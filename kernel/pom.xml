@@ -77,6 +77,11 @@
       <artifactId>javautils</artifactId>
       <version>2.7.4-0.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.multiverse</groupId>
+      <artifactId>multiverse</artifactId>
+      <version>0.3</version>
+    </dependency>
 
     <!-- For Protocol/Serialization -->
     <dependency>
@@ -103,11 +108,6 @@
       <groupId>com.twitter</groupId>
       <artifactId>scala-json</artifactId>
       <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.multiverse</groupId>
-      <artifactId>multiverse</artifactId>
-      <version>0.3</version>
     </dependency>
 
     <!-- For Mongo -->

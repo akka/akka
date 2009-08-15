@@ -1,0 +1,219 @@
+todo tasks
+
+- testen wat er gebeurd bij een duplicate field.. dus als je een field toevoegd doe ook al in
+de mixin zit.
+
+- testen wat er gebeurd bij een duplicate method... dus als een method toevoegd doe ook al
+in de mixin zit.
+
+- er is een probleem bij een atomicobject zonder velden
+
+- flashback transactions test
+
+- de exclude functionaliteit moet getest worden.
+
+- instrumentatie gaat fout als er velden worden uitgesloten (misschien access, misschien exclude) en
+blijven dus netjes in de AtomicObject staan, maar de code die doet aanroepen op de Tranlocal.
+ Dit kan opgelost worden mbv een custom remapper implementatie te maken.
+
+- stm exectutor aanpassen zodat hij op de instrumentatie werkt.
+
+- constructors en atomic kunnen niet goed omgaan met  super calls
+
+- constructors en atomic kunnen niet goed omgaan met  this calls
+
+- de Tranlocal bij de instrumentatie moet speciale behandeling hebben voor methods zodat
+ze public zijn.
+
+- TransactionalObject annotation and AtomicObject interface
+
+- bij de tranlocal instrumentatie, een grote hoeveelheid no-ops in de code.
+
+- incTransactionReadonlyCount: niet gebruikt
+
+- instead of having a locked bit, the tranlocal could have access to the transaction. Once committed,
+this reference can be set to null. Can also be used for detecting if a tranlocal can in from a different
+transaction. 
+
+- what happens when a throwable is thrown while executing the orelse template. if the throwable
+is caught, it leaves the transaction in an inconsistent state.
+
+- exceptions in the exception package zijn afhankelijk van de standard package
+
+- de name 'standard' voor de default stm implementation is lame.
+
+- the interfaces in the api package contain a lot of implementation specific stuff. A lot of that
+stuff could be added using instrumentation.
+
+- de methods of the AtomicObject should be part of the standard implementation.
+
+- RetrySpinningWriteSetLockPolicy
+
+- BalancedTree moet nog rotatie hebben
+
+- wat moet er gebeuren als een transactie een load doet op uncommitted data.
+    + opgelost in de code
+    + opgelost in de documentatie van de load methodes
+    - opgelost in de code van andere methodes behalve de loadmethods van de transactie.
+    - documentatie
+    - unit tests
+
+- FastTom.registerRetryListener en de noProgressPossibleException
+
+- atomic en constructors werk niet goed mbt instrumentatie.. Class validate fout
+
+    -de PipelineLongTest geeft bij het debuggen een :
+    java.lang.ClassFormatError: Invalid length 65519 in LocalVariableTable in class file org/multiverse/integration/PipelineLongTest
+    Dit komt door de atomicclassfiletransformer aangezien dat de enigste instrumentatie is die er nu in zit. 
+
+- FastTomTest afmaken
+
+- checkin op subversion
+
+- LOAD PROBLAMTIEK
+
+    - it could happen that a readonly transaction fails because it reads a TransactionalObject that
+    is locked.
+
+    - privatize functie aanpassen zodat fail fast.
+    
+    - it could happen that a writetransaction fails with the privatized call because it reads a
+    TransactionalObject that is locked.
+
+- IntValuePerformanceTest moet naar benchy geport worden.
+
+- CigaretteSmokersProblemSimplifiedTest
+
+- move the benchmarks to this project
+    - depends on instrumentation
+
+- SpinningWriteSetlockPolicy unit tests
+ 
+todo features
+
+- name on transaction
+
+- retry in instrumentation needs to be added
+
+- retry limit on atomictemplate.
+
+- support for real serialized isolation level
+
+- instrumentation of Transactional Objects.
+
+- history for stale objects
+
+- customizable contention managers 
+
+- customizable lock acquire manager.
+
+- pessimistic locking online
+
+- nested transactions
+
+- SkipList
+
+- better queue that allows better concurrency.
+
+idea:
+
+- a performance test comparing the 'managed ref' approach vs the full blown multiverse approach.
+
+- a performance comparison between 'uninstrumented' code and instrumented code.
+
+- statistics about number of loads that could get information from the transaction instead
+of loading from main memory. This is also needed for optimizing bytecode.
+
+- Commute Clojure nazoeken
+
+- after commit event (for example for starting threads).
+
+- could the abort and retry mechanism be implemented more efficiently? Atm the whole transaction
+is aborted and the complete transaction needs to be re-done. A more efficient implemention could block
+and wait until a write has happened on some field and continue with the operation, just like a classic
+wait/notify.
+
+- more efficient wait/notify: for example the balancedtree and sleeping for a specific key. Atm
+all objects loaded by a transaction are a reason to wake up (cause a change happens on them). But
+what if you are only interested in a specific field... this could reduce the stress on the mechanism
+
+- logging instrumentation: instrumentation that adds logging.
+
+- transaction level statistics
+
+- jmx component om statistics grafisch inzichtelijk te maken
+
+- door onderscheid te maken tussen attachednew en loaded, zou je eventueel nog optimalisaties kunnen doen:
+     - op nieuw objecten hoef je geen lock aan te vragen
+     - op nieuw objecten hoef je niet te valideren
+     - op nieuw objecten hoef je geen lock te releasen
+     - op nieuw objecten hoef je je niet druk te maken over retrylisteners
+
+- online pessimistic locking
+
+- Optimization for transaction usage
+
+via DebugConstants er in laten genereren
+- exceptions opnieuw aanmaken of bestaande instance hergebruiken:
+
+- te kijken wat te doen met de exception hierarcy.. zoals moeten andere exceptions extenden van abortexception and
+retryerror?
+
+- bloomfilter
+
+- heeft het nu om een read op een writetransactie te hebben terwijl je de $readPrivatized daar ook al hebt?
+
+- abort silently
+
+- retry moet gebeuren als er een write is gebeurd
+
+- all methods of transactionalobjects should automatically have the automic tag
+
+- ipv de cheap latch zou je ook de monitor lock van de transactie kunnen gebruiken.
+Dit scheelt nog een object creatie.
+
+- enchance the $Object structure so that it also can be used for tree (replacement for the identity hashmap)
+
+- timeout tijd.. spaarrekening waar je iedere keer vanaf kunt boeken.
+
+- de timeout tijds op de locks zetten
+
+- een abortAndRetry interruptibly?
+
+- abort en retry met timeouts?
+
+- managed ref annotation: by setting a ref, you don't force an object to an atomic object
+but a normal object using a managed ref.
+
+done
+
+- fields can be excluded by using the @Exclude annotation.
+
+- dirtiness state -> dirtiness status so that is looks more like the transactionstatus.
+
+- cyclichandling test TranlocalSingleLinkedNode en origin
+
+- documentatie bij de stm is matig
+
+- TL2STM is onlogisch qua naamgeving aangezien TL2 niet wordt gebruikt.
+
+- package indeling: in de root staan zowel de interfaces als implementaties.
+
+- bij de AtomicObject heb je een load die een immutable versie terug geeft, en een privatize voor
+een mutable versie. Bij de transactie heb je een load die een mutable versie terug geeft, en een
+load readonly die een immutable versie terug geeft. Dit is inconsistent.
+
+- incTransactionPendingRetryCount: niet gebruikt
+
+- incTransactionRetriedCount: niet gebruikt
+
+- de naam voor tranlocal moet nog aangepast worden in de instrumentatie
+
+- exception hierarchy still is messy
+
+- constructors van atomicobjecten testen
+
+---------------------------------
+
+de writes gebeuren nadat de versie is opgehoogd, je kunt dus niet zomaar de laatste versie uitlezen
+

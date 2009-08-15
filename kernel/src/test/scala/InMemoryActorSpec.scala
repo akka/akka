@@ -26,9 +26,9 @@ case class FailureOneWay(key: String, value: String, failer: Actor)
 class InMemStatefulActor extends Actor {
   timeout = 100000
   makeTransactionRequired
-  private val mapState = TransactionalState.newInMemoryMap[String, String]
-  private val vectorState = TransactionalState.newInMemoryVector[String]
-  private val refState = TransactionalState.newInMemoryRef[String]
+  private val mapState = TransactionalState.newMap[String, String]
+  private val vectorState = TransactionalState.newVector[String]
+  private val refState = TransactionalState.newRef[String]("")
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>
@@ -217,14 +217,26 @@ class InMemoryActorSpec extends TestCase {
   def testRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor
     stateful.start
+    println("------------ 1")
+    try {
     stateful !! SetRefState("init") // set init state
+    } catch {
+      case e: RuntimeException => 
+        println("------------ 1.1")
+        stateful !! SetRefState("init") // set init state        
+        println("------------ 1.2")
+    }
+    println("------------ 2")
     val failer = new InMemFailerActor
     failer.start
     try {
+    println("------------ 3")
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
+    println("------------ 4")
       fail("should have thrown an exception")
-    } catch {case e: RuntimeException => {}}
+    } catch {case e: RuntimeException => {
+      println("------------ 5")
+    }}
     assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
   }
-  
 }

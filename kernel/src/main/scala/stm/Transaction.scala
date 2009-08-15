@@ -7,31 +7,30 @@ package se.scalablesolutions.akka.kernel.stm
 import kernel.state.Transactional
 import kernel.util.Logging
 
-import org.multiverse.api.Transaction
-import org.multiverse.standard.DefaultStm
+import org.multiverse.api.{Transaction => MultiverseTransaction}
+import org.multiverse.stms.alpha.AlphaStm
 import org.multiverse.utils.GlobalStmInstance
 import org.multiverse.utils.TransactionThreadLocal._
 
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object STM {
-  val stm = new DefaultStm
-  GlobalStmInstance.set(stm)
+object Multiverse {
+  val STM = new AlphaStm
+  GlobalStmInstance.set(STM)
   setThreadLocalTransaction(null)
 }
-
-
     
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable class Transaction extends Logging {
-  log.debug("Creating a new transaction with id [%s]", id)
-
-
+  private[this] var _id = 0L
+  def id = _id
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
+  private[kernel] var transaction: MultiverseTransaction = _
 
   private[this] val transactionalItems = new ChangeSet
 
@@ -51,6 +50,10 @@ object STM {
 
   def begin(participant: String) = synchronized {
     ensureIsActiveOrNew
+    transaction = Multiverse.STM.startUpdateTransaction
+    _id = transaction.getReadVersion
+    log.debug("Creating a new transaction with id [%s]", _id)
+
     if (status == TransactionStatus.New) log.debug("TX BEGIN - Server with UUID [%s] is starting NEW transaction [%s]", participant, toString)
     else log.debug("Server [%s] is participating in transaction", participant)
     participants ::= participant
@@ -74,7 +77,8 @@ object STM {
             else false
           }}.exists(_ == true)
         } else false
-      if (haveAllPreCommitted) {
+      if (haveAllPreCommitted && transaction != null) {
+        transaction.commit
         transactionalItems.items.foreach(_.commit)
         status = TransactionStatus.Completed
         reset
@@ -89,7 +93,7 @@ object STM {
   def rollback(participant: String) = synchronized {
     ensureIsActiveOrAborted
     log.debug("TX ROLLBACK - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
-    transactionalItems.items.foreach(_.rollback)
+    transaction.abort
     status = TransactionStatus.Aborted
     reset
   }
@@ -97,7 +101,7 @@ object STM {
   def rollbackForRescheduling(participant: String) = synchronized {
     ensureIsActiveOrAborted
     log.debug("TX ROLLBACK for recheduling - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
-    transactionalItems.items.foreach(_.rollback)
+    transaction.abort
     reset
   }
 

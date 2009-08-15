@@ -1,0 +1,180 @@
+doel:
+
+bepalen welke initiele transformaties (zonder optimalisaties) nodig zijn
+
+------------------- volledig stateless classes-----------------------------------------------------------
+
+aangezien ze geen state hebben kunnen ze geignored worden.
+
+-------------------- objecten met alleen maar primtives zonder interfaces en super classes ---------------
+
+voor:
+
+class Foo{
+    int a;
+    boolean b;
+
+    void inc(){
+        a++;
+    }
+}
+
+na:
+
+class Foo implements TransactionalObject{
+
+    Foo(){
+        Transaction t = TransactionThreadLocal.get();
+        t.attachAsNew(new $Foo());
+    }
+
+    void inc(){
+        Transaction t = TransactionThreadLocal.get();
+        $Foo $foo = ($Foo)t.read(this);
+        $foo.inc();
+    }
+
+    +alle methods van TransactionalObject
+}
+
+class $Foo implements $Object{
+    int a;
+    int b;
+    boolean committed;
+    long version;
+
+    void inc(){
+        if(committed){
+            throw new ReadonlyException();
+        }else{
+            a++;
+        }
+    }
+
+    ...
+
+    + methods van $Object
+}
+
+Stappen:
+
+- Plaats TransactionalObject interface op Original en implementeer die
+
+- Verhuis alle velden van Object naar $Object
+
+- Copieer de methodes van Object naar $Object
+
+- Transformeer alle methodes van Original zodat ze de call forwarden naarde $Object
+
+- de methodes die een mutatie aanbrengen op het $Object moeten voorzien zijn van een committed check.
+
+- ? Moet de $Object ook de interfaces/superclasses van de Original overnemen?
+
+--------------- methodes zonder argumenten ------------------------------------
+
+--------------- methodes met primitive argumenten -----------------------------
+
+--------------- methodes met transactional argumenten -------------------------
+
+--------------- methodes met runtime determined argumenten --------------------
+
+--------------- methode met void return type ----------------------------------
+
+--------------- methode met primtive return type ------------------------------
+
+---------------
+
+--------------- objecten met non stm members and non primitives ---------------
+
+---------------- object met only final fields ---------------------------------
+
+voor:
+
+class IntValueConstant{
+
+    final IntValue intValue;
+
+    public IntValueConstant(int i){
+        intValue = new IntValue(i);
+    }
+
+    void inc(){
+        intValue.inc();
+    }
+}
+
+
+na:
+
+class IntValueConstant{
+
+    final IntValue intValue;
+
+    public IntValueConstant(int i){
+        intValue = new IntValue(i);
+    }
+
+}
+
+
+todo: hoeft dus niets aan te gebeuren.
+
+--------------- objecten met mutable stm members ------------------------------
+
+voor:
+
+class IntValueHolder{
+
+    IntValue intValue;
+
+    void set(IntValue intValue){
+        this.intValue = intValue;
+    }
+
+    IntValue get(){
+        return intValue;
+    }
+}
+
+na:
+
+class IntValueHolder{
+
+    void set(IntValue intValue){
+        Transaction t = TransactionThreadLocal.get();
+        $IntValueHolder tranlocalThis = ($IntValueHolder)t.read(this);
+        tranlocalThis.set(intValue);
+    }
+}
+
+class $IntValueHolder implements $Object{
+
+    IntValue intValue;
+
+    void set(IntValue intValue){
+        this.intValue = intValue;
+    }
+
+    void get(){
+        return intValue;
+    }
+}
+
+---------------- objecten met runtime determined stm members -----------------
+
+
+----------------- static inner objects ---------------------------------------
+
+
+--------------------- non static inner objects -------------------------------
+
+------------------- subclasses -----------------------------------------------
+
+
+------------------- static methods -------------------------------------------
+
+
+-------------------- missing transaction -------------------------------------
+
+idealiter zou je willen dat zo gauw er geen transactie aanwezig is, er een wordt gemaakt en na afloop
+weer wordt gecommit. 

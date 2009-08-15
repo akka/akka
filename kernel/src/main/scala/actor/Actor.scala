@@ -19,6 +19,7 @@ import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFa
 import management.Management
 
 import com.twitter.service.Stats
+import org.multiverse.utils.TransactionThreadLocal._
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -464,7 +465,10 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
+    if (messageHandle.tx.isDefined) {
+      TransactionManagement.threadBoundTx.set(messageHandle.tx)
+      setThreadLocalTransaction(messageHandle.tx.get.transaction)
+    }
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
     try {
@@ -479,11 +483,15 @@ trait Actor extends Logging with TransactionManagement {
         else e.printStackTrace
     } finally {
       TransactionManagement.threadBoundTx.set(None)
+      setThreadLocalTransaction(null)
     }
   }
 
   private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
-    if (messageHandle.tx.isDefined) TransactionManagement.threadBoundTx.set(messageHandle.tx)
+    if (messageHandle.tx.isDefined) {
+      TransactionManagement.threadBoundTx.set(messageHandle.tx)
+      setThreadLocalTransaction(messageHandle.tx.get.transaction)
+    }
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
     try {
@@ -500,6 +508,7 @@ trait Actor extends Logging with TransactionManagement {
       case e =>
         rollback(activeTx)
         TransactionManagement.threadBoundTx.set(None) // need to clear threadBoundTx before call to supervisor 
+        setThreadLocalTransaction(null)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (supervisor.isDefined) supervisor.get ! Exit(this, e)
         if (future.isDefined) future.get.completeWithException(this, e)
@@ -510,6 +519,7 @@ trait Actor extends Logging with TransactionManagement {
       else tryToPrecommitTransaction
       rescheduleClashedMessages
       TransactionManagement.threadBoundTx.set(None)
+      setThreadLocalTransaction(null)
     }
   }
 

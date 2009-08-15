@@ -4,133 +4,14 @@
 
 package se.scalablesolutions.akka.kernel.state
 
-import kernel.stm.TransactionManagement
+import kernel.stm.{Ref, TransactionManagement}
 import akka.collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-import org.multiverse.standard.manuallyinstrumented.Ref
-
-sealed abstract class TransactionalStateConfig
-abstract class PersistentStorageConfig  extends TransactionalStateConfig
-case class CassandraStorageConfig extends PersistentStorageConfig
-case class TerracottaStorageConfig extends PersistentStorageConfig
-case class TokyoCabinetStorageConfig extends PersistentStorageConfig
-case class MongoStorageConfig extends PersistentStorageConfig
-
-/**
- * Scala API.
- * <p/>
- * Example Scala usage:
- * <pre>
- * val myMap = TransactionalState.newPersistentMap(CassandraStorageConfig)
- * </pre>
- */
-object TransactionalState extends TransactionalState
-
-/**
- * Java API.
- * <p/>
- * Example Java usage:
- * <pre>
- * TransactionalState state = new TransactionalState();
- * TransactionalMap myMap = state.newPersistentMap(new CassandraStorageConfig());
- * </pre>
- */
-class TransactionalState {
-  def newPersistentMap(config: PersistentStorageConfig): TransactionalMap[AnyRef, AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
-    case MongoStorageConfig() => new MongoPersistentTransactionalMap
-    case TerracottaStorageConfig() => throw new UnsupportedOperationException
-    case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
-  }
-
-  def newPersistentVector(config: PersistentStorageConfig): TransactionalVector[AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
-    case MongoStorageConfig() => new MongoPersistentTransactionalVector
-    case TerracottaStorageConfig() => throw new UnsupportedOperationException
-    case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
-  }
-
-  def newPersistentRef(config: PersistentStorageConfig): TransactionalRef[AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalRef
-    case TerracottaStorageConfig() => throw new UnsupportedOperationException
-    case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
-  }
-
-  def newInMemoryMap[K, V]: TransactionalMap[K, V] = new InMemoryTransactionalMap[K, V]
-
-  def newInMemoryVector[T]: TransactionalVector[T] = new InMemoryTransactionalVector[T]
-
-  def newInMemoryRef[T]: TransactionalRef[T] = new TransactionalRef[T]
-}
-
-/**
- *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-@serializable
-trait Transactional {
-  // FIXME: won't work across the cluster
-  val uuid = Uuid.newUuid.toString
-
-  protected def verifyTransaction = {
-    val cflowTx = TransactionManagement.threadBoundTx.get
-    if (!cflowTx.isDefined) {
-      throw new IllegalStateException("Can't access transactional reference outside the scope of a transaction [" + this + "]")
-    } else {
-      cflowTx.get.register(this)
-    }
-  }
-}
-
-/**
- * Base trait for all state implementations (persistent or in-memory).
- *
- * FIXME: Create Java versions using pcollections
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
-  override def hashCode: Int = System.identityHashCode(this);
-  override def equals(other: Any): Boolean = false
-  def remove(key: K)
-}
-
-/**
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
-  protected[this] var ref = new TransactionalRef(new HashTrie[K, V])
-
-  // ---- Overriding scala.collection.mutable.Map behavior ----
-  override def contains(key: K): Boolean = ref.get.contains(key)
-
-  override def clear = ref.set(new HashTrie[K, V])
-
-  override def size: Int = ref.get.size
-
-  // ---- For scala.collection.mutable.Map ----
-  override def remove(key: K) = ref.set(ref.get - key)
-
-  override def elements: Iterator[(K, V)] = ref.get.elements
- 
-  override def get(key: K): Option[V] = ref.get.get(key)
-
-  override def put(key: K, value: V): Option[V] = {
-    val map = ref.get
-    val oldValue = map.get(key)
-    ref.set(map.update(key, value))
-    oldValue
-  }
-
-  override def -=(key: K) = remove(key)
-
-  override def update(key: K, value: V) = put(key, value)
-}
+import org.multiverse.utils.TransactionThreadLocal._
 
 /**
  * Base class for all persistent transactional map implementations should extend.
@@ -147,10 +28,6 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 
   def getRange(start: Option[AnyRef], count: Int)
 
-  def begin
-  def commit
-  def rollback = changeSet.clear
- 
   // ---- For scala.collection.mutable.Map ----
   override def put(key: K, value: V): Option[V] = {
     verifyTransaction
@@ -178,7 +55,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
   val storage: MapStorage
 
   override def remove(key: AnyRef) = {
-    verifyTransaction
     if (changeSet.contains(key)) changeSet -= key
     else storage.removeMapStorageFor(uuid, key)
   }
@@ -187,7 +63,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
     getRange(start, None, count)
 
   def getRange(start: Option[AnyRef], finish: Option[AnyRef], count: Int) = {
-    verifyTransaction
     try {
       storage.getMapStorageRangeFor(uuid, start, finish, count)
     } catch {
@@ -203,7 +78,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
 
   // ---- Overriding scala.collection.mutable.Map behavior ----
   override def clear = {
-    verifyTransaction
     try {
       storage.removeMapStorageFor(uuid)
     } catch {
@@ -282,76 +156,6 @@ class MongoPersistentTransactionalMap extends TemplatePersistentTransactionalMap
 }
 
 /**
- * Base for all transactional vector implementations.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
-  override def hashCode: Int = System.identityHashCode(this);
-  override def equals(other: Any): Boolean = false
-
-  def add(elem: T)
-
-  def get(index: Int): T
-
-  def getRange(start: Int, count: Int): List[T]
-}
-
-/**
- * Implements an in-memory transactional vector.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
-  private[kernel] var state = new Ref[Vector[T]](EmptyVector) 
-
-  def add(elem: T) = {
-    state.get.set(elem) 
-  }
-
-  def get(index: Int): T = {
-
-
-    state(index)
-  }
-
-  def getRange(start: Int, count: Int): List[T] = {
-    verifyTransaction
-    state.slice(start, count).toList.asInstanceOf[List[T]]
-  }
-
-  // ---- For Transactional ----
-  override def begin = snapshot = state
-
-  override def commit = snapshot = state
-
-  override def rollback = state = snapshot
-
-  // ---- For Seq ----
-  def length: Int = {
-    verifyTransaction
-    state.length
-  }
-
-  def apply(index: Int): T = {
-    verifyTransaction
-    state(index)
-  }
-
-  override def elements: Iterator[T] = {
-    //verifyTransaction
-    state.elements
-  }
-
-  override def toList: List[T] = {
-    verifyTransaction
-    state.toList
-  }
-}
-
-/**
  * Base class for all persistent transactional vector implementations should extend.
  * Implements a Unit of Work, records changes into a change set.
  *
@@ -363,11 +167,6 @@ abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
 
   // FIXME: need to handle remove in another changeSet
   protected[kernel] val changeSet = new ArrayBuffer[T]
-
-  // ---- For Transactional ----
-  override def begin = {}
-
-  override def rollback = changeSet.clear
 
   // ---- For TransactionalVector ----
   override def add(value: T) = {
@@ -416,7 +215,6 @@ abstract class TemplatePersistentTransactionalVector extends PersistentTransacti
     get(length - 1)
   }
 
-  // ---- For Transactional ----
   override def commit = {
     // FIXME: should use batch function once the bug is resolved
     for (element <- changeSet) storage.insertVectorStorageEntryFor(uuid, element)
@@ -449,40 +247,11 @@ class MongoPersistentTransactionalVector extends TemplatePersistentTransactional
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalRef[T](elem: T) extends Transactional {
-  def this() = this(null)
-
-  private[kernel] val ref = new Ref[T](elem)
-
-  def swap(elem: T) = ref.set(elem)
-
-  def get: Option[T] = {
-    if (ref.isNull) None
-    else Some(ref.get)
-  }
-
-  def getOrElse(default: => T): T = {
-    if (ref.isNull) default
-    else ref.get
-  }
-
-  def isDefined: Boolean = !ref.isNull)
-}
-
-/**
- * Implements a transactional reference.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class CassandraPersistentTransactionalRef extends TransactionalRef[String] {
-  def commit = if (isDefined) {
+class CassandraPersistentTransactionalRef extends TransactionalRef[AnyRef] {
+  override def commit = if (isDefined) {
     CassandraStorage.insertRefStorageFor(uuid, ref.get)
     ref.clear
   }
-
-  def rollback = ref.clear
 
   override def get: Option[AnyRef] = {
     verifyTransaction

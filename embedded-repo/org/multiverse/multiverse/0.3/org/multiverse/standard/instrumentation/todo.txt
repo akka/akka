@@ -1,0 +1,35 @@
+todo
+
+- er is een probleem met atomic en constructors.
+
+- Het toevoegen van een Atomic annotation geeft problemen met een constantpool.
+
+- bij de Tranlocal nog een snapshot
+
+- TranlocalSnapshot
+
+- de debug info van de methodes uit de FastAtomicObjectMixin meenemen naar de class zelf.
+
+- test for multiple clinit clauses
+
+idea
+
+done
+
+- de automatic package moet gerenamed worden.
+
+- Tranlocal opzetten mbv tree api
+
+- bij de Tranlocal moet nog een committed check gedaan worden
+
+- problemen met het toevoegen van nieuwe classes in asm structuur
+
+- aangezien je een chain hebt, ben je de orginele kwijt... zou je die misschien mee kunnen geven?
+
+- de nieuwe Tranlocal toevoegen aan de classloader.
+
+- Tranlocal en privatize constructor
+
+- bij de Tranlocal getDirtnessState
+
+

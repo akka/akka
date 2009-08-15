@@ -1,0 +1,192 @@
+---------------- Faster Get-Transactie optimizations -----------------
+
+De huidige transactie moet opgehaald worden via de ThreadLocal. Dit kan een kostbare aangelegenheid worden,
+dus de vraag is hoe je dit kunt optimaliseren:
+
+voor:
+
+int get(){
+    $IntValue tranlocalThis = ($IntValue)TransactionThreadLocal.get().read(this);
+    return tranlocalThis;
+}
+
+void foo(){
+    Transaction t = startTransaction();
+    someIntValue.get();
+    t.commit();
+}
+
+Kosten zijn nu 1 getTransaction.
+
+na:
+
+int get(Transaction t){
+    $IntValue tranlocalThis = ($IntValue)t.read(this);
+    return tranlocalThis;
+}
+
+void foo(){
+    Transaction t = startTransaction();
+    someIntValue.get(t);
+    t.commit();
+}
+
+Kosten zijn nu 0 getTransaction.
+
+Wat:
+    Je zult de signature van de methode breder moeten maken zodat de transaction meegegeven gaat worden.
+    Je zult aanroepende methodes ook breder moeten maken.
+Wanneer:
+   Tot hoe diep ga je.
+
+Note:
+  Volgens mij is dit een vrij eenvoudige optimalisatie aangezien je niets hoeft te weten van de andere classes.
+  Als er extra methodes bij worden gegenereerd, kan je gewoon de huidige methode aanroepen vervangen
+
+----------------- Optimization ---------------------------
+
+Methods that don't need a transaction..
+
+doel"
+   verminderen overhead transactie creatie/administratie.
+
+--------------  Optimization -----------------------------
+
+probleem:
+Als een object bewerkingen gaat doen op een of meer transactionele objecten, dan zal je iedere keer als
+je de $Object wilt hebben, naar de transactie moeten gaan om het op te halen. Dit ophalen is kostbaar
+(in ieder geval een stuk kostbaarder dan een variable. En het ophalen gaat door de extra code dat nodig is,
+ook de JIT in de weg zitten.
+
+doel:
+-verminderen van het aatal verzoeken dat gedaan wordt om de state op te halen.
+-JIT niet in de weg zitten bij optimalisaties
+
+Randvoorwaarden:
+- als de waarde niet veranderd (finals bv)
+- als de waarde wel veranderd, moet je nieuwe $Object ophalen... maar kan nog steeds geoptimaliseerd worden.
+
+voor:
+     public int pop() {
+        Transaction t = TransactionThreadLocal.get();
+        if (readyToPopStack.isEmpty()) {
+            while (!pushedStack.isEmpty()) {
+                readyToPopStack.push(pushedStack.pop());
+            }
+        }
+
+        return readyToPopStack.pop();
+    }
+
+1<=kosten<=(readyToPopStack + 3*pushedStack.size)*Transaction.read
+
+na:
+   public int pop() {
+        Transaction t = TransactionThreadLocal.get();
+        $IntStack $readyToPopStack = ($IntStack) t.read(readyToPopStack);
+        if ($readyToPopStack.isEmpty()) {
+            $IntStack $pushedStack = ($IntStack) t.read(pushedStack);
+            while (!$pushedStack.isEmpty()) {
+                $readyToPopStack.push($pushedStack.pop());
+            }
+        }
+
+        return $readyToPopStack.pop();
+    }
+}
+
+1<=kosten<=2 * Transaction.read
+
+
+--------------- Constant Simplification Optimization --------------
+
+---------------- Pass $Object instead Object optimization ---------
+
+Probleem:
+Als je een methode hebt die daarin een transactioneel Object mee krijgt, zal binnen die methode het $Object
+opgehaald moeten worden. Dit kan kostbaar zijn. Als de callee de $Object toch al heeft, dan is het eenvoudiger
+om de $Object mee te geven.
+
+Oplossing:
+
+Genereer een extra methode:
+
+voor
+
+    public static void inc(IntValue intValue){
+        Transaction t = TransactionThreadLocal.get();
+        $IntValue $intValue = ($IntValue)intValue;
+        $intValue.set($intValue.get());
+    }
+
+    public static void inc2(IntValue intValue){
+        inc(intValue);
+        inc(intValue);
+    }
+
+na
+
+    public static void inc($IntValue $intValue){
+        $intValue.set($intValue.get());
+    }
+
+    public static void inc2(IntValue intValue){
+        $IntValue $intValue = ($IntValue)getTransaction().read(intValue);
+        $intValue.inc();
+        $intValue.inc();
+    }
+
+    public static void inc2($IntValue $intValue){
+        $intValue.inc();
+        $intValue.inc();
+    }
+
+
+De caller van de inc2 functie kan nu dus kiezen uit de inc2 waar het $Object nog opgehaald moet worden,
+en waar niet. Als je kijkt naar de laatste inc2, dan zie je dat hij niets duurder is dan een klassieke POJO.
+
+Randvoorwaarden:
+
+------------------- Reduce Return Value Transformation optimization ---------------------
+
+Problem:
+
+Onnodig return values omzetten is kostbaar, dus je kunt een extra methode aanbieden
+
+voor:
+
+public IntValue min(IntValue a, IntValue b){
+
+}
+
+public void foo(IntValue a, IntValue b){
+    IntValue result = min(a,b);
+    result.inc();
+}
+
+
+na:
+
+public $IntValue $min(IntValue a, IntValue b){
+
+}
+
+public void foo(IntValue a, IntValue b){
+    $IntValue $result = min(a,b);
+    $result.inc();
+}
+
+
+--------------------  Readonly Transaction Optimization ? ---------
+
+
+De optimalisaties zouden onafhankelijk
+
+----------------------- kosten optimalisatie inzichtelijk maken:
+
+het aantal keren dat er een Transaction.read gedaan moet worden.
+
+
+ -----------------
+
+ meerdere keren transactie ophalen binnen een methode kan vervangen worden door een enkele keer ophalen.
