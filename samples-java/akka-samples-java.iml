@@ -9,8 +9,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="akka-kernel" exported="" />
-    <orderEntry type="module" module-name="akka-util-java" exported="" />
+    <orderEntry type="library" exported="" name="Maven: se.scalablesolutions.akka:akka-kernel:0.5" level="project" />
+    <orderEntry type="library" exported="" name="Maven: se.scalablesolutions.akka:akka-util-java:0.5" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-beta-4" level="project" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-jsr250:2.0-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Maven: javax.annotation:jsr250-api:1.0" level="project" />

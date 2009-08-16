@@ -85,9 +85,11 @@ public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E>
 
   @Override
     public E set(final E newRef) {
+    System.out.println("------------- REF SET 1: " + newRef);
     return new AtomicTemplate<E>() {
       @Override
         public E execute(Transaction t) throws Exception {
+          System.out.println("------------- REF SET 2: " + newRef);
         RefTranlocal<E> tranlocalRef = (RefTranlocal) ((Transaction) t).privatize(Ref.this);
         return tranlocalRef.set(newRef);
       }
