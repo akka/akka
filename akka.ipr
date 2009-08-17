@@ -339,6 +339,7 @@
               <list size="0" />
             </value>
           </option>
+          <option name="ADD_JUNIT_TO_ENTRIES" value="true" />
         </inspection_tool>
         <inspection_tool class="UnusedMessageFormatParameter" enabled="false" level="WARNING" enabled_by_default="false" />
         <inspection_tool class="UnusedParameters" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -1817,6 +1818,110 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.GA/netty-3.1.0.GA-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: se.scalablesolutions.akka:akka-kernel:0.5">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/kernel/pom.xml!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom.xml!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom.xml!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom.xml!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-kernel/0.5/akka-kernel-0.5.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$PROJECT_DIR$/kernel/pom-javadoc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom-javadoc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom-javadoc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-kernel/0.5/akka-kernel-0.5-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$PROJECT_DIR$/kernel/pom-sources.jar!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom-sources.jar!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom-sources.jar!/" />
+        <root url="jar://$PROJECT_DIR$/kernel/pom-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-kernel/0.5/akka-kernel-0.5-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: se.scalablesolutions.akka:akka-util-java:0.5">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/util-java/pom.xml!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom.xml!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom.xml!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom.xml!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom.xml!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-util-java/0.5/akka-util-java-0.5.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$PROJECT_DIR$/util-java/pom-javadoc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-javadoc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-javadoc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-javadoc.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-util-java/0.5/akka-util-java-0.5-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$PROJECT_DIR$/util-java/pom-sources.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-sources.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-sources.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-sources.jar!/" />
+        <root url="jar://$PROJECT_DIR$/util-java/pom-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-util-java/0.5/akka-util-java-0.5-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.multiverse:multiverse:0.3">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse/0.3/multiverse-0.3.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse/0.3/multiverse-0.3-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse/0.3/multiverse-0.3-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.codehaus.aspectwerkz:aspectwerkz-jdk5:2.1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/aspectwerkz/aspectwerkz-jdk5/2.1/aspectwerkz-jdk5-2.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/aspectwerkz/aspectwerkz-jdk5/2.1/aspectwerkz-jdk5-2.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/aspectwerkz/aspectwerkz-jdk5/2.1/aspectwerkz-jdk5-2.1-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: com.twitter:scala-stats:1.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/twitter/scala-stats/1.0/scala-stats-1.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/com/twitter/scala-stats/1.0/scala-stats-1.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/twitter/scala-stats/1.0/scala-stats-1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: com.mongodb:mongo:0.6">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/mongodb/mongo/0.6/mongo-0.6.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/com/mongodb/mongo/0.6/mongo-0.6-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/com/mongodb/mongo/0.6/mongo-0.6-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.apache.cassandra:cassandra:0.4.0-trunk">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk-sources.jar!/" />
       </SOURCES>
     </library>
   </component>
