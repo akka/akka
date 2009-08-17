@@ -10,7 +10,7 @@
   <parent>
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.5</version>
+    <version>0.6</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -22,12 +22,12 @@
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-kernel</artifactId>
-      <version>0.5</version>
+      <version>0.6</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-util-java</artifactId>
-      <version>0.5</version>
+      <version>0.6</version>
     </dependency>
     <dependency>
       <groupId>javax.ws.rs</groupId>
