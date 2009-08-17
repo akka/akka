@@ -6,16 +6,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/AllTest.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/AllTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/akka-kernel.iml" afterPath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/util-java/akka-util-java.iml" afterPath="$PROJECT_DIR$/util-java/akka-util-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" afterPath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" afterPath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/kernel/src/test/scala/SchedulerSpec.scala" />
     </list>
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
     <ignored path=".idea/workspace.xml" />
@@ -100,8 +92,10 @@
       <file leaf-file-name="Scheduler.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="11" column="12" selection-start="299" selection-end="299" vertical-scroll-proportion="0.06685633">
-              <folding />
+            <state line="11" column="1" selection-start="595" selection-end="595" vertical-scroll-proportion="0.25035563">
+              <folding>
+                <marker date="1250534749000" expanded="true" signature="0:597" placeholder="/.../" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -2201,8 +2195,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="11" column="12" selection-start="299" selection-end="299" vertical-scroll-proportion="0.06685633">
-          <folding />
+        <state line="11" column="1" selection-start="595" selection-end="595" vertical-scroll-proportion="0.25035563">
+          <folding>
+            <marker date="1250534749000" expanded="true" signature="0:597" placeholder="/.../" />
+          </folding>
         </state>
       </provider>
     </entry>
