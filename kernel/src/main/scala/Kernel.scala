@@ -32,7 +32,7 @@ object Kernel extends Logging {
   }
 
   val config = setupConfig
-  
+
   val CONFIG_VERSION = config.getString("akka.version", "0")
   if (VERSION != CONFIG_VERSION) throw new IllegalStateException("Akka JAR version [" + VERSION + "] is different than the provided config ('akka.conf') version [" + CONFIG_VERSION + "]")
 
@@ -51,7 +51,7 @@ object Kernel extends Logging {
   private var jerseySelectorThread: SelectorThread = _
   private val startTime = System.currentTimeMillis
   private var applicationLoader: Option[ClassLoader] = None
-  
+
   def main(args: Array[String]) = boot
 
   def boot = synchronized {
@@ -65,13 +65,13 @@ object Kernel extends Logging {
       if (RUN_MANAGEMENT_SERVICE) startManagementService
 
       STORAGE_SYSTEM match {
-        case "cassandra" =>     startCassandra
-        case "terracotta" =>    throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
-        case "mongodb" =>       throw new UnsupportedOperationException("mongodb storage backend is not yet supported")
-        case "redis" =>         throw new UnsupportedOperationException("redis storage backend is not yet supported")
-        case "voldemort" =>     throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
+        case "cassandra" => startCassandra
+        case "terracotta" => throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
+        case "mongodb" => throw new UnsupportedOperationException("mongodb storage backend is not yet supported")
+        case "redis" => throw new UnsupportedOperationException("redis storage backend is not yet supported")
+        case "voldemort" => throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
         case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
-        case _ =>               throw new UnsupportedOperationException("Unknown storage system [" + STORAGE_SYSTEM + "]")
+        case _ => throw new UnsupportedOperationException("Unknown storage system [" + STORAGE_SYSTEM + "]")
       }
 
       if (RUN_REST_SERVICE) startREST
@@ -81,26 +81,26 @@ object Kernel extends Logging {
       hasBooted = true
     }
   }
-  
+
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
   def setupConfig: Config = {
-      if (HOME.isDefined) {
-        try {
-          val configFile = HOME.get + "/config/akka.conf"
-          Configgy.configure(configFile)
-          log.info("AKKA_HOME is defined to [%s], config loaded from [%s].", HOME.get, configFile)
-        } catch {
-          case e: ParseException => throw new IllegalStateException("'akka.conf' config file can not be found in [" + HOME + "/config/akka.conf] - aborting. Either add it in the 'config' directory or add it to the classpath.")
-        }
-      } else {
-        try {
-          Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
-          log.info("Config loaded from the application classpath.")
-        } catch {
-          case e: ParseException => throw new IllegalStateException("'$AKKA_HOME/config/akka.conf' could not be found and no 'akka.conf' can be found on the classpath - aborting. . Either add it in the '$AKKA_HOME/config' directory or add it to the classpath.")
-        }
+    if (HOME.isDefined) {
+      try {
+        val configFile = HOME.get + "/config/akka.conf"
+        Configgy.configure(configFile)
+        log.info("AKKA_HOME is defined to [%s], config loaded from [%s].", HOME.get, configFile)
+      } catch {
+        case e: ParseException => throw new IllegalStateException("'akka.conf' config file can not be found in [" + HOME + "/config/akka.conf] - aborting. Either add it in the 'config' directory or add it to the classpath.")
       }
+    } else {
+      try {
+        Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
+        log.info("Config loaded from the application classpath.")
+      } catch {
+        case e: ParseException => throw new IllegalStateException("'$AKKA_HOME/config/akka.conf' could not be found and no 'akka.conf' can be found on the classpath - aborting. . Either add it in the '$AKKA_HOME/config' directory or add it to the classpath.")
+      }
+    }
     val config = Configgy.config
     config.registerWithJmx("com.scalablesolutions.akka")
     // FIXME fix Configgy JMX subscription to allow management
@@ -111,29 +111,29 @@ object Kernel extends Logging {
   private[akka] def runApplicationBootClasses = {
     new management.RestfulJMXBoot // add the REST/JMX service
     val loader =
-      if (HOME.isDefined) {
-        val CONFIG = HOME.get + "/config"
-        val DEPLOY = HOME.get + "/deploy"
-        val DEPLOY_DIR = new File(DEPLOY)
-        if (!DEPLOY_DIR.exists) { log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1) }
-        val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
-        //val toDeploy = DEPLOY_DIR.toURL :: (for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL)
-        log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
-        new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
-      } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) { 
-        getClass.getClassLoader
-      } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+    if (HOME.isDefined) {
+      val CONFIG = HOME.get + "/config"
+      val DEPLOY = HOME.get + "/deploy"
+      val DEPLOY_DIR = new File(DEPLOY)
+      if (!DEPLOY_DIR.exists) {log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1)}
+      val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
+      //val toDeploy = DEPLOY_DIR.toURL :: (for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL)
+      log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
+      new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+    } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) {
+      getClass.getClassLoader
+    } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
     for (clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
     applicationLoader = Some(loader)
   }
-  
+
   private[akka] def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
-       def run = RemoteServer.start(applicationLoader)
+      def run = RemoteServer.start(applicationLoader)
     }, "Akka Remote Service")
     remoteServerThread.start
   }
@@ -178,18 +178,18 @@ object Kernel extends Logging {
 
   private def printBanner = {
     log.info(
-"""==============================
-        __    __
- _____  |  | _|  | _______
- \__  \ |  |/ /  |/ /\__  \
-  / __ \|    <|    <  / __ \_
- (____  /__|_ \__|_ \(____  /
-      \/     \/    \/     \/
-""")
+      """==============================
+              __    __
+       _____  |  | _|  | _______
+       \__  \ |  |/ /  |/ /\__  \
+        / __ \|    <|    <  / __ \_
+       (____  /__|_ \__|_ \(____  /
+            \/     \/    \/     \/
+      """)
     log.info("     Running version " + VERSION)
     log.info("==============================")
   }
-  
+
   private def cassandraBenchmark = {
     val NR_ENTRIES = 100000
 
@@ -206,7 +206,7 @@ object Kernel extends Logging {
     CassandraStorage.insertMapStorageEntriesFor("test", entries.toList)
     end = System.currentTimeMillis
     println("Writes per second - batch: " + NR_ENTRIES / ((end - start).toDouble / 1000))
-    
+
     println("=================================================")
     start = System.currentTimeMillis
     for (i <- 1 to NR_ENTRIES) CassandraStorage.getMapStorageEntryFor("test", i.toString)
@@ -219,15 +219,15 @@ object Kernel extends Logging {
 
 
 
-  
-/*
-  //import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
-  //import voldemort.server.{VoldemortConfig, VoldemortServer}
-  //import voldemort.versioning.Versioned
 
-    private[this] var storageFactory: StoreClientFactory = _
-    private[this] var storageServer: VoldemortServer = _
-  */
+/*
+//import voldemort.client.{SocketStoreClientFactory, StoreClient, StoreClientFactory}
+//import voldemort.server.{VoldemortConfig, VoldemortServer}
+//import voldemort.versioning.Versioned
+
+  private[this] var storageFactory: StoreClientFactory = _
+  private[this] var storageServer: VoldemortServer = _
+*/
 
 //  private[akka] def startVoldemort = {
 //  val VOLDEMORT_SERVER_URL = "tcp://" + SERVER_URL
@@ -263,39 +263,39 @@ object Kernel extends Logging {
 //  private[akka] def getStorageFor(storageName: String): StoreClient[String, String] =
 //    storageFactory.getStoreClient(storageName)
 
-   // private[akka] def startZooKeeper = {
-  //import org.apache.zookeeper.jmx.ManagedUtil
-  //import org.apache.zookeeper.server.persistence.FileTxnSnapLog
-  //import org.apache.zookeeper.server.ServerConfig
-  //import org.apache.zookeeper.server.NIOServerCnxn
-  //  val ZOO_KEEPER_SERVER_URL = SERVER_URL
-  //  val ZOO_KEEPER_SERVER_PORT = 9898
-  //   try {
-  //     ManagedUtil.registerLog4jMBeans
-  //     ServerConfig.parse(args)
-  //   } catch {
-  //     case e: JMException => log.warning("Unable to register log4j JMX control: s%", e)
-  //     case e => log.fatal("Error in ZooKeeper config: s%", e)
-  //   }
-  //   val factory = new ZooKeeperServer.Factory() {
-  //     override def createConnectionFactory = new NIOServerCnxn.Factory(ServerConfig.getClientPort)
-  //     override def createServer = {
-  //       val server = new ZooKeeperServer
-  //       val txLog = new FileTxnSnapLog(
-  //         new File(ServerConfig.getDataLogDir),
-  //         new File(ServerConfig.getDataDir))
-  //       server.setTxnLogFactory(txLog)
-  //       server
-  //     }
-  //   }
-  //   try {
-  //     val zooKeeper = factory.createServer
-  //     zooKeeper.startup
-  //     log.info("ZooKeeper started")
-  //     // TODO: handle clean shutdown as below in separate thread
-  //     // val cnxnFactory = serverFactory.createConnectionFactory
-  //     // cnxnFactory.setZooKeeperServer(zooKeeper)
-  //     // cnxnFactory.join
-  //     // if (zooKeeper.isRunning) zooKeeper.shutdown
-  //   } catch { case e => log.fatal("Unexpected exception: s%",e) }
-  // }
+// private[akka] def startZooKeeper = {
+//import org.apache.zookeeper.jmx.ManagedUtil
+//import org.apache.zookeeper.server.persistence.FileTxnSnapLog
+//import org.apache.zookeeper.server.ServerConfig
+//import org.apache.zookeeper.server.NIOServerCnxn
+//  val ZOO_KEEPER_SERVER_URL = SERVER_URL
+//  val ZOO_KEEPER_SERVER_PORT = 9898
+//   try {
+//     ManagedUtil.registerLog4jMBeans
+//     ServerConfig.parse(args)
+//   } catch {
+//     case e: JMException => log.warning("Unable to register log4j JMX control: s%", e)
+//     case e => log.fatal("Error in ZooKeeper config: s%", e)
+//   }
+//   val factory = new ZooKeeperServer.Factory() {
+//     override def createConnectionFactory = new NIOServerCnxn.Factory(ServerConfig.getClientPort)
+//     override def createServer = {
+//       val server = new ZooKeeperServer
+//       val txLog = new FileTxnSnapLog(
+//         new File(ServerConfig.getDataLogDir),
+//         new File(ServerConfig.getDataDir))
+//       server.setTxnLogFactory(txLog)
+//       server
+//     }
+//   }
+//   try {
+//     val zooKeeper = factory.createServer
+//     zooKeeper.startup
+//     log.info("ZooKeeper started")
+//     // TODO: handle clean shutdown as below in separate thread
+//     // val cnxnFactory = serverFactory.createConnectionFactory
+//     // cnxnFactory.setZooKeeperServer(zooKeeper)
+//     // cnxnFactory.join
+//     // if (zooKeeper.isRunning) zooKeeper.shutdown
+//   } catch { case e => log.fatal("Unexpected exception: s%",e) }
+// }

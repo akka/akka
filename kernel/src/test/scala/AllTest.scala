@@ -6,6 +6,7 @@ import junit.framework.TestSuite
 
 import kernel.actor.{ActorSpec, RemoteActorSpec, PersistentActorSpec, InMemoryActorSpec}
 import kernel.reactor.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
+import kernel.util.SchedulerSpec
 
 object AllTest extends TestCase {
   def suite(): Test = {
@@ -18,6 +19,8 @@ object AllTest extends TestCase {
     suite.addTestSuite(classOf[RemoteActorSpec])
     //suite.addTestSuite(classOf[PersistentActorSpec])
     suite.addTestSuite(classOf[InMemoryActorSpec])
+    suite.addTestSuite(classOf[SchedulerSpec])
+
     //suite.addTestSuite(classOf[TransactionClasherSpec])
     suite
   }

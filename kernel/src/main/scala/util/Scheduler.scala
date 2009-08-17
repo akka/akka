@@ -1,7 +1,3 @@
-/**
- *  Copyright (C) 2009 Scalable Solutions.
- */
-
 package se.scalablesolutions.akka.kernel.util
 
 import java.util.concurrent._
@@ -9,17 +5,14 @@ import kernel.actor.{OneForOneStrategy, Actor}
 
 import org.scala_tools.javautils.Imports._
 
-case object Schedule
 case object UnSchedule
 case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
 /**
- * Based on David Pollak's ActorPing class in the Lift Project.
- * Licensed under Apache 2 License.
+ * Rework of David Pollak's ActorPing class in the Lift Project
+ * which is licensed under the Apache 2 License.
  */
 class ScheduleActor(val receiver: Actor, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
-  receiver ! Schedule
-
   def receive: PartialFunction[Any, Unit] = {
     case UnSchedule =>
       Scheduler.stopSupervising(this)
@@ -33,6 +26,7 @@ object Scheduler extends Actor {
   private val schedulers = new ConcurrentHashMap[Actor, Actor]
   faultHandler = Some(OneForOneStrategy(5, 5000))
   trapExit = true
+  start
 
   def schedule(receiver: Actor, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
     try {
@@ -73,3 +67,5 @@ private object SchedulerThreadFactory extends ThreadFactory {
     thread
   }
 }
+
+
