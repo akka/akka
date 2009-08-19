@@ -56,15 +56,7 @@ class PersistentActor extends Actor {
   }
 }
 
-object PersistenceManager {
-  @volatile var isRunning = false
-  def init = if (!isRunning) {
-    Kernel.startCassandra
-    isRunning = true
-  }
-}
 class PersistentActorSpec extends TestCase {
-  PersistenceManager.init
 
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {

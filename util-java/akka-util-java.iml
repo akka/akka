@@ -12,7 +12,6 @@
     <orderEntry type="library" name="Protobuf" level="application" />
     <orderEntry type="library" exported="" name="Maven: org.guiceyfruit:guice-core:2.0-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="Maven: com.google.protobuf:protobuf-java:2.1.0" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.multiverse:multiverse:0.3" level="project" />
   </component>
 </module>
 

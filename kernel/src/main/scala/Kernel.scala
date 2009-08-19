@@ -63,17 +63,6 @@ object Kernel extends Logging {
 
       if (RUN_REMOTE_SERVICE) startRemoteService
       if (RUN_MANAGEMENT_SERVICE) startManagementService
-
-      STORAGE_SYSTEM match {
-        case "cassandra" => startCassandra
-        case "terracotta" => throw new UnsupportedOperationException("terracotta storage backend is not yet supported")
-        case "mongodb" => throw new UnsupportedOperationException("mongodb storage backend is not yet supported")
-        case "redis" => throw new UnsupportedOperationException("redis storage backend is not yet supported")
-        case "voldemort" => throw new UnsupportedOperationException("voldemort storage backend is not yet supported")
-        case "tokyo-cabinet" => throw new UnsupportedOperationException("tokyo-cabinet storage backend is not yet supported")
-        case _ => throw new UnsupportedOperationException("Unknown storage system [" + STORAGE_SYSTEM + "]")
-      }
-
       if (RUN_REST_SERVICE) startREST
 
       Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
@@ -84,7 +73,7 @@ object Kernel extends Logging {
 
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
-  def setupConfig: Config = {
+  private def setupConfig: Config = {
     if (HOME.isDefined) {
       try {
         val configFile = HOME.get + "/config/akka.conf"
@@ -143,14 +132,7 @@ object Kernel extends Logging {
     log.info("Management service started successfully.")
   }
 
-  private[akka] def startCassandra = if (config.getBool("akka.storage.cassandra.service", true)) {
-    System.setProperty("cassandra", "")
-    if (HOME.isDefined) System.setProperty("storage-config", HOME.get + "/config/")
-    else if (System.getProperty("storage-config", "NIL") == "NIL") throw new IllegalStateException("AKKA_HOME and -Dstorage-config=... is not set. Can't start up Cassandra. Either set AKKA_HOME or set the -Dstorage-config=... variable to the directory with the Cassandra storage-conf.xml file.")
-    CassandraStorage.start
-  }
-
-  private[akka] def startREST = {
+  def startREST = {
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
 
     val scheme = uri.getScheme

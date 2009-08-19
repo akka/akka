@@ -57,47 +57,28 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  private[this] var sessions: Option[CassandraSessionPool[_]] = None
-
-  def start = synchronized {
-    if (!isRunning) {
-      try {
-        sessions = Some(new CassandraSessionPool(
-          KEYSPACE,
-          StackPool(SocketProvider(CASSANDRA_SERVER_HOSTNAME, CASSANDRA_SERVER_PORT)),
-          protocol,
-          CONSISTENCY_LEVEL))
-        log.info("Cassandra persistent storage has started up successfully");
-      } catch {
-        case e =>
-          log.error("Could not start up Cassandra persistent storage")
-          throw e
-      }
-      isRunning
-    }
-  }
-
-  def stop = synchronized {
-    if (isRunning && sessions.isDefined) sessions.get.close
-  }
-
+  private[this] var sessions = new CassandraSessionPool(
+    KEYSPACE,
+    StackPool(SocketProvider(CASSANDRA_SERVER_HOSTNAME, CASSANDRA_SERVER_PORT)),
+    protocol,
+    CONSISTENCY_LEVEL)
   // ===============================================================
   // For Ref
   // ===============================================================
 
-  override def insertRefStorageFor(name: String, element: AnyRef) = if (sessions.isDefined) {
-    sessions.get.withSession {
+  override def insertRefStorageFor(name: String, element: AnyRef) = {
+    sessions.withSession {
       _ ++| (name,
         new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY),
         serializer.out(element),
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
-  override def getRefStorageFor(name: String): Option[AnyRef] = if (sessions.isDefined) {
+  override def getRefStorageFor(name: String): Option[AnyRef] = {
     try {
-      val column: Option[Column] = sessions.get.withSession {
+      val column: Option[Column] = sessions.withSession {
         _ | (name, new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY))
       }
       if (column.isDefined) Some(serializer.in(column.get.value, None))
@@ -107,37 +88,37 @@ object CassandraStorage extends MapStorage
         e.printStackTrace
         None
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
   // ===============================================================
   // For Vector
   // ===============================================================
 
-  override def insertVectorStorageEntryFor(name: String, element: AnyRef) = if (sessions.isDefined) {
-    sessions.get.withSession {
+  override def insertVectorStorageEntryFor(name: String, element: AnyRef) = {
+    sessions.withSession {
       _ ++| (name,
         new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(getVectorStorageSizeFor(name))),
         serializer.out(element),
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
   override def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
   }
 
-  override def getVectorStorageEntryFor(name: String, index: Int): AnyRef = if (sessions.isDefined) {
-    val column: Option[Column] = sessions.get.withSession {
+  override def getVectorStorageEntryFor(name: String, index: Int): AnyRef =  {
+    val column: Option[Column] = sessions.withSession {
       _ | (name, new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)))
     }
     if (column.isDefined) serializer.in(column.get.value, None)
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
-  override def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = if (sessions.isDefined) {
+  override def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
     val startBytes = if (start.isDefined) intToBytes(start.get) else null
     val finishBytes = if (finish.isDefined) intToBytes(finish.get) else null
-    val columns: List[Column] = sessions.get.withSession {
+    val columns: List[Column] = sessions.withSession {
       _ / (name,
         VECTOR_COLUMN_PARENT,
         startBytes, finishBytes,
@@ -146,43 +127,43 @@ object CassandraStorage extends MapStorage
         CONSISTENCY_LEVEL)
     }
     columns.map(column => serializer.in(column.value, None))
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
-  override def getVectorStorageSizeFor(name: String): Int = if (sessions.isDefined) {
-    sessions.get.withSession {
+  override def getVectorStorageSizeFor(name: String): Int = {
+    sessions.withSession {
       _ |# (name, VECTOR_COLUMN_PARENT)
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
   // ===============================================================
   // For Map
   // ===============================================================
 
-  override def insertMapStorageEntryFor(name: String, key: AnyRef, element: AnyRef) = if (sessions.isDefined) {
-    sessions.get.withSession {
+  override def insertMapStorageEntryFor(name: String, key: AnyRef, element: AnyRef) = {
+    sessions.withSession {
       _ ++| (name,
         new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)),
         serializer.out(element),
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
-  override def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) = if (sessions.isDefined) {
+  override def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) = {
     val cf2columns: java.util.Map[String, java.util.List[Column]] = new java.util.HashMap
     for (entry <- entries) {
       val columns: java.util.List[Column] = new java.util.ArrayList
       columns.add(new Column(serializer.out(entry._1), serializer.out(entry._2), System.currentTimeMillis))
       cf2columns.put(MAP_COLUMN_PARENT.getColumn_family, columns)
     }
-    sessions.get.withSession {
+    sessions.withSession {
       _ ++| (new BatchMutation(name, cf2columns), CONSISTENCY_LEVEL)
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
-  override def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = if (sessions.isDefined) {
+  override def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
     try {
-      val column: Option[Column] = sessions.get.withSession {
+      val column: Option[Column] = sessions.withSession {
         _ | (name, new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)))
       }
       if (column.isDefined) Some(serializer.in(column.get.value, None))
@@ -192,9 +173,9 @@ object CassandraStorage extends MapStorage
         e.printStackTrace
         None
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
-  override def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = if (sessions.isDefined) {
+  override def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = {
     throw new UnsupportedOperationException
     /*
     val columns = server.get_columns_since(name, MAP_COLUMN_FAMILY, -1)
@@ -204,35 +185,35 @@ object CassandraStorage extends MapStorage
       col = (column.columnName, column.value)
     } yield col
   */
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
-  override def getMapStorageSizeFor(name: String): Int = if (sessions.isDefined) {
-    sessions.get.withSession {
+  override def getMapStorageSizeFor(name: String): Int = {
+    sessions.withSession {
       _ |# (name, MAP_COLUMN_PARENT)
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
   override def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
 
-  override def removeMapStorageFor(name: String, key: AnyRef): Unit = if (sessions.isDefined) {
+  override def removeMapStorageFor(name: String, key: AnyRef): Unit = {
     val keyBytes = if (key == null) null else serializer.out(key)
-    sessions.get.withSession {
+    sessions.withSession {
       _ -- (name,
         new ColumnPathOrParent(MAP_COLUMN_PARENT.getColumn_family, null, keyBytes),
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 
   override def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int):
-  List[Tuple2[AnyRef, AnyRef]] = if (sessions.isDefined) {
+  List[Tuple2[AnyRef, AnyRef]] = {
     val startBytes = if (start.isDefined) serializer.out(start.get) else null
     val finishBytes = if (finish.isDefined) serializer.out(finish.get) else null
-    val columns: List[Column] = sessions.get.withSession {
+    val columns: List[Column] = sessions.withSession {
       _ / (name, MAP_COLUMN_PARENT, startBytes, finishBytes, IS_ASCENDING, count, CONSISTENCY_LEVEL)
     }
     columns.map(column => (column.name, serializer.in(column.value, None)))
-  } else throw new IllegalStateException("CassandraStorage is not started")
+  }
 }
 
 /**
