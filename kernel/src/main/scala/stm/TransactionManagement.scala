@@ -49,6 +49,7 @@ trait TransactionManagement extends Logging {
     activeTx = tx
     threadBoundTx.set(tx)
     setThreadLocalTransaction(tx.get.transaction)
+    println("------ Start: " + tx.get.transaction)
     tx
   }
 
