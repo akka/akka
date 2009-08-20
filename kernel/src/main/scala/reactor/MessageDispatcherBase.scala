@@ -4,13 +4,9 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
-import kernel.management.Management
-
 import java.util.{LinkedList, Queue, List}
 import java.util.concurrent.{TimeUnit, BlockingQueue}
 import java.util.HashMap
-
-import com.twitter.service.Stats
 
 abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher {
 
@@ -22,12 +18,6 @@ abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher
   protected val messageHandlers = new HashMap[AnyRef, MessageInvoker]
   protected var selectorThread: Thread = _
   protected val guard = new Object
-
-  if (Management.RECORD_STATS) {
-    Stats.makeGauge("SizeOfBlockingQueue_" + name) {
-      guard.synchronized { blockingQueue.size.toDouble }
-    }
-  }
 
   def messageQueue = queue
 
@@ -54,12 +44,6 @@ abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher
 class ReactiveMessageQueue(name: String) extends MessageQueue {
   private[kernel] val queue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
   @volatile private var interrupted = false
-
-  if (Management.RECORD_STATS) {
-    Stats.makeGauge("SizeOfReactiveQueue_" + name) {
-      queue.synchronized { queue.size.toDouble }
-    }
-  }
 
   def append(handle: MessageInvocation) = queue.synchronized {
     queue.offer(handle)

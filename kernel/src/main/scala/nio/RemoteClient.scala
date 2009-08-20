@@ -12,7 +12,6 @@ import kernel.actor.{Exit, Actor}
 import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
 import serialization.{Serializer, Serializable, SerializationProtocol}
 import kernel.util.Logging
-import kernel.management.Management
 
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
@@ -21,8 +20,6 @@ import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, Length
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 
 import scala.collection.mutable.HashMap
-
-import com.twitter.service.Stats
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -48,8 +45,6 @@ object RemoteClient extends Logging {
  */
 class RemoteClient(hostname: String, port: Int) extends Logging {
   val name = "RemoteClient@" + hostname
-  val NR_OF_BYTES_SENT = Stats.getCounter("NrOfBytesSent_" + name)
-  val NR_OF_MESSAGES_SENT = Stats.getCounter("NrOfMessagesSent_" + name)
 
   @volatile private var isRunning = false 
   private val futures = new ConcurrentHashMap[Long, CompletableFutureResult]
@@ -91,10 +86,6 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   }
 
   def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
-    if (Management.RECORD_STATS) {
-      NR_OF_BYTES_SENT.incr(request.getSerializedSize)
-      NR_OF_MESSAGES_SENT.incr
-    }
     if (request.getIsOneWay) {
       connection.getChannel.write(request)
       None
@@ -145,9 +136,6 @@ class RemoteClientHandler(val name: String,
                           val supervisors: ConcurrentMap[String, Actor])
  extends SimpleChannelUpstreamHandler with Logging {
 
-  val NR_OF_BYTES_RECEIVED = Stats.getCounter("NrOfBytesReceived_" + name)
-  val NR_OF_MESSAGES_RECEIVED = Stats.getCounter("NrOfMessagesReceived_" + name)
-
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
       log.debug(event.toString)
@@ -160,10 +148,6 @@ class RemoteClientHandler(val name: String,
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
-        if (Management.RECORD_STATS) {
-          NR_OF_MESSAGES_RECEIVED.incr
-          NR_OF_BYTES_RECEIVED.incr(reply.getSerializedSize)
-        }
         log.debug("Received RemoteReply[\n%s]", reply.toString)
         val future = futures.get(reply.getId)
         if (reply.getIsSuccessful) {

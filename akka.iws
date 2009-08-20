@@ -6,13 +6,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="212ccd86-01aa-4780-a2f0-0d130be5abd2" name="Test" comment="Test">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistenceManager.java" afterPath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistenceManager.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/test/scala/PersistentActorSpec.scala" afterPath="$PROJECT_DIR$/kernel/src/test/scala/PersistentActorSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/util-java/akka-util-java.iml" afterPath="$PROJECT_DIR$/util-java/akka-util-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/management/RestfulJMX.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/management/JMX.scala" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" afterPath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteServer.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteServer.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteClient.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteClient.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" afterPath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/management/ScalaJMX.scala" afterPath="" />
     </list>
     <list readonly="true" id="6e842704-fac6-40e9-8a67-d02385f87db9" name="Default" comment="&#10;# Brief commit desciption here&#10;&#10;# Full commit description here (comment lines starting with '#' will not be included)&#10;&#10;" />
     <ignored path=".idea/workspace.xml" />
@@ -94,11 +102,85 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
+      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="289" column="12" selection-start="10556" selection-end="10556" vertical-scroll-proportion="-5.730769">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ThreadBasedDispatcher.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="48" column="0" selection-start="1460" selection-end="1460" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="EventBasedSingleThreadDispatcher.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="25" column="0" selection-start="943" selection-end="943" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RemoteServer.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteServer.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="196" column="0" selection-start="8491" selection-end="8491" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RemoteClient.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteClient.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="141" column="23" selection-start="5326" selection-end="5575" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="EventBasedThreadPoolDispatcher.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="58" column="102" selection-start="1891" selection-end="1891" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MessageDispatcherBase.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="46" column="0" selection-start="1407" selection-end="1407" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="Kernel.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="64" column="56" selection-start="2222" selection-end="2222" vertical-scroll-proportion="0.25910932">
+            <state line="93" column="0" selection-start="3354" selection-end="3354" vertical-scroll-proportion="-0.022160664">
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TransactionManagement.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/stm/TransactionManagement.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="22" column="0" selection-start="934" selection-end="934" vertical-scroll-proportion="0.0">
+              <folding>
+                <marker date="1250769177000" expanded="true" signature="4338:4553" placeholder="{...}" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -116,22 +198,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateful.java" />
         <option value="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" />
         <option value="$PROJECT_DIR$/fun-test-java/pom.xml" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/stm/Transaction.scala" />
         <option value="$PROJECT_DIR$/kernel/src/test/scala/InMemoryActorSpec.scala" />
-        <option value="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/kernel/stm/Ref.java" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraSession.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/test/scala/AllTest.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/test/scala/SchedulerSpec.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/util/Logging.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" />
+        <option value="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/kernel/stm/Ref.java" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/stm/TransactionManagement.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteClient.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" />
+        <option value="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteServer.scala" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" />
-        <option value="$PROJECT_DIR$/kernel/src/test/scala/PersistentActorSpec.scala" />
-        <option value="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistenceManager.java" />
       </list>
     </option>
   </component>
@@ -191,6 +273,58 @@
           <option name="myItemId" value="akka" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-util-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="Libraries" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-util-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="util-java" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-samples-scala" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-samples-scala" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="samples-scala" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
       </PATH>
       <PATH>
         <PATH_ELEMENT>
@@ -224,6 +358,10 @@
         <PATH_ELEMENT>
           <option name="myItemId" value="akka-kernel" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="Libraries" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.LibraryGroupNode" />
         </PATH_ELEMENT>
       </PATH>
       <PATH>
@@ -318,7 +456,67 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="state" />
+          <option name="myItemId" value="serialization" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-kernel" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="kernel" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="main" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="scala" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="reactor" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-kernel" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="kernel" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="main" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="scala" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="nio" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -390,84 +588,6 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="akka-fun-test-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="fun-test-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-fun-test-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="fun-test-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="test" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="api" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-fun-test-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="fun-test-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="test" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="api" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="PersistenceManager" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
           <option name="myItemId" value="akka" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
         </PATH_ELEMENT>
@@ -483,13 +603,31 @@
         </PATH_ELEMENT>
         <PATH_ELEMENT>
           <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="config" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
     </subPane>
   </component>
   <component name="ProjectReloadState">
-    <option name="STATE" value="2" />
+    <option name="STATE" value="0" />
   </component>
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1" splitterProportion="0.5">
@@ -507,7 +645,7 @@
   <component name="PropertiesComponent">
     <property name="project.structure.proportion" value="0.15" />
     <property name="GoToClass.includeJavaFiles" value="false" />
-    <property name="project.structure.last.edited" value="Modules" />
+    <property name="project.structure.last.edited" value="Libraries" />
     <property name="MemberChooser.copyJavadoc" value="false" />
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="options.searchVisible" value="true" />
@@ -535,7 +673,7 @@
       <recent name="stm" />
     </key>
   </component>
-  <component name="RunManager" selected="JUnit.SchedulerSpec">
+  <component name="RunManager" selected="JUnit.InMemoryActorSpec">
     <configuration default="false" name="PersistentActorSpec.testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess" type="JUnit" factoryName="JUnit" temporary="true" enabled="false" merge="false" sample_coverage="true" runner="emma">
       <pattern>
         <option name="PATTERN" value="se.scalablesolutions.akka.kernel.actor.*" />
@@ -720,17 +858,6 @@
       </method>
     </configuration>
     <configuration default="true" type="SpecsRunConfiguration" factoryName="Specs">
-      <module name="" />
-      <setting name="path" value="" />
-      <setting name="vmparams" value="" />
-      <setting name="params" value="" />
-      <method>
-        <option name="AntTarget" enabled="false" />
-        <option name="Make" enabled="true" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
-      </method>
-    </configuration>
-    <configuration default="true" type="ScalaScriptRunConfiguration" factoryName="Scala Script">
       <module name="" />
       <setting name="path" value="" />
       <setting name="vmparams" value="" />
@@ -937,6 +1064,34 @@
       </RunnerSettings>
       <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="Debug" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="Make" enabled="false" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="false" name="JerseySpec" type="JUnit" factoryName="JUnit" enabled="false" merge="false" sample_coverage="true" runner="emma">
+      <module name="akka-kernel" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" value="" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.kernel.JerseySpec" />
+      <option name="METHOD_NAME" value="" />
+      <option name="TEST_OBJECT" value="class" />
+      <option name="VM_PARAMETERS" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="ADDITIONAL_CLASS_PATH" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="moduleWithDependencies" />
+      </option>
+      <envs>
+        <env name="AKKA_HOME" value="$PROJECT_DIR$" />
+      </envs>
+      <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="Run" />
       <method>
         <option name="AntTarget" enabled="false" />
@@ -1526,23 +1681,17 @@
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
-    <configuration default="false" name="SchedulerSpec" type="JUnit" factoryName="JUnit" enabled="false" merge="false" sample_coverage="true" runner="emma">
-      <module name="akka-kernel" />
+    <configuration default="false" name="Kernel" type="Application" factoryName="Application" enabled="false" merge="false" sample_coverage="true" runner="emma">
+      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.kernel.Kernel" />
+      <option name="VM_PARAMETERS" value="-Dcassandra -Dstorage-config=config/ -Dpidfile=akka.pid" />
+      <option name="PROGRAM_PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
       <option name="ALTERNATIVE_JRE_PATH" value="" />
-      <option name="PACKAGE_NAME" value="" />
-      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.kernel.util.SchedulerSpec" />
-      <option name="METHOD_NAME" value="" />
-      <option name="TEST_OBJECT" value="class" />
-      <option name="VM_PARAMETERS" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
       <option name="ENV_VARIABLES" />
       <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="moduleWithDependencies" />
-      </option>
+      <module name="akka-kernel" />
       <envs>
         <env name="AKKA_HOME" value="$PROJECT_DIR$" />
       </envs>
@@ -1584,7 +1733,7 @@
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
-    <list size="28">
+    <list size="29">
       <item index="0" class="java.lang.String" itemvalue="JUnit.PersistentActorSpec.testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec.testOneWayVectorShouldRollbackStateForStatefulServerInCaseOfFailure" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec.testOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure" />
@@ -1592,27 +1741,28 @@
       <item index="4" class="java.lang.String" itemvalue="JUnit.All Tests Java" />
       <item index="5" class="java.lang.String" itemvalue="JUnit.RemoteActorSpec" />
       <item index="6" class="java.lang.String" itemvalue="JUnit.All Tests Scala" />
-      <item index="7" class="java.lang.String" itemvalue="JUnit.EventBasedSingleThreadDispatcherTest" />
-      <item index="8" class="java.lang.String" itemvalue="JUnit.CamelSpec" />
-      <item index="9" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec" />
-      <item index="10" class="java.lang.String" itemvalue="JUnit.RemoteSupervisorSpec" />
-      <item index="11" class="java.lang.String" itemvalue="JUnit.ActorSpec" />
-      <item index="12" class="java.lang.String" itemvalue="JUnit.TransactionClasherSpec" />
-      <item index="13" class="java.lang.String" itemvalue="JUnit.PersistentNestedStateTest" />
-      <item index="14" class="java.lang.String" itemvalue="JUnit.InMemNestedStateTest" />
-      <item index="15" class="java.lang.String" itemvalue="JUnit.SupervisorSpec" />
-      <item index="16" class="java.lang.String" itemvalue="JUnit.ThreadBasedDispatcherTest" />
-      <item index="17" class="java.lang.String" itemvalue="JUnit.RemoteInMemoryStateTest" />
-      <item index="18" class="java.lang.String" itemvalue="JUnit.PersistentActorSpec" />
-      <item index="19" class="java.lang.String" itemvalue="JUnit.ActiveObjectGuiceConfiguratorTest" />
-      <item index="20" class="java.lang.String" itemvalue="JUnit.RemotePersistentStateTest" />
-      <item index="21" class="java.lang.String" itemvalue="JUnit.InMemoryStateTest" />
-      <item index="22" class="java.lang.String" itemvalue="JUnit.RestTest" />
-      <item index="23" class="java.lang.String" itemvalue="JUnit.PersistentStateTest" />
-      <item index="24" class="java.lang.String" itemvalue="JUnit.EventBasedThreadPoolDispatcherTest" />
-      <item index="25" class="java.lang.String" itemvalue="JUnit.SchedulerSpec" />
-      <item index="26" class="java.lang.String" itemvalue="Remote.Unnamed" />
-      <item index="27" class="java.lang.String" itemvalue="Scala Console.Scala Console" />
+      <item index="7" class="java.lang.String" itemvalue="JUnit.JerseySpec" />
+      <item index="8" class="java.lang.String" itemvalue="JUnit.EventBasedSingleThreadDispatcherTest" />
+      <item index="9" class="java.lang.String" itemvalue="JUnit.CamelSpec" />
+      <item index="10" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec" />
+      <item index="11" class="java.lang.String" itemvalue="JUnit.RemoteSupervisorSpec" />
+      <item index="12" class="java.lang.String" itemvalue="JUnit.ActorSpec" />
+      <item index="13" class="java.lang.String" itemvalue="JUnit.TransactionClasherSpec" />
+      <item index="14" class="java.lang.String" itemvalue="JUnit.PersistentNestedStateTest" />
+      <item index="15" class="java.lang.String" itemvalue="JUnit.InMemNestedStateTest" />
+      <item index="16" class="java.lang.String" itemvalue="JUnit.SupervisorSpec" />
+      <item index="17" class="java.lang.String" itemvalue="JUnit.ThreadBasedDispatcherTest" />
+      <item index="18" class="java.lang.String" itemvalue="JUnit.RemoteInMemoryStateTest" />
+      <item index="19" class="java.lang.String" itemvalue="JUnit.PersistentActorSpec" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.ActiveObjectGuiceConfiguratorTest" />
+      <item index="21" class="java.lang.String" itemvalue="JUnit.RemotePersistentStateTest" />
+      <item index="22" class="java.lang.String" itemvalue="JUnit.InMemoryStateTest" />
+      <item index="23" class="java.lang.String" itemvalue="JUnit.RestTest" />
+      <item index="24" class="java.lang.String" itemvalue="JUnit.PersistentStateTest" />
+      <item index="25" class="java.lang.String" itemvalue="JUnit.EventBasedThreadPoolDispatcherTest" />
+      <item index="26" class="java.lang.String" itemvalue="Application.Kernel" />
+      <item index="27" class="java.lang.String" itemvalue="Remote.Unnamed" />
+      <item index="28" class="java.lang.String" itemvalue="Scala Console.Scala Console" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -1689,20 +1839,19 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="4" y="22" width="1436" height="878" extended-state="0" />
+    <frame x="4" y="22" width="1436" height="878" extended-state="6" />
     <editor active="true" />
     <layout>
+      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3294881" sideWeight="0.70790815" order="5" side_tool="false" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="15" side_tool="false" />
-      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33525595" sideWeight="0.0" order="5" side_tool="false" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24906267" sideWeight="0.5212177" order="1" side_tool="false" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3265306" sideWeight="0.5" order="9" side_tool="false" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.41709185" sideWeight="0.0" order="2" side_tool="false" x="4" y="22" width="1436" height="878" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.47066328" sideWeight="0.0" order="2" side_tool="false" x="4" y="22" width="1436" height="878" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32749078" sideWeight="0.5" order="6" side_tool="false" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.21413122" sideWeight="0.0" order="1" side_tool="false" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2148522" sideWeight="0.0" order="1" side_tool="false" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39668366" sideWeight="0.5" order="3" side_tool="false" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.31887755" sideWeight="0.5" order="1" side_tool="false" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.29127613" sideWeight="0.33545917" order="0" side_tool="true" x="1609" y="144" width="252" height="862" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.16818425" sideWeight="0.24354243" order="0" side_tool="true" x="1609" y="144" width="252" height="862" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3265306" sideWeight="0.5" order="13" side_tool="false" />
       <window_info id="Web Preview" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32822478" sideWeight="0.5" order="16" side_tool="false" />
       <window_info id="Dataflow to this" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="17" side_tool="false" />
@@ -1713,8 +1862,9 @@
       <window_info id="Clojure REPL" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32749078" sideWeight="0.5" order="8" side_tool="false" />
       <window_info id="Data Sources" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3294881" sideWeight="0.6875" order="3" side_tool="false" />
       <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.26479077" sideWeight="0.24617347" order="2" side_tool="true" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32908162" sideWeight="0.0" order="14" side_tool="false" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.31887755" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32908162" sideWeight="0.0" order="14" side_tool="false" />
       <window_info id="FindBugs-IDEA" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32976654" sideWeight="0.5" order="12" side_tool="false" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24965987" sideWeight="0.5" order="2" side_tool="false" />
@@ -1756,142 +1906,111 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-tools/javautils/2.7.4-0.1/javautils-2.7.4-0.1.jar!/org/scala_tools/javautils/Implicits.class">
+    <entry file="file://$PROJECT_DIR$/config/akka-reference.conf">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="1" column="124" selection-start="158" selection-end="158" vertical-scroll-proportion="0.0">
+        <state line="19" column="36" selection-start="504" selection-end="504" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-tools/javautils/2.7.4-0.1/javautils-2.7.4-0.1.jar!/org/scala_tools/javautils/Imports.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="1" column="73" selection-start="107" selection-end="107" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/collection/jcl/Conversions.scala">
+    <entry file="file://$PROJECT_DIR$/config/storage-conf.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/CassandraSession.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="23" column="37" selection-start="565" selection-end="565" vertical-scroll-proportion="-2.4615386">
-          <folding>
-            <marker date="1250524255000" expanded="false" signature="0:49" placeholder="/**...*/" />
-            <marker date="1250524255000" expanded="true" signature="106:396" placeholder="..." />
-            <marker date="1250524255000" expanded="true" signature="398:469" placeholder="/**...*/" />
-            <marker date="1250524255000" expanded="true" signature="526:9332" placeholder="{...}" />
-            <marker date="1250524255000" expanded="true" signature="537:649" placeholder="..." />
-            <marker date="1250524255000" expanded="true" signature="829:1263" placeholder="/**...*/" />
-            <marker date="1250524255000" expanded="true" signature="9528:10730" placeholder="{...}" />
-            <marker date="1250524255000" expanded="true" signature="9815:10474" placeholder="{...}" />
-            <marker date="1250524255000" expanded="true" signature="10047:10470" placeholder="{...}" />
-            <marker date="1250524255000" expanded="true" signature="10528:10693" placeholder="{...}" />
-            <marker date="1250524255000" expanded="true" signature="10794:10865" placeholder="{...}" />
-            <marker date="1250524255000" expanded="true" signature="10883:11076" placeholder="{...}" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/akka-kernel.iml">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse/0.3/multiverse-0.3.jar!/org/multiverse/stms/alpha/mixins/FastAtomicObjectMixin.class">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/ActorSpec.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/InMemoryActorSpec.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="6" column="6" selection-start="119" selection-end="119" vertical-scroll-proportion="0.0">
+        <state line="216" column="6" selection-start="8448" selection-end="8448" vertical-scroll-proportion="0.0">
           <folding>
-            <marker date="1250375169000" expanded="true" signature="55:111" placeholder="..." />
-            <marker date="1250375169000" expanded="true" signature="162:1491" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="240:415" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="288:411" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="442:765" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="527:637" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="577:631" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="793:968" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="997:1189" placeholder="{...}" />
-            <marker date="1250375169000" expanded="true" signature="1224:1489" placeholder="{...}" />
+            <marker date="1250750012000" expanded="true" signature="834:928" placeholder="{...}" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/AllTest.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="7" selection-start="363" selection-end="363" vertical-scroll-proportion="0.0">
+        <state line="47" column="35" selection-start="1580" selection-end="1580" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/util/Logging.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/stm/TransactionManagement.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="53" column="8" selection-start="1557" selection-end="1557" vertical-scroll-proportion="0.42989418">
+        <state line="22" column="0" selection-start="934" selection-end="934" vertical-scroll-proportion="0.0">
+          <folding>
+            <marker date="1250769177000" expanded="true" signature="4338:4553" placeholder="{...}" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteClient.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="141" column="23" selection-start="5326" selection-end="5575" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/pom.xml">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="130" column="0" selection-start="3682" selection-end="3829" vertical-scroll-proportion="0.0">
+        <state line="58" column="102" selection-start="1891" selection-end="1891" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Boot.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="15" column="7" selection-start="364" selection-end="364" vertical-scroll-proportion="0.0">
+        <state line="46" column="0" selection-start="1407" selection-end="1407" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pom.xml">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="60" column="0" selection-start="1683" selection-end="1683" vertical-scroll-proportion="0.0">
+        <state line="48" column="0" selection-start="1460" selection-end="1460" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="25" column="0" selection-start="943" selection-end="943" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="16" column="6" selection-start="462" selection-end="462" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="285" column="37" selection-start="10408" selection-end="10408" vertical-scroll-proportion="0.0">
-          <folding>
-            <marker date="1250677097000" expanded="true" signature="19464:24308" placeholder="{...}" />
-            <marker date="1250677097000" expanded="true" signature="19464:19475" placeholder="{...}" />
-            <marker date="1250677097000" expanded="true" signature="20508:21270" placeholder="{...}" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistenceManager.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="6" column="0" selection-start="179" selection-end="179" vertical-scroll-proportion="0.1302578">
+        <state line="289" column="12" selection-start="10556" selection-end="10556" vertical-scroll-proportion="-5.730769">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/test/scala/PersistentActorSpec.scala">
+    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteServer.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="59" column="0" selection-start="1703" selection-end="1703" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="208" column="33" selection-start="7569" selection-end="7569" vertical-scroll-proportion="0.0">
+        <state line="196" column="0" selection-start="8491" selection-end="8491" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="64" column="56" selection-start="2222" selection-end="2222" vertical-scroll-proportion="0.25910932">
+        <state line="93" column="0" selection-start="3354" selection-end="3354" vertical-scroll-proportion="-0.022160664">
           <folding />
         </state>
       </provider>

@@ -13,15 +13,12 @@ import kernel.util._
 import protobuf.RemoteProtocol
 import protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
 import serialization.{Serializer, Serializable, SerializationProtocol}
-import kernel.management.Management
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
-
-import com.twitter.service.Stats
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -86,11 +83,6 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) ext
  */
 @ChannelPipelineCoverage { val value = "all" }
 class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader]) extends SimpleChannelUpstreamHandler with Logging {
-  val NR_OF_BYTES_SENT = Stats.getCounter("NrOfBytesSent_" + name)
-  val NR_OF_BYTES_RECEIVED = Stats.getCounter("NrOfBytesReceived_" + name)
-  val NR_OF_MESSAGES_SENT = Stats.getCounter("NrOfMessagesSent_" + name)
-  val NR_OF_MESSAGES_RECEIVED = Stats.getCounter("NrOfMessagesReceived_" + name)
-
   private val activeObjectFactory = new ActiveObjectFactory
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
@@ -115,10 +107,6 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
   }
 
   private def handleRemoteRequest(request: RemoteRequest, channel: Channel) = {
-    if (Management.RECORD_STATS) {
-      NR_OF_MESSAGES_RECEIVED.incr
-      NR_OF_BYTES_RECEIVED.incr(request.getSerializedSize)
-    }
     log.debug("Received RemoteRequest[\n%s]", request.toString)
     if (request.getIsActor) dispatchToActor(request, channel)
     else dispatchToActiveObject(request, channel)
@@ -143,10 +131,6 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
-        if (Management.RECORD_STATS) {
-          NR_OF_MESSAGES_SENT.incr
-          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
-        }
       } catch {
         case e: Throwable =>
           log.error("Could not invoke remote actor [%s] due to: %s", request.getTarget, e)
@@ -159,10 +143,6 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
           if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
           val replyMessage = replyBuilder.build
           channel.write(replyMessage)
-          if (Management.RECORD_STATS) {
-            NR_OF_MESSAGES_SENT.incr
-            NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
-          }
       }
     }    
   }
@@ -190,10 +170,6 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
-        if (Management.RECORD_STATS) {
-          NR_OF_MESSAGES_SENT.incr
-          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
-        }
       }
     } catch {
       case e: InvocationTargetException =>
@@ -207,10 +183,6 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
-        if (Management.RECORD_STATS) {
-          NR_OF_MESSAGES_SENT.incr
-          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
-        }
       case e: Throwable =>
         log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.getMethod, request.getTarget, e)
         e.printStackTrace
@@ -222,10 +194,6 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
-        if (Management.RECORD_STATS) {
-          NR_OF_MESSAGES_SENT.incr
-          NR_OF_BYTES_SENT.incr(replyMessage.getSerializedSize)
-        }
     }
   }
 

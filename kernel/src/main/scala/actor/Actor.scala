@@ -16,9 +16,6 @@ import nio.protobuf.RemoteProtocol.RemoteRequest
 import util.Logging
 import serialization.{Serializer, Serializable, SerializationProtocol}
 import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
-import management.Management
-
-import com.twitter.service.Stats
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -53,7 +50,6 @@ object Actor {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends Logging with TransactionManagement {
-  Stats.getCounter("NrOfActors").incr
   ActorRegistry.register(this)
   
   @volatile private[this] var isRunning: Boolean = false
@@ -537,8 +533,6 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
-    if (Management.RECORD_STATS) Stats.getCounter("NrOfFailures_" + dead.name).incr
-
     if (trapExit) {
       if (faultHandler.isDefined) {
         faultHandler.get match {
@@ -556,7 +550,6 @@ trait Actor extends Logging with TransactionManagement {
     linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach(_.restart(reason))
 
   private[Actor] def restart(reason: AnyRef) = synchronized {
-    if (Management.RECORD_STATS) Stats.getCounter("NrOfRestarts_" + name).incr
     lifeCycleConfig match {
       case None => throw new IllegalStateException("Server [" + id + "] does not have a life-cycle defined.")
 

@@ -4,13 +4,10 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
-import com.twitter.service.Stats
-
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.Queue
 
 import kernel.actor.{Actor, ActorMessageInvoker}
-import kernel.management.Management
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
@@ -18,8 +15,6 @@ import kernel.management.Management
  */
 class ThreadBasedDispatcher private[kernel] (val name: String, val messageHandler: MessageInvoker) extends MessageDispatcher {
   def this(actor: Actor) = this(actor.getClass.getName, new ActorMessageInvoker(actor))
-
-  val NR_OF_PROCESSED_MESSAGES = Stats.getCounter("NrOfProcessedMessages_" + name)
 
   private val queue = new BlockingMessageQueue(name)
   private var selectorThread: Thread = _
@@ -33,7 +28,6 @@ class ThreadBasedDispatcher private[kernel] (val name: String, val messageHandle
       override def run = {
         while (active) {
           try {
-            if (Management.RECORD_STATS) NR_OF_PROCESSED_MESSAGES.incr
             messageHandler.invoke(queue.take)
           } catch { case e: InterruptedException => active = false }
         }
@@ -52,12 +46,6 @@ class ThreadBasedDispatcher private[kernel] (val name: String, val messageHandle
 }
 
 class BlockingMessageQueue(name: String) extends MessageQueue {
-  if (Management.RECORD_STATS) {
-    Stats.makeGauge("SizeOfBlockingQueue_" + name) {
-      queue.size.toDouble
-    }
-  }
-
   // FIXME: configure the LBQ
   private val queue = new LinkedBlockingQueue[MessageInvocation]
   def append(handle: MessageInvocation) = queue.put(handle)

@@ -10,14 +10,9 @@
  */
 package se.scalablesolutions.akka.kernel.reactor
 
-import kernel.management.Management
-
-import java.util.{LinkedList, Queue, List}
-
-import com.twitter.service.Stats
+import java.util.{LinkedList, List}
 
 class EventBasedSingleThreadDispatcher(name: String) extends MessageDispatcherBase(name) {
-  val NR_OF_PROCESSED_MESSAGES = Stats.getCounter("NrOfProcessedMessage_" + name)
   def start = if (!active) {
     active = true
     val messageDemultiplexer = new EventBasedSingleThreadDemultiplexer(queue)
@@ -28,7 +23,6 @@ class EventBasedSingleThreadDispatcher(name: String) extends MessageDispatcherBa
             messageDemultiplexer.select
           } catch { case e: InterruptedException => active = false }
           val selectedInvocations = messageDemultiplexer.acquireSelectedInvocations
-          if (Management.RECORD_STATS) NR_OF_PROCESSED_MESSAGES.incr(selectedInvocations.size)
           val iter = selectedInvocations.iterator
           while (iter.hasNext) {
             val invocation = iter.next

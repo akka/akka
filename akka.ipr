@@ -1869,17 +1869,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/se/scalablesolutions/akka/akka-util-java/0.5/akka-util-java-0.5-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.multiverse:multiverse:0.3">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse/0.3/multiverse-0.3.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse/0.3/multiverse-0.3-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse/0.3/multiverse-0.3-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.codehaus.aspectwerkz:aspectwerkz-jdk5:2.1">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/codehaus/aspectwerkz/aspectwerkz-jdk5/2.1/aspectwerkz-jdk5-2.1.jar!/" />

@@ -4,15 +4,11 @@
 
 package se.scalablesolutions.akka.kernel.reactor
 
-import kernel.management.{Management, ThreadPoolMBean}
-
 import java.util.concurrent._
 import locks.ReentrantLock
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 import java.util.{Collection, HashSet, HashMap, LinkedList, List}
-
-import com.twitter.service.Stats
 
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
@@ -63,7 +59,6 @@ import com.twitter.service.Stats
 class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: Boolean) extends MessageDispatcherBase(name) {
   def this(name: String) = this(name, false)
   
-  val NR_OF_PROCESSED_MESSAGES = Stats.getCounter("NrOfProcessedMessages_" + name)
   private val NR_START_THREADS = 16
   private val NR_MAX_THREADS = 128
   private val KEEP_ALIVE_TIME = 60000L // default is one minute
@@ -79,7 +74,6 @@ class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: B
   
   def start = if (!active) {
     active = true
-    Management.registerMBean(new ThreadPoolMBean(threadPoolBuilder), "ThreadPool_" + name)
 
     /**
      * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
@@ -95,7 +89,6 @@ class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: B
             } catch { case e: InterruptedException => active = false }
             val selectedInvocations = messageDemultiplexer.acquireSelectedInvocations
             val reservedInvocations = reserve(selectedInvocations)
-            if (Management.RECORD_STATS) NR_OF_PROCESSED_MESSAGES.incr(reservedInvocations.size)
             val it = reservedInvocations.entrySet.iterator
             while (it.hasNext) {
               val entry = it.next
