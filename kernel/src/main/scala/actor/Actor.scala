@@ -358,8 +358,8 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawn(actorClass: Class[_]): Actor = {
-    val actor = actorClass.newInstance.asInstanceOf[Actor]
+  protected[this] def spawn[T <: Actor](actorClass: Class[T]): T = {
+    val actor = actorClass.newInstance.asInstanceOf[T]
     actor.dispatcher = dispatcher
     actor.mailbox = mailbox
     actor.start
@@ -371,8 +371,8 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnRemote(actorClass: Class[_]): Actor = {
-    val actor = actorClass.newInstance.asInstanceOf[Actor]
+  protected[this] def spawnRemote[T <: Actor](actorClass: Class[T]): T = {
+    val actor = actorClass.newInstance.asInstanceOf[T]
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.dispatcher = dispatcher
     actor.mailbox = mailbox
@@ -385,8 +385,8 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLink(actorClass: Class[_]): Actor = {
-    val actor = spawn(actorClass)
+  protected[this] def spawnLink[T <: Actor](actorClass: Class[T]): T = {
+    val actor = spawn[T](actorClass)
     link(actor)
     actor
   }
@@ -396,8 +396,8 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLinkRemote(actorClass: Class[_]): Actor = {
-    val actor = spawn(actorClass)
+  protected[this] def spawnLinkRemote[T <: Actor](actorClass: Class[T]): T = {
+    val actor = spawn[T](actorClass)
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     link(actor)
     actor
