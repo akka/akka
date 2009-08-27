@@ -20,6 +20,7 @@
   <modules>
     <module>util-java</module>
     <module>kernel</module>
+    <module>akka-amqp</module>
     <module>fun-test-java</module>
     <module>samples-scala</module>
     <module>samples-lift</module>
