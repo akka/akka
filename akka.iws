@@ -2,15 +2,8 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager">
     <list default="true" readonly="true" id="d8b7c92c-a9d3-4b9d-89b5-ef04194c68b8" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/akka-kernel.iml" afterPath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/embedded-repo/org/multiverse/multiverse/0.3/multiverse-0.3.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" afterPath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pom.xml" afterPath="$PROJECT_DIR$/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" afterPath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-lift/akka-samples-lift.iml" afterPath="$PROJECT_DIR$/samples-lift/akka-samples-lift.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" afterPath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
@@ -68,7 +61,7 @@
       <file leaf-file-name="AMQP.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="96" column="21" selection-start="3271" selection-end="3271" vertical-scroll-proportion="0.60444444">
+            <state line="65" column="8" selection-start="2035" selection-end="2035" vertical-scroll-proportion="0.9288889">
               <folding />
             </state>
           </provider>
@@ -392,7 +385,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="96" column="21" selection-start="3271" selection-end="3271" vertical-scroll-proportion="0.60444444">
+        <state line="65" column="8" selection-start="2035" selection-end="2035" vertical-scroll-proportion="0.9288889">
           <folding />
         </state>
       </provider>
