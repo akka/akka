@@ -36,13 +36,12 @@ object AMQP {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   class Client(
-    connectionFactory: ConnectionFactory,
-    hostname: String,
-    port: Int,
-    exchangeKey: String,
-    routingKey: String,
-    serializer: Serializer) extends Actor {
-    
+          connectionFactory: ConnectionFactory,
+          hostname: String,
+          port: Int,
+          exchangeKey: String,
+          routingKey: String,
+          serializer: Serializer) extends Actor {
     private val connection = connectionFactory.newConnection(hostname, port)
     private val channel = connection.createChannel
 
@@ -63,7 +62,7 @@ object AMQP {
     private var listeners: List[Actor] = Nil
     private val endpoint = this
 
-    def  init(channel: Channel)
+    def init(channel: Channel)
 
     def receive: PartialFunction[Any, Unit] = {
       case message: Message => listeners.foreach(_ ! message)
@@ -87,47 +86,48 @@ object AMQP {
   }
 }
 
-class ExampleAMQPSession {
-  import AMQP._
-  
-  val CONFIG = new ConnectionParameters
-  CONFIG.setUsername("barack")
-  CONFIG.setPassword("obama")
-  CONFIG.setVirtualHost("/")
-  CONFIG.setRequestedHeartbeat(0)
+object ExampleAMQPSession {
+  def main(args: Array[String]) = {
+    import AMQP._
+    val CONFIG = new ConnectionParameters
+    CONFIG.setUsername("barack")
+    CONFIG.setPassword("obama")
+    CONFIG.setVirtualHost("/")
+    CONFIG.setRequestedHeartbeat(0)
 
-  val EXCHANGE = "whitehouse.gov"
-  val QUEUE = "marketing"
-  val ROUTING_KEY = "newsletter"
-  val HOSTNAME = "localhost"
-  val PORT = 8787
-  val SERIALIZER = Serializer.Java
+    val EXCHANGE = "whitehouse.gov"
+    val QUEUE = "marketing"
+    val ROUTING_KEY = "newsletter"
+    val HOSTNAME = "localhost"
+    val PORT = 8787
+    val SERIALIZER = Serializer.Java
 
-  val endpoint = new Endpoint(new ConnectionFactory(CONFIG), HOSTNAME, PORT) {
-    override def init(channel: Channel) = {
-      channel.exchangeDeclare(EXCHANGE, "direct")
-      channel.queueDeclare(QUEUE)
-      channel.queueBind(QUEUE, EXCHANGE, ROUTING_KEY)
-      channel.basicConsume(QUEUE, false, new DefaultConsumer(channel) {
-        override def handleDelivery(tag: String, envelope: Envelope, properties: RabbitMQ.BasicProperties, payload: Array[Byte]) {
-          messageConsumer ! Message(SERIALIZER.in(payload, None))
-          channel.basicAck(envelope.getDeliveryTag, false)
-        }
-      })
+    val endpoint = new Endpoint(new ConnectionFactory(CONFIG), HOSTNAME, PORT) {
+      override def init(channel: Channel) = {
+        channel.exchangeDeclare(EXCHANGE, "direct")
+        channel.queueDeclare(QUEUE)
+        channel.queueBind(QUEUE, EXCHANGE, ROUTING_KEY)
+        channel.basicConsume(QUEUE, false, new DefaultConsumer(channel) {
+          override def handleDelivery(tag: String, envelope: Envelope, properties: RabbitMQ.BasicProperties, payload: Array[Byte]) {
+            messageConsumer ! Message(SERIALIZER.in(payload, None))
+            channel.basicAck(envelope.getDeliveryTag, false)
+          }
+        })
+      }
     }
-  }
-  endpoint.start
+    endpoint.start
 
-  val messageConsumer = new Actor() {
-    def receive: PartialFunction[Any, Unit] = {
-      case Message(payload) => println("Received message: " + payload)
+    val messageConsumer = new Actor() {
+      def receive: PartialFunction[Any, Unit] = {
+        case Message(payload) => println("Received message: " + payload)
+      }
     }
+    messageConsumer.start
+
+    endpoint ! MessageConsumer(messageConsumer)
+
+    val client = new Client(new ConnectionFactory(CONFIG), HOSTNAME, PORT, EXCHANGE, ROUTING_KEY, SERIALIZER)
+    client.start
+    client ! Message("The President: I'm going surfing")
   }
-  messageConsumer.start
-
-  endpoint ! MessageConsumer(messageConsumer)
-
-  val client = new Client(new ConnectionFactory(CONFIG), HOSTNAME, PORT, EXCHANGE, ROUTING_KEY, SERIALIZER)
-  client.start
-  client ! Message("The President: I'm going surfing")
 }
