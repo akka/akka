@@ -40,11 +40,13 @@ class Boot {
       override def getSupervisorConfig: SupervisorConfig = {
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
-            Supervise(
-              new SimpleService,
-              LifeCycle(Permanent, 100)
-            )
-          :: Nil)
+          Supervise(
+            new SimpleService,      
+            LifeCycle(Permanent, 100)) ::
+          Supervise(
+            new SimpleService,
+            LifeCycle(Permanent, 100)) ::
+          Nil)
       }
     }
     val supervisor = factory.newSupervisor

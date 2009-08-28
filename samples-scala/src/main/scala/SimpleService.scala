@@ -24,10 +24,13 @@ class Boot {
         Supervise(
           new SimpleService,
           LifeCycle(Permanent, 100)) ::
-                Supervise(
-                  new Chat,
-                  LifeCycle(Permanent, 100))
-                :: Nil)
+        Supervise(
+          new Chat,
+          LifeCycle(Permanent, 100)) ::
+        Supervise(
+           new PersistentSimpleService,
+           LifeCycle(Permanent, 100))
+        :: Nil)
     }
   }
   val supervisor = factory.newSupervisor
@@ -43,6 +46,39 @@ class Boot {
  */
 @Path("/scalacount")
 class SimpleService extends Actor {
+  makeTransactionRequired
+
+  case object Tick
+  private val KEY = "COUNTER";
+  private var hasStartedTicking = false;
+  private val storage = TransactionalState.newInMemoryMap[String, Integer]
+
+  @GET
+  @Produces(Array("text/html"))
+  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
+
+  override def receive: PartialFunction[Any, Unit] = {
+    case Tick => if (hasStartedTicking) {
+      val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
+      storage.put(KEY, new Integer(counter + 1))
+      reply(<success>Tick:{counter + 1}</success>)
+    } else {
+      storage.put(KEY, new Integer(0))
+      hasStartedTicking = true
+      reply(<success>Tick: 0</success>)
+    }
+  }
+}
+
+/**
+ * Try service out by invoking (multiple times):
+ * <pre>
+ * curl http://localhost:9998/persistentscalacount
+ * </pre>
+ * Or browse to the URL from a web browser.
+ */
+@Path("/persistentscalacount")
+class PersistentSimpleService extends Actor {
   makeTransactionRequired
 
   case object Tick

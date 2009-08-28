@@ -13,6 +13,10 @@ public class Boot {
           new Component(
             sample.java.SimpleService.class,
             new LifeCycle(new Permanent(), 1000),
+            1000),
+          new Component(
+            sample.java.PersistentSimpleService.class,
+            new LifeCycle(new Permanent(), 1000),
             1000)
         }).supervise();
     }

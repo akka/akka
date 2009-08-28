@@ -102,6 +102,13 @@ object ExampleAMQPSession {
     val PORT = 8787
     val SERIALIZER = Serializer.Java
 
+    val messageConsumer = new Actor() {
+      def receive: PartialFunction[Any, Unit] = {
+        case Message(payload) => println("Received message: " + payload)
+      }
+    }
+    messageConsumer.start
+
     val endpoint = new Endpoint(new ConnectionFactory(CONFIG), HOSTNAME, PORT) {
       override def init(channel: Channel) = {
         channel.exchangeDeclare(EXCHANGE, "direct")
@@ -116,13 +123,6 @@ object ExampleAMQPSession {
       }
     }
     endpoint.start
-
-    val messageConsumer = new Actor() {
-      def receive: PartialFunction[Any, Unit] = {
-        case Message(payload) => println("Received message: " + payload)
-      }
-    }
-    messageConsumer.start
 
     endpoint ! MessageConsumer(messageConsumer)
 

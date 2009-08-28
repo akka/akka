@@ -15,24 +15,24 @@ import se.scalablesolutions.akka.kernel.state.TransactionalState;
 import se.scalablesolutions.akka.kernel.state.TransactionalMap;
 import se.scalablesolutions.akka.kernel.state.CassandraStorageConfig;
 
-/**                                
+/**
  * Try service out by invoking (multiple times):
  * <pre>
- * curl http://localhost:9998/javacount
+ * curl http://localhost:9998/persistentjavacount
  * </pre>
  * Or browse to the URL from a web browser.
  */
-@Path("/javacount")
+@Path("/persistentjavacount")
 @transactionrequired
-public class SimpleService {
+public class PersistentSimpleService {
   private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
   private TransactionalState factory = new TransactionalState();
-  private TransactionalMap storage = factory.newInMemoryMap();
+  private TransactionalMap<Object, Object> storage = factory.newPersistentMap(new CassandraStorageConfig());
 
   @GET
-  @Produces({"application/json"})
+  @Produces({"application/html"})
   public String count() {
     if (!hasStartedTicking) {
       storage.put(KEY, 0);
