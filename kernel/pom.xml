@@ -99,6 +99,22 @@
       <artifactId>scala-json</artifactId>
       <version>1.0</version>
     </dependency>
+    <dependency>
+      <groupId>dispatch.json</groupId>
+      <artifactId>dispatch-json</artifactId>
+      <version>0.5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>dispatch.http</groupId>
+      <artifactId>dispatch-http</artifactId>
+      <version>0.5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>sjson.json</groupId>
+      <artifactId>sjson</artifactId>
+      <version>0.1</version>
+    </dependency>
+
 
     <!-- For Mongo -->
     <dependency>

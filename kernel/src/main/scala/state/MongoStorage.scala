@@ -4,6 +4,7 @@ import com.mongodb._
 import se.scalablesolutions.akka.kernel.util.Logging
 import serialization.{Serializer}
 import kernel.Kernel.config
+import sjson.json.Serializer._
 
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
 
@@ -47,7 +48,7 @@ object MongoStorage extends MapStorage
   val coll = db.getCollection(COLLECTION)
 
   // @fixme: make this pluggable
-  private[this] val serializer: Serializer = Serializer.ScalaJSON
+  private[this] val serializer = SJSON
   
   override def insertMapStorageEntryFor(name: String, 
     key: AnyRef, value: AnyRef) {
@@ -125,7 +126,7 @@ object MongoStorage extends MapStorage
       List(m.keySet.toArray: _*).asInstanceOf[List[String]]
     val vals = 
       for(s <- n) 
-        yield (s, serializer.in(m.get(s).asInstanceOf[Array[Byte]], None))
+        yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
     vals.asInstanceOf[List[Tuple2[String, AnyRef]]]
   }
   
@@ -157,7 +158,7 @@ object MongoStorage extends MapStorage
       List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
     val vals = 
       for(s <- n) 
-        yield (s, serializer.in(m.get(s).asInstanceOf[Array[Byte]], None))
+        yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
     vals.asInstanceOf[List[Tuple2[String, AnyRef]]]
   }
   
@@ -166,10 +167,10 @@ object MongoStorage extends MapStorage
       nullSafeFindOne(name) match {
         case None => None
         case Some(dbo) =>
-          Some(serializer.in(
+          Some(serializer.in[AnyRef](
             dbo.get(VALUE)
                .asInstanceOf[JMap[String, AnyRef]]
-               .get(key).asInstanceOf[Array[Byte]], None))
+               .get(key).asInstanceOf[Array[Byte]]))
       }
     } catch {
       case e =>
@@ -218,10 +219,8 @@ object MongoStorage extends MapStorage
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
       }
-      serializer.in(
-        o.get(index).asInstanceOf[Array[Byte]], 
-        None
-      )
+      serializer.in[AnyRef](
+        o.get(index).asInstanceOf[Array[Byte]])
     } catch {
       case e => 
         throw new Predef.NoSuchElementException(e.getMessage)
@@ -245,7 +244,7 @@ object MongoStorage extends MapStorage
         List(o.subList(start.get, start.get + count).toArray: _*)
 
       for(e <- l) 
-        yield serializer.in(e.asInstanceOf[Array[Byte]], None)
+        yield serializer.in[AnyRef](e.asInstanceOf[Array[Byte]])
     } catch {
       case e => 
         throw new Predef.NoSuchElementException(e.getMessage)
@@ -285,7 +284,7 @@ object MongoStorage extends MapStorage
     nullSafeFindOne(name) match {
       case None => None
       case Some(dbo) =>
-        Some(serializer.in(dbo.get(VALUE).asInstanceOf[Array[Byte]], None))
+        Some(serializer.in[AnyRef](dbo.get(VALUE).asInstanceOf[Array[Byte]]))
     }
   }
 }

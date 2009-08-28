@@ -4,6 +4,8 @@ import junit.framework.TestCase
 
 import org.junit.{Test, Before}
 import org.junit.Assert._
+import dispatch.json._
+import dispatch.json.Js._
 
 class MongoStorageSpec extends TestCase {
 
@@ -69,20 +71,22 @@ class MongoStorageSpec extends TestCase {
 
     // get some stuff
     changeSetV += "debasish"
-    changeSetV += List(12, 13, 14)
+    changeSetV += List(BigDecimal(12), BigDecimal(13), BigDecimal(14))
     MongoStorage.insertVectorStorageEntriesFor("U-A1", changeSetV.toList)
 
     assertEquals(
       2,
       MongoStorage.getVectorStorageSizeFor("U-A1"))
 
-    assertEquals(
-      "debasish",
-      MongoStorage.getVectorStorageEntryFor("U-A1", 0).asInstanceOf[String])
+    val JsString(str) = MongoStorage.getVectorStorageEntryFor("U-A1", 0).asInstanceOf[JsString]
+    assertEquals("debasish", str)
 
-    assertEquals(
-      List(12, 13, 14),
-      MongoStorage.getVectorStorageEntryFor("U-A1", 1).asInstanceOf[List[Int]])
+    import dispatch.json.Js._
+
+    val l = MongoStorage.getVectorStorageEntryFor("U-A1", 1).asInstanceOf[JsValue]
+    val num_list = list ! num
+    val num_list(l0) = l
+    assertEquals(List(12, 13, 14), l0)
 
     changeSetV.clear
     changeSetV += Map(1->1, 2->4, 3->9)
@@ -98,7 +102,9 @@ class MongoStorageSpec extends TestCase {
       MongoStorage.getVectorStorageRangeFor("U-A1", Some(1), None, 3)
 
     assertEquals(3, r.size)
-    assertEquals(List(12, 13, 14), r(0).asInstanceOf[List[Int]])
+    val lr = r(0).asInstanceOf[JsValue]
+    val num_list(l1) = lr
+    assertEquals(List(12, 13, 14), l1)
   }
 
   @Test
@@ -154,15 +160,26 @@ class MongoStorageSpec extends TestCase {
     fillMap
     MongoStorage.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
     MongoStorage.getMapStorageEntryFor("U-M1", "2") match {
-      case Some(x) => assertEquals("peter", x.asInstanceOf[String])
+      case Some(x) => {
+        val JsString(str) = x.asInstanceOf[JsValue]
+        assertEquals("peter", str)
+      }
       case None => fail("should fetch peter")
     }
     MongoStorage.getMapStorageEntryFor("U-M1", "4") match {
-      case Some(x) => assertEquals(3, x.asInstanceOf[List[Int]].size)
+      case Some(x) => {
+        val num_list = list ! num
+        val num_list(l0) = x.asInstanceOf[JsValue]
+        assertEquals(3, l0.size)
+      }
       case None => fail("should fetch list")
     }
     MongoStorage.getMapStorageEntryFor("U-M1", "3") match {
-      case Some(x) => assertEquals(2, x.asInstanceOf[List[Int]].size)
+      case Some(x) => {
+        val num_list = list ! num
+        val num_list(l0) = x.asInstanceOf[JsValue]
+        assertEquals(2, l0.size)
+      }
       case None => fail("should fetch list")
     }
 
@@ -176,7 +193,8 @@ class MongoStorageSpec extends TestCase {
     assertTrue(l.map(_._1).contains("3"))
     assertTrue(l.map(_._1).contains("4"))
 
-    assertTrue(l.map(_._2).contains("john"))
+    val JsString(str) = l.filter(_._1 == "2").first._2
+    assertEquals(str, "peter")
 
     // trying to fetch for a non-existent transaction will throw
     try {
@@ -200,9 +218,14 @@ class MongoStorageSpec extends TestCase {
 
     assertEquals(3, l.size)
     assertEquals("3", l(0)._1.asInstanceOf[String])
-    assertEquals(List(100, 200), l(0)._2.asInstanceOf[List[Int]])
+    val lst = l(0)._2.asInstanceOf[JsValue]
+    val num_list = list ! num
+    val num_list(l0) = lst
+    assertEquals(List(100, 200), l0)
     assertEquals("4", l(1)._1.asInstanceOf[String])
-    assertEquals(List(10, 20, 30), l(1)._2.asInstanceOf[List[Int]])
+    val ls = l(1)._2.asInstanceOf[JsValue]
+    val num_list(l1) = ls
+    assertEquals(List(10, 20, 30), l1)
     
     // specify start, finish and count where finish - start == count
     assertEquals(3,
@@ -282,11 +305,18 @@ class MongoStorageSpec extends TestCase {
     MongoStorage.getRefStorageFor("U-R1") match {
       case None => fail("should not be empty")
       case Some(r) => {
-        val a = r.asInstanceOf[Map[String, Int]]
-        assertEquals(a.size, 3)
-        assertEquals(a.get("1").get, 1)
-        assertEquals(a.get("2").get, 4)
-        assertEquals(a.get("3").get, 9)
+        val a = r.asInstanceOf[JsValue]
+        val m1 = Symbol("1") ? num
+        val m2 = Symbol("2") ? num
+        val m3 = Symbol("3") ? num
+
+        val m1(n1) = a
+        val m2(n2) = a
+        val m3(n3) = a
+
+        assertEquals(n1, 1)
+        assertEquals(n2, 4)
+        assertEquals(n3, 9)
       }
     }
 
@@ -297,9 +327,10 @@ class MongoStorageSpec extends TestCase {
     MongoStorage.getRefStorageFor("U-R1") match {
       case None => fail("should not be empty")
       case Some(r) => {
-        val a = r.asInstanceOf[List[String]]
-        assertEquals("100", a(0))
-        assertEquals("jonas", a(1))
+        val a = r.asInstanceOf[JsValue]
+        val str_lst = list ! str
+        val str_lst(l) = a
+        assertEquals(b, l)
       }
     }
   }

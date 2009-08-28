@@ -4,6 +4,8 @@ package se.scalablesolutions.akka.kernel.actor
 import junit.framework.TestCase
 import org.junit.{Test, Before}
 import org.junit.Assert._
+import dispatch.json._
+import dispatch.json.Js._
 
 import kernel.state.{MongoStorageConfig, TransactionalState}
 
@@ -45,7 +47,10 @@ class BankAccountActor extends Actor {
       val m: BigInt =
       accountState.get(accountNo) match {
         case None => 0
-        case Some(v) => BigInt(v.asInstanceOf[String])
+        case Some(v) => {
+          val JsNumber(n) = v.asInstanceOf[JsValue]
+          BigInt(n.toString)
+        }
       }
       accountState.put(accountNo, (m - amount))
       if (amount > m)
@@ -75,7 +80,10 @@ class BankAccountActor extends Actor {
       val m: BigInt =
       accountState.get(accountNo) match {
         case None => 0
-        case Some(v) => BigInt(v.asInstanceOf[String])
+        case Some(v) => {
+          val JsNumber(n) = v.asInstanceOf[JsValue]
+          BigInt(n.toString)
+        }
       }
       accountState.put(accountNo, (m + amount))
       reply(m + amount)
@@ -84,14 +92,6 @@ class BankAccountActor extends Actor {
       reply(txnLog.length.asInstanceOf[AnyRef])
   }
 }
-/*
-@serializable class PersistentFailerActor extends Actor {
-  makeTransactionRequired
-  def receive: PartialFunction[Any, Unit] = {
-    case "Failure" =>
-      throw new RuntimeException("expected")
-  }
-}*/
 
 class MongoPersistentActorSpec extends TestCase {
   @Test
@@ -102,16 +102,19 @@ class MongoPersistentActorSpec extends TestCase {
     failer.start
     bactor !! Credit("a-123", 5000)
     bactor !! Debit("a-123", 3000, failer)
-    assertEquals(BigInt(2000),
-      BigInt((bactor !! Balance("a-123")).get.asInstanceOf[String]))
+    val b = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
+    val JsNumber(n) = b
+    assertEquals(BigInt(2000), BigInt(n.toString))
 
     bactor !! Credit("a-123", 7000)
-    assertEquals(BigInt(9000),
-      BigInt((bactor !! Balance("a-123")).get.asInstanceOf[String]))
+    val b1 = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
+    val JsNumber(n1) = b1
+    assertEquals(BigInt(9000), BigInt(n1.toString))
 
     bactor !! Debit("a-123", 8000, failer)
-    assertEquals(BigInt(1000),
-      BigInt((bactor !! Balance("a-123")).get.asInstanceOf[String]))
+    val b2 = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
+    val JsNumber(n2) = b2
+    assertEquals(BigInt(1000), BigInt(n2.toString))
     assertEquals(7, (bactor !! LogSize).get)
   }
 
@@ -120,8 +123,10 @@ class MongoPersistentActorSpec extends TestCase {
     val bactor = new BankAccountActor
     bactor.start
     bactor !! Credit("a-123", 5000)
-    assertEquals(BigInt(5000),
-      BigInt((bactor !! Balance("a-123")).get.asInstanceOf[String]))
+
+    val b = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
+    val JsNumber(n) = b
+    assertEquals(BigInt(5000), BigInt(n.toString))
 
     val failer = new PersistentFailerActor
     failer.start
@@ -130,8 +135,9 @@ class MongoPersistentActorSpec extends TestCase {
       fail("should throw exception")
     } catch { case e: RuntimeException => {}}
 
-    assertEquals(BigInt(5000),
-      BigInt((bactor !! Balance("a-123")).get.asInstanceOf[String]))
+    val b1 = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
+    val JsNumber(n1) = b1
+    assertEquals(BigInt(5000), BigInt(n1.toString))
 
     // should not count the failed one
     assertEquals(3, (bactor !! LogSize).get)
@@ -142,8 +148,9 @@ class MongoPersistentActorSpec extends TestCase {
     val bactor = new BankAccountActor
     bactor.start
     bactor !! Credit("a-123", 5000)
-    assertEquals(BigInt(5000),
-      BigInt((bactor !! Balance("a-123")).get.asInstanceOf[String]))
+    val b = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
+    val JsNumber(n) = b
+    assertEquals(BigInt(5000), BigInt(n.toString))
 
     val failer = new PersistentFailerActor
     failer.start
@@ -152,8 +159,9 @@ class MongoPersistentActorSpec extends TestCase {
       fail("should throw exception")
     } catch { case e: RuntimeException => {}}
 
-    assertEquals(BigInt(5000),
-      BigInt((bactor !! Balance("a-123")).get.asInstanceOf[String]))
+    val b1 = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
+    val JsNumber(n1) = b1
+    assertEquals(BigInt(5000), BigInt(n1.toString))
 
     // should not count the failed one
     assertEquals(3, (bactor !! LogSize).get)
