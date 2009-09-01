@@ -18,13 +18,17 @@
   </properties>
 
   <modules>
-    <module>util-java</module>
-    <module>kernel</module>
+    <module>akka-util-java</module>
+    <module>akka-actors</module>
+    <module>akka-stm</module>
+    <module>akka-persistence</module>
+    <module>akka-rest</module>
+    <module>akka-camel</module>
     <module>akka-amqp</module>
-    <module>fun-test-java</module>
-    <module>samples-scala</module>
-    <module>samples-lift</module>
-    <module>samples-java</module>
+    <module>akka-fun-test-java</module>
+    <module>akka-samples-scala</module>
+    <module>akka-samples-lift</module>
+    <module>akka-samples-java</module>
   </modules>
 
   <organization>

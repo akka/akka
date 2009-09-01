@@ -2,23 +2,155 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager">
     <list default="true" readonly="true" id="d8b7c92c-a9d3-4b9d-89b5-ef04194c68b8" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/kernel/akka-kernel.iml" afterPath="$PROJECT_DIR$/kernel/akka-kernel.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" afterPath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" afterPath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-lift/akka-samples-lift.iml" afterPath="$PROJECT_DIR$/samples-lift/akka-samples-lift.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/akka/SimpleService.scala" afterPath="$PROJECT_DIR$/samples-lift/src/main/scala/akka/SimpleService.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/Boot.java" afterPath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/Boot.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/PersistentSimpleService.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" afterPath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" afterPath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" afterPath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/bootstrap/liftweb/Boot.scala" afterPath="$PROJECT_DIR$/samples-lift/src/main/scala/bootstrap/liftweb/Boot.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/SupervisorAwareCamelContext.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectEndpoint.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentFailer.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/Configuration.scala" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pom.xml" afterPath="$PROJECT_DIR$/pom.xml" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/MongoStorageSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/akka-fun-test-java.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/TransactionClasherSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ThreadBasedDispatcher.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/stm/TransactionManagement.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/ActorSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Ext.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/Configurator.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/collection/HashTrie.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/test/scala/LiftConsole.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/resources/META-INF/aop.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/resources/META-INF/services/org/apache/camel/component/akka" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStatefulNested.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/util/Helpers.scala" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/changes.xml" afterPath="$PROJECT_DIR$/changes.xml" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/ThreadBasedDispatcherTest.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/pom.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/bootstrap/liftweb/Boot.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectProducer.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraSession.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/pom.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemotePersistentStateTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/util/ResultOrFailure.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/Pool.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/rest/ActorComponentProvider.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStatefulNested.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/Supervisor.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/ConfiguratorRepository.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/ActiveObjectManager.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/testng.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-java/pom.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteClient.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/serialization/Binary.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializable.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/MongoPersistentActorSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/annotation/configuration.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/stm/TransactionWatcher.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/InMemoryActorSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/MessageDriven.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/RemoteSupervisorSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/serialization/Serializer.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/RemoteActorSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Foo.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/snippet/HelloWorld.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/PersistentActorSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-scala/akka-samples-scala.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/MongoStorage.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/snippet/.keep" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/Messages.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/pom.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/kernel/config/DependencyBinding.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/akka-samples-lift.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/EventBasedSingleThreadDispatcherTest.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/JerseyFoo.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/pom.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/PersistentSimpleService.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/Config.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistenceManager.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/State.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectComponent.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/util-java.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/SchedulerSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/collection/Vector.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/kernel.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ExtImpl.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/annotation/immutable.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/MessageDispatcherBase.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/view/.keep" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteProtocolBuilder.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentClasher.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentNestedStateTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/AllTest.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/util/Logging.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/AllSuite.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/rest/ActorComponentProviderFactory.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/annotation/postrestart.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/Reactor.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/akka/SimpleService.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/kernel/nio/protobuf/RemoteProtocol.proto" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/test/scala/RunWebApp.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/Future.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-java/akka-samples-java.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateful.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/annotation/state.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/kernel/config/ActiveObjectGuiceModule.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/ManagedActorScheduler.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/config/akka.conf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/rest/NodeWriter.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/akka-kernel.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/kernel/nio/protobuf/RemoteProtocol.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/AllTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemFailer.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/stm/Transaction.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/reactor/Dispatchers.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-scala/pom.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/Storage.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/util/HashCode.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-java/src/main/java/sample/java/Boot.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/stm/ChangeSet.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/webapp/WEB-INF/web.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/webapp/index.html" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/annotation/oneway.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/config/CamelConfigurator.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/rest/AkkaServlet.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufSerializationTest.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/actor/ActorRegistry.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/Bar.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/DataFlowVariable.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/akka-util-java.iml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/nio/RemoteServer.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/camel/ActiveObjectConsumer.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Boot.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/nio/RequestReply.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/model/.keep" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/annotation/prerestart.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.proto" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/CamelSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/kernel/src/test/scala/SupervisorSpec.scala" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/fun-test-java/src/test/java/se/scalablesolutions/akka/api/BarImpl.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/util-java/src/main/java/se/scalablesolutions/akka/annotation/transactionrequired.java" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/webapp/templates-hidden/default.html" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/samples-lift/src/main/scala/comet/.keep" afterPath="" />
     </list>
-    <ignored path="akka.iws" />
     <ignored path=".idea/workspace.xml" />
+    <ignored path="akka.iws" />
   </component>
   <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
   <component name="CreatePatchCommitExecutor">
@@ -69,89 +201,7 @@
   </component>
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name="Kernel.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="53" column="2" selection-start="1864" selection-end="1864" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SimpleService.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="0" selection-start="1005" selection-end="1102" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Boot.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/samples-lift/src/main/scala/bootstrap/liftweb/Boot.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="43" column="36" selection-start="1401" selection-end="1401" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Boot.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/Boot.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="17" column="34" selection-start="589" selection-end="589" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="State.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/State.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="40" column="6" selection-start="1094" selection-end="1094" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AMQP.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="40" column="26" selection-start="1154" selection-end="1154" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SimpleService.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="0" selection-start="1001" selection-end="1001" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SimpleService.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/samples-lift/src/main/scala/akka/SimpleService.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="26" column="73" selection-start="838" selection-end="838" vertical-scroll-proportion="0.3181818">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="PersistentSimpleService.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/PersistentSimpleService.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="31" column="70" selection-start="1006" selection-end="1006" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <leaf />
   </component>
   <component name="FindManager">
     <FindUsagesManager>
@@ -212,7 +262,7 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-scala" />
+          <option name="myItemId" value="akka-camel" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -222,11 +272,11 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-scala" />
+          <option name="myItemId" value="akka-camel" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="samples-scala" />
+          <option name="myItemId" value="akka-camel" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -236,33 +286,7 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-scala" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="samples-scala" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="scala" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-lift" />
+          <option name="myItemId" value="akka-actors" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -272,211 +296,11 @@
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-lift" />
+          <option name="myItemId" value="akka-actors" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
         </PATH_ELEMENT>
         <PATH_ELEMENT>
-          <option name="myItemId" value="samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="scala" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="samples-lift" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="scala" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="samples-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-samples-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="samples-java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="java" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-amqp" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-amqp" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-amqp" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-      </PATH>
-      <PATH>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-amqp" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="akka-amqp" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="src" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="main" />
-          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-        </PATH_ELEMENT>
-        <PATH_ELEMENT>
-          <option name="myItemId" value="scala" />
+          <option name="myItemId" value="akka-actors" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
@@ -501,8 +325,8 @@
   <component name="PropertiesComponent">
     <property name="MemberChooser.copyJavadoc" value="false" />
     <property name="GoToClass.includeLibraries" value="false" />
-    <property name="MemberChooser.showClasses" value="true" />
     <property name="dynamic.classpath" value="false" />
+    <property name="MemberChooser.showClasses" value="true" />
     <property name="MemberChooser.sorted" value="false" />
     <property name="GoToFile.includeJavaFiles" value="false" />
     <property name="GoToClass.toSaveIncludeLibraries" value="false" />
@@ -649,17 +473,17 @@
     <supportedVersion>125</supportedVersion>
   </component>
   <component name="ToolWindowManager">
-    <frame x="4" y="22" width="1916" height="1178" extended-state="6" />
-    <editor active="true" />
+    <frame x="4" y="22" width="1436" height="878" extended-state="6" />
+    <editor active="false" />
     <layout>
-      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
+      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32933578" sideWeight="0.5" order="2" side_tool="false" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24906267" sideWeight="0.6642066" order="0" side_tool="false" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24873829" sideWeight="0.6642066" order="0" side_tool="false" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
@@ -716,13 +540,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/CassandraStorage.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="21" column="0" selection-start="402" selection-end="466" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-amqp/pom.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state line="18" column="58" selection-start="603" selection-end="603" vertical-scroll-proportion="0.27272728">
@@ -730,65 +547,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/Kernel.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="53" column="2" selection-start="1864" selection-end="1864" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="0" selection-start="1005" selection-end="1102" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/samples-lift/src/main/scala/bootstrap/liftweb/Boot.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="43" column="36" selection-start="1401" selection-end="1401" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/Boot.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="17" column="34" selection-start="589" selection-end="589" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="40" column="26" selection-start="1154" selection-end="1154" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/state/State.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="40" column="6" selection-start="1094" selection-end="1094" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/PersistentSimpleService.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="31" column="70" selection-start="1006" selection-end="1006" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/samples-java/src/main/java/sample/java/SimpleService.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="0" selection-start="1001" selection-end="1001" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/samples-lift/src/main/scala/akka/SimpleService.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="26" column="73" selection-start="838" selection-end="838" vertical-scroll-proportion="0.3181818">
           <folding />
         </state>
       </provider>
