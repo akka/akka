@@ -2,11 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.amqp
+package se.scalablesolutions.akka.amqp
 
 import java.lang.String
-import rabbitmq.client.{AMQP => RabbitMQ, _}
-import rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.{AMQP => RabbitMQ, _}
+import com.rabbitmq.client.ConnectionFactory
 
 import se.scalablesolutions.akka.kernel.actor.Actor
 import se.scalablesolutions.akka.kernel.util.Logging
@@ -71,7 +71,7 @@ object AMQP {
    * params.setPassword("obama")
    * params.setVirtualHost("/")
    * params.setRequestedHeartbeat(0)
-   * val client = new AMQP.Client(new ConnectionFactory(params), "localhost", 5672, "exchangeName", "routingKey", Serializer.Java, None)
+   * val client = new AMQP.Client(new ConnectionFactory(params), "localhost", 5672, "exchangeName", "routingKey", Serializer.Java, None, None)
    * client.start
    * client ! Message("hi")
    * </pre>
@@ -85,7 +85,8 @@ object AMQP {
           exchangeKey: String,
           routingKey: String,
           serializer: Serializer,
-          returnListener: Option[ReturnListener]) extends Actor {
+          returnListener: Option[ReturnListener],
+          shutdownListener: Option[ShutdownListener]) extends Actor {
     private val connection = connectionFactory.newConnection(hostname, port)
     private val channel = connection.createChannel
     returnListener match {
@@ -106,6 +107,7 @@ object AMQP {
         }
       })
     }
+    if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
 
     def receive: PartialFunction[Any, Unit] = {
       case Message(msg: AnyRef) => send(msg)
@@ -125,12 +127,14 @@ object AMQP {
           queueName: String,
           routingKey: String,
           exchangeType: ExchangeType,
-          serializer: Serializer) extends Actor {
+          serializer: Serializer,
+          shutdownListener: Option[ShutdownListener]) extends Actor {
     private var connection = connectionFactory.newConnection(hostname, port)
     private var channel = connection.createChannel
     private val reconnectionTimer = new Timer
     private var listeners: List[Actor] = Nil
     private val endpoint = this
+    if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     setupChannel
 
     private def setupChannel = {
@@ -191,13 +195,13 @@ object ExampleAMQPSession {
     messageConsumer.start
 
     val endpoint = new Endpoint(
-      new ConnectionFactory(CONFIG), HOSTNAME, PORT, EXCHANGE, QUEUE, ROUTING_KEY, ExchangeType.Direct, SERIALIZER)
+      new ConnectionFactory(CONFIG), HOSTNAME, PORT, EXCHANGE, QUEUE, ROUTING_KEY, ExchangeType.Direct, SERIALIZER, None)
     endpoint.start
 
     // register message consumer
     endpoint ! MessageConsumer(messageConsumer)
 
-    val client = new Client(new ConnectionFactory(CONFIG), HOSTNAME, PORT, EXCHANGE, ROUTING_KEY, SERIALIZER, None)
+    val client = new Client(new ConnectionFactory(CONFIG), HOSTNAME, PORT, EXCHANGE, ROUTING_KEY, SERIALIZER, None, None)
     client.start
     client ! Message(ROUTING_KEY + " I'm going surfing")
   }
