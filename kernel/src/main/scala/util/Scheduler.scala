@@ -15,6 +15,7 @@ package se.scalablesolutions.akka.kernel.util
 
 import java.util.concurrent._
 import kernel.actor.{OneForOneStrategy, Actor}
+import kernel.config.ScalaConfig._
 
 import org.scala_tools.javautils.Imports._
 
@@ -26,6 +27,8 @@ case class SchedulerException(msg: String, e: Throwable) extends RuntimeExceptio
  * which is licensed under the Apache 2 License.
  */
 class ScheduleActor(val receiver: Actor, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
+  lifeCycleConfig = Some(LifeCycle(Permanent, 100))
+
   def receive: PartialFunction[Any, Unit] = {
     case UnSchedule =>
       Scheduler.stopSupervising(this)
