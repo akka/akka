@@ -2,12 +2,12 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.rest
+package se.scalablesolutions.akka.rest
 
 import com.sun.jersey.core.spi.component.ioc.IoCFullyManagedComponentProvider
 
-import kernel.config.Configurator
-import kernel.util.Logging
+import config.Configurator
+import util.Logging
 
 class ActorComponentProvider(val clazz: Class[_], val configurators: List[Configurator])
     extends IoCFullyManagedComponentProvider with Logging {

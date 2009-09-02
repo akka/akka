@@ -2,17 +2,15 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.rest
+package se.scalablesolutions.akka.rest
 
-import kernel.Kernel
-import util.Logging
 import javax.ws.rs.core.Context
 
 import com.sun.jersey.core.spi.component.ioc.{IoCComponentProvider,IoCComponentProviderFactory}
 import com.sun.jersey.core.spi.component.{ComponentContext}
 
 import config.Configurator
-
+import util.Logging
 
 class ActorComponentProviderFactory(val configurators: List[Configurator])
 extends IoCComponentProviderFactory with Logging {

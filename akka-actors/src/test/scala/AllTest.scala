@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka
 
 import junit.framework.Test
 import junit.framework.TestCase
 import junit.framework.TestSuite
 
-import kernel.actor.{ActorSpec, RemoteActorSpec, PersistentActorSpec, InMemoryActorSpec}
-import kernel.reactor.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
-import kernel.util.SchedulerSpec
+import actor.{ActorSpec, RemoteActorSpec, PersistentActorSpec, InMemoryActorSpec}
+import reactor.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
+import util.SchedulerSpec
 
 object AllTest extends TestCase {
   def suite(): Test = {

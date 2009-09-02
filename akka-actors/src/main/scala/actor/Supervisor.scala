@@ -2,12 +2,12 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.actor
 
-import kernel.util.Logging
-import kernel.config.ScalaConfig._
-import kernel.config.{ConfiguratorRepository, Configurator}
-import kernel.util.Helpers._
+import util.Logging
+import config.ScalaConfig._
+import config.{ConfiguratorRepository, Configurator}
+import util.Helpers._
 
 import java.util.concurrent.ConcurrentHashMap
 

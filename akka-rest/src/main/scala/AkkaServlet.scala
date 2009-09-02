@@ -2,9 +2,8 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.rest
+package se.scalablesolutions.akka.rest
 
-import kernel.Kernel
 import config.ConfiguratorRepository
 import util.Logging
 
@@ -32,7 +31,7 @@ import scala.collection.jcl.Conversions._
 class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with Logging {
 
   override def initiate(rc: ResourceConfig, wa: WebApplication) = {
-    Kernel.boot // will boot if not already booted by 'main'
+    akka.Kernel.boot // will boot if not already booted by 'main'
     val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext)
 
     rc.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))

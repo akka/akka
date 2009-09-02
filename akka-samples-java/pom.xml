@@ -16,12 +16,32 @@
 
   <dependencies>
     <dependency>
-      <artifactId>akka-kernel</artifactId>
+      <artifactId>akka-util-java</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
       <version>0.6</version>
     </dependency>
     <dependency>
-      <artifactId>akka-util-java</artifactId>
+      <artifactId>akka-util</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-actors</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-persistence</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-rest</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-kernel</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
       <version>0.6</version>
     </dependency>

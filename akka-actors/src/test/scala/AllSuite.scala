@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka
 
 import org.scalatest._
 

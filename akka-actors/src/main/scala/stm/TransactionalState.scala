@@ -2,9 +2,9 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
 
-import kernel.stm.TransactionManagement
+import stm.TransactionManagement
 import akka.collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
@@ -44,9 +44,9 @@ trait Transactional {
   // FIXME: won't work across the cluster
   val uuid = Uuid.newUuid.toString
 
-  private[kernel] def begin
-  private[kernel] def commit
-  private[kernel] def rollback
+  private[akka] def begin
+  private[akka] def commit
+  private[akka] def rollback
 
   protected def verifyTransaction = {
     val cflowTx = TransactionManagement.threadBoundTx.get
@@ -77,8 +77,8 @@ trait TransactionalMap[K, V] extends Transactional with scala.collection.mutable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
-  protected[kernel] var state = new HashTrie[K, V]
-  protected[kernel] var snapshot = state
+  protected[akka] var state = new HashTrie[K, V]
+  protected[akka] var snapshot = state
 
   // ---- For Transactional ----
   override def begin = snapshot = state
@@ -159,8 +159,8 @@ abstract class TransactionalVector[T] extends Transactional with RandomAccessSeq
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
-  private[kernel] var state: Vector[T] = EmptyVector
-  private[kernel] var snapshot = state
+  private[akka] var state: Vector[T] = EmptyVector
+  private[akka] var snapshot = state
 
   def add(elem: T) = {
     verifyTransaction
@@ -214,8 +214,8 @@ class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {
-  private[kernel] var ref: Option[T] = None
-  private[kernel] var snapshot: Option[T] = None
+  private[akka] var ref: Option[T] = None
+  private[akka] var snapshot: Option[T] = None
 
   override def begin = if (ref.isDefined) snapshot = Some(ref.get)
 

@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.kernel.reactor
+package se.scalablesolutions.akka.reactor
 
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent.atomic.AtomicBoolean

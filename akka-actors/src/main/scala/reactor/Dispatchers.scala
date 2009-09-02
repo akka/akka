@@ -2,9 +2,9 @@
  *  Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.reactor
+package se.scalablesolutions.akka.reactor
 
-import kernel.actor.Actor
+import actor.Actor
 
 /**
  * Scala API. Dispatcher factory.

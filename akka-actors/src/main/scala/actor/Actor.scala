@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.actor
 
 import com.google.protobuf.ByteString
 import java.net.InetSocketAddress
@@ -42,8 +42,9 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor {
-  val TIMEOUT = Kernel.config.getInt("akka.actor.timeout", 5000)
-  val SERIALIZE_MESSAGES = Kernel.config.getBool("akka.actor.serialize-messages", false)
+  import Config._
+  val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
+  val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 }
 
 /**
@@ -60,7 +61,7 @@ trait Actor extends Logging with TransactionManagement {
   private var config: Option[AnyRef] = None
   @volatile protected[this] var isTransactional = false
   @volatile protected[this] var remoteAddress: Option[InetSocketAddress] = None
-  @volatile protected[kernel] var supervisor: Option[Actor] = None
+  @volatile protected[akka] var supervisor: Option[Actor] = None
   protected[Actor] var mailbox: MessageQueue = _
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
@@ -99,7 +100,7 @@ trait Actor extends Logging with TransactionManagement {
    *     .buildThreadPool
    * </pre>
    */
-  protected[kernel] var dispatcher: MessageDispatcher = {
+  protected[akka] var dispatcher: MessageDispatcher = {
     val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher(getClass.getName)
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))
@@ -454,7 +455,7 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods
    */
-  private[kernel] def invoke(messageHandle: MessageInvocation) = synchronized {
+  private[akka] def invoke(messageHandle: MessageInvocation) = synchronized {
     if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
     else dispatch(messageHandle)
   }
@@ -577,7 +578,7 @@ trait Actor extends Logging with TransactionManagement {
     }
   }
 
-  private[kernel] def registerSupervisorAsRemoteActor: Option[String] = synchronized {
+  private[akka] def registerSupervisorAsRemoteActor: Option[String] = synchronized {
     if (supervisor.isDefined) {
       RemoteClient.clientFor(remoteAddress.get).registerSupervisorForActor(this)
       Some(supervisor.get.uuid)
@@ -585,7 +586,7 @@ trait Actor extends Logging with TransactionManagement {
   }
 
 
-  private[kernel] def swapDispatcher(disp: MessageDispatcher) = synchronized {
+  private[akka] def swapDispatcher(disp: MessageDispatcher) = synchronized {
     dispatcher = disp
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))

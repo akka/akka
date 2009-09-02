@@ -44,7 +44,7 @@
               </descriptorRefs>
               <archive>
                 <manifest>
-                  <mainClass>se.scalablesolutions.akka.kernel.Kernel</mainClass>
+                  <mainClass>se.scalablesolutions.akka.Kernel</mainClass>
                 </manifest>
               </archive>
            </configuration>

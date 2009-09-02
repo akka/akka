@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.actor
 
 import junit.framework.TestCase
 
-import kernel.stm.TransactionRollbackException
+import stm.TransactionRollbackException
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import kernel.state.TransactionalState
+import state.TransactionalState
 
 object Log {
   var log = ""

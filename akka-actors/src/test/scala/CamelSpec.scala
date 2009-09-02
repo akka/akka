@@ -2,11 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka
 
-import akka.kernel.config.ActiveObjectGuiceConfigurator
+import config.ActiveObjectGuiceConfigurator
 import annotation.oneway
-import kernel.config.ScalaConfig._
+import config.ScalaConfig._
 
 import com.google.inject.{AbstractModule, Scopes}
 //import com.jteigen.scalatest.JUnit4Runner

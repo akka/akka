@@ -2,11 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.stm
+package se.scalablesolutions.akka.stm
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
-import kernel.state.Transactional
-import kernel.util.Logging
+import state.Transactional
+import util.Logging
 
 @serializable sealed abstract class TransactionStatus
 object TransactionStatus {
@@ -134,7 +134,7 @@ object TransactionIdFactory {
     throw new IllegalStateException("Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
   // For reinitialize transaction after sending it over the wire 
-  private[kernel] def reinit = synchronized {
+  private[akka] def reinit = synchronized {
     import net.lag.logging.{Logger, Level}
     if (log == null) {
       log = Logger.get(this.getClass.getName)

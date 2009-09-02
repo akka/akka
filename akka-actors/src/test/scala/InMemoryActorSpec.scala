@@ -1,7 +1,7 @@
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.actor
 
 import junit.framework.TestCase
-import kernel.state.TransactionalState
+import state.TransactionalState
 
 import org.junit.{Test, Before}
 import org.junit.Assert._

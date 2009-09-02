@@ -2,15 +2,15 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.config
+package se.scalablesolutions.akka.config
 
-import akka.kernel.config.JavaConfig._
+import JavaConfig._
 
 import com.google.inject._
 
 import java.util._
-import org.apache.camel.impl.{JndiRegistry, DefaultCamelContext}
-import org.apache.camel.{Endpoint, Routes}
+//import org.apache.camel.impl.{JndiRegistry, DefaultCamelContext}
+//import org.apache.camel.{Endpoint, Routes}
 
 /**
  * 
@@ -49,10 +49,10 @@ class ActiveObjectManager {
     this
   }
 
-  def addRoutes(routes: Routes): ActiveObjectManager  = {
-    INSTANCE.addRoutes(routes)
-    this
-  }
+  //def addRoutes(routes: Routes): ActiveObjectManager  = {
+  //  INSTANCE.addRoutes(routes)
+  //  this
+ // }
 
   
   def getComponentInterfaces: List[Class[_]] = {
@@ -63,11 +63,11 @@ class ActiveObjectManager {
 
   def getExternalDependency[T](clazz: Class[T]): T = INSTANCE.getExternalDependency(clazz)
 
-  def getRoutingEndpoint(uri: String): Endpoint = INSTANCE.getRoutingEndpoint(uri)
+  //def getRoutingEndpoint(uri: String): Endpoint = INSTANCE.getRoutingEndpoint(uri)
 
-  def getRoutingEndpoints: java.util.Collection[Endpoint] = INSTANCE.getRoutingEndpoints
+  //def getRoutingEndpoints: java.util.Collection[Endpoint] = INSTANCE.getRoutingEndpoints
 
-  def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = INSTANCE.getRoutingEndpoints(uri)
+  //def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = INSTANCE.getRoutingEndpoints(uri)
 
   def getGuiceModules: List[Module] = INSTANCE.getGuiceModules
 

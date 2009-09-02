@@ -2,8 +2,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-amqp</artifactId>
-  <name>Akka AMQP Module</name>
+  <artifactId>akka-util</artifactId>
+  <name>Akka Util Module</name>
 
   <packaging>jar</packaging>
 
@@ -16,19 +16,14 @@
 
   <dependencies>
     <dependency>
-      <artifactId>akka-util</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.7.5</version>
     </dependency>
     <dependency>
-      <artifactId>akka-actors</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
-    </dependency>
-   <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>rabbitmq-client</artifactId>
-      <version>0.9.1</version>
+      <groupId>net.lag</groupId>
+      <artifactId>configgy</artifactId>
+      <version>1.3</version>
     </dependency>
   </dependencies>
 

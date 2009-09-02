@@ -5,7 +5,7 @@
 /**
  * Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
  */
-package se.scalablesolutions.akka.kernel.reactor
+package se.scalablesolutions.akka.reactor
 
 import java.util.concurrent.locks.{Lock, Condition, ReentrantLock}
 import java.util.concurrent.TimeUnit

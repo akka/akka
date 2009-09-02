@@ -2,16 +2,16 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.actor
 
 import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.InetSocketAddress
 
-import kernel.reactor.{MessageDispatcher, FutureResult}
-import kernel.nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
-import kernel.nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
-import kernel.config.ScalaConfig._
-import kernel.util._
+import reactor.{MessageDispatcher, FutureResult}
+import nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
+import config.ScalaConfig._
+import util._
 import serialization.Serializer
 
 import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice, Advice}
@@ -113,15 +113,15 @@ class ActiveObjectFactory {
     ActiveObject.newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
-  private[kernel] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+  private[akka] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     ActiveObject.newInstance(target, actor, remoteAddress, timeout)
   }
 
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+  private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     ActiveObject.newInstance(intf, target, actor, remoteAddress, timeout)
   }
   
-  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
+  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
     ActiveObject.supervise(restartStrategy, components)
 
   /*
@@ -219,7 +219,7 @@ object ActiveObject {
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
-  private[kernel] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+  private[akka] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(target, false, true)
@@ -230,7 +230,7 @@ object ActiveObject {
     proxy.asInstanceOf[T]
   }
 
-  private[kernel] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+  private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
@@ -242,7 +242,7 @@ object ActiveObject {
   }
 
 
-  private[kernel] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
+  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
     object factory extends SupervisorFactory {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
@@ -364,7 +364,7 @@ sealed class ActiveObjectAspect {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable private[kernel] case class Invocation(val joinpoint: JoinPoint, val isOneWay: Boolean) {
+@serializable private[akka] case class Invocation(val joinpoint: JoinPoint, val isOneWay: Boolean) {
 
   override def toString: String = synchronized {
     "Invocation [joinpoint: " + joinpoint.toString + ", isOneWay: " + isOneWay + "]"
@@ -390,7 +390,7 @@ sealed class ActiveObjectAspect {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[kernel] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends Actor {
+private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends Actor {
   private val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
   private val ZERO_ITEM_OBJECT_ARRAY = Array[Object[_]]()
 

@@ -2,12 +2,12 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel
+package se.scalablesolutions.akka
 
 import akka.serialization.BinaryString
-import kernel.nio.{RemoteClient, RemoteServer}
-import kernel.actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
-import kernel.config.ScalaConfig._
+import nio.{RemoteClient, RemoteServer}
+import actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
+import config.ScalaConfig._
 
 //import com.jteigen.scalatest.JUnit4Runner
 import org.junit.runner.RunWith

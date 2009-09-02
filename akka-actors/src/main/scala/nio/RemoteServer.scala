@@ -2,14 +2,14 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.nio
+package se.scalablesolutions.akka.nio
 
 import java.lang.reflect.InvocationTargetException
 import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 
-import kernel.actor._
-import kernel.util._
+import actor._
+import util._
 import protobuf.RemoteProtocol
 import protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
 import serialization.{Serializer, Serializable, SerializationProtocol}
@@ -31,7 +31,7 @@ class RemoteServer extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteServer extends Logging {
-  import kernel.Kernel.config
+  import Config.config
   val HOSTNAME = config.getString("akka.remote.hostname", "localhost")
   val PORT = config.getInt("akka.remote.port", 9999)
   val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.connection-timeout", 1000)  

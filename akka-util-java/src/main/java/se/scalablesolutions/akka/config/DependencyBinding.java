@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.config;
+package se.scalablesolutions.akka.config;
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

@@ -2,11 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.nio
+package se.scalablesolutions.akka.nio
 
 import java.util.concurrent.atomic.AtomicLong
-import kernel.stm.Transaction
-import kernel.util.HashCode
+import stm.Transaction
+import util.HashCode
 
 // FIXME: will not work - can clash with other host's requests - need te prepend with hostname
 object RemoteRequestIdFactory {

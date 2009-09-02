@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.rest
+package se.scalablesolutions.akka.rest
 
 import java.io.OutputStream
 import java.lang.annotation.Annotation

@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.reactor
+package se.scalablesolutions.akka.reactor
 
 import java.util.{LinkedList, Queue, List}
 import java.util.concurrent.{TimeUnit, BlockingQueue}
@@ -10,7 +10,7 @@ import java.util.HashMap
 
 abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher {
 
-  //val CONCURRENT_MODE = kernel.Kernel.config.getBool("akka.actor.concurrent-mode", false)
+  //val CONCURRENT_MODE = Config.config.getBool("akka.actor.concurrent-mode", false)
   val MILLISECONDS = TimeUnit.MILLISECONDS
   val queue = new ReactiveMessageQueue(name)
   var blockingQueue: BlockingQueue[Runnable] = _
@@ -42,7 +42,7 @@ abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher
 }
 
 class ReactiveMessageQueue(name: String) extends MessageQueue {
-  private[kernel] val queue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
+  private[akka] val queue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
   @volatile private var interrupted = false
 
   def append(handle: MessageInvocation) = queue.synchronized {

@@ -1,8 +1,8 @@
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.TimeUnit
 import junit.framework.TestCase
-import kernel.nio.{RemoteServer, RemoteClient}
+import nio.{RemoteServer, RemoteClient}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 

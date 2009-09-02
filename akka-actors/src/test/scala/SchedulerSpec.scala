@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.kernel.util
+package se.scalablesolutions.akka.util
 
 import se.scalablesolutions.akka.kernel.actor.Actor
 

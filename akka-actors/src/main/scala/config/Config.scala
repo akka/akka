@@ -2,12 +2,12 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.config
+package se.scalablesolutions.akka.config
 
 import reflect.BeanProperty
 
-import kernel.actor.Actor
-import kernel.reactor.MessageDispatcher
+import actor.Actor
+import reactor.MessageDispatcher
 
 /**
  * Configuration classes - not to be used as messages.
@@ -95,7 +95,7 @@ object JavaConfig {
       @BeanProperty val scheme: FailOverScheme,
       @BeanProperty val maxNrOfRetries: Int,
       @BeanProperty val withinTimeRange: Int) extends ConfigElement {
-    def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.RestartStrategy(
+    def transform = se.scalablesolutions.akka.config.ScalaConfig.RestartStrategy(
       scheme.transform, maxNrOfRetries, withinTimeRange)
   }
   
@@ -103,35 +103,35 @@ object JavaConfig {
     def this(scope: Scope, shutdownTime: Int) = this(scope, shutdownTime, null)
     def transform = {
       val callbackOption = if (callbacks == null) None else Some(callbacks.transform)
-      se.scalablesolutions.akka.kernel.config.ScalaConfig.LifeCycle(scope.transform, shutdownTime, callbackOption)
+      se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform, shutdownTime, callbackOption)
     }
   }
 
   class RestartCallbacks(@BeanProperty val preRestart: String, @BeanProperty val postRestart: String) {
-    def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.RestartCallbacks(preRestart, postRestart)
+    def transform = se.scalablesolutions.akka.config.ScalaConfig.RestartCallbacks(preRestart, postRestart)
   }
 
   abstract class Scope extends ConfigElement {
-    def transform: se.scalablesolutions.akka.kernel.config.ScalaConfig.Scope
+    def transform: se.scalablesolutions.akka.config.ScalaConfig.Scope
   }
   class Permanent extends Scope {
-    override def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.Permanent
+    override def transform = se.scalablesolutions.akka.config.ScalaConfig.Permanent
   }
   class Transient extends Scope {
-    override def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.Transient
+    override def transform = se.scalablesolutions.akka.config.ScalaConfig.Transient
   }
   class Temporary extends Scope {
-    override def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.Temporary
+    override def transform = se.scalablesolutions.akka.config.ScalaConfig.Temporary
   }
 
   abstract class FailOverScheme extends ConfigElement {
-    def transform: se.scalablesolutions.akka.kernel.config.ScalaConfig.FailOverScheme
+    def transform: se.scalablesolutions.akka.config.ScalaConfig.FailOverScheme
   }
   class AllForOne extends FailOverScheme {
-    override def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.AllForOne
+    override def transform = se.scalablesolutions.akka.config.ScalaConfig.AllForOne
   }
   class OneForOne extends FailOverScheme {
-    override def transform = se.scalablesolutions.akka.kernel.config.ScalaConfig.OneForOne
+    override def transform = se.scalablesolutions.akka.config.ScalaConfig.OneForOne
   }
 
   class RemoteAddress(@BeanProperty val hostname: String, @BeanProperty val port: Int)
@@ -167,11 +167,11 @@ object JavaConfig {
       this(null, target, lifeCycle, timeout, dispatcher, remoteAddress)
 
     def transform =
-      se.scalablesolutions.akka.kernel.config.ScalaConfig.Component(intf, target, lifeCycle.transform, timeout, dispatcher,
-        if (remoteAddress != null) se.scalablesolutions.akka.kernel.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
+      se.scalablesolutions.akka.config.ScalaConfig.Component(intf, target, lifeCycle.transform, timeout, dispatcher,
+        if (remoteAddress != null) se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
 
     def newSupervised(actor: Actor) =
-      se.scalablesolutions.akka.kernel.config.ScalaConfig.Supervise(actor, lifeCycle.transform)
+      se.scalablesolutions.akka.config.ScalaConfig.Supervise(actor, lifeCycle.transform)
   }
   
 }

@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.config;
+package se.scalablesolutions.akka.config;
 
 import java.util.List;
 

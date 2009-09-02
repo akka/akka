@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.nio
+package se.scalablesolutions.akka.nio
 
 import akka.serialization.Serializable.SBinary
 import com.google.protobuf.{Message, ByteString}

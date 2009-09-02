@@ -2,16 +2,16 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.config
+package se.scalablesolutions.akka.config
 
 import com.google.inject._
 
 import ScalaConfig._
-import kernel.actor.{Supervisor, ActiveObjectFactory, Dispatcher}
-import kernel.util.Logging
+import akka.actor.{Supervisor, ActiveObjectFactory, Dispatcher}
+import akka.util.Logging
 
-import org.apache.camel.impl.{DefaultCamelContext}
-import org.apache.camel.{CamelContext, Endpoint, Routes}
+//import org.apache.camel.impl.{DefaultCamelContext}
+//import org.apache.camel.{CamelContext, Endpoint, Routes}
 
 import scala.collection.mutable.HashMap
 
@@ -21,8 +21,8 @@ import java.lang.reflect.Method
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelConfigurator with Logging {
-  val AKKA_CAMEL_ROUTING_SCHEME = "akka"
+class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with Logging { // with CamelConfigurator {
+  //val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
   private var injector: Injector = _
   private var supervisor: Option[Supervisor]  = None
@@ -33,7 +33,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
   private var activeObjectRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
   private var activeObjectFactory = new ActiveObjectFactory
-  private var camelContext = new DefaultCamelContext
+  //private var camelContext = new DefaultCamelContext
   private var modules = new java.util.ArrayList[Module]
   private var methodToUriRegistry = new HashMap[Method, String]
 
@@ -65,7 +65,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
       if (c.intf.isDefined) c.intf.get
       else c.target
     }
- 
+  /*
   override def getRoutingEndpoint(uri: String): Endpoint = synchronized {
     camelContext.getEndpoint(uri)
   }
@@ -77,7 +77,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
   override def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = synchronized {
     camelContext.getEndpoints(uri)
   }
-
+  */
   override def configure(restartStrategy: RestartStrategy, components: List[Component]):
     ActiveObjectConfigurator = synchronized {
     this.restartStrategy = restartStrategy
@@ -155,14 +155,14 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     modules.add(module)
     this
   }
-
+  /*
   override def addRoutes(routes: Routes): ActiveObjectConfigurator  = synchronized {
     camelContext.addRoutes(routes)
     this
   }
 
   override def getCamelContext: CamelContext = camelContext
-
+  */
   def getGuiceModules: java.util.List[Module] = modules
 
   def reset = synchronized {
@@ -172,21 +172,21 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with CamelC
     methodToUriRegistry = new HashMap[Method, String]
     injector = null
     restartStrategy = null
-    camelContext = new DefaultCamelContext
+    //camelContext = new DefaultCamelContext
   }
 
   def stop = synchronized {
-    camelContext.stop
+    //camelContext.stop
     if (supervisor.isDefined) supervisor.get.stop
   }
 
-  def registerMethodForUri(method: Method, componentName: String) =
-    methodToUriRegistry += method -> buildUri(method, componentName)
+//  def registerMethodForUri(method: Method, componentName: String) =
+//    methodToUriRegistry += method -> buildUri(method, componentName)
 
-  def lookupUriFor(method: Method): String =
-    methodToUriRegistry.getOrElse(method, throw new IllegalStateException("Could not find URI for method [" + method.getName + "]"))
+//  def lookupUriFor(method: Method): String =
+//    methodToUriRegistry.getOrElse(method, throw new IllegalStateException("Could not find URI for method [" + method.getName + "]"))
 
-  def buildUri(method: Method, componentName: String): String =
-    AKKA_CAMEL_ROUTING_SCHEME + ":" + componentName + "." + method.getName
+//  def buildUri(method: Method, componentName: String): String =
+//    AKKA_CAMEL_ROUTING_SCHEME + ":" + componentName + "." + method.getName
 }
  

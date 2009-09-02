@@ -2,10 +2,10 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.camel
+package se.scalablesolutions.akka.camel
 
-import kernel.config.ActiveObjectConfigurator
-import kernel.util.Logging
+import config.ActiveObjectConfigurator
+import util.Logging
 
 import java.util.{ArrayList, HashSet, List, Set}
 import java.util.concurrent.{BlockingQueue, CopyOnWriteArraySet, LinkedBlockingQueue}

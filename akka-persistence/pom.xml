@@ -16,7 +16,12 @@
 
   <dependencies>
     <dependency>
-      <artifactId>akka-kernel</artifactId>
+      <artifactId>akka-util</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-actors</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
       <version>0.6</version>
     </dependency>

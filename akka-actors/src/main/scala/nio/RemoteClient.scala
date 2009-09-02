@@ -2,16 +2,16 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.nio
+package se.scalablesolutions.akka.nio
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{Executors, ConcurrentMap, ConcurrentHashMap}
 
 import protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
-import kernel.actor.{Exit, Actor}
-import kernel.reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
+import actor.{Exit, Actor}
+import reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
 import serialization.{Serializer, Serializable, SerializationProtocol}
-import kernel.util.Logging
+import util.Logging
 
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._

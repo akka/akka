@@ -2,10 +2,10 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.camel
+package se.scalablesolutions.akka.camel
 
-import kernel.actor.Supervisor
-import kernel.util.Logging
+import actor.Supervisor
+import util.Logging
 import org.apache.camel.impl.{DefaultCamelContext, DefaultEndpoint, DefaultComponent}
 
 /**

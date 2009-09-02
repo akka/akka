@@ -2,18 +2,18 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.reactor
+package se.scalablesolutions.akka.reactor
 
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.Queue
 
-import kernel.actor.{Actor, ActorMessageInvoker}
+import actor.{Actor, ActorMessageInvoker}
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher private[kernel] (val name: String, val messageHandler: MessageInvoker) extends MessageDispatcher {
+class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler: MessageInvoker) extends MessageDispatcher {
   def this(actor: Actor) = this(actor.getClass.getName, new ActorMessageInvoker(actor))
 
   private val queue = new BlockingMessageQueue(name)

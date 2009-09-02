@@ -2,12 +2,12 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
  
-package se.scalablesolutions.akka.kernel.nio.protobuf;
+package se.scalablesolutions.akka.nio.protobuf;
 
 /*
   Compile with:
-  cd ./util-java/src/main/java
-  protoc se/scalablesolutions/akka/kernel/nio/protobuf/RemoteProtocol.proto --java_out .
+  cd ./akka-util-java/src/main/java
+  protoc se/scalablesolutions/akka/nio/protobuf/RemoteProtocol.proto --java_out .
 */
 
 option optimize_for = SPEED;

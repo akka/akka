@@ -2,11 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.camel
+package se.scalablesolutions.akka.camel
 
 import java.util.concurrent.{BlockingQueue, ExecutorService, Executors, ThreadFactory, TimeUnit}
 
-import kernel.util.Logging
+import util.Logging
 
 import org.apache.camel.{AsyncCallback, AsyncProcessor, Consumer, Exchange, Processor}
 import org.apache.camel.impl.ServiceSupport

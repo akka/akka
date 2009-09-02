@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.camel
+package se.scalablesolutions.akka.camel
 
 import config.ActiveObjectConfigurator
 

@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.stm
+package se.scalablesolutions.akka.stm
 
 /*
 import kernel.util.Logging

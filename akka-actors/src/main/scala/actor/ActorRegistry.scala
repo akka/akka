@@ -2,9 +2,9 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.actor
 
-import kernel.util.Logging
+import util.Logging
 
 import scala.collection.jcl.HashMap
 
