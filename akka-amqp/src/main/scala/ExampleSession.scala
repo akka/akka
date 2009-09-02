@@ -9,27 +9,49 @@ import com.rabbitmq.client.ConnectionParameters
 import kernel.actor.Actor
 
 object ExampleSession {
+  import AMQP._
+  val SERIALIZER = Serializer.Java
+  val CONFIG = new ConnectionParameters
+  val HOSTNAME = "localhost"
+  val PORT = 5672
+
+  val IM = "im.whitehouse.gov"
+  val CHAT = "chat.whitehouse.gov"
+
   def main(args: Array[String]) = {
-    import AMQP._
-    val CONFIG = new ConnectionParameters
-    val EXCHANGE = "whitehouse.gov"
-    val QUEUE = "twitter"
-    val ROUTING_KEY = "@barack_obama"
-    val HOSTNAME = "localhost"
-    val PORT = 5672
-    val SERIALIZER = Serializer.Java
+    println("==== DIRECT ===")
+    direct
 
-    val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, EXCHANGE, ExchangeType.Direct, SERIALIZER, None, 100)
+    Thread.sleep(1000)
+    
+    println("==== FANOUT ===")
+    fanout
+  }
 
-    // register message consumer
-    endpoint ! MessageConsumer(new Actor() {
+  def direct = {
+    val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, IM, ExchangeType.Direct, SERIALIZER, None, 100)
+    endpoint ! MessageConsumer("@george_bush", "direct", new Actor() {
       def receive: PartialFunction[Any, Unit] = {
-        case Message(payload, _, _, _) => log.debug("Received message: %s", payload)
+        case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", payload)
       }
-    }, QUEUE, ROUTING_KEY)
+    })
+    val client = AMQP.newClient(CONFIG, HOSTNAME, PORT, IM, SERIALIZER, None, None, 100)
+    client ! Message("@jonas_boner: You sucked!!", "direct")
+  }
 
-    val client = AMQP.newClient(CONFIG, HOSTNAME, PORT, EXCHANGE, SERIALIZER, None, None, 100)
-    client ! Message(ROUTING_KEY + " I'm going surfing", ROUTING_KEY)
-    client ! Message(ROUTING_KEY + " I'm going surfing", ROUTING_KEY)
+  def fanout = {
+    val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, CHAT, ExchangeType.Fanout, SERIALIZER, None, 100)
+    endpoint ! MessageConsumer("@george_bush", "", new Actor() {
+      def receive: PartialFunction[Any, Unit] = {
+        case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", payload)
+      }
+    })
+    endpoint ! MessageConsumer("@barack_obama", "", new Actor() {
+      def receive: PartialFunction[Any, Unit] = {
+        case Message(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", payload)
+      }
+    })
+    val client = AMQP.newClient(CONFIG, HOSTNAME, PORT, CHAT, SERIALIZER, None, None, 100)
+    client ! Message("@jonas_boner: I'm going surfing", "")
   }
 }

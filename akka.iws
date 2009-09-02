@@ -2,7 +2,7 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager">
     <list default="true" readonly="true" id="d8b7c92c-a9d3-4b9d-89b5-ef04194c68b8" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
     </list>
@@ -59,91 +59,28 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="556" column="50" selection-start="21523" selection-end="21562" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AMQP.scala" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="AMQP.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="344" column="23" selection-start="11667" selection-end="11667" vertical-scroll-proportion="0.0">
+            <state line="281" column="22" selection-start="10222" selection-end="10222" vertical-scroll-proportion="0.4291498">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ExampleSession.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="DefaultConsumer.class" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1.jar!/com/rabbitmq/client/DefaultConsumer.class">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="15" column="103" selection-start="589" selection-end="676" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ExampleSession.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="0" selection-start="1041" selection-end="1041" vertical-scroll-proportion="0.6947083">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="HashMap.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/collection/mutable/HashMap.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="34" column="26" selection-start="1114" selection-end="1114" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="HashTable.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/collection/mutable/HashTable.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="80" column="16" selection-start="2879" selection-end="2879" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ActiveObject.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/actor/ActiveObject.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="385" column="0" selection-start="16319" selection-end="16740" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Scheduler.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="31" column="2" selection-start="1200" selection-end="1200" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SimpleService.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/samples-scala/src/main/scala/SimpleService.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="25" column="35" selection-start="896" selection-end="921" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ReturnListener.class" pinned="false" current="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1.jar!/com/rabbitmq/client/ReturnListener.class">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="5" column="17" selection-start="161" selection-end="161" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="pom.xml" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-amqp/pom.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="30" column="18" selection-start="966" selection-end="966" vertical-scroll-proportion="0.0">
+            <state line="13" column="0" selection-start="278" selection-end="278" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -173,8 +110,8 @@
         <option value="$PROJECT_DIR$/kernel/src/main/scala/actor/Actor.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/pom.xml" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala" />
-        <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" />
+        <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
       </list>
     </option>
   </component>
@@ -394,7 +331,7 @@
       </method>
     </configuration>
     <configuration default="false" name="ExampleAMQPSession" type="Application" factoryName="Application" enabled="false" merge="false" sample_coverage="true" runner="emma">
-      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.amqp.ExampleAMQPSession" />
+      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.amqp.ExampleSession" />
       <option name="VM_PARAMETERS" value="" />
       <option name="PROGRAM_PARAMETERS" value="" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
@@ -504,13 +441,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1.jar!/com/rabbitmq/client/DefaultConsumer.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="16" column="0" selection-start="412" selection-end="701" vertical-scroll-proportion="0.32388663">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar:///System/Library/Frameworks/JavaVM.framework/Versions/1.6.0/Home/../Classes/classes.jar!/java/lang/String.class">
       <provider selected="true" editor-type-id="text-editor">
         <state line="165" column="45" selection-start="6707" selection-end="6707" vertical-scroll-proportion="0.33333334">
@@ -595,16 +525,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
+    <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="344" column="23" selection-start="11667" selection-end="11667" vertical-scroll-proportion="0.0">
+        <state line="13" column="0" selection-start="278" selection-end="278" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala">
+    <entry file="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1.jar!/com/rabbitmq/client/DefaultConsumer.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="0" selection-start="1041" selection-end="1041" vertical-scroll-proportion="0.6947083">
+        <state line="15" column="103" selection-start="589" selection-end="676" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="281" column="22" selection-start="10222" selection-end="10222" vertical-scroll-proportion="0.4291498">
           <folding />
         </state>
       </provider>

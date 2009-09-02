@@ -24,17 +24,13 @@ import java.io.IOException
  * AMQP Actor API. Implements Client and Endpoint materialized as Actors.
  *
  * <pre>
- *   val messageConsumer = new Actor() {
+ *   val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, EXCHANGE, ExchangeType.Direct, Serializer.Java, None, 100)
+ *
+ *   endpoint ! MessageConsumer(QUEUE, ROUTING_KEY, new Actor() {
  *     def receive: PartialFunction[Any, Unit] = {
- *       case Message(payload) => log.debug("Received message: %s", payload)
+ *       case Message(payload, _, _, _, _) => log.debug("Received message: %s", payload)
  *     }
- *   }
- *   messageConsumer.start
- *
- *   val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, EXCHANGE, QUEUE, ROUTING_KEY, ExchangeType.Direct, Serializer.Java, None, 100)
- *
- *   // register message consumer
- *   endpoint ! MessageConsumer(messageConsumer)
+ *   })
  *
  *   val client = AMQP.newClient(CONFIG, HOSTNAME, PORT, EXCHANGE, Serializer.Java, None, None, 100)
  *   client ! Message("Hi", ROUTING_KEY)
@@ -49,19 +45,19 @@ object AMQP extends Actor {
   start
 
   // ====== MESSAGES =====
-  class Message(val payload: AnyRef, val routingKey: String, val mandatory: Boolean, val immediate: Boolean) {
-    override def toString(): String = "Message[payload=" + payload + ", routingKey=" + routingKey + "]"     
+  class Message(val payload: AnyRef, val routingKey: String, val mandatory: Boolean, val immediate: Boolean, val properties: RabbitMQ.BasicProperties) {
+    override def toString(): String = "Message[payload=" + payload + ", routingKey=" + routingKey + ", properties=" + properties + "]"     
   }
   object Message {
-    def unapply(message: Message): Option[Tuple4[AnyRef, String, Boolean, Boolean]] =
-      Some((message.payload, message.routingKey, message.mandatory, message.immediate))
-    def apply(payload: AnyRef, routingKey: String, mandatory: Boolean, immediate: Boolean): Message =
-      new Message(payload, routingKey, mandatory, immediate)
+    def unapply(message: Message): Option[Tuple5[AnyRef, String, Boolean, Boolean, RabbitMQ.BasicProperties]] =
+      Some((message.payload, message.routingKey, message.mandatory, message.immediate, message.properties))
+    def apply(payload: AnyRef, routingKey: String, mandatory: Boolean, immediate: Boolean, properties: RabbitMQ.BasicProperties): Message =
+      new Message(payload, routingKey, mandatory, immediate, properties)
     def apply(payload: AnyRef, routingKey: String): Message =
-      new Message(payload, routingKey, false, false)
+      new Message(payload, routingKey, false, false, null)
   }
 
-  case class MessageConsumer(actor: Actor, queueName: String, routingKey: String) {
+  case class MessageConsumer(queueName: String, routingKey: String, actor: Actor) {
     var tag: Option[String] = None
 
     override def toString(): String = "MessageConsumer[actor=" + actor + ", queue=" + queueName + ", routingKey=" + routingKey  + "]" 
@@ -184,7 +180,7 @@ object AMQP extends Actor {
           val connectionFactory: ConnectionFactory,
           val hostname: String,
           val port: Int,
-          val exchangeKey: String,
+          val exchangeName: String,
           val serializer: Serializer,
           val returnListener: Option[ReturnListener],
           val shutdownListener: Option[ShutdownListener],
@@ -193,11 +189,12 @@ object AMQP extends Actor {
 
     setupChannel
     
-    log.info("AMQP.Client [%s] is started", this)
+    log.info("AMQP.Client [%s] is started", toString)
 
     def receive: PartialFunction[Any, Unit] = {
-      case Message(payload, routingKey, mandatory, immediate) =>
-        channel.basicPublish(exchangeKey, routingKey, mandatory, immediate, null, serializer.out(payload))
+      case message @ Message(payload, routingKey, mandatory, immediate, properties) =>
+        log.debug("Sending message [%s]", message)
+        channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties, serializer.out(payload))
       case Stop =>
         disconnect; stop
     }
@@ -227,6 +224,8 @@ object AMQP extends Actor {
       }
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)      
     }
+
+    override def toString(): String = "AMQP.Client[hostname=" + hostname + ", port=" + port + ", exchange=" + exchangeName + "]" 
   }
 
   /**
@@ -251,7 +250,7 @@ object AMQP extends Actor {
 
     setupChannel
 
-    log.info("AMQP.Endpoint [%s] is started", this)
+    log.info("AMQP.Endpoint [%s] is started", toString)
 
     def setupChannel = {
       connection = connectionFactory.newConnection(hostname, port)
@@ -264,6 +263,7 @@ object AMQP extends Actor {
     def setupConsumer(consumer: MessageConsumer) = {
       channel.queueDeclare(consumer.queueName)
       channel.queueBind(consumer.queueName, exchangeName, consumer.routingKey)
+
       val consumerTag = channel.basicConsume(consumer.queueName, false, new DefaultConsumer(channel) with Logging {
         override def handleDelivery(tag: String, envelope: Envelope, properties: RabbitMQ.BasicProperties, payload: Array[Byte]) {
           try {
@@ -271,6 +271,15 @@ object AMQP extends Actor {
             channel.basicAck(envelope.getDeliveryTag, false)
           } catch {
             case cause => endpoint ! Failure(cause) // pass on and rethrow exception in endpoint actor to trigger restart and reconnect
+          }
+        }        
+
+        override def handleShutdownSignal(consumerTag: String, signal: ShutdownSignalException) = {
+          consumers.elements.toList.map(_._2).find(_.tag == consumerTag) match {
+            case None => log.warning("Could not find message consumer for tag [%s]; can't shut consumer down", consumerTag)
+            case Some(consumer) =>
+              log.warning("Message consumer [%s] is being shutdown by [%s] due to [%s]", consumer, signal.getReference, signal.getReason)
+              endpoint ! CancelMessageConsumer(consumer)
           }
         }
       })
@@ -302,8 +311,10 @@ object AMQP extends Actor {
       case Reconnect(delay) => reconnect(delay)
       case Failure(cause) => log.error(cause, ""); throw cause
       case Stop => disconnect; stop
-      case unknown => throw new IllegalArgumentException("Unknown message to AMQP Endpoint [" + unknown + "]")
+      case unknown => throw new IllegalArgumentException("Unknown message [" + unknown + "] to AMQP Endpoint [" + this + "]")
     }
+
+    override def toString(): String = "AMQP.Endpoint[hostname=" + hostname + ", port=" + port + ", exchange=" + exchangeName + ", type=" + exchangeType + "]"
   }
 
   trait FaultTolerantConnectionActor extends Actor {
@@ -325,14 +336,14 @@ object AMQP extends Actor {
       try {
         channel.close
       } catch {
-        case e: IOException => log.error("Could not close AMQP channel %s:%s", hostname, port)
+        case e: IOException => log.error("Could not close AMQP channel %s:%s [%s]", hostname, port, this)
         case _ => ()
       }
       try {
         connection.close
-        log.debug("Disconnected AMQP connection at %s:%s", hostname, port)
+        log.debug("Disconnected AMQP connection at %s:%s [%s]", hostname, port, this)
       } catch {
-        case e: IOException => log.error("Could not close AMQP connection %s:%s", hostname, port)
+        case e: IOException => log.error("Could not close AMQP connection %s:%s [%s]", hostname, port, this)
         case _ => ()
       }
     }
@@ -341,12 +352,12 @@ object AMQP extends Actor {
       disconnect
       try {
         setupChannel
-        log.debug("Successfully reconnected to AMQP Server %s:%s", hostname, port)
+        log.debug("Successfully reconnected to AMQP Server %s:%s [%s]", hostname, port, this)
       } catch {
         case e: Exception =>
           val waitInMillis = delay * 2
           val self = this
-          log.debug("Trying to reconnect to AMQP server in %n milliseconds", waitInMillis)
+          log.debug("Trying to reconnect to AMQP server in %n milliseconds [%s]", waitInMillis, this)
           reconnectionTimer.schedule(new TimerTask() {
             override def run = self ! Reconnect(waitInMillis)
           }, delay)
