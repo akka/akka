@@ -2,6 +2,7 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager">
     <list default="true" readonly="true" id="d8b7c92c-a9d3-4b9d-89b5-ef04194c68b8" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
     </list>
@@ -67,19 +68,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="pom.xml" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kernel/pom.xml">
+      <file leaf-file-name="AMQP.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="5" column="28" selection-start="286" selection-end="286" vertical-scroll-proportion="0.0">
+            <state line="344" column="23" selection-start="11667" selection-end="11667" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="AMQP.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
+      <file leaf-file-name="ExampleSession.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="0" column="21" selection-start="3" selection-end="3" vertical-scroll-proportion="0.0">
+            <state line="32" column="0" selection-start="1041" selection-end="1041" vertical-scroll-proportion="0.6947083">
               <folding />
             </state>
           </provider>
@@ -158,7 +159,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQPActor.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQPDispatcher.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQPClientActor.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQPClient.scala" />
@@ -174,6 +174,7 @@
         <option value="$PROJECT_DIR$/akka-amqp/pom.xml" />
         <option value="$PROJECT_DIR$/kernel/src/main/scala/util/Scheduler.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
+        <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" />
       </list>
     </option>
   </component>
@@ -202,6 +203,56 @@
         <PATH_ELEMENT>
           <option name="myItemId" value="akka" />
           <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-amqp" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-amqp" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-amqp" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-amqp" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewModuleNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="akka-amqp" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="src" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="main" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="scala" />
+          <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
         </PATH_ELEMENT>
       </PATH>
       <PATH>
@@ -446,13 +497,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/akka-amqp/pom.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="30" column="18" selection-start="966" selection-end="966" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1.jar!/com/rabbitmq/client/ConnectionParameters.class">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
@@ -553,7 +597,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="21" selection-start="3" selection-end="3" vertical-scroll-proportion="0.0">
+        <state line="344" column="23" selection-start="11667" selection-end="11667" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="32" column="0" selection-start="1041" selection-end="1041" vertical-scroll-proportion="0.6947083">
           <folding />
         </state>
       </provider>
