@@ -6,10 +6,10 @@ package se.scalablesolutions.akka.serialization
 
 import org.codehaus.jackson.map.ObjectMapper
 import com.google.protobuf.Message
-import com.twitter.commons.Json
 import reflect.Manifest
 import sbinary.DefaultProtocol
 import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
+import sjson.json.{Serializer=>SJSONSerializer}
 
 object SerializationProtocol {
   val SBINARY = 1
@@ -100,8 +100,8 @@ object Serializable {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait ScalaJSON extends JSON {
-    def toJSON: String = Json.build(this).toString
-    def toBytes: Array[Byte] = toJSON.getBytes("UTF-8")
+    def toJSON: String = new String(toBytes, "UTF-8")
+    def toBytes: Array[Byte] = SJSONSerializer.SJSON.out(this)
   }
   
   /**
