@@ -4,7 +4,6 @@
 
 package se.scalablesolutions.akka.actor
 
-import actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
 import config.ScalaConfig._
 
 //import com.jteigen.scalatest.JUnit4Runner

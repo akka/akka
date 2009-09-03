@@ -2,6 +2,7 @@ package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.TimeUnit
 import junit.framework.TestCase
+
 import nio.{RemoteServer, RemoteClient}
 import org.junit.{Test, Before}
 import org.junit.Assert._
@@ -26,7 +27,7 @@ class RemoteActorSpecActorBidirectional extends Actor {
 }
 
 class RemoteActorSpec extends TestCase {
-  kernel.Kernel.config
+  akka.Config.config
   new Thread(new Runnable() {
      def run = {
        val server = new RemoteServer

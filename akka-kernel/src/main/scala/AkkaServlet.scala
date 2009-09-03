@@ -32,7 +32,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
 
   override def initiate(rc: ResourceConfig, wa: WebApplication) = {
     akka.Kernel.boot // will boot if not already booted by 'main'
-    val configurators = ConfiguratorRepository.getConfiguratorsFor(getServletContext)
+    val configurators = ConfiguratorRepository.getConfigurators
 
     rc.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
     log.info("Starting AkkaServlet with ResourceFilters: " + rc.getProperty("com.sun.jersey.spi.container.ResourceFilters"));
@@ -49,7 +49,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
       val isUsingStream = try {
         event.getResponse.getWriter
         false
-      } catch {case e: IllegalStateException => true}
+      } catch { case e: IllegalStateException => true }
 
       val data = event.getMessage.toString
       if (isUsingStream) {
@@ -59,7 +59,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
         event.getResponse.getWriter.write(data)
         event.getResponse.getWriter.flush
       }
-    } else log.info("Null event message :/ req[%s] res[%s]", event.getRequest, event.getResponse)
+    } else log.info("Null event message: req[%s] res[%s]", event.getRequest, event.getResponse)
     event
   }
 

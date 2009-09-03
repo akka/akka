@@ -1,22 +1,38 @@
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.state
 
+import akka.actor.Actor
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
 
 import junit.framework.TestCase
-import kernel.Kernel
-import kernel.reactor._
+import reactor._
 
-import kernel.state.{CassandraStorageConfig, TransactionalState}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-class PersistentActor extends Actor {
+case class GetMapState(key: String)
+case object GetVectorState
+case object GetVectorSize
+case object GetRefState
+
+case class SetMapState(key: String, value: String)
+case class SetVectorState(key: String)
+case class SetRefState(key: String)
+case class Success(key: String, value: String)
+case class Failure(key: String, value: String, failer: Actor)
+
+case class SetMapStateOneWay(key: String, value: String)
+case class SetVectorStateOneWay(key: String)
+case class SetRefStateOneWay(key: String)
+case class SuccessOneWay(key: String, value: String)
+case class FailureOneWay(key: String, value: String, failer: Actor)
+
+class CassandraPersistentActor extends Actor {
   timeout = 100000
   makeTransactionRequired
-  private val mapState = TransactionalState.newPersistentMap(CassandraStorageConfig())
-  private val vectorState = TransactionalState.newPersistentVector(CassandraStorageConfig())
-  private val refState = TransactionalState.newPersistentRef(CassandraStorageConfig())
+  private val mapState = PersistentState.newMap(CassandraStorageConfig())
+  private val vectorState = PersistentState.newVector(CassandraStorageConfig())
+  private val refState = PersistentState.newRef(CassandraStorageConfig())
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>
@@ -56,11 +72,11 @@ class PersistentActor extends Actor {
   }
 }
 
-class PersistentActorSpec extends TestCase {
+class CassandraPersistentActorSpec extends TestCase {
 
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = new PersistentActor
+    val stateful = new CassandraPersistentActor
     stateful.start
     stateful !! SetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -69,7 +85,7 @@ class PersistentActorSpec extends TestCase {
 
   @Test
   def testMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = new PersistentActor
+    val stateful = new CassandraPersistentActor
     stateful.start
     stateful !! SetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
     val failer = new PersistentFailerActor
@@ -83,7 +99,7 @@ class PersistentActorSpec extends TestCase {
 
   @Test
   def testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = new PersistentActor
+    val stateful = new CassandraPersistentActor
     stateful.start
     stateful !! SetVectorState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -92,7 +108,7 @@ class PersistentActorSpec extends TestCase {
 
   @Test
   def testVectorShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = new PersistentActor
+    val stateful = new CassandraPersistentActor
     stateful.start
     stateful !! SetVectorState("init") // set init state
     val failer = new PersistentFailerActor
@@ -106,7 +122,7 @@ class PersistentActorSpec extends TestCase {
 
   @Test
   def testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = new PersistentActor
+    val stateful = new CassandraPersistentActor
     stateful.start
     stateful !! SetRefState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -115,7 +131,7 @@ class PersistentActorSpec extends TestCase {
 
   @Test
   def testRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = new PersistentActor
+    val stateful = new CassandraPersistentActor
     stateful.start
     stateful !! SetRefState("init") // set init state
     val failer = new PersistentFailerActor

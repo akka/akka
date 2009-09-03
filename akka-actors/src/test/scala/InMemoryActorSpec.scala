@@ -26,9 +26,9 @@ case class FailureOneWay(key: String, value: String, failer: Actor)
 class InMemStatefulActor extends Actor {
   timeout = 100000
   makeTransactionRequired
-  private val mapState = TransactionalState.newInMemoryMap[String, String]
-  private val vectorState = TransactionalState.newInMemoryVector[String]
-  private val refState = TransactionalState.newInMemoryRef[String]
+  private val mapState = TransactionalState.newMap[String, String]
+  private val vectorState = TransactionalState.newVector[String]
+  private val refState = TransactionalState.newRef[String]
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>

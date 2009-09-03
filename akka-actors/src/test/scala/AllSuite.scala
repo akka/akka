@@ -12,7 +12,6 @@ import org.scalatest._
 class AllSuite extends SuperSuite(
 
   List(
-    new SupervisorSpec
  //    new ActiveObjectSpec,
 //    new RestManagerSpec
   )

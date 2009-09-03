@@ -12,8 +12,6 @@ import javax.ws.rs.core.UriBuilder
 import java.io.File
 import java.net.URLClassLoader
 
-import net.lag.configgy.{Config, Configgy, RuntimeEnvironment, ParseException}
-
 import rest.AkkaCometServlet
 import nio.RemoteServer
 import state.CassandraStorage

@@ -2,9 +2,9 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
 
-import kernel.stm.TransactionManagement
+import stm.TransactionManagement
 import akka.collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
@@ -71,7 +71,7 @@ class PersistentState {
 abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 
   // FIXME: need to handle remove in another changeSet
-  protected[kernel] val changeSet = new HashMap[K, V]
+  protected[akka] val changeSet = new HashMap[K, V]
 
   def getRange(start: Option[AnyRef], count: Int)
 
@@ -221,7 +221,7 @@ class MongoPersistentTransactionalMap extends TemplatePersistentTransactionalMap
 abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
 
   // FIXME: need to handle remove in another changeSet
-  protected[kernel] val changeSet = new ArrayBuffer[T]
+  protected[akka] val changeSet = new ArrayBuffer[T]
 
   // ---- For Transactional ----
   override def begin = {}

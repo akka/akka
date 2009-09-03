@@ -2,14 +2,14 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
 
 import java.io.{Flushable, Closeable}
 
 import util.Logging
 import util.Helpers._
 import serialization.Serializer
-import kernel.Kernel.config
+import akka.Config.config
 
 import org.apache.cassandra.db.ColumnFamily
 import org.apache.cassandra.service._
@@ -46,7 +46,7 @@ object CassandraStorage extends MapStorage
 */
 
   private[this] val serializer: Serializer = {
-    kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "java") match {
+    config.getString("akka.storage.cassandra.storage-format", "java") match {
       case "scala-json" => Serializer.ScalaJSON
       case "java-json" =>  Serializer.JavaJSON
       case "protobuf" =>   Serializer.Protobuf
@@ -231,14 +231,14 @@ val REF_COLUMN_FAMILY = "ref:item"
 
 val IS_ASCENDING = true
 
-val RUN_THRIFT_SERVICE = kernel.Kernel.config.getBool("akka.storage.cassandra.thrift-server.service", false)
+val RUN_THRIFT_SERVICE = akka.akka.config.getBool("akka.storage.cassandra.thrift-server.service", false)
 val CONSISTENCY_LEVEL =  {
-if (kernel.Kernel.config.getBool("akka.storage.cassandra.blocking", true)) 0
+if (akka.akka.config.getBool("akka.storage.cassandra.blocking", true)) 0
 else 1 }
 
 @volatile private[this] var isRunning = false
 private[this] val serializer: Serializer =  {
-kernel.Kernel.config.getString("akka.storage.cassandra.storage-format", "java") match  {
+akka.akka.config.getString("akka.storage.cassandra.storage-format", "java") match  {
 case "scala-json" => Serializer.ScalaJSON
 case "java-json" =>  Serializer.JavaJSON
 case "protobuf" =>   Serializer.Protobuf
@@ -398,7 +398,7 @@ case object Start
 case object Stop
 
 private[this] val serverEngine: TThreadPoolServer = try  {
-val pidFile = kernel.Kernel.config.getString("akka.storage.cassandra.thrift-server.pidfile", "akka.pid")
+val pidFile = akka.akka.config.getString("akka.storage.cassandra.thrift-server.pidfile", "akka.pid")
 if (pidFile != null) new File(pidFile).deleteOnExit();
 val listenPort = DatabaseDescriptor.getThriftPort
 

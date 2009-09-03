@@ -1,7 +1,7 @@
 package sample.java;
 
-import se.scalablesolutions.akka.kernel.config.ActiveObjectManager;
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.config.ActiveObjectManager;
+import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 public class Boot {
   final private ActiveObjectManager manager = new ActiveObjectManager();

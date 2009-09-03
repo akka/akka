@@ -7,11 +7,11 @@ import _root_.net.liftweb.sitemap.Loc._
 import Helpers._
 import _root_.net.liftweb.http.auth._
 
-import se.scalablesolutions.akka.kernel.state.{TransactionalState, CassandraStorageConfig}
-import se.scalablesolutions.akka.kernel.actor.{SupervisorFactory, Actor}
-import se.scalablesolutions.akka.kernel.config.ScalaConfig._
-import se.scalablesolutions.akka.kernel.util.Logging
-import sample.lift.SimpleService
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.util.Logging
+
+import sample.lift.{PersistentSimpleService, SimpleService}
 
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -44,7 +44,7 @@ class Boot {
             new SimpleService,      
             LifeCycle(Permanent, 100)) ::
           Supervise(
-            new SimpleService,
+            new PersistentSimpleService,
             LifeCycle(Permanent, 100)) ::
           Nil)
       }

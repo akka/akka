@@ -24,7 +24,7 @@
       <artifactId>akka-actors</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
       <version>0.6</version>
-    </dependency>
+    	</dependency>
    <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>rabbitmq-client</artifactId>

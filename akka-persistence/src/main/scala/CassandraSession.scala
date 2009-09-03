@@ -2,14 +2,14 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
 
 import java.io.{Flushable, Closeable}
 
 import util.Logging
 import util.Helpers._
 import serialization.Serializer
-import kernel.Kernel.config
+import akka.Config.config
 
 import org.apache.cassandra.db.ColumnFamily
 import org.apache.cassandra.service._

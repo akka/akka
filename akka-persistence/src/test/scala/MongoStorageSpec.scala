@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
 
 import junit.framework.TestCase
 

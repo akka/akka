@@ -1,13 +1,11 @@
-package se.scalablesolutions.akka.kernel.actor
+package se.scalablesolutions.akka.state
 
-
+import akka.actor.Actor
 import junit.framework.TestCase
 import org.junit.{Test, Before}
 import org.junit.Assert._
 import dispatch.json._
 import dispatch.json.Js._
-
-import kernel.state.{MongoStorageConfig, TransactionalState}
 
 /**
  * A persistent actor based on MongoDB storage.
@@ -31,9 +29,9 @@ case object LogSize
 class BankAccountActor extends Actor {
   makeTransactionRequired
   private val accountState = 
-    TransactionalState.newPersistentMap(MongoStorageConfig())
+    PersistentState.newMap(MongoStorageConfig())
   private val txnLog = 
-    TransactionalState.newPersistentVector(MongoStorageConfig())
+    PersistentState.newVector(MongoStorageConfig())
 
   def receive: PartialFunction[Any, Unit] = {
     // check balance

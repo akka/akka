@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
 
 import org.apache.commons.pool._
 import org.apache.commons.pool.impl._

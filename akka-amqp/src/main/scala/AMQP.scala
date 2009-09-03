@@ -2,15 +2,13 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package com.scalablesolutions.akka.amqp
+package se.scalablesolutions.akka.amqp
 
-import java.lang.String
-import rabbitmq.client.{AMQP => RabbitMQ, _}
-import rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.{AMQP => RabbitMQ, _}
+import com.rabbitmq.client.ConnectionFactory
 
-import se.scalablesolutions.akka.kernel.Kernel
-import se.scalablesolutions.akka.kernel.actor.Actor
-import se.scalablesolutions.akka.serialization.Serializer
+import actor.Actor
+import serialization.Serializer
 
 import java.util.{Timer, TimerTask}
 

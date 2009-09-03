@@ -1,8 +1,7 @@
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
 
 // abstracts persistence storage
-trait Storage {
-}
+trait Storage
 
 // for Maps
 trait MapStorage extends Storage {
@@ -13,8 +12,7 @@ trait MapStorage extends Storage {
   def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef]
   def getMapStorageSizeFor(name: String): Int
   def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]
-  def getMapStorageRangeFor(name: String, start: Option[AnyRef], 
-                            finish: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]]
+  def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]]
 }
 
 // for vectors

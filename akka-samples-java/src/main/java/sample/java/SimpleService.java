@@ -11,9 +11,9 @@ import javax.ws.rs.Produces;
 import se.scalablesolutions.akka.annotation.transactionrequired;
 import se.scalablesolutions.akka.annotation.prerestart;
 import se.scalablesolutions.akka.annotation.postrestart;
-import se.scalablesolutions.akka.kernel.state.TransactionalState;
-import se.scalablesolutions.akka.kernel.state.TransactionalMap;
-import se.scalablesolutions.akka.kernel.state.CassandraStorageConfig;
+import se.scalablesolutions.akka.state.TransactionalState;
+import se.scalablesolutions.akka.state.TransactionalMap;
+import se.scalablesolutions.akka.state.CassandraStorageConfig;
 
 /**                                
  * Try service out by invoking (multiple times):
@@ -29,7 +29,7 @@ public class SimpleService {
 
   private boolean hasStartedTicking = false;
   private TransactionalState factory = new TransactionalState();
-  private TransactionalMap storage = factory.newInMemoryMap();
+  private TransactionalMap storage = factory.newMap();
 
   @GET
   @Produces({"application/json"})

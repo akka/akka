@@ -2,11 +2,10 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka
+package se.scalablesolutions.akka.actor
 
 import akka.serialization.BinaryString
 import nio.{RemoteClient, RemoteServer}
-import actor.{Supervisor, SupervisorFactory, Actor, StartSupervisor}
 import config.ScalaConfig._
 
 //import com.jteigen.scalatest.JUnit4Runner
@@ -23,7 +22,7 @@ object Log {
 //@RunWith(classOf[JUnit4Runner])
 class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
 
-  Kernel.config
+  akka.Config.config
   new Thread(new Runnable() {
      def run = {
        val server = new RemoteServer
@@ -248,43 +247,43 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
 
   /*
   def testOneWayKillSingleActorOneForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
     pingpong1 ! BinaryString("Die")
     Thread.sleep(500)
     expect("DIE") {
-      Log.messageLog
+      Logg.messageLog
     }
   }
 
   def testOneWayCallKillCallSingleActorOneForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
     pingpong1 ! OneWay
     Thread.sleep(500)
     expect("oneway") {
-      Log.oneWayLog
+      Logg.oneWayLog
     }
     pingpong1 ! BinaryString("Die")
     Thread.sleep(500)
     expect("DIE") {
-      Log.messageLog
+      Logg.messageLog
     }
     pingpong1 ! OneWay
     Thread.sleep(500)
     expect("onewayoneway") {
-      Log.oneWayLog
+      Logg.oneWayLog
     }
   }
 */
   
   /*
   def testOneWayKillSingleActorAllForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
@@ -293,12 +292,12 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("DIE") {
-      Log.messageLog
+      Logg.messageLog
     }
   }
 
   def testOneWayCallKillCallSingleActorAllForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
@@ -307,26 +306,26 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("ping") {
-      Log.messageLog
+      Logg.messageLog
     }
     intercept(classOf[RuntimeException]) {
       pingpong1 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingDIE") {
-      Log.messageLog
+      Logg.messageLog
     }
     expect("pong") {
       (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
     }
     Thread.sleep(500)
     expect("pingDIEping") {
-      Log.messageLog
+      Logg.messageLog
     }
   }
 
   def testOneWayKillMultipleActorsOneForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getMultipleActorsOneForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
@@ -335,12 +334,12 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("DIE") {
-      Log.messageLog
+      Logg.messageLog
     }
   }
 
   def tesOneWayCallKillCallMultipleActorsOneForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getMultipleActorsOneForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
@@ -357,14 +356,14 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("pingpingping") {
-      Log.messageLog
+      Logg.messageLog
     }
     intercept(classOf[RuntimeException]) {
       pingpong2 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingpingpingDIE") {
-      Log.messageLog
+      Logg.messageLog
     }
     expect("pong") {
       (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
@@ -379,12 +378,12 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("pingpingpingDIEpingpingping") {
-      Log.messageLog
+      Logg.messageLog
     }
   }
 
   def testOneWayKillMultipleActorsAllForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getMultipleActorsAllForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
@@ -393,12 +392,12 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("DIEDIEDIE") {
-      Log.messageLog
+      Logg.messageLog
     }
   }
 
   def tesOneWayCallKillCallMultipleActorsAllForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
     val sup = getMultipleActorsAllForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
@@ -415,14 +414,14 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("pingpingping") {
-      Log.messageLog
+      Logg.messageLog
     }
     intercept(classOf[RuntimeException]) {
       pingpong2 ! BinaryString("Die")
     }
     Thread.sleep(500)
     expect("pingpingpingDIEDIEDIE") {
-      Log.messageLog
+      Logg.messageLog
     }
     expect("pong") {
       (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
@@ -437,14 +436,14 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
     }
     Thread.sleep(500)
     expect("pingpingpingDIEDIEDIEpingpingping") {
-      Log.messageLog
+      Logg.messageLog
     }
   }
    */
 
   /*
    def testNestedSupervisorsTerminateFirstLevelActorAllForOne = {
-    Log.messageLog = ""
+    Logg.messageLog = ""
      val sup = getNestedSupervisorsAllForOneConf
      sup ! StartSupervisor
      intercept(classOf[RuntimeException]) {
@@ -452,7 +451,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
      }
      Thread.sleep(500)
      expect("DIEDIEDIE") {
-       Log.messageLog
+       Logg.messageLog
      }
    }
 */

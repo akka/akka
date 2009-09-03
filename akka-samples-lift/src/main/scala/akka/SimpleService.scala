@@ -1,9 +1,9 @@
 package sample.lift
 
-import se.scalablesolutions.akka.kernel.state.{TransactionalState, CassandraStorageConfig}
-import se.scalablesolutions.akka.kernel.actor.{SupervisorFactory, Actor}
-import se.scalablesolutions.akka.kernel.config.ScalaConfig._
-import se.scalablesolutions.akka.kernel.util.Logging
+import se.scalablesolutions.akka.state.{PersistentState, TransactionalState, CassandraStorageConfig}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.util.Logging
 
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
@@ -22,7 +22,7 @@ class SimpleService extends Actor {
   case object Tick
   private val KEY = "COUNTER";
   private var hasStartedTicking = false;
-  private val storage = TransactionalState.newInMemoryMap[String, Integer]
+  private val storage = TransactionalState.newMap[String, Integer]
 
   @GET
   @Produces(Array("text/html"))
@@ -55,7 +55,7 @@ class PersistentSimpleService extends Actor {
   case object Tick
   private val KEY = "COUNTER";
   private var hasStartedTicking = false;
-  private val storage = TransactionalState.newPersistentMap(CassandraStorageConfig())
+  private val storage = PersistentState.newMap(CassandraStorageConfig())
 
   @GET
   @Produces(Array("text/html"))

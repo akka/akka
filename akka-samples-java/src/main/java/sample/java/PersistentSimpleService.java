@@ -11,9 +11,10 @@ import javax.ws.rs.Produces;
 import se.scalablesolutions.akka.annotation.transactionrequired;
 import se.scalablesolutions.akka.annotation.prerestart;
 import se.scalablesolutions.akka.annotation.postrestart;
-import se.scalablesolutions.akka.kernel.state.TransactionalState;
-import se.scalablesolutions.akka.kernel.state.TransactionalMap;
-import se.scalablesolutions.akka.kernel.state.CassandraStorageConfig;
+import se.scalablesolutions.akka.state.TransactionalState;
+import se.scalablesolutions.akka.state.PersistentState;
+import se.scalablesolutions.akka.state.TransactionalMap;
+import se.scalablesolutions.akka.state.CassandraStorageConfig;
 
 /**
  * Try service out by invoking (multiple times):
@@ -28,8 +29,8 @@ public class PersistentSimpleService {
   private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private TransactionalState factory = new TransactionalState();
-  private TransactionalMap<Object, Object> storage = factory.newPersistentMap(new CassandraStorageConfig());
+  private PersistentState factory = new PersistentState();
+  private TransactionalMap<Object, Object> storage = factory.newMap(new CassandraStorageConfig());
 
   @GET
   @Produces({"application/html"})

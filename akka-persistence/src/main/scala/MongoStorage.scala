@@ -1,10 +1,11 @@
-package se.scalablesolutions.akka.kernel.state
+package se.scalablesolutions.akka.state
+
+import akka.util.Logging
+import serialization.{Serializer}
+import akka.Config.config
+import sjson.json.Serializer._
 
 import com.mongodb._
-import se.scalablesolutions.akka.kernel.util.Logging
-import serialization.{Serializer}
-import kernel.Kernel.config
-import sjson.json.Serializer._
 
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
 
@@ -18,8 +19,7 @@ import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
  * <p/>
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-object MongoStorage extends MapStorage 
-    with VectorStorage with RefStorage with Logging {
+object MongoStorage extends MapStorage with VectorStorage with RefStorage with Logging {
       
   // enrich with null safe findOne
   class RichDBCollection(value: DBCollection) {
@@ -36,18 +36,15 @@ object MongoStorage extends MapStorage
   val KEY = "key"
   val VALUE = "value"
   val COLLECTION = "akka_coll"
-  val MONGODB_SERVER_HOSTNAME = 
-    config.getString("akka.storage.mongodb.hostname", "127.0.0.1")
-  val MONGODB_SERVER_DBNAME = 
-    config.getString("akka.storage.mongodb.dbname", "testdb")
-  val MONGODB_SERVER_PORT = 
-    config.getInt("akka.storage.mongodb.port", 27017)
+  
+  val MONGODB_SERVER_HOSTNAME = config.getString("akka.storage.mongodb.hostname", "127.0.0.1")
+  val MONGODB_SERVER_DBNAME = config.getString("akka.storage.mongodb.dbname", "testdb")
+  val MONGODB_SERVER_PORT = config.getInt("akka.storage.mongodb.port", 27017)
 
-  val db = new Mongo(MONGODB_SERVER_HOSTNAME,
-    MONGODB_SERVER_PORT, MONGODB_SERVER_DBNAME)
+  val db = new Mongo(MONGODB_SERVER_HOSTNAME, MONGODB_SERVER_PORT, MONGODB_SERVER_DBNAME)
   val coll = db.getCollection(COLLECTION)
 
-  // @fixme: make this pluggable
+  // FIXME: make this pluggable
   private[this] val serializer = SJSON
   
   override def insertMapStorageEntryFor(name: String, 

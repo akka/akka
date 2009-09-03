@@ -2,8 +2,9 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka
+package se.scalablesolutions.akka.camel
 
+/*
 import config.ActiveObjectGuiceConfigurator
 import annotation.oneway
 import config.ScalaConfig._
@@ -28,16 +29,16 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 
 // REQUIRES: -Djava.naming.factory.initial=org.apache.camel.util.jndi.CamelInitialContextFactory
-
+*/
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
+ *
 //@RunWith(classOf[JUnit4Runner])
 class CamelSpec extends Spec with ShouldMatchers {
 
   describe("A Camel routing scheme") {
     it("should route message from direct:test to actor A using @Bean endpoint") {
-/*
+
       val latch = new CountDownLatch(1);
 
       val conf = new ActiveObjectGuiceConfigurator
@@ -80,7 +81,6 @@ class CamelSpec extends Spec with ShouldMatchers {
       val received = latch.await(5, TimeUnit.SECONDS)
       received should equal (true)
       conf.stop
-*/
     }
   }
 }
@@ -98,3 +98,4 @@ class CamelFooImpl extends CamelFoo {
 class CamelBarImpl extends CamelBar {
   def bar(msg: String) = msg + "return_bar "
 }
+ */
