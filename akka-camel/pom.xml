@@ -1,0 +1,48 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>akka-camel</artifactId>
+  <name>Akka Camel Module</name>
+
+  <packaging>jar</packaging>
+
+  <parent>
+    <artifactId>akka</artifactId>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <version>0.6</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <!-- Core deps -->
+  <dependencies>
+    <dependency>
+      <artifactId>akka-util</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-actors</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <version>2.0-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>META-INF/*</include>
+        </includes>
+      </resource>
+    </resources>
+  </build>
+</project>

@@ -1,0 +1,59 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>akka-persistence</artifactId>
+  <name>Akka Persistence Module</name>
+
+  <packaging>jar</packaging>
+
+  <parent>
+    <artifactId>akka</artifactId>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <version>0.6</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <artifactId>akka-util</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-actors</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+
+   <!-- For Mongo -->
+    <dependency>
+      <groupId>com.mongodb</groupId>
+      <artifactId>mongo</artifactId>
+      <version>0.6</version>
+    </dependency>
+
+    <!-- For Cassandra -->
+    <dependency>
+      <groupId>org.apache.cassandra</groupId>
+      <artifactId>cassandra</artifactId>
+      <version>0.4.0-trunk</version>
+    </dependency>
+    <dependency>
+      <groupId>com.facebook</groupId>
+      <artifactId>thrift</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.facebook</groupId>
+      <artifactId>fb303</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-pool</groupId>
+      <artifactId>commons-pool</artifactId>
+      <version>1.5.1</version>
+    </dependency>
+  </dependencies>
+
+</project>

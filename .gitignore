@@ -11,7 +11,7 @@ data
 out
 logs
 storage
-lib/akka*
+_dump
 .manager
 manifest.mf
 semantic.cache
@@ -19,7 +19,8 @@ tm*.log
 tm*.lck
 tm.out
 *.tm.epoch
-_dump
-WEB-INF
 .DS_Store
+*.iws
+*.ipr
+*.iml
 

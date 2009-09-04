@@ -18,13 +18,16 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
   <body>
     <release version="0.6" date="" description="">
       <action dev="Debasish Ghosh" type="add">MongoDB as Akka storage backend </action>
+      <action dev="Debasish Ghosh" type="add">Transparent JSON serialization of Scala objects based on SJSON </action>
+      <action dev="Debasish Ghosh" type="add">MongoDB backed actor example</action>
       <action dev="Tim Perrett" type="add">Support for using the Lift Web framework with Actors</action>
+      <action dev="Viktor Klang" type="add">Security module for authentication and authorization</action>
       <action dev="Viktor Klang" type="add">Support for using Scala XML tags in RESTful Actors (scala-jersey)</action>
       <action dev="Viktor Klang" type="add">Support for Comet Actors using Atmosphere</action>
-      <action dev="Jonas Bon&#233;r" type="add">Statistics recorder with JMX and REST APIs</action>
-      <action dev="Jonas Bon&#233;r" type="add">Management service with JMX and REST APIs</action>
+      <action dev="Jonas Bon&#233;r" type="add">AMQP integration; abstracted as actors in a supervisor hierarchy. Impl AMQP 0.9.1</action>
+      <action dev="Jonas Bon&#233;r" type="add">Modularization of distribution into a thin core (actors, remoting and STM) and the rest in submodules</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Java objects (using Jackson)</action>
-      <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using scala-json)</action>
+      <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using SJSON)</action>
       <action dev="Jonas Bon&#233;r" type="add">Protobuf serialization for Java and Scala objects</action>
       <action dev="Jonas Bon&#233;r" type="add">SBinary serialization for Scala objects</action>
       <action dev="Jonas Bon&#233;r" type="add">Protobuf as remote protocol</action>
@@ -33,6 +36,7 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Jonas Bon&#233;r" type="remove">Removed embedded Cassandra mode</action>
       <action dev="Jonas Bon&#233;r" type="remove">Removed startup scripts and lib dir</action>
       <action dev="Jonas Bon&#233;r" type="add">ActorRegistry for retrieving Actor instances</action>
+      <action dev="Jonas Bon&#233;r" type="add">SchedulerActor for scheduling periodic tasks</action>
       <action dev="Jonas Bon&#233;r" type="add">Now start up kernel with 'java -jar dist/akka-0.6.jar'</action>
       <action dev="Jonas Bon&#233;r" type="fix">Concurrent mode is now per actor basis</action>
       <action dev="Jonas Bon&#233;r" type="fix">Made Akka Web App aware, does not require AKKA_HOME when using it as a library</action>

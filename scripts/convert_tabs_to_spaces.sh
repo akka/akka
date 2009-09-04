@@ -1,11 +1,23 @@
 #!/bin/sh
-echo "converting all tabs to 2 spaces"
-find . -type f -name '*.html' -exec sed -i 's/[\t]/  /' {} \;
-
-#find . -name "*.html" |while read line
-#do
-#  expand -i $line > $line.new
-#  mv -f $line.new $line
-#done
-
+find . -name "*.java" |while read line
+do
+  expand $line > $line.new
+  mv -f $line.new $line
+done
+find . -name "*.scala" |while read line
+do
+  expand $line > $line.new
+  mv -f $line.new $line
+done
+find . -name "*.html" |while read line
+do
+  expand $line > $line.new
+  mv -f $line.new $line
+done
+find . -name "*.xml" |while read line
+do
+  expand $line > $line.new
+  mv -f $line.new $line
+done
+echo "converted all tabs to 2 spaces"
 exit 0

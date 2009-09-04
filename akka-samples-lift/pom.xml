@@ -1,0 +1,97 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>akka-samples-lift</artifactId>
+  <name>Akka Lift Samples Module</name>
+
+  <packaging>war</packaging>
+
+  <parent>
+    <artifactId>akka</artifactId>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <version>0.6</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <properties>
+    <lift.version>1.1-SNAPSHOT</lift.version>
+  </properties>
+
+  <dependencies>
+   <dependency>
+      <artifactId>akka-util-java</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-util</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-actors</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-persistence</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-rest</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-kernel</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-util</artifactId>
+      <version>${lift.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-webkit</artifactId>
+      <version>${lift.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.5</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty</artifactId>
+      <version>[6.1.6,)</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+      <version>${scala.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
