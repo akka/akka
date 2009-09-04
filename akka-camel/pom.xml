@@ -1,9 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-amqp</artifactId>
-  <name>Akka AMQP Module</name>
+  <artifactId>akka-camel</artifactId>
+  <name>Akka Camel Module</name>
 
   <packaging>jar</packaging>
 
@@ -14,6 +15,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
+  <!-- Core deps -->
   <dependencies>
     <dependency>
       <artifactId>akka-util</artifactId>
@@ -24,17 +26,23 @@
       <artifactId>akka-actors</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
       <version>0.6</version>
-    	</dependency>
-   <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>rabbitmq-client</artifactId>
-      <version>0.9.1</version>
     </dependency>
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>1.4</version>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <version>2.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
+  <build>
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>META-INF/*</include>
+        </includes>
+      </resource>
+    </resources>
+  </build>
 </project>

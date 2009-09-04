@@ -7,9 +7,9 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client.{AMQP => RabbitMQ, _}
 import com.rabbitmq.client.ConnectionFactory
 
-import kernel.actor.{OneForOneStrategy, Actor}
-import kernel.config.ScalaConfig._
-import kernel.util.{HashCode, Logging}
+import actor.{OneForOneStrategy, Actor}
+import config.ScalaConfig._
+import util.{HashCode, Logging}
 import serialization.Serializer
 
 import scala.collection.mutable.HashMap
