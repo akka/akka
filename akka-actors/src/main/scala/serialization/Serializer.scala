@@ -9,7 +9,7 @@ import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, By
 import reflect.{BeanProperty, Manifest}
 import sbinary.DefaultProtocol
 import org.codehaus.jackson.map.ObjectMapper
-import com.twitter.commons.Json
+import sjson.json.{Serializer=>SJSONSerializer}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -119,11 +119,11 @@ object Serializer {
   object ScalaJSON extends Serializer {
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
-    def out(obj: AnyRef): Array[Byte] = Json.build(obj).toString.getBytes("UTF-8")
+    def out(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
 
-    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = Json.parse(new String(bytes, "UTF-8")).asInstanceOf[AnyRef]
+    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
     
-    def in(json: String): AnyRef = Json.parse(json).asInstanceOf[AnyRef]
+    def in(json: String): AnyRef = SJSONSerializer.SJSON.in(json)
   }
 
   /**
