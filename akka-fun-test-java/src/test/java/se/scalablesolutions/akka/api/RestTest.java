@@ -25,8 +25,8 @@ import java.net.URI;
 import java.util.Map;
 import java.util.HashMap;
 
-import se.scalablesolutions.akka.kernel.config.*;
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.config.*;
+import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 
 public class RestTest extends TestCase {
@@ -67,7 +67,7 @@ public class RestTest extends TestCase {
 */
   private static SelectorThread startJersey() {
     try {
-      Servlet servlet = new se.scalablesolutions.akka.kernel.rest.AkkaServlet();
+      Servlet servlet = new se.scalablesolutions.akka.rest.AkkaServlet();
       ServletAdapter adapter = new ServletAdapter();
       adapter.setServletInstance(servlet);
       adapter.setContextPath(URI.getPath());

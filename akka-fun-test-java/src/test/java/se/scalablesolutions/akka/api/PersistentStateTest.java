@@ -4,10 +4,10 @@
 
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.kernel.config.*;
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
-import se.scalablesolutions.akka.kernel.actor.*;
-import se.scalablesolutions.akka.kernel.Kernel;
+import se.scalablesolutions.akka.config.*;
+import static se.scalablesolutions.akka.config.JavaConfig.*;
+import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.Kernel;
 
 import junit.framework.TestCase;
 

@@ -1,14 +1,14 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.transactionrequired;
-import se.scalablesolutions.akka.kernel.state.*;
+import se.scalablesolutions.akka.state.*;
 
 @transactionrequired
 public class InMemStatefulNested {
   private TransactionalState factory = new TransactionalState();
-  private TransactionalMap<String, String> mapState = factory.newInMemoryMap();
-  private TransactionalVector<String> vectorState = factory.newInMemoryVector();
-  private TransactionalRef<String> refState = factory.newInMemoryRef();
+  private TransactionalMap<String, String> mapState = factory.newMap();
+  private TransactionalVector<String> vectorState = factory.newVector();
+  private TransactionalRef<String> refState = factory.newRef();
 
   
   public String getMapState(String key) {

@@ -9,18 +9,19 @@ import com.google.inject.Scopes;
 
 import junit.framework.TestCase;
 
-import se.scalablesolutions.akka.kernel.reactor.EventBasedThreadPoolDispatcher;
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
+import se.scalablesolutions.akka.Config;
+import se.scalablesolutions.akka.reactor.EventBasedThreadPoolDispatcher;
+import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class ActiveObjectGuiceConfiguratorTest extends TestCase {
   static String messageLog = "";
 
-    final private se.scalablesolutions.akka.kernel.config.ActiveObjectManager conf = new se.scalablesolutions.akka.kernel.config.ActiveObjectManager();
+    final private se.scalablesolutions.akka.config.ActiveObjectManager conf = new se.scalablesolutions.akka.config.ActiveObjectManager();
 
     protected void setUp() {
-      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
+      Config.config();
       EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher("name");
         dispatcher
        .withNewThreadPoolWithBoundedBlockingQueue(100)
@@ -103,7 +104,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     try {
       foo.longRunning();
       fail("exception should have been thrown");
-    } catch (se.scalablesolutions.akka.kernel.reactor.FutureTimeoutException e) {
+    } catch (se.scalablesolutions.akka.reactor.FutureTimeoutException e) {
     }
   }
 

@@ -6,10 +6,11 @@ package se.scalablesolutions.akka.api;
 
 import junit.framework.TestCase;
 
-import se.scalablesolutions.akka.kernel.config.*;
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
-import se.scalablesolutions.akka.kernel.actor.*;
-import se.scalablesolutions.akka.kernel.Kernel;
+import se.scalablesolutions.akka.Config;
+import se.scalablesolutions.akka.config.*;
+import static se.scalablesolutions.akka.config.JavaConfig.*;
+import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.Kernel;
 
 public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
@@ -18,7 +19,7 @@ public class InMemoryStateTest extends TestCase {
 
 
   protected void setUp() {
-    se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
+    Config.config();
     conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{

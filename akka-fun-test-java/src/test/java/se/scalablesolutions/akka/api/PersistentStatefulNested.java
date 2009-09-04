@@ -1,14 +1,14 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.transactionrequired;
-import se.scalablesolutions.akka.kernel.state.*;
+import se.scalablesolutions.akka.state.*;
 
 @transactionrequired
 public class PersistentStatefulNested {
-  private TransactionalState factory = new TransactionalState();
-  private TransactionalMap mapState =       factory.newPersistentMap(new CassandraStorageConfig());
-  private TransactionalVector vectorState = factory.newPersistentVector(new CassandraStorageConfig());;
-  private TransactionalRef refState =       factory.newPersistentRef(new CassandraStorageConfig());
+  private PersistentState factory = new PersistentState();
+  private TransactionalMap mapState =       factory.newMap(new CassandraStorageConfig());
+  private TransactionalVector vectorState = factory.newVector(new CassandraStorageConfig());;
+  private TransactionalRef refState =       factory.newRef(new CassandraStorageConfig());
 
 
   public String getMapState(String key) {

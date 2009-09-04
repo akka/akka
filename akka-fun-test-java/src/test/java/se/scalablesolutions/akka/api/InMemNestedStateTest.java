@@ -4,10 +4,11 @@
 
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.kernel.config.*;
-import static se.scalablesolutions.akka.kernel.config.JavaConfig.*;
-import se.scalablesolutions.akka.kernel.actor.*;
-import se.scalablesolutions.akka.kernel.Kernel;
+import se.scalablesolutions.akka.Config;
+import se.scalablesolutions.akka.config.*;
+import static se.scalablesolutions.akka.config.JavaConfig.*;
+import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.Kernel;
 import junit.framework.TestCase;
 
 public class InMemNestedStateTest extends TestCase {
@@ -26,7 +27,7 @@ public class InMemNestedStateTest extends TestCase {
             new Component(InMemFailer.class, new LifeCycle(new Permanent(), 1000), 1000)
             //new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000)
         }).inject().supervise();
-      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
+      Config.config();
   }
 
   protected void tearDown() {

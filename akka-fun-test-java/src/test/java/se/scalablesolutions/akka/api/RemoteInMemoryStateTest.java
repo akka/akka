@@ -4,8 +4,10 @@
 
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.kernel.actor.ActiveObjectFactory;
-import se.scalablesolutions.akka.kernel.nio.RemoteServer;
+import se.scalablesolutions.akka.Config;
+import se.scalablesolutions.akka.actor.ActiveObjectFactory;
+import se.scalablesolutions.akka.config.ActiveObjectManager;
+import se.scalablesolutions.akka.nio.RemoteServer;
 import junit.framework.TestCase;
 
 public class RemoteInMemoryStateTest extends TestCase {
@@ -19,9 +21,9 @@ public class RemoteInMemoryStateTest extends TestCase {
        }
     }).start();
     try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
-      se.scalablesolutions.akka.kernel.Kernel$.MODULE$.config();
+      Config.config();
   }
-  final private se.scalablesolutions.akka.kernel.config.ActiveObjectManager conf = new se.scalablesolutions.akka.kernel.config.ActiveObjectManager();
+  final ActiveObjectManager conf = new ActiveObjectManager();
   final private ActiveObjectFactory factory = new ActiveObjectFactory();
 
   protected void tearDown() {

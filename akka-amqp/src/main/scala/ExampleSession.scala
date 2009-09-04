@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.amqp
 
 import akka.serialization.Serializer
 import com.rabbitmq.client.ConnectionParameters
-import kernel.actor.Actor
+import actor.Actor
 
 object ExampleSession {
   import AMQP._
