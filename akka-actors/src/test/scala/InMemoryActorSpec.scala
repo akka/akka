@@ -26,6 +26,7 @@ case class FailureOneWay(key: String, value: String, failer: Actor)
 class InMemStatefulActor extends Actor {
   timeout = 100000
   makeTransactionRequired
+  //dispatcher = se.scalablesolutions.akka.reactor.Dispatchers.newThreadBasedDispatcher(this)
   private val mapState = TransactionalState.newMap[String, String]
   private val vectorState = TransactionalState.newVector[String]
   private val refState = TransactionalState.newRef[String]
@@ -86,7 +87,7 @@ class InMemFailerActor extends Actor {
 }
                                                         
 class InMemoryActorSpec extends TestCase {
-/*
+
   @Test
   def testOneWayMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor
@@ -213,7 +214,7 @@ class InMemoryActorSpec extends TestCase {
     Thread.sleep(100)
     assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
   }
-       */
+
   @Test
   def testRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor

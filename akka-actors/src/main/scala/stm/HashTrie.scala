@@ -34,6 +34,8 @@
 
 package se.scalablesolutions.akka.collection
 
+trait PersistentDataStructure
+
 /**
  * A clean-room port of Rich Hickey's persistent hash trie implementation from
  * Clojure (http://clojure.org).  Originally presented as a mutable structure in
@@ -43,7 +45,7 @@ package se.scalablesolutions.akka.collection
  * @author Rich Hickey
  */
 @serializable
-final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] {
+final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] with PersistentDataStructure {
   lazy val size = root.size
   
   def this() = this(new EmptyNode[K])

@@ -43,7 +43,8 @@ import Vector._
  * @author Rich Hickey
  */
 @serializable
-class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail: Array[AnyRef]) extends RandomAccessSeq[T] { outer =>
+class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail: Array[AnyRef]) 
+  extends RandomAccessSeq[T] with PersistentDataStructure { outer =>
   private val tailOff = length - tail.length
   
   /*

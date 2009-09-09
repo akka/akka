@@ -95,15 +95,14 @@
       <version>2.7.4-0.1</version>
     </dependency>
     <dependency>
-<<<<<<< HEAD:kernel/pom.xml
       <groupId>org.multiverse</groupId>
       <artifactId>multiverse</artifactId>
       <version>0.3</version>
-=======
+    </dependency>
+    <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>rabbitmq-client</artifactId>
       <version>0.9.1</version>
->>>>>>> master:akka-kernel/pom.xml
     </dependency>
 
     <!-- For Protocol/Serialization -->

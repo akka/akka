@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
 package se.scalablesolutions.akka.state
 
 // abstracts persistence storage
@@ -15,12 +19,13 @@ trait MapStorage extends Storage {
   def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]]
 }
 
-// for vectors
+// for Vectors
 trait VectorStorage extends Storage {
   def insertVectorStorageEntryFor(name: String, element: AnyRef) 
   def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) 
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef)
   def getVectorStorageEntryFor(name: String, index: Int): AnyRef 
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef]
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[AnyRef]
   def getVectorStorageSizeFor(name: String): Int 
 }
 

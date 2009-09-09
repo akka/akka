@@ -9,7 +9,7 @@ import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, By
 import reflect.{BeanProperty, Manifest}
 import sbinary.DefaultProtocol
 import org.codehaus.jackson.map.ObjectMapper
-import sjson.json.{Serializer=>SJSONSerializer}
+import sjson.json.{Serializer =>SJSONSerializer}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.state
 
+import org.multiverse.datastructures.refs.manual.Ref
 import stm.TransactionManagement
 import akka.collection._
 
@@ -17,6 +18,14 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
  * Example Scala usage:
  * <pre>
  * val myMap = TransactionalState.newMap
+ * val myVector = TransactionalState.newVector
+ * val myRef = TransactionalState.newRef
+ * </pre>
+ * Or:
+ * <pre>
+ * val myMap = TransactionalMap()
+ * val myVector = TransactionalVector()
+ * val myRef = TransactionalRef()
  * </pre>
  */
 object TransactionalState extends TransactionalState
@@ -31,9 +40,9 @@ object TransactionalState extends TransactionalState
  * </pre>
  */
 class TransactionalState {
-  def newMap[K, V]: TransactionalMap[K, V] = new InMemoryTransactionalMap[K, V]
-  def newVector[T]: TransactionalVector[T] = new InMemoryTransactionalVector[T]
-  def newRef[T]: TransactionalRef[T] = new TransactionalRef[T]
+  def newMap[K, V] = new TransactionalMap[K, V]
+  def newVector[T] = new TransactionalVector[T]
+  def newRef[T] = new TransactionalRef[T]
 }
 
 /**
@@ -43,203 +52,175 @@ class TransactionalState {
 trait Transactional {
   // FIXME: won't work across the cluster
   val uuid = Uuid.newUuid.toString
-
-  private[akka] def begin
-  private[akka] def commit
-  private[akka] def rollback
-
-  protected def verifyTransaction = {
-    val cflowTx = TransactionManagement.threadBoundTx.get
-    if (!cflowTx.isDefined) {
-      throw new IllegalStateException("Can't access transactional reference outside the scope of a transaction [" + this + "]")
-    } else {
-      cflowTx.get.register(this)
-    }
-  }
 }
 
 /**
- * Base trait for all state implementations (persistent or in-memory).
- *
- * FIXME: Create Java versions using pcollections
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
-  override def hashCode: Int = System.identityHashCode(this);
-  override def equals(other: Any): Boolean = false
-  def remove(key: K)
-}
-
-/**
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
-  protected[akka] var state = new HashTrie[K, V]
-  protected[akka] var snapshot = state
-
-  // ---- For Transactional ----
-  override def begin = snapshot = state
-  override def commit = snapshot = state
-  override def rollback = state = snapshot
-
-  // ---- Overriding scala.collection.mutable.Map behavior ----
-  override def contains(key: K): Boolean = {
-    verifyTransaction
-    state.contains(key)
-  }
-
-  override def clear = {
-    verifyTransaction
-    state = new HashTrie[K, V]
-  }
-
-  override def size: Int = {
-    verifyTransaction
-    state.size
-  }
-
-  // ---- For scala.collection.mutable.Map ----
-  override def remove(key: K) = {
-    verifyTransaction
-    state = state - key
-  }
-
-  override def elements: Iterator[(K, V)] = {
-//    verifyTransaction
-    state.elements
-  }
-
-  override def get(key: K): Option[V] = {
-    verifyTransaction
-    state.get(key)
-  }
-
-  override def put(key: K, value: V): Option[V] = {
-    verifyTransaction
-    val oldValue = state.get(key)
-    state = state.update(key, value)
-    oldValue
-  }
-
-  override def -=(key: K) = {
-    verifyTransaction
-    remove(key)
-  }
-
-  override def update(key: K, value: V) = {
-    verifyTransaction
-    put(key, value)
-  }
-}
-
-/**
- * Base for all transactional vector implementations.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-abstract class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
-  override def hashCode: Int = System.identityHashCode(this);
-  override def equals(other: Any): Boolean = false
-
-  def add(elem: T)
-
-  def get(index: Int): T
-
-  def getRange(start: Int, count: Int): List[T]
-}
-
-/**
- * Implements an in-memory transactional vector.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class InMemoryTransactionalVector[T] extends TransactionalVector[T] {
-  private[akka] var state: Vector[T] = EmptyVector
-  private[akka] var snapshot = state
-
-  def add(elem: T) = {
-    verifyTransaction
-    state = state + elem
-  }
-
-  def get(index: Int): T = {
-    verifyTransaction
-    state(index)
-  }
-
-  def getRange(start: Int, count: Int): List[T] = {
-    verifyTransaction
-    state.slice(start, count).toList.asInstanceOf[List[T]]
-  }
-
-  // ---- For Transactional ----
-  override def begin = snapshot = state
-
-  override def commit = snapshot = state
-
-  override def rollback = state = snapshot
-
-  // ---- For Seq ----
-  def length: Int = {
-    verifyTransaction
-    state.length
-  }
-
-  def apply(index: Int): T = {
-    verifyTransaction
-    state(index)
-  }
-
-  override def elements: Iterator[T] = {
-    //verifyTransaction
-    state.elements
-  }
-
-  override def toList: List[T] = {
-    verifyTransaction
-    state.toList
-  }
-}
-
-/**
- * Implements a transactional reference.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ * Implements a transactional managed reference.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {
-  private[akka] var ref: Option[T] = None
-  private[akka] var snapshot: Option[T] = None
-
-  override def begin = if (ref.isDefined) snapshot = Some(ref.get)
-
-  override def commit = if (ref.isDefined) snapshot = Some(ref.get)
-
-  override def rollback = if (snapshot.isDefined) ref = Some(snapshot.get)
-
+  protected[this] var ref: Option[Ref[T]] = None
+ 
+  def set(elem: T) = swap(elem)
+ 
   def swap(elem: T) = {
-    verifyTransaction
-    ref = Some(elem)
+    synchronized { if (ref.isEmpty) ref = Some(new Ref[T]) }
+    ref.get.set(elem)
+  }
+
+  def get: Option[T] = 
+    if (isEmpty) None
+    else Some(ref.get.get)
+ 
+  def getOrWait: T = {
+    synchronized { if (ref.isEmpty) ref = Some(new Ref[T]) }
+    ref.get.getOrAwait
+  }
+
+  def getOrElse(default: => T): T = 
+    if (isEmpty) default
+    else ref.get.get
+ 
+  def isDefined: Boolean = ref.isDefined && !ref.get.isNull
+
+  def isEmpty: Boolean = !isDefined
+}
+
+object TransactionalRef {
+  def apply[T](elem: T) = {
+    if (elem == null) throw new IllegalArgumentException("Can't define TransactionalRef with a null initial value, needs to be a PersistentDataStructure")
+    val ref = new TransactionalRef[T]
+    ref.swap(elem)
+    ref
+  }
+}
+
+/**
+ * Implements an in-memory transactional Map based on Clojure's PersistentMap.
+ *
+ * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
+  protected[this] val ref = TransactionalRef[HashTrie[K, V]](new HashTrie[K, V])
+ 
+  def -=(key: K) = remove(key)
+
+  def +=(key: K, value: V) = put(key, value)
+
+  def remove(key: K) = ref.swap(ref.get.get - key)
+
+  def apply(key: K): Option[V] = get(key)
+
+  def get(key: K): Option[V] = ref.get.get.get(key)
+ 
+  override def put(key: K, value: V): Option[V] = {
+    val map = ref.get.get
+    val oldValue = map.get(key)
+    ref.swap(map.update(key, value))
+    oldValue
+  }
+
+  def update(key: K, value: V) = {
+    val map = ref.get.get
+    val oldValue = map.get(key)
+    ref.swap(map.update(key, value))
+  }
+
+  def elements: Iterator[(K, V)] = ref.get.get.elements
+
+  override def contains(key: K): Boolean = ref.get.get.contains(key)
+
+  override def clear = ref.swap(new HashTrie[K, V])
+
+  def size: Int = ref.get.get.size
+ 
+  override def hashCode: Int = System.identityHashCode(this);
+
+  override def equals(other: Any): Boolean =
+    other.isInstanceOf[TransactionalMap[_, _]] && 
+    other.hashCode == hashCode
+}
+
+object TransactionalMap {
+  def apply[T]() = new TransactionalMap
+}
+
+/**
+ * Implements an in-memory transactional Vector based on Clojure's PersistentVector.
+ *
+ * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
+  private[this] val ref = TransactionalRef[Vector[T]](EmptyVector) 
+ 
+  def clear = ref.swap(EmptyVector)
+  
+  def +(elem: T) = add(elem)
+
+  def add(elem: T) = ref.swap(ref.get.get + elem)
+
+  def get(index: Int): T = ref.get.get.apply(index)
+
+  /**
+   * Removes the <i>tail</i> element of this vector.
+   */
+  def pop = ref.swap(ref.get.get.pop)
+
+  def update(index: Int, elem: T) = ref.swap(ref.get.get.update(index, elem))
+
+  def length: Int = ref.get.get.length
+
+  def apply(index: Int): T = ref.get.get.apply(index)
+
+  override def hashCode: Int = System.identityHashCode(this);
+
+  override def equals(other: Any): Boolean = 
+    other.isInstanceOf[TransactionalVector[_]] && 
+    other.hashCode == hashCode
+}
+
+object TransactionalVector {
+  def apply[T]() = new TransactionalVector
+}
+
+
+/*
+class TransactionalRef[T] private(elem: T) extends Transactional {
+  private[this] val ref = new Ref[T](elem)
+ 
+  def swap(elem: T) = {
+    println("----- setting ref: " + ref)
+    println("----- setting in thread: " + Thread.currentThread)
+    ref.set(elem)
   }
 
   def get: Option[T] = {
-    verifyTransaction
-    ref
+    if (ref.isNull) None
+    else Some(ref.get)
   }
-
+ 
+  def getOrWait: T = ref.getOrAwait
+ 
   def getOrElse(default: => T): T = {
-    verifyTransaction
-    ref.getOrElse(default)
+    if (ref.isNull) default
+    else ref.get
   }
 
-  def isDefined: Boolean = {
-    verifyTransaction
-    ref.isDefined
+  def isDefined: Boolean = !ref.isNull
+
+  def isEmpty: Boolean = ref.isNull
+}
+
+object TransactionalRef {
+  def apply[T](elem: T) = {
+    if (elem == null) throw new IllegalArgumentException("Can't define TransactionalRef with a null initial value")
+    new TransactionalRef[T](elem)
   }
 }
+*/
+

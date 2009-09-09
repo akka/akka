@@ -17,6 +17,8 @@ import org.apache.cassandra.service._
 import org.apache.thrift.transport._
 import org.apache.thrift.protocol._
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -62,11 +64,12 @@ object CassandraStorage extends MapStorage
     StackPool(SocketProvider(CASSANDRA_SERVER_HOSTNAME, CASSANDRA_SERVER_PORT)),
     protocol,
     CONSISTENCY_LEVEL)
+    
   // ===============================================================
   // For Ref
   // ===============================================================
 
-  override def insertRefStorageFor(name: String, element: AnyRef) = {
+  def insertRefStorageFor(name: String, element: AnyRef) = {
     sessions.withSession {
       _ ++| (name,
         new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY),
@@ -76,7 +79,7 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  override def getRefStorageFor(name: String): Option[AnyRef] = {
+  def getRefStorageFor(name: String): Option[AnyRef] = {
     try {
       val column: Option[Column] = sessions.withSession {
         _ | (name, new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY))
@@ -94,7 +97,7 @@ object CassandraStorage extends MapStorage
   // For Vector
   // ===============================================================
 
-  override def insertVectorStorageEntryFor(name: String, element: AnyRef) = {
+  def insertVectorStorageEntryFor(name: String, element: AnyRef) = {
     sessions.withSession {
       _ ++| (name,
         new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(getVectorStorageSizeFor(name))),
@@ -104,10 +107,20 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  override def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
+  def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
   }
 
-  override def getVectorStorageEntryFor(name: String, index: Int): AnyRef =  {
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = {
+    sessions.withSession {
+      _ ++| (name,
+        new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)),
+        serializer.out(elem),
+        System.currentTimeMillis,
+        CONSISTENCY_LEVEL)
+    }
+  }
+
+  def getVectorStorageEntryFor(name: String, index: Int): AnyRef =  {
     val column: Option[Column] = sessions.withSession {
       _ | (name, new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)))
     }
@@ -115,7 +128,7 @@ object CassandraStorage extends MapStorage
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
   }
 
-  override def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[AnyRef] = {
     val startBytes = if (start.isDefined) intToBytes(start.get) else null
     val finishBytes = if (finish.isDefined) intToBytes(finish.get) else null
     val columns: List[Column] = sessions.withSession {
@@ -126,10 +139,12 @@ object CassandraStorage extends MapStorage
         count,
         CONSISTENCY_LEVEL)
     }
-    columns.map(column => serializer.in(column.value, None))
+    val buffer = new ArrayBuffer[AnyRef]
+    for (elem <- columns.map(column => serializer.in(column.value, None))) buffer.append(elem)
+    buffer
   }
 
-  override def getVectorStorageSizeFor(name: String): Int = {
+  def getVectorStorageSizeFor(name: String): Int = {
     sessions.withSession {
       _ |# (name, VECTOR_COLUMN_PARENT)
     }
@@ -139,7 +154,7 @@ object CassandraStorage extends MapStorage
   // For Map
   // ===============================================================
 
-  override def insertMapStorageEntryFor(name: String, key: AnyRef, element: AnyRef) = {
+  def insertMapStorageEntryFor(name: String, key: AnyRef, element: AnyRef) = {
     sessions.withSession {
       _ ++| (name,
         new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)),
@@ -149,7 +164,7 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  override def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) = {
+  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) = {
     val cf2columns: java.util.Map[String, java.util.List[Column]] = new java.util.HashMap
     for (entry <- entries) {
       val columns: java.util.List[Column] = new java.util.ArrayList
@@ -161,7 +176,7 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  override def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
+  def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
     try {
       val column: Option[Column] = sessions.withSession {
         _ | (name, new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)))
@@ -175,7 +190,7 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  override def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = {
+  def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = {
     throw new UnsupportedOperationException
     /*
     val columns = server.get_columns_since(name, MAP_COLUMN_FAMILY, -1)
@@ -187,15 +202,15 @@ object CassandraStorage extends MapStorage
   */
   }
 
-  override def getMapStorageSizeFor(name: String): Int = {
+  def getMapStorageSizeFor(name: String): Int = {
     sessions.withSession {
       _ |# (name, MAP_COLUMN_PARENT)
     }
   }
 
-  override def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
+  def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
 
-  override def removeMapStorageFor(name: String, key: AnyRef): Unit = {
+  def removeMapStorageFor(name: String, key: AnyRef): Unit = {
     val keyBytes = if (key == null) null else serializer.out(key)
     sessions.withSession {
       _ -- (name,
@@ -205,7 +220,7 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  override def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int):
+  def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int):
   List[Tuple2[AnyRef, AnyRef]] = {
     val startBytes = if (start.isDefined) serializer.out(start.get) else null
     val finishBytes = if (finish.isDefined) serializer.out(finish.get) else null

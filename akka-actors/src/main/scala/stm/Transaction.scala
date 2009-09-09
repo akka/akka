@@ -12,6 +12,7 @@ import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.stms.alpha.AlphaStm
 import org.multiverse.utils.GlobalStmInstance
 import org.multiverse.utils.TransactionThreadLocal._
+import org.multiverse.templates.{OrElseTemplate, AtomicTemplate}
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -23,7 +24,34 @@ object Multiverse {
   GlobalStmInstance.set(STM)
   setThreadLocalTransaction(null)
 }
-    
+
+/**
+ * Example of Or-Else transaction management.
+ * <pre>
+ * import se.scalablesolutions.akka.stm.{Transaction => Tx}
+ * Tx.Or {
+ *   .. // try to do something
+ * } Tx.Else {
+ *   .. // if transaction clashes try do do something else to minimize contention
+ * }
+ * </pre>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object Transaction {
+
+  // -- Monad --------------------------
+
+
+  // -- OrElse --------------------------
+  def Or[A](orBody: => A) = elseBody(orBody)
+  def elseBody[A](orBody: => A) = new {
+    def Else(elseBody: => A) = new OrElseTemplate[A] {
+      def run(t: MultiverseTransaction) = orBody
+      def orelserun(t: MultiverseTransaction) = elseBody
+    }.execute
+  }
+} 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -31,9 +59,7 @@ object Multiverse {
   private[this] var _id = 0L
   def id = _id
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
-  private[kernel] var transaction: MultiverseTransaction = _
-
-  private[this] val transactionalItems = new ChangeSet
+  private[akka] var transaction: MultiverseTransaction = _
 
   private[this] var participants: List[String] = Nil
   private[this] var precommitted: List[String] = Nil
@@ -46,12 +72,11 @@ object Multiverse {
   
   def register(transactional: Transactional) = synchronized {
     ensureIsActiveOrNew
-    transactionalItems + transactional
   }
 
   def begin(participant: String) = synchronized {
     ensureIsActiveOrNew
-    transaction = Multiverse.STM.startUpdateTransaction
+    transaction = Multiverse.STM.startUpdateTransaction("akka")
     _id = transaction.getReadVersion
     log.debug("Creating a new transaction with id [%s]", _id)
 
@@ -80,7 +105,6 @@ object Multiverse {
         } else false
       if (haveAllPreCommitted && transaction != null) {
         transaction.commit
-        transactionalItems.items.foreach(_.commit)
         status = TransactionStatus.Completed
         reset
         true
@@ -118,7 +142,6 @@ object Multiverse {
   def isAborted = status == TransactionStatus.Aborted
 
   private def reset = {
-    transactionalItems.clear
     participants = Nil
     precommitted = Nil    
   }
@@ -133,7 +156,7 @@ object Multiverse {
     throw new IllegalStateException("Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
   // For reinitialize transaction after sending it over the wire 
-  private[kernel] def reinit = synchronized {
+  private[akka] def reinit = synchronized {
     import net.lag.logging.{Logger, Level}
     if (log == null) {
       log = Logger.get(this.getClass.getName)
@@ -153,31 +176,6 @@ object Multiverse {
     "Transaction[" + id + ", " + status + "]"
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @serializable sealed abstract class TransactionStatus
