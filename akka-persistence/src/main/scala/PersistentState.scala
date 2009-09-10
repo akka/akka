@@ -38,37 +38,27 @@ object PersistentState extends PersistentState
  * </pre>
  */
 class PersistentState {
-  def newMap(config: PersistentStorageConfig): PersistentMap[AnyRef, AnyRef] = config match {
+  def newMap(config: PersistentStorageConfig): PersistentMap = config match {
     case CassandraStorageConfig() => new CassandraPersistentMap
     case MongoStorageConfig() => new MongoPersistentMap
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  def newVector(config: PersistentStorageConfig): PersistentVector[AnyRef] = config match {
+  def newVector(config: PersistentStorageConfig): PersistentVector = config match {
     case CassandraStorageConfig() => new CassandraPersistentVector
     case MongoStorageConfig() => new MongoPersistentVector
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  def newRef(config: PersistentStorageConfig): PersistentRef[AnyRef] = config match {
+  def newRef(config: PersistentStorageConfig): PersistentRef = config match {
     case CassandraStorageConfig() => new CassandraPersistentRef
     case MongoStorageConfig() => new MongoPersistentRef
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 }
-
-/**
- * Base class for all persistent transactional map implementations should extend.
- * Implements a Unit of Work, records changes into a change set.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait PersistentMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V]
 
 /**
  * Implementation of <tt>PersistentMap</tt> for every concrete 
@@ -79,7 +69,7 @@ trait PersistentMap[K, V] extends Transactional with scala.collection.mutable.Ma
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait TemplatePersistentMap extends PersistentMap[AnyRef, AnyRef] {
+trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Transactional {
   protected val newAndUpdatedEntries = TransactionalState.newMap[AnyRef, AnyRef]
   protected val removedEntries = TransactionalState.newMap[AnyRef, AnyRef]
   protected val shouldClearOnCommit = TransactionalRef[Boolean](false)
@@ -148,13 +138,12 @@ trait TemplatePersistentMap extends PersistentMap[AnyRef, AnyRef] {
   }
 }
 
-
 /**
  * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class CassandraPersistentMap extends TemplatePersistentMap {
+class CassandraPersistentMap extends PersistentMap {
   val storage = CassandraStorage
 }
 
@@ -163,26 +152,16 @@ class CassandraPersistentMap extends TemplatePersistentMap {
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class MongoPersistentMap extends TemplatePersistentMap {
+class MongoPersistentMap extends PersistentMap {
   val storage = MongoStorage
 }
 
 /**
- * Base class for all persistent transactional vector implementations should extend.
- * Implements a Unit of Work, records changes into a change set.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
+ * Implements a template for a concrete persistent transactional vector based storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector[T] extends Transactional with RandomAccessSeq[T]
-
-/**
- * Implements a template for a concrete persistent transactional vector based storage.
- *
- * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
- */
-trait TemplatePersistentVector extends PersistentVector[AnyRef] {
+trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
   protected val newElems = TransactionalState.newVector[AnyRef]
   protected val updatedElems = TransactionalState.newMap[Int, AnyRef]
   protected val removedElems = TransactionalState.newVector[AnyRef]
@@ -198,6 +177,10 @@ trait TemplatePersistentVector extends PersistentVector[AnyRef] {
     updatedElems.clear
   }
 
+  def +(elem: AnyRef) = newElems + elem
+
+  def add(elem: AnyRef) = newElems + elem
+ 
   def apply(index: Int): AnyRef = get(index)
 
   def get(index: Int): AnyRef = {
@@ -213,10 +196,9 @@ trait TemplatePersistentVector extends PersistentVector[AnyRef] {
   /**
    * Removes the <i>tail</i> element of this vector.
    */
-  // FIXME 
+  // FIXME: implement persistent vector pop 
   def pop: AnyRef = throw new UnsupportedOperationException("need to implement persistent vector pop")
 
-  // FIXME 
   def update(index: Int, newElem: AnyRef) = storage.updateVectorStorageEntryFor(uuid, index, newElem)
 
   override def first: AnyRef = get(0)
@@ -236,9 +218,9 @@ trait TemplatePersistentVector extends PersistentVector[AnyRef] {
 /**
  * Implements a persistent transactional vector based on the Cassandra distributed P2P key-value storage.
  *
- * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentVector extends TemplatePersistentVector {
+class CassandraPersistentVector extends PersistentVector {
   val storage = CassandraStorage
 }
 
@@ -247,13 +229,16 @@ class CassandraPersistentVector extends TemplatePersistentVector {
  *
  * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
  */
-class MongoPersistentVector extends TemplatePersistentVector {
+class MongoPersistentVector extends PersistentVector {
   val storage = MongoStorage
 } 
 
-trait PersistentRef[T] extends Transactional
-
-trait TemplatePersistentRef extends PersistentRef[AnyRef] {
+/**
+ * Implements a persistent reference with abstract storage.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait PersistentRef extends Transactional {
   protected val ref = new TransactionalRef[AnyRef]
   
   val storage: RefStorage
@@ -263,6 +248,8 @@ trait TemplatePersistentRef extends PersistentRef[AnyRef] {
     ref.swap(null) 
   }
 
+  def swap(elem: AnyRef) = ref.swap(elem)
+  
   def get: Option[AnyRef] = if (ref.isDefined) ref.get else storage.getRefStorageFor(uuid)
 
   def isDefined: Boolean = ref.isDefined || storage.getRefStorageFor(uuid).isDefined
@@ -274,10 +261,10 @@ trait TemplatePersistentRef extends PersistentRef[AnyRef] {
   }
 }
 
-class CassandraPersistentRef extends TemplatePersistentRef {
+class CassandraPersistentRef extends PersistentRef {
   val storage = CassandraStorage
 }
 
-class MongoPersistentRef extends TemplatePersistentRef {
+class MongoPersistentRef extends PersistentRef {
   val storage = MongoStorage
 }

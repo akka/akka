@@ -112,8 +112,6 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
 
   def remove(key: K) = ref.swap(ref.get.get - key)
 
-  def apply(key: K): Option[V] = get(key)
-
   def get(key: K): Option[V] = ref.get.get.get(key)
  
   override def put(key: K, value: V): Option[V] = {
