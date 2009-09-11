@@ -91,7 +91,7 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
     state.contains(key)
   }
 
-  override def clear = {
+  override def clear: Unit = {
     verifyTransaction
     state = new HashTrie[K, V]
   }
@@ -102,7 +102,7 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
   }
 
   // ---- For scala.collection.mutable.Map ----
-  override def remove(key: K) = {
+  override def remove(key: K): Unit = {
     verifyTransaction
     state = state - key
   }
@@ -124,12 +124,12 @@ class InMemoryTransactionalMap[K, V] extends TransactionalMap[K, V] {
     oldValue
   }
 
-  override def -=(key: K) = {
+  override def -=(key: K): Unit = {
     verifyTransaction
     remove(key)
   }
 
-  override def update(key: K, value: V) = {
+  override def update(key: K, value: V): Unit = {
     verifyTransaction
     put(key, value)
   }

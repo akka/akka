@@ -107,7 +107,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
   val storage: MapStorage
 
   override def remove(key: AnyRef) = {
-    verifyTransaction
     if (changeSet.contains(key)) changeSet -= key
     else storage.removeMapStorageFor(uuid, key)
   }
@@ -116,7 +115,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
     getRange(start, None, count)
 
   def getRange(start: Option[AnyRef], finish: Option[AnyRef], count: Int) = {
-    verifyTransaction
     try {
       storage.getMapStorageRangeFor(uuid, start, finish, count)
     } catch {
@@ -132,7 +130,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
 
   // ---- Overriding scala.collection.mutable.Map behavior ----
   override def clear = {
-    verifyTransaction
     try {
       storage.removeMapStorageFor(uuid)
     } catch {
@@ -142,7 +139,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
 
   override def contains(key: AnyRef): Boolean = {
     try {
-      verifyTransaction
       storage.getMapStorageEntryFor(uuid, key).isDefined
     } catch {
       case e: Exception => false
@@ -150,7 +146,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
   }
 
   override def size: Int = {
-    verifyTransaction
     try {
       storage.getMapStorageSizeFor(uuid)
     } catch {
@@ -160,7 +155,6 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
 
   // ---- For scala.collection.mutable.Map ----
   override def get(key: AnyRef): Option[AnyRef] = {
-    verifyTransaction
    // if (changeSet.contains(key)) changeSet.get(key)
    // else {
       val result = try {
