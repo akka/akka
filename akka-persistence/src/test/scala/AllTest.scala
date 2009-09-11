@@ -9,8 +9,8 @@ object AllTest extends TestCase {
   def suite(): Test = {
     val suite = new TestSuite("All Scala tests")
     //suite.addTestSuite(classOf[CassandraPersistentActorSpec])
-    suite.addTestSuite(classOf[MongoPersistentActorSpec])
-    suite.addTestSuite(classOf[MongoStorageSpec])
+    //suite.addTestSuite(classOf[MongoPersistentActorSpec])
+    //suite.addTestSuite(classOf[MongoStorageSpec])
     suite
   }
 
