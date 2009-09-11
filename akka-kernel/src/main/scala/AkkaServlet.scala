@@ -35,10 +35,7 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
     val configurators = ConfiguratorRepository.getConfigurators
 
     rc.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
-    log.info("Starting AkkaServlet with ResourceFilters: " + rc.getProperty("com.sun.jersey.spi.container.ResourceFilters"));
-    rc.getProperties.put("com.sun.jersey.spi.container.ResourceFilters", "org.atmosphere.core.AtmosphereFilter")
-    //rc.getFeatures.put("com.sun.jersey.config.feature.Redirect", true)
-    //rc.getFeatures.put("com.sun.jersey.config.feature.ImplicitViewables",true)
+    rc.getProperties.put("com.sun.jersey.spi.container.ResourceFilters", akka.Config.config.getString("akka.rest.filters").getOrElse(""))
 
     wa.initiate(rc, new ActorComponentProviderFactory(configurators))
   }
