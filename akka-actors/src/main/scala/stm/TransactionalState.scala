@@ -4,8 +4,10 @@
 
 package se.scalablesolutions.akka.state
 
-import org.multiverse.datastructures.refs.manual.Ref
-import stm.TransactionManagement
+//import org.multiverse.datastructures.refs.manual.Ref
+import stm.{TransactionManagement, Ref}
+import org.multiverse.templates.AtomicTemplate
+import org.multiverse.api.Transaction;
 import akka.collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
@@ -40,9 +42,27 @@ object TransactionalState extends TransactionalState
  * </pre>
  */
 class TransactionalState {
-  def newMap[K, V] = new TransactionalMap[K, V]
-  def newVector[T] = new TransactionalVector[T]
-  def newRef[T] = new TransactionalRef[T]
+  def newMap[K, V] = {
+//    new AtomicTemplate[TransactionalMap[K, V]]() {
+//      def execute(t: Transaction): TransactionalMap[K, V] = {
+        new TransactionalMap[K, V]
+//      }
+//    }.execute()
+  }
+  def newVector[T] = {
+//    new AtomicTemplate[TransactionalVector[T]]() {
+//      def execute(t: Transaction): TransactionalVector[T] = {
+        new TransactionalVector[T]
+//      }
+//    }.execute()
+  }
+  def newRef[T] = {
+//    new AtomicTemplate[TransactionalRef[T]]() {
+//      def execute(t: Transaction): TransactionalRef[T] = {
+        new TransactionalRef[T]
+//      }
+//    }.execute()
+  }
 }
 
 /**
@@ -58,7 +78,7 @@ trait Transactional {
  * Implements a transactional managed reference.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
+ *
 class TransactionalRef[T] extends Transactional {
   protected[this] var ref: Option[Ref[T]] = None
  
@@ -82,7 +102,7 @@ class TransactionalRef[T] extends Transactional {
     if (isEmpty) default
     else ref.get.get
  
-  def isDefined: Boolean = ref.isDefined && !ref.get.isNull
+  def isDefined: Boolean = ref.isDefined //&& !ref.get.isNull
 
   def isEmpty: Boolean = !isDefined
 }
@@ -95,7 +115,7 @@ object TransactionalRef {
     ref
   }
 }
-
+*/
 /**
  * Implements an in-memory transactional Map based on Clojure's PersistentMap.
  *
@@ -104,7 +124,8 @@ object TransactionalRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
-  protected[this] val ref = TransactionalRef[HashTrie[K, V]](new HashTrie[K, V])
+  protected[this] val ref = TransactionalRef[HashTrie[K, V]]
+  ref.swap(new HashTrie[K, V])
  
   def -=(key: K) = remove(key)
 
@@ -143,7 +164,7 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
 }
 
 object TransactionalMap {
-  def apply[T]() = new TransactionalMap
+  def apply[K, V]() = new TransactionalMap[K, V]
 }
 
 /**
@@ -154,7 +175,8 @@ object TransactionalMap {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
-  private[this] val ref = TransactionalRef[Vector[T]](EmptyVector) 
+  private[this] val ref = TransactionalRef[Vector[T]]
+  ref.swap(EmptyVector)
  
   def clear = ref.swap(EmptyVector)
   
@@ -186,16 +208,12 @@ object TransactionalVector {
   def apply[T]() = new TransactionalVector
 }
 
+class TransactionalRef[T] extends Transactional {
+  private[this] val ref = new Ref[T]
 
-/*
-class TransactionalRef[T] private(elem: T) extends Transactional {
-  private[this] val ref = new Ref[T](elem)
- 
-  def swap(elem: T) = {
-    println("----- setting ref: " + ref)
-    println("----- setting in thread: " + Thread.currentThread)
-    ref.set(elem)
-  }
+  def swap(elem: T) =
+    try { ref.set(elem) } catch { case e: org.multiverse.api.exceptions.LoadTooOldVersionException => ref.set(elem) }
+
 
   def get: Option[T] = {
     if (ref.isNull) None
@@ -215,10 +233,13 @@ class TransactionalRef[T] private(elem: T) extends Transactional {
 }
 
 object TransactionalRef {
-  def apply[T](elem: T) = {
-    if (elem == null) throw new IllegalArgumentException("Can't define TransactionalRef with a null initial value")
-    new TransactionalRef[T](elem)
+  def apply[T]() = {
+//    new AtomicTemplate[TransactionalRef[T]]() {
+//      def execute(t: Transaction): TransactionalRef[T] = {
+        new TransactionalRef[T]
+//      }
+//    }.execute()
   }
 }
-*/
+
 

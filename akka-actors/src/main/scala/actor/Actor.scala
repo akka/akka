@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.actor
 
 import com.google.protobuf.ByteString
+
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArraySet
 
@@ -16,10 +17,12 @@ import nio.protobuf.RemoteProtocol.RemoteRequest
 import util.Logging
 import serialization.{Serializer, Serializable, SerializationProtocol}
 import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
+
 import org.multiverse.utils.TransactionThreadLocal._
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
+case object TransactionalInit extends LifecycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifecycleMessage
 case class Restart(reason: AnyRef) extends LifecycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifecycleMessage
@@ -164,7 +167,16 @@ trait Actor extends Logging with TransactionManagement {
    * Optional callback method that is called during initialization.
    * To be implemented by subclassing actor.
    */
-  protected def init(config: AnyRef) {}
+  protected def init(config: AnyRef) = {}
+
+  /**
+   * User overridable callback/setting.
+   *
+   * Optional callback method that is called during initialization.
+   * Used to initialize transactional state. 
+   * To be implemented by subclassing actor.
+   */
+  protected def initializeTransactionalState = {}
 
   /**
    * User overridable callback/setting.
@@ -172,7 +184,7 @@ trait Actor extends Logging with TransactionManagement {
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
-  protected def preRestart(reason: AnyRef, config: Option[AnyRef]) {}
+  protected def preRestart(reason: AnyRef, config: Option[AnyRef]) = {}
 
   /**
    * User overridable callback/setting.
@@ -180,7 +192,7 @@ trait Actor extends Logging with TransactionManagement {
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
-  protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {}
+  protected def postRestart(reason: AnyRef, config: Option[AnyRef]) = {}
 
   /**
    * User overridable callback/setting.
@@ -201,6 +213,7 @@ trait Actor extends Logging with TransactionManagement {
     if (!isRunning) {
       dispatcher.start
       isRunning = true
+      if (isTransactional) this ! TransactionalInit
     }
   }
 
@@ -489,8 +502,10 @@ trait Actor extends Logging with TransactionManagement {
       TransactionManagement.threadBoundTx.set(messageHandle.tx)
       setThreadLocalTransaction(messageHandle.tx.get.transaction)
     }
+
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
+
     try {
       if (!tryToCommitTransaction && isTransactionTopLevel) handleCollision
 
@@ -538,6 +553,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private val lifeCycle: PartialFunction[Any, Unit] = {
     case Init(config) =>       init(config)
+    case TransactionalInit =>  initializeTransactionalState
     case HotSwap(code) =>      hotswap = code
     case Restart(reason) =>    restart(reason)
     case Exit(dead, reason) => handleTrapExit(dead, reason)

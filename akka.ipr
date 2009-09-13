@@ -44,6 +44,15 @@
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
+  <component name="FacetAutodetectingManager">
+    <autodetection-disabled>
+      <facet-type id="web">
+        <modules>
+          <module name="akka-samples-lift" />
+        </modules>
+      </facet-type>
+    </autodetection-disabled>
+  </component>
   <component name="IdProvider" IDEtalkID="2862596AA5228405A3DA5AD8DF61584A" />
   <component name="InspectionProjectProfileManager">
     <option name="PROJECT_PROFILE" value="Project Default" />
@@ -55,11 +64,12 @@
         <option name="myLocal" value="false" />
       </profile>
     </profiles>
-    <list size="4">
-      <item index="0" class="java.lang.String" itemvalue="WARNING" />
-      <item index="1" class="java.lang.String" itemvalue="SERVER PROBLEM" />
-      <item index="2" class="java.lang.String" itemvalue="INFO" />
-      <item index="3" class="java.lang.String" itemvalue="ERROR" />
+    <list size="5">
+      <item index="0" class="java.lang.String" itemvalue="TYPO" />
+      <item index="1" class="java.lang.String" itemvalue="WARNING" />
+      <item index="2" class="java.lang.String" itemvalue="SERVER PROBLEM" />
+      <item index="3" class="java.lang.String" itemvalue="INFO" />
+      <item index="4" class="java.lang.String" itemvalue="ERROR" />
     </list>
   </component>
   <component name="JavacSettings">
@@ -230,6 +240,9 @@
   </component>
   <component name="ProjectDetails">
     <option name="projectName" value="akka" />
+  </component>
+  <component name="ProjectDictionaryState">
+    <dictionary name="jboner" />
   </component>
   <component name="ProjectFileVersion" converted="true" />
   <component name="ProjectKey">
@@ -1358,39 +1371,6 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-SNAPSHOT/lift-actor-1.1-SNAPSHOT-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.mortbay.jetty:jetty:7.0.0.pre5">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/7.0.0.pre5/jetty-7.0.0.pre5.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/7.0.0.pre5/jetty-7.0.0.pre5-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/7.0.0.pre5/jetty-7.0.0.pre5-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.mortbay.jetty:servlet-api:3.0.pre4">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/3.0.pre4/servlet-api-3.0.pre4.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/3.0.pre4/servlet-api-3.0.pre4-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/3.0.pre4/servlet-api-3.0.pre4-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: org.mortbay.jetty:jetty-util:7.0.0.pre5">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/7.0.0.pre5/jetty-util-7.0.0.pre5.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/7.0.0.pre5/jetty-util-7.0.0.pre5-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/7.0.0.pre5/jetty-util-7.0.0.pre5-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: org.scala-tools.testing:scalatest:0.9.5">

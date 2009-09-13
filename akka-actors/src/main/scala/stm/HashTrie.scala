@@ -185,7 +185,6 @@ private[collection] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V
   override def toString = "CollisionNode(" + bucket.toString + ")"
 }
 
-
 private[collection] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, V]], bits: Int) extends Node[K, V] {
   lazy val size = {
     val sizes = for {
