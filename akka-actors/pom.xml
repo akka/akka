@@ -85,11 +85,6 @@
       <version>0.3</version>
     </dependency>
     <dependency>
-      <groupId>com.twitter</groupId>
-      <artifactId>scala-json</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
       <groupId>dispatch.json</groupId>
       <artifactId>dispatch-json</artifactId>
       <version>0.5.2</version>
