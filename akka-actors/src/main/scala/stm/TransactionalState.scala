@@ -4,15 +4,12 @@
 
 package se.scalablesolutions.akka.state
 
-//import org.multiverse.datastructures.refs.manual.Ref
 import stm.{TransactionManagement, Ref}
 import org.multiverse.templates.AtomicTemplate
 import org.multiverse.api.Transaction;
 import akka.collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
-
-import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 /**
  * Example Scala usage:
@@ -68,7 +65,7 @@ object TransactionalRef {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalRef[+T] extends Transactional {
+class TransactionalRef[T] extends Transactional {
   private[this] val ref = new Ref[T]
 
   def swap(elem: T) = ref.set(elem)
@@ -93,7 +90,7 @@ class TransactionalRef[+T] extends Transactional {
 
   def flatMap[B](f: T => Option[B]): Option[B] = if (isEmpty) None else f(ref.get)
 
-  def filter(p: T => Boolean): Option[T] = if (isEmpty || p(ref.get)) this else None
+  def filter(p: T => Boolean): Option[T] = if (isEmpty || p(ref.get)) Some(ref.get) else None
 
   def foreach(f: T => Unit) { if (!isEmpty) f(ref.get) }
 
@@ -104,8 +101,6 @@ class TransactionalRef[+T] extends Transactional {
   def toRight[X](left: => X) = if (isEmpty) Left(left) else Right(ref.get)
 
   def toLeft[X](right: => X) = if (isEmpty) Right(right) else Left(ref.get)
-
-  def orElse[B >: T](alternative: => TransactionalRef[B]): TransactionalRef[B] = if (isEmpty) alternative else this
 }
 
 object TransactionalMap {
@@ -160,7 +155,7 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
 }
 
 object TransactionalVector {
-  def apply[T]() = new TransactionalVector
+  def apply[T]() = new TransactionalVector[T]
 }
 
 /**

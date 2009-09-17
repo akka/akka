@@ -1,6 +1,4 @@
-package se.scalablesolutions.akka.util
-
-import se.scalablesolutions.akka.actor.Actor
+package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.TimeUnit
 

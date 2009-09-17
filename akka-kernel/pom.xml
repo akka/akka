@@ -42,6 +42,11 @@
       <groupId>se.scalablesolutions.akka</groupId>
       <version>0.6</version>
     </dependency>
+	<dependency>
+      <artifactId>akka-security</artifactId>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.6</version>
+    </dependency>
 
     <!-- Core deps -->
     <dependency>
