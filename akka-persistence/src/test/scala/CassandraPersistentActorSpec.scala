@@ -30,9 +30,16 @@ case class FailureOneWay(key: String, value: String, failer: Actor)
 class CassandraPersistentActor extends Actor {
   timeout = 100000
   makeTransactionRequired
-  private val mapState = PersistentState.newMap(CassandraStorageConfig())
-  private val vectorState = PersistentState.newVector(CassandraStorageConfig())
-  private val refState = PersistentState.newRef(CassandraStorageConfig())
+
+  private var mapState: PersistentMap = _
+  private var vectorState: PersistentVector = _
+  private var refState: PersistentRef = _
+
+  override def initializeTransactionalState = {
+    mapState = PersistentState.newMap(CassandraStorageConfig())
+    vectorState = PersistentState.newVector(CassandraStorageConfig())
+    refState = PersistentState.newRef(CassandraStorageConfig())
+  }
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>

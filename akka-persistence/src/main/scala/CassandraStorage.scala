@@ -64,7 +64,7 @@ object CassandraStorage extends MapStorage
     StackPool(SocketProvider(CASSANDRA_SERVER_HOSTNAME, CASSANDRA_SERVER_PORT)),
     protocol,
     CONSISTENCY_LEVEL)
-    
+
   // ===============================================================
   // For Ref
   // ===============================================================

@@ -19,25 +19,18 @@ case class TokyoCabinetStorageConfig extends PersistentStorageConfig
 case class MongoStorageConfig extends PersistentStorageConfig
 
 /**
- * Scala API.
- * <p/>
  * Example Scala usage:
  * <pre>
  * val myMap = PersistentState.newMap(CassandraStorageConfig)
  * </pre>
- */
-object PersistentState extends PersistentState
-
-/**
- * Java API.
  * <p/>
+ *
  * Example Java usage:
  * <pre>
- * PersistentState state = new PersistentState();
- * TransactionalMap myMap = state.newMap(new CassandraStorageConfig());
+ * TransactionalMap myMap = PersistentState.newMap(new CassandraStorageConfig());
  * </pre>
  */
-class PersistentState {
+object PersistentState {
   def newMap(config: PersistentStorageConfig): PersistentMap = config match {
     case CassandraStorageConfig() => new CassandraPersistentMap
     case MongoStorageConfig() => new MongoPersistentMap
@@ -72,7 +65,7 @@ class PersistentState {
 trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Transactional {
   protected val newAndUpdatedEntries = TransactionalState.newMap[AnyRef, AnyRef]
   protected val removedEntries = TransactionalState.newMap[AnyRef, AnyRef]
-  protected val shouldClearOnCommit = TransactionalRef[Boolean](false)
+  protected val shouldClearOnCommit = TransactionalRef[Boolean]()
 
   // to be concretized in subclasses
   val storage: MapStorage
@@ -165,7 +158,7 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
   protected val newElems = TransactionalState.newVector[AnyRef]
   protected val updatedElems = TransactionalState.newMap[Int, AnyRef]
   protected val removedElems = TransactionalState.newVector[AnyRef]
-  protected val shouldClearOnCommit = TransactionalRef[Boolean](false)
+  protected val shouldClearOnCommit = TransactionalRef[Boolean]()
 
   val storage: VectorStorage
 

@@ -47,7 +47,7 @@ object Multiverse {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Transaction {
-  val idFactory = new AtomicLong(0L)
+  val idFactory = new AtomicLong(-1L)
 
   // -- Monad --------------------------
 

@@ -226,13 +226,12 @@ class InMemoryActorSpec extends TestCase {
     val stateful = new InMemStatefulActor
     stateful.start
     stateful !! SetRefState("init") // set init state
-/*    val failer = new InMemFailerActor
+    val failer = new InMemFailerActor
     failer.start
     try {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
-    } catch {case e: RuntimeException => {
-    }}
-*/    assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
+    } catch {case e: RuntimeException => {}}
+    assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
   }
 }

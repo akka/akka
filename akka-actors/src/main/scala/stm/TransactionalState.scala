@@ -15,8 +15,6 @@ import org.codehaus.aspectwerkz.proxy.Uuid
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 /**
- * Scala API.
- * <p/>
  * Example Scala usage:
  * <pre>
  * val myMap = TransactionalState.newMap
@@ -29,44 +27,23 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
  * val myVector = TransactionalVector()
  * val myRef = TransactionalRef()
  * </pre>
- */
-object TransactionalState extends TransactionalState
-
-/**
- * Java API.
+ * 
  * <p/>
  * Example Java usage:
  * <pre>
- * TransactionalState state = new TransactionalState();
- * TransactionalMap myMap = state.newMap();
+ * TransactionalMap myMap = TransactionalState.newMap();
  * </pre>
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalState {
-  def newMap[K, V] = {
-//    new AtomicTemplate[TransactionalMap[K, V]]() {
-//      def execute(t: Transaction): TransactionalMap[K, V] = {
-        new TransactionalMap[K, V]
-//      }
-//    }.execute()
-  }
-  def newVector[T] = {
-//    new AtomicTemplate[TransactionalVector[T]]() {
-//      def execute(t: Transaction): TransactionalVector[T] = {
-        new TransactionalVector[T]
-//      }
-//    }.execute()
-  }
-  def newRef[T] = {
-//    new AtomicTemplate[TransactionalRef[T]]() {
-//      def execute(t: Transaction): TransactionalRef[T] = {
-        new TransactionalRef[T]
-//      }
-//    }.execute()
-  }
+object TransactionalState {
+  def newMap[K, V] = TransactionalMap[K, V]()
+  def newVector[T] = TransactionalVector[T]()
+  def newRef[T] = TransactionalRef[T]()
 }
 
 /**
- *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable
 trait Transactional {
@@ -75,47 +52,66 @@ trait Transactional {
 }
 
 /**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object TransactionalRef {
+  /**
+   * An implicit conversion that converts an option to an iterable value
+   */
+	implicit def ref2Iterable[T](ref: TransactionalRef[T]): Iterable[T] = ref.toList
+
+  def apply[T]() = new TransactionalRef[T]
+}
+
+/**
  * Implements a transactional managed reference.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- *
-class TransactionalRef[T] extends Transactional {
-  protected[this] var ref: Option[Ref[T]] = None
- 
-  def set(elem: T) = swap(elem)
- 
-  def swap(elem: T) = {
-    synchronized { if (ref.isEmpty) ref = Some(new Ref[T]) }
-    ref.get.set(elem)
+ */
+class TransactionalRef[+T] extends Transactional {
+  private[this] val ref = new Ref[T]
+
+  def swap(elem: T) = ref.set(elem)
+
+  def get: Option[T] = {
+    if (ref.isNull) None
+    else Some(ref.get)
   }
 
-  def get: Option[T] = 
-    if (isEmpty) None
-    else Some(ref.get.get)
- 
-  def getOrWait: T = {
-    synchronized { if (ref.isEmpty) ref = Some(new Ref[T]) }
-    ref.get.getOrAwait
+  def getOrWait: T = ref.getOrAwait
+
+  def getOrElse(default: => T): T = {
+    if (ref.isNull) default
+    else ref.get
   }
 
-  def getOrElse(default: => T): T = 
-    if (isEmpty) default
-    else ref.get.get
- 
-  def isDefined: Boolean = ref.isDefined //&& !ref.get.isNull
+  def isDefined: Boolean = !ref.isNull
 
-  def isEmpty: Boolean = !isDefined
+  def isEmpty: Boolean = ref.isNull
+
+  def map[B](f: T => B): Option[B] = if (isEmpty) None else Some(f(ref.get))
+
+  def flatMap[B](f: T => Option[B]): Option[B] = if (isEmpty) None else f(ref.get)
+
+  def filter(p: T => Boolean): Option[T] = if (isEmpty || p(ref.get)) this else None
+
+  def foreach(f: T => Unit) { if (!isEmpty) f(ref.get) }
+
+  def elements: Iterator[T] = if (isEmpty) Iterator.empty else Iterator.fromValues(ref.get)
+
+  def toList: List[T] = if (isEmpty) List() else List(ref.get)
+
+  def toRight[X](left: => X) = if (isEmpty) Left(left) else Right(ref.get)
+
+  def toLeft[X](right: => X) = if (isEmpty) Right(right) else Left(ref.get)
+
+  def orElse[B >: T](alternative: => TransactionalRef[B]): TransactionalRef[B] = if (isEmpty) alternative else this
 }
 
-object TransactionalRef {
-  def apply[T](elem: T) = {
-    if (elem == null) throw new IllegalArgumentException("Can't define TransactionalRef with a null initial value, needs to be a PersistentDataStructure")
-    val ref = new TransactionalRef[T]
-    ref.swap(elem)
-    ref
-  }
+object TransactionalMap {
+  def apply[K, V]() = new TransactionalMap[K, V]
 }
-*/
+
 /**
  * Implements an in-memory transactional Map based on Clojure's PersistentMap.
  *
@@ -163,8 +159,8 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
     other.hashCode == hashCode
 }
 
-object TransactionalMap {
-  def apply[K, V]() = new TransactionalMap[K, V]
+object TransactionalVector {
+  def apply[T]() = new TransactionalVector
 }
 
 /**
@@ -203,43 +199,4 @@ class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
     other.isInstanceOf[TransactionalVector[_]] && 
     other.hashCode == hashCode
 }
-
-object TransactionalVector {
-  def apply[T]() = new TransactionalVector
-}
-
-class TransactionalRef[T] extends Transactional {
-  private[this] val ref = new Ref[T]
-
-  def swap(elem: T) =
-    try { ref.set(elem) } catch { case e: org.multiverse.api.exceptions.LoadTooOldVersionException => ref.set(elem) }
-
-
-  def get: Option[T] = {
-    if (ref.isNull) None
-    else Some(ref.get)
-  }
- 
-  def getOrWait: T = ref.getOrAwait
- 
-  def getOrElse(default: => T): T = {
-    if (ref.isNull) default
-    else ref.get
-  }
-
-  def isDefined: Boolean = !ref.isNull
-
-  def isEmpty: Boolean = ref.isNull
-}
-
-object TransactionalRef {
-  def apply[T]() = {
-//    new AtomicTemplate[TransactionalRef[T]]() {
-//      def execute(t: Transaction): TransactionalRef[T] = {
-        new TransactionalRef[T]
-//      }
-//    }.execute()
-  }
-}
-
 

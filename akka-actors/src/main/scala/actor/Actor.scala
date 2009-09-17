@@ -342,7 +342,6 @@ trait Actor extends Logging with TransactionManagement {
       if (!linkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
       linkedActors.remove(actor)
       actor.supervisor = None
-
       log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }

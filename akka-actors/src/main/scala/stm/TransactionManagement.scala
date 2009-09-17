@@ -59,6 +59,7 @@ trait TransactionManagement extends Logging {
       val currentTx = cflowTx.get
       currentTx.join(uuid)
       activeTx = Some(currentTx)
+      log.debug("Joining transaction [%s]", currentTx)    
     }
   }
 
@@ -101,21 +102,17 @@ trait TransactionManagement extends Logging {
     }
   }
 
-  protected def isTransactionTopLevel = activeTx.isDefined && activeTx.get.isTopLevel
-  
   protected def isInExistingTransaction = TransactionManagement.threadBoundTx.get.isDefined
 
+  protected def isTransactionTopLevel = activeTx.isDefined && activeTx.get.isTopLevel
+  
   protected def isTransactionAborted = activeTx.isDefined && activeTx.get.isAborted
 
   protected def incrementTransaction =  if (activeTx.isDefined) activeTx.get.increment
 
   protected def decrementTransaction =  if (activeTx.isDefined) activeTx.get.decrement
 
-  protected def removeTransactionIfTopLevel = if (isTransactionTopLevel) {
-    activeTx = None
-    threadBoundTx.set(None)
-    setThreadLocalTransaction(null)
-  }
+  protected def removeTransactionIfTopLevel = if (isTransactionTopLevel) { activeTx = None }
 
   protected def reenteringExistingTransaction= if (activeTx.isDefined) {
     val cflowTx = threadBoundTx.get
