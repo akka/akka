@@ -11,11 +11,12 @@
  * limitations under the License.
  */
 
-package se.scalablesolutions.akka.util
+package se.scalablesolutions.akka.actor
 
 import java.util.concurrent._
-import actor.{OneForOneStrategy, Actor}
 import config.ScalaConfig._
+import _root_.se.scalablesolutions.akka.util.{Logging}
+
 
 import org.scala_tools.javautils.Imports._
 

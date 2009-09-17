@@ -16,18 +16,20 @@ import scala.collection.jcl.HashMap
 object ActorRegistry extends Logging {
   private val actors = new HashMap[String, List[Actor]]
 
-  def actorsFor(clazz: Class[_]): List[Actor] = synchronized {
-    actors.get(clazz.getName) match {
+  def actorsFor(fqn : String): List[Actor] = synchronized {
+    actors.get(fqn) match {
       case None => Nil
       case Some(instances) => instances
     }
   }
-
+ 
+  def actorsFor(clazz: Class[_]) : List[Actor] = actorsFor(clazz.getName)
+  
   def register(actor: Actor) = synchronized {
     val name = actor.getClass.getName
     actors.get(name) match {
       case Some(instances) => actors + (name -> (actor :: instances))
-      case None =>            actors + (name -> (actor :: Nil))
+      case None => actors + (name -> (actor :: Nil))
     }
   }
 }

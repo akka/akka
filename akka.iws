@@ -2,17 +2,9 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager">
     <list default="true" readonly="true" id="188c966f-a83c-4d3a-9128-54d5a2947a12" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
@@ -120,16 +112,34 @@
       <file leaf-file-name="InMemoryActorSpec.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="38" column="0" selection-start="1046" selection-end="1433" vertical-scroll-proportion="0.0">
+            <state line="30" column="59" selection-start="1165" selection-end="1165" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MongoPersistentActorSpec.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="MongoPersistentActorSpec.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="33" column="0" selection-start="1045" selection-end="1045" vertical-scroll-proportion="0.6984127">
+            <state line="33" column="0" selection-start="1045" selection-end="1045" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TransactionalState.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="38" column="18" selection-start="919" selection-end="919" vertical-scroll-proportion="0.28222525">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="PersistentState.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="263" column="5" selection-start="9023" selection-end="9023" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -155,10 +165,10 @@
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" />
-        <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" />
+        <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" />
       </list>
     </option>
   </component>
@@ -759,27 +769,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="41" column="38" selection-start="1050" selection-end="1050" vertical-scroll-proportion="0.043419268">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="160" column="49" selection-start="6053" selection-end="6053" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="38" column="0" selection-start="1046" selection-end="1433" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="42" column="0" selection-start="969" selection-end="1352" vertical-scroll-proportion="0.0">
@@ -789,7 +778,28 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="33" column="0" selection-start="1045" selection-end="1045" vertical-scroll-proportion="0.6984127">
+        <state line="33" column="0" selection-start="1045" selection-end="1045" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="263" column="5" selection-start="9023" selection-end="9023" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="30" column="59" selection-start="1165" selection-end="1165" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="38" column="18" selection-start="919" selection-end="919" vertical-scroll-proportion="0.28222525">
           <folding />
         </state>
       </provider>

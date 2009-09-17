@@ -261,6 +261,8 @@
       <module fileurl="file://$PROJECT_DIR$/akka-samples-java/akka-samples-java.iml" filepath="$PROJECT_DIR$/akka-samples-java/akka-samples-java.iml" />
       <module fileurl="file://$PROJECT_DIR$/akka-samples-lift/akka-samples-lift.iml" filepath="$PROJECT_DIR$/akka-samples-lift/akka-samples-lift.iml" />
       <module fileurl="file://$PROJECT_DIR$/akka-samples-scala/akka-samples-scala.iml" filepath="$PROJECT_DIR$/akka-samples-scala/akka-samples-scala.iml" />
+      <module fileurl="file://$PROJECT_DIR$/akka-samples-security/akka-samples-security.iml" filepath="$PROJECT_DIR$/akka-samples-security/akka-samples-security.iml" />
+      <module fileurl="file://$PROJECT_DIR$/akka-security/akka-security.iml" filepath="$PROJECT_DIR$/akka-security/akka-security.iml" />
       <module fileurl="file://$PROJECT_DIR$/akka-util/akka-util.iml" filepath="$PROJECT_DIR$/akka-util/akka-util.iml" />
       <module fileurl="file://$PROJECT_DIR$/akka-util-java/akka-util-java.iml" filepath="$PROJECT_DIR$/akka-util-java/akka-util-java.iml" />
     </modules>
@@ -1382,6 +1384,50 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-tools/testing/scalatest/0.9.5/scalatest-0.9.5-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: javax.annotation:jsr250-api:1.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.mortbay.jetty:jetty:7.0.0.pre5">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/7.0.0.pre5/jetty-7.0.0.pre5.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/7.0.0.pre5/jetty-7.0.0.pre5-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/7.0.0.pre5/jetty-7.0.0.pre5-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.mortbay.jetty:servlet-api:3.0.pre4">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/3.0.pre4/servlet-api-3.0.pre4.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/3.0.pre4/servlet-api-3.0.pre4-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/3.0.pre4/servlet-api-3.0.pre4-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.mortbay.jetty:jetty-util:7.0.0.pre5">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/7.0.0.pre5/jetty-util-7.0.0.pre5.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/7.0.0.pre5/jetty-util-7.0.0.pre5-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/7.0.0.pre5/jetty-util-7.0.0.pre5-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

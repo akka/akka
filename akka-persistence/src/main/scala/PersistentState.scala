@@ -108,8 +108,8 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   override def get(key: AnyRef): Option[AnyRef] = {
     if (newAndUpdatedEntries.contains(key)) newAndUpdatedEntries.get(key)
     else try {
-        storage.getMapStorageEntryFor(uuid, key)
-      } catch { case e: Exception => None }
+      storage.getMapStorageEntryFor(uuid, key)
+    } catch { case e: Exception => None }
   }
   
   override def elements: Iterator[Tuple2[AnyRef, AnyRef]]  = {
