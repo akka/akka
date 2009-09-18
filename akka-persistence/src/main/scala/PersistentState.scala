@@ -70,7 +70,7 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   // to be concretized in subclasses
   val storage: MapStorage
 
-  def commit = {
+  private[akka] def commit = {
     storage.removeMapStorageFor(uuid, removedEntries.toList)
     storage.insertMapStorageEntriesFor(uuid, newAndUpdatedEntries.toList)
     if (shouldClearOnCommit.isDefined & shouldClearOnCommit.get.get) storage.removeMapStorageFor(uuid)
@@ -162,7 +162,7 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
 
   val storage: VectorStorage
 
-  def commit = {
+  private[akka] def commit = {
     // FIXME: should use batch function once the bug is resolved
     for (element <- newElems) storage.insertVectorStorageEntryFor(uuid, element)
     for (entry <- updatedElems) storage.updateVectorStorageEntryFor(uuid, entry._1, entry._2)
@@ -183,8 +183,11 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
 
   override def slice(start: Int, count: Int): RandomAccessSeq[AnyRef] = slice(Some(start), None, count)
   
-  def slice(start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[AnyRef] =
-    storage.getVectorStorageRangeFor(uuid, start, finish, count)
+  def slice(start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[AnyRef] = {
+    val buffer = new scala.collection.mutable.ArrayBuffer[AnyRef]
+    storage.getVectorStorageRangeFor(uuid, start, finish, count).foreach(buffer.append(_))
+    buffer
+  }
 
   /**
    * Removes the <i>tail</i> element of this vector.
@@ -236,7 +239,7 @@ trait PersistentRef extends Transactional {
   
   val storage: RefStorage
 
-  def commit = if (ref.isDefined) {
+  private[akka] def commit = if (ref.isDefined) {
     storage.insertRefStorageFor(uuid, ref.get)
     ref.swap(null) 
   }
