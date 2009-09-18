@@ -4,14 +4,12 @@
 
 package se.scalablesolutions.akka.state
 
-import akka.util.Logging
-import serialization.{Serializer}
+import util.Logging
 import Config.config
+
 import sjson.json.Serializer._
 
 import com.mongodb._
-
-import scala.collection.mutable.ArrayBuffer
 
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
 
@@ -53,17 +51,17 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
   // FIXME: make this pluggable
   private[this] val serializer = SJSON
   
-  def insertMapStorageEntryFor(name: String, 
-    key: AnyRef, value: AnyRef) {
+  def insertMapStorageEntryFor(name: String, key: AnyRef, value: AnyRef) {
     insertMapStorageEntriesFor(name, List((key, value)))
   }
 
-  def insertMapStorageEntriesFor(name: String, 
-    entries: List[Tuple2[AnyRef, AnyRef]]) {
+  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) {
     import java.util.{Map, HashMap}
     
     val m: Map[AnyRef, AnyRef] = new HashMap
-    for ((k, v) <- entries) m.put(k, serializer.out(v))
+    for ((k, v) <- entries) {
+      m.put(k, serializer.out(v))
+    }
     
     nullSafeFindOne(name) match {
       case None => 
@@ -102,10 +100,9 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
     }
   }
   
-  def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
+  def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = 
     getValueForKey(name, key.asInstanceOf[String])
-  }
-  
+      
   def getMapStorageSizeFor(name: String): Int = {
     nullSafeFindOne(name) match {
       case None => 0
@@ -115,21 +112,26 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
   }
   
   def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = {
-    val m = nullSafeFindOne(name) match {
+    val m = 
+      nullSafeFindOne(name) match {
         case None => 
           throw new Predef.NoSuchElementException(name + " not present")
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
       }
-    val n = List(m.keySet.toArray: _*).asInstanceOf[List[String]]
-    val vals = for(s <- n) yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
+    val n = 
+      List(m.keySet.toArray: _*).asInstanceOf[List[String]]
+    val vals = 
+      for(s <- n) 
+        yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
     vals.asInstanceOf[List[Tuple2[String, AnyRef]]]
   }
   
   def getMapStorageRangeFor(name: String, start: Option[AnyRef], 
                             finish: Option[AnyRef], 
                             count: Int): List[Tuple2[AnyRef, AnyRef]] = {
-    val m = nullSafeFindOne(name) match {
+    val m = 
+      nullSafeFindOne(name) match {
         case None => 
           throw new Predef.NoSuchElementException(name + " not present")
         case Some(dbo) =>
@@ -149,8 +151,11 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
       }
       else count
 
-    val n = List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
-    val vals = for(s <- n) yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
+    val n = 
+      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
+    val vals = 
+      for(s <- n) 
+        yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
     vals.asInstanceOf[List[Tuple2[String, AnyRef]]]
   }
   
@@ -159,14 +164,16 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
       nullSafeFindOne(name) match {
         case None => None
         case Some(dbo) =>
-          Some(serializer.in[AnyRef](dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]].get(key).asInstanceOf[Array[Byte]]))
+          Some(serializer.in[AnyRef](
+            dbo.get(VALUE)
+               .asInstanceOf[JMap[String, AnyRef]]
+               .get(key).asInstanceOf[Array[Byte]]))
       }
     } catch {
-      case e => throw new Predef.NoSuchElementException(e.getMessage)
+      case e =>
+        throw new Predef.NoSuchElementException(e.getMessage)
     }
   }
-  
-  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = throw new UnsupportedOperationException("The updateVectorStorageEntryFor method is not yet implemented for MongoDB")
   
   def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
     val q = new BasicDBObject
@@ -187,43 +194,62 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
     
     // add to the current list
     elements.map(serializer.out(_)).foreach(currentList.add(_))
-    coll.insert(new BasicDBObject().append(KEY, name).append(VALUE, currentList))
+    
+    coll.insert(
+      new BasicDBObject()
+        .append(KEY, name)
+        .append(VALUE, currentList)
+    )
   }
   
-  def insertVectorStorageEntryFor(name: String, element: AnyRef) = insertVectorStorageEntriesFor(name, List(element))
+  def insertVectorStorageEntryFor(name: String, element: AnyRef) = {
+    insertVectorStorageEntriesFor(name, List(element))
+  }
   
   def getVectorStorageEntryFor(name: String, index: Int): AnyRef = {
     try {
-      val o = nullSafeFindOne(name) match {
+      val o =
+      nullSafeFindOne(name) match {
         case None => 
           throw new Predef.NoSuchElementException(name + " not present")
+
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
       }
-      serializer.in[AnyRef](o.get(index).asInstanceOf[Array[Byte]])
+      serializer.in[AnyRef](
+        o.get(index).asInstanceOf[Array[Byte]])
     } catch {
-      case e => throw new Predef.NoSuchElementException(e.getMessage)
+      case e => 
+        throw new Predef.NoSuchElementException(e.getMessage)
     }
   }
   
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[AnyRef] = {
+  def getVectorStorageRangeFor(name: String, 
+    start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
     try {
-      val o = nullSafeFindOne(name) match {
+      val o =
+      nullSafeFindOne(name) match {
         case None => 
           throw new Predef.NoSuchElementException(name + " not present")
+
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
       }
 
       // pick the subrange and make a Scala list
-      val l = List(o.subList(start.get, start.get + count).toArray: _*)
-      val buffer = new ArrayBuffer[AnyRef]
-      for (elem <- l.map(e => serializer.in[AnyRef](e.asInstanceOf[Array[Byte]]))) buffer.append(elem)
-      buffer
+      val l = 
+        List(o.subList(start.get, start.get + count).toArray: _*)
+
+      for(e <- l) 
+        yield serializer.in[AnyRef](e.asInstanceOf[Array[Byte]])
     } catch {
-      case e => throw new Predef.NoSuchElementException(e.getMessage)
+      case e => 
+        throw new Predef.NoSuchElementException(e.getMessage)
     }
   }
+  
+  // FIXME implement updateVectorStorageEntryFor
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = throw new UnsupportedOperationException
   
   def getVectorStorageSizeFor(name: String): Int = {
     nullSafeFindOne(name) match {
@@ -248,7 +274,10 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
         coll.remove(q)
       }
     }
-    coll.insert(new BasicDBObject().append(KEY, name).append(VALUE, serializer.out(element)))
+    coll.insert(
+      new BasicDBObject()
+        .append(KEY, name)
+        .append(VALUE, serializer.out(element)))
   }
 
   def getRefStorageFor(name: String): Option[AnyRef] = {

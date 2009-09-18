@@ -9,7 +9,6 @@ import java.io.{Flushable, Closeable}
 import util.Logging
 import util.Helpers._
 import serialization.Serializer
-import Config.config
 
 import org.apache.cassandra.db.ColumnFamily
 import org.apache.cassandra.service._
@@ -21,6 +20,18 @@ import org.apache.thrift.transport._
 import org.apache.thrift.protocol._
 
 /**
+ * Usage:
+ * <pre>
+ * // Uses default StackPool, for other pools see the API
+ * val sessions = new CassandraSessionPool(
+ *   hostname, port,
+ *   keyspace,
+ *   Protocol.JSON,
+ *   consistencyLevel)
+ *
+ * sessions.withSession { session => ... }
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait CassandraSession extends Closeable with Flushable {
@@ -35,8 +46,8 @@ trait CassandraSession extends Closeable with Flushable {
   val consistencyLevel: Int
   val schema: JMap[String, JMap[String, String]]
 
-  /**
-   * Count is always the max number of results to return.
+  /*
+    Count is always the max number of results to return.
 
     So it means, starting with `start`, or the first one if start is
     empty, go until you hit `finish` or `count`, whichever comes first.
@@ -188,21 +199,34 @@ trait CassandraSession extends Closeable with Flushable {
     client.get_key_range(keyspace, columnFamily, startsWith, stopsAt, maxResults.getOrElse(-1)).toList
 }
 
+/**
+ * Usage: 
+ * <pre>
+ * val sessions = new CassandraSessionPool(
+ *   hostname, port,
+ *   keyspace,
+ *   Protocol.JSON,
+ *   consistencyLevel)
+ * sessions.withSession { session => ... }
+ * </pre>
+ */
 class CassandraSessionPool[T <: TTransport](
   space: String,
   transportPool: Pool[T],
-  inputProtocol: Protocol,
-  outputProtocol: Protocol,
+  protocol: Protocol,
   consistency: Int) extends Closeable with Logging {
 
-  def this(space: String, transportPool: Pool[T], ioProtocol: Protocol, consistency: Int) =
-    this (space, transportPool, ioProtocol, ioProtocol, consistency)
+  /**
+   * Uses StackPool as session pool.
+   */
+  def this(hostname: String, port: Int, space: String, ioProtocol: Protocol, consistency: Int) =
+    this(space, StackPool(SocketProvider(hostname, port).asInstanceOf[PoolItemFactory[T]]), ioProtocol, consistency)
 
   def newSession: CassandraSession = newSession(consistency)
 
   def newSession(consistencyLevel: Int): CassandraSession = {
     val socket = transportPool.borrowObject
-    val cassandraClient = new Cassandra.Client(inputProtocol(socket), outputProtocol(socket))
+    val cassandraClient = new Cassandra.Client(protocol(socket), protocol(socket))
     val cassandraSchema = cassandraClient.describe_keyspace(space)
     new CassandraSession {
       val keyspace = space
@@ -287,15 +311,15 @@ trait PoolBridge[T, OP <: ObjectPool] extends Pool[T] {
 }
 
 object StackPool {
-  def apply[T](factory: PoolItemFactory[T]) = new PoolBridge[T,StackObjectPool] {
+  def apply[T](factory: PoolItemFactory[T]) = new PoolBridge[T, StackObjectPool] {
     val impl = new StackObjectPool(toPoolableObjectFactory(factory))
   }
 
-  def apply[T](factory: PoolItemFactory[T], maxIdle: Int) = new PoolBridge[T,StackObjectPool] {
+  def apply[T](factory: PoolItemFactory[T], maxIdle: Int) = new PoolBridge[T, StackObjectPool] {
     val impl = new StackObjectPool(toPoolableObjectFactory(factory),maxIdle)
   }
 
-  def apply[T](factory: PoolItemFactory[T], maxIdle: Int, initIdleCapacity: Int) = new PoolBridge[T,StackObjectPool] {
+  def apply[T](factory: PoolItemFactory[T], maxIdle: Int, initIdleCapacity: Int) = new PoolBridge[T, StackObjectPool] {
     val impl = new StackObjectPool(toPoolableObjectFactory(factory),maxIdle,initIdleCapacity)
   }
 }

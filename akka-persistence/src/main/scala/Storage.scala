@@ -25,7 +25,7 @@ trait VectorStorage extends Storage {
   def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef)
   def getVectorStorageEntryFor(name: String, index: Int): AnyRef 
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[AnyRef]
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef]
   def getVectorStorageSizeFor(name: String): Int 
 }
 

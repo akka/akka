@@ -9,7 +9,7 @@ import java.io.{Flushable, Closeable}
 import util.Logging
 import util.Helpers._
 import serialization.Serializer
-import akka.Config.config
+import Config.config
 
 import org.apache.cassandra.db.ColumnFamily
 import org.apache.cassandra.service._
@@ -107,7 +107,9 @@ object CassandraStorage extends MapStorage
     }
   }
 
+  // FIXME implement
   def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
+    throw new UnsupportedOperationException("insertVectorStorageEntriesFor for CassandraStorage is not implemented yet")
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = {
@@ -128,7 +130,7 @@ object CassandraStorage extends MapStorage
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
   }
 
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[AnyRef] = {
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
     val startBytes = if (start.isDefined) intToBytes(start.get) else null
     val finishBytes = if (finish.isDefined) intToBytes(finish.get) else null
     val columns: List[Column] = sessions.withSession {
@@ -139,9 +141,7 @@ object CassandraStorage extends MapStorage
         count,
         CONSISTENCY_LEVEL)
     }
-    val buffer = new ArrayBuffer[AnyRef]
-    for (elem <- columns.map(column => serializer.in(column.value, None))) buffer.append(elem)
-    buffer
+    columns.map(column => serializer.in(column.value, None))
   }
 
   def getVectorStorageSizeFor(name: String): Int = {
