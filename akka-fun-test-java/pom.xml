@@ -23,31 +23,31 @@
     <dependency>
       <groupId>com.sun.grizzly</groupId>
       <artifactId>grizzly-servlet-webserver</artifactId>
-      <version>1.9.9</version>
+      <version>1.8.6.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
-      <version>1.0.3</version>
+      <version>1.1.2-ea</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-json</artifactId>
-      <version>1.0.3</version>
+      <version>1.1.2-ea</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.1.0-ea</version>
+      <version>1.1.2-ea</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-atom</artifactId>
-      <version>1.0.3</version>
+      <version>1.1.2-ea</version>
       <scope>test</scope>
     </dependency>
     <dependency>
