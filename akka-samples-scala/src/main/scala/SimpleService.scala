@@ -10,9 +10,9 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
 import javax.ws.rs.core.MultivaluedMap
-import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
+import javax.ws.rs.{GET, POST, Path, QueryParam, Produces, WebApplicationException, Consumes}
 
-import org.atmosphere.core.annotation.{Broadcast, BroadcastFilter => FilterBroadcast, Suspend}
+import org.atmosphere.core.annotation.{Broadcast, Suspend}
 import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.BroadcastFilter
 
@@ -112,7 +112,6 @@ class Chat extends Actor with Logging {
   @Suspend
   @GET
   @Produces(Array("text/html"))
-  @FilterBroadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
   def suspend = <!-- Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. -->
 
   override def receive: PartialFunction[Any, Unit] = {
@@ -126,17 +125,17 @@ class Chat extends Actor with Logging {
     case x => log.info("recieve unknown: " + x)
   }
 
-  @Broadcast
+  @Broadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
   @Consumes(Array("application/x-www-form-urlencoded"))
   @POST
   @Produces(Array("text/html"))
-  @FilterBroadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
   def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"), form.getFirst("action"), form.getFirst("message"))).getOrElse("System__error")
 }
 
 
 class JsonpFilter extends BroadcastFilter[String] with Logging {
-  def filter(m: String) = {
+  def filter(an: AnyRef) = {
+    val m = an.toString
     var name = m
     var message = ""
 
