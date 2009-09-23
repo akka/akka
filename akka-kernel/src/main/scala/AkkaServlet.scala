@@ -42,21 +42,27 @@ class AkkaServlet extends ServletContainer with AtmosphereServletProcessor with 
 
   // Borrowed from AbstractReflectorAtmosphereHandler
   override def onMessage(event: AtmosphereEvent[HttpServletRequest, HttpServletResponse]): AtmosphereEvent[_, _] = {
-    if (event.getMessage ne null) {
-      val isUsingStream = try {
-        event.getResponse.getWriter
-        false
-      } catch { case e: IllegalStateException => true }
 
-      val data = event.getMessage.toString
-      if (isUsingStream) {
-        if (data != null) event.getResponse.getOutputStream.write(data.getBytes)
-        event.getResponse.getOutputStream.flush
-      } else {
-        event.getResponse.getWriter.write(data)
-        event.getResponse.getWriter.flush
-      }
-    } else log.info("Null event message: req[%s] res[%s]", event.getRequest, event.getResponse)
+    val response = event.getResponse
+    val data = if(event.getMessage ne null ) event.getMessage.toString else null
+    val isUsingStream = try {
+        response.getWriter
+        false
+      } catch { case e: IllegalStateException => true }  
+
+    if (isUsingStream)
+    {
+        if (data != null)
+            response.getOutputStream.write(data.getBytes)
+      response.getOutputStream.flush
+    }
+    else
+    {
+        if (data != null)
+            response.getWriter.write(data)
+      response.getWriter.flush
+    }
+   
     event
   }
 
@@ -72,7 +78,7 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet {
   override def init(sconf: ServletConfig) = {
     val servlet = new AkkaServlet
     config = new AtmosphereConfig { ah = servlet }
-    atmosphereHandlers.put("", new AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
+    atmosphereHandlers.put("/*", new AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
     setCometSupport(new GrizzlyCometSupport(config))
     getCometSupport.init(sconf)
     servlet.init(sconf)
