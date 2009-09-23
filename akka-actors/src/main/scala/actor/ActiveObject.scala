@@ -25,11 +25,12 @@ class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectEx
 
 object Annotations {
   import se.scalablesolutions.akka.annotation._
-  val oneway =              classOf[oneway]
-  val transactionrequired = classOf[transactionrequired]
-  val prerestart =          classOf[prerestart]
-  val postrestart =         classOf[postrestart]
-  val immutable =           classOf[immutable]
+  val oneway =                 classOf[oneway]
+  val transactionrequired =    classOf[transactionrequired]
+  val prerestart =             classOf[prerestart]
+  val postrestart =            classOf[postrestart]
+  val immutable =              classOf[immutable]
+  val inittransactionalstate = classOf[inittransactionalstate]
 }
 
 /**
@@ -397,6 +398,7 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
   private[actor] var target: Option[AnyRef] = None
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
+  private var initTxState: Option[Method] = None
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
     if (targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactionRequired
@@ -417,8 +419,8 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
     }
 
     // See if we have any annotation defined restart callbacks 
-    if (!preRestart.isDefined) preRestart = methods.find( m => m.isAnnotationPresent(Annotations.prerestart))
-    if (!postRestart.isDefined) postRestart = methods.find( m => m.isAnnotationPresent(Annotations.postrestart))
+    if (!preRestart.isDefined) preRestart = methods.find(m => m.isAnnotationPresent(Annotations.prerestart))
+    if (!postRestart.isDefined) postRestart = methods.find(m => m.isAnnotationPresent(Annotations.postrestart))
 
     if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
       throw new IllegalStateException("Method annotated with @prerestart or defined as a restart callback in [" + targetClass.getName + "] must have a zero argument definition")
@@ -427,6 +429,11 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
 
     if (preRestart.isDefined) preRestart.get.setAccessible(true)
     if (postRestart.isDefined) postRestart.get.setAccessible(true)
+    
+    // see if we have a method annotated with @inittransactionalstate, if so invoke it
+    initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
+    if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0) throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
+    if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
   override def receive: PartialFunction[Any, Unit] = {
@@ -449,6 +456,13 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
       if (postRestart.isDefined) postRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
+
+  override protected def initTransactionalState() {
+    try {
+      if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
+    } catch { case e: InvocationTargetException => throw e.getCause }
+  }
+
 
   private def serializeArguments(joinpoint: JoinPoint) = {
     val args = joinpoint.getRtti.asInstanceOf[MethodRtti].getParameterValues

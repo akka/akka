@@ -29,12 +29,8 @@ case object LogSize
 class BankAccountActor extends Actor {
   makeTransactionRequired
 
-  private var accountState: PersistentMap = _
-  private var txnLog: PersistentVector = _
-  override def initializeTransactionalState = {
-    accountState = PersistentState.newMap(MongoStorageConfig())
-    txnLog = PersistentState.newVector(MongoStorageConfig())
-  }
+  private lazy val accountState: PersistentMap = PersistentState.newMap(MongoStorageConfig())
+  private lazy val txnLog: PersistentVector = PersistentState.newVector(MongoStorageConfig())
 
   def receive: PartialFunction[Any, Unit] = {
     // check balance

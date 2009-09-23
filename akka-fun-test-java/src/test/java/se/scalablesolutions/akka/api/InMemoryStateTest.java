@@ -35,8 +35,8 @@ public class InMemoryStateTest extends TestCase {
   }
 
     protected void tearDown() {
-    conf.stop();
-  }
+      conf.stop();
+    }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);

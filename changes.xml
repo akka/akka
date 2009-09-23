@@ -21,10 +21,12 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Debasish Ghosh" type="add">Transparent JSON serialization of Scala objects based on SJSON </action>
       <action dev="Debasish Ghosh" type="add">MongoDB backed actor example</action>
       <action dev="Tim Perrett" type="add">Support for using the Lift Web framework with Actors</action>
-      <action dev="Viktor Klang" type="add">Security module for authentication and authorization</action>
+      <action dev="Viktor Klang" type="add">Security module for HTTP-based authentication and authorization</action>
       <action dev="Viktor Klang" type="add">Support for using Scala XML tags in RESTful Actors (scala-jersey)</action>
       <action dev="Viktor Klang" type="add">Support for Comet Actors using Atmosphere</action>
       <action dev="Jonas Bon&#233;r" type="add">AMQP integration; abstracted as actors in a supervisor hierarchy. Impl AMQP 0.9.1</action>
+      <action dev="Jonas Bon&#233;r" type="add">Rewritten STM, now integrated with Multiverse STM</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added STM API for atomic {..} and or {..} else {..}</action>
       <action dev="Jonas Bon&#233;r" type="add">Modularization of distribution into a thin core (actors, remoting and STM) and the rest in submodules</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Java objects (using Jackson)</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using SJSON)</action>
