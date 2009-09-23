@@ -206,18 +206,23 @@
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-core</artifactId>
+      <version>1.1.2-ea</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
-      <version>1.1.1-ea</version>
+      <version>1.1.2-ea</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-json</artifactId>
-      <version>1.1.1-ea</version>
+      <version>1.1.2-ea</version>
     </dependency>
     <dependency>
       <groupId>javax.ws.rs</groupId>
       <artifactId>jsr311-api</artifactId>
-      <version>1.0</version>
+      <version>1.1</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey.contribs</groupId>
@@ -227,23 +232,23 @@
     <dependency>
       <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-core</artifactId>
-      <version>0.3</version>
+      <version>0.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-portable-runtime</artifactId>
-      <version>0.3</version>
+      <version>0.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-compat</artifactId>
-      <version>0.3</version>
+      <version>0.4-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
+      <!--<plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <version>2.2-beta-2</version>
         <executions>
@@ -267,7 +272,34 @@
            </configuration>
           </execution>
         </executions>
-      </plugin>
+      </plugin>-->
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>1.2.1</version>
+          <executions>
+                   <execution>
+                       <phase>install</phase>
+                       <goals>
+                           <goal>shade</goal>
+                       </goals>
+                       <configuration>
+                           <artifactSet>
+                               <excludes>
+                                   <exclude>junit:junit</exclude>
+                               </excludes>
+                           </artifactSet>
+                           <transformers>
+                               <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                               <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+                               <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  					<mainClass>se.scalablesolutions.akka.Kernel</mainClass>
+                			   </transformer>
+                           </transformers>
+                       </configuration>
+                   </execution>
+               </executions>
+           </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
@@ -275,7 +307,9 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-kernel-${akka.version}-jar-with-dependencies.jar"
+                <!--<copy file="target/akka-kernel-${akka.version}-jar-with-dependencies.jar"
+                      tofile="../dist/akka-${akka.version}.jar"/>-->
+                    <copy file="target/akka-kernel-${akka.version}.jar"
                       tofile="../dist/akka-${akka.version}.jar"/>
               </tasks>
             </configuration>
