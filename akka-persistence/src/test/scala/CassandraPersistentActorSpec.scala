@@ -31,15 +31,9 @@ class CassandraPersistentActor extends Actor {
   timeout = 100000
   makeTransactionRequired
 
-  private var mapState: PersistentMap = _
-  private var vectorState: PersistentVector = _
-  private var refState: PersistentRef = _
-
-  override def initializeTransactionalState = {
-    mapState = PersistentState.newMap(CassandraStorageConfig())
-    vectorState = PersistentState.newVector(CassandraStorageConfig())
-    refState = PersistentState.newRef(CassandraStorageConfig())
-  }
+  private lazy val mapState: PersistentMap = PersistentState.newMap(CassandraStorageConfig())
+  private lazy val vectorState: PersistentVector = PersistentState.newVector(CassandraStorageConfig())
+  private lazy val refState: PersistentRef = PersistentState.newRef(CassandraStorageConfig())
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>

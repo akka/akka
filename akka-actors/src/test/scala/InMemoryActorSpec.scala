@@ -27,15 +27,9 @@ class InMemStatefulActor extends Actor {
   timeout = 100000
   makeTransactionRequired
   //dispatcher = se.scalablesolutions.akka.reactor.Dispatchers.newThreadBasedDispatcher(this)
-  private var mapState: TransactionalMap[String, String] = _
-  private var vectorState: TransactionalVector[String] = _
-  private var refState: TransactionalRef[String] = _
-
-  override def initializeTransactionalState = {
-    mapState = TransactionalState.newMap[String, String]
-    vectorState = TransactionalState.newVector[String]
-    refState = TransactionalState.newRef[String]
-  }
+  private lazy val mapState: TransactionalMap[String, String] = TransactionalState.newMap[String, String]
+  private lazy val vectorState: TransactionalVector[String] = TransactionalState.newVector[String]
+  private lazy val refState: TransactionalRef[String] = TransactionalState.newRef[String]
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>

@@ -1,16 +1,22 @@
 package se.scalablesolutions.akka.api;
 
+import se.scalablesolutions.akka.annotation.inittransactionalstate;
 import se.scalablesolutions.akka.annotation.transactionrequired;
 import se.scalablesolutions.akka.state.*;
 
 @transactionrequired
 public class PersistentStateful {
-  private PersistentState factory = new PersistentState();
-  private PersistentMap mapState =       factory.newMap(new CassandraStorageConfig());
-  private PersistentVector vectorState = factory.newVector(new CassandraStorageConfig());;
-  private PersistentRef refState =       factory.newRef(new CassandraStorageConfig());
+  private PersistentMap mapState;
+  private PersistentVector vectorState;
+  private PersistentRef refState;
 
-  
+  @inittransactionalstate
+  public void init() {
+    mapState = PersistentState.newMap(new CassandraStorageConfig());
+    vectorState = PersistentState.newVector(new CassandraStorageConfig());
+    refState = PersistentState.newRef(new CassandraStorageConfig());
+  }
+ 
   public String getMapState(String key) {
     return (String) mapState.get(key).get();
   }

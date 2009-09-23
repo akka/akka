@@ -63,9 +63,11 @@ trait Actor extends Logging with TransactionManagement {
 
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
   private var config: Option[AnyRef] = None
+ 
   @volatile protected[this] var isTransactional = false
   @volatile protected[this] var remoteAddress: Option[InetSocketAddress] = None
   @volatile protected[akka] var supervisor: Option[Actor] = None
+ 
   protected[Actor] var mailbox: MessageQueue = _
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
@@ -172,15 +174,6 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * User overridable callback/setting.
    *
-   * Optional callback method that is called during initialization.
-   * Used to initialize transactional state. 
-   * To be implemented by subclassing actor.
-   */
-  protected def initializeTransactionalState = {}
-
-  /**
-   * User overridable callback/setting.
-   *
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
@@ -193,6 +186,14 @@ trait Actor extends Logging with TransactionManagement {
    * To be implemented by subclassing actor.
    */
   protected def postRestart(reason: AnyRef, config: Option[AnyRef]) = {}
+
+  /**
+   * User overridable callback/setting.
+   *
+   * Optional callback method that is called during termination.
+   * To be implemented by subclassing actor.
+   */
+  protected def initTransactionalState() = {}
 
   /**
    * User overridable callback/setting.
@@ -552,10 +553,10 @@ trait Actor extends Logging with TransactionManagement {
 
   private val lifeCycle: PartialFunction[Any, Unit] = {
     case Init(config) =>       init(config)
-    case TransactionalInit =>  initializeTransactionalState
     case HotSwap(code) =>      hotswap = code
     case Restart(reason) =>    restart(reason)
     case Exit(dead, reason) => handleTrapExit(dead, reason)
+    case TransactionalInit =>  initTransactionalState
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {

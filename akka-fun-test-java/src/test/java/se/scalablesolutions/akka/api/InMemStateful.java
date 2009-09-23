@@ -3,15 +3,22 @@ package se.scalablesolutions.akka.api;
 import se.scalablesolutions.akka.annotation.transactionrequired;
 import se.scalablesolutions.akka.annotation.prerestart;
 import se.scalablesolutions.akka.annotation.postrestart;
+import se.scalablesolutions.akka.annotation.inittransactionalstate;
 import se.scalablesolutions.akka.state.*;
 
 @transactionrequired
 public class InMemStateful {
-  private TransactionalState factory = new TransactionalState();
-  private TransactionalMap<String, String> mapState = factory.newMap();
-  private TransactionalVector<String> vectorState = factory.newVector();
-  private TransactionalRef<String> refState = factory.newRef();
+  private TransactionalMap<String, String> mapState;
+  private TransactionalVector<String> vectorState;
+  private TransactionalRef<String> refState;
 
+  @inittransactionalstate
+  public void init() {
+    mapState = TransactionalState.newMap();
+    vectorState = TransactionalState.newVector();
+    refState = TransactionalState.newRef();
+  }
+  
   public String getMapState(String key) {
     return (String)mapState.get(key).get();
   }
