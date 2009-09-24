@@ -32,6 +32,7 @@ public class RemoteInMemoryStateTest extends TestCase {
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
+    stateful.init();
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
@@ -39,6 +40,7 @@ public class RemoteInMemoryStateTest extends TestCase {
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
+    stateful.init();
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
     InMemFailer failer = factory.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
     try {
@@ -51,6 +53,7 @@ public class RemoteInMemoryStateTest extends TestCase {
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
+    stateful.init();
     stateful.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getVectorState());
@@ -58,6 +61,7 @@ public class RemoteInMemoryStateTest extends TestCase {
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
+    stateful.init();
     stateful.setVectorState("init"); // set init state
     InMemFailer failer = factory.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
     try {
@@ -70,6 +74,7 @@ public class RemoteInMemoryStateTest extends TestCase {
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
+    stateful.init();
     stateful.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
     assertEquals("new state", stateful.getRefState());
@@ -77,6 +82,7 @@ public class RemoteInMemoryStateTest extends TestCase {
 
   public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
     InMemStateful stateful = factory.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
+    stateful.init();
     stateful.setRefState("init"); // set init state
     InMemFailer failer = factory.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
     try {

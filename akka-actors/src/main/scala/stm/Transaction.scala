@@ -79,14 +79,10 @@ object Transaction {
 
   private[this] val depth = new AtomicInteger(0)
   
-  def increment = synchronized { depth.incrementAndGet }
-  def decrement = synchronized { depth.decrementAndGet }
-  def isTopLevel = synchronized { depth.get == 0 }
+  def increment = depth.incrementAndGet
+  def decrement = depth.decrementAndGet
+  def isTopLevel = depth.compareAndSet(0, 0)
   
-  def register(transactional: Transactional) = synchronized {
-    ensureIsActiveOrNew
-  }
-
   def begin(participant: String) = synchronized {
     ensureIsActiveOrNew
     transaction = Multiverse.STM.startUpdateTransaction("akka")
@@ -150,12 +146,12 @@ object Transaction {
     participants ::= participant
   }
 
-  def isNew = status == TransactionStatus.New
-  def isActive = status == TransactionStatus.Active
-  def isCompleted = status == TransactionStatus.Completed
-  def isAborted = status == TransactionStatus.Aborted
+  def isNew = synchronized { status == TransactionStatus.New }
+  def isActive = synchronized { status == TransactionStatus.Active }
+  def isCompleted = synchronized { status == TransactionStatus.Completed }
+  def isAborted = synchronized { status == TransactionStatus.Aborted }
 
-  private def reset = {
+  private def reset = synchronized {
     participants = Nil
     precommitted = Nil    
   }
@@ -174,7 +170,7 @@ object Transaction {
     import net.lag.logging.{Logger, Level}
     if (log == null) {
       log = Logger.get(this.getClass.getName)
-      log.setLevel(Level.ALL)
+      log.setLevel(Level.ALL) // TODO: preserve logging level
     }
   }
 
@@ -184,11 +180,9 @@ object Transaction {
     that.asInstanceOf[Transaction].id == this.id
   }
  
-  override def hashCode(): Int = id.toInt
+  override def hashCode(): Int = synchronized { id.toInt }
  
-  override def toString(): String = synchronized { 
-    "Transaction[" + id + ", " + status + "]"
-  }
+  override def toString(): String = synchronized { "Transaction[" + id + ", " + status + "]" }
 }
 
 

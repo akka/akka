@@ -59,7 +59,6 @@ trait TransactionManagement extends Logging {
       val currentTx = cflowTx.get
       currentTx.join(uuid)
       activeTx = Some(currentTx)
-      log.debug("Joining transaction [%s]", currentTx)    
     }
   }
 
@@ -91,11 +90,11 @@ trait TransactionManagement extends Logging {
     do {
       Thread.sleep(TransactionManagement.TIME_WAITING_FOR_COMPLETION)
       nrRetries += 1
-      log.debug("Pending transaction [%s] not completed, waiting %s milliseconds. Attempt %s", activeTx.get, TransactionManagement.TIME_WAITING_FOR_COMPLETION, nrRetries)
+      log.debug("Pending transaction [%s] not completed, waiting %s milliseconds. Attempt %s", activeTx.get.id, TransactionManagement.TIME_WAITING_FOR_COMPLETION, nrRetries)
       failed = !tryToCommitTransaction
     } while(nrRetries < TransactionManagement.NR_OF_TIMES_WAITING_FOR_COMPLETION && failed)
     if (failed) {
-      log.debug("Pending transaction [%s] still not completed, aborting and rescheduling message [%s]", activeTx.get, latestMessage)
+      log.debug("Pending transaction [%s] still not completed, aborting and rescheduling message [%s]", activeTx.get.id, latestMessage)
       rollback(activeTx)
       if (TransactionManagement.RESTART_TRANSACTION_ON_COLLISION) messageToReschedule = Some(latestMessage.get)
       else throw new TransactionRollbackException("Conflicting transactions, rolling back transaction for message [" + latestMessage + "]")
@@ -112,7 +111,7 @@ trait TransactionManagement extends Logging {
 
   protected def decrementTransaction =  if (activeTx.isDefined) activeTx.get.decrement
 
-  protected def removeTransactionIfTopLevel = if (isTransactionTopLevel) { activeTx = None }
+  protected def removeTransactionIfTopLevel = if (isTransactionTopLevel) activeTx = None
 
   protected def reenteringExistingTransaction= if (activeTx.isDefined) {
     val cflowTx = threadBoundTx.get

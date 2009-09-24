@@ -93,9 +93,9 @@ class InMemoryActorSpec extends TestCase {
     val stateful = new InMemStatefulActor
     stateful.start
     stateful ! SetMapStateOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
-    Thread.sleep(100)
+    Thread.sleep(1000)
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    Thread.sleep(100)
+    Thread.sleep(1000)
     assertEquals("new state", (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get)
   }
 
@@ -115,9 +115,9 @@ class InMemoryActorSpec extends TestCase {
     val failer = new InMemFailerActor
     failer.start
     stateful ! SetMapStateOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-    Thread.sleep(100)
+    Thread.sleep(1000)
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
-    Thread.sleep(100)
+    Thread.sleep(1000)
     assertEquals("init", (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
   }
 
@@ -140,9 +140,9 @@ class InMemoryActorSpec extends TestCase {
     val stateful = new InMemStatefulActor
     stateful.start
     stateful ! SetVectorStateOneWay("init") // set init state
-    Thread.sleep(100)
+    Thread.sleep(1000)
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    Thread.sleep(100)
+    Thread.sleep(1000)
     assertEquals(2, (stateful !! GetVectorSize).get)
   }
 
@@ -160,12 +160,12 @@ class InMemoryActorSpec extends TestCase {
     val stateful = new InMemStatefulActor
     stateful.start
     stateful ! SetVectorStateOneWay("init") // set init state
-    Thread.sleep(100)
+    Thread.sleep(1000)
     val failer = new InMemFailerActor
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
-    Thread.sleep(100)
-    assertEquals(1, (stateful !! GetVectorSize).get) // check that state is == init state
+    Thread.sleep(1000)
+    assertEquals(1, (stateful !! GetVectorSize).get)
   }
 
   @Test
@@ -179,7 +179,7 @@ class InMemoryActorSpec extends TestCase {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    assertEquals(1, (stateful !! GetVectorSize).get) // check that state is == init state
+    assertEquals(1, (stateful !! GetVectorSize).get)
   }
 
   @Test
@@ -187,9 +187,9 @@ class InMemoryActorSpec extends TestCase {
     val stateful = new InMemStatefulActor
     stateful.start
     stateful ! SetRefStateOneWay("init") // set init state
-    Thread.sleep(100)
+    Thread.sleep(1000)
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    Thread.sleep(100)
+    Thread.sleep(1000)
     assertEquals("new state", (stateful !! GetRefState).get)
   }
 
@@ -207,11 +207,11 @@ class InMemoryActorSpec extends TestCase {
     val stateful = new InMemStatefulActor
     stateful.start
     stateful ! SetRefStateOneWay("init") // set init state
-    Thread.sleep(100)
+    Thread.sleep(1000)
     val failer = new InMemFailerActor
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
-    Thread.sleep(100)
+    Thread.sleep(1000)
     assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
   }
 

@@ -11,12 +11,15 @@ public class InMemStateful {
   private TransactionalMap<String, String> mapState;
   private TransactionalVector<String> vectorState;
   private TransactionalRef<String> refState;
-
-  @inittransactionalstate
+  private boolean isInitialized = false;
+    
   public void init() {
-    mapState = TransactionalState.newMap();
-    vectorState = TransactionalState.newVector();
-    refState = TransactionalState.newRef();
+    if (!isInitialized) {
+      mapState = TransactionalState.newMap();
+      vectorState = TransactionalState.newVector();
+      refState = TransactionalState.newRef();
+      isInitialized = true;
+    }
   }
   
   public String getMapState(String key) {

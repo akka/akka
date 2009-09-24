@@ -32,6 +32,8 @@ public class InMemoryStateTest extends TestCase {
                 new LifeCycle(new Permanent(), 1000),
             10000)
         }).inject().supervise();
+      InMemStateful stateful = conf.getInstance(InMemStateful.class);
+      stateful.init();
   }
 
     protected void tearDown() {

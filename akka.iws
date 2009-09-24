@@ -1,27 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project relativePaths="false" version="4">
-  <component name="ChangeListManager">
+  <component name="ChangeListManager" verified="true">
     <list default="true" readonly="true" id="188c966f-a83c-4d3a-9128-54d5a2947a12" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iml" afterPath="$PROJECT_DIR$/akka.iml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStatefulNested.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStatefulNested.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/akka-kernel/src/main/scala/Kernel.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/changes.xml" afterPath="$PROJECT_DIR$/changes.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoStorageSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoStorageSpec.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/CamelSpec.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentClasher.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentClasher.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/AllTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/AllTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateful.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateful.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-util/src/main/scala/Config.scala" afterPath="$PROJECT_DIR$/akka-util/src/main/scala/Config.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStatefulNested.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStatefulNested.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="true" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="SHELVE" />
   </component>
   <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
   <component name="CreatePatchCommitExecutor">
@@ -33,33 +36,7 @@
   </component>
   <component name="DebuggerManager">
     <line_breakpoints>
-      <breakpoint url="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" line="90" class="Class at Transaction.scala:90" package="">
-        <option name="ENABLED" value="true" />
-        <option name="LOG_ENABLED" value="false" />
-        <option name="LOG_EXPRESSION_ENABLED" value="false" />
-        <option name="SUSPEND_POLICY" value="SuspendAll" />
-        <option name="COUNT_FILTER_ENABLED" value="false" />
-        <option name="COUNT_FILTER" value="0" />
-        <option name="CONDITION_ENABLED" value="false" />
-        <option name="CLASS_FILTERS_ENABLED" value="false" />
-        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
-        <option name="CONDITION" value="" />
-        <option name="LOG_MESSAGE" value="" />
-      </breakpoint>
-      <breakpoint url="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" line="108" class="Class at Transaction.scala:108" package="">
-        <option name="ENABLED" value="true" />
-        <option name="LOG_ENABLED" value="false" />
-        <option name="LOG_EXPRESSION_ENABLED" value="false" />
-        <option name="SUSPEND_POLICY" value="SuspendAll" />
-        <option name="COUNT_FILTER_ENABLED" value="false" />
-        <option name="COUNT_FILTER" value="0" />
-        <option name="CONDITION_ENABLED" value="false" />
-        <option name="CLASS_FILTERS_ENABLED" value="false" />
-        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
-        <option name="CONDITION" value="" />
-        <option name="LOG_MESSAGE" value="" />
-      </breakpoint>
-      <breakpoint url="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" line="131" class="Class at Transaction.scala:131" package="">
+      <breakpoint url="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" line="563" class="Class at Actor.scala:560" package="">
         <option name="ENABLED" value="true" />
         <option name="LOG_ENABLED" value="false" />
         <option name="LOG_EXPRESSION_ENABLED" value="false" />
@@ -106,7 +83,24 @@
       </breakpoint>
     </breakpoint_any>
     <breakpoint_rules />
-    <ui_properties />
+    <ui_properties>
+      <property name="exception_breakpoints_flattenPackages" value="true" />
+      <property name="line_breakpoints_groupByClasses" value="true" />
+      <property name="exception_breakpoints_groupByMethods" value="false" />
+      <property name="method_breakpoints_viewId" value="TABLE" />
+      <property name="line_breakpoints_viewId" value="TABLE" />
+      <property name="exception_breakpoints_groupByClasses" value="true" />
+      <property name="method_breakpoints_groupByMethods" value="false" />
+      <property name="field_breakpoints_flattenPackages" value="true" />
+      <property name="line_breakpoints_flattenPackages" value="true" />
+      <property name="exception_breakpoints_viewId" value="TABLE" />
+      <property name="field_breakpoints_groupByClasses" value="true" />
+      <property name="method_breakpoints_flattenPackages" value="true" />
+      <property name="field_breakpoints_viewId" value="TABLE" />
+      <property name="line_breakpoints_groupByMethods" value="false" />
+      <property name="method_breakpoints_groupByClasses" value="true" />
+      <property name="field_breakpoints_groupByMethods" value="false" />
+    </ui_properties>
   </component>
   <component name="FavoritesManager">
     <favorites_list name="akka" />
@@ -114,19 +108,91 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="ActiveObject.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="ActiveObject.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="471" column="49" selection-start="21206" selection-end="21206" vertical-scroll-proportion="1.4898785">
+            <state line="158" column="0" selection-start="7868" selection-end="7868" vertical-scroll-proportion="-14.769231">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
+      <file leaf-file-name="InMemStateful.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="24" column="29" selection-start="733" selection-end="733" vertical-scroll-proportion="0.0">
+            <state line="24" column="41" selection-start="849" selection-end="849" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="InMemStatefulNested.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStatefulNested.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="13" column="10" selection-start="481" selection-end="481" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="InMemNestedStateTest.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="90" column="14" selection-start="4825" selection-end="4825" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RemoteInMemoryStateTest.java" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="135" column="0" selection-start="6508" selection-end="6508" vertical-scroll-proportion="0.9074253">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RemoteServer.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="98" column="43" selection-start="3734" selection-end="3734" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="InMemoryStateTest.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="81" column="14" selection-start="3613" selection-end="3613" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Transaction.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="183" column="28" selection-start="6231" selection-end="6231" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AtomicInteger.class" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar:///System/Library/Frameworks/JavaVM.framework/Versions/1.6.0/Home/../Classes/classes.jar!/java/util/concurrent/atomic/AtomicInteger.class">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="23" column="25" selection-start="830" selection-end="830" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TransactionManagement.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="20" column="38" selection-start="660" selection-end="660" vertical-scroll-proportion="-11.076923">
               <folding />
             </state>
           </provider>
@@ -142,21 +208,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/HashTrie.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/test/scala/STMSpec.scala" />
-        <option value="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/config/Ref.java" />
-        <option value="$PROJECT_DIR$/akka-actors/src/test/scala/STMBugReproducer.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" />
         <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
+        <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" />
+        <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" />
+        <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" />
+        <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStatefulNested.java" />
+        <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java" />
       </list>
     </option>
   </component>
@@ -212,10 +279,6 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Favorites" />
-      <pane id="ProjectPane">
-        <subPane />
-      </pane>
       <pane id="Scope">
         <subPane subId="Problems">
           <PATH>
@@ -250,8 +313,36 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
             </PATH_ELEMENT>
           </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka-fun-test-java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewModuleNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka-fun-test-java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewModuleNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="se.scalablesolutions.akka.api" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageElementNode" />
+            </PATH_ELEMENT>
+          </PATH>
         </subPane>
       </pane>
+      <pane id="ProjectPane">
+        <subPane />
+      </pane>
+      <pane id="Favorites" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -273,101 +364,7 @@
     <property name="GoToClass.toSaveIncludeLibraries" value="false" />
     <property name="RunManagerConfig.showSettingsBeforeRunnig" value="false" />
   </component>
-  <component name="RunManager" selected="JUnit.InMemoryActorSpec">
-    <configuration default="false" name="InMemoryActorSpec.testVectorShouldRollbackStateForStatefulServerInCaseOfFailure" type="JUnit" factoryName="JUnit" temporary="true" enabled="false" merge="false" sample_coverage="true" runner="emma">
-      <pattern>
-        <option name="PATTERN" value="se.scalablesolutions.akka.actor.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-      <module name="akka-actors" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" value="" />
-      <option name="PACKAGE_NAME" value="" />
-      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.actor.InMemoryActorSpec" />
-      <option name="METHOD_NAME" value="testVectorShouldRollbackStateForStatefulServerInCaseOfFailure" />
-      <option name="TEST_OBJECT" value="method" />
-      <option name="VM_PARAMETERS" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="moduleWithDependencies" />
-      </option>
-      <envs />
-      <RunnerSettings RunnerId="Run" />
-      <ConfigurationWrapper RunnerId="Run" />
-      <method>
-        <option name="AntTarget" enabled="false" />
-        <option name="Make" enabled="true" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
-      </method>
-    </configuration>
-    <configuration default="false" name="InMemoryActorSpec.testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess" type="JUnit" factoryName="JUnit" temporary="true" enabled="false" merge="false" sample_coverage="true" runner="emma">
-      <pattern>
-        <option name="PATTERN" value="se.scalablesolutions.akka.actor.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-      <module name="akka-actors" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" value="" />
-      <option name="PACKAGE_NAME" value="" />
-      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.actor.InMemoryActorSpec" />
-      <option name="METHOD_NAME" value="testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess" />
-      <option name="TEST_OBJECT" value="method" />
-      <option name="VM_PARAMETERS" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="moduleWithDependencies" />
-      </option>
-      <envs />
-      <RunnerSettings RunnerId="Run" />
-      <ConfigurationWrapper RunnerId="Run" />
-      <method>
-        <option name="AntTarget" enabled="false" />
-        <option name="Make" enabled="true" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
-      </method>
-    </configuration>
-    <configuration default="false" name="InMemoryActorSpec.testOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure" type="JUnit" factoryName="JUnit" temporary="true" enabled="false" merge="false" sample_coverage="true" runner="emma">
-      <pattern>
-        <option name="PATTERN" value="se.scalablesolutions.akka.actor.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-      <module name="akka-actors" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" value="" />
-      <option name="PACKAGE_NAME" value="" />
-      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.actor.InMemoryActorSpec" />
-      <option name="METHOD_NAME" value="testOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure" />
-      <option name="TEST_OBJECT" value="method" />
-      <option name="VM_PARAMETERS" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="moduleWithDependencies" />
-      </option>
-      <envs />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="65127" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method>
-        <option name="AntTarget" enabled="false" />
-        <option name="Make" enabled="true" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="JUnit.InMemNestedStateTest">
     <configuration default="true" type="Remote" factoryName="Remote">
       <option name="USE_SOCKET_TRANSPORT" value="true" />
       <option name="SERVER_MODE" value="false" />
@@ -376,12 +373,17 @@
       <option name="PORT" value="5005" />
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
-    <configuration default="true" type="PhpRunConfigurationType" factoryName="PHP" browser="DEFAULT" web_path="">
+    <configuration default="true" type="PhpRunConfigurationType" factoryName="PHP" break_at_first_line="false" browser="DEFAULT" open_page_automatically="true" session_id="" session_after_first_page="false" web_path="">
+      <option name="mappings">
+        <list />
+      </option>
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
@@ -398,6 +400,7 @@
       <option name="ALTERNATIVE_JRE_PATH" />
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Make" enabled="true" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
@@ -409,6 +412,15 @@
       <setting name="params" value="" />
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="true" type="FlexUnitRunConfigurationType" factoryName="FlexUnit">
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Make" enabled="true" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
@@ -430,7 +442,6 @@
       <option name="ANNOTATION_TYPE" />
       <option name="ENV_VARIABLES" />
       <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
       <option name="TEST_SEARCH_SCOPE">
         <value defaultName="moduleWithDependencies" />
       </option>
@@ -440,6 +451,7 @@
       <listeners />
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Make" enabled="true" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
@@ -457,13 +469,13 @@
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="ENV_VARIABLES" />
       <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
       <option name="TEST_SEARCH_SCOPE">
         <value defaultName="moduleWithDependencies" />
       </option>
       <envs />
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Make" enabled="true" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
@@ -476,6 +488,7 @@
       <setting name="params" value="" />
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Make" enabled="true" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
@@ -494,33 +507,8 @@
       <envs />
       <method>
         <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Make" enabled="true" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
-      </method>
-    </configuration>
-    <configuration default="false" name="STMBugReproducer" type="JUnit" factoryName="JUnit" enabled="false" merge="false" sample_coverage="true" runner="emma">
-      <module name="akka-actors" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" value="" />
-      <option name="PACKAGE_NAME" value="" />
-      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.actor.STMBugReproducer" />
-      <option name="METHOD_NAME" value="" />
-      <option name="TEST_OBJECT" value="class" />
-      <option name="VM_PARAMETERS" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="moduleWithDependencies" />
-      </option>
-      <envs />
-      <RunnerSettings RunnerId="Run" />
-      <ConfigurationWrapper RunnerId="Run" />
-      <method>
-        <option name="AntTarget" enabled="false" />
-        <option name="Make" enabled="false" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
@@ -537,7 +525,6 @@
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
       <option name="ENV_VARIABLES" />
       <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
       <option name="TEST_SEARCH_SCOPE">
         <value defaultName="moduleWithDependencies" />
       </option>
@@ -545,9 +532,7 @@
       <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="Run" />
       <method>
-        <option name="AntTarget" enabled="false" />
         <option name="Make" enabled="false" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
     <configuration default="false" name="InMemoryActorSpec" type="JUnit" factoryName="JUnit" enabled="false" merge="false" sample_coverage="true" runner="emma">
@@ -563,7 +548,6 @@
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
       <option name="ENV_VARIABLES" />
       <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="ADDITIONAL_CLASS_PATH" />
       <option name="TEST_SEARCH_SCOPE">
         <value defaultName="moduleWithDependencies" />
       </option>
@@ -571,18 +555,66 @@
       <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="Run" />
       <method>
-        <option name="AntTarget" enabled="false" />
         <option name="Make" enabled="false" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
-    <list size="6">
-      <item index="0" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec.testVectorShouldRollbackStateForStatefulServerInCaseOfFailure" />
-      <item index="1" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec.testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess" />
-      <item index="2" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec.testOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure" />
-      <item index="3" class="java.lang.String" itemvalue="JUnit.STMBugReproducer" />
-      <item index="4" class="java.lang.String" itemvalue="JUnit.RemoteInMemoryStateTest" />
-      <item index="5" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec" />
+    <configuration default="false" name="InMemoryStateTest" type="JUnit" factoryName="JUnit" enabled="false" merge="false" sample_coverage="true" runner="emma">
+      <module name="akka-fun-test-java" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" value="" />
+      <option name="PACKAGE_NAME" value="se.scalablesolutions.akka.api" />
+      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.api.InMemoryStateTest" />
+      <option name="METHOD_NAME" value="" />
+      <option name="TEST_OBJECT" value="class" />
+      <option name="VM_PARAMETERS" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="moduleWithDependencies" />
+      </option>
+      <envs />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="51083" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Debug" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method>
+        <option name="Make" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="false" name="InMemNestedStateTest" type="JUnit" factoryName="JUnit" enabled="false" merge="false" sample_coverage="true" runner="emma">
+      <module name="akka-fun-test-java" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" value="" />
+      <option name="PACKAGE_NAME" value="se.scalablesolutions.akka.api" />
+      <option name="MAIN_CLASS_NAME" value="se.scalablesolutions.akka.api.InMemNestedStateTest" />
+      <option name="METHOD_NAME" value="" />
+      <option name="TEST_OBJECT" value="class" />
+      <option name="VM_PARAMETERS" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="moduleWithDependencies" />
+      </option>
+      <envs />
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method>
+        <option name="Make" enabled="false" />
+      </method>
+    </configuration>
+    <list size="4">
+      <item index="0" class="java.lang.String" itemvalue="JUnit.RemoteInMemoryStateTest" />
+      <item index="1" class="java.lang.String" itemvalue="JUnit.InMemoryActorSpec" />
+      <item index="2" class="java.lang.String" itemvalue="JUnit.InMemoryStateTest" />
+      <item index="3" class="java.lang.String" itemvalue="JUnit.InMemNestedStateTest" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -623,27 +655,27 @@
     </option>
   </component>
   <component name="ToolWindowManager">
-    <frame x="4" y="22" width="1436" height="878" extended-state="0" />
+    <frame x="4" y="22" width="1916" height="1178" extended-state="7" />
     <editor active="true" />
     <layout>
-      <window_info id="Web Preview" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.19264069" sideWeight="0.6747449" order="0" side_tool="false" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.19239014" sideWeight="0.57749075" order="0" side_tool="false" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32841328" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.31632653" sideWeight="0.5" order="2" side_tool="false" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39923468" sideWeight="0.5" order="3" side_tool="false" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.41605166" sideWeight="0.5" order="2" side_tool="false" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.48214287" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" />
       <window_info id="IDEtalk Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
+      <window_info id="Web Preview" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32908162" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32908162" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" />
@@ -682,68 +714,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="90" column="0" selection-start="2585" selection-end="2585" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/reactor/Reactor.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="45" selection-start="666" selection-end="666" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-rest/src/main/scala/ActorComponentProviderFactory.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="14" column="6" selection-start="335" selection-end="335" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/reactor/MessageDispatcherBase.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="47" column="21" selection-start="1413" selection-end="1413" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraSession.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="27" column="7" selection-start="637" selection-end="637" vertical-scroll-proportion="-0.3102493" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="16" column="0" selection-start="405" selection-end="405" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="12" column="4" selection-start="453" selection-end="453" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="67" column="0" selection-start="2484" selection-end="2484" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="42" column="0" selection-start="969" selection-end="1352" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="33" column="0" selection-start="1045" selection-end="1045" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="266" column="0" selection-start="9174" selection-end="9174" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="30" column="59" selection-start="1165" selection-end="1165" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="34" column="20" selection-start="780" selection-end="780" vertical-scroll-proportion="0.19538671" />
@@ -751,21 +721,103 @@
     </entry>
     <entry file="jar:///System/Library/Frameworks/JavaVM.framework/Versions/1.6.0/Home/../Classes/classes.jar!/java/lang/reflect/Method.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="64" column="38" selection-start="2983" selection-end="2987" vertical-scroll-proportion="-21.961538">
+        <state line="64" column="38" selection-start="2983" selection-end="2987" vertical-scroll-proportion="-21.961538" />
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5.jar!/scala/PartialFunction.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="205" column="6" selection-start="8078" selection-end="8078" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="24" column="29" selection-start="733" selection-end="733" vertical-scroll-proportion="0.0">
+        <state line="513" column="108" selection-start="19179" selection-end="19179" vertical-scroll-proportion="-14.769231">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/nio/protobuf/RemoteProtocol.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="98" column="43" selection-start="3734" selection-end="3734" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="471" column="49" selection-start="21206" selection-end="21206" vertical-scroll-proportion="1.4898785">
+        <state line="158" column="0" selection-start="7868" selection-end="7868" vertical-scroll-proportion="-14.769231">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="20" column="38" selection-start="660" selection-end="660" vertical-scroll-proportion="-11.076923">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar:///System/Library/Frameworks/JavaVM.framework/Versions/1.6.0/Home/../Classes/classes.jar!/java/util/concurrent/atomic/AtomicInteger.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="23" column="25" selection-start="830" selection-end="830" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="183" column="28" selection-start="6231" selection-end="6231" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStatefulNested.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="10" selection-start="481" selection-end="481" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="81" column="14" selection-start="3613" selection-end="3613" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="90" column="14" selection-start="4825" selection-end="4825" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="24" column="41" selection-start="849" selection-end="849" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="135" column="0" selection-start="6508" selection-end="6508" vertical-scroll-proportion="0.9074253">
           <folding />
         </state>
       </provider>
