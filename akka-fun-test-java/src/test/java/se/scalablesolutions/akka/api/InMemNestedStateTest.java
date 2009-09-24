@@ -27,7 +27,11 @@ public class InMemNestedStateTest extends TestCase {
             new Component(InMemFailer.class, new LifeCycle(new Permanent(), 1000), 1000)
             //new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent(), 1000), 100000)
         }).inject().supervise();
-      Config.config();
+    Config.config();
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
+    stateful.init();
+    InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
+    nested.init();
   }
 
   protected void tearDown() {

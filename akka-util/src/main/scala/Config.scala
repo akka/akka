@@ -6,7 +6,7 @@ package se.scalablesolutions.akka
 
 import util.Logging
 
-import net.lag.configgy.{Config => ConfiggyConfig, Configgy, RuntimeEnvironment, ParseException}
+import net.lag.configgy.{Config => ConfiggyConfig, Configgy, ParseException}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -14,9 +14,12 @@ import net.lag.configgy.{Config => ConfiggyConfig, Configgy, RuntimeEnvironment,
 object Config extends Logging {
   val VERSION = "0.6"
   val HOME = {
-    val home = System.getenv("AKKA_HOME")
-    if (home == null) None
-    else Some(home)
+    val systemHome = System.getenv("AKKA_HOME")
+    if (systemHome == null || systemHome.length == 0) {
+      val optionHome = System.getProperty("akka.home", "")
+      if (optionHome.length != 0) Some(optionHome)
+      else None
+    } else Some(systemHome)
   }
 
   val config = {

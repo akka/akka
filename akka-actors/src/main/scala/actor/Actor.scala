@@ -7,16 +7,16 @@ package se.scalablesolutions.akka.actor
 import com.google.protobuf.ByteString
 
 import java.net.InetSocketAddress
-import java.util.concurrent.CopyOnWriteArraySet
+import java.util.HashSet
 
 import reactor._
 import config.ScalaConfig._
 import stm.TransactionManagement
-import util.Helpers.ReadWriteLock
 import nio.protobuf.RemoteProtocol.RemoteRequest
-import util.Logging
-import serialization.{Serializer, Serializable, SerializationProtocol}
 import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
+import serialization.{Serializer, Serializable, SerializationProtocol}
+import util.Helpers.ReadWriteLock
+import util.Logging
 
 import org.multiverse.utils.TransactionThreadLocal._
 
@@ -70,7 +70,7 @@ trait Actor extends Logging with TransactionManagement {
  
   protected[Actor] var mailbox: MessageQueue = _
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
-  protected[this] val linkedActors = new CopyOnWriteArraySet[Actor]
+  protected[this] val linkedActors = new HashSet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
 
   val name = this.getClass.getName
@@ -224,6 +224,8 @@ trait Actor extends Logging with TransactionManagement {
   def stop = synchronized {
     if (isRunning) {
       dispatcher.unregisterHandler(this)
+      if (dispatcher.isInstanceOf[ThreadBasedDispatcher]) dispatcher.shutdown
+      // FIXME: Need to do reference count to know if EventBasedThreadPoolDispatcher and EventBasedSingleThreadDispatcher can be shut down
       isRunning = false
       shutdown
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -509,6 +511,11 @@ trait Actor extends Logging with TransactionManagement {
     try {
       if (!tryToCommitTransaction && isTransactionTopLevel) handleCollision
 
+      if (TransactionManagement.threadBoundTx.get.isDefined && !TransactionManagement.threadBoundTx.get.get.isActive) {
+        TransactionManagement.threadBoundTx.set(None) // need to clear threadBoundTx before call to supervisor
+        setThreadLocalTransaction(null)
+      }
+
       if (isInExistingTransaction) joinExistingTransaction
       else if (isTransactional) startNewTransaction
 
@@ -536,10 +543,8 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
-    if (future.exception.isDefined) {
-      val (_, cause) = future.exception.get
-      throw cause
-    } else future.result.asInstanceOf[Option[T]]
+    if (future.exception.isDefined) throw future.exception.get._2
+    else future.result.asInstanceOf[Option[T]]
 
   private def rescheduleClashedMessages = if (messageToReschedule.isDefined) {
     val handle = messageToReschedule.get

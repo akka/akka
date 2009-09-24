@@ -45,8 +45,6 @@ object Kernel extends Logging {
       printBanner
       log.info("Starting Akka...")
 
-      runApplicationBootClasses
-
       if (RUN_REMOTE_SERVICE) startRemoteService
       if (RUN_REST_SERVICE) startREST
 
@@ -56,29 +54,7 @@ object Kernel extends Logging {
     }
   }
 
-
-  private[akka] def runApplicationBootClasses = {
-    val loader =
-    if (HOME.isDefined) {
-      val CONFIG = HOME.get + "/config"
-      val DEPLOY = HOME.get + "/deploy"
-      val DEPLOY_DIR = new File(DEPLOY)
-      if (!DEPLOY_DIR.exists) {log.error("Could not find a deploy directory at [" + DEPLOY + "]"); System.exit(-1)}
-      val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
-      //val toDeploy = DEPLOY_DIR.toURL :: (for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL)
-      log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
-      new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
-    } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) {
-      getClass.getClassLoader
-    } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
-    for (clazz <- BOOT_CLASSES) {
-      log.info("Loading boot class [%s]", clazz)
-      loader.loadClass(clazz).newInstance
-    }
-    applicationLoader = Some(loader)
-  }
-
-  private[akka] def startRemoteService = {
+  def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
       def run = RemoteServer.start(applicationLoader)
@@ -87,6 +63,7 @@ object Kernel extends Logging {
   }
 
   def startREST = {
+    runApplicationBootClasses
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
 
     val scheme = uri.getScheme
@@ -110,6 +87,29 @@ object Kernel extends Logging {
     jerseySelectorThread.listen
 
     log.info("REST service started successfully. Listening to port [" + REST_PORT + "]")
+  }
+
+  private def runApplicationBootClasses = {
+    val loader =
+    if (HOME.isDefined) {
+      val CONFIG = HOME.get + "/config"
+      val DEPLOY = HOME.get + "/deploy"
+      val DEPLOY_DIR = new File(DEPLOY)
+      if (!DEPLOY_DIR.exists) {
+        log.error("Could not find a deploy directory at [" + DEPLOY + "]")
+        System.exit(-1)
+      }
+      val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
+      log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
+      new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+    } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) {
+      getClass.getClassLoader
+    } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+    for (clazz <- BOOT_CLASSES) {
+      log.info("Loading boot class [%s]", clazz)
+      loader.loadClass(clazz).newInstance
+    }
+    applicationLoader = Some(loader)
   }
 
   private def printBanner = {

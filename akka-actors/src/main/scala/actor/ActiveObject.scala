@@ -12,13 +12,11 @@ import nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
 import config.ScalaConfig._
 import util._
-import serialization.Serializer
 
-import org.codehaus.aspectwerkz.intercept.{Advisable, AroundAdvice, Advice}
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
-import org.codehaus.aspectwerkz.aspect.management.Aspects
+import se.scalablesolutions.akka.serialization.Serializer
 
 sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
 class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
@@ -124,18 +122,6 @@ class ActiveObjectFactory {
   
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
     ActiveObject.supervise(restartStrategy, components)
-
-  /*
-  def newInstanceAndLink[T](target: Class[T], supervisor: AnyRef): T = {
-    val actor = new Dispatcher(None)(target.getName)
-    ActiveObject.newInstance(target, actor)
-  }
-
-  def newInstanceAndLink[T](intf: Class[T], target: AnyRef, supervisor: AnyRef): T = {
-    val actor = new Dispatcher(None)(target.getName)
-    ActiveObject.newInstance(intf, target, actor)
-  }
-  */
 }
 
 /**
@@ -144,8 +130,6 @@ class ActiveObjectFactory {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActiveObject {
-
-  val MATCH_ALL = "execution(* *.*(..))"
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
   def newInstance[T](target: Class[T], timeout: Long): T =
@@ -221,8 +205,7 @@ object ActiveObject {
   }
 
   private[akka] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
-    if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
+    //if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(target, false, true)
     actor.initialize(target, proxy)
     actor.timeout = timeout
@@ -232,8 +215,7 @@ object ActiveObject {
   }
 
   private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    //if (getClass.getClassLoader.getResourceAsStream("META-INF/aop.xml") != null) println("000000000000000000000 FOUND AOP")
-    if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
+    //if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     actor.initialize(target.getClass, target)
     actor.timeout = timeout
@@ -281,7 +263,7 @@ sealed class ActiveObjectAspect {
   var remoteAddress: Option[InetSocketAddress] = _
   var timeout: Long = _
 
-  @Around("execution(* *..*(..))")
+  @Around("execution(* *.*(..))")
   def invoke(joinpoint: JoinPoint): AnyRef = {
     if (!isInitialized) {
       val init = AspectInitRegistry.initFor(joinpoint.getThis)
@@ -431,9 +413,9 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
     if (postRestart.isDefined) postRestart.get.setAccessible(true)
     
     // see if we have a method annotated with @inittransactionalstate, if so invoke it
-    initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
-    if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0) throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
-    if (initTxState.isDefined) initTxState.get.setAccessible(true)
+    //initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
+    //if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0) throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
+    //if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
   override def receive: PartialFunction[Any, Unit] = {
@@ -457,12 +439,11 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
-  override protected def initTransactionalState() {
-    try {
-      if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
-    } catch { case e: InvocationTargetException => throw e.getCause }
-  }
-
+  //override protected def initTransactionalState = {
+  //  try {
+  //    if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
+  //  } catch { case e: InvocationTargetException => throw e.getCause }
+  //}
 
   private def serializeArguments(joinpoint: JoinPoint) = {
     val args = joinpoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
