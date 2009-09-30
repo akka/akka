@@ -22,7 +22,8 @@ import static java.lang.String.format;
  * @author Peter Veentjer
  */
 public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E> {
-    final public static class NoTransactionInScopeException extends RuntimeException {}
+    final public static class NoTransactionInScopeException extends RuntimeException {
+    }
 
     public Ref() {
         Transaction tx = getThreadLocalTransaction();
@@ -56,7 +57,6 @@ public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E>
         return tranlocalRef.get();
     }
 
-    @Override
     public E getOrAwait() {
         Transaction tx = getThreadLocalTransaction();
         if (tx == null) throw new NoTransactionInScopeException();
@@ -69,8 +69,6 @@ public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E>
         return tranlocalRef.getOrAwait();
     }
 
-
-    @Override
     public E set(final E newRef) {
         Transaction tx = getThreadLocalTransaction();
         if (tx == null) throw new NoTransactionInScopeException();
@@ -83,7 +81,6 @@ public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E>
         return tranlocalRef.set(newRef);
     }
 
-    @Override
     public boolean isNull() {
         Transaction tx = getThreadLocalTransaction();
         if (tx == null) throw new NoTransactionInScopeException();
@@ -96,7 +93,6 @@ public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E>
         return tranlocalRef.isNull();
     }
 
-    @Override
     public E clear() {
         Transaction tx = getThreadLocalTransaction();
         if (tx == null) throw new NoTransactionInScopeException();
@@ -122,7 +118,6 @@ public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E>
         return tranlocalRef.toString();
     }
 
-    @Override
     public RefTranlocal<E> privatize(long readVersion) {
         RefTranlocal<E> origin = (RefTranlocal<E>) load(readVersion);
         if (origin == null) {

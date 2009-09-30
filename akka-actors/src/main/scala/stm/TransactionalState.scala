@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.state
 import stm.{TransactionManagement, Ref}
 import org.multiverse.templates.AtomicTemplate
 import org.multiverse.api.Transaction;
-import akka.collection._
+import collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 
@@ -71,15 +71,17 @@ class TransactionalRef[T] extends Transactional {
   def swap(elem: T) = ref.set(elem)
 
   def get: Option[T] = {
-    if (ref.isNull) None
-    else Some(ref.get)
+//    if (ref.isNull) None
+  //  else
+  Some(ref.get)
   }
 
   def getOrWait: T = ref.getOrAwait
 
   def getOrElse(default: => T): T = {
-    if (ref.isNull) default
-    else ref.get
+//    if (ref.isNull) default
+    //else
+  ref.get
   }
 
   def isDefined: Boolean = !ref.isNull

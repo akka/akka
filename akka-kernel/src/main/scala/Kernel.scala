@@ -24,9 +24,9 @@ object Kernel extends Logging {
   import Config._
 
   val BOOT_CLASSES = config.getList("akka.boot")
-  val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", true)
+  val RUN_REMOTE_SERVICE = config.getBool("akka.remote.service", false)
+  val RUN_REST_SERVICE = config.getBool("akka.rest.service", false)
   val STORAGE_SYSTEM = config.getString("akka.storage.system", "cassandra")
-  val RUN_REST_SERVICE = config.getBool("akka.rest.service", true)
   val REST_HOSTNAME = config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
   val REST_PORT = config.getInt("akka.rest.port", 9998)
