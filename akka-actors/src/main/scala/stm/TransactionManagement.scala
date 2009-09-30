@@ -22,7 +22,7 @@ object TransactionManagement {
   import Config._
   val TIME_WAITING_FOR_COMPLETION = config.getInt("akka.stm.wait-for-completion", 100)
   val NR_OF_TIMES_WAITING_FOR_COMPLETION = config.getInt("akka.stm.wait-nr-of-times", 3)
-  val TRANSACTION_ENABLED = new AtomicBoolean(config.getBool("akka.stm.service", true))
+  val TRANSACTION_ENABLED = new AtomicBoolean(config.getBool("akka.stm.service", false))
   // FIXME reenable 'akka.stm.restart-on-collision' when new STM is in place 
   val RESTART_TRANSACTION_ON_COLLISION = false //akka.Kernel.config.getBool("akka.stm.restart-on-collision", true)
 

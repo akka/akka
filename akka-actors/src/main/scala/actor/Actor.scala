@@ -216,6 +216,7 @@ trait Actor extends Logging with TransactionManagement {
       isRunning = true
       if (isTransactional) this ! TransactionalInit
     }
+    log.info("[%s] has started", toString)
   }
 
   /**
@@ -364,8 +365,8 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def startLinkRemote(actor: Actor) = {
-    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
+  protected[this] def startLinkRemote(actor: Actor, hostname: String, port: Int) = {
+    actor.makeRemote(hostname, port)
     actor.start
     link(actor)
   }
@@ -377,8 +378,10 @@ trait Actor extends Logging with TransactionManagement {
    */
   protected[this] def spawn[T <: Actor](actorClass: Class[T]): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
-    actor.dispatcher = dispatcher
-    actor.mailbox = mailbox
+    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
+      actor.dispatcher = dispatcher
+      actor.mailbox = mailbox
+    }
     actor.start
     actor
   }
@@ -388,11 +391,13 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnRemote[T <: Actor](actorClass: Class[T]): T = {
+  protected[this] def spawnRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
-    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
-    actor.dispatcher = dispatcher
-    actor.mailbox = mailbox
+    actor.makeRemote(hostname, port)
+    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
+      actor.dispatcher = dispatcher
+      actor.mailbox = mailbox
+    }
     actor.start
     actor
   }
@@ -413,9 +418,9 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLinkRemote[T <: Actor](actorClass: Class[T]): T = {
+  protected[this] def spawnLinkRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
     val actor = spawn[T](actorClass)
-    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
+    actor.makeRemote(hostname, port)
     link(actor)
     actor
   }

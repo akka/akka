@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.stm
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import state.Transactional
 import util.Logging
+import actor.Actor
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.stms.alpha.AlphaStm
@@ -74,6 +75,9 @@ object Transaction {
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: MultiverseTransaction = _
 
+//  private[this] var initMessage: Option[AnyRef] = None
+//  private[this] var initReceiver: Option[Actor] = None
+                            
   private[this] var participants: List[String] = Nil
   private[this] var precommitted: List[String] = Nil
 
@@ -84,7 +88,10 @@ object Transaction {
   def isTopLevel = depth.compareAndSet(0, 0)
   
   def begin(participant: String) = synchronized {
+//    def begin(participant: String, message, receiver) = synchronized {
     ensureIsActiveOrNew
+//    initMessage = Some(message)
+//    initReceiver = Some(receiver)
     transaction = Multiverse.STM.startUpdateTransaction("akka")
     log.debug("Creating a new transaction with id [%s]", id)
 

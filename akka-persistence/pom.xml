@@ -37,18 +37,18 @@
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>cassandra</artifactId>
-      <version>0.4.0-trunk</version>
+      <version>0.4.0</version>
     </dependency>
     <dependency>
       <groupId>com.facebook</groupId>
       <artifactId>thrift</artifactId>
       <version>1.0</version>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>com.facebook</groupId>
       <artifactId>fb303</artifactId>
       <version>1.0</version>
-    </dependency>
+    </dependency-->
     <dependency>
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
