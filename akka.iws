@@ -2,18 +2,13 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager" verified="true">
     <list default="true" readonly="true" id="188c966f-a83c-4d3a-9128-54d5a2947a12" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/config/akka-reference.conf" afterPath="$PROJECT_DIR$/config/akka-reference.conf" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-kernel/src/main/scala/Kernel.scala" afterPath="$PROJECT_DIR$/akka-kernel/src/main/scala/Kernel.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/config/storage-conf.xml" afterPath="$PROJECT_DIR$/config/storage-conf.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/pom.xml" afterPath="$PROJECT_DIR$/akka-persistence/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/embedded-repo/com/facebook/thrift/1.0/thrift-1.0.jar" afterPath="$PROJECT_DIR$/embedded-repo/com/facebook/thrift/1.0/thrift-1.0.jar" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/embedded-repo/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/embedded-repo/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk.pom" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/config/Ref.java" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraSession.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraSession.scala" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-persistence/src/main/scala/DataFlowVariable.scala" afterPath="" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
@@ -105,64 +100,73 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="Transaction.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
+      <file leaf-file-name="CassandraSession.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraSession.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="90" column="2" selection-start="2618" selection-end="2618" vertical-scroll-proportion="0.0">
+            <state line="14" column="0" selection-start="268" selection-end="268" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
+      <file leaf-file-name="storage-conf.xml" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/config/storage-conf.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="399" column="55" selection-start="14532" selection-end="14532" vertical-scroll-proportion="0.0">
+            <state line="320" column="0" selection-start="14147" selection-end="14147" vertical-scroll-proportion="0.9945726">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TransactionalState.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala">
+      <file leaf-file-name="AllTest.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="82" column="6" selection-start="1883" selection-end="1883" vertical-scroll-proportion="0.0">
+            <state line="11" column="4" selection-start="395" selection-end="395" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="InMemNestedStateTest.java" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java">
+      <file leaf-file-name="Predef.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/Predef.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="65" column="14" selection-start="3397" selection-end="3397" vertical-scroll-proportion="0.33333334">
+            <state line="67" column="42" selection-start="2802" selection-end="2802" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Ref.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java">
+      <file leaf-file-name="Map.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/collection/immutable/Map.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="0" column="1" selection-start="1" selection-end="1" vertical-scroll-proportion="0.0">
+            <state line="10" column="71" selection-start="580" selection-end="580" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Kernel.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-kernel/src/main/scala/Kernel.scala">
+      <file leaf-file-name="CassandraStorage.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="1" selection-start="989" selection-end="989" vertical-scroll-proportion="0.0">
+            <state line="156" column="13" selection-start="5640" selection-end="5640" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="SimpleService.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-samples-lift/src/main/scala/akka/SimpleService.scala">
+      <file leaf-file-name="ColumnOrSuperColumn.class" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0.jar!/org/apache/cassandra/service/ColumnOrSuperColumn.class">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="18" column="6" selection-start="597" selection-end="597" vertical-scroll-proportion="0.0">
+            <state line="5" column="13" selection-start="166" selection-end="166" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Column.class" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0.jar!/org/apache/cassandra/service/Column.class">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="5" column="13" selection-start="166" selection-end="166" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -201,10 +205,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
         <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" />
         <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" />
         <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" />
@@ -217,6 +217,10 @@
         <option value="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/config/Ref.java" />
         <option value="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java" />
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" />
+        <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" />
+        <option value="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraSession.scala" />
+        <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala" />
+        <option value="$PROJECT_DIR$/config/storage-conf.xml" />
       </list>
     </option>
   </component>
@@ -272,9 +276,38 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Favorites" />
       <pane id="ProjectPane">
         <subPane />
+      </pane>
+      <pane id="PackagesPane">
+        <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka-persistence" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewModuleNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="akka-fun-test-java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewModuleNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
       </pane>
       <pane id="Scope">
         <subPane subId="Problems">
@@ -302,52 +335,23 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="PackagesPane">
-        <subPane>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="akka" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="akka" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="akka-fun-test-java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewModuleNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="akka" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="akka-actors" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PackageViewModuleNode" />
-            </PATH_ELEMENT>
-          </PATH>
-        </subPane>
-      </pane>
+      <pane id="Favorites" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="project.structure.proportion" value="0.15" />
     <property name="GoToClass.includeJavaFiles" value="false" />
+    <property name="project.structure.proportion" value="0.15" />
     <property name="MemberChooser.copyJavadoc" value="false" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatOrder2" value="2" />
-    <property name="FileHistory.git4idea.history.GitHistoryProvider_treeOrder2" value="2" />
     <property name="options.splitter.main.proportions" value="0.3" />
+    <property name="FileHistory.git4idea.history.GitHistoryProvider_treeOrder2" value="2" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeWidth3" value="924" />
     <property name="GoToFile.includeJavaFiles" value="false" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatWidth0" value="113" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeWidth2" value="130" />
-    <property name="options.splitter.details.proportions" value="0.2" />
-    <property name="GoToClass.includeLibraries" value="false" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatWidth2" value="133" />
+    <property name="GoToClass.includeLibraries" value="false" />
+    <property name="options.splitter.details.proportions" value="0.2" />
     <property name="MemberChooser.showClasses" value="true" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatOrder0" value="0" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatOrder3" value="3" />
@@ -359,13 +363,13 @@
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeOrder0" value="0" />
     <property name="RunManagerConfig.showSettingsBeforeRunnig" value="false" />
     <property name="project.structure.last.edited" value="Facets" />
-    <property name="options.searchVisible" value="true" />
     <property name="MemberChooser.sorted" value="false" />
+    <property name="options.searchVisible" value="true" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeOrder1" value="1" />
     <property name="recentsLimit" value="5" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeWidth1" value="162" />
-    <property name="dynamic.classpath" value="false" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatWidth3" value="928" />
+    <property name="dynamic.classpath" value="false" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatWidth1" value="166" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_flatOrder1" value="1" />
   </component>
@@ -422,6 +426,14 @@
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
+    <configuration default="true" type="FlexUnitRunConfigurationType" factoryName="FlexUnit" air_descriptor_path="" air_program_params="" air_publisher_id="" air_root_dir_path="" class_name="" html_or_swf_file_path="" main_class_name="" method_name="" module_name="" output_log_level="" package_name="" port="0" run_mode="HtmlOrSwfFile" scope="Class" socket_policy_port="0" url_to_launch="http://">
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
+        <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
     <configuration default="true" type="TestNG" factoryName="TestNG" enabled="false" merge="false" runner="emma">
       <module name="" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
@@ -446,14 +458,6 @@
       <envs />
       <properties />
       <listeners />
-      <method>
-        <option name="AntTarget" enabled="false" />
-        <option name="BuildArtifacts" enabled="false" />
-        <option name="Make" enabled="true" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
-      </method>
-    </configuration>
-    <configuration default="true" type="FlexUnitRunConfigurationType" factoryName="FlexUnit" air_descriptor_path="" air_program_params="" air_publisher_id="" air_root_dir_path="" class_name="" html_or_swf_file_path="" main_class_name="" method_name="" module_name="" output_log_level="" package_name="" port="0" run_mode="HtmlOrSwfFile" scope="Class" socket_policy_port="0" url_to_launch="http://">
       <method>
         <option name="AntTarget" enabled="false" />
         <option name="BuildArtifacts" enabled="false" />
@@ -660,20 +664,21 @@
     </option>
   </component>
   <component name="ToolWindowManager">
-    <frame x="5" y="22" width="1916" height="1178" extended-state="6" />
-    <editor active="false" />
+    <frame x="4" y="22" width="1436" height="878" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25884244" sideWeight="0.57749075" order="0" side_tool="false" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.29076478" sideWeight="0.6651291" order="0" side_tool="false" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32841328" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.41605166" sideWeight="0.5" order="2" side_tool="false" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.41605166" sideWeight="0.5" order="2" side_tool="false" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.48214287" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" />
       <window_info id="IDEtalk Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
@@ -681,7 +686,6 @@
       <window_info id="Web Preview" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32780612" sideWeight="0.5" order="1" side_tool="false" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32908162" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" />
@@ -719,44 +723,19 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java">
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="24" column="41" selection-start="849" selection-end="849" vertical-scroll-proportion="0.0" />
+        <state line="82" column="6" selection-start="1883" selection-end="1883" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStatefulNested.java">
+    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="13" column="10" selection-start="481" selection-end="481" vertical-scroll-proportion="0.0" />
+        <state line="65" column="14" selection-start="3397" selection-end="3397" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala">
+    <entry file="file://$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="98" column="43" selection-start="3734" selection-end="3734" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="81" column="14" selection-start="3613" selection-end="3613" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="jar:///System/Library/Frameworks/JavaVM.framework/Versions/1.6.0/Home/../Classes/classes.jar!/java/util/concurrent/atomic/AtomicInteger.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="23" column="25" selection-start="830" selection-end="830" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="20" column="38" selection-start="660" selection-end="660" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemoteInMemoryStateTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="103" column="18" selection-start="5230" selection-end="5230" vertical-scroll-proportion="0.17503393" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="90" column="2" selection-start="2618" selection-end="2618" vertical-scroll-proportion="0.0" />
+        <state line="0" column="1" selection-start="1" selection-end="1" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-kernel/src/main/scala/Kernel.scala">
@@ -779,30 +758,65 @@
         <state line="12" column="2" selection-start="386" selection-end="386" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0.jar!/org/apache/cassandra/service/Cassandra.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="399" column="55" selection-start="14532" selection-end="14532" vertical-scroll-proportion="0.0">
+        <state line="2124" column="33" selection-start="116949" selection-end="116949" vertical-scroll-proportion="0.33333334">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0.jar!/org/apache/cassandra/service/ColumnOrSuperColumn.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="1" selection-start="1" selection-end="1" vertical-scroll-proportion="0.0">
+        <state line="5" column="13" selection-start="166" selection-end="166" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0.jar!/org/apache/cassandra/service/Column.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="82" column="6" selection-start="1883" selection-end="1883" vertical-scroll-proportion="0.0">
+        <state line="5" column="13" selection-start="166" selection-end="166" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/collection/immutable/Map.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="65" column="14" selection-start="3397" selection-end="3397" vertical-scroll-proportion="0.33333334">
+        <state line="10" column="71" selection-start="580" selection-end="580" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.7.5/scala-library-2.7.5-sources.jar!/scala/Predef.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="67" column="42" selection-start="2802" selection-end="2802" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="156" column="13" selection-start="5640" selection-end="5640" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraSession.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="14" column="0" selection-start="268" selection-end="268" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/AllTest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11" column="4" selection-start="395" selection-end="395" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config/storage-conf.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="320" column="0" selection-start="14147" selection-end="14147" vertical-scroll-proportion="0.9945726">
           <folding />
         </state>
       </provider>

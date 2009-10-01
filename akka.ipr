@@ -1264,17 +1264,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-SNAPSHOT/lift-actor-1.1-SNAPSHOT-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: net.liftweb:lift-base:1.1-SNAPSHOT">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-base/1.1-SNAPSHOT/lift-base-1.1-SNAPSHOT.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-base/1.1-SNAPSHOT/lift-base-1.1-SNAPSHOT-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-base/1.1-SNAPSHOT/lift-base-1.1-SNAPSHOT-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.mortbay.jetty:jetty:6.1.21">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/6.1.21/jetty-6.1.21.jar!/" />
@@ -1284,6 +1273,39 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty/6.1.21/jetty-6.1.21-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.apache.cassandra:cassandra:0.4.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0/cassandra-0.4.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.mortbay.jetty:jetty-util:6.1.21">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/6.1.21/jetty-util-6.1.21.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/6.1.21/jetty-util-6.1.21-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/jetty-util/6.1.21/jetty-util-6.1.21-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: org.mortbay.jetty:servlet-api:2.5-20081211">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/2.5-20081211/servlet-api-2.5-20081211.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/2.5-20081211/servlet-api-2.5-20081211-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/org/mortbay/jetty/servlet-api/2.5-20081211/servlet-api-2.5-20081211-sources.jar!/" />
       </SOURCES>
     </library>
   </component>
