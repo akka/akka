@@ -8,10 +8,14 @@ import java.util.concurrent.locks.ReentrantLock
 import org.junit.{Test, Before}
 import org.junit.Assert._
 import junit.framework.TestCase
+import se.scalablesolutions.akka.actor.Actor
 
 class ThreadBasedDispatcherTest extends TestCase {
   private var threadingIssueDetected: AtomicBoolean = null
-
+  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  
   class TestMessageHandle(handleLatch: CountDownLatch) extends MessageInvoker {
     val guardLock: Lock = new ReentrantLock
 
@@ -52,7 +56,7 @@ class ThreadBasedDispatcherTest extends TestCase {
     val dispatcher = new ThreadBasedDispatcher("name", new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation("id", new Object, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
@@ -73,7 +77,7 @@ class ThreadBasedDispatcherTest extends TestCase {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation("id", new Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Integer(i), None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)

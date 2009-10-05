@@ -5,8 +5,12 @@
 package se.scalablesolutions.akka.reactor
 
 import java.util.List
-import stm.Transaction
-import util.HashCode
+
+import se.scalablesolutions.akka.util.HashCode
+import se.scalablesolutions.akka.stm.Transaction
+import se.scalablesolutions.akka.actor.Actor
+
+import java.util.concurrent.atomic.AtomicInteger
 
 trait MessageQueue {
   def append(handle: MessageInvocation)
@@ -32,23 +36,35 @@ trait MessageDemultiplexer {
   def wakeUp
 }
 
-class MessageInvocation(val sender: AnyRef,
+class MessageInvocation(val receiver: Actor,
                         val message: AnyRef,
                         val future: Option[CompletableFutureResult],
                         val tx: Option[Transaction]) {
+  if (receiver == null) throw new IllegalArgumentException("receiver is null")
+  if (message == null) throw new IllegalArgumentException("message is null")
 
-  override def hashCode(): Int = {
+  private [akka] val nrOfDeliveryAttempts = new AtomicInteger(0)
+  
+  def send = synchronized {
+    receiver.mailbox.append(this)
+    nrOfDeliveryAttempts.incrementAndGet
+  }
+  
+  override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
-    result = HashCode.hash(result, sender)
+    result = HashCode.hash(result, receiver)
     result = HashCode.hash(result, message)
     result
   }
 
-  override def equals(that: Any): Boolean =
+  override def equals(that: Any): Boolean = synchronized {
     that != null &&
     that.isInstanceOf[MessageInvocation] &&
-    that.asInstanceOf[MessageInvocation].sender == sender &&
+    that.asInstanceOf[MessageInvocation].receiver == receiver &&
     that.asInstanceOf[MessageInvocation].message == message
-
-  override def toString(): String = "MessageInvocation[message = " + message + ", sender = " + sender + ", future = " + future + ", tx = " + tx + "]"
+  }
+  
+  override def toString(): String = synchronized { 
+    "MessageInvocation[message = " + message + ", receiver = " + receiver + ", future = " + future + ", tx = " + tx + "]"
+  }
 }

@@ -201,7 +201,7 @@ class InMemoryActorSpec extends TestCase {
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
     assertEquals("new state", (stateful !! GetRefState).get)
   }
-
+ 
   @Test
   def testOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor
@@ -226,6 +226,7 @@ class InMemoryActorSpec extends TestCase {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
+    println("---------- BACK")
     assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
   }
 }

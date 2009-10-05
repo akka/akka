@@ -45,7 +45,14 @@ object TransactionalState {
 @serializable
 trait Transactional {
   // FIXME: won't work across the cluster
-  val uuid = Uuid.newUuid.toString
+  var uuid = Uuid.newUuid.toString
+}
+
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait Committable {
+  def commit: Unit
 }
 
 /**
@@ -71,17 +78,15 @@ class TransactionalRef[T] extends Transactional {
   def swap(elem: T) = ref.set(elem)
 
   def get: Option[T] = {
-//    if (ref.isNull) None
-  //  else
-  Some(ref.get)
+    if (ref.isNull) None
+    else Some(ref.get)
   }
 
   def getOrWait: T = ref.getOrAwait
 
   def getOrElse(default: => T): T = {
-//    if (ref.isNull) default
-    //else
-  ref.get
+    if (ref.isNull) default
+    else ref.get
   }
 
   def isDefined: Boolean = !ref.isNull
