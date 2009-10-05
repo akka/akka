@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock
 import org.junit.{Test, Before}
 import org.junit.Assert._
 import junit.framework.TestCase
+import se.scalablesolutions.akka.actor.Actor
 
 class EventBasedSingleThreadDispatcherTest extends TestCase {
   private var threadingIssueDetected: AtomicBoolean = null
@@ -51,15 +52,18 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
     internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder
   }
 
+  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(100)
-    val key = "key"
     val dispatcher = new EventBasedSingleThreadDispatcher("name")
-    dispatcher.registerHandler(key, new TestMessageHandle(handleLatch))
+    dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation(key, new Object, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
@@ -67,8 +71,6 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
 
   private def internalTestMessagesDispatchedToDifferentHandlersAreExecutedSequentially: Unit = {
     val handleLatch = new CountDownLatch(2)
-    val key1 = "key1"
-    val key2 = "key2"
     val dispatcher = new EventBasedSingleThreadDispatcher("name")
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
@@ -81,8 +83,6 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
 
   private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
     val handleLatch = new CountDownLatch(200)
-    val key1 = "key1"
-    val key2 = "key2"
     val dispatcher = new EventBasedSingleThreadDispatcher("name")
     dispatcher.registerHandler(key1, new MessageInvoker {
       var currentValue = -1;

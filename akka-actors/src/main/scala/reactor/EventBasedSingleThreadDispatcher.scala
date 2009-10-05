@@ -26,7 +26,7 @@ class EventBasedSingleThreadDispatcher(name: String) extends MessageDispatcherBa
           val iter = selectedInvocations.iterator
           while (iter.hasNext) {
             val invocation = iter.next
-            val invoker = messageHandlers.get(invocation.sender)
+            val invoker = messageHandlers.get(invocation.receiver)
             if (invoker != null) invoker.invoke(invocation)
             iter.remove
           }

@@ -5,11 +5,14 @@
 package se.scalablesolutions.akka.state
 
 import stm.TransactionManagement
+import stm.TransactionManagement.currentTransaction
 import akka.collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+
+class NoTransactionInScopeException extends RuntimeException
 
 sealed abstract class PersistentStateConfig
 abstract class PersistentStorageConfig  extends PersistentStateConfig
@@ -62,7 +65,7 @@ object PersistentState {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Transactional {
+trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Transactional with Committable {
   protected val newAndUpdatedEntries = TransactionalState.newMap[AnyRef, AnyRef]
   protected val removedEntries = TransactionalState.newMap[AnyRef, AnyRef]
   protected val shouldClearOnCommit = TransactionalRef[Boolean]()
@@ -70,10 +73,10 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   // to be concretized in subclasses
   val storage: MapStorage
 
-  private[akka] def commit = {
+  def commit = {
     storage.removeMapStorageFor(uuid, removedEntries.toList)
     storage.insertMapStorageEntriesFor(uuid, newAndUpdatedEntries.toList)
-    if (shouldClearOnCommit.isDefined & shouldClearOnCommit.get.get) storage.removeMapStorageFor(uuid)
+    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get) storage.removeMapStorageFor(uuid)
     newAndUpdatedEntries.clear
     removedEntries.clear
   }
@@ -82,28 +85,39 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
 
   def +=(key: AnyRef, value: AnyRef) = put(key, value)
 
-  override def put(key: AnyRef, value: AnyRef): Option[AnyRef] = newAndUpdatedEntries.put(key, value)
+  override def put(key: AnyRef, value: AnyRef): Option[AnyRef] = { 
+    register
+    newAndUpdatedEntries.put(key, value)
+  }
  
-  override def update(key: AnyRef, value: AnyRef) = newAndUpdatedEntries.update(key, value)
- 
-  def remove(key: AnyRef) = removedEntries.remove(key)
+  override def update(key: AnyRef, value: AnyRef) = { 
+    register
+    newAndUpdatedEntries.update(key, value)
+  }
+  
+  def remove(key: AnyRef) = { 
+    register
+    removedEntries.remove(key)
+  }
   
   def slice(start: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]] = slice(start, None, count)
 
   def slice(start: Option[AnyRef], finish: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]] = try {
-      storage.getMapStorageRangeFor(uuid, start, finish, count)
-    } catch { case e: Exception => Nil }
+    storage.getMapStorageRangeFor(uuid, start, finish, count)
+  } catch { case e: Exception => Nil }
 
-  override def clear = shouldClearOnCommit.swap(true)
-
+  override def clear = { 
+    register
+    shouldClearOnCommit.swap(true)
+  }
+  
   override def contains(key: AnyRef): Boolean = try {
-      newAndUpdatedEntries.contains(key) || 
-      storage.getMapStorageEntryFor(uuid, key).isDefined
-    } catch { case e: Exception => false }
+    newAndUpdatedEntries.contains(key) || storage.getMapStorageEntryFor(uuid, key).isDefined
+  } catch { case e: Exception => false }
 
   override def size: Int = try {
-      storage.getMapStorageSizeFor(uuid) + newAndUpdatedEntries.size
-    } catch { case e: Exception => 0 }
+    storage.getMapStorageSizeFor(uuid) + newAndUpdatedEntries.size
+  } catch { case e: Exception => 0 }
 
   override def get(key: AnyRef): Option[AnyRef] = {
     if (newAndUpdatedEntries.contains(key)) newAndUpdatedEntries.get(key)
@@ -128,6 +142,11 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
       }
       override def hasNext: Boolean = synchronized { !elements.isEmpty }
     }
+  }
+
+  private def register = {
+    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
+    currentTransaction.get.get.register(uuid, this)
   }
 }
 
@@ -154,7 +173,7 @@ class MongoPersistentMap extends PersistentMap {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
+trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional with Committable {
   protected val newElems = TransactionalState.newVector[AnyRef]
   protected val updatedElems = TransactionalState.newMap[Int, AnyRef]
   protected val removedElems = TransactionalState.newVector[AnyRef]
@@ -162,7 +181,7 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
 
   val storage: VectorStorage
 
-  private[akka] def commit = {
+  def commit = {
     // FIXME: should use batch function once the bug is resolved
     for (element <- newElems) storage.insertVectorStorageEntryFor(uuid, element)
     for (entry <- updatedElems) storage.updateVectorStorageEntryFor(uuid, entry._1, entry._2)
@@ -170,9 +189,12 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
     updatedElems.clear
   }
 
-  def +(elem: AnyRef) = newElems + elem
-
-  def add(elem: AnyRef) = newElems + elem
+  def +(elem: AnyRef) = add(elem)
+  
+  def add(elem: AnyRef) = { 
+    register
+    newElems + elem
+  }
  
   def apply(index: Int): AnyRef = get(index)
 
@@ -193,9 +215,15 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
    * Removes the <i>tail</i> element of this vector.
    */
   // FIXME: implement persistent vector pop 
-  def pop: AnyRef = throw new UnsupportedOperationException("need to implement persistent vector pop")
+  def pop: AnyRef = { 
+    register
+    throw new UnsupportedOperationException("need to implement persistent vector pop")
+  }
 
-  def update(index: Int, newElem: AnyRef) = storage.updateVectorStorageEntryFor(uuid, index, newElem)
+  def update(index: Int, newElem: AnyRef) = {
+    register
+    storage.updateVectorStorageEntryFor(uuid, index, newElem)
+  }
 
   override def first: AnyRef = get(0)
 
@@ -209,6 +237,11 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional {
   }
 
   def length: Int = storage.getVectorStorageSizeFor(uuid) + newElems.length
+
+  private def register = {
+    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
+    currentTransaction.get.get.register(uuid, this)
+  }
 }
 
 /**
@@ -234,17 +267,20 @@ class MongoPersistentVector extends PersistentVector {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentRef extends Transactional {
+trait PersistentRef extends Transactional with Committable {
   protected val ref = new TransactionalRef[AnyRef]
   
   val storage: RefStorage
 
-  private[akka] def commit = if (ref.isDefined) {
-    storage.insertRefStorageFor(uuid, ref.get)
+  def commit = if (ref.isDefined) {
+    storage.insertRefStorageFor(uuid, ref.get.get)
     ref.swap(null) 
   }
 
-  def swap(elem: AnyRef) = ref.swap(elem)
+  def swap(elem: AnyRef) = { 
+    register
+    ref.swap(elem)
+  }
   
   def get: Option[AnyRef] = if (ref.isDefined) ref.get else storage.getRefStorageFor(uuid)
 
@@ -252,8 +288,13 @@ trait PersistentRef extends Transactional {
 
   def getOrElse(default: => AnyRef): AnyRef = {
     val current = get
-    if (current.isDefined) current
+    if (current.isDefined) current.get
     else default
+  }
+
+  private def register = {
+    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
+    currentTransaction.get.get.register(uuid, this)
   }
 }
 

@@ -4,21 +4,22 @@
 
 package se.scalablesolutions.akka.actor
 
-import com.google.protobuf.ByteString
-
 import java.net.InetSocketAddress
 import java.util.HashSet
 
-import reactor._
-import config.ScalaConfig._
-import stm.TransactionManagement
-import nio.protobuf.RemoteProtocol.RemoteRequest
-import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
-import serialization.{Serializer, Serializable, SerializationProtocol}
-import util.Helpers.ReadWriteLock
-import util.Logging
+import se.scalablesolutions.akka.Config._
+import se.scalablesolutions.akka.reactor._
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.stm.TransactionManagement._
+import se.scalablesolutions.akka.stm.TransactionManagement
+import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
+import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
+import se.scalablesolutions.akka.util.Logging
 
 import org.multiverse.utils.TransactionThreadLocal._
+import org.multiverse.api.exceptions.StmException
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -46,7 +47,6 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor {
-  import Config._
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 }
@@ -68,7 +68,7 @@ trait Actor extends Logging with TransactionManagement {
   @volatile protected[this] var remoteAddress: Option[InetSocketAddress] = None
   @volatile protected[akka] var supervisor: Option[Actor] = None
  
-  protected[Actor] var mailbox: MessageQueue = _
+  protected[akka] var mailbox: MessageQueue = _
   protected[this] var senderFuture: Option[CompletableFutureResult] = None
   protected[this] val linkedActors = new HashSet[Actor]
   protected[actor] var lifeCycleConfig: Option[LifeCycle] = None
@@ -443,15 +443,14 @@ trait Actor extends Logging with TransactionManagement {
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(remoteAddress.get).send(requestBuilder.build)
     } else {
-      val handle = new MessageInvocation(this, message, None, TransactionManagement.threadBoundTx.get)
-      mailbox.append(handle)
-      latestMessage = Some(handle)
+      val handle = new MessageInvocation(this, message, None, currentTransaction.get)
+      handle.send
     }
   }
 
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequest.newBuilder
+      val requestBuilder = RemoteRequest.newBuilder                                                                                                
         .setId(RemoteRequestIdFactory.nextId)
         .setTarget(this.getClass.getName)
         .setTimeout(timeout)
@@ -466,9 +465,8 @@ trait Actor extends Logging with TransactionManagement {
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = new DefaultCompletableFutureResult(timeout)
-      val handle = new MessageInvocation(this, message, Some(future), TransactionManagement.threadBoundTx.get)
-      mailbox.append(handle)
-      latestMessage = Some(handle)
+      val handle = new MessageInvocation(this, message, Some(future), currentTransaction.get)
+      handle.send
       future
     }
   }
@@ -483,7 +481,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
     if (messageHandle.tx.isDefined) {
-      TransactionManagement.threadBoundTx.set(messageHandle.tx)
+      currentTransaction.set(messageHandle.tx)
       setThreadLocalTransaction(messageHandle.tx.get.transaction)
     }
     val message = messageHandle.message //serializeMessage(messageHandle.message)
@@ -499,14 +497,14 @@ trait Actor extends Logging with TransactionManagement {
         if (future.isDefined) future.get.completeWithException(this, e)
         else e.printStackTrace
     } finally {
-      TransactionManagement.threadBoundTx.set(None)
+      currentTransaction.set(None)
       setThreadLocalTransaction(null)
     }
   }
 
   private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
     if (messageHandle.tx.isDefined) {
-      TransactionManagement.threadBoundTx.set(messageHandle.tx)
+      currentTransaction.set(messageHandle.tx)
       setThreadLocalTransaction(messageHandle.tx.get.transaction)
     }
 
@@ -514,35 +512,59 @@ trait Actor extends Logging with TransactionManagement {
     val future = messageHandle.future
 
     try {
-      if (!tryToCommitTransaction && isTransactionTopLevel) handleCollision
+      tryToCommitTransactions
 
-      if (TransactionManagement.threadBoundTx.get.isDefined && !TransactionManagement.threadBoundTx.get.get.isActive) {
-        TransactionManagement.threadBoundTx.set(None) // need to clear threadBoundTx before call to supervisor
+      if (currentTransaction.get.isDefined && !currentTransaction.get.get.isActive) {
+        currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
         setThreadLocalTransaction(null)
       }
 
       if (isInExistingTransaction) joinExistingTransaction
-      else if (isTransactional) startNewTransaction
+      else if (isTransactional) startNewTransaction(messageHandle)
 
       incrementTransaction
       senderFuture = future
-      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
+        if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
+        else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
+      decrementTransaction
     } catch {
-      case e =>
-        rollback(activeTx)
-        TransactionManagement.threadBoundTx.set(None) // need to clear threadBoundTx before call to supervisor 
+      case e: StmException =>
+        e.printStackTrace
+        decrementTransaction
+
+        val tx = currentTransaction.get
+        rollback(tx)
+
+        if (!(tx.isDefined && tx.get.isTopLevel)) {
+          val done = tx.get.retry
+          if (done) {
+            if (future.isDefined) future.get.completeWithException(this, e)
+            else e.printStackTrace
+          }
+        }
+        currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
         setThreadLocalTransaction(null)
-        // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-        if (supervisor.isDefined) supervisor.get ! Exit(this, e)
+
+      case e =>
+        e.printStackTrace
+        decrementTransaction
+
+        val tx = currentTransaction.get
+        rollback(tx)
+
         if (future.isDefined) future.get.completeWithException(this, e)
         else e.printStackTrace
+
+        currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
+        setThreadLocalTransaction(null)
+
+        // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
+        if (supervisor.isDefined) supervisor.get ! Exit(this, e)
+
     } finally {
-      decrementTransaction
-      if (isTransactionAborted) removeTransactionIfTopLevel
-      else tryToPrecommitTransaction
-      rescheduleClashedMessages
-      TransactionManagement.threadBoundTx.set(None)
+      if (currentTransaction.get.isDefined && currentTransaction.get.get.isAborted) removeTransactionIfTopLevel(currentTransaction.get.get)
+      else tryToPrecommitTransactions
+      currentTransaction.set(None)
       setThreadLocalTransaction(null)
     }
   }
@@ -550,14 +572,6 @@ trait Actor extends Logging with TransactionManagement {
   private def getResultOrThrowException[T](future: FutureResult): Option[T] =
     if (future.exception.isDefined) throw future.exception.get._2
     else future.result.asInstanceOf[Option[T]]
-
-  private def rescheduleClashedMessages = if (messageToReschedule.isDefined) {
-    val handle = messageToReschedule.get
-    val newTx = startNewTransaction
-    val clone = new MessageInvocation(handle.sender, handle.message, handle.future, newTx)
-    log.debug("Rescheduling message %s", clone)
-    mailbox.append(clone) // FIXME append or prepend rescheduled messages?
-  }
 
   private def base: PartialFunction[Any, Unit] = lifeCycle orElse (hotswap getOrElse receive)
 
@@ -588,7 +602,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private[Actor] def restart(reason: AnyRef) = synchronized {
     lifeCycleConfig match {
-      case None => throw new IllegalStateException("Server [" + id + "] does not have a life-cycle defined.")
+      case None => throw new IllegalStateException("Actor [" + id + "] does not have a life-cycle defined.")
 
       // FIXME implement support for shutdown time
       case Some(LifeCycle(scope, shutdownTime, _)) => {
@@ -605,10 +619,10 @@ trait Actor extends Logging with TransactionManagement {
 //              log.debug("Restarting actor [%s] configured as TEMPORARY (since exited naturally).", id)
 //              scheduleRestart
 //            } else
-            log.info("Server [%s] configured as TEMPORARY will not be restarted (received unnatural exit message).", id)
+            log.info("Actor [%s] configured as TEMPORARY will not be restarted (received unnatural exit message).", id)
 
           case Transient =>
-            log.info("Server [%s] configured as TRANSIENT will not be restarted.", id)
+            log.info("Actor [%s] configured as TRANSIENT will not be restarted.", id)
         }
       }
     }
@@ -644,7 +658,7 @@ trait Actor extends Logging with TransactionManagement {
       !message.isInstanceOf[Tuple6[_,_,_,_,_,_]] &&
       !message.isInstanceOf[Tuple7[_,_,_,_,_,_,_]] &&
       !message.isInstanceOf[Tuple8[_,_,_,_,_,_,_,_]] &&
-      !message.isInstanceOf[Array[_]] &&
+      !message.getClass.isArray &&
       !message.isInstanceOf[List[_]] &&
       !message.isInstanceOf[scala.collection.immutable.Map[_,_]] &&
       !message.isInstanceOf[scala.collection.immutable.Set[_]] &&

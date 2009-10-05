@@ -146,24 +146,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <resources>
-      <resource>
-        <filtering>false</filtering>
-        <directory>../config</directory>
-        <includes>
-          <include>akka.conf</include>
-          <include>akka-reference.conf</include>
-        </includes>
-      </resource>
-      <resource>
-        <filtering>false</filtering>
-        <directory>src/main/resources</directory>
-        <includes>
-          <include>META-INF/*</include>
-        </includes>
-      </resource>
-    </resources>
-  </build>
 </project>

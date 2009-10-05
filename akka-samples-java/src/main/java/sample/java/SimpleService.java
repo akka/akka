@@ -28,8 +28,7 @@ public class SimpleService {
   private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private TransactionalState factory = new TransactionalState();
-  private TransactionalMap storage = factory.newMap();
+  private TransactionalMap storage = TransactionalState.newMap();
 
   @GET
   @Produces({"application/json"})

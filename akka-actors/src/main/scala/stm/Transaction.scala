@@ -4,10 +4,12 @@
 
 package se.scalablesolutions.akka.stm
 
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
-import state.Transactional
-import util.Logging
-import actor.Actor
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicInteger
+
+import se.scalablesolutions.akka.reactor.MessageInvocation
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.state.Committable
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.stms.alpha.AlphaStm
@@ -15,7 +17,9 @@ import org.multiverse.utils.GlobalStmInstance
 import org.multiverse.utils.TransactionThreadLocal._
 import org.multiverse.templates.{OrElseTemplate, AtomicTemplate}
 
-import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.mutable.HashMap
+
+class TransactionRetryException(message: String) extends RuntimeException(message)
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -75,28 +79,29 @@ object Transaction {
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: MultiverseTransaction = _
 
-//  private[this] var initMessage: Option[AnyRef] = None
-//  private[this] var initReceiver: Option[Actor] = None
-                            
+  private[this] var message: Option[MessageInvocation] = None
+
   private[this] var participants: List[String] = Nil
   private[this] var precommitted: List[String] = Nil
 
-  private[this] val depth = new AtomicInteger(0)
+  private[this] val persistentStateMap = new HashMap[String, Committable]
+
+  private[akka] val depth = new AtomicInteger(0)
   
   def increment = depth.incrementAndGet
   def decrement = depth.decrementAndGet
-  def isTopLevel = depth.compareAndSet(0, 0)
-  
-  def begin(participant: String) = synchronized {
-//    def begin(participant: String, message, receiver) = synchronized {
-    ensureIsActiveOrNew
-//    initMessage = Some(message)
-//    initReceiver = Some(receiver)
-    transaction = Multiverse.STM.startUpdateTransaction("akka")
-    log.debug("Creating a new transaction with id [%s]", id)
+  def isTopLevel = depth.get == 0
 
-    if (status == TransactionStatus.New) log.debug("TX BEGIN - Server with UUID [%s] is starting NEW transaction [%s]", participant, toString)
-    else log.debug("Server [%s] is participating in transaction", participant)
+  def register(uuid: String, storage: Committable) = persistentStateMap.put(uuid, storage)
+  
+  def begin(participant: String, msg: MessageInvocation) = synchronized {
+    ensureIsActiveOrNew
+    message = Some(msg)
+    transaction = Multiverse.STM.startUpdateTransaction("akka")
+    log.debug("TX BEGIN - Creating a new transaction with id [%s]", id)
+
+    if (status == TransactionStatus.New) log.debug("TX BEGIN - Actor with UUID [%s] is starting NEW transaction [%s]", participant, toString)
+    else log.debug("Actor [%s] is participating in transaction", participant)
     participants ::= participant
     status = TransactionStatus.Active
   }
@@ -109,8 +114,9 @@ object Transaction {
   }
 
   def commit(participant: String): Boolean = synchronized {
+    log.debug("TX COMMIT - Trying to commit transaction [%s] for server with UUID [%s]", toString, participant)
+    setThreadLocalTransaction(transaction)
     if (status == TransactionStatus.Active) {
-      log.debug("TX COMMIT - Committing transaction [%s] for server with UUID [%s]", toString, participant)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
           for (part <- participants) yield {
@@ -119,38 +125,55 @@ object Transaction {
           }}.exists(_ == true)
         } else false
       if (haveAllPreCommitted && transaction != null) {
+        log.debug("TX COMMIT - Committing transaction [%s] for server with UUID [%s]", toString, participant)
         transaction.commit
-        transaction.reset
-        status = TransactionStatus.Completed
         reset
+        status = TransactionStatus.Completed
+        Transaction.Atomic {
+          persistentStateMap.values.foreach(_.commit)          
+        }
         true
       } else false
     } else {
-      reset
       true
     }
   }
 
   def rollback(participant: String) = synchronized {
     ensureIsActiveOrAborted
-    log.debug("TX ROLLBACK - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
+    log.debug("TX ROLLBACK - Actor with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
     status = TransactionStatus.Aborted
     transaction.abort
-    transaction.reset
     reset
   }
 
   def rollbackForRescheduling(participant: String) = synchronized {
     ensureIsActiveOrAborted
-    log.debug("TX ROLLBACK for recheduling - Server with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
+    log.debug("TX ROLLBACK for recheduling - Actor with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
     transaction.abort
     reset
   }
 
   def join(participant: String) = synchronized {
     ensureIsActive
-    log.debug("TX JOIN - Server with UUID [%s] is joining transaction [%s]" , participant, toString)
+    log.debug("TX JOIN - Actor with UUID [%s] is joining transaction [%s]" , participant, toString)
     participants ::= participant
+  }
+
+  def retry: Boolean = synchronized {
+    println("----- 2 " + message.isDefined)
+    println("----- 3 " + message.get.nrOfDeliveryAttempts)
+    if (message.isDefined && message.get.nrOfDeliveryAttempts.get < TransactionManagement.MAX_NR_OF_RETRIES) { 
+      log.debug("TX RETRY - Restarting transaction [%s] resending message [%s]", transaction, message.get)
+      message.get.send
+      true
+    } else false
+  }
+
+  private def reset = synchronized {
+    transaction.reset
+    participants = Nil
+    precommitted = Nil
   }
 
   def isNew = synchronized { status == TransactionStatus.New }
@@ -158,11 +181,6 @@ object Transaction {
   def isCompleted = synchronized { status == TransactionStatus.Completed }
   def isAborted = synchronized { status == TransactionStatus.Aborted }
 
-  private def reset = synchronized {
-    participants = Nil
-    precommitted = Nil    
-  }
-  
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new IllegalStateException("Expected ACTIVE transaction - current status [" + status + "]: " + toString)
 

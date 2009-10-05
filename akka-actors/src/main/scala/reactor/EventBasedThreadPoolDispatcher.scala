@@ -97,7 +97,7 @@ class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: B
               threadPoolBuilder.execute(new Runnable() {
                 def run = {
                   invoker.invoke(invocation)
-                  free(invocation.sender)
+                  free(invocation.receiver)
                   messageDemultiplexer.wakeUp
                 }
               })
@@ -119,16 +119,16 @@ class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: B
     while (iterator.hasNext) {
       val invocation = iterator.next
       if (concurrentMode) {
-        val invoker = messageHandlers.get(invocation.sender)
+        val invoker = messageHandlers.get(invocation.receiver)
         if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
         if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
         result.put(invocation, invoker)        
-      } else if (!busyInvokers.contains(invocation.sender)) {
-        val invoker = messageHandlers.get(invocation.sender)
+      } else if (!busyInvokers.contains(invocation.receiver)) {
+        val invoker = messageHandlers.get(invocation.receiver)
         if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
         if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
         result.put(invocation, invoker)
-        busyInvokers.add(invocation.sender)
+        busyInvokers.add(invocation.receiver)
         iterator.remove
       }
     }

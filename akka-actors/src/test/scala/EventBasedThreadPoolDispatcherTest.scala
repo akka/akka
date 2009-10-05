@@ -9,9 +9,13 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.Assert._
 import junit.framework.TestCase
+import se.scalablesolutions.akka.actor.Actor
 
 class EventBasedThreadPoolDispatcherTest extends TestCase {
   private var threadingIssueDetected: AtomicBoolean = null
+  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
 
   @Before
   override def setUp = {
@@ -36,7 +40,6 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(10)
-    val key = "key"
     val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
@@ -44,7 +47,7 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
             .setKeepAliveTimeInMillis(60000)
             .setRejectionPolicy(new CallerRunsPolicy)
             .buildThreadPool
-    dispatcher.registerHandler(key, new MessageInvoker {
+    dispatcher.registerHandler(key1, new MessageInvoker {
       def invoke(message: MessageInvocation) {
         try {
           if (threadingIssueDetected.get) return
@@ -64,7 +67,7 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
     })
     dispatcher.start
     for (i <- 0 until 10) {
-      dispatcher.messageQueue.append(new MessageInvocation(key, new Object, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
@@ -74,8 +77,6 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
     val guardLock1 = new ReentrantLock
     val guardLock2 = new ReentrantLock
     val handlersBarrier = new CyclicBarrier(3)
-    val key1 = "key1"
-    val key2 = "key2"
     val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
@@ -119,8 +120,6 @@ class EventBasedThreadPoolDispatcherTest extends TestCase {
 
   private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
     val handleLatch = new CountDownLatch(200)
-    val key1 = "key1"
-    val key2 = "key2"
     val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)

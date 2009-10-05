@@ -8,11 +8,10 @@ import java.lang.reflect.InvocationTargetException
 import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 
-import actor._
-import util._
-import protobuf.RemoteProtocol
-import protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
-import serialization.{Serializer, Serializable, SerializationProtocol}
+import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.util._
+import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
+import se.scalablesolutions.akka.Config.config
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -31,7 +30,6 @@ class RemoteServer extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteServer extends Logging {
-  import Config.config
   val HOSTNAME = config.getString("akka.remote.hostname", "localhost")
   val PORT = config.getInt("akka.remote.port", 9999)
   val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.connection-timeout", 1000)  
@@ -70,7 +68,7 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) ext
   def getPipeline: ChannelPipeline  = {
     val p = Channels.pipeline()
     p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
-    p.addLast("protobufDecoder", new ProtobufDecoder(RemoteProtocol.RemoteRequest.getDefaultInstance))
+    p.addLast("protobufDecoder", new ProtobufDecoder(RemoteRequest.getDefaultInstance))
     p.addLast("frameEncoder", new LengthFieldPrepender(4))
     p.addLast("protobufEncoder", new ProtobufEncoder)
     p.addLast("handler", new RemoteServerHandler(name, loader))
@@ -234,6 +232,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
     val activeObjectOrNull = activeObjects.get(name)
     if (activeObjectOrNull == null) {
       try {
+        log.info("Creating a new remote active object [%s]", name)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
         val newInstance = activeObjectFactory.newInstance(clazz, timeout).asInstanceOf[AnyRef]
@@ -252,6 +251,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
     val actorOrNull = actors.get(name)
     if (actorOrNull == null) {
       try {
+        log.info("Creating a new remote actor [%s]", name)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
         val newInstance = clazz.newInstance.asInstanceOf[Actor]

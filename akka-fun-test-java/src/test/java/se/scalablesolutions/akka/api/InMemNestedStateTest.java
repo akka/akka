@@ -38,32 +38,37 @@ public class InMemNestedStateTest extends TestCase {
     conf.stop();
   }
 
-  public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+  public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
+    System.out.println("-- BACK --");
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
     assertEquals("new state", nested.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
-  public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
+  public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() throws InterruptedException {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
+    Thread.sleep(100);
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
+    Thread.sleep(100);
     InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
+      Thread.sleep(100);
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
     assertEquals("init", stateful.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
+    Thread.sleep(100);
     assertEquals("init", nested.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")); // check that state is == init state
   }
 
-  public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+  public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
@@ -73,22 +78,26 @@ public class InMemNestedStateTest extends TestCase {
     assertEquals("new state", nested.getVectorState());
   }
 
-  public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
+  public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() throws InterruptedException {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
+    Thread.sleep(100);
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setVectorState("init"); // set init state
+    Thread.sleep(100);
     InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
+      Thread.sleep(100);
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
     assertEquals("init", stateful.getVectorState()); // check that state is == init state
+    Thread.sleep(100);
     assertEquals("init", nested.getVectorState()); // check that state is == init state
   }
 
-  public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
+  public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     stateful.setRefState("init"); // set init state
@@ -98,18 +107,22 @@ public class InMemNestedStateTest extends TestCase {
     assertEquals("new state", nested.getRefState());
   }
 
-  public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
+  public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() throws InterruptedException {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     stateful.setRefState("init"); // set init state
+    Thread.sleep(100);
     nested.setRefState("init"); // set init state
+    Thread.sleep(100);
     InMemFailer failer = conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer); // call failing transactionrequired method
+      Thread.sleep(100);
       fail("should have thrown an exception");
     } catch (RuntimeException e) {
     } // expected
     assertEquals("init", stateful.getRefState()); // check that state is == init state
+    Thread.sleep(100);
     assertEquals("init", nested.getRefState()); // check that state is == init state
   }
 }
