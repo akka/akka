@@ -39,7 +39,7 @@ object Multiverse {
  * }
  * </pre>
  *
- * Example of do-orElse transaction management.
+ * Example of Do-OrElse transaction management.
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
  * do {
@@ -55,6 +55,7 @@ object Transaction {
   val idFactory = new AtomicLong(-1L)
 
   // -- Monad --------------------------
+  // FIXME implement Transaction::map/flatMap/filter/foreach
 
   // -- atomic block --------------------------
   def atomic[T](body: => T) = new AtomicTemplate[T]() {
@@ -62,7 +63,7 @@ object Transaction {
   }.execute()
 
 
-  // -- OrElse --------------------------
+  // -- Do-OrElse --------------------------
   def do[A](orBody: => A) = elseBody(orBody)
   def elseBody[A](orBody: => A) = new {
     def orElse(elseBody: => A) = new OrElseTemplate[A] {
