@@ -480,10 +480,8 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    if (messageHandle.tx.isDefined) {
-      currentTransaction.set(messageHandle.tx)
-      setThreadLocalTransaction(messageHandle.tx.get.transaction)
-    }
+    setTransaction(messageHandle.tx)
+
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
     try {
@@ -497,59 +495,51 @@ trait Actor extends Logging with TransactionManagement {
         if (future.isDefined) future.get.completeWithException(this, e)
         else e.printStackTrace
     } finally {
-      currentTransaction.set(None)
-      setThreadLocalTransaction(null)
+      clearTransaction
     }
   }
 
   private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
-    if (messageHandle.tx.isDefined) {
-      currentTransaction.set(messageHandle.tx)
-      setThreadLocalTransaction(messageHandle.tx.get.transaction)
-    }
-
+    setTransaction(messageHandle.tx)
+    
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
 
     try {
       tryToCommitTransactions
 
-      //if (currentTransaction.get.isDefined && !currentTransaction.get.get.isActive) {
-      //  currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
-      //  setThreadLocalTransaction(null)
-      //}
-
       if (isInExistingTransaction) joinExistingTransaction
       else if (isTransactional) startNewTransaction(messageHandle)
 
       incrementTransaction
       senderFuture = future
-        if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
-        else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
+      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
+      else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
       decrementTransaction
+
     } catch {
       case e: StmException =>
         e.printStackTrace
         decrementTransaction
 
         val tx = currentTransaction.get
-        rollback(tx)
-
-        if (tx.isDefined && tx.get.isTopLevel) {
-          val done = tx.get.retry
-          if (done) {
-            if (future.isDefined) future.get.completeWithException(this, e)
-            else e.printStackTrace
+        if (tx.isDefined) {
+          rollback(tx.get)
+          if (tx.get.isTopLevel) {
+            val done = tx.get.retry
+            if (done) {
+              if (future.isDefined) future.get.completeWithException(this, e)
+              else e.printStackTrace
+            }
           }
         }
-        clearTransaction
       
       case e =>
         e.printStackTrace
         decrementTransaction
 
         val tx = currentTransaction.get
-        rollback(tx)
+        if (tx.isDefined) rollback(tx.get)
 
         if (future.isDefined) future.get.completeWithException(this, e)
         else e.printStackTrace
@@ -560,8 +550,7 @@ trait Actor extends Logging with TransactionManagement {
         if (supervisor.isDefined) supervisor.get ! Exit(this, e)
 
     } finally {
-      if (currentTransaction.get.isDefined && currentTransaction.get.get.isAborted) removeTransactionIfTopLevel(currentTransaction.get.get)
-      else tryToPrecommitTransactions
+      tryToPrecommitTransactions
       clearTransaction
     }
   }

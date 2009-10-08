@@ -76,18 +76,16 @@ trait TransactionManagement extends Logging {
           println("---------- tryToCommitTransactions tx.isTopLevel " + tx.isTopLevel)
           println("---------- tryToCommitTransactions tx.depth.get " + tx.depth.get)
           println("---------- tryToCommitTransactions tx.status_? " + tx.status_?)
-          rollback(Some(tx))
+          rollback(tx)
         // continue, try to commit on next received message
         // FIXME check if TX hase timed out => throw exception
       }
     }
   }
   
-  protected def rollback(tx: Option[Transaction]) = tx match {
-    case None => {} // no tx; nothing to do
-    case Some(tx) =>
-      tx.rollback(uuid)
-      activeTransactions -= tx
+  protected def rollback(tx: Transaction) = {
+    tx.rollback(uuid)
+    activeTransactions -= tx
   }
 
   protected def setTransaction(transaction: Option[Transaction]) = if (transaction.isDefined) {

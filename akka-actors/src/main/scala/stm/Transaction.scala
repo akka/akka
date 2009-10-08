@@ -34,17 +34,17 @@ object Multiverse {
  * Example of atomic transaction management.
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
- * Atomic {
+ * atomic {
  *   .. // do something within a transaction
  * }
  * </pre>
  *
- * Example of Or-Else transaction management.
+ * Example of do-orElse transaction management.
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
- * Or {
+ * do {
  *   .. // try to do something
- * } Else {
+ * } orElse {
  *   .. // if transaction clashes try do do something else to minimize contention
  * }
  * </pre>
@@ -57,20 +57,20 @@ object Transaction {
   // -- Monad --------------------------
 
   // -- atomic block --------------------------
-  def Atomic[T](body: => T) = new AtomicTemplate[T]() {
+  def atomic[T](body: => T) = new AtomicTemplate[T]() {
     def execute(t: MultiverseTransaction): T = body
   }.execute()
 
 
   // -- OrElse --------------------------
-  def Or[A](orBody: => A) = elseBody(orBody)
+  def do[A](orBody: => A) = elseBody(orBody)
   def elseBody[A](orBody: => A) = new {
-    def Else(elseBody: => A) = new OrElseTemplate[A] {
+    def orElse(elseBody: => A) = new OrElseTemplate[A] {
       def run(t: MultiverseTransaction) = orBody
       def orelserun(t: MultiverseTransaction) = elseBody
     }.execute()
   }
-} 
+}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -130,7 +130,7 @@ object Transaction {
         transaction.commit
         reset
         status = TransactionStatus.Completed
-        Transaction.Atomic {
+        Transaction.atomic {
           persistentStateMap.values.foreach(_.commit)          
         }
         setThreadLocalTransaction(null)
