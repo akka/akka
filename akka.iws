@@ -3,40 +3,7 @@
   <component name="ChangeListManager" verified="true">
     <list default="true" readonly="true" id="188c966f-a83c-4d3a-9128-54d5a2947a12" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/config/akka-reference.conf" afterPath="$PROJECT_DIR$/config/akka-reference.conf" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/reactor/Future.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java" afterPath="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/ThreadBasedDispatcherTest.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/ThreadBasedDispatcherTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/ExampleSession.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/config/ActiveObjectGuiceConfigurator.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionalState.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoStorageSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoStorageSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/config/Config.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/config/Config.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/main/scala/PersistentState.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/reactor/ThreadBasedDispatcher.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-kernel/src/main/scala/AkkaServlet.scala" afterPath="$PROJECT_DIR$/akka-kernel/src/main/scala/AkkaServlet.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteClient.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteClient.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/reactor/EventBasedSingleThreadDispatcher.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/main/scala/CassandraStorage.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-util/src/main/scala/Config.scala" afterPath="$PROJECT_DIR$/akka-util/src/main/scala/Config.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedSingleThreadDispatcherTest.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedSingleThreadDispatcherTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/embedded-repo/org/multiverse/multiverse/0.3/multiverse-0.3.jar" afterPath="$PROJECT_DIR$/embedded-repo/org/multiverse/multiverse/0.3/multiverse-0.3.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoPersistentActorSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/reactor/EventBasedThreadPoolDispatcher.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/AllTest.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/AllTest.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/reactor/Reactor.scala" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/reactor/MessageDispatcherBase.scala" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" afterPath="$PROJECT_DIR$/akka-persistence/src/test/scala/CassandraPersistentActorSpec.scala" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/reactor/Dispatchers.scala" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
     </list>
@@ -126,37 +93,28 @@
   <component name="FileColors" enabled="false" enabledForTabs="false" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="AMQP.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
+      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="295" column="18" selection-start="10898" selection-end="10898" vertical-scroll-proportion="0.0">
+            <state line="552" column="6" selection-start="20548" selection-end="20548" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Ref.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java">
+      <file leaf-file-name="Transaction.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="4" column="43" selection-start="158" selection-end="158" vertical-scroll-proportion="0.0">
+            <state line="2" column="8" selection-start="49" selection-end="49" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MongoStorageSpec.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/akka-persistence/src/test/scala/MongoStorageSpec.scala">
+      <file leaf-file-name="TransactionManagement.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="6" column="22" selection-start="146" selection-end="154" vertical-scroll-proportion="-4.3846154">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AkkaServlet.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/akka-kernel/src/main/scala/AkkaServlet.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="41" column="70" selection-start="1514" selection-end="1514" vertical-scroll-proportion="1.3117155">
+            <state line="90" column="30" selection-start="3357" selection-end="3371" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -177,9 +135,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/test/scala/AllTest.scala" />
-        <option value="$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedSingleThreadDispatcherTest.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedThreadPoolDispatcherTest.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/test/scala/InMemoryActorSpec.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/test/scala/ThreadBasedDispatcherTest.scala" />
@@ -193,6 +148,9 @@
         <option value="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/stm/Ref.java" />
         <option value="$PROJECT_DIR$/akka-persistence/src/test/scala/MongoStorageSpec.scala" />
         <option value="$PROJECT_DIR$/akka-kernel/src/main/scala/AkkaServlet.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
       </list>
     </option>
   </component>
@@ -747,7 +705,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="4" y="22" width="1436" height="878" extended-state="6" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" />
       <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="5" side_tool="false" />
@@ -756,7 +714,7 @@
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.18542568" sideWeight="0.6645408" order="0" side_tool="false" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.29209185" sideWeight="0.5" order="1" side_tool="false" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" />
-      <window_info id="Messages" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.3265306" sideWeight="0.5" order="12" side_tool="false" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3265306" sideWeight="0.5" order="12" side_tool="false" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="4" side_tool="false" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" />
@@ -805,27 +763,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="8" column="33" selection-start="173" selection-end="173" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/AllTest.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="7" column="7" selection-start="249" selection-end="249" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedSingleThreadDispatcherTest.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="34" selection-start="34" selection-end="34" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/EventBasedThreadPoolDispatcherTest.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="34" selection-start="34" selection-end="34" vertical-scroll-proportion="0.0">
@@ -915,6 +852,27 @@
     <entry file="file://$PROJECT_DIR$/akka-kernel/src/main/scala/AkkaServlet.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="41" column="70" selection-start="1514" selection-end="1514" vertical-scroll-proportion="1.3117155">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="90" column="30" selection-start="3357" selection-end="3371" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="552" column="6" selection-start="20548" selection-end="20548" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="2" column="8" selection-start="49" selection-end="49" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
