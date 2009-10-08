@@ -4,8 +4,8 @@ import junit.framework.TestCase
 
 import org.junit.{Test, Before}
 import org.junit.Assert._
-import dispatch.json._
-import dispatch.json.Js._
+import _root_.dispatch.json._
+import _root_.dispatch.json.Js._
 
 class MongoStorageSpec extends TestCase {
 
@@ -80,8 +80,6 @@ class MongoStorageSpec extends TestCase {
 
     val JsString(str) = MongoStorage.getVectorStorageEntryFor("U-A1", 0).asInstanceOf[JsString]
     assertEquals("debasish", str)
-
-    import dispatch.json.Js._
 
     val l = MongoStorage.getVectorStorageEntryFor("U-A1", 1).asInstanceOf[JsValue]
     val num_list = list ! num

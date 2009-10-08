@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 import java.util.HashSet
 
 import se.scalablesolutions.akka.Config._
-import se.scalablesolutions.akka.reactor._
+import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
@@ -514,10 +514,10 @@ trait Actor extends Logging with TransactionManagement {
     try {
       tryToCommitTransactions
 
-      if (currentTransaction.get.isDefined && !currentTransaction.get.get.isActive) {
-        currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
-        setThreadLocalTransaction(null)
-      }
+      //if (currentTransaction.get.isDefined && !currentTransaction.get.get.isActive) {
+      //  currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
+      //  setThreadLocalTransaction(null)
+      //}
 
       if (isInExistingTransaction) joinExistingTransaction
       else if (isTransactional) startNewTransaction(messageHandle)
@@ -535,16 +535,15 @@ trait Actor extends Logging with TransactionManagement {
         val tx = currentTransaction.get
         rollback(tx)
 
-        if (!(tx.isDefined && tx.get.isTopLevel)) {
+        if (tx.isDefined && tx.get.isTopLevel) {
           val done = tx.get.retry
           if (done) {
             if (future.isDefined) future.get.completeWithException(this, e)
             else e.printStackTrace
           }
         }
-        currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
-        setThreadLocalTransaction(null)
-
+        clearTransaction
+      
       case e =>
         e.printStackTrace
         decrementTransaction
@@ -555,8 +554,7 @@ trait Actor extends Logging with TransactionManagement {
         if (future.isDefined) future.get.completeWithException(this, e)
         else e.printStackTrace
 
-        currentTransaction.set(None) // need to clear currentTransaction before call to supervisor
-        setThreadLocalTransaction(null)
+        clearTransaction // need to clear currentTransaction before call to supervisor
 
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (supervisor.isDefined) supervisor.get ! Exit(this, e)
@@ -564,8 +562,7 @@ trait Actor extends Logging with TransactionManagement {
     } finally {
       if (currentTransaction.get.isDefined && currentTransaction.get.get.isAborted) removeTransactionIfTopLevel(currentTransaction.get.get)
       else tryToPrecommitTransactions
-      currentTransaction.set(None)
-      setThreadLocalTransaction(null)
+      clearTransaction
     }
   }
 

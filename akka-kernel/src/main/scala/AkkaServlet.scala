@@ -4,8 +4,8 @@
 
 package se.scalablesolutions.akka.rest
 
-import config.ConfiguratorRepository
-import util.Logging
+import se.scalablesolutions.akka.config.ConfiguratorRepository
+import se.scalablesolutions.akka.util.Logging
 
 import com.sun.jersey.api.core.ResourceConfig
 import com.sun.jersey.spi.container.servlet.ServletContainer

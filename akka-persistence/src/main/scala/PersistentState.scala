@@ -116,7 +116,7 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   } catch { case e: Exception => false }
 
   override def size: Int = try {
-    storage.getMapStorageSizeFor(uuid) + newAndUpdatedEntries.size
+    storage.getMapStorageSizeFor(uuid)
   } catch { case e: Exception => 0 }
 
   override def get(key: AnyRef): Option[AnyRef] = {
@@ -137,7 +137,7 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
       private var elements = newAndUpdatedEntries.toList ::: originalList.reverse 
       override def next: Tuple2[AnyRef, AnyRef]= synchronized {
         val element = elements.head
-        elements = elements.tail
+        elements = elements.tail        
         element
       }
       override def hasNext: Boolean = synchronized { !elements.isEmpty }
@@ -151,7 +151,9 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
 }
 
 /**
- * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
+ * Implements a persistent transaction
+ 
+ al map based on the Cassandra distributed P2P key-value storage.
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */

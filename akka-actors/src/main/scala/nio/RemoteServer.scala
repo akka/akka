@@ -47,10 +47,14 @@ object RemoteServer extends Logging {
 
   private val bootstrap = new ServerBootstrap(factory)
 
-  def start(loader: Option[ClassLoader]) = synchronized {
+  def start: Unit = start(None)
+  def start(loader: Option[ClassLoader]): Unit = start(HOSTNAME, PORT)
+  def start(hostname: String, port: Int): Unit = start(hostname, port, None)
+  def start(hostname: String, port: Int, loader: Option[ClassLoader]): Unit = synchronized {
     if (!isRunning) {
       log.info("Starting remote server at [%s:%s]", HOSTNAME, PORT)
       bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, loader))
+      // FIXME make these RemoteServer options configurable
       bootstrap.setOption("child.tcpNoDelay", true)
       bootstrap.setOption("child.keepAlive", true)
       bootstrap.setOption("child.reuseAddress", true)

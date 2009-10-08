@@ -2,7 +2,7 @@
  *  Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.reactor
+package se.scalablesolutions.akka.dispatch
 
 import actor.Actor
 

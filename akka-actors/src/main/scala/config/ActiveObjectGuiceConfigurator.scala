@@ -7,8 +7,8 @@ package se.scalablesolutions.akka.config
 import com.google.inject._
 
 import ScalaConfig._
-import akka.actor.{Supervisor, ActiveObjectFactory, Dispatcher}
-import akka.util.Logging
+import se.scalablesolutions.akka.actor.{Supervisor, ActiveObjectFactory, Dispatcher}
+import se.scalablesolutions.akka.util.Logging
 
 //import org.apache.camel.impl.{DefaultCamelContext}
 //import org.apache.camel.{CamelContext, Endpoint, Routes}

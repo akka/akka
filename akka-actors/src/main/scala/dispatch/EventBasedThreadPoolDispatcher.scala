@@ -2,19 +2,21 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.reactor
+package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent._
 import locks.ReentrantLock
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
+
 import java.util.{Collection, HashSet, HashMap, LinkedList, List}
 
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
  * See also this article: [http://today.java.net/cs/user/print/a/350].
  * <p/>
- * Default thread pool settings are:
+ * 
+ * Default settings are:
  * <pre/>
  *   - withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
  *   - NR_START_THREADS = 16
@@ -22,14 +24,16 @@ import java.util.{Collection, HashSet, HashMap, LinkedList, List}
  *   - KEEP_ALIVE_TIME = 60000L // one minute
  * </pre>
  * <p/>
+ * 
  * The dispatcher has a fluent builder interface to build up a thread pool to suite your use-case. 
  * There is a default thread pool defined but make use of the builder if you need it. Here are some examples.
  * <p/>
+ * 
  * Scala API.
  * <p/>
  * Example usage:
  * <pre/>
- *   val dispatcher = EventBasedThreadPoolDispatcher
+ *   val dispatcher = new EventBasedThreadPoolDispatcher
  *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
@@ -53,7 +57,11 @@ import java.util.{Collection, HashSet, HashMap, LinkedList, List}
  *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .buildThreadPool();
  * </pre>
+ * <p/>
  *
+ * But the preferred way of creating dispatchers is to use 
+ * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: Boolean) extends MessageDispatcherBase(name) {
@@ -340,6 +348,7 @@ object MonitorableThread {
   @volatile val debugLifecycle = false
 }
 
+// FIXME fix the issues with using the monitoring in MonitorableThread
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

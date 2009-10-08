@@ -1,11 +1,11 @@
 package se.scalablesolutions.akka.state
 
-import akka.actor.Actor
+import se.scalablesolutions.akka.actor.Actor
 import junit.framework.TestCase
 import org.junit.{Test, Before}
 import org.junit.Assert._
-import dispatch.json._
-import dispatch.json.Js._
+import _root_.dispatch.json._
+import _root_.dispatch.json.Js._
 
 /**
  * A persistent actor based on MongoDB storage.
