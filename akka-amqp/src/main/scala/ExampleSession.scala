@@ -4,9 +4,10 @@
 
 package se.scalablesolutions.akka.amqp
 
-import akka.serialization.Serializer
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.actor.Actor
+
 import com.rabbitmq.client.ConnectionParameters
-import actor.Actor
 
 object ExampleSession {
   import AMQP._
@@ -29,29 +30,29 @@ object ExampleSession {
   }
 
   def direct = {
-    val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, IM, ExchangeType.Direct, SERIALIZER, None, 100)
-    endpoint ! MessageConsumer("@george_bush", "direct", new Actor() {
+    val consumer = AMQP.newConsumer(CONFIG, HOSTNAME, PORT, IM, ExchangeType.Direct, SERIALIZER, None, 100, false, false, Map[String, AnyRef]())
+    consumer ! MessageConsumerListener("@george_bush", "direct", new Actor() {
       def receive: PartialFunction[Any, Unit] = {
         case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", payload)
       }
     })
-    val client = AMQP.newClient(CONFIG, HOSTNAME, PORT, IM, SERIALIZER, None, None, 100)
-    client ! Message("@jonas_boner: You sucked!!", "direct")
+    val producer = AMQP.newProducer(CONFIG, HOSTNAME, PORT, IM, SERIALIZER, None, None, 100)
+    producer ! Message("@jonas_boner: You sucked!!", "direct")
   }
 
   def fanout = {
-    val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, CHAT, ExchangeType.Fanout, SERIALIZER, None, 100)
-    endpoint ! MessageConsumer("@george_bush", "", new Actor() {
+    val consumer = AMQP.newConsumer(CONFIG, HOSTNAME, PORT, CHAT, ExchangeType.Fanout, SERIALIZER, None, 100, false, false, Map[String, AnyRef]())
+    consumer ! MessageConsumerListener("@george_bush", "", new Actor() {
       def receive: PartialFunction[Any, Unit] = {
         case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", payload)
       }
     })
-    endpoint ! MessageConsumer("@barack_obama", "", new Actor() {
+    consumer ! MessageConsumerListener("@barack_obama", "", new Actor() {
       def receive: PartialFunction[Any, Unit] = {
         case Message(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", payload)
       }
     })
-    val client = AMQP.newClient(CONFIG, HOSTNAME, PORT, CHAT, SERIALIZER, None, None, 100)
-    client ! Message("@jonas_boner: I'm going surfing", "")
+    val producer = AMQP.newProducer(CONFIG, HOSTNAME, PORT, CHAT, SERIALIZER, None, None, 100)
+    producer ! Message("@jonas_boner: I'm going surfing", "")
   }
 }

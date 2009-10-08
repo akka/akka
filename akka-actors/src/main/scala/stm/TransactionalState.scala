@@ -73,11 +73,18 @@ object TransactionalRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {
-  private[this] val ref = new Ref[T]
+  import org.multiverse.utils.TransactionThreadLocal._
 
-  def swap(elem: T) = ref.set(elem)
+  println("---- create TX " + getThreadLocalTransaction)
+  private[this] val ref: Ref[T] = new Ref[T]//Ref.createCommittedRef[T]
 
+
+  def swap(elem: T) = {
+    println("---- swap TX " + getThreadLocalTransaction)
+    ref.set(elem)
+  }
   def get: Option[T] = {
+    println("---- get TX " + getThreadLocalTransaction)
     if (ref.isNull) None
     else Some(ref.get)
   }
@@ -89,8 +96,11 @@ class TransactionalRef[T] extends Transactional {
     else ref.get
   }
 
-  def isDefined: Boolean = !ref.isNull
-
+  def isDefined: Boolean = {
+    println("---- isDefined TX " + getThreadLocalTransaction)
+    !ref.isNull  
+  }
+  
   def isEmpty: Boolean = ref.isNull
 
   def map[B](f: T => B): Option[B] = if (isEmpty) None else Some(f(ref.get))

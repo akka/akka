@@ -56,7 +56,8 @@ public class InMemStateful {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
-    nested.success(key, msg); 
+    nested.success(key, msg);
+    System.out.println("--- after success ");
   }
 
   public String failure(String key, String msg, InMemFailer failer) {

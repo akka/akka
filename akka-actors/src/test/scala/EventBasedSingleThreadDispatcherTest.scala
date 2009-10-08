@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.reactor
+package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit

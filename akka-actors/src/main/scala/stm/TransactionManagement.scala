@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.stm
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import se.scalablesolutions.akka.reactor.MessageInvocation
+import se.scalablesolutions.akka.dispatch.MessageInvocation
 import se.scalablesolutions.akka.util.Logging
 
 import org.codehaus.aspectwerkz.proxy.Uuid
@@ -25,7 +25,7 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
 
 object TransactionManagement {
   import se.scalablesolutions.akka.Config._
-  val TIME_WAITING_FOR_COMPLETION = config.getInt("akka.stm.wait-for-completion", 100)
+  val TIME_WAITING_FOR_COMPLETION = config.getInt("akka.stm.wait-for-completion", 1000)
   val NR_OF_TIMES_WAITING_FOR_COMPLETION = config.getInt("akka.stm.wait-nr-of-times", 3)
   val MAX_NR_OF_RETRIES = config.getInt("akka.stm.max-nr-of-retries", 10)
   val TRANSACTION_ENABLED = new AtomicBoolean(config.getBool("akka.stm.service", false))
@@ -72,6 +72,11 @@ trait TransactionManagement extends Logging {
         println("------------ COULD NOT COMMIT -- WAITING OR TIMEOUT? ---------")
         //tx.retry
       } else {
+        println("---------- tryToCommitTransactions ")
+          println("---------- tryToCommitTransactions tx.isTopLevel " + tx.isTopLevel)
+          println("---------- tryToCommitTransactions tx.depth.get " + tx.depth.get)
+          println("---------- tryToCommitTransactions tx.status_? " + tx.status_?)
+          rollback(Some(tx))
         // continue, try to commit on next received message
         // FIXME check if TX hase timed out => throw exception
       }
@@ -82,12 +87,17 @@ trait TransactionManagement extends Logging {
     case None => {} // no tx; nothing to do
     case Some(tx) =>
       tx.rollback(uuid)
+      activeTransactions -= tx
   }
 
-  protected def rollbackForRescheduling(tx: Option[Transaction]) = tx match {
-    case None => {} // no tx; nothing to do
-    case Some(tx) =>
-      tx.rollbackForRescheduling(uuid)
+  protected def setTransaction(transaction: Option[Transaction]) = if (transaction.isDefined) {
+    currentTransaction.set(transaction)
+    setThreadLocalTransaction(transaction.get.transaction)
+  }
+
+  protected def clearTransaction = {
+    currentTransaction.set(None)
+    setThreadLocalTransaction(null)
   }
 
   protected def isInExistingTransaction = currentTransaction.get.isDefined

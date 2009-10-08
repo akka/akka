@@ -5,7 +5,7 @@ import junit.framework.TestCase
 import junit.framework.TestSuite
 
 import actor.{ActorSpec, RemoteActorSpec, InMemoryActorSpec, SupervisorSpec, RemoteSupervisorSpec,SchedulerSpec}
-import reactor.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
+import dispatch.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
 
 object AllTest extends TestCase {
   def suite(): Test = {

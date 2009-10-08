@@ -776,17 +776,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/com/mongodb/mongo/0.6/mongo-0.6-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.apache.cassandra:cassandra:0.4.0-trunk">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.0-trunk/cassandra-0.4.0-trunk-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: com.facebook:thrift:1.0">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/com/facebook/thrift/1.0/thrift-1.0.jar!/" />

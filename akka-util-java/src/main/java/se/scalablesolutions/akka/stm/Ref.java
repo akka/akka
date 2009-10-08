@@ -1,5 +1,6 @@
 package se.scalablesolutions.akka.stm;
 
+import org.multiverse.api.Stm;
 import static org.multiverse.api.StmUtils.retry;
 import org.multiverse.api.Transaction;
 import org.multiverse.api.exceptions.LoadUncommittedException;
@@ -7,6 +8,8 @@ import org.multiverse.api.exceptions.ReadonlyException;
 import org.multiverse.datastructures.refs.ManagedRef;
 import org.multiverse.stms.alpha.*;
 import org.multiverse.stms.alpha.mixins.FastAtomicObjectMixin;
+import org.multiverse.templates.AtomicTemplate;
+import org.multiverse.utils.GlobalStmInstance;
 import static org.multiverse.utils.TransactionThreadLocal.getThreadLocalTransaction;
 
 import static java.lang.String.format;
@@ -23,6 +26,63 @@ import static java.lang.String.format;
  */
 public final class Ref<E> extends FastAtomicObjectMixin implements ManagedRef<E> {
     final public static class NoTransactionInScopeException extends RuntimeException {
+    }
+
+    /**
+     * Creates a committed ref with a null value using the Stm in the
+     * {@link GlobalStmInstance}.
+     *
+     * @return the created ref.
+     * @see #createCommittedRef(org.multiverse.api.Stm, Object)
+     */
+    public static <E> Ref<E> createCommittedRef() {
+        return createCommittedRef(GlobalStmInstance.get(), null);
+    }
+
+    /**
+     * Creates a committed ref with a null value.
+     *
+     * @param stm the {@Stm} used for committing the ref.
+     * @return the created ref.
+     * @see #createCommittedRef(org.multiverse.api.Stm, Object)
+     */
+    public static <E> Ref<E> createCommittedRef(Stm stm) {
+        return createCommittedRef(stm, null);
+    }
+
+    /**
+     * Creates a committed ref with the given value using the Stm in the
+     * {@link GlobalStmInstance}.
+     *
+     * @param value the initial value of the Ref.
+     * @return the created ref.
+     * @see #createCommittedRef(org.multiverse.api.Stm, Object)
+     */
+    public static <E> Ref<E> createCommittedRef(E value) {
+        return createCommittedRef(GlobalStmInstance.get(), value);
+    }
+
+    /**
+     * Creates a committed ref with the given value and using the given Stm.
+     * <p/>
+     * This factory method should be called when one doesn't want to lift on the current
+     * transaction, but you want something to be committed whatever happens. In the future
+     * behavior will be added propagation levels. But for the time being this is the 'expect_new'
+     * implementation of this propagation level.
+     * <p/>
+     * If the value is an atomicobject or has a reference to it (perhaps indirectly), and
+     * the transaction this atomicobject is created in is aborted (or hasn't committed) yet,
+     * you will get the dreaded {@link org.multiverse.api.exceptions.LoadUncommittedException}.
+     *
+     * @param stm   the {@Stm} used for committing the ref.
+     * @param value the initial value of the ref. The value is allowed to be null.
+     * @return the created ref.
+     */
+    public static <E> Ref<E> createCommittedRef(Stm stm, E value) {
+        Transaction t = stm.startUpdateTransaction("createRef");
+        Ref<E> ref = new Ref<E>(t, value);
+        t.commit();
+        return ref;
     }
 
     public Ref() {

@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.stm
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 
-import se.scalablesolutions.akka.reactor.MessageInvocation
+import se.scalablesolutions.akka.dispatch.MessageInvocation
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.state.Committable
 
@@ -71,6 +71,7 @@ object Transaction {
     }.execute()
   }
 } 
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -114,9 +115,8 @@ object Transaction {
   }
 
   def commit(participant: String): Boolean = synchronized {
-    log.debug("TX COMMIT - Trying to commit transaction [%s] for server with UUID [%s]", toString, participant)
-    setThreadLocalTransaction(transaction)
     if (status == TransactionStatus.Active) {
+      log.debug("TX COMMIT - Trying to commit transaction [%s] for server with UUID [%s]", toString, participant)
       val haveAllPreCommitted =
         if (participants.size == precommitted.size) {{
           for (part <- participants) yield {
@@ -125,6 +125,7 @@ object Transaction {
           }}.exists(_ == true)
         } else false
       if (haveAllPreCommitted && transaction != null) {
+        setThreadLocalTransaction(transaction)
         log.debug("TX COMMIT - Committing transaction [%s] for server with UUID [%s]", toString, participant)
         transaction.commit
         reset
@@ -132,6 +133,7 @@ object Transaction {
         Transaction.Atomic {
           persistentStateMap.values.foreach(_.commit)          
         }
+        setThreadLocalTransaction(null)
         true
       } else false
     } else {
@@ -146,14 +148,7 @@ object Transaction {
     transaction.abort
     reset
   }
-
-  def rollbackForRescheduling(participant: String) = synchronized {
-    ensureIsActiveOrAborted
-    log.debug("TX ROLLBACK for recheduling - Actor with UUID [%s] has initiated transaction rollback for [%s]", participant, toString)
-    transaction.abort
-    reset
-  }
-
+  
   def join(participant: String) = synchronized {
     ensureIsActive
     log.debug("TX JOIN - Actor with UUID [%s] is joining transaction [%s]" , participant, toString)
@@ -176,6 +171,7 @@ object Transaction {
     precommitted = Nil
   }
 
+  def status_? = status
   def isNew = synchronized { status == TransactionStatus.New }
   def isActive = synchronized { status == TransactionStatus.Active }
   def isCompleted = synchronized { status == TransactionStatus.Completed }

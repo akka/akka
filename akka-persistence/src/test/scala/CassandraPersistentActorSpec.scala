@@ -5,7 +5,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
 
 import junit.framework.TestCase
-import reactor._
+import dispatch._
 
 import org.junit.{Test, Before}
 import org.junit.Assert._

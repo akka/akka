@@ -6,7 +6,7 @@ package se.scalablesolutions.akka
 
 import util.Logging
 
-import net.lag.configgy.{Config => ConfiggyConfig, Configgy, ParseException}
+import net.lag.configgy.{Configgy, ParseException}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -30,6 +30,14 @@ object Config extends Logging {
         log.info("AKKA_HOME is defined to [%s], config loaded from [%s].", HOME.get, configFile)
       } catch {
         case e: ParseException => throw new IllegalStateException("'akka.conf' config file can not be found in [" + HOME + "/config/akka.conf] - aborting. Either add it in the 'config' directory or add it to the classpath.")
+      }
+    } else if (System.getProperty("akka.config", "") != "") {
+      val configFile = System.getProperty("akka.config", "")
+      try {
+        Configgy.configure(configFile)
+        log.info("Config loaded from -Dakka.config=%s", configFile)
+      } catch {
+        case e: ParseException => throw new IllegalStateException("Config could not be loaded from -Dakka.config=" + configFile)
       }
     } else {
       try {

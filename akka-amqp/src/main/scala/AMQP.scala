@@ -7,10 +7,10 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client.{AMQP => RabbitMQ, _}
 import com.rabbitmq.client.ConnectionFactory
 
-import actor.{OneForOneStrategy, Actor}
-import config.ScalaConfig._
-import util.{HashCode, Logging}
-import serialization.Serializer
+import se.scalablesolutions.akka.actor.{OneForOneStrategy, Actor}
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.util.{HashCode, Logging}
+import se.scalablesolutions.akka.serialization.Serializer
 
 import scala.collection.mutable.HashMap
 
@@ -21,19 +21,19 @@ import java.util.{Timer, TimerTask}
 import java.io.IOException
 
 /**
- * AMQP Actor API. Implements Client and Endpoint materialized as Actors.
+ * AMQP Actor API. Implements Producer and Consumer materialized as Actors.
  *
  * <pre>
- *   val endpoint = AMQP.newEndpoint(CONFIG, HOSTNAME, PORT, EXCHANGE, ExchangeType.Direct, Serializer.Java, None, 100)
+ *   val endpoint = AMQP.newConsumer(CONFIG, HOSTNAME, PORT, EXCHANGE, ExchangeType.Direct, Serializer.Java, None, 100)
  *
- *   endpoint ! MessageConsumer(QUEUE, ROUTING_KEY, new Actor() {
+ *   endpoint ! MessageConsumerListener(QUEUE, ROUTING_KEY, new Actor() {
  *     def receive: PartialFunction[Any, Unit] = {
  *       case Message(payload, _, _, _, _) => log.debug("Received message: %s", payload)
  *     }
  *   })
  *
- *   val client = AMQP.newClient(CONFIG, HOSTNAME, PORT, EXCHANGE, Serializer.Java, None, None, 100)
- *   client ! Message("Hi", ROUTING_KEY)
+ *   val producer = AMQP.newProducer(CONFIG, HOSTNAME, PORT, EXCHANGE, Serializer.Java, None, None, 100)
+ *   producer ! Message("Hi", ROUTING_KEY)
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -57,10 +57,10 @@ object AMQP extends Actor {
       new Message(payload, routingKey, false, false, null)
   }
 
-  case class MessageConsumer(queueName: String, routingKey: String, actor: Actor) {
+  case class MessageConsumerListener(queueName: String, routingKey: String, actor: Actor) {
     var tag: Option[String] = None
 
-    override def toString(): String = "MessageConsumer[actor=" + actor + ", queue=" + queueName + ", routingKey=" + routingKey  + "]" 
+    override def toString(): String = "MessageConsumerListener[actor=" + actor + ", queue=" + queueName + ", routingKey=" + routingKey  + "]"
 
     override def hashCode(): Int = synchronized {
       var result = HashCode.SEED
@@ -71,13 +71,13 @@ object AMQP extends Actor {
 
     override def equals(that: Any): Boolean = synchronized {
       that != null &&
-      that.isInstanceOf[MessageConsumer] &&
-      that.asInstanceOf[MessageConsumer].queueName== queueName &&
-      that.asInstanceOf[MessageConsumer].routingKey == routingKey
+      that.isInstanceOf[MessageConsumerListener] &&
+      that.asInstanceOf[MessageConsumerListener].queueName== queueName &&
+      that.asInstanceOf[MessageConsumerListener].routingKey == routingKey
     }
   }
 
-  case class CancelMessageConsumer(consumer: MessageConsumer)
+  case class CancelMessageConsumerListener(consumer: MessageConsumerListener)
   case class Reconnect(delay: Long)
   case class Failure(cause: Throwable)
   case object Stop
@@ -108,7 +108,7 @@ object AMQP extends Actor {
     }
   }
 
-  def newClient(
+  def newProducer(
           config: ConnectionParameters,
           hostname: String,
           port: Int,
@@ -116,8 +116,8 @@ object AMQP extends Actor {
           serializer: Serializer,
           returnListener: Option[ReturnListener],
           shutdownListener: Option[ShutdownListener],
-          initReconnectDelay: Long): Client = {
-    val client = new Client(
+          initReconnectDelay: Long): Producer = {
+    val producer = new Producer(
       new ConnectionFactory(config),
       hostname, port,
       exchangeName,
@@ -125,11 +125,11 @@ object AMQP extends Actor {
       returnListener,
       shutdownListener,
       initReconnectDelay)
-    startLink(client)
-    client
+    startLink(producer)
+    producer
   }
 
-  def newEndpoint(
+  def newConsumer(
           config: ConnectionParameters,
           hostname: String,
           port: Int,
@@ -137,15 +137,21 @@ object AMQP extends Actor {
           exchangeType: ExchangeType,
           serializer: Serializer,
           shutdownListener: Option[ShutdownListener],
-          initReconnectDelay: Long): Endpoint = {
-    val endpoint = new Endpoint(
+          initReconnectDelay: Long,
+          passive: Boolean, 
+          durable: Boolean, 
+          configurationArguments: Map[String, AnyRef]): Consumer = {
+    val endpoint = new Consumer(
       new ConnectionFactory(config),
       hostname, port,
       exchangeName,
       exchangeType,
       serializer,
       shutdownListener,
-      initReconnectDelay)
+      initReconnectDelay,
+      passive,
+      durable,
+      configurationArguments)
     startLink(endpoint)
     endpoint
   }
@@ -162,7 +168,7 @@ object AMQP extends Actor {
   }
 
   /**
-   * AMQP client actor.
+   * AMQP producer actor.
    * Usage:
    * <pre>
    * val params = new ConnectionParameters
@@ -170,13 +176,13 @@ object AMQP extends Actor {
    * params.setPassword("obama")
    * params.setVirtualHost("/")
    * params.setRequestedHeartbeat(0)
-   * val client = AMQP.newClient(params, "localhost", 5672, "exchangeName", Serializer.Java, None, None, 100)
-   * client ! Message("hi")
+   * val producer = AMQP.newProducer(params, "localhost", 5672, "exchangeName", Serializer.Java, None, None, 100)
+   * producer ! Message("hi")
    * </pre>
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  class Client private[amqp] (
+  class Producer private[amqp] (
           val connectionFactory: ConnectionFactory,
           val hostname: String,
           val port: Int,
@@ -189,14 +195,15 @@ object AMQP extends Actor {
 
     setupChannel
     
-    log.info("AMQP.Client [%s] is started", toString)
+    log.info("AMQP.Producer [%s] is started", toString)
 
     def receive: PartialFunction[Any, Unit] = {
       case message @ Message(payload, routingKey, mandatory, immediate, properties) =>
         log.debug("Sending message [%s]", message)
         channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties, serializer.out(payload))
       case Stop =>
-        disconnect; stop
+        disconnect
+        stop
     }
 
     def setupChannel = {
@@ -225,96 +232,109 @@ object AMQP extends Actor {
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)      
     }
 
-    override def toString(): String = "AMQP.Client[hostname=" + hostname + ", port=" + port + ", exchange=" + exchangeName + "]" 
+    override def toString(): String = 
+      "AMQP.Producer[hostname=" + hostname + 
+      ", port=" + port + 
+      ", exchange=" + exchangeName + "]" 
   }
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  class Endpoint private[amqp] (
+  class Consumer private[amqp] (
           val connectionFactory: ConnectionFactory,
           val hostname: String,
           val port: Int,
-          exchangeName: String,
-          exchangeType: ExchangeType,
-          serializer: Serializer,
-          shutdownListener: Option[ShutdownListener],
-          val initReconnectDelay: Long)
-    extends FaultTolerantConnectionActor {
+          val exchangeName: String,
+          val exchangeType: ExchangeType,
+          val serializer: Serializer,
+          val shutdownListener: Option[ShutdownListener],
+          val initReconnectDelay: Long,
+          val passive: Boolean, 
+          val durable: Boolean, 
+          val configurationArguments: Map[java.lang.String, Object])
+    extends FaultTolerantConnectionActor { self: Consumer => 
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = true
 
-    val consumers = new HashMap[MessageConsumer, MessageConsumer]  
-    val endpoint = this
+    val listeners = new HashMap[MessageConsumerListener, MessageConsumerListener]
 
     setupChannel
 
-    log.info("AMQP.Endpoint [%s] is started", toString)
+    log.info("AMQP.Consumer [%s] is started", toString)
 
     def setupChannel = {
       connection = connectionFactory.newConnection(hostname, port)
       channel = connection.createChannel
-      channel.exchangeDeclare(exchangeName, exchangeType.toString)
-      consumers.elements.toList.map(_._2).foreach(setupConsumer) 
+        channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, 
+                                passive, durable, 
+                                configurationArguments.asJava)
+      listeners.elements.toList.map(_._2).foreach(setupConsumer)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
 
-    def setupConsumer(consumer: MessageConsumer) = {
-      channel.queueDeclare(consumer.queueName)
-      channel.queueBind(consumer.queueName, exchangeName, consumer.routingKey)
+    def setupConsumer(listener: MessageConsumerListener) = {
+      channel.queueDeclare(listener.queueName)
+      channel.queueBind(listener.queueName, exchangeName, listener.routingKey)
 
-      val consumerTag = channel.basicConsume(consumer.queueName, false, new DefaultConsumer(channel) with Logging {
+      val listenerTag = channel.basicConsume(listener.queueName, false, new DefaultConsumer(channel) with Logging {
         override def handleDelivery(tag: String, envelope: Envelope, properties: RabbitMQ.BasicProperties, payload: Array[Byte]) {
           try {
-            consumer.actor ! Message(serializer.in(payload, None), envelope.getRoutingKey)
+            listener.actor ! Message(serializer.in(payload, None), envelope.getRoutingKey)
             channel.basicAck(envelope.getDeliveryTag, false)
           } catch {
-            case cause => endpoint ! Failure(cause) // pass on and rethrow exception in endpoint actor to trigger restart and reconnect
+            case cause => self ! Failure(cause) // pass on and re-throw exception in endpoint actor to trigger restart and reconnect
           }
         }        
 
-        override def handleShutdownSignal(consumerTag: String, signal: ShutdownSignalException) = {
-          consumers.elements.toList.map(_._2).find(_.tag == consumerTag) match {
-            case None => log.warning("Could not find message consumer for tag [%s]; can't shut consumer down", consumerTag)
-            case Some(consumer) =>
-              log.warning("Message consumer [%s] is being shutdown by [%s] due to [%s]", consumer, signal.getReference, signal.getReason)
-              endpoint ! CancelMessageConsumer(consumer)
+        override def handleShutdownSignal(listenerTag: String, signal: ShutdownSignalException) = {
+          listeners.elements.toList.map(_._2).find(_.tag == listenerTag) match {
+            case None => log.warning("Could not find message listener for tag [%s]; can't shut listener down", listenerTag)
+            case Some(listener) =>
+              log.warning("Message listener listener [%s] is being shutdown by [%s] due to [%s]", listener, signal.getReference, signal.getReason)
+              self ! CancelMessageConsumerListener(listener)
           }
         }
       })
-      consumer.tag = Some(consumerTag)
+      listener.tag = Some(listenerTag)
     }
     
     def receive: PartialFunction[Any, Unit] = {
-      case consumer: MessageConsumer =>
-        startLink(consumer.actor)
-        consumers.put(consumer, consumer)
-        setupConsumer(consumer)
-        log.info("Message consumer is registered [%s]", consumer)
+      case listener: MessageConsumerListener =>
+        startLink(listener.actor)
+        listeners.put(listener, listener)
+        setupConsumer(listener)
+        log.info("Message consumer listener is registered [%s]", listener)
 
-      case CancelMessageConsumer(hash) =>
-        consumers.get(hash) match {
-          case None => log.warning("Can't unregister message consumer [%s]; no such consumer", hash)
-          case Some(consumer) =>
-            consumers - consumer
-            consumer.tag match {
-              case None => log.warning("Can't unregister message consumer [%s]; no consumer tag", consumer)
+      case CancelMessageConsumerListener(hash) =>
+        listeners.get(hash) match {
+          case None => log.warning("Can't unregister message consumer listener [%s]; no such listener", hash)
+          case Some(listener) =>
+            listeners - listener
+            listener.tag match {
+              case None => log.warning("Can't unregister message consumer listener [%s]; no listener tag", listener)
               case Some(tag) =>
                 channel.basicCancel(tag)
-                unlink(consumer.actor)
-                consumer.actor.stop
-                log.info("Message consumer is cancelled and shut down [%s]", consumer)
+                unlink(listener.actor)
+                listener.actor.stop
+                log.info("Message consumer is cancelled and shut down [%s]", listener)
             }
         }
 
       case Reconnect(delay) => reconnect(delay)
       case Failure(cause) => log.error(cause, ""); throw cause
       case Stop => disconnect; stop
-      case unknown => throw new IllegalArgumentException("Unknown message [" + unknown + "] to AMQP Endpoint [" + this + "]")
+      case unknown => throw new IllegalArgumentException("Unknown message [" + unknown + "] to AMQP Consumer [" + this + "]")
     }
 
-    override def toString(): String = "AMQP.Endpoint[hostname=" + hostname + ", port=" + port + ", exchange=" + exchangeName + ", type=" + exchangeType + "]"
+    override def toString(): String = 
+      "AMQP.Consumer[hostname=" + hostname + 
+      ", port=" + port + 
+      ", exchange=" + exchangeName + 
+      ", type=" + exchangeType +
+      ", passive=" + passive +
+      ", durable=" + durable + "]"
   }
 
   trait FaultTolerantConnectionActor extends Actor {

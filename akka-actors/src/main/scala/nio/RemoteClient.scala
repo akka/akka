@@ -9,7 +9,7 @@ import java.util.concurrent.{Executors, ConcurrentMap, ConcurrentHashMap}
 
 import protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 import actor.{Exit, Actor}
-import reactor.{DefaultCompletableFutureResult, CompletableFutureResult}
+import dispatch.{DefaultCompletableFutureResult, CompletableFutureResult}
 import serialization.{Serializer, Serializable, SerializationProtocol}
 import util.Logging
 

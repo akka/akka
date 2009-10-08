@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.config
 import reflect.BeanProperty
 
 import actor.Actor
-import reactor.MessageDispatcher
+import dispatch.MessageDispatcher
 
 /**
  * Configuration classes - not to be used as messages.

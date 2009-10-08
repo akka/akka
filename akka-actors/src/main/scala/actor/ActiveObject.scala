@@ -7,11 +7,11 @@ package se.scalablesolutions.akka.actor
 import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.InetSocketAddress
 
-import reactor.{MessageDispatcher, FutureResult}
-import nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
-import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
-import config.ScalaConfig._
-import util._
+import se.scalablesolutions.akka.dispatch.{MessageDispatcher, FutureResult}
+import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
+import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.util._
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy

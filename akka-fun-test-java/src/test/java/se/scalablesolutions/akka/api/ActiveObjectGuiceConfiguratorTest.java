@@ -10,7 +10,7 @@ import com.google.inject.Scopes;
 import junit.framework.TestCase;
 
 import se.scalablesolutions.akka.Config;
-import se.scalablesolutions.akka.reactor.EventBasedThreadPoolDispatcher;
+import se.scalablesolutions.akka.dispatch.EventBasedThreadPoolDispatcher;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 import java.util.concurrent.ThreadPoolExecutor;
@@ -104,7 +104,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     try {
       foo.longRunning();
       fail("exception should have been thrown");
-    } catch (se.scalablesolutions.akka.reactor.FutureTimeoutException e) {
+    } catch (se.scalablesolutions.akka.dispatch.FutureTimeoutException e) {
     }
   }
 

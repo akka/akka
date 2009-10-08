@@ -29,6 +29,7 @@ object CassandraStorage extends MapStorage
   val VECTOR_COLUMN_PARENT = new ColumnParent("vector", null)
   val REF_COLUMN_PARENT = new ColumnParent("ref", null)
   val REF_KEY = "item".getBytes("UTF-8")
+  val EMPTY_BYTE_ARRAY = new Array[Byte](0)
 
   val CASSANDRA_SERVER_HOSTNAME = config.getString("akka.storage.cassandra.hostname", "127.0.0.1")
   val CASSANDRA_SERVER_PORT = config.getInt("akka.storage.cassandra.port", 9160)
@@ -126,7 +127,7 @@ object CassandraStorage extends MapStorage
     val column: Option[ColumnOrSuperColumn] = sessions.withSession {
       _ | (name, new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)))
     }
-    if (column.isDefined) serializer.in(column.get.getColumn.value, None)
+    if (column.isDefined) serializer.in(column.get.column.value, None)
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
   }
 
@@ -191,16 +192,16 @@ object CassandraStorage extends MapStorage
   }
 
   def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = {
-    throw new UnsupportedOperationException
-    /*
-    val columns = server.get_columns_since(name, MAP_COLUMN_FAMILY, -1)
-      .toArray.toList.asInstanceOf[List[org.apache.cassandra.service.column_t]]
-    for {
-      column <- columns
-      col = (column.columnName, column.value)
-    } yield col
-  */
+    val size = getMapStorageSizeFor(name)
+    sessions.withSession { session =>
+      val columns = session / (name, MAP_COLUMN_PARENT, EMPTY_BYTE_ARRAY, EMPTY_BYTE_ARRAY, true, size, CONSISTENCY_LEVEL)
+      for {
+        columnOrSuperColumn <- columns
+        entry = (serializer.in(columnOrSuperColumn.column.name, None), serializer.in(columnOrSuperColumn.column.value, None))
+      } yield entry
+    }
   }
+
 
   def getMapStorageSizeFor(name: String): Int = {
     sessions.withSession {
