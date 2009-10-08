@@ -2,9 +2,7 @@
 <project relativePaths="false" version="4">
   <component name="ChangeListManager" verified="true">
     <list default="true" readonly="true" id="188c966f-a83c-4d3a-9128-54d5a2947a12" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/TransactionManagement.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala" />
     </list>
     <ignored path="akka.iws" />
@@ -105,7 +103,7 @@
       <file leaf-file-name="Transaction.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="2" column="8" selection-start="49" selection-end="49" vertical-scroll-proportion="0.0">
+            <state line="57" column="34" selection-start="1578" selection-end="1578" vertical-scroll-proportion="0.2820513">
               <folding />
             </state>
           </provider>
@@ -872,7 +870,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/stm/Transaction.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="2" column="8" selection-start="49" selection-end="49" vertical-scroll-proportion="0.0">
+        <state line="57" column="34" selection-start="1578" selection-end="1578" vertical-scroll-proportion="0.2820513">
           <folding />
         </state>
       </provider>
