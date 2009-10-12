@@ -43,12 +43,11 @@ class AkkaServlet extends ServletContainer  with Logging {
 
 class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet {
 
-    override def loadConfiguration(sc : ServletConfig) : Unit = {
-        val servlet = new AkkaServlet with AtmosphereServletProcessor {
+    val servlet = new AkkaServlet with AtmosphereServletProcessor {
 
             //Delegate to implement the behavior for AtmosphereHandler
             private val handler = new AbstractReflectorAtmosphereHandler {
-                override def onRequest(event: AtmosphereResource[HttpServletRequest, HttpServletResponse]) : Unit = {
+                override def onRequest(event: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
                     if(event ne null)
                     {
                         event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_RESOURCE, event)
@@ -64,13 +63,11 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet {
             }
 
             override def onRequest(resource: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
-                if(resource ne null)
                    handler onRequest resource
             }
         }
 
+    override def loadConfiguration(sc : ServletConfig) {
         atmosphereHandlers.put("/*", new AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
     }
-
-    override def loadAtmosphereDotXml(is: InputStream, urlc: URLClassLoader) = () //Hide it
 }
