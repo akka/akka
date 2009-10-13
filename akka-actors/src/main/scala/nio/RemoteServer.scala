@@ -23,21 +23,20 @@ import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServer extends Logging {
-  def start = RemoteServer.start(None)
-}
+object RemoteServer extends RemoteServer
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteServer extends Logging {
+class RemoteServer extends Logging {
   import Config.config
   val HOSTNAME = config.getString("akka.remote.hostname", "localhost")
   val PORT = config.getInt("akka.remote.port", 9999)
   val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.connection-timeout", 1000)  
 
-  val name = "RemoteServer@" + HOSTNAME
-
+  private var hostname = HOSTNAME 
+  private var port = PORT
+   
   @volatile private var isRunning = false
   @volatile private var isConfigured = false
 
@@ -49,10 +48,18 @@ object RemoteServer extends Logging {
 
   private val bootstrap = new ServerBootstrap(factory)
 
+  def name = "RemoteServer@" + hostname + ":" + port
+  
   def start: Unit = start(None)
+
+  def start(loader: Option[ClassLoader]): Unit = start(HOSTNAME, PORT, loader)
+
   def start(hostname: String, port: Int): Unit = start(hostname, port, None)
-  def start(hostname: String, port: Int, loader: Option[ClassLoader]): Unit = synchronized {
+
+  def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): Unit = synchronized {
     if (!isRunning) {
+      hostname = _hostname
+      port = _port
       log.info("Starting remote server at [%s:%s]", hostname, port)
       bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, loader))
       // FIXME make these RemoteServer options configurable
