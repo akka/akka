@@ -1,10 +1,9 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.state.TransactionalMap;
-import se.scalablesolutions.akka.state.CassandraPersistentTransactionalMap;
 
 public class PersistentClasher {
-  private TransactionalMap state = new CassandraPersistentTransactionalMap();
+  private TransactionalMap state = new se.scalablesolutions.akka.state.CassandraPersistentMap();
 
   public String getState(String key) {
     return (String)state.get(key).get();

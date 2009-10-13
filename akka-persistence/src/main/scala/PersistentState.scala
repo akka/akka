@@ -39,22 +39,22 @@ object PersistentState extends PersistentState
  */
 class PersistentState {
   def newMap(config: PersistentStorageConfig): TransactionalMap[AnyRef, AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalMap
-    case MongoStorageConfig() => new MongoPersistentTransactionalMap
+    case CassandraStorageConfig() => new CassandraPersistentMap
+    case MongoStorageConfig() => new MongoPersistentMap
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
   def newVector(config: PersistentStorageConfig): TransactionalVector[AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalVector
-    case MongoStorageConfig() => new MongoPersistentTransactionalVector
+    case CassandraStorageConfig() => new CassandraPersistentVector
+    case MongoStorageConfig() => new MongoPersistentVector
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
   def newRef(config: PersistentStorageConfig): TransactionalRef[AnyRef] = config match {
-    case CassandraStorageConfig() => new CassandraPersistentTransactionalRef
-    case MongoStorageConfig() => new MongoPersistentTransactionalRef
+    case CassandraStorageConfig() => new CassandraPersistentRef
+    case MongoStorageConfig() => new MongoPersistentRef
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
@@ -68,7 +68,7 @@ class PersistentState {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
+abstract class PersistentMap[K, V] extends TransactionalMap[K, V] {
 
   // FIXME: need to handle remove in another changeSet
   protected[akka] val changeSet = new HashMap[K, V]
@@ -93,7 +93,7 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
 }
 
 /**
- * Implementation of <tt>PersistentTransactionalMap</tt> for every concrete 
+ * Implementation of <tt>PersistentMap</tt> for every concrete
  * storage will have the same workflow. This abstracts the workflow.
  *
  * Subclasses just need to provide the actual concrete instance for the
@@ -101,7 +101,7 @@ abstract class PersistentTransactionalMap[K, V] extends TransactionalMap[K, V] {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class TemplatePersistentTransactionalMap extends PersistentTransactionalMap[AnyRef, AnyRef] {
+abstract class TemplatePersistentMap extends PersistentMap[AnyRef, AnyRef] {
 
   // to be concretized in subclasses
   val storage: MapStorage
@@ -191,7 +191,7 @@ abstract class TemplatePersistentTransactionalMap extends PersistentTransactiona
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class CassandraPersistentTransactionalMap extends TemplatePersistentTransactionalMap {
+class CassandraPersistentMap extends TemplatePersistentMap {
   val storage = CassandraStorage
 }
 
@@ -200,7 +200,7 @@ class CassandraPersistentTransactionalMap extends TemplatePersistentTransactiona
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class MongoPersistentTransactionalMap extends TemplatePersistentTransactionalMap {
+class MongoPersistentMap extends TemplatePersistentMap {
   val storage = MongoStorage
 }
 
@@ -212,7 +212,7 @@ class MongoPersistentTransactionalMap extends TemplatePersistentTransactionalMap
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
+abstract class PersistentVector[T] extends TransactionalVector[T] {
 
   // FIXME: need to handle remove in another changeSet
   protected[akka] val changeSet = new ArrayBuffer[T]
@@ -234,7 +234,7 @@ abstract class PersistentTransactionalVector[T] extends TransactionalVector[T] {
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-abstract class TemplatePersistentTransactionalVector extends PersistentTransactionalVector[AnyRef] {
+abstract class TemplatePersistentVector extends PersistentVector[AnyRef] {
 
   val storage: VectorStorage
 
@@ -282,7 +282,7 @@ abstract class TemplatePersistentTransactionalVector extends PersistentTransacti
  *
  * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
  */
-class CassandraPersistentTransactionalVector extends TemplatePersistentTransactionalVector {
+class CassandraPersistentVector extends TemplatePersistentVector {
   val storage = CassandraStorage
 }
 
@@ -291,11 +291,11 @@ class CassandraPersistentTransactionalVector extends TemplatePersistentTransacti
  *
  * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
  */
-class MongoPersistentTransactionalVector extends TemplatePersistentTransactionalVector {
+class MongoPersistentVector extends TemplatePersistentVector {
   val storage = MongoStorage
 } 
 
-abstract class TemplatePersistentTransactionalRef extends TransactionalRef[AnyRef] {
+abstract class TemplatePersistentRef extends TransactionalRef[AnyRef] {
   val storage: RefStorage
 
   override def commit = if (ref.isDefined) {
@@ -319,10 +319,10 @@ abstract class TemplatePersistentTransactionalRef extends TransactionalRef[AnyRe
   }
 }
 
-class CassandraPersistentTransactionalRef extends TemplatePersistentTransactionalRef {
+class CassandraPersistentRef extends TemplatePersistentRef {
   val storage = CassandraStorage
 }
 
-class MongoPersistentTransactionalRef extends TemplatePersistentTransactionalRef {
+class MongoPersistentRef extends TemplatePersistentRef {
   val storage = MongoStorage
 }
