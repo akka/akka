@@ -1,0 +1,54 @@
+body {
+  background-image: url(../images/body-background.png);
+  background-repeat: repeat-x;
+  background-color: #5c8098;
+}
+html, body, h1, h2 {
+  margin: 0px;
+  padding: 0px;
+}
+body, textarea, input {
+  font-size: 12px;
+  font-family: Verdana, Helvetica, Arial, sans-serif;
+  color: #2d2b3d;
+}
+#container {
+  text-align:center;
+}
+#container-inner {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: justify;
+  width: 820px;
+}
+#header {
+  width: 820px;
+  height: 100px;
+  background-image: url(../images/header-background.png);
+  background-repeat: no-repeat;
+}
+#header h1 {
+  display: none;
+}
+#main {
+  height: 610px;
+  background-image: url(../images/main-background.png);
+  background-repeat: no-repeat;
+  text-align: left;
+  width: 740px;
+  padding: 30px 40px 20px 40px;
+}
+#display {
+  border: 1px solid #5c8098;
+  width: 740px;
+  height: 400px;
+  margin-bottom: 10px;
+  overflow-y: scroll;
+}
+#login-name {
+  width: 200px;
+}
+#message {
+  width: 740px;
+  height: 50px;
+}
