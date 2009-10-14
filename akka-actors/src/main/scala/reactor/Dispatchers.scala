@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.reactor
 
-import actor.Actor
+import se.scalablesolutions.akka.actor.Actor
 
 /**
  * Scala API. Dispatcher factory.

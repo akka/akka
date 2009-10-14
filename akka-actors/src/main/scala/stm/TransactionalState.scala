@@ -42,7 +42,7 @@ class TransactionalState {
 @serializable
 trait Transactional {
   // FIXME: won't work across the cluster
-  val uuid = Uuid.newUuid.toString
+  var uuid = Uuid.newUuid.toString
 
   private[akka] def begin
   private[akka] def commit

@@ -5,11 +5,9 @@ import se.scalablesolutions.akka.state.*;
 
 @transactionrequired
 public class PersistentStatefulNested {
-  private PersistentState factory = new PersistentState();
-  private TransactionalMap mapState =       factory.newMap(new CassandraStorageConfig());
-  private TransactionalVector vectorState = factory.newVector(new CassandraStorageConfig());;
-  private TransactionalRef refState =       factory.newRef(new CassandraStorageConfig());
-
+  private PersistentMap mapState =       PersistentState.newMap(new CassandraStorageConfig());
+  private PersistentVector vectorState = PersistentState.newVector(new CassandraStorageConfig());
+  private PersistentRef refState =       PersistentState.newRef(new CassandraStorageConfig());
 
   public String getMapState(String key) {
     return (String) mapState.get(key).get();

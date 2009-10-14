@@ -34,7 +34,7 @@ case class User(val usernamePassword: Tuple2[String, String],
   def toBytes: Array[Byte] = toByteArray(this)
 }
 
-case class RemotePing extends TestMessage
+case object RemotePing extends TestMessage
 case object RemotePong extends TestMessage
 case object RemoteOneWay extends TestMessage
 case object RemoteDie extends TestMessage

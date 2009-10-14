@@ -2,12 +2,16 @@ package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.TimeUnit
 
-import org.junit.Assert._
+import junit.framework.Assert._
 
-class ActorSpec extends junit.framework.TestCase {
+import se.scalablesolutions.akka.reactor.Dispatchers
+
+class ThreadBasedActorSpec extends junit.framework.TestCase {
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
+    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+    
     def receive: PartialFunction[Any, Unit] = {
       case "Hello" =>
         reply("World")

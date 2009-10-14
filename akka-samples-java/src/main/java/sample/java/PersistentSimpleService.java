@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.annotation.prerestart;
 import se.scalablesolutions.akka.annotation.postrestart;
 import se.scalablesolutions.akka.state.TransactionalState;
 import se.scalablesolutions.akka.state.PersistentState;
-import se.scalablesolutions.akka.state.TransactionalMap;
+import se.scalablesolutions.akka.state.PersistentMap;
 import se.scalablesolutions.akka.state.CassandraStorageConfig;
 
 /**
@@ -26,11 +26,10 @@ import se.scalablesolutions.akka.state.CassandraStorageConfig;
 @Path("/persistentjavacount")
 @transactionrequired
 public class PersistentSimpleService {
-  private String KEY = "COUNTER";
+  private Object KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private PersistentState factory = new PersistentState();
-  private TransactionalMap<Object, Object> storage = factory.newMap(new CassandraStorageConfig());
+  private PersistentMap storage = PersistentState.newMap(new CassandraStorageConfig());
 
   @GET
   @Produces({"application/html"})

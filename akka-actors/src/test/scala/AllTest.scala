@@ -4,7 +4,7 @@ import junit.framework.Test
 import junit.framework.TestCase
 import junit.framework.TestSuite
 
-import actor.{ActorSpec, RemoteActorSpec, InMemoryActorSpec, SupervisorSpec, RemoteSupervisorSpec,SchedulerSpec}
+import actor.{ThreadBasedActorSpec, RemoteActorSpec, InMemoryActorSpec, SupervisorSpec, RemoteSupervisorSpec,SchedulerSpec}
 import reactor.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
 
 object AllTest extends TestCase {
@@ -14,7 +14,9 @@ object AllTest extends TestCase {
     suite.addTestSuite(classOf[RemoteSupervisorSpec])
     suite.addTestSuite(classOf[EventBasedSingleThreadDispatcherTest])
     suite.addTestSuite(classOf[EventBasedThreadPoolDispatcherTest])
-    suite.addTestSuite(classOf[ActorSpec])
+    suite.addTestSuite(classOf[ThreadBasedActorSpec])
+    suite.addTestSuite(classOf[EventBasedSingleThreadDispatcherTest])
+    suite.addTestSuite(classOf[EventBasedThreadPoolDispatcherTest])
     suite.addTestSuite(classOf[RemoteActorSpec])
     suite.addTestSuite(classOf[InMemoryActorSpec])
     suite.addTestSuite(classOf[SchedulerSpec])

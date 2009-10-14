@@ -73,7 +73,7 @@ class ThreadBasedDispatcherTest extends TestCase {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation("id", new Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageInvocation("id", new java.lang.Integer(i), None, None))
     }
     assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
     assertFalse(threadingIssueDetected.get)
