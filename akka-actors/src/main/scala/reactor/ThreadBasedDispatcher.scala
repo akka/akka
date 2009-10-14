@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.reactor
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.Queue
 
-import actor.{Actor, ActorMessageInvoker}
+import se.scalablesolutions.akka.actor.{Actor, ActorMessageInvoker}
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
@@ -41,8 +41,8 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
     selectorThread.interrupt
   }
   
-  def registerHandler(key: AnyRef, handler: MessageInvoker) = throw new UnsupportedOperationException
-  def unregisterHandler(key: AnyRef) = throw new UnsupportedOperationException
+  def registerHandler(key: AnyRef, handler: MessageInvoker) = {}
+  def unregisterHandler(key: AnyRef) = {}
 }
 
 class BlockingMessageQueue(name: String) extends MessageQueue {

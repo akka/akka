@@ -11,6 +11,7 @@ import _root_.se.scalablesolutions.akka.util.Logging
 import _root_.se.scalablesolutions.akka.security.{DigestAuthenticationActor, UserInfo}
 import _root_.javax.annotation.security.{DenyAll,PermitAll,RolesAllowed}
 import javax.ws.rs.{GET, POST, Path, Produces, Consumes}
+import java.lang.Integer
 
 class Boot {
   object factory extends SupervisorFactory {

@@ -13,10 +13,10 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 sealed abstract class PersistentStateConfig
 abstract class PersistentStorageConfig  extends PersistentStateConfig
-case class CassandraStorageConfig extends PersistentStorageConfig
-case class TerracottaStorageConfig extends PersistentStorageConfig
-case class TokyoCabinetStorageConfig extends PersistentStorageConfig
-case class MongoStorageConfig extends PersistentStorageConfig
+case class CassandraStorageConfig() extends PersistentStorageConfig
+case class TerracottaStorageConfig() extends PersistentStorageConfig
+case class TokyoCabinetStorageConfig() extends PersistentStorageConfig
+case class MongoStorageConfig() extends PersistentStorageConfig
 
 /**
  * Scala API.
@@ -25,34 +25,29 @@ case class MongoStorageConfig extends PersistentStorageConfig
  * <pre>
  * val myMap = PersistentState.newMap(CassandraStorageConfig)
  * </pre>
- */
-object PersistentState extends PersistentState
-
-/**
  * Java API.
  * <p/>
  * Example Java usage:
  * <pre>
- * PersistentState state = new PersistentState();
- * TransactionalMap myMap = state.newMap(new CassandraStorageConfig());
+ * TransactionalMap myMap = PersistentState.newMap(new CassandraStorageConfig());
  * </pre>
  */
-class PersistentState {
-  def newMap(config: PersistentStorageConfig): TransactionalMap[AnyRef, AnyRef] = config match {
+object PersistentState {
+  def newMap(config: PersistentStorageConfig): PersistentMap = config match {
     case CassandraStorageConfig() => new CassandraPersistentMap
     case MongoStorageConfig() => new MongoPersistentMap
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  def newVector(config: PersistentStorageConfig): TransactionalVector[AnyRef] = config match {
+  def newVector(config: PersistentStorageConfig): PersistentVector = config match {
     case CassandraStorageConfig() => new CassandraPersistentVector
     case MongoStorageConfig() => new MongoPersistentVector
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  def newRef(config: PersistentStorageConfig): TransactionalRef[AnyRef] = config match {
+  def newRef(config: PersistentStorageConfig): PersistentRef = config match {
     case CassandraStorageConfig() => new CassandraPersistentRef
     case MongoStorageConfig() => new MongoPersistentRef
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
@@ -68,10 +63,10 @@ class PersistentState {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class PersistentMap[K, V] extends TransactionalMap[K, V] {
+abstract class PersistentMap extends TransactionalMap[AnyRef, AnyRef] {
 
   // FIXME: need to handle remove in another changeSet
-  protected[akka] val changeSet = new HashMap[K, V]
+  protected[akka] val changeSet = new HashMap[AnyRef, AnyRef]
 
   def getRange(start: Option[AnyRef], count: Int)
 
@@ -81,15 +76,15 @@ abstract class PersistentMap[K, V] extends TransactionalMap[K, V] {
   override def rollback = changeSet.clear
  
   // ---- For scala.collection.mutable.Map ----
-  override def put(key: K, value: V): Option[V] = {
+  override def put(key: AnyRef, value: AnyRef): Option[AnyRef] = {
     verifyTransaction
     changeSet += key -> value
     None // always return None to speed up writes (else need to go to DB to get
   }
 
-  override def -=(key: K) = remove(key)
+  override def -=(key: AnyRef) = remove(key)
 
-  override def update(key: K, value: V) = put(key, value)
+  override def update(key: AnyRef, value: AnyRef) = put(key, value)
 }
 
 /**
@@ -101,7 +96,7 @@ abstract class PersistentMap[K, V] extends TransactionalMap[K, V] {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class TemplatePersistentMap extends PersistentMap[AnyRef, AnyRef] {
+abstract class TemplatePersistentMap extends PersistentMap {
 
   // to be concretized in subclasses
   val storage: MapStorage
@@ -212,10 +207,10 @@ class MongoPersistentMap extends TemplatePersistentMap {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class PersistentVector[T] extends TransactionalVector[T] {
+abstract class PersistentVector extends TransactionalVector[AnyRef] {
 
   // FIXME: need to handle remove in another changeSet
-  protected[akka] val changeSet = new ArrayBuffer[T]
+  protected[akka] val changeSet = new ArrayBuffer[AnyRef]
 
   // ---- For Transactional ----
   override def begin = {}
@@ -223,7 +218,7 @@ abstract class PersistentVector[T] extends TransactionalVector[T] {
   override def rollback = changeSet.clear
 
   // ---- For TransactionalVector ----
-  override def add(value: T) = {
+  override def add(value: AnyRef) = {
     verifyTransaction
     changeSet += value
   }
@@ -234,7 +229,7 @@ abstract class PersistentVector[T] extends TransactionalVector[T] {
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-abstract class TemplatePersistentVector extends PersistentVector[AnyRef] {
+abstract class TemplatePersistentVector extends PersistentVector {
 
   val storage: VectorStorage
 
@@ -286,7 +281,7 @@ class CassandraPersistentVector extends TemplatePersistentVector {
   val storage = CassandraStorage
 }
 
-/**
+/**                                                                                                                                           
  * Implements a persistent transactional vector based on the MongoDB distributed P2P key-value storage.
  *
  * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
@@ -295,7 +290,7 @@ class MongoPersistentVector extends TemplatePersistentVector {
   val storage = MongoStorage
 } 
 
-abstract class TemplatePersistentRef extends TransactionalRef[AnyRef] {
+abstract class PersistentRef extends TransactionalRef[AnyRef] {
   val storage: RefStorage
 
   override def commit = if (ref.isDefined) {
@@ -319,10 +314,10 @@ abstract class TemplatePersistentRef extends TransactionalRef[AnyRef] {
   }
 }
 
-class CassandraPersistentRef extends TemplatePersistentRef {
+class CassandraPersistentRef extends PersistentRef {
   val storage = CassandraStorage
 }
 
-class MongoPersistentRef extends TemplatePersistentRef {
+class MongoPersistentRef extends PersistentRef {
   val storage = MongoStorage
 }

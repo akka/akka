@@ -7,15 +7,16 @@ package se.scalablesolutions.akka.actor
 import com.google.protobuf.ByteString
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArraySet
-
-import reactor._
-import config.ScalaConfig._
-import stm.TransactionManagement
-import util.Helpers.ReadWriteLock
-import nio.protobuf.RemoteProtocol.RemoteRequest
-import util.Logging
-import serialization.{Serializer, Serializable, SerializationProtocol}
-import nio.{RemoteProtocolBuilder, RemoteClient, RemoteServer, RemoteRequestIdFactory}
+                                                
+import se.scalablesolutions.akka.reactor._
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.stm.TransactionManagement
+import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
+import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.Config._
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
@@ -42,7 +43,6 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor {
-  import Config._
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 }
@@ -100,7 +100,7 @@ trait Actor extends Logging with TransactionManagement {
    *     .buildThreadPool
    * </pre>
    */
-  protected[akka] var dispatcher: MessageDispatcher = {
+  protected[akka] var messageDispatcher: MessageDispatcher = {
     val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher(getClass.getName)
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))
@@ -198,7 +198,7 @@ trait Actor extends Logging with TransactionManagement {
    */
   def start = synchronized  {
     if (!isRunning) {
-      dispatcher.start
+      messageDispatcher.start
       isRunning = true
     }
   }
@@ -208,7 +208,7 @@ trait Actor extends Logging with TransactionManagement {
    */
   def stop = synchronized {
     if (isRunning) {
-      dispatcher.unregisterHandler(this)
+      messageDispatcher.unregisterHandler(this)
       isRunning = false
       shutdown
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -265,14 +265,16 @@ trait Actor extends Logging with TransactionManagement {
     case Some(future) => future.completeWithResult(message)
   }
 
+  def dispatcher = messageDispatcher
+
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
-  def setDispatcher(disp: MessageDispatcher) = synchronized {
+  def dispatcher_=(dispatcher: MessageDispatcher): Unit = synchronized {
     if (!isRunning) {
-      dispatcher = disp
-      mailbox = dispatcher.messageQueue
-      dispatcher.registerHandler(this, new ActorMessageInvoker(this))
+      messageDispatcher = dispatcher
+      mailbox = messageDispatcher.messageQueue
+      messageDispatcher.registerHandler(this, new ActorMessageInvoker(this))
     } else throw new IllegalArgumentException("Can not swap dispatcher for " + toString + " after it has been started")
   }
   
@@ -361,7 +363,7 @@ trait Actor extends Logging with TransactionManagement {
    */
   protected[this] def spawn[T <: Actor](actorClass: Class[T]): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = messageDispatcher
     actor.mailbox = mailbox
     actor.start
     actor
@@ -375,7 +377,7 @@ trait Actor extends Logging with TransactionManagement {
   protected[this] def spawnRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
     actor.makeRemote(hostname, port)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = messageDispatcher
     actor.mailbox = mailbox
     actor.start
     actor
@@ -587,9 +589,9 @@ trait Actor extends Logging with TransactionManagement {
 
 
   private[akka] def swapDispatcher(disp: MessageDispatcher) = synchronized {
-    dispatcher = disp
-    mailbox = dispatcher.messageQueue
-    dispatcher.registerHandler(this, new ActorMessageInvoker(this))
+    messageDispatcher = disp
+    mailbox = messageDispatcher.messageQueue
+    messageDispatcher.registerHandler(this, new ActorMessageInvoker(this))
   }
 
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
