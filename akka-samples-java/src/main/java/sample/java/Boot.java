@@ -1,10 +1,10 @@
 package sample.java;
 
-import se.scalablesolutions.akka.config.ActiveObjectManager;
+import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 public class Boot {
-  final private ActiveObjectManager manager = new ActiveObjectManager();
+  final private ActiveObjectConfigurator manager = new ActiveObjectConfigurator();
 
   public Boot() throws Exception  {
     manager.configure(

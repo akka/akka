@@ -4,7 +4,6 @@
 
 package se.scalablesolutions.akka.actor
 
-import java.lang.reflect.{InvocationTargetException, Method}
 import java.net.InetSocketAddress
 
 import se.scalablesolutions.akka.dispatch.{MessageDispatcher, FutureResult}
@@ -17,9 +16,7 @@ import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 import se.scalablesolutions.akka.serialization.Serializer
-
-sealed class ActiveObjectException(msg: String) extends RuntimeException(msg)
-class ActiveObjectInvocationTimeoutException(msg: String) extends ActiveObjectException(msg)
+import java.lang.reflect.{InvocationTargetException, Method}
 
 object Annotations {
   import se.scalablesolutions.akka.annotation._
@@ -32,100 +29,7 @@ object Annotations {
 }
 
 /**
- * Factory for Java API.
- * 
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class ActiveObjectFactory {
-
-  // FIXME How to pass the MessageDispatcher on from active object to child???????
-
-  def newInstance[T](target: Class[T], timeout: Long): T =
-    ActiveObject.newInstance(target, new Dispatcher(None), None, timeout)
-
-  def newInstance[T](target: Class[T], timeout: Long, restartCallbacks: Option[RestartCallbacks]): T =
-    ActiveObject.newInstance(target, new Dispatcher(restartCallbacks), None, timeout)
-
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
-    ActiveObject.newInstance(intf, target, new Dispatcher(None), None, timeout)
-
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, restartCallbacks: Option[RestartCallbacks]): T =
-    ActiveObject.newInstance(intf, target, new Dispatcher(restartCallbacks), None, timeout)
-
-  def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
-    ActiveObject.newInstance(target, new Dispatcher(None), Some(new InetSocketAddress(hostname, port)), timeout)
-
-  def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T =
-    ActiveObject.newInstance(target, new Dispatcher(restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
-
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int): T =
-    ActiveObject.newInstance(intf, target, new Dispatcher(None), Some(new InetSocketAddress(hostname, port)), timeout)
-
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T =
-    ActiveObject.newInstance(intf, target, new Dispatcher(restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
-
-  def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher): T = {
-    val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(target, actor, None, timeout)
-  }
-
-  def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(target, actor, None, timeout)
-  }
-
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher): T = {
-    val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(intf, target, actor, None, timeout)
-  }
-
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(intf, target, actor, None, timeout)
-  }
-
-  def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
-    val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
-  }
-
-  def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
-  }
-
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
-    val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
-  }
-
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
-    ActiveObject.newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
-  }
-
-  private[akka] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    ActiveObject.newInstance(target, actor, remoteAddress, timeout)
-  }
-
-  private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    ActiveObject.newInstance(intf, target, actor, remoteAddress, timeout)
-  }
-  
-  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
-    ActiveObject.supervise(restartStrategy, components)
-}
-
-/**
- * Factory for Scala API.
+ * Factory object for Active Objects.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -205,7 +109,6 @@ object ActiveObject {
   }
 
   private[akka] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    //if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(target, false, true)
     actor.initialize(target, proxy)
     actor.timeout = timeout
@@ -215,7 +118,6 @@ object ActiveObject {
   }
 
   private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    //if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     actor.initialize(target.getClass, target)
     actor.timeout = timeout
@@ -235,28 +137,32 @@ object ActiveObject {
   }
 }
 
-object AspectInitRegistry {
+private[akka] object AspectInitRegistry {
   private val inits = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
+
   def initFor(target: AnyRef) = {
     val init = inits.get(target)
     inits.remove(target)
     init
   }  
+
   def register(target: AnyRef, init: AspectInit) = inits.put(target, init)
 }
 
-sealed case class AspectInit(
+private[akka] sealed case class AspectInit(
   val target: Class[_],
   val actor: Dispatcher,          
   val remoteAddress: Option[InetSocketAddress],
   val timeout: Long)
-
+      
 /**
+ * AspectWerkz Aspect that is turning POJOs into Active Object.
+ * Is deployed on a 'per-instance' basis.
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable
 @Aspect("perInstance")
-sealed class ActiveObjectAspect {
+private[akka] sealed class ActiveObjectAspect {
   @volatile var isInitialized = false
   var target: Class[_] = _
   var actor: Dispatcher = _            
@@ -264,36 +170,36 @@ sealed class ActiveObjectAspect {
   var timeout: Long = _
 
   @Around("execution(* *.*(..))")
-  def invoke(joinpoint: JoinPoint): AnyRef = {
+  def invoke(joinPoint: JoinPoint): AnyRef = {
     if (!isInitialized) {
-      val init = AspectInitRegistry.initFor(joinpoint.getThis)
+      val init = AspectInitRegistry.initFor(joinPoint.getThis)
       target = init.target
       actor = init.actor            
       remoteAddress = init.remoteAddress
       timeout = init.timeout
       isInitialized = true
     }
-    dispatch(joinpoint)
+    dispatch(joinPoint)
   }
 
-  private def dispatch(joinpoint: JoinPoint) = {
-    if (remoteAddress.isDefined) remoteDispatch(joinpoint)
-    else localDispatch(joinpoint)
+  private def dispatch(joinPoint: JoinPoint) = {
+    if (remoteAddress.isDefined) remoteDispatch(joinPoint)
+    else localDispatch(joinPoint)
   }
 
-  private def localDispatch(joinpoint: JoinPoint): AnyRef = {
-    val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
-    if (isOneWay(rtti)) actor ! Invocation(joinpoint, true)
+  private def localDispatch(joinPoint: JoinPoint): AnyRef = {
+    val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
+    if (isOneWay(rtti)) actor ! Invocation(joinPoint, true, true)
     else {
-      val result = actor !! Invocation(joinpoint, false)
+      val result = actor !! Invocation(joinPoint, false, isVoid(rtti))
       if (result.isDefined) result.get
-      else throw new IllegalStateException("No result defined for invocation [" + joinpoint + "]")
+      else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }
   }
 
-  private def remoteDispatch(joinpoint: JoinPoint): AnyRef = {
-    val rtti = joinpoint.getRtti.asInstanceOf[MethodRtti]
-    val oneWay = isOneWay(rtti)
+  private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
+    val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
+    val oneWay_? = isOneWay(rtti)
     val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
     val requestBuilder = RemoteRequest.newBuilder
       .setId(RemoteRequestIdFactory.nextId)
@@ -301,21 +207,21 @@ sealed class ActiveObjectAspect {
       .setTarget(target.getName)
       .setTimeout(timeout)
       .setIsActor(false)
-      .setIsOneWay(oneWay)
+      .setIsOneWay(oneWay_?)
       .setIsEscaped(false)
     RemoteProtocolBuilder.setMessage(message, requestBuilder)
     val id = actor.registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
     val remoteMessage = requestBuilder.build
     val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage)
-    if (oneWay) null // for void methods
+    if (oneWay_?) null // for void methods
     else {
       if (future.isDefined) {
         future.get.await
         val result = getResultOrThrowException(future.get)
         if (result.isDefined) result.get
-        else throw new IllegalStateException("No result returned from call to [" + joinpoint + "]")
-      } else throw new IllegalStateException("No future returned from call to [" + joinpoint + "]")
+        else throw new IllegalStateException("No result returned from call to [" + joinPoint + "]")
+      } else throw new IllegalStateException("No future returned from call to [" + joinPoint + "]")
     }
   }
 
@@ -325,9 +231,9 @@ sealed class ActiveObjectAspect {
       throw cause
     } else future.result.asInstanceOf[Option[T]]
   
-  private def isOneWay(rtti: MethodRtti) =
-    rtti.getMethod.getReturnType == java.lang.Void.TYPE ||
-    rtti.getMethod.isAnnotationPresent(Annotations.oneway)
+  private def isOneWay(rtti: MethodRtti) = rtti.getMethod.isAnnotationPresent(Annotations.oneway)
+
+  private def isVoid(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
 
   private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
     var isEscaped = false
@@ -347,24 +253,26 @@ sealed class ActiveObjectAspect {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable private[akka] case class Invocation(val joinpoint: JoinPoint, val isOneWay: Boolean) {
+@serializable private[akka] case class Invocation(joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean) {
 
   override def toString: String = synchronized {
-    "Invocation [joinpoint: " + joinpoint.toString + ", isOneWay: " + isOneWay + "]"
+    "Invocation [joinPoint: " + joinPoint.toString + ", isOneWay: " + isOneWay + ", isVoid: " + isVoid + "]"
   }
 
-  override def hashCode(): Int = synchronized {
+  override def hashCode: Int = synchronized {
     var result = HashCode.SEED
-    result = HashCode.hash(result, joinpoint)
+    result = HashCode.hash(result, joinPoint)
     result = HashCode.hash(result, isOneWay)
+    result = HashCode.hash(result, isVoid)
     result
   }
 
   override def equals(that: Any): Boolean = synchronized {
     that != null &&
     that.isInstanceOf[Invocation] &&
-    that.asInstanceOf[Invocation].joinpoint == joinpoint &&
-    that.asInstanceOf[Invocation].isOneWay == isOneWay
+    that.asInstanceOf[Invocation].joinPoint == joinPoint &&
+    that.asInstanceOf[Invocation].isOneWay == isOneWay &&
+    that.asInstanceOf[Invocation].isVoid == isVoid
   }
 }
 
@@ -419,12 +327,12 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
   }
 
   override def receive: PartialFunction[Any, Unit] = {
-    case Invocation(joinpoint, oneWay) =>
-      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinpoint)
-      if (oneWay) joinpoint.proceed
-      else reply(joinpoint.proceed)
+    case Invocation(joinPoint, isOneWay, _) =>
+      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
+      if (isOneWay) joinPoint.proceed
+      else reply(joinPoint.proceed)
     case unexpected =>
-      throw new ActiveObjectException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
+      throw new IllegalStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
 
   override protected def preRestart(reason: AnyRef, config: Option[AnyRef]) {
@@ -445,8 +353,8 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
   //  } catch { case e: InvocationTargetException => throw e.getCause }
   //}
 
-  private def serializeArguments(joinpoint: JoinPoint) = {
-    val args = joinpoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
+  private def serializeArguments(joinPoint: JoinPoint) = {
+    val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
     var unserializable = false
     var hasMutableArgument = false
     for (arg <- args.toList) {
@@ -473,7 +381,7 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
     if (!unserializable && hasMutableArgument) {
       // FIXME: can we have another default deep cloner?
       val copyOfArgs = Serializer.Java.deepClone(args)
-      joinpoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
+      joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
     }    
   }
 }

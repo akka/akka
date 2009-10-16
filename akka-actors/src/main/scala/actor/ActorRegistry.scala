@@ -4,17 +4,19 @@
 
 package se.scalablesolutions.akka.actor
 
-import util.Logging
+import se.scalablesolutions.akka.util.Logging
 
-import scala.collection.jcl.HashMap
+import scala.collection.mutable.HashMap
 
 /**
- * Registry holding all actor instances, mapped by class..
+ * Registry holding all actor instances, mapped by class.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends Logging {
   private val actors = new HashMap[String, List[Actor]]
+
+  def actorsFor(clazz: Class[_]): List[Actor] = actorsFor(clazz.getName)
 
   def actorsFor(fqn : String): List[Actor] = synchronized {
     actors.get(fqn) match {
@@ -23,8 +25,6 @@ object ActorRegistry extends Logging {
     }
   }
  
-  def actorsFor(clazz: Class[_]) : List[Actor] = actorsFor(clazz.getName)
-  
   def register(actor: Actor) = synchronized {
     val name = actor.getClass.getName
     actors.get(name) match {

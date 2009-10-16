@@ -2,7 +2,6 @@ package se.scalablesolutions.akka.actor
 
 import junit.framework.TestCase
 
-import stm.TransactionRollbackException
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
@@ -95,8 +94,8 @@ class TransactionClasherSpec extends TestCase {
     Thread.sleep(1000)
     try {
       txActor2 !! "Second"
-      fail("Expected TransactionRollbackException")
-    } catch { case e: TransactionRollbackException => {} }
+      fail("Expected Exception")
+    } catch { case e: Exception => {} }
   }
 
   @Test
@@ -116,8 +115,8 @@ class TransactionClasherSpec extends TestCase {
     Thread.sleep(1000)
     try {
       txActor2 ! "Second"
-      fail("Expected TransactionRollbackException")
-    } catch { case e: TransactionRollbackException => {} }
+      fail("Expected Exception")
+    } catch { case e: Exception => {} }
   }
  
   /*

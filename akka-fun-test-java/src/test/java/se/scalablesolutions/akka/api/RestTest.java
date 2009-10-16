@@ -4,9 +4,6 @@
 
 package se.scalablesolutions.akka.api;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.container.grizzly.GrizzlyWebContainerFactory;
 import com.sun.grizzly.http.SelectorThread;
 import com.sun.grizzly.http.servlet.ServletAdapter;
 import com.sun.grizzly.tcp.Adapter;
@@ -15,15 +12,11 @@ import com.sun.grizzly.standalone.StaticStreamAlgorithm;
 import javax.ws.rs.core.UriBuilder;
 import javax.servlet.Servlet;
 
-import junit.framework.TestSuite;
 import junit.framework.TestCase;
 import org.junit.*;
-import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
-import java.util.HashMap;
 
 import se.scalablesolutions.akka.config.*;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
@@ -34,7 +27,7 @@ public class RestTest extends TestCase {
   private static int PORT = 9998;
   private static URI URI = UriBuilder.fromUri("http://localhost/").port(PORT).build();
   private static SelectorThread selector = null;
-  private static ActiveObjectManager conf = new ActiveObjectManager();
+  private static ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
   @BeforeClass
   protected void setUp() {

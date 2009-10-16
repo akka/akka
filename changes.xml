@@ -26,13 +26,19 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Viktor Klang" type="add">Support for Comet Actors using Atmosphere</action>
       <action dev="Jonas Bon&#233;r" type="add">AMQP integration; abstracted as actors in a supervisor hierarchy. Impl AMQP 0.9.1</action>
       <action dev="Jonas Bon&#233;r" type="add">Rewritten STM, now integrated with Multiverse STM</action>
-      <action dev="Jonas Bon&#233;r" type="add">Added STM API for atomic {..} and or {..} else {..}</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added STM API for atomic {..} and run {..} orElse {..}</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added STM retry</action>
+      <action dev="Jonas Bon&#233;r" type="add">Complete rewrite of the persistence transaction management, now based on Unit of Work and Multiverse STM</action>
+      <action dev="Jonas Bon&#233;r" type="add">Monadic API to TransactionalRef (use it in for-comprehension)</action>
+      <action dev="Jonas Bon&#233;r" type="add">New Scala JSON parser based on sjson</action>
+      <action dev="Jonas Bon&#233;r" type="add">Smoother web app integration; just add akka.conf to WEB-INF/classes, no need for AKKA_HOME</action>
       <action dev="Jonas Bon&#233;r" type="add">Modularization of distribution into a thin core (actors, remoting and STM) and the rest in submodules</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Java objects (using Jackson)</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using SJSON)</action>
       <action dev="Jonas Bon&#233;r" type="add">Protobuf serialization for Java and Scala objects</action>
       <action dev="Jonas Bon&#233;r" type="add">SBinary serialization for Scala objects</action>
       <action dev="Jonas Bon&#233;r" type="add">Protobuf as remote protocol</action>
+      <action dev="Jonas Bon&#233;r" type="add">Updated Cassandra integration and CassandraSession API to v0.4</action>
       <action dev="Jonas Bon&#233;r" type="add">Added CassandraSession API (with socket pooling) wrapping Cassandra's Thrift API in Scala and Java APIs</action>
       <action dev="Jonas Bon&#233;r" type="add">CassandraStorage is now works with external Cassandra cluster</action>
       <action dev="Jonas Bon&#233;r" type="remove">Removed embedded Cassandra mode</action>
@@ -41,12 +47,12 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Jonas Bon&#233;r" type="add">SchedulerActor for scheduling periodic tasks</action>
       <action dev="Jonas Bon&#233;r" type="add">Now start up kernel with 'java -jar dist/akka-0.6.jar'</action>
       <action dev="Jonas Bon&#233;r" type="fix">Concurrent mode is now per actor basis</action>
-      <action dev="Jonas Bon&#233;r" type="fix">Made Akka Web App aware, does not require AKKA_HOME when using it as a library</action>
       <action dev="Jonas Bon&#233;r" type="fix">Fixed dispatcher bug</action>
       <action dev="Jonas Bon&#233;r" type="fix">Cleaned up Maven scripts and distribution in general</action>
       <action dev="Jonas Bon&#233;r" type="add">Added mailing list: akka-user@googlegroups.com</action>
       <action dev="Jonas Bon&#233;r" type="add">Improved and restructured documentation</action>
       <action dev="Jonas Bon&#233;r" type="add">New URL: http://akkasource.org</action>
+      <action dev="Jonas Bon&#233;r" type="add">Fixed many many bugs</action>
     </release>
     <release version="0.5" date="2009-07-12" description="First public release" />
   </body>

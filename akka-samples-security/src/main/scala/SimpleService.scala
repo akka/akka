@@ -4,13 +4,14 @@
 
 package sample.secure
 
-import _root_.se.scalablesolutions.akka.state.{TransactionalState,PersistentState, CassandraStorageConfig}
-import _root_.se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
-import _root_.se.scalablesolutions.akka.config.ScalaConfig._
-import _root_.se.scalablesolutions.akka.util.Logging
-import _root_.se.scalablesolutions.akka.security.{DigestAuthenticationActor, UserInfo}
-import _root_.javax.annotation.security.{DenyAll,PermitAll,RolesAllowed}
-import javax.ws.rs.{GET, POST, Path, Produces, Consumes}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.security.{DigestAuthenticationActor, UserInfo}
+import se.scalablesolutions.akka.state.TransactionalState
+
+import javax.annotation.security.RolesAllowed
+import javax.ws.rs.{GET, Path, Produces}
 
 class Boot {
   object factory extends SupervisorFactory {
@@ -66,7 +67,7 @@ class SecureService extends Actor with Logging {
   case object Tick
   private val KEY = "COUNTER";
   private var hasStartedTicking = false;
-  private val storage = PersistentState.newMap(CassandraStorageConfig())
+  private val storage = TransactionalState.newMap  
 
   @GET
   @Produces(Array("text/html"))

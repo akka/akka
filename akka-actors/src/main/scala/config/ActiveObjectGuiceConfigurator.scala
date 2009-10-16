@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.config
 import com.google.inject._
 
 import ScalaConfig._
-import se.scalablesolutions.akka.actor.{Supervisor, ActiveObjectFactory, Dispatcher}
+import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher}
 import se.scalablesolutions.akka.util.Logging
 
 //import org.apache.camel.impl.{DefaultCamelContext}
@@ -21,7 +21,7 @@ import java.lang.reflect.Method
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with Logging { // with CamelConfigurator {
+private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfiguratorBase with Logging { // with CamelConfigurator {
   //val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
   private var injector: Injector = _
@@ -32,7 +32,6 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with Loggin
   private var bindings: List[DependencyBinding] = Nil
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
   private var activeObjectRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
-  private var activeObjectFactory = new ActiveObjectFactory
   //private var camelContext = new DefaultCamelContext
   private var modules = new java.util.ArrayList[Module]
   private var methodToUriRegistry = new HashMap[Method, String]
@@ -79,7 +78,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with Loggin
   }
   */
   override def configure(restartStrategy: RestartStrategy, components: List[Component]):
-    ActiveObjectConfigurator = synchronized {
+    ActiveObjectConfiguratorBase = synchronized {
     this.restartStrategy = restartStrategy
     this.components = components.toArray.toList.asInstanceOf[List[Component]]
     bindings = for (component <- this.components) yield {
@@ -102,7 +101,7 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with Loggin
     val remoteAddress =
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
-    val proxy = activeObjectFactory.newInstance(targetClass, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    val proxy = ActiveObject.newInstance(targetClass, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     supervised ::= Supervise(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
@@ -117,21 +116,21 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with Loggin
     val remoteAddress =
       if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
-    val proxy = activeObjectFactory.newInstance(targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    val proxy = ActiveObject.newInstance(targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     supervised ::= Supervise(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }
 
-  override def inject: ActiveObjectConfigurator = synchronized {
+  override def inject: ActiveObjectConfiguratorBase = synchronized {
     if (injector != null) throw new IllegalStateException("inject() has already been called on this configurator")
     injector = Guice.createInjector(modules)
     this
   }
 
-  override def supervise: ActiveObjectConfigurator = synchronized {
+  override def supervise: ActiveObjectConfiguratorBase = synchronized {
     if (injector == null) inject
-    supervisor = Some(activeObjectFactory.supervise(restartStrategy, supervised))
+    supervisor = Some(ActiveObject.supervise(restartStrategy, supervised))
     //camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
     //camelContext.start
     supervisor.get.startSupervisor
@@ -151,12 +150,12 @@ class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurator with Loggin
    *   }})
    * </pre>
    */
-  def addExternalGuiceModule(module: Module): ActiveObjectConfigurator  = synchronized {
+  def addExternalGuiceModule(module: Module): ActiveObjectConfiguratorBase  = synchronized {
     modules.add(module)
     this
   }
   /*
-  override def addRoutes(routes: Routes): ActiveObjectConfigurator  = synchronized {
+  override def addRoutes(routes: Routes): ActiveObjectConfiguratorBase  = synchronized {
     camelContext.addRoutes(routes)
     this
   }

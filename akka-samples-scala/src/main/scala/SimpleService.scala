@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
 import javax.ws.rs.core.MultivaluedMap
-import javax.ws.rs.{GET, POST, Path, QueryParam, Produces, WebApplicationException, Consumes}
+import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
 
 import org.atmosphere.core.annotation.{Broadcast, Suspend}
 import org.atmosphere.util.XSSHtmlFilter

@@ -6,15 +6,13 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.config.*;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
-import se.scalablesolutions.akka.actor.*;
-import se.scalablesolutions.akka.Kernel;
 
 import junit.framework.TestCase;
 
 public class PersistentStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectManager conf = new ActiveObjectManager();
+  final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
   protected void setUp() {
     PersistenceManager.init();
@@ -23,7 +21,7 @@ public class PersistentStateTest extends TestCase {
         new Component[] {
           new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 10000000),
           new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000)
-          //new Component(PersistentClasher.class, new LifeCycle(new Permanent(), 1000), 100000) 
+          //new Component(PersistentClasher.class, new LifeCycle(new Permanent(), 1000), 100000)
         }).supervise();
   }
 

@@ -10,20 +10,22 @@ import java.util.HashSet
 import se.scalablesolutions.akka.Config._
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.stm.Transaction._
 import se.scalablesolutions.akka.stm.TransactionManagement._
-import se.scalablesolutions.akka.stm.TransactionManagement
+import se.scalablesolutions.akka.stm.{StmException, TransactionManagement}
 import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
 import se.scalablesolutions.akka.util.Logging
 
+import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
+
 import org.multiverse.utils.TransactionThreadLocal._
-import org.multiverse.api.exceptions.StmException
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
-case object TransactionalInit extends LifecycleMessage
+//case object TransactionalInit extends LifecycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifecycleMessage
 case class Restart(reason: AnyRef) extends LifecycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifecycleMessage
@@ -64,7 +66,7 @@ trait Actor extends Logging with TransactionManagement {
   private var hotswap: Option[PartialFunction[Any, Unit]] = None
   private var config: Option[AnyRef] = None
  
-  @volatile protected[this] var isTransactional = false
+  @volatile protected[this] var isTransactionRequiresNew = false
   @volatile protected[this] var remoteAddress: Option[InetSocketAddress] = None
   @volatile protected[akka] var supervisor: Option[Actor] = None
  
@@ -214,7 +216,7 @@ trait Actor extends Logging with TransactionManagement {
     if (!isRunning) {
       dispatcher.start
       isRunning = true
-      if (isTransactional) this ! TransactionalInit
+      //if (isTransactional) this !! TransactionalInit
     }
     log.info("[%s] has started", toString)
   }
@@ -235,39 +237,44 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    */
-  def !(message: AnyRef): Unit =
+  def !(message: AnyRef) =
     if (isRunning) postMessageToMailbox(message)
     else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
-   * It waits on the reply either until it receives it (returns Some(replyMessage) or until the timeout expires (returns None).
-   * E.g. send-and-receive-eventually semantics.
+   * <p/>
+   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
+   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
    * <p/>
    * <b>NOTE:</b>
-   * If you are sending messages using '!!' then you *have to* use reply(..) sending a reply message to the original sender.
-   * If not then the sender will unessecary block until the timeout expires.
+   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
+   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
     val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
+    if (message.isInstanceOf[Invocation] && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
     future.await
     getResultOrThrowException(future)
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-
+  
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
-   * It waits on the reply either until it receives it (returns Some(replyMessage) or until the actor default timeout expires (returns None).
-   * E.g. send-and-receive-eventually semantics.
+   * <p/>
+   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
+   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
    * <p/>
    * <b>NOTE:</b>
-   * If you are sending messages using '!!' then you *have to* use reply(..) sending a reply message to the original sender.
-   * If not then the sender will unessecary block until the timeout expires.
+   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
+   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def !![T](message: AnyRef): Option[T] = !![T](message, timeout)
 
   /**
    * Sends a message asynchronously, but waits on a future indefinitely. E.g. emulates a synchronous call.
-   * E.g. send-and-receive-eventually semantics.
+   * <p/>
+   * <b>NOTE:</b>
+   * Should be used with care.
    */
   def !?[T](message: AnyRef): T = if (isRunning) {
     val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
@@ -276,10 +283,18 @@ trait Actor extends Logging with TransactionManagement {
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
 
   /**
-   * Use reply(..) to reply with a message to the original sender of the message currently being processed.
+   * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * <p/>
+   * <b>NOTE:</b>
+   * Does only work together with the actor <code>!!</code> method and/or active objects not annotated
+   * with <code>@oneway</code>.
    */
   protected[this] def reply(message: AnyRef) = senderFuture match {
-    case None => throw new IllegalStateException("No sender in scope, can't reply. Have you used '!' (async, fire-and-forget)? If so, switch to '!!' which will return a future to wait on." )
+    case None => throw new IllegalStateException(
+      "\n\tNo sender in scope, can't reply. " +
+      "\n\tHave you used the '!' message send or the '@oneway' active object annotation? " +
+      "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future that will be bound by the argument passed to 'reply'." )
     case Some(future) => future.completeWithResult(message)
   }
 
@@ -318,7 +333,7 @@ trait Actor extends Logging with TransactionManagement {
    */
   def makeTransactionRequired = synchronized {
     if (isRunning) throw new IllegalArgumentException("Can not make actor transaction required after it has been started")
-    else isTransactional = true
+    else isTransactionRequiresNew = true
   }
 
   /**
@@ -505,41 +520,30 @@ trait Actor extends Logging with TransactionManagement {
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     val future = messageHandle.future
 
-    try {
-      tryToCommitTransactions
-
-      if (isInExistingTransaction) joinExistingTransaction
-      else if (isTransactional) startNewTransaction(messageHandle)
-
-      incrementTransaction
-      senderFuture = future
-      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
-      decrementTransaction
-
-    } catch {
-      case e: StmException =>
-        e.printStackTrace
+    def proceed = {
+      try {
+        incrementTransaction
+        if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
+        else throw new IllegalArgumentException("Actor " + toString + " could not process message [" + message + "] since no matching 'case' clause in its 'receive' method could be found")
+      } finally {
         decrementTransaction
-
-        val tx = currentTransaction.get
-        if (tx.isDefined) {
-          rollback(tx.get)
-          if (tx.get.isTopLevel) {
-            val done = tx.get.retry
-            if (done) {
-              if (future.isDefined) future.get.completeWithException(this, e)
-              else e.printStackTrace
-            }
-          }
+      }
+    }
+    
+    try {
+      senderFuture = future
+      if (isTransactionRequiresNew && !isTransactionInScope) {
+        if (senderFuture.isEmpty) throw new StmException(
+          "\n\tCan't continue transaction in a one-way fire-forget message send" +
+          "\n\tE.g. using Actor '!' method or Active Object 'void' method" +
+          "\n\tPlease use the Actor '!!', '!?' methods or Active Object method with non-void return type")
+        atomic {
+          proceed
         }
-      
+      } else proceed
+    } catch {
       case e =>
         e.printStackTrace
-        decrementTransaction
-
-        val tx = currentTransaction.get
-        if (tx.isDefined) rollback(tx.get)
 
         if (future.isDefined) future.get.completeWithException(this, e)
         else e.printStackTrace
@@ -548,9 +552,7 @@ trait Actor extends Logging with TransactionManagement {
 
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (supervisor.isDefined) supervisor.get ! Exit(this, e)
-
     } finally {
-      tryToPrecommitTransactions
       clearTransaction
     }
   }
@@ -566,7 +568,7 @@ trait Actor extends Logging with TransactionManagement {
     case HotSwap(code) =>      hotswap = code
     case Restart(reason) =>    restart(reason)
     case Exit(dead, reason) => handleTrapExit(dead, reason)
-    case TransactionalInit =>  initTransactionalState
+//    case TransactionalInit =>  initTransactionalState
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {

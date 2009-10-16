@@ -8,6 +8,7 @@ import junit.framework.TestCase;
 
 import se.scalablesolutions.akka.Config;
 import se.scalablesolutions.akka.config.*;
+import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 import se.scalablesolutions.akka.actor.*;
 import se.scalablesolutions.akka.Kernel;
@@ -15,15 +16,13 @@ import se.scalablesolutions.akka.Kernel;
 public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectManager conf = new ActiveObjectManager();
-
+  final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
   protected void setUp() {
     Config.config();
     conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
-            // FIXME: remove string-name, add ctor to only accept target class
             new Component(InMemStateful.class,
                 new LifeCycle(new Permanent(), 1000),
                               //new RestartCallbacks("preRestart", "postRestart")),
@@ -63,7 +62,6 @@ public class InMemoryStateTest extends TestCase {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getVectorState());
   }
 
@@ -83,7 +81,6 @@ public class InMemoryStateTest extends TestCase {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
-    stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // to trigger commit
     assertEquals("new state", stateful.getRefState());
   }
 
@@ -131,7 +128,6 @@ public class InMemoryStateTest extends TestCase {
   // stateful.clashNotOk("stateful", "new state", clasher);
   // fail("should have thrown an exception");
   // } catch (RuntimeException e) {
-  // System.out.println(e);
   // } // expected
   // assertEquals("init", stateful.getState("stateful")); // check that state is
   // // == init state

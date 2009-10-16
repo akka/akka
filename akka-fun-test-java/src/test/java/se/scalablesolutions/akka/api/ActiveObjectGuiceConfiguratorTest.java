@@ -10,6 +10,7 @@ import com.google.inject.Scopes;
 import junit.framework.TestCase;
 
 import se.scalablesolutions.akka.Config;
+import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import se.scalablesolutions.akka.dispatch.EventBasedThreadPoolDispatcher;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
@@ -18,7 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ActiveObjectGuiceConfiguratorTest extends TestCase {
   static String messageLog = "";
 
-    final private se.scalablesolutions.akka.config.ActiveObjectManager conf = new se.scalablesolutions.akka.config.ActiveObjectManager();
+    final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
     protected void setUp() {
       Config.config();

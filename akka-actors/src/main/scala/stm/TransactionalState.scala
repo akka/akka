@@ -4,10 +4,13 @@
 
 package se.scalablesolutions.akka.state
 
-import stm.{TransactionManagement, Ref}
+import se.scalablesolutions.akka.stm.{TransactionManagement}
+import se.scalablesolutions.akka.collection._
+
 import org.multiverse.templates.AtomicTemplate
-import org.multiverse.api.Transaction;
-import collection._
+import org.multiverse.api.Transaction
+import org.multiverse.datastructures.refs.manual.Ref;
+
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 

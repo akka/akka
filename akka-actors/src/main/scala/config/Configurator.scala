@@ -20,14 +20,14 @@ trait Configurator {
   def isDefined(clazz: Class[_]): Boolean
 }
 
-trait ActiveObjectConfigurator extends Configurator {
+private[akka] trait ActiveObjectConfiguratorBase extends Configurator {
   def getExternalDependency[T](clazz: Class[T]): T
 
-  def configure(restartStrategy: RestartStrategy, components: List[Component]): ActiveObjectConfigurator
+  def configure(restartStrategy: RestartStrategy, components: List[Component]): ActiveObjectConfiguratorBase
 
-  def inject: ActiveObjectConfigurator
+  def inject: ActiveObjectConfiguratorBase
 
-  def supervise: ActiveObjectConfigurator
+  def supervise: ActiveObjectConfiguratorBase
 
   def reset
 

@@ -43,8 +43,6 @@ object RemoteServer extends Logging {
     Executors.newCachedThreadPool,
     Executors.newCachedThreadPool)
 
-  private val activeObjectFactory = new ActiveObjectFactory
-
   private val bootstrap = new ServerBootstrap(factory)
 
   def start: Unit = start(None)
@@ -85,7 +83,6 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) ext
  */
 @ChannelPipelineCoverage { val value = "all" }
 class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader]) extends SimpleChannelUpstreamHandler with Logging {
-  private val activeObjectFactory = new ActiveObjectFactory
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
  
@@ -239,7 +236,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         log.info("Creating a new remote active object [%s]", name)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
-        val newInstance = activeObjectFactory.newInstance(clazz, timeout).asInstanceOf[AnyRef]
+        val newInstance = ActiveObject.newInstance(clazz, timeout).asInstanceOf[AnyRef]
         activeObjects.put(name, newInstance)
         newInstance
       } catch {

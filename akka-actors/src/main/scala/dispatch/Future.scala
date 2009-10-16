@@ -7,7 +7,7 @@
  */
 package se.scalablesolutions.akka.dispatch
 
-import java.util.concurrent.locks.{Lock, Condition, ReentrantLock}
+import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
 
 class FutureTimeoutException(message: String) extends RuntimeException(message)
