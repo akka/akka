@@ -1,6 +1,6 @@
 h1. Akka Transactors
 
-h2. RESTful Distributed Persistent Transactional Actors
+h2. Distributed Transactional RESTful Persistent Actors
 
 h3. "http://akkasource.org":http://akkasource.org
 

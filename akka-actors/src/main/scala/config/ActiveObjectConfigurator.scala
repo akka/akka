@@ -13,10 +13,17 @@ import java.util._
 //import org.apache.camel.{Endpoint, Routes}
 
 /**
+ * Configurator for the Active Objects. Used to do declarative configuration of supervision.
+ * It also doing dependency injection with and into Active Objects using dependency injection
+ * frameworks such as Google Guice or Spring.
+ * <p/>
+ * If you don't want declarative configuration then you should use the <code>ActiveObject</code>
+ * factory methods.
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ActiveObjectManager {
+class ActiveObjectConfigurator {
+  // TODO: make pluggable once we have f.e a SpringConfigurator
   private val INSTANCE = new ActiveObjectGuiceConfigurator
 
   /**
@@ -27,29 +34,29 @@ class ActiveObjectManager {
    */
   def getInstance[T](clazz: Class[T]): T = INSTANCE.getInstance(clazz)
 
-  def configure(restartStrategy: RestartStrategy, components: Array[Component]): ActiveObjectManager = {
+  def configure(restartStrategy: RestartStrategy, components: Array[Component]): ActiveObjectConfigurator = {
     INSTANCE.configure(
       restartStrategy.transform,
       components.toList.asInstanceOf[scala.List[Component]].map(_.transform))
     this
   }
 
-  def inject(): ActiveObjectManager = {
+  def inject: ActiveObjectConfigurator = {
     INSTANCE.inject
     this
   }
 
-  def supervise: ActiveObjectManager = {
+  def supervise: ActiveObjectConfigurator = {
     INSTANCE.supervise
     this
   }
 
-  def addExternalGuiceModule(module: Module): ActiveObjectManager = {
+  def addExternalGuiceModule(module: Module): ActiveObjectConfigurator = {
     INSTANCE.addExternalGuiceModule(module)
     this
   }
 
-  //def addRoutes(routes: Routes): ActiveObjectManager  = {
+  //def addRoutes(routes: Routes): ActiveObjectConfigurator  = {
   //  INSTANCE.addRoutes(routes)
   //  this
  // }
@@ -69,6 +76,7 @@ class ActiveObjectManager {
 
   //def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = INSTANCE.getRoutingEndpoints(uri)
 
+  // TODO: should this be exposed?
   def getGuiceModules: List[Module] = INSTANCE.getGuiceModules
 
   def reset = INSTANCE.reset

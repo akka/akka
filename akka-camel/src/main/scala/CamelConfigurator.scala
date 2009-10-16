@@ -23,7 +23,7 @@ trait CamelConfigurator {
    * }).inject().supervise();
    * </pre>
    */
-   def addRoutes(routes: Routes): ActiveObjectConfigurator
+   def addRoutes(routes: Routes): ActiveObjectConfiguratorBase
 
   def getCamelContext: CamelContext
 

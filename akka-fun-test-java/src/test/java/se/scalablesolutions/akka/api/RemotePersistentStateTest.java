@@ -6,15 +6,13 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.config.*;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
-import se.scalablesolutions.akka.actor.*;
-import se.scalablesolutions.akka.Kernel;
 
 import junit.framework.TestCase;
 
 public class RemotePersistentStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectManager conf = new ActiveObjectManager();
+  final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
   protected void setUp() {
     PersistenceManager.init();

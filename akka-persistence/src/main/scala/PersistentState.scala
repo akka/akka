@@ -4,13 +4,10 @@
 
 package se.scalablesolutions.akka.state
 
-import stm.TransactionManagement
-import stm.TransactionManagement.currentTransaction
-import akka.collection._
+import se.scalablesolutions.akka.stm.TransactionManagement.currentTransaction
+import se.scalablesolutions.akka.collection._
 
 import org.codehaus.aspectwerkz.proxy.Uuid
-
-import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 class NoTransactionInScopeException extends RuntimeException
 

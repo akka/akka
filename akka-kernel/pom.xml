@@ -144,7 +144,7 @@
     <dependency>
       <groupId>sjson.json</groupId>
       <artifactId>sjson</artifactId>
-      <version>0.1</version>
+      <version>0.2</version>
     </dependency>
 
     <!-- For Mongo -->
@@ -207,17 +207,17 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-core</artifactId>
-      <version>1.1.2-ea</version>
+      <version>1.1.3-ea</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
-      <version>1.1.2-ea</version>
+      <version>1.1.3-ea</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-json</artifactId>
-      <version>1.1.2-ea</version>
+      <version>1.1.3-ea</version>
     </dependency>
     <dependency>
       <groupId>javax.ws.rs</groupId>
@@ -227,7 +227,7 @@
     <dependency>
       <groupId>com.sun.jersey.contribs</groupId>
       <artifactId>jersey-scala</artifactId>
-      <version>1.1.2-ea-SNAPSHOT</version>
+      <version>1.1.3-ea</version>
     </dependency>
     <dependency>
       <groupId>org.atmosphere</groupId>

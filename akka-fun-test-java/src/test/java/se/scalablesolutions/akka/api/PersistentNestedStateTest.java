@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.config.*;
+import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 import se.scalablesolutions.akka.actor.*;
 	import se.scalablesolutions.akka.Kernel;
@@ -14,8 +15,7 @@ import junit.framework.TestCase;
 public class PersistentNestedStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectManager conf = new ActiveObjectManager();
-  final private ActiveObjectFactory factory = new ActiveObjectFactory();
+  final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
   protected void setUp() {
       PersistenceManager.init();

@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.actor
 import java.util.concurrent.TimeUnit
 import junit.framework.TestCase
 
-import nio.{RemoteServer, RemoteClient}
+import se.scalablesolutions.akka.nio.{RemoteServer, RemoteClient}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 

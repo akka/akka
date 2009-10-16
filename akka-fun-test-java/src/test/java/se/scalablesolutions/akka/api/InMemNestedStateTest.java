@@ -6,6 +6,7 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.Config;
 import se.scalablesolutions.akka.config.*;
+import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 import se.scalablesolutions.akka.actor.*;
 import se.scalablesolutions.akka.Kernel;
@@ -14,8 +15,7 @@ import junit.framework.TestCase;
 public class InMemNestedStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectManager conf = new ActiveObjectManager();
-  final private ActiveObjectFactory factory = new ActiveObjectFactory();
+  final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
   protected void setUp() {
     conf.configure(
@@ -44,7 +44,6 @@ public class InMemNestedStateTest extends TestCase {
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
-    System.out.println("-- BACK --");
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
     assertEquals("new state", nested.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
