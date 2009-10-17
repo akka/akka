@@ -61,13 +61,11 @@ object Transaction extends TransactionManagement {
   def atomic[T](body: => T): T = new AtomicTemplate[T](Multiverse.STM, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
     override def postStart(mtx: MultiverseTransaction) = {
-      println("------ SETTING TX")
       val tx = new Transaction
       tx.transaction = Some(mtx)
       setTransaction(Some(tx))
     }
     override def postCommit =  {
-      println("------ GETTING TX")
       if (isTransactionInScope) {}///getTransactionInScope.commit
       else throw new IllegalStateException("No transaction in scope")
     }
@@ -167,7 +165,6 @@ object Transaction extends TransactionManagement {
  
   override def toString(): String = synchronized { "Transaction[" + id + ", " + status + "]" }
 }
-
 
 @serializable sealed abstract class TransactionStatus
 object TransactionStatus {
