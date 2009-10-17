@@ -68,6 +68,8 @@ case class DigestCredentials(method: String,
                              response: String,
                              opaque: String) extends Credentials
 
+case class SpnegoCredentials(token : Array[Byte]) extends Credentials
+
 /**
  * Jersey Filter for invocation intercept and authorization/authentication
  */
@@ -168,7 +170,7 @@ trait AuthenticationActor[C <: Credentials] extends Actor with Logging
     def mkDefaultSecurityContext(r : Req,u : UserInfo, scheme : String) : SecurityContext = {
         val n = u.username
         val p = new Principal { def getName = n }
-        
+
         new SecurityContext {
             def getAuthenticationScheme = scheme
             def getUserPrincipal = p
@@ -331,4 +333,157 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials]
     //Optional overrides
     def nonceValidityPeriod = 60*1000//ms
     def noncePurgeInterval = 2*60*1000 //ms
+}
+
+import _root_.java.security.Principal
+import _root_.java.security.PrivilegedActionException
+import _root_.java.security.PrivilegedExceptionAction
+
+import _root_.javax.security.auth.login.AppConfigurationEntry
+import _root_.javax.security.auth.login.Configuration
+import _root_.javax.security.auth.login.LoginContext
+import _root_.javax.security.auth.Subject
+import _root_.javax.security.auth.kerberos.KerberosPrincipal
+
+import _root_.org.ietf.jgss.GSSContext
+import _root_.org.ietf.jgss.GSSCredential
+import _root_.org.ietf.jgss.GSSManager
+trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials]
+{
+    override def unauthorized =
+            Response.status(401).header("WWW-Authenticate", "Negotiate").build
+
+    override def extractCredentials(r : Req) : Option[SpnegoCredentials] = {
+
+      val a = auth(r)
+
+      // for some reason the jersey Base64 class does not work with kerberos
+      // but the commons Base64 does
+      import _root_.org.apache.commons.codec.binary.Base64
+      if (a != null && a.startsWith("Negotiate "))
+        Some(
+          SpnegoCredentials(Base64.decodeBase64(a.substring(10).trim.getBytes))
+        )
+      else
+        None
+    }
+
+
+    override def verify(odc : Option[SpnegoCredentials]) : Option[UserInfo] = odc match {
+      case Some(dc) => {
+
+        try {
+          val principal = Subject.doAs(this.serviceSubject, new KerberosValidateAction(dc.token));
+
+          val user = stripRealmFrom(principal)
+
+          Some(UserInfo(user, null, rolesFor(user)))
+        } catch {
+          case e: PrivilegedActionException => {
+            e.printStackTrace
+            return None
+          }
+        }
+      }
+      case _ => None
+    }
+
+    override def mkSecurityContext(r : Req,u : UserInfo) : SecurityContext =
+        mkDefaultSecurityContext(r,u,SecurityContext.CLIENT_CERT_AUTH)
+
+    /**
+     * returns the roles for the given user
+     */
+    def rolesFor(user: String): List[String]
+
+   // Kerberos 
+
+   /**
+    * strips the realm from a kerberos principal name, returning only the user part
+    */
+   private def stripRealmFrom(principal: String):String = principal.split("@")(0)
+
+   /**
+    * principal name for the HTTP kerberos service, i.e HTTP/{server}@{realm}
+    */
+   lazy val servicePrincipal = akka.Config.config.getString("akka.rest.kerberos.servicePrincipal").getOrElse(throw new IllegalStateException("akka.rest.kerberos.servicePrincipal"))
+
+   /**
+    * keytab location with credentials for the service principal
+    */
+   lazy val keyTabLocation = akka.Config.config.getString("akka.rest.kerberos.keyTabLocation").getOrElse(throw new IllegalStateException("akka.rest.kerberos.keyTabLocation"))
+
+   lazy val kerberosDebug = akka.Config.config.getString("akka.rest.kerberos.kerberosDebug").getOrElse("false")
+
+   /**
+    * is not used by this authenticator, so accept an empty value
+    */
+   lazy val realm = akka.Config.config.getString("akka.rest.kerberos.realm").getOrElse("")
+
+   /**
+    * verify the kerberos token from a client with the server
+    */
+    class KerberosValidateAction(kerberosTicket: Array[Byte]) extends PrivilegedExceptionAction[String] {
+
+        def run = {
+            val context = GSSManager.getInstance().createContext(null.asInstanceOf[GSSCredential])
+
+            context.acceptSecContext(kerberosTicket, 0, kerberosTicket.length)
+
+            val user = context.getSrcName().toString()
+
+            context.dispose()
+
+            user
+        }
+
+    }
+
+    // service principal login to kerberos on startup
+
+    val serviceSubject = servicePrincipalLogin
+
+    /**
+     * acquire an initial ticket from the kerberos server for the HTTP service
+     */
+    def servicePrincipalLogin = {
+        val loginConfig = new LoginConfig(
+            new java.net.URL(this.keyTabLocation).toExternalForm(),
+            this.servicePrincipal,
+            this.kerberosDebug)
+
+        val princ = new java.util.HashSet[Principal](1)
+        princ.add(new KerberosPrincipal(this.servicePrincipal))
+
+        val sub = new Subject(false, princ, new java.util.HashSet[Object], new java.util.HashSet[Object])
+
+        val lc = new LoginContext("", sub, null, loginConfig)
+        
+        lc.login()
+
+        lc.getSubject()
+    }
+
+    /**
+     * this class simulates a login-config.xml
+     */
+    class LoginConfig(keyTabLocation: String, servicePrincipal: String, debug: String) extends Configuration {
+
+        override def getAppConfigurationEntry(name: String):Array[AppConfigurationEntry] = {
+            val options = new java.util.HashMap[String, String]
+            options.put("useKeyTab",   "true");
+            options.put("keyTab",      this.keyTabLocation);
+            options.put("principal",   this.servicePrincipal);
+            options.put("storeKey",    "true");
+            options.put("doNotPrompt", "true");
+            options.put("isInitiator", "true");
+            options.put("debug", debug);
+
+            Array(new AppConfigurationEntry(
+                "com.sun.security.auth.module.Krb5LoginModule",
+                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                options))
+        }
+    }
+
 }
