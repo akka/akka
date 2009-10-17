@@ -82,12 +82,8 @@ class TransactionalRef[T] extends Transactional {
   private[this] val ref: Ref[T] = new Ref[T]//Ref.createCommittedRef[T]
 
 
-  def swap(elem: T) = {
-    println("---- swap TX " + getThreadLocalTransaction)
-    ref.set(elem)
-  }
+  def swap(elem: T) = ref.set(elem)
   def get: Option[T] = {
-    println("---- get TX " + getThreadLocalTransaction)
     if (ref.isNull) None
     else Some(ref.get)
   }
@@ -99,10 +95,7 @@ class TransactionalRef[T] extends Transactional {
     else ref.get
   }
 
-  def isDefined: Boolean = {
-    println("---- isDefined TX " + getThreadLocalTransaction)
-    !ref.isNull  
-  }
+  def isDefined: Boolean = !ref.isNull
   
   def isEmpty: Boolean = ref.isNull
 
