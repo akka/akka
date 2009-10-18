@@ -137,7 +137,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
         //Last but not least, the resource-level RolesAllowed
         val cra = am.getResource.getAnnotation(classOf[RolesAllowed])
         if (cra ne null)
-            return mkFilter(Some(ra.value.toList))
+            return mkFilter(Some(cra.value.toList))
 
         return null;
     }
@@ -389,7 +389,8 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials]
     }
 
     override def mkSecurityContext(r : Req,u : UserInfo) : SecurityContext =
-        mkDefaultSecurityContext(r,u,SecurityContext.CLIENT_CERT_AUTH)
+        mkDefaultSecurityContext(r,u,SecurityContext.CLIENT_CERT_AUTH) // the security context does not know about spnego/kerberos
+                                                                       // not sure whether to use a constant from the security context or something like "SPNEGO/Kerberos"
 
     /**
      * returns the roles for the given user
