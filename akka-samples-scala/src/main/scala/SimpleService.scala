@@ -9,6 +9,7 @@ import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
+import java.lang.Integer
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
 
@@ -112,7 +113,13 @@ class Chat extends Actor with Logging {
   @Suspend
   @GET
   @Produces(Array("text/html"))
-  def suspend = <!-- Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. -->
+  def suspend = {
+      val s = new StringBuilder
+      s append "<!-- "
+      for(i <- 1 to 10) s append "Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. "
+      s append " -->"
+      s toString
+  }
 
   override def receive: PartialFunction[Any, Unit] = {
     case Chat(who, what, msg) => {

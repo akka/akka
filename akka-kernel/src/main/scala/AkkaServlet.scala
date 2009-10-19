@@ -41,32 +41,31 @@ class AkkaServlet extends ServletContainer with Logging {
 }
 
 class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet {
-  override def init(sconf: ServletConfig) = {
     val servlet = new AkkaServlet with AtmosphereServletProcessor {
 
-      //Delegate to implement the behavior for AtmosphereHandler
-      private val handler = new AbstractReflectorAtmosphereHandler {
-        override def onRequest(event: AtmosphereResource[HttpServletRequest, HttpServletResponse]): Unit = {
-          event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_RESOURCE, event)
-          event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_HANDLER, this)
-          service(event.getRequest, event.getResponse)
+            //Delegate to implement the behavior for AtmosphereHandler
+            private val handler = new AbstractReflectorAtmosphereHandler {
+                override def onRequest(event: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
+                    if(event ne null)
+                    {
+                        event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_RESOURCE, event)
+                        event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_HANDLER, this)
+                        service(event.getRequest, event.getResponse)
+                    }
+                }
+            }
+
+            override def onStateChange(event : AtmosphereResourceEvent[HttpServletRequest, HttpServletResponse] ) {
+                if(event ne null)
+                   handler onStateChange event
+            }
+
+            override def onRequest(resource: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
+                   handler onRequest resource
+            }
         }
-      }
 
-      override def onStateChange(event: AtmosphereResourceEvent[HttpServletRequest, HttpServletResponse]) {
-        handler onStateChange event
-      }
-
-      override def onRequest(resource: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
-        handler onRequest resource
-      }
+    override def loadConfiguration(sc : ServletConfig) {
+        atmosphereHandlers.put("/*", new AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
     }
-    config = new AtmosphereConfig {ah = servlet}
-    atmosphereHandlers.put("/*", new AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
-    setCometSupport(new GrizzlyCometSupport(config))
-    getCometSupport.init(sconf)
-    servlet.init(sconf)
-  }
-
-  override def loadAtmosphereDotXml(is: InputStream, urlc: URLClassLoader) = () //Hide it
 }

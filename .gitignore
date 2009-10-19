@@ -6,7 +6,7 @@ reports
 dist
 build
 target
-deploy
+deploy/*.jar
 data
 out
 logs

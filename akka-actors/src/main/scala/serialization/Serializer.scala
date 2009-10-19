@@ -37,6 +37,12 @@ object Serializer {
   val EMPTY_CLASS_ARRAY = Array[Class[_]]()
   val EMPTY_ANY_REF_ARRAY = Array[AnyRef]()
 
+  object NOOP extends Serializer {
+    def deepClone(obj: AnyRef): AnyRef = obj
+    def out(obj: AnyRef): Array[Byte] = obj.asInstanceOf[Array[Byte]]
+    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = bytes
+  }
+
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */

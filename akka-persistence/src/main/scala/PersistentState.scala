@@ -13,10 +13,10 @@ class NoTransactionInScopeException extends RuntimeException
 
 sealed abstract class PersistentStateConfig
 abstract class PersistentStorageConfig  extends PersistentStateConfig
-case class CassandraStorageConfig extends PersistentStorageConfig
-case class TerracottaStorageConfig extends PersistentStorageConfig
-case class TokyoCabinetStorageConfig extends PersistentStorageConfig
-case class MongoStorageConfig extends PersistentStorageConfig
+case class CassandraStorageConfig() extends PersistentStorageConfig
+case class TerracottaStorageConfig() extends PersistentStorageConfig
+case class TokyoCabinetStorageConfig() extends PersistentStorageConfig
+case class MongoStorageConfig() extends PersistentStorageConfig
 
 /**
  * Example Scala usage:
@@ -24,7 +24,6 @@ case class MongoStorageConfig extends PersistentStorageConfig
  * val myMap = PersistentState.newMap(CassandraStorageConfig)
  * </pre>
  * <p/>
- *
  * Example Java usage:
  * <pre>
  * TransactionalMap myMap = PersistentState.newMap(new CassandraStorageConfig());
@@ -252,7 +251,7 @@ class CassandraPersistentVector extends PersistentVector {
   val storage = CassandraStorage
 }
 
-/**
+/**                                                                                                                                           
  * Implements a persistent transactional vector based on the MongoDB distributed P2P key-value storage.
  *
  * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>

@@ -108,7 +108,7 @@ trait Actor extends Logging with TransactionManagement {
    *     .buildThreadPool
    * </pre>
    */
-  protected[akka] var dispatcher: MessageDispatcher = {
+  protected[akka] var messageDispatcher: MessageDispatcher = {
     val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher(getClass.getName)
     mailbox = dispatcher.messageQueue
     dispatcher.registerHandler(this, new ActorMessageInvoker(this))
@@ -214,7 +214,7 @@ trait Actor extends Logging with TransactionManagement {
    */
   def start = synchronized  {
     if (!isRunning) {
-      dispatcher.start
+      messageDispatcher.start
       isRunning = true
       //if (isTransactional) this !! TransactionalInit
     }
@@ -298,14 +298,16 @@ trait Actor extends Logging with TransactionManagement {
     case Some(future) => future.completeWithResult(message)
   }
 
+  def dispatcher = messageDispatcher
+
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
-  def setDispatcher(disp: MessageDispatcher) = synchronized {
+  def dispatcher_=(dispatcher: MessageDispatcher): Unit = synchronized {
     if (!isRunning) {
-      dispatcher = disp
-      mailbox = dispatcher.messageQueue
-      dispatcher.registerHandler(this, new ActorMessageInvoker(this))
+      messageDispatcher = dispatcher
+      mailbox = messageDispatcher.messageQueue
+      messageDispatcher.registerHandler(this, new ActorMessageInvoker(this))
     } else throw new IllegalArgumentException("Can not swap dispatcher for " + toString + " after it has been started")
   }
   
@@ -625,9 +627,9 @@ trait Actor extends Logging with TransactionManagement {
 
 
   private[akka] def swapDispatcher(disp: MessageDispatcher) = synchronized {
-    dispatcher = disp
-    mailbox = dispatcher.messageQueue
-    dispatcher.registerHandler(this, new ActorMessageInvoker(this))
+    messageDispatcher = disp
+    mailbox = messageDispatcher.messageQueue
+    messageDispatcher.registerHandler(this, new ActorMessageInvoker(this))
   }
 
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {

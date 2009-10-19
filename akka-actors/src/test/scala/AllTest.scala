@@ -4,8 +4,8 @@ import junit.framework.Test
 import junit.framework.TestCase
 import junit.framework.TestSuite
 
-import actor.{ActorSpec, RemoteActorSpec, InMemoryActorSpec, SupervisorSpec, RemoteSupervisorSpec,SchedulerSpec}
-import dispatch.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
+import se.scalablesolutions.akka.actor.{RemoteActorSpec, InMemoryActorSpec, ThreadBasedActorSpec, SupervisorSpec, RemoteSupervisorSpec, SchedulerSpec}
+import se.scalablesolutions.akka.dispatch.{EventBasedSingleThreadDispatcherTest, EventBasedThreadPoolDispatcherTest}
 
 object AllTest extends TestCase {
   def suite(): Test = {
@@ -14,7 +14,9 @@ object AllTest extends TestCase {
     suite.addTestSuite(classOf[RemoteSupervisorSpec])
     suite.addTestSuite(classOf[EventBasedSingleThreadDispatcherTest])
     suite.addTestSuite(classOf[EventBasedThreadPoolDispatcherTest])
-    suite.addTestSuite(classOf[ActorSpec])
+    suite.addTestSuite(classOf[ThreadBasedActorSpec])
+    suite.addTestSuite(classOf[EventBasedSingleThreadDispatcherTest])
+    suite.addTestSuite(classOf[EventBasedThreadPoolDispatcherTest])
     suite.addTestSuite(classOf[RemoteActorSpec])
     suite.addTestSuite(classOf[InMemoryActorSpec])
     suite.addTestSuite(classOf[SchedulerSpec])

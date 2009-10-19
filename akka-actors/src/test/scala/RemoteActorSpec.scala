@@ -30,8 +30,7 @@ class RemoteActorSpec extends TestCase {
   akka.Config.config
   new Thread(new Runnable() {
      def run = {
-       val server = new RemoteServer
-       server.start
+       RemoteServer.start
      }
   }).start
   Thread.sleep(1000)

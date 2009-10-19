@@ -29,7 +29,6 @@ object Annotations {
 }
 
 /**
- * Factory object for Active Objects.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -62,49 +61,49 @@ object ActiveObject {
 
   def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher): T = {
     val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
   def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher): T = {
     val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = new Dispatcher(None)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = new Dispatcher(restartCallbacks)
-    actor.dispatcher = dispatcher
+    actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
