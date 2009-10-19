@@ -34,8 +34,7 @@ class Boot {
 /*
  * In akka.conf you can set the FQN of any AuthenticationActor of your wish, under the property name: akka.rest.authenticator
  */
-class SimpleAuthenticationService extends DigestAuthenticationActor
-{
+class SimpleAuthenticationService extends DigestAuthenticationActor {
     //If you want to have a distributed nonce-map, you can use something like below,
     //don't forget to configure your standalone Cassandra instance
     //
@@ -67,7 +66,7 @@ class SecureService extends Actor with Logging {
   case object Tick
   private val KEY = "COUNTER";
   private var hasStartedTicking = false;
-  private val storage = TransactionalState.newMap  
+  private val storage = TransactionalState.newMap[String, Integer]  
 
   @GET
   @Produces(Array("text/html"))
@@ -76,7 +75,7 @@ class SecureService extends Actor with Logging {
 
   override def receive: PartialFunction[Any, Unit] = {
     case Tick => if (hasStartedTicking) {
-      val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
+      val counter = storage.get(KEY).get.intValue
       storage.put(KEY, new Integer(counter + 1))
       reply(<success>Tick:{counter + 1}</success>)
     } else {
