@@ -158,16 +158,11 @@
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>cassandra</artifactId>
-      <version>0.4.0</version>
+      <version>0.4.1</version>
     </dependency>
     <dependency>
       <groupId>com.facebook</groupId>
       <artifactId>thrift</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.facebook</groupId>
-      <artifactId>fb303</artifactId>
       <version>1.0</version>
     </dependency>
     <dependency>
@@ -248,31 +243,6 @@
 
   <build>
     <plugins>
-      <!--<plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.2-beta-2</version>
-        <executions>
-          <execution>
-            <id>create-executable-jar</id>
-            <phase>install</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptorRefs>
-                <descriptorRef>
-                  jar-with-dependencies
-                </descriptorRef>
-              </descriptorRefs>
-              <archive>
-                <manifest>
-                  <mainClass>se.scalablesolutions.akka.Kernel</mainClass>
-                </manifest>
-              </archive>
-           </configuration>
-          </execution>
-        </executions>
-      </plugin>-->
       <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
@@ -293,8 +263,8 @@
                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  					<mainClass>se.scalablesolutions.akka.Kernel</mainClass>
-                			   </transformer>
+                                 <mainClass>se.scalablesolutions.akka.Kernel</mainClass>
+                               </transformer>
                            </transformers>
                        </configuration>
                    </execution>
@@ -307,9 +277,7 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <!--<copy file="target/akka-kernel-${akka.version}-jar-with-dependencies.jar"
-                      tofile="../dist/akka-${akka.version}.jar"/>-->
-                    <copy file="target/akka-kernel-${akka.version}.jar"
+                <copy file="target/akka-kernel-${akka.version}.jar"
                       tofile="../dist/akka-${akka.version}.jar"/>
               </tasks>
             </configuration>

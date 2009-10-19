@@ -203,9 +203,9 @@
             <jvmArg>-Xmx1024m</jvmArg>
           </jvmArgs>
           <args>
-            <!--arg>-unchecked</arg>
+            <arg>-unchecked</arg>
             <arg>-deprecation</arg>
-            <arg>-Xno-varargs-conversion</arg-->
+            <arg>-Xno-varargs-conversion</arg>
           </args>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>

@@ -45,6 +45,7 @@ object Kernel extends Logging {
       printBanner
       log.info("Starting Akka...")
 
+      runApplicationBootClasses
       if (RUN_REMOTE_SERVICE) startRemoteService
       if (RUN_REST_SERVICE) startREST
 
@@ -63,7 +64,6 @@ object Kernel extends Logging {
   }
 
   def startREST = {
-    runApplicationBootClasses
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
 
     val scheme = uri.getScheme
