@@ -4,14 +4,15 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import actor.Actor
+import se.scalablesolutions.akka.actor.Actor
 
 /**
  * Scala API. Dispatcher factory.
  * <p/>
  * Example usage:
  * <pre/>
- *   val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher
+ *   val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
+ *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
@@ -20,30 +21,24 @@ import actor.Actor
  *     .buildThreadPool
  * </pre>
  * <p/>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object Dispatchers extends DispatcherFactory
-
-/**
  * Java API. Dispatcher factory.
  * <p/>
  * Example usage:
  * <pre/>
- *   DispatcherFactory dispatcherFactory = new DispatcherFactory
- *   MessageDispatcher dispatcher = dispatcherFactory.newEventBasedThreadPoolDispatcher
+ *   MessageDispatcher dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name");
+ *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
  *     .setRejectionPolicy(new CallerRunsPolicy)
- *     .buildThreadPool
+ *     .buildThreadPool();
  * </pre>
  * <p/>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class DispatcherFactory {
+object Dispatchers {
   
   /**
    * Creates an event based dispatcher serving multiple (millions) of actors through a thread pool.
