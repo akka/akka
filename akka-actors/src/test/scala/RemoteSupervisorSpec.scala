@@ -25,8 +25,7 @@ class RemoteSupervisorSpec extends junit.framework.TestCase with Suite  {
   akka.Config.config
   new Thread(new Runnable() {
      def run = {
-       val server = new RemoteServer
-       server.start
+       RemoteServer.start
      }
   }).start
   Thread.sleep(1000)

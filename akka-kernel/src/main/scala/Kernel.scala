@@ -33,7 +33,6 @@ object Kernel extends Logging {
 
   // FIXME add API to shut server down gracefully
   @volatile private var hasBooted = false
-  private var remoteServer: RemoteServer = _
   private var jerseySelectorThread: SelectorThread = _
   private val startTime = System.currentTimeMillis
   private var applicationLoader: Option[ClassLoader] = None

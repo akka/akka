@@ -49,11 +49,12 @@ object CassandraStorage extends MapStorage
 */
 
   private[this] val serializer: Serializer = {
-    config.getString("akka.storage.cassandra.storage-format", "java") match {
+    config.getString("akka.storage.cassandra.storage-format", "manual") match {
       case "scala-json" => Serializer.ScalaJSON
       case "java-json" =>  Serializer.JavaJSON
       case "protobuf" =>   Serializer.Protobuf
       case "java" =>       Serializer.Java
+      case "manual" =>     Serializer.NOOP
       case "sbinary" =>    throw new UnsupportedOperationException("SBinary serialization protocol is not yet supported for storage")
       case "avro" =>       throw new UnsupportedOperationException("Avro serialization protocol is not yet supported for storage")
       case unknown =>      throw new UnsupportedOperationException("Unknown storage serialization protocol [" + unknown + "]")

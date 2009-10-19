@@ -5,6 +5,7 @@ import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
+import java.lang.Integer
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
 
