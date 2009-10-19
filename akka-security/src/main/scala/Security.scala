@@ -226,13 +226,21 @@ trait BasicAuthenticationActor extends AuthenticationActor[BasicCredentials]
             Response.status(401).header("WWW-Authenticate","Basic realm=\"" + realm + "\"").build
 
     override def extractCredentials(r : Req) : Option[BasicCredentials] = {
-        val a = r.getHeaderValue("Authorization")
-        new String(Base64.decode(a.substring(6,a.length).getBytes)).split(":").toList match {
-        case userName :: password :: _ => Some(BasicCredentials(userName, password))
-        case userName :: Nil =>           Some(BasicCredentials(userName, ""))
-        case _ => None
-      }
-    }
+      
+    	val Authorization = """(.*):(.*)""".r
+      
+    	authOption(r) match {
+    	  case Some(token) => {
+    	    val authResponse = new String(Base64.decode(token.substring(6).getBytes))
+    	    authResponse match {
+    	    	case Authorization(username, password) => Some(BasicCredentials(username, password))
+    	    	case _ => None
+            }
+    	  }
+          case _ => None 
+    	}
+    }    
+    
 
     override def mkSecurityContext(r : Req,u : UserInfo) : SecurityContext =
         mkDefaultSecurityContext(r,u,SecurityContext.BASIC_AUTH)
@@ -353,19 +361,19 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials]
     override def unauthorized =
             Response.status(401).header("WWW-Authenticate", "Negotiate").build
 
+    // for some reason the jersey Base64 class does not work with kerberos
+    // but the commons Base64 does
+    import _root_.org.apache.commons.codec.binary.Base64
     override def extractCredentials(r : Req) : Option[SpnegoCredentials] = {
 
-      val a = auth(r)
+      val AuthHeader = """Negotiate\s(.*)""".r
 
-      // for some reason the jersey Base64 class does not work with kerberos
-      // but the commons Base64 does
-      import _root_.org.apache.commons.codec.binary.Base64
-      if (a != null && a.startsWith("Negotiate "))
-        Some(
-          SpnegoCredentials(Base64.decodeBase64(a.substring(10).trim.getBytes))
-        )
-      else
-        None
+      authOption(r) match {
+        case Some(AuthHeader(token)) => {
+        	Some(SpnegoCredentials(Base64.decodeBase64(token.trim.getBytes)))
+        }
+        case _ => None
+      }
     }
 
 
