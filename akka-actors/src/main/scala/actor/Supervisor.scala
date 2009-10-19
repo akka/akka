@@ -4,10 +4,11 @@
 
 package se.scalablesolutions.akka.actor
 
-import util.Logging
-import config.ScalaConfig._
-import config.{ConfiguratorRepository, Configurator}
-import util.Helpers._
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.{ConfiguratorRepository, Configurator}
+import se.scalablesolutions.akka.util.Helpers._
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.dispatch.Dispatchers
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -102,9 +103,10 @@ abstract class SupervisorFactory extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */                                  
-class Supervisor(handler: FaultHandlingStrategy) extends Actor with Logging with Configurator {  
+class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor with Logging with Configurator {  
   trapExit = true
   faultHandler = Some(handler)
+  //dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
   val actors = new ConcurrentHashMap[String, Actor]
   

@@ -33,7 +33,7 @@ import java.util.{Collection, HashSet, HashMap, LinkedList, List}
  * <p/>
  * Example usage:
  * <pre/>
- *   val dispatcher = new EventBasedThreadPoolDispatcher
+ *   val dispatcher = new EventBasedThreadPoolDispatcher("name", false)
  *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
@@ -48,7 +48,7 @@ import java.util.{Collection, HashSet, HashMap, LinkedList, List}
  * <p/>
  * Example usage:
  * <pre/>
- *   EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher();
+ *   EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher("name", false);
  *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
