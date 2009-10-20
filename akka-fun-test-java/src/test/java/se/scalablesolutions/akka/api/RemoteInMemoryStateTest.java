@@ -16,8 +16,7 @@ public class RemoteInMemoryStateTest extends TestCase {
   static {
     new Thread(new Runnable() {
        public void run() {
-         RemoteServer server = new RemoteServer();
-         server.start();         
+         RemoteServer.start();         
        }
     }).start();
     try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
