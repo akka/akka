@@ -7,6 +7,7 @@ import org.junit.Assert._
 import _root_.dispatch.json._
 import _root_.dispatch.json.Js._
 
+@scala.reflect.BeanInfo case class Foo(no: Int, name: String)
 class MongoStorageSpec extends TestCase {
 
   val changeSetV = new scala.collection.mutable.ArrayBuffer[AnyRef]
@@ -120,7 +121,6 @@ class MongoStorageSpec extends TestCase {
 
   @Test
   def testMapInsertForTransactionId = {
-    case class Foo(no: Int, name: String)
     fillMap
     
     // add some more to changeSet
