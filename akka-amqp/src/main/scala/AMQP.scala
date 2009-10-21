@@ -207,8 +207,8 @@ object AMQP extends Actor {
     }
 
     def setupChannel = {
-      connection = connectionFactory.newConnection(hostname, port)
-      channel = connection.createChannel
+      _connection = Some(connectionFactory.newConnection(hostname, port))
+      _channel = Some(connection.createChannel)
       returnListener match {
         case Some(listener) => channel.setReturnListener(listener)
         case None => channel.setReturnListener(new ReturnListener() {
@@ -265,9 +265,9 @@ object AMQP extends Actor {
     log.info("AMQP.Consumer [%s] is started", toString)
 
     def setupChannel = {
-      connection = connectionFactory.newConnection(hostname, port)
-      channel = connection.createChannel
-        channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, 
+      _connection = Some(connectionFactory.newConnection(hostname, port))
+      _channel = Some(connection.createChannel)
+      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, 
                                 passive, durable, 
                                 configurationArguments.asJava)
       listeners.elements.toList.map(_._2).foreach(setupConsumer)
@@ -337,20 +337,15 @@ object AMQP extends Actor {
       ", durable=" + durable + "]"
   }
 
-  trait FaultTolerantConnectionActor extends Actor {
+  trait FaultTolerantConnectionActor extends Actor with ChannelManager {
     lifeCycleConfig = Some(LifeCycle(Permanent, 100))
 
     val reconnectionTimer = new Timer
-
-    var connection: Connection = _
-    var channel: Channel = _
 
     val connectionFactory: ConnectionFactory
     val hostname: String
     val port: Int
     val initReconnectDelay: Long
-
-    def setupChannel
 
     protected def disconnect = {
       try {
@@ -391,4 +386,39 @@ object AMQP extends Actor {
   def receive: PartialFunction[Any, Unit] = {
     case _ => {} // ignore all messages
   }
+}
+
+ trait ChannelManager extends Actor {
+   val exchangeName: String
+
+   protected var _connection: Option[Connection] = None
+   protected var _channel: Option[Channel] = None
+   def connection = _connection.getOrElse(throw new IllegalStateException("Connection not defined"))
+   def channel = _channel.getOrElse(throw new IllegalStateException("Channel not defined"))
+
+   def setupChannel
+   
+   def createQueue: String = channel.queueDeclare.getQueue
+
+   def createQueue(name: String) = channel.queueDeclare(name)
+
+   def createQueue(name: String, durable: Boolean) = channel.queueDeclare(name, durable)
+
+   def createBindQueue: String = { 
+     val name = channel.queueDeclare.getQueue
+     channel.queueBind(name, exchangeName, name)
+     name
+   }
+
+   def createBindQueue(name: String) = { 
+     channel.queueDeclare(name)
+     channel.queueBind(name, exchangeName, name)
+   }
+
+   def createBindQueue(name: String, durable: Boolean) = { 
+     channel.queueDeclare(name, durable)
+     channel.queueBind(name, exchangeName, name)
+   }
+
+   def deleteQueue(name: String) = channel.queueDelete(name)
 }
