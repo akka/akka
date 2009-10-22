@@ -181,6 +181,19 @@
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.4.2</version>
+        <configuration>
+          <systemProperties>
+            <property>
+              <name>org.multiverse.api.exceptions.WriteConflictException.reuse</name>
+              <value>true</value>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>maven-jetty-plugin</artifactId>
         <configuration>
