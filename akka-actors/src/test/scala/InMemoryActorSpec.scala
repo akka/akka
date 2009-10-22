@@ -26,7 +26,7 @@ case class FailureOneWay(key: String, value: String, failer: Actor)
 class InMemStatefulActor extends Actor {
   timeout = 100000
   makeTransactionRequired
-  //dispatcher = se.scalablesolutions.akka.dispatch.Dispatchers.newThreadBasedDispatcher(this)
+
   private lazy val mapState: TransactionalMap[String, String] = TransactionalState.newMap[String, String]
   private lazy val vectorState: TransactionalVector[String] = TransactionalState.newVector[String]
   private lazy val refState: TransactionalRef[String] = TransactionalState.newRef[String]
