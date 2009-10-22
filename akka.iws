@@ -6,11 +6,7 @@
   <component name="ChangeListManager" verified="true">
     <list default="true" readonly="true" id="188c966f-a83c-4d3a-9128-54d5a2947a12" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pom.xml" afterPath="$PROJECT_DIR$/pom.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/config/multiverse-properties-reference.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/pom.xml" afterPath="$PROJECT_DIR$/akka-actors/pom.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
     </list>
     <ignored path="akka.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -259,10 +255,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="pom.xml" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="pom.xml" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/pom.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="77" column="22" selection-start="2280" selection-end="2280" vertical-scroll-proportion="0.0">
+            <state line="195" column="0" selection-start="5602" selection-end="6048" vertical-scroll-proportion="0.37412095">
               <folding />
             </state>
           </provider>
@@ -277,10 +273,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="multiverse-properties-reference.txt" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="multiverse-properties-reference.txt" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/config/multiverse-properties-reference.txt">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="36" column="2" selection-start="0" selection-end="1704" vertical-scroll-proportion="0.83597887">
+            <state line="37" column="30" selection-start="1630" selection-end="1688" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Config.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-util/src/main/scala/Config.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="21" column="30" selection-start="557" selection-end="557" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -310,7 +315,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentNestedStateTest.java" />
         <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" />
         <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" />
         <option value="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemStateful.java" />
@@ -323,9 +327,10 @@
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteClient.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
-        <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/akka-actors/pom.xml" />
         <option value="$PROJECT_DIR$/config/multiverse-properties-reference.txt" />
+        <option value="$PROJECT_DIR$/akka-util/src/main/scala/Config.scala" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>
@@ -1025,13 +1030,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.1.0.GA/netty-3.1.0.GA-sources.jar!/org/jboss/netty/util/Timer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/ActiveObject.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="153" column="45" selection-start="6851" selection-end="6868" vertical-scroll-proportion="0.0">
@@ -1116,9 +1114,16 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pom.xml">
+    <entry file="file://$PROJECT_DIR$/akka-util/src/main/scala/Config.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="77" column="22" selection-start="2280" selection-end="2280" vertical-scroll-proportion="0.0">
+        <state line="21" column="30" selection-start="557" selection-end="557" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config/multiverse-properties-reference.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="37" column="30" selection-start="1630" selection-end="1688" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -1130,9 +1135,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/config/multiverse-properties-reference.txt">
+    <entry file="file://$PROJECT_DIR$/pom.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="36" column="2" selection-start="0" selection-end="1704" vertical-scroll-proportion="0.83597887">
+        <state line="195" column="0" selection-start="5602" selection-end="6048" vertical-scroll-proportion="0.37412095">
           <folding />
         </state>
       </provider>
