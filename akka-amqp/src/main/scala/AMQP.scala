@@ -46,7 +46,7 @@ object AMQP extends Actor {
 
   // ====== MESSAGES =====
   class Message(val payload: AnyRef, val routingKey: String, val mandatory: Boolean, val immediate: Boolean, val properties: RabbitMQ.BasicProperties) {
-    override def toString(): String = "Message[payload=" + payload + ", routingKey=" + routingKey + ", properties=" + properties + "]"     
+    override def toString(): String = "Message[payload=" + payload + ", routingKey=" + routingKey + ", properties=" + properties + "]"
   }
   object Message {
     def unapply(message: Message): Option[Tuple5[AnyRef, String, Boolean, Boolean, RabbitMQ.BasicProperties]] =
@@ -138,8 +138,8 @@ object AMQP extends Actor {
           serializer: Serializer,
           shutdownListener: Option[ShutdownListener],
           initReconnectDelay: Long,
-          passive: Boolean, 
-          durable: Boolean, 
+          passive: Boolean,
+          durable: Boolean,
           configurationArguments: Map[String, AnyRef]): Consumer = {
     val endpoint = new Consumer(
       new ConnectionFactory(config),
@@ -194,7 +194,7 @@ object AMQP extends Actor {
     extends FaultTolerantConnectionActor {
 
     setupChannel
-    
+
     log.info("AMQP.Producer [%s] is started", toString)
 
     def receive: PartialFunction[Any, Unit] = {
@@ -207,8 +207,8 @@ object AMQP extends Actor {
     }
 
     def setupChannel = {
-      _connection = Some(connectionFactory.newConnection(hostname, port))
-      _channel = Some(connection.createChannel)
+      connection = connectionFactory.newConnection(hostname, port)
+      channel = connection.createChannel
       returnListener match {
         case Some(listener) => channel.setReturnListener(listener)
         case None => channel.setReturnListener(new ReturnListener() {
@@ -229,13 +229,13 @@ object AMQP extends Actor {
           }
         })
       }
-      if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)      
+      if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
 
-    override def toString(): String = 
-      "AMQP.Producer[hostname=" + hostname + 
-      ", port=" + port + 
-      ", exchange=" + exchangeName + "]" 
+    override def toString(): String =
+      "AMQP.Producer[hostname=" + hostname +
+      ", port=" + port +
+      ", exchange=" + exchangeName + "]"
   }
 
   /**
@@ -250,10 +250,10 @@ object AMQP extends Actor {
           val serializer: Serializer,
           val shutdownListener: Option[ShutdownListener],
           val initReconnectDelay: Long,
-          val passive: Boolean, 
-          val durable: Boolean, 
+          val passive: Boolean,
+          val durable: Boolean,
           val configurationArguments: Map[java.lang.String, Object])
-    extends FaultTolerantConnectionActor { self: Consumer => 
+    extends FaultTolerantConnectionActor { self: Consumer =>
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = true
@@ -265,10 +265,10 @@ object AMQP extends Actor {
     log.info("AMQP.Consumer [%s] is started", toString)
 
     def setupChannel = {
-      _connection = Some(connectionFactory.newConnection(hostname, port))
-      _channel = Some(connection.createChannel)
-      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, 
-                                passive, durable, 
+      connection = connectionFactory.newConnection(hostname, port)
+      channel = connection.createChannel
+        channel.exchangeDeclare(exchangeName.toString, exchangeType.toString,
+                                passive, durable,
                                 configurationArguments.asJava)
       listeners.elements.toList.map(_._2).foreach(setupConsumer)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
@@ -286,7 +286,7 @@ object AMQP extends Actor {
           } catch {
             case cause => self ! Failure(cause) // pass on and re-throw exception in endpoint actor to trigger restart and reconnect
           }
-        }        
+        }
 
         override def handleShutdownSignal(listenerTag: String, signal: ShutdownSignalException) = {
           listeners.elements.toList.map(_._2).find(_.tag == listenerTag) match {
@@ -299,7 +299,7 @@ object AMQP extends Actor {
       })
       listener.tag = Some(listenerTag)
     }
-    
+
     def receive: PartialFunction[Any, Unit] = {
       case listener: MessageConsumerListener =>
         startLink(listener.actor)
@@ -328,24 +328,29 @@ object AMQP extends Actor {
       case unknown => throw new IllegalArgumentException("Unknown message [" + unknown + "] to AMQP Consumer [" + this + "]")
     }
 
-    override def toString(): String = 
-      "AMQP.Consumer[hostname=" + hostname + 
-      ", port=" + port + 
-      ", exchange=" + exchangeName + 
+    override def toString(): String =
+      "AMQP.Consumer[hostname=" + hostname +
+      ", port=" + port +
+      ", exchange=" + exchangeName +
       ", type=" + exchangeType +
       ", passive=" + passive +
       ", durable=" + durable + "]"
   }
 
-  trait FaultTolerantConnectionActor extends Actor with ChannelManager {
+  trait FaultTolerantConnectionActor extends Actor {
     lifeCycleConfig = Some(LifeCycle(Permanent, 100))
 
     val reconnectionTimer = new Timer
+
+    var connection: Connection = _
+    var channel: Channel = _
 
     val connectionFactory: ConnectionFactory
     val hostname: String
     val port: Int
     val initReconnectDelay: Long
+
+    def setupChannel
 
     protected def disconnect = {
       try {
@@ -386,39 +391,4 @@ object AMQP extends Actor {
   def receive: PartialFunction[Any, Unit] = {
     case _ => {} // ignore all messages
   }
-}
-
- trait ChannelManager extends Actor {
-   val exchangeName: String
-
-   protected var _connection: Option[Connection] = None
-   protected var _channel: Option[Channel] = None
-   def connection = _connection.getOrElse(throw new IllegalStateException("Connection not defined"))
-   def channel = _channel.getOrElse(throw new IllegalStateException("Channel not defined"))
-
-   def setupChannel
-   
-   def createQueue: String = channel.queueDeclare.getQueue
-
-   def createQueue(name: String) = channel.queueDeclare(name)
-
-   def createQueue(name: String, durable: Boolean) = channel.queueDeclare(name, durable)
-
-   def createBindQueue: String = { 
-     val name = channel.queueDeclare.getQueue
-     channel.queueBind(name, exchangeName, name)
-     name
-   }
-
-   def createBindQueue(name: String) = { 
-     channel.queueDeclare(name)
-     channel.queueBind(name, exchangeName, name)
-   }
-
-   def createBindQueue(name: String, durable: Boolean) = { 
-     channel.queueDeclare(name, durable)
-     channel.queueBind(name, exchangeName, name)
-   }
-
-   def deleteQueue(name: String) = channel.queueDelete(name)
 }
