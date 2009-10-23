@@ -29,7 +29,7 @@
     <module>akka-kernel</module>
     <module>akka-fun-test-java</module>
     <module>akka-samples-scala</module>
-    <module>akka-samples-lift</module>
+    <!--module>akka-samples-lift</module-->
     <module>akka-samples-java</module>
     <module>akka-samples-security</module>
   </modules>
@@ -91,6 +91,17 @@
       <id>lag</id>
       <name>Configgy's' Repository</name>
       <url>http://www.lag.net/repo</url>
+    </repository>
+    <repository>
+      <id>multiverse-releases</id>
+      <url>http://multiverse.googlecode.com/svn/maven-repository/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>multiverse-snaphosts</id>
+      <url>http://multiverse.googlecode.com/svn/maven-repository/snapshots</url>
     </repository>
     <repository>
       <id>maven2-repository.dev.java.net</id>
@@ -169,6 +180,19 @@
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.4.2</version>
+        <configuration>
+          <systemProperties>
+            <property>
+              <name>org.multiverse.api.exceptions.WriteConflictException.reuse</name>
+              <value>true</value>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>maven-jetty-plugin</artifactId>
@@ -258,7 +282,7 @@
                 <requireJavaVersion>
                   <version>1.6.0</version>
                 </requireJavaVersion>
-              </rules>    
+              </rules>
             </configuration>
           </execution>
         </executions>
