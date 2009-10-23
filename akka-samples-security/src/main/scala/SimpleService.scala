@@ -100,8 +100,8 @@ class SecureTickActor extends Actor with Logging {
   makeTransactionRequired
 
   case object Tick
-  private val KEY = "COUNTER";
-  private var hasStartedTicking = false;
+  private val KEY = "COUNTER"
+  private var hasStartedTicking = false
   private val storage = TransactionalState.newMap[String, Integer]
 
   /**
