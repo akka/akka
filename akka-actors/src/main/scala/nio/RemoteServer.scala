@@ -23,9 +23,9 @@ import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteServer extends Logging {
-  val HOSTNAME = config.getString("akka.remote.hostname", "localhost")
-  val PORT = config.getInt("akka.remote.port", 9999)
-  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.connection-timeout", 1000)  
+  val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
+  val PORT = config.getInt("akka.remote.server.port", 9999)
+  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)  
 
   private var hostname = HOSTNAME 
   private var port = PORT

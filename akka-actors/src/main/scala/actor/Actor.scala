@@ -253,8 +253,15 @@ trait Actor extends Logging with TransactionManagement {
    */
   def !![T](message: AnyRef, timeout: Long): Option[T] = if (isRunning) {
     val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
-    if (message.isInstanceOf[Invocation] && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
-    future.await
+    val isActiveObject = message.isInstanceOf[Invocation]
+    if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
+    try {
+      future.await
+    } catch {
+      case e: FutureTimeoutException =>
+        if (isActiveObject) throw e
+        else None
+    }
     getResultOrThrowException(future)
   } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   
@@ -274,7 +281,7 @@ trait Actor extends Logging with TransactionManagement {
    * Sends a message asynchronously, but waits on a future indefinitely. E.g. emulates a synchronous call.
    * <p/>
    * <b>NOTE:</b>
-   * Should be used with care.
+   * Should be used with care (almost never), since very dangerous (will block a thread indefinitely if no reply).
    */
   def !?[T](message: AnyRef): T = if (isRunning) {
     val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)

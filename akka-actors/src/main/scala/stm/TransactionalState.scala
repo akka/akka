@@ -78,11 +78,10 @@ object TransactionalRef {
 class TransactionalRef[T] extends Transactional {
   import org.multiverse.utils.TransactionThreadLocal._
 
-  println("---- create TX " + getThreadLocalTransaction)
   private[this] val ref: Ref[T] = new Ref[T]//Ref.createCommittedRef[T]
 
-
   def swap(elem: T) = ref.set(elem)
+  
   def get: Option[T] = {
     if (ref.isNull) None
     else Some(ref.get)
