@@ -95,7 +95,6 @@ import java.lang.Integer
 import javax.annotation.security.{RolesAllowed, DenyAll, PermitAll}
 import javax.ws.rs.{GET, Path, Produces}
 @Path("/secureticker")
-@DenyAll
 class SecureTickActor extends Actor with Logging {
 
   makeTransactionRequired
@@ -106,7 +105,7 @@ class SecureTickActor extends Actor with Logging {
   private val storage = TransactionalState.newMap[String, Integer]
 
   /**
-   * allow access for any user to the resource "/secureticker/public"
+   * allow access for any user to "/secureticker/public"
    */
   @GET
   @Produces(Array("text/xml"))
@@ -115,7 +114,7 @@ class SecureTickActor extends Actor with Logging {
   def publicTick = tick
 
   /**
-   * restrict access to resource "/secureticker/chef" users with "chef" role
+   * restrict access to "/secureticker/chef" users with "chef" role
    */
   @GET
   @Path("/chef")
@@ -124,10 +123,11 @@ class SecureTickActor extends Actor with Logging {
   def chefTick = tick
 
   /**
-   * access denied because of the class level annotation for any user
+   * access denied for any user to default Path "/secureticker/"
    */
   @GET
   @Produces(Array("text/xml"))
+  @DenyAll
   def paranoiaTick = tick
 
   def tick = (this !! Tick) match {
