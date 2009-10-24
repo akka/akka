@@ -50,8 +50,8 @@ class SimpleService extends Actor {
   makeTransactionRequired
 
   case object Tick
-  private val KEY = "COUNTER";
-  private var hasStartedTicking = false;
+  private val KEY = "COUNTER"
+  private var hasStartedTicking = false
   private val storage = TransactionalState.newMap[String, Integer]
 
   @GET
@@ -83,8 +83,8 @@ class PersistentSimpleService extends Actor {
   makeTransactionRequired
 
   case object Tick
-  private val KEY = "COUNTER";
-  private var hasStartedTicking = false;
+  private val KEY = "COUNTER"
+  private var hasStartedTicking = false
   private val storage = PersistentState.newMap(CassandraStorageConfig())
 
   @GET
