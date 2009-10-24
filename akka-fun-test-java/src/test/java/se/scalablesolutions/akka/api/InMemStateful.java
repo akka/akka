@@ -88,17 +88,4 @@ public class InMemStateful {
   public void postRestart() {
     System.out.println("################ POST RESTART");
   }
-
-  /*
-  public void clashOk(String key, String msg, InMemClasher clasher) {
-    mapState.put(key, msg);
-    clasher.clash();
-  }
-
-  public void clashNotOk(String key, String msg, InMemClasher clasher) {
-    mapState.put(key, msg);
-    clasher.clash();
-    this.success("clash", "clash");
-  }
-  */
 }

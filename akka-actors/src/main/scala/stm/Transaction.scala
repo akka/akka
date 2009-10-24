@@ -11,8 +11,7 @@ import se.scalablesolutions.akka.state.Committable
 import se.scalablesolutions.akka.util.Logging
 
 import org.multiverse.api.{Stm, Transaction => MultiverseTransaction}
-import org.multiverse.stms.alpha.AlphaStm
-import org.multiverse.utils.GlobalStmInstance
+import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.utils.TransactionThreadLocal._
 import org.multiverse.templates.OrElseTemplate
 
@@ -20,15 +19,6 @@ import scala.collection.mutable.HashMap
 
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
-
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object Multiverse {
-  val STM: Stm = new AlphaStm
-  GlobalStmInstance.set(STM)
-  setThreadLocalTransaction(null)
-}
 
 /**
  * Example of atomic transaction management.
@@ -58,7 +48,8 @@ object Transaction extends TransactionManagement {
   // FIXME implement Transaction::map/flatMap/filter/foreach
 
   // -- atomic block --------------------------
-  def atomic[T](body: => T): T = new AtomicTemplate[T](Multiverse.STM, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
+  def atomic[T](body: => T): T = new AtomicTemplate[T](
+    getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
     override def postStart(mtx: MultiverseTransaction) = {
       val tx = new Transaction
@@ -71,6 +62,7 @@ object Transaction extends TransactionManagement {
     }
   }.execute()
 
+// FIXME: add these other atomic methods
 /*
   def atomic[T](retryCount: Int)(body: => T): T = new AtomicTemplate[T](Multiverse.STM, "akka", false, false, retryCount) {
     def execute(mtx: MultiverseTransaction): T = body

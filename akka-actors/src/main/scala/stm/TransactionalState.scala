@@ -4,13 +4,13 @@
 
 package se.scalablesolutions.akka.state
 
-import se.scalablesolutions.akka.stm.{TransactionManagement}
+import se.scalablesolutions.akka.stm.TransactionManagement
+import se.scalablesolutions.akka.stm.Transaction.atomic
 import se.scalablesolutions.akka.collection._
 
 import org.multiverse.templates.AtomicTemplate
 import org.multiverse.api.Transaction
 import org.multiverse.datastructures.refs.manual.Ref;
-
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 
@@ -47,7 +47,7 @@ object TransactionalState {
  */
 @serializable
 trait Transactional {
-  // FIXME: won't work across the cluster
+  // FIXME: won't work across the remote machines, use [http://johannburkard.de/software/uuid/]
   var uuid = Uuid.newUuid.toString
 }
 
@@ -62,6 +62,7 @@ trait Committable {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionalRef {
+
   /**
    * An implicit conversion that converts an option to an iterable value
    */
@@ -78,7 +79,7 @@ object TransactionalRef {
 class TransactionalRef[T] extends Transactional {
   import org.multiverse.utils.TransactionThreadLocal._
 
-  private[this] val ref: Ref[T] = new Ref[T]//Ref.createCommittedRef[T]
+  private[this] val ref: Ref[T] = atomic { new Ref }
 
   def swap(elem: T) = ref.set(elem)
   
