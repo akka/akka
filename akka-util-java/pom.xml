@@ -27,8 +27,13 @@
     </dependency>
     <dependency>
       <groupId>org.multiverse</groupId>
-      <artifactId>multiverse</artifactId>
-      <version>0.3</version>
+      <artifactId>multiverse-core</artifactId>
+      <version>0.3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.multiverse</groupId>
+      <artifactId>multiverse-alpha</artifactId>
+      <version>0.3-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

@@ -27,9 +27,9 @@ class InMemStatefulActor extends Actor {
   timeout = 100000
   makeTransactionRequired
 
-  private lazy val mapState: TransactionalMap[String, String] = TransactionalState.newMap[String, String]
-  private lazy val vectorState: TransactionalVector[String] = TransactionalState.newVector[String]
-  private lazy val refState: TransactionalRef[String] = TransactionalState.newRef[String]
+  private lazy val mapState = TransactionalState.newMap[String, String]
+  private lazy val vectorState = TransactionalState.newVector[String]
+  private lazy val refState = TransactionalState.newRef[String]
 
   def receive: PartialFunction[Any, Unit] = {
     case GetMapState(key) =>

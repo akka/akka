@@ -51,14 +51,25 @@ object AMQP extends Actor {
   start
 
   // ====== MESSAGES =====
-  class Message(val payload: AnyRef, val routingKey: String, val mandatory: Boolean, val immediate: Boolean, val properties: RabbitMQ.BasicProperties) {
-    override def toString(): String = "Message[payload=" + payload + ", routingKey=" + routingKey + ", properties=" + properties + "]"
+  class Message(val payload: AnyRef, 
+                val routingKey: String, 
+                val mandatory: Boolean, 
+                val immediate: Boolean, 
+                val properties: RabbitMQ.BasicProperties) {
+    override def toString(): String = 
+      "Message[payload=" + payload + 
+      ", routingKey=" + routingKey + 
+      ", mandatory=" + mandatory + 
+      ", immediate=" + immediate + 
+      ", properties=" + properties + "]"
   }
   object Message {
     def unapply(message: Message): Option[Tuple5[AnyRef, String, Boolean, Boolean, RabbitMQ.BasicProperties]] =
       Some((message.payload, message.routingKey, message.mandatory, message.immediate, message.properties))
+
     def apply(payload: AnyRef, routingKey: String, mandatory: Boolean, immediate: Boolean, properties: RabbitMQ.BasicProperties): Message =
       new Message(payload, routingKey, mandatory, immediate, properties)
+
     def apply(payload: AnyRef, routingKey: String): Message =
       new Message(payload, routingKey, false, false, null)
   }
