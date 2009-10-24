@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package sample.secure
+package se.scalablesolutions.akka.security.samples
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
@@ -10,21 +10,31 @@ import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.security.{DigestAuthenticationActor, UserInfo}
 import se.scalablesolutions.akka.state.TransactionalState
 
-import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{GET, Path, Produces}
-
 class Boot {
+
   object factory extends SupervisorFactory {
+
     override def getSupervisorConfig: SupervisorConfig = {
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 100),
+        // Dummy implementations of all authentication actors
+        // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
         Supervise(
-          new SimpleAuthenticationService,
+          new BasicAuthenticationService,
+          LifeCycle(Permanent, 100)) ::
+       /**
+        Supervise(
+          new DigestAuthenticationService,
           LifeCycle(Permanent, 100)) ::
         Supervise(
-          new SecureService,
+          new SpnegoAuthenticationService,
+          LifeCycle(Permanent, 100)) ::
+        **/
+        Supervise(
+          new SecureTickActor,
           LifeCycle(Permanent, 100)):: Nil)
     }
+
   }
 
   val supervisor = factory.newSupervisor
@@ -34,7 +44,7 @@ class Boot {
 /*
  * In akka.conf you can set the FQN of any AuthenticationActor of your wish, under the property name: akka.rest.authenticator
  */
-class SimpleAuthenticationService extends DigestAuthenticationActor {
+class DigestAuthenticationService extends DigestAuthenticationActor {
     //If you want to have a distributed nonce-map, you can use something like below,
     //don't forget to configure your standalone Cassandra instance
     //
@@ -43,6 +53,7 @@ class SimpleAuthenticationService extends DigestAuthenticationActor {
 
     //Use an in-memory nonce-map as default
     override def mkNonceMap = new scala.collection.mutable.HashMap[String,Long]
+
     //Change this to whatever you want
     override def realm = "test"
 
@@ -50,38 +61,89 @@ class SimpleAuthenticationService extends DigestAuthenticationActor {
     override def userInfo(username : String) : Option[UserInfo] = Some(UserInfo(username,"bar","ninja" :: "chef" :: Nil))
 }
 
+class BasicAuthenticationService extends BasicAuthenticationActor {
+
+    //Change this to whatever you want
+    override def realm = "test"
+
+    //Dummy method that allows you to log on with whatever username
+    def verify(odc : Option[BasicCredentials]) : Option[UserInfo] = odc match {
+        case Some(dc) => userInfo(dc.username)
+        case _ => None
+    }
+
+    //Dummy method that allows you to log on with whatever username with the password "bar"
+    def userInfo(username : String) : Option[UserInfo] = Some(UserInfo(username,"bar","ninja" :: "chef" :: Nil))
+
+}
+
+class SpnegoAuthenticationService extends SpnegoAuthenticationActor {
+
+    def rolesFor(user: String) = "ninja" :: "chef" :: Nil
+
+}
+
 /**
- * This is merely a secured version of the scala-sample
+ * a REST Actor with class level paranoia settings to deny all access
  *
  * The interesting part is
  *  @RolesAllowed
  *  @PermitAll
  *  @DenyAll
  */
+import java.lang.Integer
+import javax.annotation.security.{RolesAllowed, DenyAll, PermitAll}
+import javax.ws.rs.{GET, Path, Produces}
+@Path("/secureticker")
+class SecureTickActor extends Actor with Logging {
 
-@Path("/securecount")
-class SecureService extends Actor with Logging {
   makeTransactionRequired
 
   case object Tick
-  private val KEY = "COUNTER";
-  private var hasStartedTicking = false;
-  private val storage = TransactionalState.newMap[String, Integer]  
+  private val KEY = "COUNTER"
+  private var hasStartedTicking = false
+  private val storage = TransactionalState.newMap[String, Integer]
 
+  /**
+   * allow access for any user to "/secureticker/public"
+   */
   @GET
-  @Produces(Array("text/html"))
+  @Produces(Array("text/xml"))
+  @Path("/public")
+  @PermitAll
+  def publicTick = tick
+
+  /**
+   * restrict access to "/secureticker/chef" users with "chef" role
+   */
+  @GET
+  @Path("/chef")
+  @Produces(Array("text/xml"))
   @RolesAllowed(Array("chef"))
-  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
+  def chefTick = tick
+
+  /**
+   * access denied for any user to default Path "/secureticker/"
+   */
+  @GET
+  @Produces(Array("text/xml"))
+  @DenyAll
+  def paranoiaTick = tick
+
+  def tick = (this !! Tick) match {
+    case(Some(counter)) => (<success>Tick: {counter}</success>)
+    case _ => (<error>Error in counter</error>)
+  }
 
   override def receive: PartialFunction[Any, Unit] = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.intValue
-      storage.put(KEY, new Integer(counter + 1))
-      reply(<success>Tick:{counter + 1}</success>)
+      storage.put(KEY, counter + 1)
+      reply(new Integer(counter + 1))
     } else {
-      storage.put(KEY, new Integer(0))
+      storage.put(KEY, 0)
       hasStartedTicking = true
-      reply(<success>Tick: 0</success>)
+      reply(new Integer(0))
     }
   }
 }
