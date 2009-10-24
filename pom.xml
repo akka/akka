@@ -226,11 +226,11 @@
           <jvmArgs>
             <jvmArg>-Xmx1024m</jvmArg>
           </jvmArgs>
-          <args>
+          <!--args>
             <arg>-unchecked</arg>
             <arg>-deprecation</arg>
             <arg>-Xno-varargs-conversion</arg>
-          </args>
+          </args-->
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
       </plugin>
@@ -337,6 +337,7 @@
             <tag>FIXME</tag>
             <tag>TODO</tag>
             <tag>XXX</tag>
+            <tag>@fixme</tag>
             <tag>@todo</tag>
             <tag>@deprecated</tag>
           </tags>
@@ -355,7 +356,7 @@
             <jvmArg>-DpackageLinkDefs=file://${basedir}/../vscaladocs-packageLinkDefs.properties</jvmArg>
           </jvmArgs>
           <args>
-            <arg>-unchecked</arg>
+            <!--arg>-unchecked</arg-->
           </args>
           <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
           <scalaVersion>${scala.version}</scalaVersion>
