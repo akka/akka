@@ -2,9 +2,10 @@ package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.TimeUnit
 
-import junit.framework.Assert._
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
-class EventBasedThreadPoolActorSpec extends junit.framework.TestCase {
+class EventBasedThreadPoolActorTest extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
@@ -16,7 +17,7 @@ class EventBasedThreadPoolActorSpec extends junit.framework.TestCase {
     }
   }
 
-  def testSendOneWay = {
+  @Test def shouldSendOneWay = {
     implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
@@ -27,29 +28,29 @@ class EventBasedThreadPoolActorSpec extends junit.framework.TestCase {
     actor.start
     val result = actor ! "OneWay"
     Thread.sleep(100)
-    assertEquals("received", oneWay)
+    assert("received" === oneWay)
     actor.stop
   }
 
-  def testSendReplySync = {
+  @Test def shouldSendReplySync = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
     val result: String = actor !? "Hello"
-    assertEquals("World", result)
+    assert("World" === result)
     actor.stop
   }
 
-  def testSendReplyAsync = {
+  @Test def shouldSendReplyAsync = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
     val result = actor !! "Hello"
-    assertEquals("World", result.get.asInstanceOf[String])
+    assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
 
-  def testSendReceiveException = {
+  @Test def shouldSendReceiveException = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
@@ -58,7 +59,7 @@ class EventBasedThreadPoolActorSpec extends junit.framework.TestCase {
       fail("Should have thrown an exception")
     } catch {
       case e =>
-        assertEquals("expected", e.getMessage())
+        assert("expected" === e.getMessage())
     }
     actor.stop
   }

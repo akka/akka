@@ -4,8 +4,8 @@ import java.util.concurrent.TimeUnit
 import junit.framework.TestCase
 
 import se.scalablesolutions.akka.nio.{RemoteServer, RemoteClient}
-import org.junit.{Test, Before}
-import org.junit.Assert._
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
 object Global {
   var oneWay = "nada"  
@@ -26,7 +26,7 @@ class RemoteActorSpecActorBidirectional extends Actor {
   }
 }
 
-class RemoteActorSpec extends TestCase {
+class RemoteActorTest extends JUnitSuite   {
   akka.Config.config
   new Thread(new Runnable() {
      def run = {
@@ -38,41 +38,41 @@ class RemoteActorSpec extends TestCase {
   private val unit = TimeUnit.MILLISECONDS
 
   @Test
-  def testSendOneWay = {
+  def shouldSendOneWay = {
     implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorUnidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
     val result = actor ! "OneWay"
     Thread.sleep(100)
-    assertEquals("received", Global.oneWay)
+    assert("received" === Global.oneWay)
     actor.stop
   }
 
   @Test
-  def testSendReplySync = {
+  def shouldSendReplySync = {
     implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
     val result: String = actor !? "Hello"
-    assertEquals("World", result)
+    assert("World" === result)
     actor.stop
   }
 
   @Test
-  def testSendReplyAsync = {
+  def shouldSendReplyAsync = {
     implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
     val result = actor !! "Hello"
-    assertEquals("World", result.get.asInstanceOf[String])
+    assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
 
   @Test
-  def testSendReceiveException = {
+  def shouldSendReceiveException = {
     implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
@@ -82,7 +82,7 @@ class RemoteActorSpec extends TestCase {
       fail("Should have thrown an exception")
     } catch {
       case e =>
-        assertEquals("expected", e.getMessage())
+        assert("expected" === e.getMessage())
     }
     actor.stop
   }

@@ -2,11 +2,12 @@ package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.TimeUnit
 
-import org.junit.Assert._
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
-class SchedulerSpec extends junit.framework.TestCase {
+class SchedulerTest extends JUnitSuite {
   
-  def testScheduler = {
+  @Test def schedulerShouldSchedule = {
     var count = 0
     case object Tick
     val actor = new Actor() {
@@ -18,6 +19,6 @@ class SchedulerSpec extends junit.framework.TestCase {
     Scheduler.schedule(actor, Tick, 0L, 1L, TimeUnit.SECONDS)
     Thread.sleep(5000)
     Scheduler.shutdown
-    assertTrue(count > 0)
+    assert(count > 0)
   }
 }
