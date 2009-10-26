@@ -1,0 +1,121 @@
+
+  <html>
+  <head>
+    <link href='./../_highlighter/SyntaxHighlighter.css' rel='stylesheet' type='text/css'/>
+    <script language='javascript' src='./../_highlighter/shAll.js'></script>
+  </head>
+  <body>
+    <pre name="code" class="scala" style="width:100%">
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
+package se.scalablesolutions.akka.nio
+
+import java.util.concurrent.atomic.AtomicLong
+import stm.Transaction
+import util.HashCode
+
+// FIXME: will not work - can clash with other host's requests - need te prepend with hostname
+object RemoteRequestIdFactory {
+  private val id = new AtomicLong
+  def nextId = id.getAndIncrement
+}
+
+/*
+@serializable class RemoteRequest(val message: AnyRef,
+                                  val method: String,
+                                  val target: String,
+                                  val timeout: Long,
+                                  val supervisorUuid: Option[String],
+                                  val isActor: Boolean,
+                                  val isOneWay: Boolean,
+                                  val isEscaped: Boolean) {
+  private[RemoteRequest] var _id = IdFactory.nextId
+  def id = _id
+
+  override def toString: String = synchronized {
+    "RemoteRequest[isActor: " + isActor + " | message: " + message + " | timeout: " + timeout + " | method: " + method + 
+    " | target: " + target + " | isOneWay: " + isOneWay + " | supervisorUuid: " + supervisorUuid + "]"
+  }
+
+  override def hashCode(): Int = synchronized {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, isActor)
+    result = HashCode.hash(result, message)
+    result = HashCode.hash(result, method)
+    result = HashCode.hash(result, target)
+    result = HashCode.hash(result, timeout)
+    result = HashCode.hash(result, isOneWay)
+    result = HashCode.hash(result, isEscaped)
+    result = if (supervisorUuid.isDefined) HashCode.hash(result, supervisorUuid.get) else result
+    result
+  }
+
+  override def equals(that: Any): Boolean = synchronized {
+    that != null &&
+    that.isInstanceOf[RemoteRequest] &&
+    that.asInstanceOf[RemoteRequest].isActor == isActor &&
+    that.asInstanceOf[RemoteRequest].message == message &&
+    that.asInstanceOf[RemoteRequest].method == method &&
+    that.asInstanceOf[RemoteRequest].target == target &&
+    that.asInstanceOf[RemoteRequest].timeout == timeout &&
+    that.asInstanceOf[RemoteRequest].isOneWay == isOneWay &&
+    that.asInstanceOf[RemoteRequest].isEscaped == isEscaped &&
+    that.asInstanceOf[RemoteRequest].supervisorUuid.isDefined == supervisorUuid.isDefined &&
+    that.asInstanceOf[RemoteRequest].supervisorUuid.get == supervisorUuid.get
+  }
+
+  def newReplyWithMessage(message: AnyRef, tx: Option[Transaction]) = synchronized {
+    new RemoteReply(true, id, message, null, supervisorUuid)
+  }
+
+  def newReplyWithException(error: Throwable) = synchronized {
+    new RemoteReply(false, id, null, error, supervisorUuid)
+  }
+
+  def cloneWithNewMessage(message: AnyRef, isEscaped: Boolean) = synchronized {
+    val request = new RemoteRequest(message, method, target, timeout, supervisorUuid, isActor, isOneWay, isEscaped)
+    request._id = id
+    request
+  }
+}
+
+@serializable class RemoteReply(val successful: Boolean,
+                                val id: Long,
+                                val message: AnyRef,
+                                val exception: Throwable,
+                                val supervisorUuid: Option[String]) {
+  override def toString: String = synchronized {
+    "RemoteReply[successful: " + successful + " | id: " + id + " | message: " + message +
+    " | exception: " + exception + " | supervisorUuid: " + supervisorUuid + "]"
+  }
+
+  override def hashCode(): Int = synchronized {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, successful)
+    result = HashCode.hash(result, id)
+    result = HashCode.hash(result, message)
+    result = HashCode.hash(result, exception)
+    result = if (supervisorUuid.isDefined) HashCode.hash(result, supervisorUuid.get) else result
+    result
+  }
+
+  override def equals(that: Any): Boolean = synchronized {
+    that != null &&
+    that.isInstanceOf[RemoteReply] &&
+    that.asInstanceOf[RemoteReply].successful == successful &&
+    that.asInstanceOf[RemoteReply].id == id &&
+    that.asInstanceOf[RemoteReply].message == message &&
+    that.asInstanceOf[RemoteReply].exception == exception &&
+    that.asInstanceOf[RemoteRequest].supervisorUuid.isDefined == supervisorUuid.isDefined &&
+    that.asInstanceOf[RemoteRequest].supervisorUuid.get == supervisorUuid.get
+  }
+}
+*/</pre>
+    <script language='javascript'>
+      dp.SyntaxHighlighter.ClipboardSwf = './../_highlighter/clipboard.swf';
+      dp.SyntaxHighlighter.HighlightAll('code');
+    </script>
+  </body>
+  </html>

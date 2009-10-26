@@ -1,0 +1,1711 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+      <head>
+      
+      <title>Akka Persistence Module 0.6 API : se.scalablesolutions.akka.state.MongoPersistentMap</title>
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8"></meta>
+      <meta content="scaladoc (1.2)" name="generator"></meta>
+      <script type="text/javascript" src="./../../../../jquery-1.3.2.js"></script>
+    
+      
+      <link href="./../../../../content.css" type="text/css" rel="stylesheet"></link>
+      <script src="./../../../../content.js" language="javascript" id="content.js"></script>
+      <link href="./../../../../_highlighter/SyntaxHighlighter.css" type="text/css" rel="stylesheet"></link>
+      <script src="./../../../../_highlighter/shAll.js" language="javascript" id="shAll.js"></script>
+      
+    
+      </head>
+      <body>
+      <div class="header"></div>
+      <!-- ========= START OF TOP NAVBAR ======= -->
+      <a name="navbar_top"><!-- --></a>
+      <table cellpadding="1" width="100%" class="NavBar" cellspacing="0" border="0">
+      <tr>
+        <td class="NavBarCell1">
+      <a href="./../../../../overview.html">OVERVIEW</a>&nbsp;|&nbsp;
+      <a href="./../../../../overview.html" title="se.scalablesolutions.akka.state" >PACKAGE</a> | 
+      <a href="#Constructors">CONSTR</a>&nbsp;|&nbsp;
+      <a href="#Fields">FIELDS</a>&nbsp;|&nbsp;
+      <a href="#Methods">METHODS</a>
+    </td>
+        <td class="NavBarCell2">
+      <a href="./../../../../index.html" target="_top">FRAMES</a>
+      &nbsp;&nbsp;
+      <a href="MongoPersistentMap.html" target="_top">NO FRAMES</a>
+    </td>
+        <td class="NavBarCell3"><a href="#" title="show/hide inherited" class="btnInherited" onclick="toggleInherited()">INHERITED<input type="checkbox" class="filter_inherited_cb" checked="true"></input></a></td>
+      </tr>
+    </table>
+      <!-- ========= END OF TOP NAVBAR ========= -->
+      
+      <!-- ======== START OF CLASS DATA ======== -->
+      <h2>
+      <span style="font-size:80%">se.scalablesolutions.akka.state.MongoPersistentMap</span>
+      <br></br>
+      class MongoPersistentMap
+      </h2>
+      <div id="intro">
+      <code class="signature">class MongoPersistentMap</code>
+      <code class="signature">
+        <br></br>&nbsp;extends
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </code>
+      <br></br>
+      <div class="apiComments">
+         Implements a persistent transactional map based on the MongoDB distributed P2P key-value storage.
+
+
+        <dl>
+         <dt>author</dt>
+         <dd><code></code> - <a href="http://debasishg.blogspot.com">Debasish Ghosh</a></dd>
+          </dl>
+      </div>
+      <br></br>
+      
+      Source: <a href="./../../../../PersistentState.scala.html#Some(165)">PersistentState.scala(165)</a>
+      </div>
+      
+      
+      
+        <!-- =========== {subtitle} =========== -->
+        <h3><a name="Constructors">&nbsp;</a>Constructors</h3>
+        <table summary="" cellpadding="3" width="100%" cellspacing="0" border="1">
+        <tbody class="TableRowColor">
+        <tr class="">
+      <td class="signature">
+        <code class="signature">def this</code>
+        
+      </td>
+    </tr>
+        </tbody>
+        </table>
+      
+      
+        <!-- =========== {subtitle} =========== -->
+        <h3><a name="Fields">&nbsp;</a>Fields</h3>
+        <table summary="" cellpadding="3" width="100%" cellspacing="0" border="1">
+        <tbody class="TableRowColor">
+        <tr class="isInherited">
+      <td class="name">
+        <b>hasDefiniteSize</b>..<a name="hasDefiniteSize"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def hasDefiniteSize</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>isEmpty</b>..<a name="isEmpty"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def isEmpty</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>keySet</b>..<a name="keySet"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def keySet</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Set.html" title="scala.collection.Set" >Set</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>keys</b>..<a name="keys"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def keys</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterator.html" title="scala.Iterator" >Iterator</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>mkString</b>..<a name="mkString"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def mkString</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>newAndUpdatedEntries</b>..<a name="newAndUpdatedEntries"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">protected val newAndUpdatedEntries</code>
+        
+        
+      </td>
+      <td class="type"><a href="./TransactionalMap.html" title="se.scalablesolutions.akka.state.TransactionalMap" >TransactionalMap</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>projection</b>..<a name="projection"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def projection</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map/Projection.html" title="scala.collection.Map.Projection" >Projection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B.html" title="scala.collection.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>readOnly</b>..<a name="readOnly"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def readOnly</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>removedEntries</b>..<a name="removedEntries"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">protected val removedEntries</code>
+        
+        
+      </td>
+      <td class="type"><a href="./TransactionalMap.html" title="se.scalablesolutions.akka.state.TransactionalMap" >TransactionalMap</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>shouldClearOnCommit</b>..<a name="shouldClearOnCommit"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">protected val shouldClearOnCommit</code>
+        
+        
+      </td>
+      <td class="type"><a href="./TransactionalRef.html" title="se.scalablesolutions.akka.state.TransactionalRef" >TransactionalRef</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>size</b>..<a name="size"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def size</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a></td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="">
+      <td class="name">
+        <b>storage</b>..<a name="storage"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">val storage</code>
+        
+        
+      </td>
+      <td class="type"><a href="./../../../../overview.html" title="se.scalablesolutions.akka.state.MongoStorage" >MongoStorage</a></td>
+      <td class="remarks">
+        
+        
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>stringPrefix</b>..<a name="stringPrefix"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">protected override def stringPrefix</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>toList</b>..<a name="toList"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def toList</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/List.html" title="scala.List" >List</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>toSeq</b>..<a name="toSeq"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def toSeq</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Seq.html" title="scala.Seq" >Seq</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>toStream</b>..<a name="toStream"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def toStream</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Stream.html" title="scala.Stream" >Stream</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>uuid</b>..<a name="uuid"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">var uuid</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a></td>
+      <td class="remarks">
+        
+        <a href="./Transactional.html" title="se.scalablesolutions.akka.state.Transactional" >Transactional</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>values</b>..<a name="values"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def values</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterator.html" title="scala.Iterator" >Iterator</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B.html" title="scala.collection.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr>
+        </tbody>
+        </table>
+      
+      
+        <!-- =========== {subtitle} =========== -->
+        <h3><a name="Methods">&nbsp;</a>Methods</h3>
+        <table summary="" cellpadding="3" width="100%" cellspacing="0" border="1">
+        <tbody class="TableRowColor">
+        <tr class="isInherited">
+      <td class="name">
+        <b>!=</b>..<a name="!=(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def !=(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>!=</b>..<a name="!=(scala.Any)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def !=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>+</b>..<a name="+(scala.Tuple2,scala.Tuple2,scala.&lt;repeated&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def +(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>), arg1 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>), arg2 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)*)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>+</b>..<a name="+(scala.Tuple2)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def +(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>))</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>++</b>..<a name="++(scala.Iterable)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def ++[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Collection.html" title="scala.Collection" >Collection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>++</b>..<a name="++(scala.Iterator)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def ++(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterator.html" title="scala.Iterator" >Iterator</a>[(<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>++</b>..<a name="++(scala.Iterable)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def ++(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[(<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>++=</b>..<a name="++=(scala.Iterator)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def ++=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterator.html" title="scala.Iterator" >Iterator</a>[(<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>++=</b>..<a name="++=(scala.Iterable)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def ++=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[(<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>+=</b>..<a name="+=(scala.Tuple2,scala.Tuple2,scala.&lt;repeated&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def +=(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>), arg1 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>), arg2 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)*)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>+=</b>..<a name="+=(scala.collection.mutable.Map.A)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def +=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.MapTo.html" title="scala.collection.mutable.Map.MapTo" >MapTo</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>+=</b>..<a name="+=(java.lang.Object,java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def +=(key : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, value : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>+=</b>..<a name="+=(scala.Tuple2)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def +=(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>))</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>-</b>..<a name="-(scala.collection.mutable.Map.A)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def -(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>-</b>..<a name="-(scala.collection.mutable.Map.A,scala.collection.mutable.Map.A,scala.&lt;repeated&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def -(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, arg1 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, arg2 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>*)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>--</b>..<a name="--(scala.Iterator)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def --(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterator.html" title="scala.Iterator" >Iterator</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>--</b>..<a name="--(scala.Iterable)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def --(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>--=</b>..<a name="--=(scala.Iterable)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def --=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>--=</b>..<a name="--=(scala.Iterator)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def --=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterator.html" title="scala.Iterator" >Iterator</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>-=</b>..<a name="-=(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def -=(key : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>-=</b>..<a name="-=(scala.collection.mutable.Map.A,scala.collection.mutable.Map.A,scala.&lt;repeated&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def -=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, arg1 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, arg2 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>*)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>/:</b>..<a name="/:(scala.Iterable.B)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def /:[B](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>:\</b>..<a name=":\(scala.Iterable.B)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def :\[B](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>&lt;&lt;</b>..<a name="&lt;&lt;(scala.collection.mutable.Message)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def &lt;&lt;(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Message.html" title="scala.collection.mutable.Message" >Message</a>[(<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>==</b>..<a name="==(scala.Any)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def ==(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>==</b>..<a name="==(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def ==(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>addString</b>..<a name="addString(scala.StringBuilder,java.lang.String)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def addString(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/StringBuilder.html" title="scala.StringBuilder" >StringBuilder</a>, arg1 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/StringBuilder.html" title="scala.StringBuilder" >StringBuilder</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>addString</b>..<a name="addString(scala.StringBuilder)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def addString(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/StringBuilder.html" title="scala.StringBuilder" >StringBuilder</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/StringBuilder.html" title="scala.StringBuilder" >StringBuilder</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>addString</b>..<a name="addString(scala.StringBuilder,java.lang.String,java.lang.String,java.lang.String)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def addString(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/StringBuilder.html" title="scala.StringBuilder" >StringBuilder</a>, arg1 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>, arg2 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>, arg3 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/StringBuilder.html" title="scala.StringBuilder" >StringBuilder</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>andThen</b>..<a name="andThen(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def andThen[C](arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.B.html" title="scala.PartialFunction.B" >B</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.C.html" title="scala.PartialFunction.C" >C</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.html" title="scala.PartialFunction" >PartialFunction</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.A.html" title="scala.PartialFunction.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.C.html" title="scala.PartialFunction.C" >C</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.html" title="scala.PartialFunction" >PartialFunction</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>apply</b>..<a name="apply(scala.collection.Map.A)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def apply(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B.html" title="scala.collection.Map.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>asInstanceOf</b>..<a name="asInstanceOf"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def asInstanceOf[T0]</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Any.T0.html" title="scala.Any.T0" >T0</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>clear</b>..<a name="clear"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def clear</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>clone</b>..<a name="clone"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def clone</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>commit</b>..<a name="commit"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def commit</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>compose</b>..<a name="compose(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def compose[A](arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Function1.A.html" title="scala.Function1.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Function1.T1.html" title="scala.Function1.T1" >T1</a>)</code>
+        
+        
+      </td>
+      <td class="type">(<a href="http://www.scala-lang.org/docu/files/api/scala/Function1.A.html" title="scala.Function1.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Function1.R.html" title="scala.Function1.R" >R</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Function1.html" title="scala.Function1" >Function1</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>concat</b>..<a name="concat(scala.Iterable)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def concat[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Collection.html" title="scala.Collection" >Collection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>contains</b>..<a name="contains(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def contains(key : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>copyToArray</b>..<a name="copyToArray(scala.Array,scala.Int)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def copyToArray[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Array.html" title="scala.Array" >Array</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>], arg1 : <a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>copyToBuffer</b>..<a name="copyToBuffer(scala.collection.mutable.Buffer)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def copyToBuffer[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Buffer.html" title="scala.collection.mutable.Buffer" >Buffer</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>default</b>..<a name="default(scala.collection.Map.A)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def default(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B.html" title="scala.collection.Map.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>drop</b>..<a name="drop(scala.Int)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def drop(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Collection.html" title="scala.Collection" >Collection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>dropWhile</b>..<a name="dropWhile(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def dropWhile(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Collection.html" title="scala.Collection" >Collection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>elements</b>..<a name="elements"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def elements</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterator.html" title="scala.Iterator" >Iterator</a>[(<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>eq</b>..<a name="eq(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def eq(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>equals</b>..<a name="equals(scala.Any)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def equals(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>excl</b>..<a name="excl(scala.&lt;repeated&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def excl(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>*)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>exists</b>..<a name="exists(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def exists(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>filter</b>..<a name="filter(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def filter(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>filterKeys</b>..<a name="filterKeys(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def filterKeys(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map/Projection.html" title="scala.collection.Map.Projection" >Projection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B.html" title="scala.collection.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>finalize</b>..<a name="finalize"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">protected def finalize</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>find</b>..<a name="find(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def find(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>findIndexOf</b>..<a name="findIndexOf(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def findIndexOf(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>flatMap</b>..<a name="flatMap(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def flatMap[B](arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>foldLeft</b>..<a name="foldLeft(scala.Iterable.B)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def foldLeft[B](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>foldRight</b>..<a name="foldRight(scala.Iterable.B)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def foldRight[B](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>forall</b>..<a name="forall(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def forall(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>foreach</b>..<a name="foreach(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def foreach(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>get</b>..<a name="get(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def get(key : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>getClass</b>..<a name="getClass"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def getClass</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/Class.html" title="java.lang.Class" >Class</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>getOrElse</b>..<a name="getOrElse(scala.collection.Map.A,scala.&lt;byname&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def getOrElse[B2 &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B.html" title="scala.collection.Map.B" >B</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>, arg1 : =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B2.html" title="scala.collection.Map.B2" >B2</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B2.html" title="scala.collection.Map.B2" >B2</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>getOrElseUpdate</b>..<a name="getOrElseUpdate(scala.collection.mutable.Map.A,scala.&lt;byname&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def getOrElseUpdate(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, arg1 : =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>hashCode</b>..<a name="hashCode"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def hashCode</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>incl</b>..<a name="incl(scala.&lt;repeated&gt;)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def incl(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)*)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>indexOf</b>..<a name="indexOf(scala.Iterable.B)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def indexOf[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>isDefinedAt</b>..<a name="isDefinedAt(scala.collection.Map.A)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def isDefinedAt(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>isInstanceOf</b>..<a name="isInstanceOf"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def isInstanceOf[T0]</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>map</b>..<a name="map(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def map[B](arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>mapElements</b>..<a name="mapElements(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def mapElements[C](arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.B.html" title="scala.collection.Map.B" >B</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.C.html" title="scala.collection.Map.C" >C</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map/Projection.html" title="scala.collection.Map.Projection" >Projection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.A.html" title="scala.collection.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.C.html" title="scala.collection.Map.C" >C</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>mkString</b>..<a name="mkString(java.lang.String)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def mkString(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>mkString</b>..<a name="mkString(java.lang.String,java.lang.String,java.lang.String)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def mkString(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>, arg1 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>, arg2 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>ne</b>..<a name="ne(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def ne(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>notify</b>..<a name="notify"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def notify</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>notifyAll</b>..<a name="notifyAll"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def notifyAll</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>orElse</b>..<a name="orElse(scala.PartialFunction)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def orElse[A1 &lt;: <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.A.html" title="scala.PartialFunction.A" >A</a>, B1 &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.B.html" title="scala.PartialFunction.B" >B</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.html" title="scala.PartialFunction" >PartialFunction</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.A1.html" title="scala.PartialFunction.A1" >A1</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.B1.html" title="scala.PartialFunction.B1" >B1</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.html" title="scala.PartialFunction" >PartialFunction</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.A1.html" title="scala.PartialFunction.A1" >A1</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.B1.html" title="scala.PartialFunction.B1" >B1</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/PartialFunction.html" title="scala.PartialFunction" >PartialFunction</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>partition</b>..<a name="partition(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def partition(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type">(<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>], <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>])</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>put</b>..<a name="put(java.lang.Object,java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def put(key : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, value : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>reduceLeft</b>..<a name="reduceLeft(scala.Function2)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def reduceLeft[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>reduceRight</b>..<a name="reduceRight(scala.Function2)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def reduceRight[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>remove</b>..<a name="remove(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def remove(key : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="javascript:void" title="se.scalablesolutions.akka.collection.HashTrie" class="noref">HashTrie</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>removeKey</b>..<a name="removeKey(scala.collection.mutable.Map.A)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def removeKey(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>retain</b>..<a name="retain(scala.Function2)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def retain(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>sameElements</b>..<a name="sameElements(scala.Iterable)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def sameElements[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>](arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.B.html" title="scala.Iterable.B" >B</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>slice</b>..<a name="slice(scala.Option,scala.Option,scala.Int)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def slice(start : <a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>], finish : <a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>], count : <a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/List.html" title="scala.List" >List</a>[(<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>slice</b>..<a name="slice(scala.Option,scala.Int)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def slice(start : <a href="http://www.scala-lang.org/docu/files/api/scala/Option.html" title="scala.Option" >Option</a>[<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>], count : <a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/List.html" title="scala.List" >List</a>[(<a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)]</td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>synchronized</b>..<a name="synchronized(java.lang.Object.T0)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def synchronized[T0](arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.T0.html" title="java.lang.Object.T0" >T0</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.T0.html" title="java.lang.Object.T0" >T0</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited isDeprecated">
+      <td class="name">
+        <b>take</b>..<a name="take(scala.Int)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def take(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Collection.html" title="scala.Collection" >Collection</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>takeWhile</b>..<a name="takeWhile(scala.Function1)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def takeWhile(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.A.html" title="scala.Iterable.A" >A</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Iterable.html" title="scala.Iterable" >Iterable</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>toArray</b>..<a name="toArray"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def toArray[B &gt;: <a href="http://www.scala-lang.org/docu/files/api/scala/Collection.A.html" title="scala.Collection.A" >A</a>]</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Array.html" title="scala.Array" >Array</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Collection.B.html" title="scala.Collection.B" >B</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Collection.html" title="scala.Collection" >Collection</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>toString</b>..<a name="toString"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def toString</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/Map.html" title="scala.collection.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>transform</b>..<a name="transform(scala.Function2)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def transform(arg0 : (<a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.A.html" title="scala.collection.mutable.Map.A" >A</a>, <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>) =&gt; <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.B.html" title="scala.collection.mutable.Map.B" >B</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/collection/mutable/Map.html" title="scala.collection.mutable.Map" >Map</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>update</b>..<a name="update(java.lang.Object,java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">override def update(key : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>, value : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="./PersistentMap.html" title="se.scalablesolutions.akka.state.PersistentMap" >PersistentMap</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>wait</b>..<a name="wait(scala.Long,scala.Int)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def wait(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Long.html" title="scala.Long" >Long</a>, arg1 : <a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>wait</b>..<a name="wait(scala.Long)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def wait(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Long.html" title="scala.Long" >Long</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>wait</b>..<a name="wait"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def wait</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr>
+        </tbody>
+        </table>
+      
+      <!-- ========= END OF CLASS DATA ========= -->
+    
+      <!-- ======= START OF BOTTOM NAVBAR ====== -->
+      <a name="navbar_bottom"><!-- --></a>
+      <table cellpadding="1" width="100%" class="NavBar" cellspacing="0" border="0">
+      <tr>
+        <td class="NavBarCell1">
+      <a href="./../../../../overview.html">OVERVIEW</a>&nbsp;|&nbsp;
+      <a href="./../../../../overview.html" title="se.scalablesolutions.akka.state" >PACKAGE</a> | 
+      <a href="#Constructors">CONSTR</a>&nbsp;|&nbsp;
+      <a href="#Fields">FIELDS</a>&nbsp;|&nbsp;
+      <a href="#Methods">METHODS</a>
+    </td>
+        <td class="NavBarCell2">
+      <a href="./../../../../index.html" target="_top">FRAMES</a>
+      &nbsp;&nbsp;
+      <a href="MongoPersistentMap.html" target="_top">NO FRAMES</a>
+    </td>
+        <td class="NavBarCell3"><a href="#" title="show/hide inherited" class="btnInherited" onclick="toggleInherited()">INHERITED<input type="checkbox" class="filter_inherited_cb" checked="true"></input></a></td>
+      </tr>
+    </table>
+      <!-- ======== END OF BOTTOM NAVBAR ======= -->
+      <div>Copyright (c) 2009 <a href="http://scalablesolutions.se">Scalable Solutions AB</a>. All Rights Reserved.</div>
+      <script language="javascript">
+        dp.SyntaxHighlighter.ClipboardSwf = './../../../../_highlighter/clipboard.swf';
+        dp.SyntaxHighlighter.HighlightAll('code');
+      </script>
+    </body>
+    </html>

@@ -1,0 +1,40 @@
+
+  <html>
+  <head>
+    <link href='./_highlighter/SyntaxHighlighter.css' rel='stylesheet' type='text/css'/>
+    <script language='javascript' src='./_highlighter/shAll.js'></script>
+  </head>
+  <body>
+    <pre name="code" class="scala" style="width:100%">
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
+package se.scalablesolutions.akka.rest
+
+import com.sun.jersey.core.spi.component.ioc.IoCFullyManagedComponentProvider
+
+import config.Configurator
+import util.Logging
+
+class ActorComponentProvider(val clazz: Class[_], val configurators: List[Configurator])
+    extends IoCFullyManagedComponentProvider with Logging {
+
+  override def getInstance: AnyRef = {
+    val instances = for {
+      conf &lt;- configurators
+      if conf.isDefined(clazz)
+    } yield conf.getInstance(clazz).asInstanceOf[AnyRef]
+    instances match {
+      case instance :: Nil => instance
+      case Nil => throw new IllegalArgumentException("No Actor for class [" +  clazz + "] could be found. Make sure you have defined and configured the class as an Active Object or Actor in a Configurator")
+      case _ => throw new IllegalArgumentException("Actor for class [" +  clazz + "] is defined in more than one Configurator. Eliminate the redundancy.")
+    }
+  }
+}</pre>
+    <script language='javascript'>
+      dp.SyntaxHighlighter.ClipboardSwf = './_highlighter/clipboard.swf';
+      dp.SyntaxHighlighter.HighlightAll('code');
+    </script>
+  </body>
+  </html>

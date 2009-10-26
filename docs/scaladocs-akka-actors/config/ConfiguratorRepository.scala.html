@@ -1,0 +1,44 @@
+
+  <html>
+  <head>
+    <link href='./../_highlighter/SyntaxHighlighter.css' rel='stylesheet' type='text/css'/>
+    <script language='javascript' src='./../_highlighter/shAll.js'></script>
+  </head>
+  <body>
+    <pre name="code" class="scala" style="width:100%">
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
+package se.scalablesolutions.akka.config
+
+import scala.collection.mutable.HashSet
+
+import util.Logging
+
+object ConfiguratorRepository extends Logging {
+
+  private val configuration = new HashSet[Configurator]
+
+  def registerConfigurator(conf: Configurator) = synchronized {
+    configuration + conf
+  }
+
+  def getConfigurators: List[Configurator] = synchronized {
+    configuration.toList
+    //configurations.getOrElse(ctx, throw new IllegalArgumentException("No configuration for servlet context [" + ctx + "]"))
+  }
+}
+
+class ConfiguratorRepository extends Logging {
+  def registerConfigurator(conf: Configurator) = ConfiguratorRepository.registerConfigurator(conf)
+  def getConfigurators: List[Configurator] = ConfiguratorRepository.getConfigurators
+}
+
+</pre>
+    <script language='javascript'>
+      dp.SyntaxHighlighter.ClipboardSwf = './../_highlighter/clipboard.swf';
+      dp.SyntaxHighlighter.HighlightAll('code');
+    </script>
+  </body>
+  </html>
