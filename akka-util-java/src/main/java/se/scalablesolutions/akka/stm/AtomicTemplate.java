@@ -9,8 +9,8 @@ import org.multiverse.api.exceptions.LoadException;
 import org.multiverse.api.exceptions.RetryError;
 import org.multiverse.api.exceptions.TooManyRetriesException;
 import static org.multiverse.api.GlobalStmInstance.getGlobalStmInstance;
-import static org.multiverse.utils.TransactionThreadLocal.getThreadLocalTransaction;
-import static org.multiverse.utils.TransactionThreadLocal.setThreadLocalTransaction;
+import static org.multiverse.utils.ThreadLocalTransaction.getThreadLocalTransaction;
+import static org.multiverse.utils.ThreadLocalTransaction.setThreadLocalTransaction;
 
 import static java.lang.String.format;
 import java.util.logging.Logger;
@@ -60,7 +60,7 @@ public abstract class AtomicTemplate<E> {
 
     /**
      * Creates a new AtomicTemplate that uses the STM stored in the GlobalStm and works the the {@link
-     * org.multiverse.utils.TransactionThreadLocal}.
+     * org.multiverse.utils.ThreadLocalTransaction}.
      */
     public AtomicTemplate() {
         this(getGlobalStmInstance());
@@ -72,7 +72,7 @@ public abstract class AtomicTemplate<E> {
 
     /**
      * Creates a new AtomicTemplate using the provided stm. The transaction used is stores/retrieved from the {@link
-     * org.multiverse.utils.TransactionThreadLocal}.
+     * org.multiverse.utils.ThreadLocalTransaction}.
      *
      * @param stm the stm to use for transactions.
      * @throws NullPointerException if stm is null.
@@ -274,7 +274,7 @@ public abstract class AtomicTemplate<E> {
                         if (abort) {
                             t.abort();
                             if (reset) {
-                                t.reset();
+                                t.restart();
                             }
                         }
                     }

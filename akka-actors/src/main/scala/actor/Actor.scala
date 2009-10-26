@@ -21,7 +21,7 @@ import se.scalablesolutions.akka.util.Logging
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 
-import org.multiverse.utils.TransactionThreadLocal._
+import org.multiverse.utils.ThreadLocalTransaction._
 
 sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage

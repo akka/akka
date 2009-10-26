@@ -12,7 +12,7 @@ import org.codehaus.aspectwerkz.proxy.Uuid
 
 import scala.collection.mutable.HashSet
 
-import org.multiverse.utils.TransactionThreadLocal._
+import org.multiverse.utils.ThreadLocalTransaction._
 
 class StmException(msg: String) extends RuntimeException(msg)
 

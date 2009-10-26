@@ -77,7 +77,7 @@ object TransactionalRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {
-  import org.multiverse.utils.TransactionThreadLocal._
+  import org.multiverse.utils.ThreadLocalTransaction._
 
   private[this] val ref: Ref[T] = atomic { new Ref }
 
