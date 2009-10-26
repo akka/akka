@@ -2,16 +2,17 @@ package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.TimeUnit
 
-import junit.framework.Assert._
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-class ThreadBasedActorSpec extends junit.framework.TestCase {
+class EventBasedSingleThreadActorTest extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
-    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
-    
+    dispatcher = Dispatchers.newEventBasedSingleThreadDispatcher(name)
+
     def receive: PartialFunction[Any, Unit] = {
       case "Hello" =>
         reply("World")
@@ -19,8 +20,8 @@ class ThreadBasedActorSpec extends junit.framework.TestCase {
         throw new RuntimeException("expected")
     }
   }
-  
-  def testSendOneWay = {
+
+  @Test def shouldSendOneWay = {
     implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
@@ -31,29 +32,29 @@ class ThreadBasedActorSpec extends junit.framework.TestCase {
     actor.start
     val result = actor ! "OneWay"
     Thread.sleep(100)
-    assertEquals("received", oneWay)
+    assert("received" === oneWay)
     actor.stop
   }
 
-  def testSendReplySync = {
+  @Test def shouldSendReplySync = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
     val result: String = actor !? "Hello"
-    assertEquals("World", result)
+    assert("World" === result)
     actor.stop
   }
 
-  def testSendReplyAsync = {
+  @Test def shouldSendReplyAsync = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
     val result = actor !! "Hello"
-    assertEquals("World", result.get.asInstanceOf[String])
+    assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
 
-  def testSendReceiveException = {
+  @Test def shouldSendReceiveException = {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
@@ -62,7 +63,7 @@ class ThreadBasedActorSpec extends junit.framework.TestCase {
       fail("Should have thrown an exception")
     } catch {
       case e =>
-        assertEquals("expected", e.getMessage())
+        assert("expected" === e.getMessage())
     }
     actor.stop
   }

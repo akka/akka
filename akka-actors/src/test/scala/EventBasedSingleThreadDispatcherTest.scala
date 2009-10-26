@@ -7,12 +7,11 @@ import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 
 import org.junit.{Test, Before}
-import org.junit.Assert._
-import junit.framework.TestCase
+import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
 
-class EventBasedSingleThreadDispatcherTest extends TestCase {
+class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
   private var threadingIssueDetected: AtomicBoolean = null
 
   class TestMessageHandle(handleLatch: CountDownLatch) extends MessageInvoker {
@@ -35,22 +34,19 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
   }
 
   @Before
-  override def setUp = {
+  def setUp = {
     threadingIssueDetected = new AtomicBoolean(false)
   }
 
-  @Test
-  def testMessagesDispatchedToTheSameHandlerAreExecutedSequentially = {
+  @Test def shouldMessagesDispatchedToTheSameHandlerAreExecutedSequentially = {
     internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially
   }
 
-  @Test
-  def testMessagesDispatchedToDifferentHandlersAreExecutedSequentially = {
+  @Test def shouldMessagesDispatchedToDifferentHandlersAreExecutedSequentially = {
     internalTestMessagesDispatchedToDifferentHandlersAreExecutedSequentially
   }
 
-  @Test
-  def testMessagesDispatchedToHandlersAreExecutedInFIFOOrder = {
+  @Test def shouldMessagesDispatchedToHandlersAreExecutedInFIFOOrder = {
     internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder
   }
 
@@ -67,8 +63,8 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
     for (i <- 0 until 100) {
       dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
     }
-    assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
-    assertFalse(threadingIssueDetected.get)
+    assert(handleLatch.await(5, TimeUnit.SECONDS))
+    assert(!threadingIssueDetected.get)
   }
 
   private def internalTestMessagesDispatchedToDifferentHandlersAreExecutedSequentially: Unit = {
@@ -79,8 +75,8 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
     dispatcher.start
     dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
     dispatcher.messageQueue.append(new MessageInvocation(key2, new Object, None, None))
-    assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
-    assertFalse(threadingIssueDetected.get)
+    assert(handleLatch.await(5, TimeUnit.SECONDS))
+    assert(!threadingIssueDetected.get)
   }
 
   private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
@@ -113,8 +109,8 @@ class EventBasedSingleThreadDispatcherTest extends TestCase {
       dispatcher.messageQueue.append(new MessageInvocation(key1, new java.lang.Integer(i), None, None))
       dispatcher.messageQueue.append(new MessageInvocation(key2, new java.lang.Integer(i), None, None))
     }
-    assertTrue(handleLatch.await(5, TimeUnit.SECONDS))
-    assertFalse(threadingIssueDetected.get)
+    assert(handleLatch.await(5, TimeUnit.SECONDS))
+    assert(!threadingIssueDetected.get)
     dispatcher.shutdown
   }
 }

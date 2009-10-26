@@ -134,9 +134,9 @@
 
     <!-- For Testing -->
     <dependency>
-      <groupId>org.scala-tools.testing</groupId>
+      <groupId>org.scalatest</groupId>
       <artifactId>scalatest</artifactId>
-      <version>0.9.5</version>
+      <version>1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

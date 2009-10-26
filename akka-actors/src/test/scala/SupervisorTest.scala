@@ -6,15 +6,13 @@ package se.scalablesolutions.akka.actor
 
 import config.ScalaConfig._
 
-//import com.jteigen.scalatest.JUnit4Runner
-import org.junit.runner.RunWith
-import org.scalatest.Suite
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-//@RunWith(classOf[JUnit4Runner])
-class SupervisorSpec extends junit.framework.TestCase with Suite {
+class SupervisorTest extends JUnitSuite {
 
   var messageLog: String = ""
   var oneWayLog: String = ""
@@ -23,7 +21,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
   var pingpong2: PingPong2Actor = _
   var pingpong3: PingPong3Actor = _
 
-  def testStartServer = {
+  @Test def shouldStartServer = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
     sup ! StartSupervisor
@@ -33,12 +31,12 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testKillSingleActorOneForOne = {
+  @Test def shouldKillSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong1 !! Die
     }
     Thread.sleep(500)
@@ -47,7 +45,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testCallKillCallSingleActorOneForOne = {
+  @Test def shouldCallKillCallSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
     sup ! StartSupervisor
@@ -59,7 +57,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     expect("ping") {
       messageLog
     }
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong1 !! Die
     }
     Thread.sleep(500)
@@ -75,12 +73,12 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testKillSingleActorAllForOne = {
+  @Test def shouldKillSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong1 !! Die
     }
     Thread.sleep(500)
@@ -89,7 +87,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testCallKillCallSingleActorAllForOne = {
+  @Test def shouldCallKillCallSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
     sup ! StartSupervisor
@@ -101,7 +99,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     expect("ping") {
       messageLog
     }
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong1 !! Die
     }
     Thread.sleep(500)
@@ -117,12 +115,12 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testKillMultipleActorsOneForOne = {
+  @Test def shouldKillMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong3 !! Die
     }
     Thread.sleep(500)
@@ -151,7 +149,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     expect("pingpingping") {
       messageLog
     }
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong2 !! Die
     }
     Thread.sleep(500)
@@ -175,12 +173,12 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testKillMultipleActorsAllForOne = {
+  @Test def shouldKillMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong2 !! Die
     }
     Thread.sleep(500)
@@ -209,7 +207,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     expect("pingpingping") {
       messageLog
     }
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong2 !! Die
     }
     Thread.sleep(500)
@@ -233,7 +231,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testOneWayKillSingleActorOneForOne = {
+  @Test def shouldOneWayKillSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
     sup ! StartSupervisor
@@ -245,7 +243,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testOneWayCallKillCallSingleActorOneForOne = {
+  @Test def shouldOneWayCallKillCallSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
     sup ! StartSupervisor
@@ -268,12 +266,12 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
   }
 
   /*
-  def testOneWayKillSingleActorAllForOne = {
+  @Test def shouldOneWayKillSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
     sup ! StartSupervisor
     Thread.sleep(500)
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong1 ! Die
     }
     Thread.sleep(500)
@@ -282,7 +280,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testOneWayCallKillCallSingleActorAllForOne = {
+  @Test def shouldOneWayCallKillCallSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
     sup ! StartSupervisor
@@ -294,7 +292,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     expect("ping") {
       messageLog
     }
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong1 ! Die
     }
     Thread.sleep(500)
@@ -310,12 +308,12 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testOneWayKillMultipleActorsOneForOne = {
+  @Test def shouldOneWayKillMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong3 ! Die
     }
     Thread.sleep(500)
@@ -344,7 +342,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     expect("pingpingping") {
       messageLog
     }
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong2 ! Die
     }
     Thread.sleep(500)
@@ -368,12 +366,12 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     }
   }
 
-  def testOneWayKillMultipleActorsAllForOne = {
+  @Test def shouldOneWayKillMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
     sup ! StartSupervisor
     Thread.sleep(500)
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong2 ! Die
     }
     Thread.sleep(500)
@@ -402,7 +400,7 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
     expect("pingpingping") {
       messageLog
     }
-    intercept(classOf[RuntimeException]) {
+    intercept[RuntimeException] {
       pingpong2 ! Die
     }
     Thread.sleep(500)
@@ -428,11 +426,11 @@ class SupervisorSpec extends junit.framework.TestCase with Suite {
    */
 
   /*
-   def testNestedSupervisorsTerminateFirstLevelActorAllForOne = {
+   @Test def shouldNestedSupervisorsTerminateFirstLevelActorAllForOne = {
     messageLog = ""
      val sup = getNestedSupervisorsAllForOneConf
      sup ! StartSupervisor
-     intercept(classOf[RuntimeException]) {
+     intercept[RuntimeException] {
        pingpong1 !! Die
      }
      Thread.sleep(500)
