@@ -190,6 +190,10 @@
               <name>org.multiverse.api.exceptions.WriteConflictException.reuse</name>
               <value>true</value>
             </property>
+            <property>
+              <name>akka.home</name>
+              <value>..</value>
+            </property>
           </systemProperties>
         </configuration>
       </plugin>
