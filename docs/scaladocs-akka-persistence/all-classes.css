@@ -1,0 +1,13 @@
+body{font-size:10pt;font-family:sans-serif;}
+h2{background-color:#EEE;border:1px solid #999;color:#900;font-family:sans-serif;font-weight:bold;padding:.3em;}
+a{text-decoration:none;}
+div.ctrl{text-align:center;}
+select#packagesFilter,input#nameFilter{width:100%;}
+#classes{margin-left:0;padding-left:0;list-style:none;}
+.trait,.object,.class{padding-left:17px;background-repeat:no-repeat;background-position:0 0;}
+.trait{color:#5C4AA0;background-image:url(_images/trait.png);font-style:italic;}
+.class{color:#33814B;background-image:url(_images/class.png);}
+.object{color:#892020;background-image:url(_images/object.png);}
+#kindFilters *{font-size:75%;font-weight:bold;font-style:normal;}
+#classes a:active,#classes a:hover{color:#900;text-decoration:underline;}
+#classes a:link,#classes a:visited{color:#009;font-family:sans-serif;text-decoration:none;}

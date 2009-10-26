@@ -1,0 +1,126 @@
+
+  <html>
+  <head>
+    <link href='./../_highlighter/SyntaxHighlighter.css' rel='stylesheet' type='text/css'/>
+    <script language='javascript' src='./../_highlighter/shAll.js'></script>
+  </head>
+  <body>
+    <pre name="code" class="scala" style="width:100%">
+/**
+ * Copyright (C) 2009 Scalable Solutions.
+ */
+
+package se.scalablesolutions.akka.nio
+
+import akka.serialization.Serializable.SBinary
+import com.google.protobuf.{Message, ByteString}
+
+import serialization.{Serializer, Serializable, SerializationProtocol}
+import protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+
+object RemoteProtocolBuilder {
+  def getMessage(request: RemoteRequest): AnyRef = {
+    request.getProtocol match {
+      case SerializationProtocol.SBINARY =>
+        val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ &lt;: AnyRef]]
+        renderer.fromBytes(request.getMessage.toByteArray)
+      case SerializationProtocol.SCALA_JSON =>
+        val manifest = Serializer.Java.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        Serializer.ScalaJSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
+      case SerializationProtocol.JAVA_JSON =>
+        val manifest = Serializer.Java.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        Serializer.JavaJSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
+      case SerializationProtocol.PROTOBUF =>
+        val messageClass = Serializer.Java.in(request.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
+        Serializer.Protobuf.in(request.getMessage.toByteArray, Some(messageClass))
+      case SerializationProtocol.JAVA =>
+        Serializer.Java.in(request.getMessage.toByteArray, None)
+      case SerializationProtocol.AVRO =>
+        throw new UnsupportedOperationException("Avro protocol is not yet supported")
+    }
+  }
+
+  def getMessage(reply: RemoteReply): AnyRef = {
+    reply.getProtocol match {
+      case SerializationProtocol.SBINARY =>
+        val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ &lt;: AnyRef]]
+        renderer.fromBytes(reply.getMessage.toByteArray)
+      case SerializationProtocol.SCALA_JSON =>
+        val manifest = Serializer.Java.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        Serializer.ScalaJSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
+      case SerializationProtocol.JAVA_JSON =>
+        val manifest = Serializer.Java.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        Serializer.JavaJSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
+      case SerializationProtocol.PROTOBUF =>
+        val messageClass = Serializer.Java.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
+        Serializer.Protobuf.in(reply.getMessage.toByteArray, Some(messageClass))
+      case SerializationProtocol.JAVA =>
+        Serializer.Java.in(reply.getMessage.toByteArray, None)
+      case SerializationProtocol.AVRO =>
+        throw new UnsupportedOperationException("Avro protocol is not yet supported")
+    }
+  }
+
+  def setMessage(message: AnyRef, builder: RemoteRequest.Builder) = {
+    if (message.isInstanceOf[Serializable.SBinary[_]]) {
+      val serializable = message.asInstanceOf[Serializable.SBinary[_ &lt;: AnyRef]]
+      builder.setProtocol(SerializationProtocol.SBINARY)
+      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
+    } else if (message.isInstanceOf[Message]) {
+      val serializable = message.asInstanceOf[Message]
+      builder.setProtocol(SerializationProtocol.PROTOBUF)
+      builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
+      builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getClass)))
+    } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.ScalaJSON]
+      builder.setProtocol(SerializationProtocol.SCALA_JSON)
+      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
+    } else if (message.isInstanceOf[Serializable.JavaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.JavaJSON]
+      builder.setProtocol(SerializationProtocol.JAVA_JSON)
+      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
+    } else {
+      // default, e.g. if no protocol used explicitly then use Java serialization
+      builder.setProtocol(SerializationProtocol.JAVA)
+      builder.setMessage(ByteString.copyFrom(Serializer.Java.out(message)))
+    }
+  }
+
+  def setMessage(message: AnyRef, builder: RemoteReply.Builder) = {
+    if (message.isInstanceOf[Serializable.SBinary[_]]) {
+      val serializable = message.asInstanceOf[Serializable.SBinary[_ &lt;: AnyRef]]
+      builder.setProtocol(SerializationProtocol.SBINARY)
+      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
+    } else if (message.isInstanceOf[Message]) {
+      val serializable = message.asInstanceOf[Message]
+      builder.setProtocol(SerializationProtocol.PROTOBUF)
+      builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
+      builder.setMessageManifest(ByteString.copyFrom(Serializer.Java.out(serializable.getClass)))
+    } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.ScalaJSON]
+      builder.setProtocol(SerializationProtocol.SCALA_JSON)
+      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
+    } else if (message.isInstanceOf[Serializable.JavaJSON]) {
+      val serializable = message.asInstanceOf[Serializable.JavaJSON]
+      builder.setProtocol(SerializationProtocol.JAVA_JSON)
+      builder.setMessage(ByteString.copyFrom(serializable.toBytes))
+      builder.setMessageManifest(ByteString.copyFrom(serializable.asInstanceOf[AnyRef].getClass.getName.getBytes))
+    } else {
+      // default, e.g. if no protocol used explicitly then use Java serialization
+      builder.setProtocol(SerializationProtocol.JAVA)
+      builder.setMessage(ByteString.copyFrom(Serializer.Java.out(message)))
+    }
+  }
+}
+</pre>
+    <script language='javascript'>
+      dp.SyntaxHighlighter.ClipboardSwf = './../_highlighter/clipboard.swf';
+      dp.SyntaxHighlighter.HighlightAll('code');
+    </script>
+  </body>
+  </html>

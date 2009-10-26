@@ -1,0 +1,448 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+      <head>
+      
+      <title>Akka Actors Module 0.6 API : se.scalablesolutions.akka.serialization.Serializable.SBinary</title>
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8"></meta>
+      <meta content="scaladoc (1.2)" name="generator"></meta>
+      <script type="text/javascript" src="./../../../../../jquery-1.3.2.js"></script>
+    
+      
+      <link href="./../../../../../content.css" type="text/css" rel="stylesheet"></link>
+      <script src="./../../../../../content.js" language="javascript" id="content.js"></script>
+      <link href="./../../../../../_highlighter/SyntaxHighlighter.css" type="text/css" rel="stylesheet"></link>
+      <script src="./../../../../../_highlighter/shAll.js" language="javascript" id="shAll.js"></script>
+      
+    
+      </head>
+      <body>
+      <div class="header"></div>
+      <!-- ========= START OF TOP NAVBAR ======= -->
+      <a name="navbar_top"><!-- --></a>
+      <table cellpadding="1" width="100%" class="NavBar" cellspacing="0" border="0">
+      <tr>
+        <td class="NavBarCell1">
+      <a href="./../../../../../overview.html">OVERVIEW</a>&nbsp;|&nbsp;
+      <a href="./../../../../../overview.html" title="se.scalablesolutions.akka.serialization.Serializable" >PACKAGE</a> | 
+      <a href="#Constructors">CONSTR</a>&nbsp;|&nbsp;
+      <a href="#Fields">FIELDS</a>&nbsp;|&nbsp;
+      <a href="#Methods">METHODS</a>
+    </td>
+        <td class="NavBarCell2">
+      <a href="./../../../../../index.html" target="_top">FRAMES</a>
+      &nbsp;&nbsp;
+      <a href="SBinary.html" target="_top">NO FRAMES</a>
+    </td>
+        <td class="NavBarCell3"><a href="#" title="show/hide inherited" class="btnInherited" onclick="toggleInherited()">INHERITED<input type="checkbox" class="filter_inherited_cb" checked="true"></input></a></td>
+      </tr>
+    </table>
+      <!-- ========= END OF TOP NAVBAR ========= -->
+      
+      <!-- ======== START OF CLASS DATA ======== -->
+      <h2>
+      <span style="font-size:80%">se.scalablesolutions.akka.serialization.Serializable.SBinary</span>
+      <br></br>
+      trait SBinary
+      </h2>
+      <div id="intro">
+      <code class="signature">trait SBinary[T &lt;: <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>]</code>
+      <code class="signature">
+        <br></br>&nbsp;extends
+        <a href="./../Serializable.html" title="se.scalablesolutions.akka.serialization.Serializable" >Serializable</a>
+      </code>
+      <br></br>
+      <div class="apiComments">
+         Example on how to use the SBinary serialization protocol: 
+   <pre>
+   case class User(val usernamePassword: Tuple2[String, String],
+                   val email: String,
+                   val age: Int)
+     extends Serializable.SBinary[User] {
+     def this() = this(null, null, 0)
+     import sbinary.DefaultProtocol._                                             
+     implicit object UserFormat extends Format[User] {
+       def reads(in : Input) = User(
+         read[Tuple2[String, String]](in),
+         read[String](in),
+         read[Int](in))
+       def writes(out: Output, value: User) = {
+         write[Tuple2[String, String]](out, value.usernamePassword)
+         write[String](out, value.email)
+         write[Int](out, value.age)
+       }
+     }
+     def fromBytes(bytes: Array[Byte]) = fromByteArray[User](bytes)
+     def toBytes: Array[Byte] = toByteArray(this)
+   }
+   </pre>
+
+        <dl>
+         <dt>author</dt>
+         <dd><code></code> - <a href="http://jonasboner.com">Jonas Bon&#233;r</a></dd>
+          </dl>
+      </div>
+      <br></br>
+      
+      Source: <a href="./../../../../../serialization/Serializable.scala.html#Some(63)">Serializable.scala(63)</a>
+      </div>
+      
+        <h3>Direct Known Subclasses</h3>
+        <a href="./../BinaryBigIntStringMap.html" title="se.scalablesolutions.akka.serialization.BinaryBigIntStringMap" >BinaryBigIntStringMap</a>, <a href="./../BinaryBooleanStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryBooleanStringTuple" >BinaryBooleanStringTuple</a>, <a href="./../BinaryDoubleStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryDoubleStringTuple" >BinaryDoubleStringTuple</a>, <a href="./../BinaryStringClassMap.html" title="se.scalablesolutions.akka.serialization.BinaryStringClassMap" >BinaryStringClassMap</a>, <a href="./../BinaryDouble.html" title="se.scalablesolutions.akka.serialization.BinaryDouble" >BinaryDouble</a>, <a href="./../BinaryIntIntTuple.html" title="se.scalablesolutions.akka.serialization.BinaryIntIntTuple" >BinaryIntIntTuple</a>, <a href="./../BinaryIntArray.html" title="se.scalablesolutions.akka.serialization.BinaryIntArray" >BinaryIntArray</a>, <a href="./../BinaryStringByteArrayMap.html" title="se.scalablesolutions.akka.serialization.BinaryStringByteArrayMap" >BinaryStringByteArrayMap</a>, <a href="./../BinaryClassClassTuple.html" title="se.scalablesolutions.akka.serialization.BinaryClassClassTuple" >BinaryClassClassTuple</a>, <a href="./../BinaryBigIntArray.html" title="se.scalablesolutions.akka.serialization.BinaryBigIntArray" >BinaryBigIntArray</a>, <a href="./../BinaryStringList.html" title="se.scalablesolutions.akka.serialization.BinaryStringList" >BinaryStringList</a>, <a href="./../BinaryLong.html" title="se.scalablesolutions.akka.serialization.BinaryLong" >BinaryLong</a>, <a href="./../BinaryBooleanBooleanTuple.html" title="se.scalablesolutions.akka.serialization.BinaryBooleanBooleanTuple" >BinaryBooleanBooleanTuple</a>, <a href="./../BinaryStringBigIntMap.html" title="se.scalablesolutions.akka.serialization.BinaryStringBigIntMap" >BinaryStringBigIntMap</a>, <a href="./../BinaryBoolean.html" title="se.scalablesolutions.akka.serialization.BinaryBoolean" >BinaryBoolean</a>, <a href="./../BinaryBigDecimal.html" title="se.scalablesolutions.akka.serialization.BinaryBigDecimal" >BinaryBigDecimal</a>, <a href="./../BinaryStringLongMap.html" title="se.scalablesolutions.akka.serialization.BinaryStringLongMap" >BinaryStringLongMap</a>, <a href="./../BinaryByteArrayByteArrayTuple.html" title="se.scalablesolutions.akka.serialization.BinaryByteArrayByteArrayTuple" >BinaryByteArrayByteArrayTuple</a>, <a href="./../BinaryStringStringMap.html" title="se.scalablesolutions.akka.serialization.BinaryStringStringMap" >BinaryStringStringMap</a>, <a href="./../BinaryDoubleList.html" title="se.scalablesolutions.akka.serialization.BinaryDoubleList" >BinaryDoubleList</a>, <a href="./../BinaryDoubleArray.html" title="se.scalablesolutions.akka.serialization.BinaryDoubleArray" >BinaryDoubleArray</a>, <a href="./../BinaryStringBigDecimalMap.html" title="se.scalablesolutions.akka.serialization.BinaryStringBigDecimalMap" >BinaryStringBigDecimalMap</a>, <a href="./../BinaryIntStringMap.html" title="se.scalablesolutions.akka.serialization.BinaryIntStringMap" >BinaryIntStringMap</a>, <a href="./../BinaryChar.html" title="se.scalablesolutions.akka.serialization.BinaryChar" >BinaryChar</a>, <a href="./../BinaryFloatFloatTuple.html" title="se.scalablesolutions.akka.serialization.BinaryFloatFloatTuple" >BinaryFloatFloatTuple</a>, <a href="./../BinaryBooleanArray.html" title="se.scalablesolutions.akka.serialization.BinaryBooleanArray" >BinaryBooleanArray</a>, <a href="./../BinaryFloat.html" title="se.scalablesolutions.akka.serialization.BinaryFloat" >BinaryFloat</a>, <a href="./../BinaryClassList.html" title="se.scalablesolutions.akka.serialization.BinaryClassList" >BinaryClassList</a>, <a href="./../BinaryBigDecimalArray.html" title="se.scalablesolutions.akka.serialization.BinaryBigDecimalArray" >BinaryBigDecimalArray</a>, <a href="./../BinaryBigDecimalStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryBigDecimalStringTuple" >BinaryBigDecimalStringTuple</a>, <a href="./../BinaryBigDecimalList.html" title="se.scalablesolutions.akka.serialization.BinaryBigDecimalList" >BinaryBigDecimalList</a>, <a href="./../BinaryClassStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryClassStringTuple" >BinaryClassStringTuple</a>, <a href="./../BinaryLongLongTuple.html" title="se.scalablesolutions.akka.serialization.BinaryLongLongTuple" >BinaryLongLongTuple</a>, <a href="./../BinaryByteArray.html" title="se.scalablesolutions.akka.serialization.BinaryByteArray" >BinaryByteArray</a>, <a href="./../BinaryClassStringMap.html" title="se.scalablesolutions.akka.serialization.BinaryClassStringMap" >BinaryClassStringMap</a>, <a href="./../BinaryBigInt.html" title="se.scalablesolutions.akka.serialization.BinaryBigInt" >BinaryBigInt</a>, <a href="./../BinaryBigDecimalBigDecimalTuple.html" title="se.scalablesolutions.akka.serialization.BinaryBigDecimalBigDecimalTuple" >BinaryBigDecimalBigDecimalTuple</a>, <a href="./../BinaryIntStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryIntStringTuple" >BinaryIntStringTuple</a>, <a href="./../BinaryByte.html" title="se.scalablesolutions.akka.serialization.BinaryByte" >BinaryByte</a>, <a href="./../BinaryIntList.html" title="se.scalablesolutions.akka.serialization.BinaryIntList" >BinaryIntList</a>, <a href="./../BinaryFloatList.html" title="se.scalablesolutions.akka.serialization.BinaryFloatList" >BinaryFloatList</a>, <a href="./../BinaryStringByteArrayTuple.html" title="se.scalablesolutions.akka.serialization.BinaryStringByteArrayTuple" >BinaryStringByteArrayTuple</a>, <a href="./../BinaryLongStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryLongStringTuple" >BinaryLongStringTuple</a>, <a href="./../BinaryClassArray.html" title="se.scalablesolutions.akka.serialization.BinaryClassArray" >BinaryClassArray</a>, <a href="./../BinaryStringStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryStringStringTuple" >BinaryStringStringTuple</a>, <a href="./../BinaryInt.html" title="se.scalablesolutions.akka.serialization.BinaryInt" >BinaryInt</a>, <a href="./../BinaryStringIntMap.html" title="se.scalablesolutions.akka.serialization.BinaryStringIntMap" >BinaryStringIntMap</a>, <a href="./../BinaryBigIntList.html" title="se.scalablesolutions.akka.serialization.BinaryBigIntList" >BinaryBigIntList</a>, <a href="./../BinaryBigDecimalStringMap.html" title="se.scalablesolutions.akka.serialization.BinaryBigDecimalStringMap" >BinaryBigDecimalStringMap</a>, <a href="./../BinaryFloatStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryFloatStringTuple" >BinaryFloatStringTuple</a>, <a href="./../BinaryDoubleDoubleTuple.html" title="se.scalablesolutions.akka.serialization.BinaryDoubleDoubleTuple" >BinaryDoubleDoubleTuple</a>, <a href="./../BinaryString.html" title="se.scalablesolutions.akka.serialization.BinaryString" >BinaryString</a>, <a href="./../BinaryLongList.html" title="se.scalablesolutions.akka.serialization.BinaryLongList" >BinaryLongList</a>, <a href="./../BinaryStringArray.html" title="se.scalablesolutions.akka.serialization.BinaryStringArray" >BinaryStringArray</a>, <a href="./../BinaryBooleanList.html" title="se.scalablesolutions.akka.serialization.BinaryBooleanList" >BinaryBooleanList</a>, <a href="./../BinaryLongArray.html" title="se.scalablesolutions.akka.serialization.BinaryLongArray" >BinaryLongArray</a>, <a href="./../BinaryBigIntBigIntTuple.html" title="se.scalablesolutions.akka.serialization.BinaryBigIntBigIntTuple" >BinaryBigIntBigIntTuple</a>, <a href="./../BinaryBigIntStringTuple.html" title="se.scalablesolutions.akka.serialization.BinaryBigIntStringTuple" >BinaryBigIntStringTuple</a>, <a href="./../BinaryFloatArray.html" title="se.scalablesolutions.akka.serialization.BinaryFloatArray" >BinaryFloatArray</a>, <a href="./../BinaryLongStringMap.html" title="se.scalablesolutions.akka.serialization.BinaryLongStringMap" >BinaryLongStringMap</a>, 
+      
+      
+      
+      
+        <!-- =========== {subtitle} =========== -->
+        <h3><a name="Fields">&nbsp;</a>Fields</h3>
+        <table summary="" cellpadding="3" width="100%" cellspacing="0" border="1">
+        <tbody class="TableRowColor">
+        <tr class="">
+      <td class="name">
+        <b>toBytes</b>..<a name="toBytes"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">abstract def toBytes</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Array.html" title="scala.Array" >Array</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Byte.html" title="scala.Byte" >Byte</a>]</td>
+      <td class="remarks">
+        
+        
+      </td>
+    </tr>
+        </tbody>
+        </table>
+      
+      
+        <!-- =========== {subtitle} =========== -->
+        <h3><a name="Methods">&nbsp;</a>Methods</h3>
+        <table summary="" cellpadding="3" width="100%" cellspacing="0" border="1">
+        <tbody class="TableRowColor">
+        <tr class="isInherited">
+      <td class="name">
+        <b>!=</b>..<a name="!=(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def !=(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>!=</b>..<a name="!=(scala.Any)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def !=(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>==</b>..<a name="==(scala.Any)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def ==(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>==</b>..<a name="==(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def ==(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>asInstanceOf</b>..<a name="asInstanceOf"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def asInstanceOf[T0]</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Any.T0.html" title="scala.Any.T0" >T0</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>clone</b>..<a name="clone"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">protected def clone</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>eq</b>..<a name="eq(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def eq(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>equals</b>..<a name="equals(scala.Any)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def equals(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>finalize</b>..<a name="finalize"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">protected def finalize</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="">
+      <td class="name">
+        <b>fromBytes</b>..<a name="fromBytes(scala.Array)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">abstract def fromBytes(bytes : <a href="http://www.scala-lang.org/docu/files/api/scala/Array.html" title="scala.Array" >Array</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Byte.html" title="scala.Byte" >Byte</a>])</code>
+        
+        
+      </td>
+      <td class="type"><a href="./SBinary.T.html" title="se.scalablesolutions.akka.serialization.Serializable.SBinary.T" >T</a></td>
+      <td class="remarks">
+        
+        
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>getClass</b>..<a name="getClass"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def getClass</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/Class.html" title="java.lang.Class" >Class</a>[<a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>]</td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>hashCode</b>..<a name="hashCode"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def hashCode</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>isInstanceOf</b>..<a name="isInstanceOf"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def isInstanceOf[T0]</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/Any.html" title="scala.Any" >Any</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>ne</b>..<a name="ne(java.lang.Object)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def ne(arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.html" title="java.lang.Object" >Object</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Boolean.html" title="scala.Boolean" >Boolean</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>notify</b>..<a name="notify"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def notify</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>notifyAll</b>..<a name="notifyAll"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def notifyAll</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>synchronized</b>..<a name="synchronized(java.lang.Object.T0)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def synchronized[T0](arg0 : <a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.T0.html" title="java.lang.Object.T0" >T0</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/Object.T0.html" title="java.lang.Object.T0" >T0</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>toString</b>..<a name="toString"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">def toString</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://java.sun.com/javase/6/docs/api/java/lang/String.html" title="java.lang.String" >String</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>wait</b>..<a name="wait(scala.Long,scala.Int)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def wait(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Long.html" title="scala.Long" >Long</a>, arg1 : <a href="http://www.scala-lang.org/docu/files/api/scala/Int.html" title="scala.Int" >Int</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>wait</b>..<a name="wait"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def wait</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr><tr class="isInherited">
+      <td class="name">
+        <b>wait</b>..<a name="wait(scala.Long)"></a>
+      </td>
+      <td class="signature">
+        <code class="signature">final def wait(arg0 : <a href="http://www.scala-lang.org/docu/files/api/scala/Long.html" title="scala.Long" >Long</a>)</code>
+        
+        
+      </td>
+      <td class="type"><a href="http://www.scala-lang.org/docu/files/api/scala/Unit.html" title="scala.Unit" >Unit</a></td>
+      <td class="remarks">
+        
+        <a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" title="scala.AnyRef" >AnyRef</a>
+      </td>
+    </tr>
+        </tbody>
+        </table>
+      
+      <!-- ========= END OF CLASS DATA ========= -->
+    
+      <!-- ======= START OF BOTTOM NAVBAR ====== -->
+      <a name="navbar_bottom"><!-- --></a>
+      <table cellpadding="1" width="100%" class="NavBar" cellspacing="0" border="0">
+      <tr>
+        <td class="NavBarCell1">
+      <a href="./../../../../../overview.html">OVERVIEW</a>&nbsp;|&nbsp;
+      <a href="./../../../../../overview.html" title="se.scalablesolutions.akka.serialization.Serializable" >PACKAGE</a> | 
+      <a href="#Constructors">CONSTR</a>&nbsp;|&nbsp;
+      <a href="#Fields">FIELDS</a>&nbsp;|&nbsp;
+      <a href="#Methods">METHODS</a>
+    </td>
+        <td class="NavBarCell2">
+      <a href="./../../../../../index.html" target="_top">FRAMES</a>
+      &nbsp;&nbsp;
+      <a href="SBinary.html" target="_top">NO FRAMES</a>
+    </td>
+        <td class="NavBarCell3"><a href="#" title="show/hide inherited" class="btnInherited" onclick="toggleInherited()">INHERITED<input type="checkbox" class="filter_inherited_cb" checked="true"></input></a></td>
+      </tr>
+    </table>
+      <!-- ======== END OF BOTTOM NAVBAR ======= -->
+      <div>Copyright (c) 2009 <a href="http://scalablesolutions.se">Scalable Solutions AB</a>. All Rights Reserved.</div>
+      <script language="javascript">
+        dp.SyntaxHighlighter.ClipboardSwf = './../../../../../_highlighter/clipboard.swf';
+        dp.SyntaxHighlighter.HighlightAll('code');
+      </script>
+    </body>
+    </html>
