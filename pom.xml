@@ -187,6 +187,10 @@
         <configuration>
           <systemProperties>
             <property>
+              <name>akka.home</name>
+              <value>${basedir}/..</value>
+            </property>
+            <property>
               <name>org.multiverse.api.exceptions.WriteConflictException.reuse</name>
               <value>true</value>
             </property>
