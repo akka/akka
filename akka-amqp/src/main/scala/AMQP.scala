@@ -201,7 +201,7 @@ object AMQP extends Actor {
 
     log.info("AMQP.Producer [%s] is started", toString)
 
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case message @ Message(payload, routingKey, mandatory, immediate, properties) =>
         log.debug("Sending message [%s]", message)
         channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties, serializer.out(payload))
@@ -304,7 +304,7 @@ object AMQP extends Actor {
       listener.tag = Some(listenerTag)
     }
 
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case listener: MessageConsumerListener =>
         startLink(listener.actor)
         listeners.put(listener, listener)
@@ -326,9 +326,16 @@ object AMQP extends Actor {
             }
         }
 
+      case message @ Message(payload, routingKey, mandatory, immediate, properties) =>
+        log.debug("Sending message [%s]", message)
+        channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties, serializer.out(payload))
+
       case Reconnect(delay) => reconnect(delay)
+
       case Failure(cause) => log.error(cause, ""); throw cause
+
       case Stop => disconnect; stop
+
       case unknown => throw new IllegalArgumentException("Unknown message [" + unknown + "] to AMQP Consumer [" + this + "]")
     }
 
