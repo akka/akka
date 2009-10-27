@@ -4,8 +4,9 @@ import _root_.net.liftweb.util._
 import _root_.net.liftweb.http._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
-import Helpers._
+import _root_.net.liftweb.common._
 import _root_.net.liftweb.http.auth._
+import Helpers._
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
