@@ -31,7 +31,7 @@ object ExampleSession {
 
   def direct = {
     val consumer = AMQP.newConsumer(CONFIG, HOSTNAME, PORT, IM, ExchangeType.Direct, SERIALIZER, None, 100, false, false, Map[String, AnyRef]())
-    consumer ! MessageConsumerListener("@george_bush", "direct", new Actor() {
+    consumer ! MessageConsumerListener("@george_bush", "direct", false, new Actor() {
       def receive: PartialFunction[Any, Unit] = {
         case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", payload)
       }
@@ -42,12 +42,12 @@ object ExampleSession {
 
   def fanout = {
     val consumer = AMQP.newConsumer(CONFIG, HOSTNAME, PORT, CHAT, ExchangeType.Fanout, SERIALIZER, None, 100, false, false, Map[String, AnyRef]())
-    consumer ! MessageConsumerListener("@george_bush", "", new Actor() {
+    consumer ! MessageConsumerListener("@george_bush", "", false, new Actor() {
       def receive: PartialFunction[Any, Unit] = {
         case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", payload)
       }
     })
-    consumer ! MessageConsumerListener("@barack_obama", "", new Actor() {
+    consumer ! MessageConsumerListener("@barack_obama", "", false, new Actor() {
       def receive: PartialFunction[Any, Unit] = {
         case Message(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", payload)
       }
