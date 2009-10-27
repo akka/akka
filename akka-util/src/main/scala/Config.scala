@@ -17,7 +17,6 @@ object Config extends Logging {
     val systemHome = System.getenv("AKKA_HOME")
     if (systemHome == null || systemHome.length == 0 || systemHome == ".") {
       val optionHome = System.getProperty("akka.home", "")
-      println("=============== " + optionHome)
       if (optionHome.length != 0) Some(optionHome)
       else None
     } else Some(systemHome)

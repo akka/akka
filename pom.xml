@@ -29,7 +29,7 @@
     <module>akka-kernel</module>
     <module>akka-fun-test-java</module>
     <module>akka-samples-scala</module>
-    <!--module>akka-samples-lift</module-->
+    <module>akka-samples-lift</module>
     <module>akka-samples-java</module>
     <module>akka-samples-security</module>
   </modules>
