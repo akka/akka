@@ -50,11 +50,14 @@ object AMQP extends Actor {
   trapExit = true
   start
 
+  sealed trait AMQPMessage
+  private[akka] trait InternalAMQPMessage extends AMQPMessage
+
   class Message(val payload: AnyRef, 
                 val routingKey: String, 
                 val mandatory: Boolean, 
                 val immediate: Boolean, 
-                val properties: RabbitMQ.BasicProperties) {
+                val properties: RabbitMQ.BasicProperties) extends AMQPMessage {
     override def toString(): String = 
       "Message[payload=" + payload + 
       ", routingKey=" + routingKey + 
@@ -74,9 +77,10 @@ object AMQP extends Actor {
       new Message(payload, routingKey, false, false, null)
   }
 
-  private[akka] sealed trait AMQPInternalMessage
-  private[akka] case class MessageConsumerListener(queueName: String, routingKey: String, isUsingExistingQueue: Boolean, actor: Actor) 
-  extends AMQPInternalMessage {
+  private[akka] case class MessageConsumerListener(queueName: String, 
+                                                   routingKey: String, 
+                                                   isUsingExistingQueue: Boolean, 
+                                                   actor: Actor) extends AMQPMessage {
     private[akka] var tag: Option[String] = None
 
     override def toString() = 
@@ -113,11 +117,14 @@ object AMQP extends Actor {
       { if (that.asInstanceOf[MessageConsumerListener].tag.isDefined) { that.asInstanceOf[MessageConsumerListener].tag.get == tag.get } else true}
     }
   }
-
-  private[akka] case class CancelMessageConsumerListener(consumer: MessageConsumerListener) extends AMQPInternalMessage
-  private[akka] case class Reconnect(delay: Long) extends AMQPInternalMessage
-  private[akka] case class Failure(cause: Throwable) extends AMQPInternalMessage
-  private[akka] case object Stop extends AMQPInternalMessage
+  
+  case object Stop extends AMQPMessage
+  
+  private[akka] case class CancelMessageConsumerListener(consumer: MessageConsumerListener) extends InternalAMQPMessage
+  
+  private[akka] case class Reconnect(delay: Long) extends InternalAMQPMessage
+  
+  private[akka] case class Failure(cause: Throwable) extends InternalAMQPMessage
  
   private[akka] class MessageNotDeliveredException(
           val message: String,
