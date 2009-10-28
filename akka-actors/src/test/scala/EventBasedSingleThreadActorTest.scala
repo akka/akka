@@ -11,7 +11,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
-    dispatcher = Dispatchers.newEventBasedSingleThreadDispatcher(name)
+    dispatcher = Dispatchers.newEventBasedSingleThreadDispatcher(uuid)
 
     def receive: PartialFunction[Any, Unit] = {
       case "Hello" =>

@@ -46,7 +46,7 @@ class MessageInvocation(val receiver: Actor,
   private [akka] val nrOfDeliveryAttempts = new AtomicInteger(0)
   
   def send = synchronized {
-    receiver.mailbox.append(this)
+    receiver._mailbox.append(this)
     nrOfDeliveryAttempts.incrementAndGet
   }
   

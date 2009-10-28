@@ -108,12 +108,12 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   } else throw new IllegalStateException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.")
 
   def registerSupervisorForActor(actor: Actor) =
-    if (!actor.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actor + " since it is not under supervision")
-    else supervisors.putIfAbsent(actor.supervisor.get.uuid, actor)
+    if (!actor._supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actor + " since it is not under supervision")
+    else supervisors.putIfAbsent(actor._supervisor.get.uuid, actor)
 
   def deregisterSupervisorForActor(actor: Actor) =
-    if (!actor.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actor + " since it is not under supervision")
-    else supervisors.remove(actor.supervisor.get.uuid)
+    if (!actor._supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actor + " since it is not under supervision")
+    else supervisors.remove(actor._supervisor.get.uuid)
   
   def deregisterSupervisorWithUuid(uuid: String) = supervisors.remove(uuid)
 }
@@ -169,8 +169,8 @@ class RemoteClientHandler(val name: String,
             val supervisorUuid = reply.getSupervisorUuid
             if (!supervisors.containsKey(supervisorUuid)) throw new IllegalStateException("Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
-            if (!supervisedActor.supervisor.isDefined) throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-            else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply))
+            if (!supervisedActor._supervisor.isDefined) throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
+            else supervisedActor._supervisor.get ! Exit(supervisedActor, parseException(reply))
           }
           future.completeWithException(null, parseException(reply))
         }
