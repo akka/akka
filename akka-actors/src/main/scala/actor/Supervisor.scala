@@ -127,10 +127,10 @@ class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor wi
 
   protected def receive: PartialFunction[Any, Unit] = {
     case StartSupervisor =>
-      linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor => actor.start; log.info("Starting actor: %s", actor) }
+      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor => actor.start; log.info("Starting actor: %s", actor) }
 
     case StopSupervisor =>
-      linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor => actor.stop; log.info("Stopping actor: %s", actor) }
+      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor => actor.stop; log.info("Stopping actor: %s", actor) }
       log.info("Stopping supervisor: %s", this)
       stop
   }

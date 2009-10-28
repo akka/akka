@@ -8,8 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import se.scalablesolutions.akka.util.Logging
 
-import org.codehaus.aspectwerkz.proxy.Uuid
-
 import scala.collection.mutable.HashSet
 
 import org.multiverse.utils.ThreadLocalTransaction._
@@ -38,9 +36,6 @@ object TransactionManagement extends TransactionManagement {
 }
 
 trait TransactionManagement extends Logging {
-  // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
-  var uuid = Uuid.newUuid.toString
-  
   import TransactionManagement.currentTransaction
   private[akka] val activeTransactions = new HashSet[Transaction]
 
