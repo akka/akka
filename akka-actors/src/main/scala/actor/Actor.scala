@@ -55,7 +55,9 @@ object Actor {
 }
 
 /**
- * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model'
+ * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
+ * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends Logging with TransactionManagement {
@@ -93,7 +95,7 @@ trait Actor extends Logging with TransactionManagement {
    * 
    * Needs to be set if the actor is supervised programmatically.
    */
-  @volatile var lifeCycleConfig: Option[LifeCycle] = None
+  @volatile var lifeCycle: Option[LifeCycle] = None
 
   /**
    * User overridable callback/setting.
@@ -246,7 +248,7 @@ trait Actor extends Logging with TransactionManagement {
       // FIXME: Need to do reference count to know if EventBasedThreadPoolDispatcher and EventBasedSingleThreadDispatcher can be shut down
       _isRunning = false
       shutdown
-    } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+    }
   }
 
   /**
@@ -585,9 +587,9 @@ trait Actor extends Logging with TransactionManagement {
     if (future.exception.isDefined) throw future.exception.get._2
     else future.result.asInstanceOf[Option[T]]
 
-  private def base: PartialFunction[Any, Unit] = lifeCycle orElse (_hotswap getOrElse receive)
+  private def base: PartialFunction[Any, Unit] = lifeCycles orElse (_hotswap getOrElse receive)
 
-  private val lifeCycle: PartialFunction[Any, Unit] = {
+  private val lifeCycles: PartialFunction[Any, Unit] = {
     case Init(config) =>       init(config)
     case HotSwap(code) =>      _hotswap = code
     case Restart(reason) =>    restart(reason)
@@ -613,7 +615,7 @@ trait Actor extends Logging with TransactionManagement {
     _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach(_.restart(reason))
 
   private[Actor] def restart(reason: AnyRef) = synchronized {
-    lifeCycleConfig match {
+    lifeCycle match {
       case None => throw new IllegalStateException("Actor [" + id + "] does not have a life-cycle defined.")
 
       // FIXME implement support for shutdown time

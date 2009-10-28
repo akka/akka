@@ -141,7 +141,7 @@ class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor wi
         server match {
           case Supervise(actor, lifecycle) =>
             actors.put(actor.getClass.getName, actor)
-            actor.lifeCycleConfig = Some(lifecycle)
+            actor.lifeCycle = Some(lifecycle)
             startLink(actor)
 
            case SupervisorConfig(_, _) => // recursive configuration

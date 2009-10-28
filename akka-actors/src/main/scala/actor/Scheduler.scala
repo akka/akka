@@ -28,7 +28,7 @@ case class SchedulerException(msg: String, e: Throwable) extends RuntimeExceptio
  * which is licensed under the Apache 2 License.
  */
 class ScheduleActor(val receiver: Actor, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
-  lifeCycleConfig = Some(LifeCycle(Permanent, 100))
+  lifeCycle = Some(LifeCycle(Permanent, 100))
 
   def receive: PartialFunction[Any, Unit] = {
     case UnSchedule =>

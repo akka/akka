@@ -125,7 +125,7 @@ object AMQP extends Actor {
   
   case object Stop extends AMQPMessage
   
-  private[akka] case class CancelMessageConsumerListener(consumer: MessageConsumerListener) extends InternalAMQPMessage
+  private[akka] case class UnregisterMessageConsumerListener(consumer: MessageConsumerListener) extends InternalAMQPMessage
   
   private[akka] case class Reconnect(delay: Long) extends InternalAMQPMessage
   
@@ -307,35 +307,29 @@ object AMQP extends Actor {
     def receive = {
       case listener: MessageConsumerListener =>
         startLink(listener.actor)
-        registerConsumer(listener)
+        registerListener(listener)
         log.info("Message consumer listener is registered [%s]", listener)
 
-      case CancelMessageConsumerListener(listener) =>
-        listeners.get(listener) match {
-          case None => log.warning("Can't unregister message consumer listener [%s]; no such listener", listener.toString(exchangeName))
-          case Some(listener) =>
-            listeners - listener
-            listener.tag match {
-              case None => log.warning("Can't unregister message consumer listener [%s]; no listener tag", listener.toString(exchangeName))
-              case Some(tag) =>
-                channel.basicCancel(tag)
-                unlink(listener.actor)
-                listener.actor.stop
-                log.debug("Message consumer is cancelled and shut down [%s]", listener)
-            }
-        }
+      case UnregisterMessageConsumerListener(listener) =>
+        unregisterListener(listener)
+        
+      case Reconnect(delay) => 
+        reconnect(delay)
 
-      case message @ Message(payload, routingKey, mandatory, immediate, properties) =>
-        log.debug("Sending message [%s]", message)
-        channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties, payload.asInstanceOf[Array[Byte]])
+      case Failure(cause) => 
+        log.error(cause, "")
+        throw cause
 
-      case Reconnect(delay) => reconnect(delay)
+      case Stop => 
+        listeners.elements.toList.map(_._2).foreach(unregisterListener(_))
+        disconnect
+        stop
 
-      case Failure(cause) => log.error(cause, ""); throw cause
+      case message: Message => 
+        handleIllegalMessage("AMQP.Consumer [" + this + "] can't be used to send messages, ignoring message [" + message + "]")
 
-      case Stop => disconnect; stop
-
-      case unknown => throw new IllegalArgumentException("Unknown message [" + unknown + "] to AMQP Consumer [" + this + "]")
+      case unknown => 
+        handleIllegalMessage("Unknown message [" + unknown + "] to AMQP Consumer [" + this + "]")
     }
 
     protected def setupChannel = {
@@ -344,11 +338,11 @@ object AMQP extends Actor {
       channel.exchangeDeclare(exchangeName.toString, exchangeType.toString,
                               passive, durable,
                               configurationArguments.asJava)
-      listeners.elements.toList.map(_._2).foreach(registerConsumer)
+      listeners.elements.toList.map(_._2).foreach(registerListener)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
 
-    private def registerConsumer(listener: MessageConsumerListener) = {
+    private def registerListener(listener: MessageConsumerListener) = {
       log.debug("Register MessageConsumerListener %s", listener.toString(exchangeName))
       listeners.put(listener, listener)
 
@@ -381,18 +375,43 @@ object AMQP extends Actor {
         }
 
         override def handleShutdownSignal(listenerTag: String, signal: ShutdownSignalException) = {
-          listeners.elements.toList.map(_._2).find(_.tag == listenerTag) match {
-            case None => log.warning("Could not find message listener for tag [%s]; can't shut listener down", listenerTag)
+          def hasTag(listener: MessageConsumerListener, listenerTag: String): Boolean = {
+            if (listener.tag.isEmpty) throw new IllegalStateException("MessageConsumerListener [" + listener + "] does not have a tag")
+            listener.tag.get == listenerTag
+          }
+          listeners.elements.toList.map(_._2).find(hasTag(_, listenerTag)) match {
+            case None => log.error("Could not find message listener for tag [%s]; can't shut listener down", listenerTag)
             case Some(listener) =>
-              log.warning("Message listener listener [%s] is being shutdown by [%s] due to [%s]", 
+              log.warning("MessageConsumerListener [%s] is being shutdown by [%s] due to [%s]", 
                           listener.toString(exchangeName), signal.getReference, signal.getReason)
-              self ! CancelMessageConsumerListener(listener)
+              self ! UnregisterMessageConsumerListener(listener)
           }
         }
       })
       listener.tag = Some(listenerTag)
     }
 
+    private def unregisterListener(listener: MessageConsumerListener) = {
+      listeners.get(listener) match {
+        case None => log.warning("Can't unregister message consumer listener [%s]; no such listener", listener.toString(exchangeName))
+        case Some(listener) =>
+          listeners - listener
+          listener.tag match {
+            case None => log.warning("Can't unregister message consumer listener [%s]; no listener tag", listener.toString(exchangeName))
+            case Some(tag) =>
+              channel.basicCancel(tag)
+              unlink(listener.actor)
+              listener.actor.stop
+              log.debug("Message consumer is cancelled and shut down [%s]", listener)
+          }
+      }
+    }
+   
+    private def handleIllegalMessage(errorMessage: String) = {
+      log.error(errorMessage)
+      throw new IllegalArgumentException(errorMessage)
+    }
+    
     override def toString(): String =
       "AMQP.Consumer[hostname=" + hostname +
       ", port=" + port +
@@ -403,7 +422,7 @@ object AMQP extends Actor {
   }
 
   trait FaultTolerantConnectionActor extends Actor {
-    lifeCycleConfig = Some(LifeCycle(Permanent, 100))
+    lifeCycle = Some(LifeCycle(Permanent, 100))
 
     val reconnectionTimer = new Timer
 
