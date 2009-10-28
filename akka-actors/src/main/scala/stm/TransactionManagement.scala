@@ -38,7 +38,7 @@ object TransactionManagement extends TransactionManagement {
 }
 
 trait TransactionManagement extends Logging {
-  // FIXME is java.util.UUID better?
+  // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
   var uuid = Uuid.newUuid.toString
   
   import TransactionManagement.currentTransaction

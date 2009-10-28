@@ -58,7 +58,7 @@ object Actor {
  */
 trait Actor extends Logging with TransactionManagement {
   ActorRegistry.register(this)
-  
+
   @volatile private[this] var isRunning: Boolean = false
   private[this] val remoteFlagLock = new ReadWriteLock
   private[this] val transactionalFlagLock = new ReadWriteLock
