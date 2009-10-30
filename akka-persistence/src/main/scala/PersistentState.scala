@@ -7,8 +7,6 @@ package se.scalablesolutions.akka.state
 import se.scalablesolutions.akka.stm.TransactionManagement.currentTransaction
 import se.scalablesolutions.akka.collection._
 
-import org.codehaus.aspectwerkz.proxy.Uuid
-
 class NoTransactionInScopeException extends RuntimeException
 
 sealed abstract class PersistentStateConfig

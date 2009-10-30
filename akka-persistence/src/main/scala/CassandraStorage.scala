@@ -6,10 +6,10 @@ package se.scalablesolutions.akka.state
 
 import java.io.{Flushable, Closeable}
 
-import util.Logging
-import util.Helpers._
-import serialization.Serializer
-import Config.config
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.Helpers._
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.Config.config
 
 import org.apache.cassandra.db.ColumnFamily
 import org.apache.cassandra.service._
@@ -33,7 +33,15 @@ object CassandraStorage extends MapStorage
 
   val CASSANDRA_SERVER_HOSTNAME = config.getString("akka.storage.cassandra.hostname", "127.0.0.1")
   val CASSANDRA_SERVER_PORT = config.getInt("akka.storage.cassandra.port", 9160)
-  val CONSISTENCY_LEVEL = config.getInt("akka.storage.cassandra.consistency-level", 1)
+  val CONSISTENCY_LEVEL = {
+    config.getString("akka.storage.cassandra.consistency-level", "QUORUM") match {
+      case "ZERO" =>   0
+      case "ONE" =>    1
+      case "QUORUM" => 2
+      case "ALL" =>    3
+      case unknown => throw new IllegalArgumentException("Consistency level [" + unknown + "] is not supported. Expected one of [ZERO, ONE, QUORUM, ALL]")
+    }
+  }
   val IS_ASCENDING = true
 
   @volatile private[this] var isRunning = false
@@ -61,7 +69,7 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  private[this] var sessions = new CassandraSessionPool(
+  private[this] val sessions = new CassandraSessionPool(
     KEYSPACE,
     StackPool(SocketProvider(CASSANDRA_SERVER_HOSTNAME, CASSANDRA_SERVER_PORT)),
     protocol,

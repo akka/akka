@@ -81,21 +81,23 @@ trait Actor extends Logging with TransactionManagement {
   // ==== USER CALLBACKS TO OVERRIDE ====
   // ====================================
 
+
+  /**
+   * User overridable callback/setting.
+   *
+   * Identifier for actor, does not have to be a unique one. Default is the class name.
+   *
+   * This field is used for logging etc. but also as the identifier for persistence, which means that you can
+   * use a custom name to be able to retrieve the "correct" persisted state upon restart, remote restart etc.
+   */
+  protected[this] var id: String = this.getClass.toString
+
   /**
    * User overridable callback/setting.
    *
    * Defines the default timeout for '!!' invocations, e.g. the timeout for the future returned by the call to '!!'.
    */
   @volatile var timeout: Long = Actor.TIMEOUT
-
-  /**
-   * User overridable callback/setting.
-   *
-   * Defines the life-cycle for a supervised actor. 
-   * 
-   * Needs to be set if the actor is supervised programmatically.
-   */
-  @volatile var lifeCycle: Option[LifeCycle] = None
 
   /**
    * User overridable callback/setting.
@@ -127,24 +129,9 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * User overridable callback/setting.
    *
-   * Identifier for actor, does not have to be a unique one. Simply the one used in logging etc.
-   */
-  protected[this] var id: String = this.getClass.toString
-
-  /**
-   * User overridable callback/setting.
-   *
    * Set trapExit to true if actor should be able to trap linked actors exit messages.
    */
   protected[this] var trapExit: Boolean = false
-
-  /**
-   * User overridable callback/setting.
-   *
-   * Set to true if messages should have REQUIRES_NEW semantics, e.g. a new transaction should 
-   * start if there is no one running, else it joins the existing transaction.
-   */
-  @volatile protected var isTransactionRequiresNew = false
 
   /**
    * User overridable callback/setting.
@@ -158,6 +145,23 @@ trait Actor extends Logging with TransactionManagement {
    * </pre>
    */
   protected var faultHandler: Option[FaultHandlingStrategy] = None
+
+  /**
+   * User overridable callback/setting.
+   *
+   * Defines the life-cycle for a supervised actor.
+   *
+   * Needs to be set if the actor is supervised programmatically.
+   */
+  @volatile var lifeCycle: Option[LifeCycle] = None
+
+  /**
+   * User overridable callback/setting.
+   *
+   * Set to true if messages should have REQUIRES_NEW semantics, e.g. a new transaction should
+   * start if there is no one running, else it joins the existing transaction.
+   */
+  @volatile protected var isTransactionRequiresNew = false
 
   /**
    * User overridable callback/setting.
