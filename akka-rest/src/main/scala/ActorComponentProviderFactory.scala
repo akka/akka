@@ -4,13 +4,11 @@
 
 package se.scalablesolutions.akka.rest
 
-import javax.ws.rs.core.Context
-
 import com.sun.jersey.core.spi.component.ioc.{IoCComponentProvider,IoCComponentProviderFactory}
 import com.sun.jersey.core.spi.component.{ComponentContext}
 
-import config.Configurator
-import util.Logging
+import se.scalablesolutions.akka.config.Configurator
+import se.scalablesolutions.akka.util.Logging
 
 class ActorComponentProviderFactory(val configurators: List[Configurator])
 extends IoCComponentProviderFactory with Logging {

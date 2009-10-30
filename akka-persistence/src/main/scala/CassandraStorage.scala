@@ -4,20 +4,14 @@
 
 package se.scalablesolutions.akka.state
 
-import java.io.{Flushable, Closeable}
-
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.Config.config
 
-import org.apache.cassandra.db.ColumnFamily
 import org.apache.cassandra.service._
-
 import org.apache.thrift.transport._
 import org.apache.thrift.protocol._
-
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

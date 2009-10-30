@@ -12,10 +12,8 @@ import javax.ws.rs.core.UriBuilder
 import java.io.File
 import java.net.URLClassLoader
 
-import rest.AkkaCometServlet
-import nio.RemoteServer
-import state.CassandraStorage
-import util.Logging
+import se.scalablesolutions.akka.nio.RemoteServer
+import se.scalablesolutions.akka.util.Logging
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -112,19 +110,20 @@ object Kernel extends Logging {
 
   private def printBanner = {
     log.info(
-      """==============================
+"""==============================
               __    __
        _____  |  | _|  | _______
        \__  \ |  |/ /  |/ /\__  \
         / __ \|    <|    <  / __ \_
        (____  /__|_ \__|_ \(____  /
             \/     \/    \/     \/
-      """)
+""")
     log.info("     Running version " + VERSION)
     log.info("==============================")
   }
 
   private def cassandraBenchmark = {
+    import se.scalablesolutions.akka.state.CassandraStorage
     val NR_ENTRIES = 100000
 
     println("=================================================")
