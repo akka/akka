@@ -6,10 +6,10 @@ package se.scalablesolutions.akka.state
 
 import java.io.{Flushable, Closeable}
 
-import util.Logging
-import util.Helpers._
-import serialization.Serializer
-import akka.Config.config
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.Helpers._
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.Config.config
 
 import scala.collection.mutable.Map
 
