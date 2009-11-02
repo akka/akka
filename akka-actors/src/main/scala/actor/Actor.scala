@@ -19,17 +19,19 @@ import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
 import se.scalablesolutions.akka.util.Logging
 
-import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Uuid
 
 import org.multiverse.utils.ThreadLocalTransaction._
 
-sealed abstract class LifecycleMessage
+@serializable sealed abstract class LifecycleMessage
 case class Init(config: AnyRef) extends LifecycleMessage
-//case object TransactionalInit extends LifecycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifecycleMessage
 case class Restart(reason: AnyRef) extends LifecycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifecycleMessage
+case class Kill(killer: Actor) extends LifecycleMessage
+//case object TransactionalInit extends LifecycleMessage
+
+class ActorKilledException(val killed: Actor, val killer: Actor) extends RuntimeException("Actor [" + killed + "] killed by [" + killer + "]")
 
 sealed abstract class DispatcherType
 object DispatcherType {
@@ -610,6 +612,7 @@ trait Actor extends Logging with TransactionManagement {
     case HotSwap(code) =>      _hotswap = code
     case Restart(reason) =>    restart(reason)
     case Exit(dead, reason) => handleTrapExit(dead, reason)
+    case Kill(killer) =>       throw new ActorKilledException(this, killer)
 //    case TransactionalInit =>  initTransactionalState
   }
 
@@ -698,5 +701,5 @@ trait Actor extends Logging with TransactionManagement {
     } else message
   } else message
 
-  override def toString(): String = "Actor[" + uuid + ":" + id + "]"
+  override def toString(): String = "Actor[" + id+ ":" + uuid + "]"
 }

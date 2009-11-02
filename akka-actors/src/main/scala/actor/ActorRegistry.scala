@@ -13,7 +13,7 @@ import scala.collection.mutable.HashMap
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ActorRegistry extends Logging {
+object ActorRegistry {
   private val actorsByClassName = new HashMap[String, List[Actor]]
   private val actorsById = new HashMap[String, List[Actor]]
 
