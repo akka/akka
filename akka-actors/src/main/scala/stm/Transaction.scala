@@ -21,7 +21,7 @@ class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
 
 /**
- * Example of atomic transaction management.
+ * Example of atomic transaction management using high-order functions:
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
  * atomic {
@@ -39,13 +39,52 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  * }
  * </pre>
  *
+ * Example of atomic transaction management using for comprehensions (monadic usage):
+ *
+ * <pre>
+ * import se.scalablesolutions.akka.stm.Transaction._
+ * for (tx <- Transaction) {
+ *   ... // do transactional stuff
+ * }
+ *
+ * val result = for (tx <- Transaction) yield {
+ *   ... // do transactional stuff yielding a result
+ * }
+ * </pre>
+ *
+ * Example of using Transaction and TransactionalRef in for comprehensions (monadic usage):
+ *
+ * <pre>
+ * // For example, if you have a List with TransactionalRef
+ * val refs: List[TransactionalRef] = ...
+ *
+ * // You can use them together with Transaction in a for comprehension since TransactionalRef is also monadic
+ * for {
+ *   tx <- Transaction
+ *   ref <- refs
+ * } {
+ *   ... // use the ref inside a transaction
+ * }
+ *
+ * val result = for {
+ *   tx <- Transaction
+ *   ref <- refs
+ * } yield {
+ *   ... // use the ref inside a transaction, yield a result
+ * }
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Transaction extends TransactionManagement {
   val idFactory = new AtomicLong(-1L)
 
-  // -- Monad --------------------------
-  // FIXME implement Transaction::map/flatMap/filter/foreach
+  // -- monadic api --------------------------
+  def map[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
+
+  def flatMap[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
+
+  def foreach(f: Transaction => Unit): Unit = atomic { f(getTransactionInScope) }
 
   // -- atomic block --------------------------
   def atomic[T](body: => T): T = new AtomicTemplate[T](
@@ -63,28 +102,51 @@ object Transaction extends TransactionManagement {
   }.execute()
 
 // FIXME: add these other atomic methods
-/*
-  def atomic[T](retryCount: Int)(body: => T): T = new AtomicTemplate[T](Multiverse.STM, "akka", false, false, retryCount) {
-    def execute(mtx: MultiverseTransaction): T = body
-    override def postCommit =
-      if (isTransactionInScope) getTransactionInScope.commit
-      else throw new IllegalStateException("No transaction in scope")
-  }.execute
+  def atomic[T](retryCount: Int)(body: => T): T = {
+    new AtomicTemplate[T](getGlobalStmInstance, "akka", false, false, retryCount) {
+      def execute(mtx: MultiverseTransaction): T = body
+      override def postStart(mtx: MultiverseTransaction) = {
+        val tx = new Transaction
+        tx.transaction = Some(mtx)
+        setTransaction(Some(tx))
+      }
+      override def postCommit =  {
+        if (isTransactionInScope) {}///getTransactionInScope.commit
+        else throw new IllegalStateException("No transaction in scope")
+      }
+    }.execute
+  }
 
-  def atomicReadOnly[T](retryCount: Int)(body: => T): T = new AtomicTemplate[T](Multiverse.STM, "akka", false, true, retryCount) {
-    def execute(mtx: MultiverseTransaction): T = body
-    override def postCommit =
-      if (isTransactionInScope) getTransactionInScope.commit
-      else throw new IllegalStateException("No transaction in scope")
-  }.execute
+  def atomicReadOnly[T](retryCount: Int)(body: => T): T = {
+    new AtomicTemplate[T](getGlobalStmInstance, "akka", false, true, retryCount) {
+      def execute(mtx: MultiverseTransaction): T = body
+      override def postStart(mtx: MultiverseTransaction) = {
+        val tx = new Transaction
+        tx.transaction = Some(mtx)
+        setTransaction(Some(tx))
+      }
+      override def postCommit =  {
+        if (isTransactionInScope) {}///getTransactionInScope.commit
+        else throw new IllegalStateException("No transaction in scope")
+      }
+    }.execute
+  }
 
-  def atomicReadOnly[T](body: => T): T = new AtomicTemplate[T](true) {
-    def execute(mtx: MultiverseTransaction): T = body
-    override def postCommit =
-      if (isTransactionInScope) getTransactionInScope.commit
-      else throw new IllegalStateException("No transaction in scope")
-  }.execute
-*/
+  def atomicReadOnly[T](body: => T): T = {
+    new AtomicTemplate[T](true) {
+      def execute(mtx: MultiverseTransaction): T = body
+      override def postStart(mtx: MultiverseTransaction) = {
+        val tx = new Transaction
+        tx.transaction = Some(mtx)
+        setTransaction(Some(tx))
+      }
+      override def postCommit =  {
+        if (isTransactionInScope) {}///getTransactionInScope.commit
+        else throw new IllegalStateException("No transaction in scope")
+      }
+    }.execute
+  }
+
   // -- Run-OrElse --------------------------
   def run[A](orBody: => A) = elseBody(orBody)
   def elseBody[A](orBody: => A) = new {
@@ -104,16 +166,10 @@ object Transaction extends TransactionManagement {
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: Option[MultiverseTransaction] = None
-
   private[this] val persistentStateMap = new HashMap[String, Committable]
-
   private[akka] val depth = new AtomicInteger(0)
   
-  def increment = depth.incrementAndGet
-  def decrement = depth.decrementAndGet
-  def isTopLevel = depth.get == 0
-
-  def register(uuid: String, storage: Committable) = persistentStateMap.put(uuid, storage)
+  // --- public methods ---------
 
   def commit = synchronized {
     atomic {
@@ -123,11 +179,25 @@ object Transaction extends TransactionManagement {
     status = TransactionStatus.Completed
   }
 
-  def status_? = status
   def isNew = synchronized { status == TransactionStatus.New }
+
   def isActive = synchronized { status == TransactionStatus.Active }
+
   def isCompleted = synchronized { status == TransactionStatus.Completed }
+
   def isAborted = synchronized { status == TransactionStatus.Aborted }
+
+  // --- internal methods ---------
+
+  private[akka] def status_? = status
+
+  private[akka] def increment = depth.incrementAndGet
+
+  private[akka] def decrement = depth.decrementAndGet
+
+  private[akka] def isTopLevel = depth.get == 0
+
+  private[akka] def register(uuid: String, storage: Committable) = persistentStateMap.put(uuid, storage)
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new IllegalStateException("Expected ACTIVE transaction - current status [" + status + "]: " + toString)
@@ -158,10 +228,18 @@ object Transaction extends TransactionManagement {
   override def toString(): String = synchronized { "Transaction[" + id + ", " + status + "]" }
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 @serializable sealed abstract class TransactionStatus
+
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object TransactionStatus {
   case object New extends TransactionStatus
   case object Active extends TransactionStatus
   case object Aborted extends TransactionStatus
   case object Completed extends TransactionStatus
 }
+
