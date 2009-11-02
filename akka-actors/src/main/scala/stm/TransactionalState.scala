@@ -61,9 +61,9 @@ trait Committable {
 object TransactionalRef {
 
   /**
-   * An implicit conversion that converts an option to an iterable value
+   * An implicit conversion that converts an Option to an Iterable value.
    */
-	implicit def ref2Iterable[T](ref: TransactionalRef[T]): Iterable[T] = ref.toList
+  implicit def ref2Iterable[T](ref: TransactionalRef[T]): Iterable[T] = ref.toList
 
   def apply[T]() = new TransactionalRef[T]
 }
