@@ -136,6 +136,7 @@
       <facet-type id="web">
         <modules>
           <module name="akka-samples-lift" />
+          <module name="akka-samples-security" />
         </modules>
       </facet-type>
     </autodetection-disabled>

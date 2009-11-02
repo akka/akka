@@ -82,8 +82,8 @@ one logical cluster from joining any other cluster. -->
       <ColumnFamily CompareWith="UTF8Type" Name="ref"/>
 
       <!--ColumnFamily CompareWith="UTF8Type" Name="Standard1" FlushPeriodInMinutes="60"/>
-  <ColumnFamily CompareWith="TimeUUIDType" Name="StandardByUUID1"/>
-  <ColumnFamily ColumnType="Super" CompareWith="UTF8Type" CompareSubcolumnsWith="UTF8Type" Name="Super1"/-->
+      <ColumnFamily CompareWith="TimeUUIDType" Name="StandardByUUID1"/>
+      <ColumnFamily ColumnType="Super" CompareWith="UTF8Type" CompareSubcolumnsWith="UTF8Type" Name="Super1"/-->
     </Keyspace>
   </Keyspaces>
 
