@@ -23,13 +23,13 @@ import org.codehaus.aspectwerkz.proxy.Uuid
 
 import org.multiverse.utils.ThreadLocalTransaction._
 
-@serializable sealed abstract class LifecycleMessage
-case class Init(config: AnyRef) extends LifecycleMessage
-case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifecycleMessage
-case class Restart(reason: AnyRef) extends LifecycleMessage
-case class Exit(dead: Actor, killer: Throwable) extends LifecycleMessage
-case class Kill(killer: Actor) extends LifecycleMessage
-//case object TransactionalInit extends LifecycleMessage
+@serializable sealed abstract class LifeCycleMessage
+case class Init(config: AnyRef) extends LifeCycleMessage
+case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMessage
+case class Restart(reason: AnyRef) extends LifeCycleMessage
+case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
+case class Kill(killer: Actor) extends LifeCycleMessage
+//case object TransactionalInit extends LifeCycleMessage
 
 class ActorKilledException(val killed: Actor, val killer: Actor) extends RuntimeException("Actor [" + killed + "] killed by [" + killer + "]")
 
@@ -54,6 +54,17 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 object Actor {
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
+
+  def actor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
+    start
+    def receive = body
+  }
+
+  def actor(lifeCycleConfig: LifeCycle)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
+    lifeCycle = Some(lifeCycleConfig)
+    start
+    def receive = body
+  }
 }
 
 /**
@@ -97,7 +108,7 @@ trait Actor extends Logging with TransactionManagement {
    * This field is used for logging etc. but also as the identifier for persistence, which means that you can
    * use a custom name to be able to retrieve the "correct" persisted state upon restart, remote restart etc.
    */
-  protected[akka] var id: String = this.getClass.toString
+  protected[akka] var id: String = this.getClass.getName
 
   /**
    * User overridable callback/setting.
@@ -701,5 +712,5 @@ trait Actor extends Logging with TransactionManagement {
     } else message
   } else message
 
-  override def toString(): String = "Actor[" + id+ ":" + uuid + "]"
+  override def toString(): String = "Actor[" + id + ":" + uuid + "]"
 }
