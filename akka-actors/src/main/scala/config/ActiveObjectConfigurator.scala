@@ -14,7 +14,7 @@ import java.util._
 
 /**
  * Configurator for the Active Objects. Used to do declarative configuration of supervision.
- * It also doing dependency injection with and into Active Objects using dependency injection
+ * It also does dependency injection with and into Active Objects using dependency injection
  * frameworks such as Google Guice or Spring.
  * <p/>
  * If you don't want declarative configuration then you should use the <code>ActiveObject</code>
