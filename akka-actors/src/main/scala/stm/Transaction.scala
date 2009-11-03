@@ -87,6 +87,11 @@ object Transaction extends TransactionManagement {
   def foreach(f: Transaction => Unit): Unit = atomic { f(getTransactionInScope) }
 
   // -- atomic block --------------------------
+  private[akka] def atomically[T](body: => T): T = new AtomicTemplate[T](
+    getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
+    def execute(mtx: MultiverseTransaction): T = body
+  }.execute()
+
   def atomic[T](body: => T): T = new AtomicTemplate[T](
     getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
@@ -96,12 +101,11 @@ object Transaction extends TransactionManagement {
       setTransaction(Some(tx))
     }
     override def postCommit =  {
-      if (isTransactionInScope) {}///getTransactionInScope.commit
+      if (isTransactionInScope) getTransactionInScope.commit
       else throw new IllegalStateException("No transaction in scope")
     }
   }.execute()
 
-// FIXME: add these other atomic methods
   def atomic[T](retryCount: Int)(body: => T): T = {
     new AtomicTemplate[T](getGlobalStmInstance, "akka", false, false, retryCount) {
       def execute(mtx: MultiverseTransaction): T = body
@@ -111,7 +115,7 @@ object Transaction extends TransactionManagement {
         setTransaction(Some(tx))
       }
       override def postCommit =  {
-        if (isTransactionInScope) {}///getTransactionInScope.commit
+        if (isTransactionInScope) getTransactionInScope.commit
         else throw new IllegalStateException("No transaction in scope")
       }
     }.execute
@@ -126,7 +130,7 @@ object Transaction extends TransactionManagement {
         setTransaction(Some(tx))
       }
       override def postCommit =  {
-        if (isTransactionInScope) {}///getTransactionInScope.commit
+        if (isTransactionInScope) getTransactionInScope.commit
         else throw new IllegalStateException("No transaction in scope")
       }
     }.execute
@@ -141,7 +145,7 @@ object Transaction extends TransactionManagement {
         setTransaction(Some(tx))
       }
       override def postCommit =  {
-        if (isTransactionInScope) {}///getTransactionInScope.commit
+        if (isTransactionInScope) getTransactionInScope.commit
         else throw new IllegalStateException("No transaction in scope")
       }
     }.execute
@@ -172,7 +176,7 @@ object Transaction extends TransactionManagement {
   // --- public methods ---------
 
   def commit = synchronized {
-    atomic {
+    atomically {
       persistentStateMap.values.foreach(_.commit)
       TransactionManagement.clearTransaction
     }

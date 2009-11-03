@@ -43,14 +43,12 @@ trait TransactionManagement extends Logging {
 
   private[akka] def setTransaction(transaction: Option[Transaction]) = if (transaction.isDefined) {
     val tx = transaction.get
-    //log.debug("Setting transaction [%s]", transaction.get)
     currentTransaction.set(transaction)
     if (tx.transaction.isDefined) setThreadLocalTransaction(tx.transaction.get)
     else throw new IllegalStateException("No transaction defined")
   }
 
   private[akka] def clearTransaction = {
-    //if (isTransactionInScope) log.debug("Clearing transaction [%s]", getTransactionInScope)
     currentTransaction.set(None)
     setThreadLocalTransaction(null)
   }
@@ -59,14 +57,10 @@ trait TransactionManagement extends Logging {
   
   private[akka] def isTransactionInScope = currentTransaction.get.isDefined
 
-  private[akka] def incrementTransaction =
-    if (isTransactionInScope) getTransactionInScope.increment
-    //else throw new IllegalStateException("No transaction in scope")
+  private[akka] def incrementTransaction = if (isTransactionInScope) getTransactionInScope.increment
 
-  private[akka] def decrementTransaction =
-    if (isTransactionInScope) getTransactionInScope.decrement
-    //else throw new IllegalStateException("No transaction in scope")
-    
+  private[akka] def decrementTransaction = if (isTransactionInScope) getTransactionInScope.decrement
+
   private[akka] def removeTransactionIfTopLevel(tx: Transaction) = if (tx.isTopLevel) { activeTransactions -= tx }
 }
 
