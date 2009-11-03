@@ -171,7 +171,7 @@ class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: B
   }
 
   /**
-   * Creates an new thread pool in which the number of tasks in the pending queue is bounded. Will block when exceeeded.
+   * Creates a new thread pool in which the number of tasks in the pending queue is bounded. Will block when exceeeded.
    * <p/>
    * The 'bound' variable should specify the number equal to the size of the thread pool PLUS the number of queued tasks that should be followed.
    */
