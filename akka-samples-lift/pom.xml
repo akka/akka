@@ -61,12 +61,12 @@
     </dependency>
     <dependency>
       <groupId>net.liftweb</groupId>
-      <artifactId>lift-util</artifactId>
+      <artifactId>lift-util-2009-11-04</artifactId>
       <version>${lift.version}</version>
     </dependency>
     <dependency>
       <groupId>net.liftweb</groupId>
-      <artifactId>lift-webkit</artifactId>
+      <artifactId>lift-webkit-2009-11-04</artifactId>
       <version>${lift.version}</version>
     </dependency>
     <dependency>
