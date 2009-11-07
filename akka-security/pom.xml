@@ -58,7 +58,7 @@
     <dependency>
         <groupId>net.liftweb</groupId>
         <artifactId>lift-util</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-M6</version>
     </dependency>
     
     <!-- For Testing -->
