@@ -15,7 +15,7 @@
   </parent>
 
   <properties>
-    <lift.version>1.1-SNAPSHOT</lift.version>
+    <lift.version>1.1-M6</lift.version>
   </properties>
 
   <dependencies>
