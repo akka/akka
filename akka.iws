@@ -6,30 +6,7 @@
   <component name="ChangeListManager" verified="true">
     <list default="true" readonly="true" id="188c966f-a83c-4d3a-9128-54d5a2947a12" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/docs/scaladocs-akka-actors/se/scalablesolutions/akka/actor/SupervisorFactory.html" afterPath="$PROJECT_DIR$/docs/scaladocs-akka-actors/se/scalablesolutions/akka/actor/SupervisorFactory.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemotePersistentStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RemotePersistentStateTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentStateTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/docs/scaladocs-akka-amqp/AMQP.scala.html" afterPath="$PROJECT_DIR$/docs/scaladocs-akka-amqp/AMQP.scala.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="$PROJECT_DIR$/akka.ipr" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/config/Config.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/config/Config.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-samples-java/src/main/java/sample/java/Boot.java" afterPath="$PROJECT_DIR$/akka-samples-java/src/main/java/sample/java/Boot.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/RestTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-samples-scala/src/main/scala/SimpleService.scala" afterPath="$PROJECT_DIR$/akka-samples-scala/src/main/scala/SimpleService.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/SupervisorTest.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/SupervisorTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentNestedStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/PersistentNestedStateTest.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iws" afterPath="$PROJECT_DIR$/akka.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/docs/scaladocs-akka-actors/actor/Scheduler.scala.html" afterPath="$PROJECT_DIR$/docs/scaladocs-akka-actors/actor/Scheduler.scala.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-camel/src/test/scala/CamelSpec.scala" afterPath="$PROJECT_DIR$/akka-camel/src/test/scala/CamelSpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/test/scala/RemoteSupervisorTest.scala" afterPath="$PROJECT_DIR$/akka-actors/src/test/scala/RemoteSupervisorTest.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemNestedStateTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-samples-security/src/main/scala/SimpleService.scala" afterPath="$PROJECT_DIR$/akka-samples-security/src/main/scala/SimpleService.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ActiveObjectGuiceConfiguratorTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-samples-lift/src/main/scala/bootstrap/liftweb/Boot.scala" afterPath="$PROJECT_DIR$/akka-samples-lift/src/main/scala/bootstrap/liftweb/Boot.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/InMemoryStateTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/docs/scaladocs-akka-actors/actor/Supervisor.scala.html" afterPath="$PROJECT_DIR$/docs/scaladocs-akka-actors/actor/Supervisor.scala.html" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
@@ -169,7 +146,7 @@
       <file leaf-file-name="Actor.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="645" column="110" selection-start="24703" selection-end="24703" vertical-scroll-proportion="0.3559557">
+            <state line="653" column="71" selection-start="25146" selection-end="25146" vertical-scroll-proportion="0.2631579">
               <folding />
             </state>
           </provider>
@@ -1670,7 +1647,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="645" column="110" selection-start="24703" selection-end="24703" vertical-scroll-proportion="0.3559557">
+        <state line="653" column="71" selection-start="25146" selection-end="25146" vertical-scroll-proportion="0.2631579">
           <folding />
         </state>
       </provider>
