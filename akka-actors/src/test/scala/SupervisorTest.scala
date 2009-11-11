@@ -459,7 +459,7 @@ class SupervisorTest extends JUnitSuite {
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
             pingpong1,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           :: Nil)
       }
     }
@@ -475,7 +475,7 @@ class SupervisorTest extends JUnitSuite {
           RestartStrategy(OneForOne, 3, 100),
           Supervise(
             pingpong1,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           :: Nil)
       }
     }
@@ -493,15 +493,15 @@ class SupervisorTest extends JUnitSuite {
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
             pingpong1,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           ::
           Supervise(
             pingpong2,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           ::
           Supervise(
             pingpong3,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           :: Nil)
       }
     }
@@ -519,15 +519,15 @@ class SupervisorTest extends JUnitSuite {
           RestartStrategy(OneForOne, 3, 100),
           Supervise(
             pingpong1,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           ::
           Supervise(
             pingpong2,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           ::
           Supervise(
             pingpong3,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           :: Nil)
       }
     }
@@ -545,17 +545,17 @@ class SupervisorTest extends JUnitSuite {
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
             pingpong1,
-            LifeCycle(Permanent, 100))
+            LifeCycle(Permanent))
           ::
           SupervisorConfig(
             RestartStrategy(AllForOne, 3, 100),
             Supervise(
               pingpong2,
-              LifeCycle(Permanent, 100))
+              LifeCycle(Permanent))
             ::
             Supervise(
               pingpong3,
-              LifeCycle(Permanent, 100))
+              LifeCycle(Permanent))
             :: Nil)
           :: Nil)
        }

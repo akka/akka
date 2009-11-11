@@ -19,9 +19,9 @@ public class PersistentStateTest extends TestCase {
     conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {
-          new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 10000000),
-          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000)
-          //new Component(PersistentClasher.class, new LifeCycle(new Permanent(), 1000), 100000)
+          new Component(PersistentStateful.class, new LifeCycle(new Permanent()), 10000000),
+          new Component(PersistentFailer.class, new LifeCycle(new Permanent()), 1000)
+          //new Component(PersistentClasher.class, new LifeCycle(new Permanent()), 100000)
         }).supervise();
   }
 

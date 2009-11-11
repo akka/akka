@@ -4,10 +4,8 @@
 
 package se.scalablesolutions.akka.config
 
-import reflect.BeanProperty
-
-import actor.Actor
-import dispatch.MessageDispatcher
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
 /**
  * Configuration classes - not to be used as messages.
@@ -29,20 +27,15 @@ object ScalaConfig {
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
 
-  case class LifeCycle(scope: Scope,
-                       shutdownTime: Int,
-                       callbacks: Option[RestartCallbacks]  // optional
-          ) extends ConfigElement
+  case class LifeCycle(scope: Scope, callbacks: Option[RestartCallbacks]) extends ConfigElement
   object LifeCycle {
-    def apply(scope: Scope, shutdownTime: Int) = new LifeCycle(scope, shutdownTime, None)
-    def apply(scope: Scope) = new LifeCycle(scope, 0, None)
+    def apply(scope: Scope) = new LifeCycle(scope, None)
   }
   case class RestartCallbacks(preRestart: String, postRestart: String) {
     if (preRestart == null || postRestart == null) throw new IllegalArgumentException("Restart callback methods can't be null")
   }
 
   case object Permanent extends Scope
-  case object Transient extends Scope
   case object Temporary extends Scope
 
   case class RemoteAddress(hostname: String, port: Int)
@@ -89,6 +82,8 @@ object ScalaConfig {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object JavaConfig {
+  import scala.reflect.BeanProperty
+
   sealed abstract class ConfigElement
 
   class RestartStrategy(
@@ -99,11 +94,11 @@ object JavaConfig {
       scheme.transform, maxNrOfRetries, withinTimeRange)
   }
   
-  class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val shutdownTime: Int,  @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
-    def this(scope: Scope, shutdownTime: Int) = this(scope, shutdownTime, null)
+  class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
+    def this(scope: Scope) = this(scope, null)
     def transform = {
       val callbackOption = if (callbacks == null) None else Some(callbacks.transform)
-      se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform, shutdownTime, callbackOption)
+      se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform, callbackOption)
     }
   }
 
@@ -116,9 +111,6 @@ object JavaConfig {
   }
   class Permanent extends Scope {
     override def transform = se.scalablesolutions.akka.config.ScalaConfig.Permanent
-  }
-  class Transient extends Scope {
-    override def transform = se.scalablesolutions.akka.config.ScalaConfig.Transient
   }
   class Temporary extends Scope {
     override def transform = se.scalablesolutions.akka.config.ScalaConfig.Temporary

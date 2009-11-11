@@ -422,7 +422,7 @@ object AMQP extends Actor {
   }
 
   trait FaultTolerantConnectionActor extends Actor {
-    lifeCycle = Some(LifeCycle(Permanent, 100))
+    lifeCycle = Some(LifeCycle(Permanent))
 
     val reconnectionTimer = new Timer
 

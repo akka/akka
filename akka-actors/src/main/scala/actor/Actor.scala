@@ -641,32 +641,26 @@ trait Actor extends Logging with TransactionManagement {
     }
   }
 
-  private[this] def restartLinkedActors(reason: AnyRef) =
+  private[this] def restartLinkedActors(reason: AnyRef) = {
+
+    // FIXME remove all Temporary actors from _linkedActors, move restart code from restart(..) to this method
+
     _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach(_.restart(reason))
+  }
 
   private[Actor] def restart(reason: AnyRef) = synchronized {
     lifeCycle match {
       case None => throw new IllegalStateException("Actor [" + id + "] does not have a life-cycle defined.")
 
       // FIXME implement support for shutdown time
-      case Some(LifeCycle(scope, shutdownTime, _)) => {
+      case Some(LifeCycle(scope, _)) => {
         scope match {
-          case Permanent => {
+          case Permanent =>
             preRestart(reason, _config)
             log.info("Restarting actor [%s] configured as PERMANENT.", id)
             postRestart(reason, _config)
-          }
-
           case Temporary =>
-          // FIXME handle temporary actors correctly - restart if exited normally
-//            if (reason == 'normal) {
-//              log.debug("Restarting actor [%s] configured as TEMPORARY (since exited naturally).", id)
-//              scheduleRestart
-//            } else
-            log.info("Actor [%s] configured as TEMPORARY will not be restarted (received unnatural exit message).", id)
-
-          case Transient =>
-            log.info("Actor [%s] configured as TRANSIENT will not be restarted.", id)
+            log.info("Actor [%s] configured as TEMPORARY will not be restarted.", id)
         }
       }
     }

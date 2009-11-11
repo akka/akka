@@ -989,17 +989,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/javax/annotation/jsr250-api/1.0/jsr250-api-1.0-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: net.liftweb:lift-util:1.1-SNAPSHOT">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-util/1.1-SNAPSHOT/lift-util-1.1-SNAPSHOT.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-util/1.1-SNAPSHOT/lift-util-1.1-SNAPSHOT-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-util/1.1-SNAPSHOT/lift-util-1.1-SNAPSHOT-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: commons-codec:commons-codec:1.3">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/commons-codec/commons-codec/1.3/commons-codec-1.3.jar!/" />
@@ -1165,17 +1154,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: net.liftweb:lift-actor:1.1-SNAPSHOT">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-SNAPSHOT/lift-actor-1.1-SNAPSHOT.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-SNAPSHOT/lift-actor-1.1-SNAPSHOT-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-SNAPSHOT/lift-actor-1.1-SNAPSHOT-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: sjson.json:sjson:0.2">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/sjson/json/sjson/0.2/sjson-0.2.jar!/" />
@@ -1264,17 +1242,6 @@
         <root url="jar://$MAVEN_REPOSITORY$/org/apache/cassandra/cassandra/0.4.1/cassandra-0.4.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: net.liftweb:lift-common:1.1-SNAPSHOT">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-common/1.1-SNAPSHOT/lift-common-1.1-SNAPSHOT.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-common/1.1-SNAPSHOT/lift-common-1.1-SNAPSHOT-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-common/1.1-SNAPSHOT/lift-common-1.1-SNAPSHOT-sources.jar!/" />
-      </SOURCES>
-    </library>
     <library name="Maven: org.multiverse:multiverse-core:0.3-SNAPSHOT">
       <CLASSES>
         <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse-core/0.3-SNAPSHOT/multiverse-core-0.3-SNAPSHOT.jar!/" />
@@ -1339,6 +1306,13 @@
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT.jar!/" />
       </CLASSES>
       <JAVADOC>
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
@@ -1348,8 +1322,22 @@
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
         <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4.3-SNAPSHOT/mail-1.4.3-SNAPSHOT-sources.jar!/" />
@@ -1379,17 +1367,6 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-compiler/2.7.5/scala-compiler-2.7.5-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Maven: net.liftweb:lift-webkit:1.1-SNAPSHOT">
-      <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-webkit/1.1-SNAPSHOT/lift-webkit-1.1-SNAPSHOT.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-webkit/1.1-SNAPSHOT/lift-webkit-1.1-SNAPSHOT-javadoc.jar!/" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-webkit/1.1-SNAPSHOT/lift-webkit-1.1-SNAPSHOT-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: org.mortbay.jetty:jetty:6.1.21">
@@ -1445,6 +1422,61 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/org/mockito/mockito-all/1.8.0/mockito-all-1.8.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: net.liftweb:lift-util:1.1-M6">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-util/1.1-M6/lift-util-1.1-M6.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-util/1.1-M6/lift-util-1.1-M6-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-util/1.1-M6/lift-util-1.1-M6-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: javax.mail:mail:1.4">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4/mail-1.4.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4/mail-1.4-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/javax/mail/mail/1.4/mail-1.4-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: commons-httpclient:commons-httpclient:3.1">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: net.liftweb:lift-webkit:1.1-M6">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-webkit/1.1-M6/lift-webkit-1.1-M6.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-webkit/1.1-M6/lift-webkit-1.1-M6-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-webkit/1.1-M6/lift-webkit-1.1-M6-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: net.liftweb:lift-actor:1.1-M6">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-M6/lift-actor-1.1-M6.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-M6/lift-actor-1.1-M6-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/liftweb/lift-actor/1.1-M6/lift-actor-1.1-M6-sources.jar!/" />
       </SOURCES>
     </library>
   </component>

@@ -43,10 +43,10 @@ class Boot {
           RestartStrategy(OneForOne, 3, 100),
           Supervise(
             new SimpleService,      
-            LifeCycle(Permanent, 100)) ::
+            LifeCycle(Permanent)) ::
           Supervise(
             new PersistentSimpleService,
-            LifeCycle(Permanent, 100)) ::
+            LifeCycle(Permanent)) ::
           Nil)
       }
     }

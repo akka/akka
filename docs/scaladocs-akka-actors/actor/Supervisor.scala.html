@@ -49,11 +49,11 @@ case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends 
  *        RestartStrategy(OneForOne, 3, 10),
  *        Supervise(
  *          myFirstActor,
- *          LifeCycle(Permanent, 1000))
+ *          LifeCycle(Permanent))
  *        ::
  *        Supervise(
  *          mySecondActor,
- *          LifeCycle(Permanent, 1000))
+ *          LifeCycle(Permanent))
  *        :: Nil)
  *    }
  * }
