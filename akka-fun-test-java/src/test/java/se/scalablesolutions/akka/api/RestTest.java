@@ -36,7 +36,7 @@ public class RestTest extends TestCase {
         new Component[] {
           new Component(
               JerseyFoo.class,
-              new LifeCycle(new Permanent(), 1000),
+              new LifeCycle(new Permanent()),
               10000000)
           }).inject().supervise();
     selector = startJersey();

@@ -14,9 +14,9 @@
 package se.scalablesolutions.akka.actor
 
 import java.util.concurrent._
-import config.ScalaConfig._
-import _root_.se.scalablesolutions.akka.util.{Logging}
 
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.util.{Logging}
 
 import org.scala_tools.javautils.Imports._
 
@@ -28,7 +28,7 @@ case class SchedulerException(msg: String, e: Throwable) extends RuntimeExceptio
  * which is licensed under the Apache 2 License.
  */
 class ScheduleActor(val receiver: Actor, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
-  lifeCycle = Some(LifeCycle(Permanent, 100))
+  lifeCycle = Some(LifeCycle(Permanent))
 
   def receive: PartialFunction[Any, Unit] = {
     case UnSchedule =>

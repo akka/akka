@@ -19,8 +19,8 @@ public class RemotePersistentStateTest extends TestCase {
     conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[] {
-          new Component(PersistentStateful.class, new LifeCycle(new Permanent(), 1000), 1000000, new RemoteAddress("localhost", 9999)),
-          new Component(PersistentFailer.class, new LifeCycle(new Permanent(), 1000), 1000000, new RemoteAddress("localhost", 9999))
+          new Component(PersistentStateful.class, new LifeCycle(new Permanent()), 1000000, new RemoteAddress("localhost", 9999)),
+          new Component(PersistentFailer.class, new LifeCycle(new Permanent()), 1000000, new RemoteAddress("localhost", 9999))
         }).supervise();
   }
 

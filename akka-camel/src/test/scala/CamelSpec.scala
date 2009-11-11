@@ -48,7 +48,7 @@ class CamelSpec extends Spec with ShouldMatchers {
                 "camelfoo",
                 classOf[CamelFoo],
                 classOf[CamelFooImpl],
-                LifeCycle(Permanent, 1000),
+                LifeCycle(Permanent),
                 1000) ::
             Nil
         ).addRoutes(new RouteBuilder() {

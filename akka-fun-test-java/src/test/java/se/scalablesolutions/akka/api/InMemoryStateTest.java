@@ -24,11 +24,11 @@ public class InMemoryStateTest extends TestCase {
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
             new Component(InMemStateful.class,
-                new LifeCycle(new Permanent(), 1000),
+                new LifeCycle(new Permanent()),
                               //new RestartCallbacks("preRestart", "postRestart")),
             10000),
             new Component(InMemFailer.class,
-                new LifeCycle(new Permanent(), 1000),
+                new LifeCycle(new Permanent()),
             10000)
         }).inject().supervise();
       InMemStateful stateful = conf.getInstance(InMemStateful.class);

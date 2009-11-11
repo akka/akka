@@ -21,18 +21,18 @@ class Boot {
         // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
         Supervise(
           new BasicAuthenticationService,
-          LifeCycle(Permanent, 100)) ::
+          LifeCycle(Permanent)) ::
        /**
         Supervise(
           new DigestAuthenticationService,
-          LifeCycle(Permanent, 100)) ::
+          LifeCycle(Permanent)) ::
         Supervise(
           new SpnegoAuthenticationService,
-          LifeCycle(Permanent, 100)) ::
+          LifeCycle(Permanent)) ::
         **/
         Supervise(
           new SecureTickActor,
-          LifeCycle(Permanent, 100)):: Nil)
+          LifeCycle(Permanent)):: Nil)
     }
 
   }

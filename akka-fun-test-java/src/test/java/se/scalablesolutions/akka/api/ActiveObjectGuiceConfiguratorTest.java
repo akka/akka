@@ -40,14 +40,14 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
         new RestartStrategy(new AllForOne(), 3, 5000), new Component[]{
              new Component(
                 Foo.class,
-                new LifeCycle(new Permanent(), 1000),
+                new LifeCycle(new Permanent()),
                 1000,
                 dispatcher),
                 //new RemoteAddress("localhost", 9999)),
             new Component(
                 Bar.class,
                 BarImpl.class,
-                new LifeCycle(new Permanent(), 1000),
+                new LifeCycle(new Permanent()),
                 1000,
                 dispatcher)
         }).inject().supervise();
