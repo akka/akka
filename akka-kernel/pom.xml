@@ -231,17 +231,12 @@
     </dependency>
     <dependency>
       <groupId>org.atmosphere</groupId>
+      <artifactId>atmosphere-runtime</artifactId>
+      <version>0.4.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-core</artifactId>
-      <version>0.4-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.atmosphere</groupId>
-      <artifactId>atmosphere-portable-runtime</artifactId>
-      <version>0.4-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.atmosphere</groupId>
-      <artifactId>atmosphere-compat</artifactId>
       <version>0.4-SNAPSHOT</version>
     </dependency>
   </dependencies>
