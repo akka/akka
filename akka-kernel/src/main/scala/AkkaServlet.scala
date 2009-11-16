@@ -15,7 +15,7 @@ import com.sun.jersey.spi.container.WebApplication
 import javax.servlet.{ServletConfig}
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
-import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent}
+import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
 import org.atmosphere.core.JerseyBroadcaster
 
@@ -25,7 +25,7 @@ import org.atmosphere.core.JerseyBroadcaster
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class AkkaServlet extends ServletContainer with Logging {
+class AkkaServlet extends ServletContainer {
   import org.scala_tools.javautils.Imports._
 
   override def initiate(resourceConfig: ResourceConfig, webApplication: WebApplication) = {
@@ -48,7 +48,7 @@ class AkkaServlet extends ServletContainer with Logging {
  * <p/>
  * Used by the Akka Kernel to bootstrap REST and Comet.
  */
-class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet {
+class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
   val servlet = new AkkaServlet with AtmosphereServletProcessor {
 
     //Delegate to implement the behavior for AtmosphereHandler
@@ -73,5 +73,17 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet {
 
   override def loadConfiguration(sc: ServletConfig) {
     atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
+
+    loadCometSupport(sc.getInitParameter("cometSupport")) map( setCometSupport(_) )
+  }
+
+  private def loadCometSupport(fqn : String) = {
+      fqn match {
+          case s : String if s.length > 0 => Some(Class.forName(fqn)
+                                                       .getConstructor(Array(classOf[AtmosphereConfig]))
+                                                       .newInstance(config)
+                                                       .asInstanceOf[CometSupport[_ <: AtmosphereResource[_,_]]])
+          case _ => None
+      }
   }
 }

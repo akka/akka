@@ -69,6 +69,8 @@ object Kernel extends Logging {
     adapter.setHandleStaticResources(true)
     adapter.setServletInstance(new AkkaCometServlet)
     adapter.setContextPath(uri.getPath)
+    //Using autodetection for now
+    //adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
     if (HOME.isDefined) adapter.setRootFolder(HOME.get + "/deploy/root")
     log.info("REST service root path: [" + adapter.getRootFolder + "] and context path [" + adapter.getContextPath + "] ")
 
