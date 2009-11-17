@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.rabbitmq:rabbitmq-client:0.9.1">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/rabbitmq/rabbitmq-client/0.9.1/rabbitmq-client-0.9.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

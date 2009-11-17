@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.multiverse:multiverse-core:0.3-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse-core/0.3-SNAPSHOT/multiverse-core-0.3-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse-core/0.3-SNAPSHOT/multiverse-core-0.3-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/multiverse/multiverse-core/0.3-SNAPSHOT/multiverse-core-0.3-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
