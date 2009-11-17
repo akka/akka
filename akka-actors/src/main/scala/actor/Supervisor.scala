@@ -99,12 +99,12 @@ abstract class SupervisorFactory extends Logging {
  * Should not be used in development. Instead wire the actors together using 'link', 'spawnLink' etc. and set the 'trapExit'
  * flag in the actors that should trap error signals and trigger restart.
  * <p/> 
- * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up actors.  
+ * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up actors.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */                                  
 class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor with Logging with Configurator {  
-  trapExit = true
+  trapExit = List(classOf[Throwable])
   faultHandler = Some(handler)
   //dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 

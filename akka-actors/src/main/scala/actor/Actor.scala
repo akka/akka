@@ -124,10 +124,10 @@ trait Actor extends Logging with TransactionManagement {
    * so it fits the specific use-case that the actor is used for.
    * <p/>
    * It is beneficial to have actors share the same dispatcher, easily +100 actors can share the same.
-   * <br/>
+   * <p/>
    * But if you are running many many actors then it can be a good idea to have split them up in terms of
    * dispatcher sharing.
-   * <br/>
+   * <p/>
    * Default is that all actors that are created and spawned from within this actor is sharing the same
    * dispatcher as its creator.
    * <pre>
@@ -151,9 +151,19 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * User overridable callback/setting.
    *
-   * Set trapExit to true if actor should be able to trap linked actors exit messages.
+   * Set trapExit to the list of exception classes that the actor should be able to trap
+   * from the actor it is supervising. When the supervising actor throws these exceptions
+   * then they will trigger a restart.
+   * <p/>  
+   * <pre>
+   * // trap all exceptions
+   * trapExit = List(classOf[Throwable])
+   *
+   * // trap specific exceptions only
+   * trapExit = List(classOf[MyApplicationException], classOf[MyApplicationError])
+   * </pre>
    */
-  protected[this] var trapExit: Boolean = false
+  protected[this] var trapExit: List[Class[_ <: Throwable]] = Nil
 
   /**
    * User overridable callback/setting.
@@ -392,8 +402,9 @@ trait Actor extends Logging with TransactionManagement {
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
    * receive a notification if the linked actor has crashed.
    * <p/>
-   * If the 'trapExit' member field has been set to 'true' then it will 'trap' the failure and automatically
-   * restart the linked actors according to the restart strategy defined by the 'faultHandler'.
+   * If the 'trapExit' member field has been set to at contain at least one exception class then it will
+   * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
+   * defined by the 'faultHandler'.
    * <p/>
    * To be invoked from within the actor itself.
    */
@@ -628,14 +639,14 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
-    if (trapExit) {
+    if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
       if (faultHandler.isDefined) {
         faultHandler.get match {
           // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
           case AllForOneStrategy(maxNrOfRetries, withinTimeRange) => restartLinkedActors(reason)
           case OneForOneStrategy(maxNrOfRetries, withinTimeRange) => dead.restart(reason)
         }
-      } else throw new IllegalStateException("No 'faultHandler' defined for actor with the 'trapExit' flag set to true - can't proceed " + toString)
+      } else throw new IllegalStateException("No 'faultHandler' defined for actor with the 'trapExit' member field set to non-empty list of exception classes - can't proceed " + toString)
     } else {
       if (_supervisor.isDefined) _supervisor.get ! Exit(dead, reason) // if 'trapExit' is not defined then pass the Exit on
     }
