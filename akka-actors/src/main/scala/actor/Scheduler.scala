@@ -42,7 +42,7 @@ object Scheduler extends Actor {
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
   private val schedulers = new ConcurrentHashMap[Actor, Actor]
   faultHandler = Some(OneForOneStrategy(5, 5000))
-  trapExit = true
+  trapExit = List(classOf[Throwable])
   start
 
   def schedule(receiver: Actor, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {

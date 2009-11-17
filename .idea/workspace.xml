@@ -2,10 +2,13 @@
 <project version="4">
   <component name="ChangeListManager" verified="true">
     <list default="true" readonly="true" id="e5228cd0-f5f0-4bab-b96d-de1a99e71911" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pom.xml" afterPath="$PROJECT_DIR$/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka.iml" afterPath="$PROJECT_DIR$/akka.iml" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka.ipr" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/akka.iws" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-security/src/main/scala/Security.scala" afterPath="$PROJECT_DIR$/akka-security/src/main/scala/Security.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala" afterPath="$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
@@ -65,10 +68,64 @@
   <component name="FileColors" enabled="true" enabledForTabs="true" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="Actor.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="162" column="71" selection-start="6288" selection-end="6288" vertical-scroll-proportion="1.7435898">
+            <state line="75" column="6" selection-start="2861" selection-end="2861" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Scheduler.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="45" column="0" selection-start="1590" selection-end="1628" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Config.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/config/Config.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="22" column="13" selection-start="649" selection-end="649" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Supervisor.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="106" column="60" selection-start="3768" selection-end="3768" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AMQP.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="291" column="0" selection-start="10068" selection-end="10068" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Security.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/akka-security/src/main/scala/Security.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="38" column="3" selection-start="1677" selection-end="1677" vertical-scroll-proportion="0.02631579">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SecuritySpec.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="65" column="45" selection-start="2449" selection-end="2449" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -89,6 +146,18 @@
     <FindUsagesManager>
       <setting name="OPEN_NEW_TAB" value="false" />
     </FindUsagesManager>
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="changedFiles">
+      <list>
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" />
+        <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
+        <option value="$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala" />
+        <option value="$PROJECT_DIR$/akka-security/src/main/scala/Security.scala" />
+      </list>
+    </option>
   </component>
   <component name="MavenImportPreferences">
     <option name="importingSettings">
@@ -167,6 +236,13 @@
       <option name="SHMEM_ADDRESS" value="javadebug" />
       <option name="HOST" value="localhost" />
       <option name="PORT" value="5005" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="true" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
       <method>
         <option name="AntTarget" enabled="false" />
         <option name="BuildArtifacts" enabled="false" />
@@ -329,9 +405,51 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="45" column="0" selection-start="1590" selection-end="1628" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/config/Config.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="22" column="13" selection-start="649" selection-end="649" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="106" column="60" selection-start="3768" selection-end="3768" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="291" column="0" selection-start="10068" selection-end="10068" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="162" column="71" selection-start="6288" selection-end="6288" vertical-scroll-proportion="1.7435898">
+        <state line="75" column="6" selection-start="2861" selection-end="2861" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="65" column="45" selection-start="2449" selection-end="2449" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-security/src/main/scala/Security.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="38" column="3" selection-start="1677" selection-end="1677" vertical-scroll-proportion="0.02631579">
           <folding />
         </state>
       </provider>
