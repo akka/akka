@@ -46,7 +46,7 @@ import java.io.IOException
 object AMQP extends Actor {
   private val connections = new ConcurrentHashMap[FaultTolerantConnectionActor, FaultTolerantConnectionActor]
   faultHandler = Some(OneForOneStrategy(5, 5000))
-  trapExit = true
+  trapExit = List(classOf[Throwable])
   start
 
   sealed trait AMQPMessage
@@ -288,7 +288,7 @@ object AMQP extends Actor {
     extends FaultTolerantConnectionActor { self: Consumer =>
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
-    trapExit = true
+    trapExit = List(classOf[Throwable])
 
     private val listeners = new HashMap[MessageConsumerListener, MessageConsumerListener]
 

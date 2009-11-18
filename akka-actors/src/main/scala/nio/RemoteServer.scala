@@ -258,6 +258,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
                     else Class.forName(name)
         val newInstance = clazz.newInstance.asInstanceOf[Actor]
         newInstance.timeout = timeout
+        newInstance._remoteAddress = None
         actors.put(name, newInstance)
         newInstance
       } catch {
