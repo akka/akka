@@ -181,11 +181,9 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * User overridable callback/setting.
    *
-   * Defines the life-cycle for a supervised actor.
-   *
-   * Needs to be set if the actor is supervised programmatically.
+   * Defines the life-cycle for a supervised actor. Default is 'LifeCycle(Permanent)' but can be overridden.
    */
-  @volatile var lifeCycle: Option[LifeCycle] = None
+  @volatile var lifeCycle: Option[LifeCycle] = Some(LifeCycle(Permanent))
 
   /**
    * User overridable callback/setting.

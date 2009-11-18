@@ -10,8 +10,6 @@ package se.scalablesolutions.akka.api;
   protoc se/scalablesolutions/akka/api/ProtobufProtocol.proto --java_out .
 */
 
-option optimize_for = SPEED;
-
 message ProtobufPOJO {
   required uint64 id = 1;
   required string name = 2;

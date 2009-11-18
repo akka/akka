@@ -26,7 +26,6 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteRequest_descriptor;
     }
     
-    @Override
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteRequest_fieldAccessorTable;
@@ -109,7 +108,6 @@ public final class RemoteProtocol {
     public boolean hasIsEscaped() { return hasIsEscaped; }
     public boolean getIsEscaped() { return isEscaped_; }
     
-    @Override
     public final boolean isInitialized() {
       if (!hasId) return false;
       if (!hasProtocol) return false;
@@ -122,7 +120,6 @@ public final class RemoteProtocol {
       return true;
     }
     
-    @Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (hasId()) {
@@ -162,7 +159,6 @@ public final class RemoteProtocol {
     }
     
     private int memoizedSerializedSize = -1;
-    @Override
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
@@ -224,7 +220,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest parseFrom(
         com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
@@ -235,7 +231,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
@@ -246,7 +242,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
@@ -257,7 +253,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeDelimitedFrom(input, extensionRegistry)
                .buildParsed();
@@ -269,43 +265,49 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest parseFrom(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
     
-    public static Builder newBuilder() { return new Builder(); }
-    public Builder newBuilderForType() { return new Builder(); }
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest prototype) {
-      return new Builder().mergeFrom(prototype);
+      return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
     
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
+      private se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest result;
+      
       // Construct using se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest.newBuilder()
       private Builder() {}
       
-      se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest result = new se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest();
+      private static Builder create() {
+        Builder builder = new Builder();
+        builder.result = new se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest();
+        return builder;
+      }
       
-      @Override
       protected se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest internalGetResult() {
         return result;
       }
       
-      @Override
       public Builder clear() {
+        if (result == null) {
+          throw new IllegalStateException(
+            "Cannot call clear() after build().");
+        }
         result = new se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest();
         return this;
       }
       
-      @Override
       public Builder clone() {
-        return new Builder().mergeFrom(result);
+        return create().mergeFrom(result);
       }
       
-      @Override
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest.getDescriptor();
@@ -315,10 +317,12 @@ public final class RemoteProtocol {
         return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest.getDefaultInstance();
       }
       
+      public boolean isInitialized() {
+        return result.isInitialized();
+      }
       public se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest build() {
         if (result != null && !isInitialized()) {
-          throw new com.google.protobuf.UninitializedMessageException(
-            result);
+          throw newUninitializedMessageException(result);
         }
         return buildPartial();
       }
@@ -326,7 +330,7 @@ public final class RemoteProtocol {
       private se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
-          throw new com.google.protobuf.UninitializedMessageException(
+          throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
         return buildPartial();
@@ -335,13 +339,13 @@ public final class RemoteProtocol {
       public se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
-            "build() has already been called on this Builder.");  }
+            "build() has already been called on this Builder.");
+        }
         se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest returnMe = result;
         result = null;
         return returnMe;
       }
       
-      @Override
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest) {
           return mergeFrom((se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest)other);
@@ -390,18 +394,9 @@ public final class RemoteProtocol {
         return this;
       }
       
-      @Override
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input)
-          throws java.io.IOException {
-        return mergeFrom(input,
-          com.google.protobuf.ExtensionRegistry.getEmptyRegistry());
-      }
-      
-      @Override
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistry extensionRegistry)
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder(
@@ -522,7 +517,7 @@ public final class RemoteProtocol {
       }
       public Builder clearMessage() {
         result.hasMessage = false;
-        result.message_ = com.google.protobuf.ByteString.EMPTY;
+        result.message_ = getDefaultInstance().getMessage();
         return this;
       }
       
@@ -543,7 +538,7 @@ public final class RemoteProtocol {
       }
       public Builder clearMessageManifest() {
         result.hasMessageManifest = false;
-        result.messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        result.messageManifest_ = getDefaultInstance().getMessageManifest();
         return this;
       }
       
@@ -564,7 +559,7 @@ public final class RemoteProtocol {
       }
       public Builder clearMethod() {
         result.hasMethod = false;
-        result.method_ = "";
+        result.method_ = getDefaultInstance().getMethod();
         return this;
       }
       
@@ -585,7 +580,7 @@ public final class RemoteProtocol {
       }
       public Builder clearTarget() {
         result.hasTarget = false;
-        result.target_ = "";
+        result.target_ = getDefaultInstance().getTarget();
         return this;
       }
       
@@ -624,7 +619,7 @@ public final class RemoteProtocol {
       }
       public Builder clearSupervisorUuid() {
         result.hasSupervisorUuid = false;
-        result.supervisorUuid_ = "";
+        result.supervisorUuid_ = getDefaultInstance().getSupervisorUuid();
         return this;
       }
       
@@ -686,6 +681,10 @@ public final class RemoteProtocol {
     static {
       se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.getDescriptor();
     }
+    
+    static {
+      se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.internalForceInit();
+    }
   }
   
   public static final class RemoteReply extends
@@ -707,7 +706,6 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteReply_descriptor;
     }
     
-    @Override
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteReply_fieldAccessorTable;
@@ -769,7 +767,6 @@ public final class RemoteProtocol {
     public boolean hasIsSuccessful() { return hasIsSuccessful; }
     public boolean getIsSuccessful() { return isSuccessful_; }
     
-    @Override
     public final boolean isInitialized() {
       if (!hasId) return false;
       if (!hasIsActor) return false;
@@ -777,7 +774,6 @@ public final class RemoteProtocol {
       return true;
     }
     
-    @Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (hasId()) {
@@ -808,7 +804,6 @@ public final class RemoteProtocol {
     }
     
     private int memoizedSerializedSize = -1;
-    @Override
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
@@ -858,7 +853,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply parseFrom(
         com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
@@ -869,7 +864,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
@@ -880,7 +875,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
@@ -891,7 +886,7 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeDelimitedFrom(input, extensionRegistry)
                .buildParsed();
@@ -903,43 +898,49 @@ public final class RemoteProtocol {
     }
     public static se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply parseFrom(
         com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistry extensionRegistry)
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
     
-    public static Builder newBuilder() { return new Builder(); }
-    public Builder newBuilderForType() { return new Builder(); }
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply prototype) {
-      return new Builder().mergeFrom(prototype);
+      return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
     
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
+      private se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply result;
+      
       // Construct using se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply.newBuilder()
       private Builder() {}
       
-      se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply result = new se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply();
+      private static Builder create() {
+        Builder builder = new Builder();
+        builder.result = new se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply();
+        return builder;
+      }
       
-      @Override
       protected se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply internalGetResult() {
         return result;
       }
       
-      @Override
       public Builder clear() {
+        if (result == null) {
+          throw new IllegalStateException(
+            "Cannot call clear() after build().");
+        }
         result = new se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply();
         return this;
       }
       
-      @Override
       public Builder clone() {
-        return new Builder().mergeFrom(result);
+        return create().mergeFrom(result);
       }
       
-      @Override
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply.getDescriptor();
@@ -949,10 +950,12 @@ public final class RemoteProtocol {
         return se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply.getDefaultInstance();
       }
       
+      public boolean isInitialized() {
+        return result.isInitialized();
+      }
       public se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply build() {
         if (result != null && !isInitialized()) {
-          throw new com.google.protobuf.UninitializedMessageException(
-            result);
+          throw newUninitializedMessageException(result);
         }
         return buildPartial();
       }
@@ -960,7 +963,7 @@ public final class RemoteProtocol {
       private se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
-          throw new com.google.protobuf.UninitializedMessageException(
+          throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
         }
         return buildPartial();
@@ -969,13 +972,13 @@ public final class RemoteProtocol {
       public se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
-            "build() has already been called on this Builder.");  }
+            "build() has already been called on this Builder.");
+        }
         se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply returnMe = result;
         result = null;
         return returnMe;
       }
       
-      @Override
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply) {
           return mergeFrom((se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteReply)other);
@@ -1015,18 +1018,9 @@ public final class RemoteProtocol {
         return this;
       }
       
-      @Override
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input)
-          throws java.io.IOException {
-        return mergeFrom(input,
-          com.google.protobuf.ExtensionRegistry.getEmptyRegistry());
-      }
-      
-      @Override
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistry extensionRegistry)
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder(
@@ -1135,7 +1129,7 @@ public final class RemoteProtocol {
       }
       public Builder clearMessage() {
         result.hasMessage = false;
-        result.message_ = com.google.protobuf.ByteString.EMPTY;
+        result.message_ = getDefaultInstance().getMessage();
         return this;
       }
       
@@ -1156,7 +1150,7 @@ public final class RemoteProtocol {
       }
       public Builder clearMessageManifest() {
         result.hasMessageManifest = false;
-        result.messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        result.messageManifest_ = getDefaultInstance().getMessageManifest();
         return this;
       }
       
@@ -1177,7 +1171,7 @@ public final class RemoteProtocol {
       }
       public Builder clearException() {
         result.hasException = false;
-        result.exception_ = "";
+        result.exception_ = getDefaultInstance().getException();
         return this;
       }
       
@@ -1198,7 +1192,7 @@ public final class RemoteProtocol {
       }
       public Builder clearSupervisorUuid() {
         result.hasSupervisorUuid = false;
-        result.supervisorUuid_ = "";
+        result.supervisorUuid_ = getDefaultInstance().getSupervisorUuid();
         return this;
       }
       
@@ -1242,6 +1236,10 @@ public final class RemoteProtocol {
     static {
       se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.getDescriptor();
     }
+    
+    static {
+      se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.internalForceInit();
+    }
   }
   
   private static com.google.protobuf.Descriptors.Descriptor
@@ -1262,7 +1260,7 @@ public final class RemoteProtocol {
   private static com.google.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
-    java.lang.String descriptorData =
+    java.lang.String[] descriptorData = {
       "\n;se/scalablesolutions/akka/nio/protobuf" +
       "/RemoteProtocol.proto\022&se.scalablesoluti" +
       "ons.akka.nio.protobuf\"\326\001\n\rRemoteRequest\022" +
@@ -1272,10 +1270,11 @@ public final class RemoteProtocol {
       "\022\026\n\016supervisorUuid\030\010 \001(\t\022\017\n\007isActor\030\t \002(" +
       "\010\022\020\n\010isOneWay\030\n \002(\010\022\021\n\tisEscaped\030\013 \002(\010\"\247" +
       "\001\n\013RemoteReply\022\n\n\002id\030\001 \002(\004\022\020\n\010protocol\030\002" +
-      " \001(\r\022\017\n\007message\030\003 \001(\014\022\027\n\017messageManifest" +
+      " \001(\r\022\017\n\007message\030\003 \001(\014\022\027\n\017messageManifest",
       "\030\004 \001(\014\022\021\n\texception\030\005 \001(\t\022\026\n\016supervisorU" +
       "uid\030\006 \001(\t\022\017\n\007isActor\030\007 \002(\010\022\024\n\014isSuccessf" +
-      "ul\030\010 \002(\010B\002H\001";
+      "ul\030\010 \002(\010B\002H\001"
+    };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
@@ -1305,4 +1304,6 @@ public final class RemoteProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
+  
+  public static void internalForceInit() {}
 }

@@ -16,7 +16,7 @@
           <element id="library" level="project" name="Maven: cglib:cglib:2.2" />
           <element id="library" level="project" name="Maven: asm:asm:3.1" />
           <element id="library" level="project" name="Maven: aopalliance:aopalliance:1.0" />
-          <element id="library" level="project" name="Maven: com.google.protobuf:protobuf-java:2.1.0" />
+          <element id="library" level="project" name="Maven: com.google.protobuf:protobuf-java:2.2.0" />
           <element id="library" level="project" name="Maven: org.multiverse:multiverse-core:0.3-SNAPSHOT" />
           <element id="library" level="project" name="Maven: org.multiverse:multiverse-alpha:0.3-SNAPSHOT" />
           <element id="library" level="project" name="Maven: asm:asm-tree:3.1" />
@@ -35,7 +35,7 @@
           </element>
           <element id="library" level="project" name="Maven: org.codehaus.aspectwerkz:aspectwerkz-nodeps-jdk5:2.1" />
           <element id="library" level="project" name="Maven: org.codehaus.aspectwerkz:aspectwerkz-jdk5:2.1" />
-          <element id="library" level="project" name="Maven: org.jboss.netty:netty:3.1.0.GA" />
+          <element id="library" level="project" name="Maven: org.jboss.netty:netty:3.2.0.ALPHA1" />
           <element id="library" level="project" name="Maven: org.scala-tools:javautils:2.7.4-0.1" />
           <element id="library" level="project" name="Maven: org.codehaus.jackson:jackson-core-asl:1.1.0" />
           <element id="library" level="project" name="Maven: org.codehaus.jackson:jackson-mapper-asl:1.1.0" />
