@@ -13,6 +13,12 @@ import net.lag.configgy.{Configgy, ParseException}
  */
 object Config extends Logging {
   val VERSION = "0.6"
+
+  // TODO: make Multiverse options configurable
+  // Set Multiverse options for max speed
+  System.setProperty("org.multiverse.MuliverseConstants.sanityChecks", "false")
+  System.setProperty("org.multiverse.api.GlobalStmInstance.factorymethod", "org.multiverse.stms.alpha.AlphaStm.createFast")
+
   val HOME = {
     val systemHome = System.getenv("AKKA_HOME")
     if (systemHome == null || systemHome.length == 0 || systemHome == ".") {

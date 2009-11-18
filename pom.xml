@@ -47,7 +47,7 @@
 
   <licenses>
     <license>
-      <name>the Apache License, ASL Version 2.0</name>
+      <name>The Apache License, ASL Version 2.0</name>
       <url>http://www.apache.org/licenses/LICENSE-2.0</url>
     </license>
   </licenses>
@@ -57,7 +57,7 @@
       <id>jboner</id>
       <name>Jonas Bon&#233;r</name>
       <timezone>+1</timezone>
-      <email>jonas AT jonasboner DOTCOM</email>
+      <email>jonas [REMOVE] AT jonasboner DOT com</email>
       <roles>
         <role>Founder</role>
         <role>Hacker</role>
