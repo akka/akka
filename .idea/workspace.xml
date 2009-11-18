@@ -2,19 +2,7 @@
 <project version="4">
   <component name="ChangeListManager" verified="true">
     <list default="true" id="e5228cd0-f5f0-4bab-b96d-de1a99e71911" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.proto" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.proto" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/artifacts/akka_samples_lift_war_exploded.xml" afterPath="$PROJECT_DIR$/.idea/artifacts/akka_samples_lift_war_exploded.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/embedded-repo/sjson/json/sjson/0.1/sjson-0.1.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/embedded-repo/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0.pom" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/pom.xml" afterPath="$PROJECT_DIR$/akka-fun-test-java/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-kernel/pom.xml" afterPath="$PROJECT_DIR$/akka-kernel/pom.xml" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/embedded-repo/com/google/protobuf/protobuf-java/2.1.0/protobuf-java-2.1.0.jar" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/nio/protobuf/RemoteProtocol.java" afterPath="$PROJECT_DIR$/akka-util-java/src/main/java/se/scalablesolutions/akka/nio/protobuf/RemoteProtocol.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-util-java/pom.xml" afterPath="$PROJECT_DIR$/akka-util-java/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/pom.xml" afterPath="$PROJECT_DIR$/akka-actors/pom.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.java" afterPath="$PROJECT_DIR$/akka-fun-test-java/src/test/java/se/scalablesolutions/akka/api/ProtobufProtocol.java" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
