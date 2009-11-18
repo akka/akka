@@ -23,4 +23,9 @@ tm.out
 *.iws
 *.ipr
 *.iml
+.project
+.settings
+.classpath
+.idea
+.scala_dependencies
 
