@@ -78,12 +78,17 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
   }
 
   private def loadCometSupport(fqn : String) = {
-      fqn match {
-          case s : String if s.length > 0 => Some(Class.forName(fqn)
-                                                       .getConstructor(Array(classOf[AtmosphereConfig]))
-                                                       .newInstance(config)
-                                                       .asInstanceOf[CometSupport[_ <: AtmosphereResource[_,_]]])
-          case _ => None
+
+      log.info("Trying to load: " + fqn)
+      try {
+        Some(Class.forName(fqn)
+                  .getConstructor(Array(classOf[AtmosphereConfig]): _*)
+                  .newInstance(config)
+                  .asInstanceOf[CometSupport[_ <: AtmosphereResource[_,_]]])
+      } catch {
+          case e : Exception =>
+              log.error(e, "Couldn't load comet support", fqn)
+              None
       }
   }
 }
