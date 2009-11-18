@@ -84,7 +84,7 @@ trait Actor extends Logging with TransactionManagement {
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private var _config: Option[AnyRef] = None
   private val _remoteFlagLock = new ReadWriteLock 
-  private var _remoteAddress: Option[InetSocketAddress] = None
+  private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] val _linkedActors = new HashSet[Actor]
   private[akka] var _mailbox: MessageQueue = _
   private[akka] var _supervisor: Option[Actor] = None

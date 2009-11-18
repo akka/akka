@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager" verified="true">
-    <list default="true" readonly="true" id="e5228cd0-f5f0-4bab-b96d-de1a99e71911" name="Default" comment="">
+    <list default="true" id="e5228cd0-f5f0-4bab-b96d-de1a99e71911" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-security/src/main/scala/Security.scala" afterPath="$PROJECT_DIR$/akka-security/src/main/scala/Security.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala" afterPath="$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" afterPath="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala" afterPath="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="akka.iws" />
@@ -71,7 +67,25 @@
       <file leaf-file-name="Actor.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="75" column="6" selection-start="2861" selection-end="2861" vertical-scroll-proportion="0.0">
+            <state line="86" column="14" selection-start="3347" selection-end="3347" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RemoteServer.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="260" column="41" selection-start="11124" selection-end="11124" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RemoteActorTest.scala" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/RemoteActorTest.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="28" column="6" selection-start="667" selection-end="667" vertical-scroll-proportion="0.7218453">
               <folding />
             </state>
           </provider>
@@ -113,10 +127,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Security.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="Security.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/akka-security/src/main/scala/Security.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="38" column="3" selection-start="1677" selection-end="1677" vertical-scroll-proportion="0.02631579">
+            <state line="38" column="3" selection-start="1677" selection-end="1677" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -150,12 +164,13 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala" />
         <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Supervisor.scala" />
         <option value="$PROJECT_DIR$/akka-amqp/src/main/scala/AMQP.scala" />
         <option value="$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala" />
         <option value="$PROJECT_DIR$/akka-security/src/main/scala/Security.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala" />
+        <option value="$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala" />
       </list>
     </option>
   </component>
@@ -220,12 +235,12 @@
   </component>
   <component name="PropertiesComponent">
     <property name="project.structure.proportion" value="0.0" />
-    <property name="project.structure.last.edited" value="Libraries" />
     <property name="MemberChooser.copyJavadoc" value="false" />
+    <property name="project.structure.last.edited" value="Libraries" />
     <property name="GoToClass.includeLibraries" value="false" />
     <property name="MemberChooser.showClasses" value="true" />
-    <property name="project.structure.side.proportion" value="0.2" />
     <property name="MemberChooser.sorted" value="false" />
+    <property name="project.structure.side.proportion" value="0.2" />
     <property name="GoToFile.includeJavaFiles" value="false" />
     <property name="GoToClass.toSaveIncludeLibraries" value="false" />
   </component>
@@ -242,7 +257,7 @@
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
-    <configuration default="true" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
+    <configuration default="true" type="PHPUnitRunConfigurationType" factoryName="PHPUnit" class_file="" class="" directory="" file="" method_file="" method="" scope="Class">
       <method>
         <option name="AntTarget" enabled="false" />
         <option name="BuildArtifacts" enabled="false" />
@@ -339,6 +354,7 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
+      <changelist id="e5228cd0-f5f0-4bab-b96d-de1a99e71911" name="Default" comment="" />
       <created>1258488323388</created>
       <updated>1258488323388</updated>
     </task>
@@ -347,26 +363,26 @@
     <frame x="4" y="22" width="1436" height="878" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
-      <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2204611" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22005773" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="IDEtalk Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="IDEtalk Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="VcsManagerConfiguration">
@@ -398,13 +414,6 @@
     <breakpoint-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/dispatch/Reactor.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="28" column="6" selection-start="656" selection-end="656" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Scheduler.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="45" column="0" selection-start="1590" selection-end="1628" vertical-scroll-proportion="0.0">
@@ -433,13 +442,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="75" column="6" selection-start="2861" selection-end="2861" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/akka-security/src/test/scala/SecuritySpec.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="65" column="45" selection-start="2449" selection-end="2449" vertical-scroll-proportion="0.0">
@@ -447,9 +449,37 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/dispatch/Reactor.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="28" column="6" selection-start="656" selection-end="656" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/akka-security/src/main/scala/Security.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="38" column="3" selection-start="1677" selection-end="1677" vertical-scroll-proportion="0.02631579">
+        <state line="38" column="3" selection-start="1677" selection-end="1677" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/actor/Actor.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="86" column="14" selection-start="3347" selection-end="3347" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/main/scala/nio/RemoteServer.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="260" column="41" selection-start="11124" selection-end="11124" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/akka-actors/src/test/scala/RemoteActorTest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="28" column="6" selection-start="667" selection-end="667" vertical-scroll-proportion="0.7218453">
           <folding />
         </state>
       </provider>
