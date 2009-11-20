@@ -33,7 +33,7 @@ class Boot {
 
 
   val supervisor = factory.newInstance
-  supervisor.start
+ supervisor.start
 }
 
 /*

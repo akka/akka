@@ -18,7 +18,7 @@ class SchedulerTest extends JUnitSuite {
     Thread.sleep(1000)
     Scheduler.schedule(actor, Tick, 0L, 1L, TimeUnit.SECONDS)
     Thread.sleep(5000)
-    Scheduler.shutdown
+    Scheduler.stop
     assert(count > 0)
   }
 }

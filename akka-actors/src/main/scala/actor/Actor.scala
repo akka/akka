@@ -283,8 +283,14 @@ trait Actor extends Logging with TransactionManagement {
 
   /**
    * Shuts down the actor its dispatcher and message queue.
+   * Delegates to 'stop'
    */
-  def exit = synchronized {
+  protected def exit = stop
+
+  /**
+   * Shuts down the actor its dispatcher and message queue.
+   */
+  def stop = synchronized {
     if (_isRunning) {
       messageDispatcher.unregisterHandler(this)
       if (messageDispatcher.isInstanceOf[ThreadBasedDispatcher]) messageDispatcher.shutdown

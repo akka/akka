@@ -106,26 +106,24 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
   override def start = {
     ConfiguratorRepository.registerConfigurator(this)
     actors.values.toArray.toList.foreach(println)
+    _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+      actor.start
+      log.info("Starting actor: %s", actor)
+    }
     super[Actor].start
-    this ! StartSupervisor
   }
   
-  def stop = this !? StopSupervisor
+  override def stop = {
+    super[Actor].stop
+    _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+      actor.stop
+      log.info("Shutting actor down: %s", actor)
+    }
+    log.info("Stopping supervisor: %s", this)
+  }
 
-  protected def receive = {
-    case StartSupervisor =>
-      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
-        actor.start
-        log.info("Starting actor: %s", actor)
-      }
-
-    case StopSupervisor =>
-      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
-        actor.exit
-        log.info("Shutting actor down: %s", actor)
-      }
-      log.info("Stopping supervisor: %s", this)
-      exit
+  def receive = {
+    case _ => throw new IllegalArgumentException("Supervisor does not respond to any messages")
   }
 
   def configure(config: SupervisorConfig, factory: SupervisorFactory) = config match {
