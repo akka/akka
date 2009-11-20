@@ -35,7 +35,7 @@ class CassandraPersistentActor extends Actor {
   private lazy val vectorState: PersistentVector = PersistentState.newVector(CassandraStorageConfig())
   private lazy val refState: PersistentRef = PersistentState.newRef(CassandraStorageConfig())
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case GetMapState(key) =>
       reply(mapState.get(key).get)
     case GetVectorSize =>
@@ -67,7 +67,7 @@ class CassandraPersistentActor extends Actor {
 
 @serializable class PersistentFailerActor extends Actor {
   makeTransactionRequired
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")
   }

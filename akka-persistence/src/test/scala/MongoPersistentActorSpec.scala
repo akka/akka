@@ -32,7 +32,7 @@ class BankAccountActor extends Actor {
   private lazy val accountState: PersistentMap = PersistentState.newMap(MongoStorageConfig())
   private lazy val txnLog: PersistentVector = PersistentState.newVector(MongoStorageConfig())
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:" + accountNo)
@@ -176,7 +176,7 @@ class BankAccountActor extends Actor {
     txnLog = PersistentState.newVector(MongoStorageConfig())
   }
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:" + accountNo)

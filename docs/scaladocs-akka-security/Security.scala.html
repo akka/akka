@@ -211,7 +211,7 @@ trait AuthenticationActor[C &lt;: Credentials] extends Actor with Logging
         }
     }
 
-    override def receive: PartialFunction[Any, Unit] = authenticate
+    def receive = authenticate
 
     //returns the string value of the "Authorization"-header of the request
     def auth(r : Req) = r.getHeaderValue("Authorization")
@@ -284,7 +284,7 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials]
     Scheduler.schedule(this, InvalidateNonces, noncePurgeInterval, noncePurgeInterval, TimeUnit.MILLISECONDS )
 
     //authenticate or invalidate nonces
-    override def receive: PartialFunction[Any, Unit] = authenticate orElse invalidateNonces
+    def receive = authenticate orElse invalidateNonces
 
     override def unauthorized : Response =
     {

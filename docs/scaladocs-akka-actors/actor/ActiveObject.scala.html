@@ -135,7 +135,7 @@ object ActiveObject {
 
 
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
-    object factory extends SupervisorFactory {
+    val factory = SupervisorFactory {
       override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
     }
     val supervisor = factory.newSupervisor
@@ -333,7 +333,7 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
     //if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Invocation(joinPoint, isOneWay, _) =>
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed

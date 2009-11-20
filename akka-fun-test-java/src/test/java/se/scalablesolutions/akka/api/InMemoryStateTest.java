@@ -9,7 +9,9 @@ import junit.framework.TestCase;
 import se.scalablesolutions.akka.Config;
 import se.scalablesolutions.akka.config.*;
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
+
 import static se.scalablesolutions.akka.config.JavaConfig.*;
+
 import se.scalablesolutions.akka.actor.*;
 import se.scalablesolutions.akka.Kernel;
 
@@ -18,26 +20,22 @@ public class InMemoryStateTest extends TestCase {
 
   final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
-  protected void setUp() {
+  public InMemoryStateTest() {
     Config.config();
     conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
             new Component(InMemStateful.class,
                 new LifeCycle(new Permanent()),
-                              //new RestartCallbacks("preRestart", "postRestart")),
-            10000),
+                //new RestartCallbacks("preRestart", "postRestart")),
+                10000),
             new Component(InMemFailer.class,
                 new LifeCycle(new Permanent()),
-            10000)
-        }).inject().supervise();
-      InMemStateful stateful = conf.getInstance(InMemStateful.class);
-      stateful.init();
+                10000)
+        }).supervise();
+    InMemStateful stateful = conf.getInstance(InMemStateful.class);
+    stateful.init();
   }
-
-    protected void tearDown() {
-      conf.stop();
-    }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);

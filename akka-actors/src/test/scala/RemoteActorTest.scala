@@ -11,14 +11,14 @@ object Global {
   var oneWay = "nada"  
 }
 class RemoteActorSpecActorUnidirectional extends Actor {
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case "OneWay" =>
       Global.oneWay = "received"
   }
 }
 
 class RemoteActorSpecActorBidirectional extends Actor {
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case "Hello" =>
       reply("World")
     case "Failure" =>
@@ -46,7 +46,7 @@ class RemoteActorTest extends JUnitSuite   {
     val result = actor ! "OneWay"
     Thread.sleep(100)
     assert("received" === Global.oneWay)
-    actor.stop
+    actor.exit
   }
 
   @Test
@@ -57,7 +57,7 @@ class RemoteActorTest extends JUnitSuite   {
     actor.start
     val result: String = actor !? "Hello"
     assert("World" === result)
-    actor.stop
+    actor.exit
   }
 
   @Test
@@ -68,7 +68,7 @@ class RemoteActorTest extends JUnitSuite   {
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.stop
+    actor.exit
   }
 
   @Test
@@ -84,6 +84,6 @@ class RemoteActorTest extends JUnitSuite   {
       case e =>
         assert("expected" === e.getMessage())
     }
-    actor.stop
+    actor.exit
   }
 }

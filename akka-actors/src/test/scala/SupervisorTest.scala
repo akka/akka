@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
-import config.ScalaConfig._
+import se.scalablesolutions.akka.config.ScalaConfig._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -453,33 +453,27 @@ class SupervisorTest extends JUnitSuite {
 
     pingpong1 = new PingPong1Actor
     
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
             pingpong1,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
     pingpong1 = new PingPong1Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
           Supervise(
             pingpong1,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
@@ -487,8 +481,7 @@ class SupervisorTest extends JUnitSuite {
     pingpong2 = new PingPong2Actor
     pingpong3 = new PingPong3Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
@@ -502,10 +495,8 @@ class SupervisorTest extends JUnitSuite {
           Supervise(
             pingpong3,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
@@ -513,8 +504,7 @@ class SupervisorTest extends JUnitSuite {
     pingpong2 = new PingPong2Actor
     pingpong3 = new PingPong3Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
           Supervise(
@@ -528,10 +518,8 @@ class SupervisorTest extends JUnitSuite {
           Supervise(
             pingpong3,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
@@ -539,8 +527,7 @@ class SupervisorTest extends JUnitSuite {
     pingpong2 = new PingPong2Actor
     pingpong3 = new PingPong3Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
@@ -557,14 +544,12 @@ class SupervisorTest extends JUnitSuite {
               pingpong3,
               LifeCycle(Permanent))
             :: Nil)
-          :: Nil)
-       }
-     }
-     factory.newSupervisor
+          :: Nil))
+     factory.newInstance
    }
 
   class PingPong1Actor extends Actor {
-    override def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case Ping =>
         messageLog += "ping"
         reply("pong")
@@ -581,7 +566,7 @@ class SupervisorTest extends JUnitSuite {
   }
 
   class PingPong2Actor extends Actor {
-    override def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case Ping =>
         messageLog += "ping"
         reply("pong")
@@ -594,7 +579,7 @@ class SupervisorTest extends JUnitSuite {
   }
 
   class PingPong3Actor extends Actor {
-    override def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case Ping =>
         messageLog += "ping"
         reply("pong")

@@ -158,7 +158,7 @@ trait Actor extends Logging with TransactionManagement {
    * &lt;p/>
    * Example code:
    * &lt;pre>
-   *   def receive: PartialFunction[Any, Unit] = {
+   *   def receive = {
    *     case Ping =>
    *       println("got a ping")
    *       reply("pong")
@@ -171,7 +171,7 @@ trait Actor extends Logging with TransactionManagement {
    *   }
    * &lt;/pre>
    */
-  protected def receive: PartialFunction[Any, Unit]
+  protected def receive
 
   /**
    * User overridable callback/setting.

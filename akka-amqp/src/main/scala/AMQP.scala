@@ -32,7 +32,7 @@ import java.io.IOException
  *   val consumer = AMQP.newConsumer(params, hostname, port, exchange, ExchangeType.Direct, Serializer.ScalaJSON, None, 100)
  *
  *   consumer ! MessageConsumerListener(queue, routingKey, new Actor() {
- *     def receive: PartialFunction[Any, Unit] = {
+ *     def receive = {
  *       case Message(payload, _, _, _, _) => log.debug("Received message: %s", payload)
  *     }
  *   })
@@ -208,7 +208,7 @@ object AMQP extends Actor {
 
   override def shutdown = {
     connections.values.asScala.foreach(_ ! Stop)
-    stop
+    exit
   }
 
   /**
@@ -236,7 +236,7 @@ object AMQP extends Actor {
         channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties, payload.asInstanceOf[Array[Byte]])
       case Stop =>
         disconnect
-        stop
+        exit
     }
 
     protected def setupChannel = {
@@ -323,7 +323,7 @@ object AMQP extends Actor {
       case Stop => 
         listeners.elements.toList.map(_._2).foreach(unregisterListener(_))
         disconnect
-        stop
+        exit
 
       case message: Message => 
         handleIllegalMessage("AMQP.Consumer [" + this + "] can't be used to send messages, ignoring message [" + message + "]")
@@ -401,7 +401,7 @@ object AMQP extends Actor {
             case Some(tag) =>
               channel.basicCancel(tag)
               unlink(listener.actor)
-              listener.actor.stop
+              listener.actor.exit
               log.debug("Message consumer is cancelled and shut down [%s]", listener)
           }
       }

@@ -264,17 +264,18 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
   override def receive = authenticate orElse invalidateNonces
 
   override def unauthorized: Response = {
-    val nonce = randomString(64);
+    val nonce = randomString(64)
     nonceMap.put(nonce, System.currentTimeMillis)
     unauthorized(nonce, "auth", randomString(64))
   }
 
   def unauthorized(nonce: String, qop: String, opaque: String): Response = {
-    Response.status(401).header("WWW-Authenticate",
+    Response.status(401).header(
+      "WWW-Authenticate",
       "Digest realm=\"" + realm + "\", " +
-          "qop=\"" + qop + "\", " +
-          "nonce=\"" + nonce + "\", " +
-          "opaque=\"" + opaque + "\"").build
+      "qop=\"" + qop + "\", " +
+      "nonce=\"" + nonce + "\", " +
+      "opaque=\"" + opaque + "\"").build
   }
 
   //Tests wether the specified credentials are valid
@@ -284,9 +285,10 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
     val ha1 = h(auth.userName + ":" + auth.realm + ":" + user.password)
     val ha2 = h(auth.method + ":" + auth.uri)
 
-    val response = h(ha1 + ":" + auth.nonce + ":" +
-        auth.nc + ":" + auth.cnonce + ":" +
-        auth.qop + ":" + ha2)
+    val response = h(
+      ha1 + ":" + auth.nonce + ":" +
+      auth.nc + ":" + auth.cnonce + ":" +
+      auth.qop + ":" + ha2)
 
     (response == auth.response) && (nonceMap.getOrElse(auth.nonce, -1) != -1)
   }

@@ -133,7 +133,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     supervisor = Some(ActiveObject.supervise(restartStrategy, supervised))
     //camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
     //camelContext.start
-    supervisor.get.startSupervisor
+    supervisor.get.start
     ConfiguratorRepository.registerConfigurator(this)
     this
   }
