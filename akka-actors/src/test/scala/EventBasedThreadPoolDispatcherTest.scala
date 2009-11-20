@@ -13,9 +13,9 @@ import se.scalablesolutions.akka.actor.Actor
 
 class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
   private var threadingIssueDetected: AtomicBoolean = null
-  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key1 = new Actor { def receive = { case _ => {}} }
+  val key2 = new Actor { def receive = { case _ => {}} }
+  val key3 = new Actor { def receive = { case _ => {}} }
 
   @Before
   def setUp = {

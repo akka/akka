@@ -29,7 +29,7 @@ class SimpleService extends Actor {
   @Produces(Array("text/html"))
   def count = (this !! Tick).getOrElse(<h1>Error in counter</h1>)
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
@@ -62,7 +62,7 @@ class PersistentSimpleService extends Actor {
   @Produces(Array("text/html"))
   def count = (this !! Tick).getOrElse(<h1>Error in counter</h1>)
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))

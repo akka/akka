@@ -13,7 +13,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
   class TestActor extends Actor {
     dispatcher = Dispatchers.newEventBasedSingleThreadDispatcher(uuid)
 
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case "Hello" =>
         reply("World")
       case "Failure" =>
@@ -25,7 +25,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
-      def receive: PartialFunction[Any, Unit] = {
+      def receive = {
         case "OneWay" => oneWay = "received"
       }
     }
@@ -33,7 +33,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     val result = actor ! "OneWay"
     Thread.sleep(100)
     assert("received" === oneWay)
-    actor.stop
+    actor.exit
   }
 
   @Test def shouldSendReplySync = {
@@ -42,7 +42,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     actor.start
     val result: String = actor !? "Hello"
     assert("World" === result)
-    actor.stop
+    actor.exit
   }
 
   @Test def shouldSendReplyAsync = {
@@ -51,7 +51,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.stop
+    actor.exit
   }
 
   @Test def shouldSendReceiveException = {
@@ -65,6 +65,6 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
       case e =>
         assert("expected" === e.getMessage())
     }
-    actor.stop
+    actor.exit
   }
 }

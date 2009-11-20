@@ -11,7 +11,7 @@ class SchedulerTest extends JUnitSuite {
     var count = 0
     case object Tick
     val actor = new Actor() {
-      def receive: PartialFunction[Any, Unit] = {
+      def receive = {
         case Tick => count += 1
       }}
     actor.start

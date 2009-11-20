@@ -50,9 +50,9 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
     internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder
   }
 
-  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key1 = new Actor { def receive = { case _ => {}} }
+  val key2 = new Actor { def receive = { case _ => {}} }
+  val key3 = new Actor { def receive = { case _ => {}} }
 
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock

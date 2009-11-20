@@ -8,12 +8,9 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{ConfiguratorRepository, Configurator}
 import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.dispatch.Dispatchers
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.collection.mutable.HashMap
-   
 /**
  * Messages that the supervisor responds to and returns.
  *
@@ -34,54 +31,38 @@ case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends 
  * <p>
  * Example usage:
  * <pre>
- *  class MySupervisorFactory extends SupervisorFactory {
- *
- *    override protected def getSupervisorConfig: SupervisorConfig = {
- *      SupervisorConfig(
- *        RestartStrategy(OneForOne, 3, 10),
- *        Supervise(
- *          myFirstActor,
- *          LifeCycle(Permanent))
- *        ::
- *        Supervise(
- *          mySecondActor,
- *          LifeCycle(Permanent))
- *        :: Nil)
- *    }
- * }
- * </pre>
- *
- * Then create a concrete factory in which we mix in support for the specific implementation of the Service we want to use.
- *
- * <pre>
- * object factory extends MySupervisorFactory
+ *  val factory = SupervisorFactory(
+ *    SupervisorConfig(
+ *      RestartStrategy(OneForOne, 3, 10),
+ *      Supervise(
+ *        myFirstActor,
+ *        LifeCycle(Permanent)) ::
+ *      Supervise(
+ *        mySecondActor,
+ *        LifeCycle(Permanent)) ::
+ *      Nil))
  * </pre>
  *
  * Then create a new Supervisor tree with the concrete Services we have defined.
  *
  * <pre>
- * val supervisor = factory.newSupervisor
- * supervisor ! Start // start up all managed servers
+ * val supervisor = factory.newInstance
+ * supervisor.start // start up all managed servers
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class SupervisorFactory extends Logging {
-  def newSupervisor: Supervisor = newSupervisorFor(getSupervisorConfig)
+class SupervisorFactory(val config: SupervisorConfig) extends Logging {
 
-  def newSupervisorFor(config: SupervisorConfig): Supervisor = config match {
+  def newInstance: Supervisor = newInstanceFor(config)
+
+  def newInstanceFor(config: SupervisorConfig): Supervisor = config match {
     case SupervisorConfig(restartStrategy, _) =>
       val supervisor = create(restartStrategy)
       supervisor.start
       supervisor.configure(config, this)
       supervisor
   }
-
-  /**
-   * To be overridden by concrete factory.
-   * Should return the SupervisorConfig for the supervisor.
-   */
-  protected def getSupervisorConfig: SupervisorConfig
 
   protected def create(strategy: RestartStrategy): Supervisor = strategy match {
     case RestartStrategy(scheme, maxNrOfRetries, timeRange) =>
@@ -92,18 +73,24 @@ abstract class SupervisorFactory extends Logging {
   }
 }
 
+object SupervisorFactory {
+  def apply(config: SupervisorConfig) = new SupervisorFactory(config)
+}
+
 /**
  * <b>NOTE:</b>
  * <p/> 
- * The supervisor class is only used for the configuration system when configuring supervisor hierarchies declaratively.
- * Should not be used in development. Instead wire the actors together using 'link', 'spawnLink' etc. and set the 'trapExit'
- * flag in the actors that should trap error signals and trigger restart.
+ * The supervisor class is only used for the configuration system when configuring supervisor
+ * hierarchies declaratively. Should not be used as part of the regular programming API. Instead
+ * wire the actors together using 'link', 'spawnLink' etc. and set the 'trapExit' flag in the
+ * actors that should trap error signals and trigger restart.
  * <p/> 
  * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up actors.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */                                  
-class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor with Logging with Configurator {  
+sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
+  extends Actor with Logging with Configurator {  
   trapExit = List(classOf[Throwable])
   faultHandler = Some(handler)
   //dispatcher = Dispatchers.newThreadBasedDispatcher(this)
@@ -116,23 +103,29 @@ class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor wi
 
   def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
 
-  def startSupervisor = {
+  override def start = {
     ConfiguratorRepository.registerConfigurator(this)
     actors.values.toArray.toList.foreach(println)
-    start
+    super[Actor].start
     this ! StartSupervisor
   }
   
-  def stopSupervisor = this ! StopSupervisor
+  def stop = this !? StopSupervisor
 
-  protected def receive: PartialFunction[Any, Unit] = {
+  protected def receive = {
     case StartSupervisor =>
-      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor => actor.start; log.info("Starting actor: %s", actor) }
+      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+        actor.start
+        log.info("Starting actor: %s", actor)
+      }
 
     case StopSupervisor =>
-      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor => actor.stop; log.info("Stopping actor: %s", actor) }
+      _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+        actor.exit
+        log.info("Shutting actor down: %s", actor)
+      }
       log.info("Stopping supervisor: %s", this)
-      stop
+      exit
   }
 
   def configure(config: SupervisorConfig, factory: SupervisorFactory) = config match {
@@ -145,7 +138,7 @@ class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor wi
             startLink(actor)
 
            case SupervisorConfig(_, _) => // recursive configuration
-             val supervisor = factory.newSupervisorFor(server.asInstanceOf[SupervisorConfig])
+             val supervisor = factory.newInstanceFor(server.asInstanceOf[SupervisorConfig])
              supervisor ! StartSupervisor
              // FIXME what to do with recursively supervisors?
         })

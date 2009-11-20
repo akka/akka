@@ -70,7 +70,14 @@ object Actor {
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
  * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
- * 
+ * <p/>
+ * An actor has a well-defined (non-cyclic) life-cycle.
+ * <pre>
+ * => NEW (newly created actor) - can't receive messages (yet)
+ *     => STARTED (when 'start' is invoked) - can receive messages
+ *         => SHUT DOWN (when 'exit' is invoked) - can't do anything
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends Logging with TransactionManagement {
@@ -81,6 +88,7 @@ trait Actor extends Logging with TransactionManagement {
 
   // private fields
   @volatile private var _isRunning: Boolean = false
+  @volatile private var _isShutDown: Boolean = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private var _config: Option[AnyRef] = None
   private val _remoteFlagLock = new ReadWriteLock 
@@ -144,7 +152,6 @@ trait Actor extends Logging with TransactionManagement {
   protected[akka] var messageDispatcher: MessageDispatcher = {
     val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher(getClass.getName)
     _mailbox = dispatcher.messageQueue
-    dispatcher.registerHandler(this, new ActorMessageInvoker(this))
     dispatcher
   }
 
@@ -201,7 +208,7 @@ trait Actor extends Logging with TransactionManagement {
    * <p/>
    * Example code:
    * <pre>
-   *   def receive: PartialFunction[Any, Unit] = {
+   *   def receive = {
    *     case Ping =>
    *       println("got a ping")
    *       reply("pong")
@@ -264,7 +271,9 @@ trait Actor extends Logging with TransactionManagement {
    * Starts up the actor and its message queue.
    */
   def start = synchronized  {
+    if (_isShutDown) throw new IllegalStateException("Can't restart an actor that have been shut down with 'exit'")
     if (!_isRunning) {
+      dispatcher.registerHandler(this, new ActorMessageInvoker(this))
       messageDispatcher.start
       _isRunning = true
       //if (isTransactional) this !! TransactionalInit
@@ -273,14 +282,15 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   /**
-   * Stops the actor and its message queue.
+   * Shuts down the actor its dispatcher and message queue.
    */
-  def stop = synchronized {
+  def exit = synchronized {
     if (_isRunning) {
-      dispatcher.unregisterHandler(this)
-      if (dispatcher.isInstanceOf[ThreadBasedDispatcher]) dispatcher.shutdown
+      messageDispatcher.unregisterHandler(this)
+      if (messageDispatcher.isInstanceOf[ThreadBasedDispatcher]) messageDispatcher.shutdown
       // FIXME: Need to do reference count to know if EventBasedThreadPoolDispatcher and EventBasedSingleThreadDispatcher can be shut down
       _isRunning = false
+      _isShutDown = true
       shutdown
     }
   }
@@ -356,7 +366,10 @@ trait Actor extends Logging with TransactionManagement {
     case Some(future) => future.completeWithResult(message)
   }
 
-  def dispatcher = messageDispatcher
+  /**
+   * Get the dispatcher for this actor.
+   */
+  def dispatcher = synchronized { messageDispatcher }
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.

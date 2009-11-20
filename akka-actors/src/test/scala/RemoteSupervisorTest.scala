@@ -13,18 +13,18 @@ import org.junit.Test
 
 object Log {
   var messageLog: String = ""
-  var oneWayLog: String = ""  
+  var oneWayLog: String = ""
 }
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteSupervisorTest extends JUnitSuite  {
-
+class RemoteSupervisorTest extends JUnitSuite {
   akka.Config.config
   new Thread(new Runnable() {
-     def run = {
-       RemoteServer.start
-     }
+    def run = {
+      RemoteServer.start
+    }
   }).start
   Thread.sleep(1000)
 
@@ -277,166 +277,166 @@ class RemoteSupervisorTest extends JUnitSuite  {
     }
   }
 */
-  
+
   /*
-  @Test def shouldOneWayKillSingleActorAllForOne = {
-    Logg.messageLog = ""
-    val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
-    Thread.sleep(500)
-    intercept[RuntimeException] {
-      pingpong1 ! BinaryString("Die")
-    }
-    Thread.sleep(500)
-    expect("DIE") {
-      Logg.messageLog
-    }
-  }
+ @Test def shouldOneWayKillSingleActorAllForOne = {
+   Logg.messageLog = ""
+   val sup = getSingleActorAllForOneSupervisor
+   sup ! StartSupervisor
+   Thread.sleep(500)
+   intercept[RuntimeException] {
+     pingpong1 ! BinaryString("Die")
+   }
+   Thread.sleep(500)
+   expect("DIE") {
+     Logg.messageLog
+   }
+ }
 
-  @Test def shouldOneWayCallKillCallSingleActorAllForOne = {
-    Logg.messageLog = ""
-    val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("ping") {
-      Logg.messageLog
-    }
-    intercept[RuntimeException] {
-      pingpong1 ! BinaryString("Die")
-    }
-    Thread.sleep(500)
-    expect("pingDIE") {
-      Logg.messageLog
-    }
-    expect("pong") {
-      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingDIEping") {
-      Logg.messageLog
-    }
-  }
+ @Test def shouldOneWayCallKillCallSingleActorAllForOne = {
+   Logg.messageLog = ""
+   val sup = getSingleActorAllForOneSupervisor
+   sup ! StartSupervisor
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("ping") {
+     Logg.messageLog
+   }
+   intercept[RuntimeException] {
+     pingpong1 ! BinaryString("Die")
+   }
+   Thread.sleep(500)
+   expect("pingDIE") {
+     Logg.messageLog
+   }
+   expect("pong") {
+     (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pingDIEping") {
+     Logg.messageLog
+   }
+ }
 
-  @Test def shouldOneWayKillMultipleActorsOneForOne = {
-    Logg.messageLog = ""
-    val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
-    Thread.sleep(500)
-    intercept[RuntimeException] {
-      pingpong3 ! BinaryString("Die")
-    }
-    Thread.sleep(500)
-    expect("DIE") {
-      Logg.messageLog
-    }
-  }
+ @Test def shouldOneWayKillMultipleActorsOneForOne = {
+   Logg.messageLog = ""
+   val sup = getMultipleActorsOneForOneConf
+   sup ! StartSupervisor
+   Thread.sleep(500)
+   intercept[RuntimeException] {
+     pingpong3 ! BinaryString("Die")
+   }
+   Thread.sleep(500)
+   expect("DIE") {
+     Logg.messageLog
+   }
+ }
 
-  def tesOneWayCallKillCallMultipleActorsOneForOne = {
-    Logg.messageLog = ""
-    val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingping") {
-      Logg.messageLog
-    }
-    intercept[RuntimeException] {
-      pingpong2 ! BinaryString("Die")
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIE") {
-      Logg.messageLog
-    }
-    expect("pong") {
-      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIEpingpingping") {
-      Logg.messageLog
-    }
-  }
+ def tesOneWayCallKillCallMultipleActorsOneForOne = {
+   Logg.messageLog = ""
+   val sup = getMultipleActorsOneForOneConf
+   sup ! StartSupervisor
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pingpingping") {
+     Logg.messageLog
+   }
+   intercept[RuntimeException] {
+     pingpong2 ! BinaryString("Die")
+   }
+   Thread.sleep(500)
+   expect("pingpingpingDIE") {
+     Logg.messageLog
+   }
+   expect("pong") {
+     (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pingpingpingDIEpingpingping") {
+     Logg.messageLog
+   }
+ }
 
-  @Test def shouldOneWayKillMultipleActorsAllForOne = {
-    Logg.messageLog = ""
-    val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
-    Thread.sleep(500)
-    intercept[RuntimeException] {
-      pingpong2 ! BinaryString("Die")
-    }
-    Thread.sleep(500)
-    expect("DIEDIEDIE") {
-      Logg.messageLog
-    }
-  }
+ @Test def shouldOneWayKillMultipleActorsAllForOne = {
+   Logg.messageLog = ""
+   val sup = getMultipleActorsAllForOneConf
+   sup ! StartSupervisor
+   Thread.sleep(500)
+   intercept[RuntimeException] {
+     pingpong2 ! BinaryString("Die")
+   }
+   Thread.sleep(500)
+   expect("DIEDIEDIE") {
+     Logg.messageLog
+   }
+ }
 
-  def tesOneWayCallKillCallMultipleActorsAllForOne = {
-    Logg.messageLog = ""
-    val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
-    Thread.sleep(500)
-    expect("pong") {
-      pingpong1 ! BinaryString("Ping")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingping") {
-      Logg.messageLog
-    }
-    intercept[RuntimeException] {
-      pingpong2 ! BinaryString("Die")
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIEDIEDIE") {
-      Logg.messageLog
-    }
-    expect("pong") {
-      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIEDIEDIEpingpingping") {
-      Logg.messageLog
-    }
-  }
-   */
+ def tesOneWayCallKillCallMultipleActorsAllForOne = {
+   Logg.messageLog = ""
+   val sup = getMultipleActorsAllForOneConf
+   sup ! StartSupervisor
+   Thread.sleep(500)
+   expect("pong") {
+     pingpong1 ! BinaryString("Ping")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pingpingping") {
+     Logg.messageLog
+   }
+   intercept[RuntimeException] {
+     pingpong2 ! BinaryString("Die")
+   }
+   Thread.sleep(500)
+   expect("pingpingpingDIEDIEDIE") {
+     Logg.messageLog
+   }
+   expect("pong") {
+     (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong2 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pong") {
+     (pingpong3 ! BinaryString("Ping")).getOrElse("nil")
+   }
+   Thread.sleep(500)
+   expect("pingpingpingDIEDIEDIEpingpingping") {
+     Logg.messageLog
+   }
+ }
+  */
 
   /*
    @Test def shouldNestedSupervisorsTerminateFirstLevelActorAllForOne = {
@@ -467,34 +467,29 @@ class RemoteSupervisorTest extends JUnitSuite  {
     pingpong1 = new RemotePingPong1Actor
     pingpong1.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
-        SupervisorConfig(
-          RestartStrategy(AllForOne, 3, 100),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+    val factory = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 100),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+            :: Nil))
+
+    factory.newInstance
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
     pingpong1 = new RemotePingPong1Actor
     pingpong1.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
-        SupervisorConfig(
-          RestartStrategy(OneForOne, 3, 100),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+    val factory = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(OneForOne, 3, 100),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+            :: Nil))
+    factory.newInstance
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
@@ -505,25 +500,22 @@ class RemoteSupervisorTest extends JUnitSuite  {
     pingpong3 = new RemotePingPong3Actor
     pingpong3.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
-        SupervisorConfig(
-          RestartStrategy(AllForOne, 3, 100),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          ::
-          Supervise(
-            pingpong2,
-            LifeCycle(Permanent))
-          ::
-          Supervise(
-            pingpong3,
-            LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+    val factory = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 100),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+            ::
+            Supervise(
+              pingpong2,
+              LifeCycle(Permanent))
+            ::
+            Supervise(
+              pingpong3,
+              LifeCycle(Permanent))
+            :: Nil))
+    factory.newInstance
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
@@ -534,25 +526,22 @@ class RemoteSupervisorTest extends JUnitSuite  {
     pingpong3 = new RemotePingPong3Actor
     pingpong3.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
-        SupervisorConfig(
-          RestartStrategy(OneForOne, 3, 100),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          ::
-          Supervise(
-            pingpong2,
-            LifeCycle(Permanent))
-          ::
-          Supervise(
-            pingpong3,
-            LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+    val factory = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(OneForOne, 3, 100),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+            ::
+            Supervise(
+              pingpong2,
+              LifeCycle(Permanent))
+            ::
+            Supervise(
+              pingpong3,
+              LifeCycle(Permanent))
+            :: Nil))
+    factory.newInstance
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
@@ -563,34 +552,30 @@ class RemoteSupervisorTest extends JUnitSuite  {
     pingpong3 = new RemotePingPong3Actor
     pingpong3.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
-        SupervisorConfig(
-          RestartStrategy(AllForOne, 3, 100),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          ::
-          SupervisorConfig(
-            RestartStrategy(AllForOne, 3, 100),
-            Supervise(
-              pingpong2,
-              LifeCycle(Permanent))
+    val factory = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 100),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
             ::
-            Supervise(
-              pingpong3,
-              LifeCycle(Permanent))
-            :: Nil)
-          :: Nil)
-       }
-     }
-     factory.newSupervisor
-   }
-
+            SupervisorConfig(
+              RestartStrategy(AllForOne, 3, 100),
+              Supervise(
+                pingpong2,
+                LifeCycle(Permanent))
+              ::
+              Supervise(
+                pingpong3,
+                LifeCycle(Permanent))
+              :: Nil)
+            :: Nil))
+    factory.newInstance
+  }
 }
 
 @serializable class RemotePingPong1Actor extends Actor {
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case BinaryString("Ping") =>
       Log.messageLog += "ping"
       reply("pong")
@@ -601,26 +586,28 @@ class RemoteSupervisorTest extends JUnitSuite  {
     case BinaryString("Die") =>
       throw new RuntimeException("DIE")
   }
+
   override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
     Log.messageLog += reason.asInstanceOf[Exception].getMessage
   }
 }
 
 @serializable class RemotePingPong2Actor extends Actor {
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case BinaryString("Ping") =>
       Log.messageLog += "ping"
       reply("pong")
     case BinaryString("Die") =>
       throw new RuntimeException("DIE")
   }
+
   override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
     Log.messageLog += reason.asInstanceOf[Exception].getMessage
   }
 }
 
 @serializable class RemotePingPong3Actor extends Actor {
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case BinaryString("Ping") =>
       Log.messageLog += "ping"
       reply("pong")

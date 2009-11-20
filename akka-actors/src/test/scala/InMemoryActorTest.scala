@@ -30,7 +30,7 @@ class InMemStatefulActor extends Actor {
   private lazy val vectorState = TransactionalState.newVector[String]
   private lazy val refState = TransactionalState.newRef[String]
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case GetMapState(key) =>
       reply(mapState.get(key).get)
     case GetVectorSize =>
@@ -79,7 +79,7 @@ class InMemStatefulActor extends Actor {
 @serializable
 class InMemFailerActor extends Actor {
   makeTransactionRequired
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")
   }

@@ -9,7 +9,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case "Hello" =>
         reply("World")
       case "Failure" =>
@@ -21,7 +21,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
     implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
-      def receive: PartialFunction[Any, Unit] = {
+      def receive = {
         case "OneWay" => oneWay = "received"
       }
     }
@@ -29,7 +29,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
     val result = actor ! "OneWay"
     Thread.sleep(100)
     assert("received" === oneWay)
-    actor.stop
+    actor.exit
   }
 
   @Test def shouldSendReplySync = {
@@ -38,7 +38,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
     actor.start
     val result: String = actor !? "Hello"
     assert("World" === result)
-    actor.stop
+    actor.exit
   }
 
   @Test def shouldSendReplyAsync = {
@@ -47,7 +47,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.stop
+    actor.exit
   }
 
   @Test def shouldSendReceiveException = {
@@ -61,6 +61,6 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
       case e =>
         assert("expected" === e.getMessage())
     }
-    actor.stop
+    actor.exit
   }
 }
