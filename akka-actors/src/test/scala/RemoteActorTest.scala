@@ -46,7 +46,7 @@ class RemoteActorTest extends JUnitSuite   {
     val result = actor ! "OneWay"
     Thread.sleep(100)
     assert("received" === Global.oneWay)
-    actor.exit
+    actor.stop
   }
 
   @Test
@@ -57,7 +57,7 @@ class RemoteActorTest extends JUnitSuite   {
     actor.start
     val result: String = actor !? "Hello"
     assert("World" === result)
-    actor.exit
+    actor.stop
   }
 
   @Test
@@ -68,7 +68,7 @@ class RemoteActorTest extends JUnitSuite   {
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.exit
+    actor.stop
   }
 
   @Test
@@ -84,6 +84,6 @@ class RemoteActorTest extends JUnitSuite   {
       case e =>
         assert("expected" === e.getMessage())
     }
-    actor.exit
+    actor.stop
   }
 }

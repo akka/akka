@@ -401,7 +401,7 @@ object AMQP extends Actor {
             case Some(tag) =>
               channel.basicCancel(tag)
               unlink(listener.actor)
-              listener.actor.exit
+              listener.actor.stop
               log.debug("Message consumer is cancelled and shut down [%s]", listener)
           }
       }

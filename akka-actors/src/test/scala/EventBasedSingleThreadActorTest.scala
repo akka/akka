@@ -33,7 +33,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     val result = actor ! "OneWay"
     Thread.sleep(100)
     assert("received" === oneWay)
-    actor.exit
+    actor.stop
   }
 
   @Test def shouldSendReplySync = {
@@ -42,7 +42,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     actor.start
     val result: String = actor !? "Hello"
     assert("World" === result)
-    actor.exit
+    actor.stop
   }
 
   @Test def shouldSendReplyAsync = {
@@ -51,7 +51,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
-    actor.exit
+    actor.stop
   }
 
   @Test def shouldSendReceiveException = {
@@ -65,6 +65,6 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
       case e =>
         assert("expected" === e.getMessage())
     }
-    actor.exit
+    actor.stop
   }
 }
