@@ -39,7 +39,9 @@ import se.scalablesolutions.akka.actor.Actor
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers {
-  
+
+  object globalEventBasedThreadPoolDispatcher extends EventBasedThreadPoolDispatcher("global:eventbased:dispatcher")
+
   /**
    * Creates an event based dispatcher serving multiple (millions) of actors through a thread pool.
    * Has a fluent builder interface for configuring its semantics.

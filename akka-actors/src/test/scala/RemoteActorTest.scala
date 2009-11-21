@@ -27,6 +27,7 @@ class RemoteActorSpecActorBidirectional extends Actor {
 }
 
 class RemoteActorTest extends JUnitSuite   {
+  import Actor._
   akka.Config.config
   new Thread(new Runnable() {
      def run = {

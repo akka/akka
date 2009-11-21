@@ -113,6 +113,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
   }
 
   private def dispatchToActor(request: RemoteRequest, channel: Channel) = {
+    import Actor._    
     log.debug("Dispatching to remote actor [%s]", request.getTarget)
     val actor = createActor(request.getTarget, request.getTimeout)
     actor.start

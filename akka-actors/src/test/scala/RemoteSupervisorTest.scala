@@ -20,6 +20,7 @@ object Log {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteSupervisorTest extends JUnitSuite {
+  import Actor._
   akka.Config.config
   new Thread(new Runnable() {
     def run = {
@@ -35,7 +36,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldStartServer = {
     Log.messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
 
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
@@ -45,7 +46,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldKillSingleActorOneForOne = {
     Log.messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! BinaryString("Die")
@@ -59,7 +60,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorOneForOne = {
     Log.messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
@@ -87,7 +88,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldKillSingleActorAllForOne = {
     Log.messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! BinaryString("Die")
@@ -101,7 +102,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorAllForOne = {
     Log.messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
@@ -129,7 +130,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldKillMultipleActorsOneForOne = {
     Log.messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong3 !! BinaryString("Die")
@@ -143,7 +144,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   def tesCallKillCallMultipleActorsOneForOne = {
     Log.messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
@@ -187,7 +188,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldKillMultipleActorsAllForOne = {
     Log.messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong2 !! BinaryString("Die")
@@ -201,7 +202,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   def tesCallKillCallMultipleActorsAllForOne = {
     Log.messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
@@ -246,7 +247,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillSingleActorOneForOne = {
     Logg.messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     pingpong1 ! BinaryString("Die")
     Thread.sleep(500)
@@ -258,7 +259,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   @Test def shouldOneWayCallKillCallSingleActorOneForOne = {
     Logg.messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     pingpong1 ! OneWay
     Thread.sleep(500)
@@ -282,7 +283,7 @@ class RemoteSupervisorTest extends JUnitSuite {
  @Test def shouldOneWayKillSingleActorAllForOne = {
    Logg.messageLog = ""
    val sup = getSingleActorAllForOneSupervisor
-   sup ! StartSupervisor
+   sup.start
    Thread.sleep(500)
    intercept[RuntimeException] {
      pingpong1 ! BinaryString("Die")
@@ -296,7 +297,7 @@ class RemoteSupervisorTest extends JUnitSuite {
  @Test def shouldOneWayCallKillCallSingleActorAllForOne = {
    Logg.messageLog = ""
    val sup = getSingleActorAllForOneSupervisor
-   sup ! StartSupervisor
+   sup.start
    Thread.sleep(500)
    expect("pong") {
      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
@@ -324,7 +325,7 @@ class RemoteSupervisorTest extends JUnitSuite {
  @Test def shouldOneWayKillMultipleActorsOneForOne = {
    Logg.messageLog = ""
    val sup = getMultipleActorsOneForOneConf
-   sup ! StartSupervisor
+   sup.start
    Thread.sleep(500)
    intercept[RuntimeException] {
      pingpong3 ! BinaryString("Die")
@@ -338,7 +339,7 @@ class RemoteSupervisorTest extends JUnitSuite {
  def tesOneWayCallKillCallMultipleActorsOneForOne = {
    Logg.messageLog = ""
    val sup = getMultipleActorsOneForOneConf
-   sup ! StartSupervisor
+   sup.start
    Thread.sleep(500)
    expect("pong") {
      (pingpong1 ! BinaryString("Ping")).getOrElse("nil")
@@ -382,7 +383,7 @@ class RemoteSupervisorTest extends JUnitSuite {
  @Test def shouldOneWayKillMultipleActorsAllForOne = {
    Logg.messageLog = ""
    val sup = getMultipleActorsAllForOneConf
-   sup ! StartSupervisor
+   sup.start
    Thread.sleep(500)
    intercept[RuntimeException] {
      pingpong2 ! BinaryString("Die")
@@ -396,7 +397,7 @@ class RemoteSupervisorTest extends JUnitSuite {
  def tesOneWayCallKillCallMultipleActorsAllForOne = {
    Logg.messageLog = ""
    val sup = getMultipleActorsAllForOneConf
-   sup ! StartSupervisor
+   sup.start
    Thread.sleep(500)
    expect("pong") {
      pingpong1 ! BinaryString("Ping")
@@ -442,7 +443,7 @@ class RemoteSupervisorTest extends JUnitSuite {
    @Test def shouldNestedSupervisorsTerminateFirstLevelActorAllForOne = {
     Logg.messageLog = ""
      val sup = getNestedSupervisorsAllForOneConf
-     sup ! StartSupervisor
+     sup.start
      intercept[RuntimeException] {
        pingpong1 !! BinaryString("Die")
      }

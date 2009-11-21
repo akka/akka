@@ -8,19 +8,9 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{ConfiguratorRepository, Configurator}
 import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.dispatch.Dispatchers
 
 import java.util.concurrent.ConcurrentHashMap
-
-/**
- * Messages that the supervisor responds to and returns.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-sealed abstract class SupervisorMessage
-case object StartSupervisor extends SupervisorMessage
-case object StopSupervisor extends SupervisorMessage
-case class ConfigureSupervisor(config: SupervisorConfig, factory: SupervisorFactory) extends SupervisorMessage
-case object ConfigSupervisorSuccess extends SupervisorMessage
 
 sealed abstract class FaultHandlingStrategy
 case class AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends FaultHandlingStrategy
@@ -93,7 +83,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
   extends Actor with Logging with Configurator {  
   trapExit = List(classOf[Throwable])
   faultHandler = Some(handler)
-  //dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
   val actors = new ConcurrentHashMap[String, Actor]
   
@@ -103,9 +93,8 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
 
   def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
 
-  override def start = {
+  override def start = synchronized {
     ConfiguratorRepository.registerConfigurator(this)
-    actors.values.toArray.toList.foreach(println)
     _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
       actor.start
       log.info("Starting actor: %s", actor)
@@ -113,7 +102,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
     super[Actor].start
   }
   
-  override def stop = {
+  override def stop = synchronized {
     super[Actor].stop
     _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
       actor.stop
@@ -123,21 +112,20 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
   }
 
   def receive = {
-    case _ => throw new IllegalArgumentException("Supervisor does not respond to any messages")
+    case unknown => throw new IllegalArgumentException("Supervisor does not respond to any messages. Unknown message [" + unknown + "]")
   }
 
   def configure(config: SupervisorConfig, factory: SupervisorFactory) = config match {
     case SupervisorConfig(_, servers) =>
       servers.map(server =>
         server match {
-          case Supervise(actor, lifecycle) =>
+          case Supervise(actor, lifeCycle) =>
             actors.put(actor.getClass.getName, actor)
-            actor.lifeCycle = Some(lifecycle)
+            actor.lifeCycle = lifeCycle
             startLink(actor)
 
            case SupervisorConfig(_, _) => // recursive configuration
-             val supervisor = factory.newInstanceFor(server.asInstanceOf[SupervisorConfig])
-             supervisor ! StartSupervisor
+             factory.newInstanceFor(server.asInstanceOf[SupervisorConfig]).start
              // FIXME what to do with recursively supervisors?
         })
   }

@@ -155,6 +155,7 @@ class RemoteClientHandler(val name: String,
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
+    import Actor._    
     try {
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReply]) {

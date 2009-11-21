@@ -285,7 +285,7 @@ object AMQP extends Actor {
           val passive: Boolean,
           val durable: Boolean,
           val configurationArguments: Map[java.lang.String, Object])
-    extends FaultTolerantConnectionActor { self: Consumer =>
+    extends FaultTolerantConnectionActor { consumer: Consumer =>
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
@@ -370,7 +370,7 @@ object AMQP extends Actor {
           } catch {
             case cause => 
               log.error("Delivery of message to MessageConsumerListener [%s] failed due to [%s]", listener.toString(exchangeName), cause.toString)
-              self ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and reconnect
+              consumer ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and reconnect
           }
         }
 
@@ -384,7 +384,7 @@ object AMQP extends Actor {
             case Some(listener) =>
               log.warning("MessageConsumerListener [%s] is being shutdown by [%s] due to [%s]", 
                           listener.toString(exchangeName), signal.getReference, signal.getReason)
-              self ! UnregisterMessageConsumerListener(listener)
+              consumer ! UnregisterMessageConsumerListener(listener)
           }
         }
       })
@@ -422,8 +422,6 @@ object AMQP extends Actor {
   }
 
   trait FaultTolerantConnectionActor extends Actor {
-    lifeCycle = Some(LifeCycle(Permanent))
-
     val reconnectionTimer = new Timer
 
     var connection: Connection = _

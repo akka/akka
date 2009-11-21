@@ -160,6 +160,8 @@ private[akka] sealed case class AspectInit(
  */
 @Aspect("perInstance")
 private[akka] sealed class ActiveObjectAspect {
+  import Actor._
+  
   @volatile var isInitialized = false
   var target: Class[_] = _
   var actor: Dispatcher = _            
