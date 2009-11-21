@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009 Scalable Solutions.
  */
- 
+
 package se.scalablesolutions.akka.nio.protobuf;
 
 /*
@@ -10,8 +10,6 @@ package se.scalablesolutions.akka.nio.protobuf;
   protoc se/scalablesolutions/akka/nio/protobuf/RemoteProtocol.proto --java_out .
 */
 
-option optimize_for = SPEED;
-
 message RemoteRequest {
   required uint64 id = 1;
   required uint32 protocol = 2;
@@ -19,11 +17,12 @@ message RemoteRequest {
   optional bytes messageManifest = 4;
   optional string method = 5;
   required string target = 6;
-  required uint64 timeout = 7;
-  optional string supervisorUuid = 8;
-  required bool isActor = 9;
-  required bool isOneWay = 10;
-  required bool isEscaped = 11;
+  required string uuid = 7;
+  required uint64 timeout = 8;
+  optional string supervisorUuid = 9;
+  required bool isActor = 10;
+  required bool isOneWay = 11;
+  required bool isEscaped = 12;
 }
 
 message RemoteReply {

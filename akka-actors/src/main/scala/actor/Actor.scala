@@ -101,13 +101,14 @@ trait Actor extends Logging with TransactionManagement {
   implicit val self: AnyRef = this
   
   // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
-  val uuid = Uuid.newUuid.toString
-
+  private[akka] var _uuid = Uuid.newUuid.toString
+  def uuid = _uuid
+  
   // ====================================
   // private fields
   // ====================================
 
-   @volatile private var _isRunning: Boolean = false
+  @volatile private var _isRunning: Boolean = false
   @volatile private var _isShutDown: Boolean = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private var _config: Option[AnyRef] = None
@@ -346,6 +347,9 @@ trait Actor extends Logging with TransactionManagement {
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
+  /**
+   * Same as the '!' method but does not take an implicit sender as second parameter.
+   */
   def send(message: AnyRef) = {
     if (_isRunning) postMessageToMailbox(message, None)
     else throw new IllegalStateException(
@@ -394,17 +398,10 @@ trait Actor extends Logging with TransactionManagement {
   def !![T](message: AnyRef): Option[T] = !![T](message, timeout)
 
   /**
-   * Sends a message asynchronously, but waits on a future indefinitely. E.g. emulates a synchronous call.
-   * <p/>
-   * <b>NOTE:</b>
-   * Should be used with care (almost never), since very dangerous (will block a thread indefinitely if no reply).
+   * This method is evil and have been removed. Use '!!' with a timeout instead. 
    */
-  def !?[T](message: AnyRef): T = if (_isRunning) {
-    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, 0)
-    future.awaitBlocking
-    getResultOrThrowException(future).get
-  } else throw new IllegalStateException(
-    "Actor has not been started, you need to invoke 'actor.start' before using it")
+  def !?[T](message: AnyRef): T = throw new UnsupportedOperationException(
+    "'!?' is evil and have been removed. Use '!!' with a timeout instead")
 
   /**
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
@@ -596,6 +593,7 @@ trait Actor extends Logging with TransactionManagement {
         .setId(RemoteRequestIdFactory.nextId)
         .setTarget(this.getClass.getName)
         .setTimeout(timeout)
+        .setUuid(uuid)
         .setIsActor(true)
         .setIsOneWay(true)
         .setIsEscaped(false)
@@ -615,6 +613,7 @@ trait Actor extends Logging with TransactionManagement {
         .setId(RemoteRequestIdFactory.nextId)
         .setTarget(this.getClass.getName)
         .setTimeout(timeout)
+        .setUuid(uuid)
         .setIsActor(true)
         .setIsOneWay(false)
         .setIsEscaped(false)

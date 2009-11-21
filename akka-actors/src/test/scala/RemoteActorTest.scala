@@ -51,17 +51,6 @@ class RemoteActorTest extends JUnitSuite   {
   }
 
   @Test
-  def shouldSendReplySync = {
-    implicit val timeout = 500000000L
-    val actor = new RemoteActorSpecActorBidirectional
-    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
-    actor.start
-    val result: String = actor !? "Hello"
-    assert("World" === result)
-    actor.stop
-  }
-
-  @Test
   def shouldSendReplyAsync = {
     implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
