@@ -18,6 +18,7 @@ import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
+import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -25,7 +26,8 @@ import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 object RemoteServer extends Logging {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
-  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)  
+  val COMPRESSION = config.getBool("akka.remote.compression", true)
+  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
 
   private var hostname = HOSTNAME 
   private var port = PORT
@@ -70,13 +72,15 @@ object RemoteServer extends Logging {
 class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
     extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline  = {
-    val p = Channels.pipeline()
-    p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
-    p.addLast("protobufDecoder", new ProtobufDecoder(RemoteRequest.getDefaultInstance))
-    p.addLast("frameEncoder", new LengthFieldPrepender(4))
-    p.addLast("protobufEncoder", new ProtobufEncoder)
-    p.addLast("handler", new RemoteServerHandler(name, loader))
-    p
+    val pipeline = Channels.pipeline()
+    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibDecoder", new ZlibDecoder())
+    pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
+    pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteRequest.getDefaultInstance))
+    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibEncoder", new ZlibEncoder())
+    pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
+    pipeline.addLast("protobufEncoder", new ProtobufEncoder)
+    pipeline.addLast("handler", new RemoteServerHandler(name, loader))
+    pipeline
   }
 }
 

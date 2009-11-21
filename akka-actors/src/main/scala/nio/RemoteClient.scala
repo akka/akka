@@ -22,6 +22,7 @@ import org.jboss.netty.util.{TimerTask, Timeout, HashedWheelTimer}
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap}
+import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibEncoder}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -128,8 +129,10 @@ class RemoteClientPipelineFactory(name: String,
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
     pipeline.addLast("timeout", new ReadTimeoutHandler(RemoteClient.TIMER, RemoteClient.READ_TIMEOUT))
+    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibDecoder", new ZlibDecoder())
     pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteReply.getDefaultInstance))
+    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibEncoder", new ZlibEncoder())
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder())
     pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap))
