@@ -39,6 +39,7 @@ trait MessageDemultiplexer {
 class MessageInvocation(val receiver: Actor,
                         val message: AnyRef,
                         val future: Option[CompletableFutureResult],
+                        val sender: Option[Actor],
                         val tx: Option[Transaction]) {
   if (receiver == null) throw new IllegalArgumentException("receiver is null")
   if (message == null) throw new IllegalArgumentException("message is null")
@@ -65,6 +66,10 @@ class MessageInvocation(val receiver: Actor,
   }
   
   override def toString(): String = synchronized { 
-    "MessageInvocation[message = " + message + ", receiver = " + receiver + ", future = " + future + ", tx = " + tx + "]"
+    "MessageInvocation[message = " + message +
+        ", receiver = " + receiver +
+        ", sender = " + sender +
+        ", future = " + future +
+        ", tx = " + tx + "]"
   }
 }

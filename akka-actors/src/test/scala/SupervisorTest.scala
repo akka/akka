@@ -13,6 +13,7 @@ import org.junit.Test
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class SupervisorTest extends JUnitSuite {
+  import Actor._
 
   var messageLog: String = ""
   var oneWayLog: String = ""
@@ -24,7 +25,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldStartServer = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
 
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -34,7 +35,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! Die
@@ -48,7 +49,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -76,7 +77,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! Die
@@ -90,7 +91,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -118,7 +119,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong3 !! Die
@@ -132,7 +133,7 @@ class SupervisorTest extends JUnitSuite {
   def tesCallKillCallMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -176,7 +177,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong2 !! Die
@@ -190,7 +191,7 @@ class SupervisorTest extends JUnitSuite {
   def tesCallKillCallMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -234,7 +235,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     pingpong1 ! Die
     Thread.sleep(500)
@@ -246,7 +247,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayCallKillCallSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     pingpong1 ! OneWay
     Thread.sleep(500)
@@ -269,7 +270,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 ! Die
@@ -283,7 +284,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayCallKillCallSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 ! Ping).getOrElse("nil")
@@ -311,7 +312,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong3 ! Die
@@ -325,7 +326,7 @@ class SupervisorTest extends JUnitSuite {
   def tesOneWayCallKillCallMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 ! Ping).getOrElse("nil")
@@ -369,7 +370,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong2 ! Die
@@ -383,7 +384,7 @@ class SupervisorTest extends JUnitSuite {
   def tesOneWayCallKillCallMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       pingpong1 ! Ping
@@ -429,7 +430,7 @@ class SupervisorTest extends JUnitSuite {
    @Test def shouldNestedSupervisorsTerminateFirstLevelActorAllForOne = {
     messageLog = ""
      val sup = getNestedSupervisorsAllForOneConf
-     sup ! StartSupervisor
+     sup.start
      intercept[RuntimeException] {
        pingpong1 !! Die
      }

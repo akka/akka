@@ -10,6 +10,11 @@ description
 </action>
 see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
 -->
+
+<!--action dev="jboner" type="fix" issue="23" system="github">
+  Info message
+</action-->
+
 <document>
   <properties>
     <title>Akka Release Notes</title>
@@ -33,11 +38,13 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Jonas Bon&#233;r" type="add">Monadic API to TransactionalRef (use it in for-comprehension)</action>
       <action dev="Jonas Bon&#233;r" type="add">Lightweight actor syntax 'actor { case _ => .. }'</action>
       <action dev="Jonas Bon&#233;r" type="add">New Scala JSON parser based on sjson</action>
+      <action dev="Jonas Bon&#233;r" type="add">Upgraded to Netty 3.2 and Protobuf 2.2</action>
       <action dev="Jonas Bon&#233;r" type="add">Monadic API to TransactionalRef (use it in for-comprehension)</action>
       <action dev="Jonas Bon&#233;r" type="add">Smoother web app integration; just add akka.conf to WEB-INF/classes, no need for AKKA_HOME</action>
       <action dev="Jonas Bon&#233;r" type="add">Modularization of distribution into a thin core (actors, remoting and STM) and the rest in submodules</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Java objects (using Jackson)</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using SJSON)</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added implementation for remote actor reconnect upon failure</action>
       <action dev="Jonas Bon&#233;r" type="add">Protobuf serialization for Java and Scala objects</action>
       <action dev="Jonas Bon&#233;r" type="add">SBinary serialization for Scala objects</action>
       <action dev="Jonas Bon&#233;r" type="add">Protobuf as remote protocol</action>
