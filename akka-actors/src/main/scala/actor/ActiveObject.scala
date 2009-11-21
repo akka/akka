@@ -204,6 +204,7 @@ private[akka] sealed class ActiveObjectAspect {
       .setId(RemoteRequestIdFactory.nextId)
       .setMethod(rtti.getMethod.getName)
       .setTarget(target.getName)
+      .setUuid(actor.uuid)
       .setTimeout(timeout)
       .setIsActor(false)
       .setIsOneWay(oneWay_?)

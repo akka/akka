@@ -37,7 +37,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
-    val result: String = actor !? "Hello"
+    val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
     actor.stop
   }

@@ -67,7 +67,8 @@ object RemoteServer extends Logging {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) extends ChannelPipelineFactory {
+class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
+    extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline  = {
     val p = Channels.pipeline()
     p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
@@ -83,12 +84,14 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) ext
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelPipelineCoverage { val value = "all" }
-class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader]) extends SimpleChannelUpstreamHandler with Logging {
+class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader])
+    extends SimpleChannelUpstreamHandler with Logging {
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
  
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
-    if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
+    if (event.isInstanceOf[ChannelStateEvent] &&
+        event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
       log.debug(event.toString)
     }
     super.handleUpstream(ctx, event)
@@ -96,8 +99,11 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
-    if (message == null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
-    if (message.isInstanceOf[RemoteRequest]) handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
+    if (message == null) throw new IllegalStateException(
+      "Message in remote MessageEvent is null: " + event)
+    if (message.isInstanceOf[RemoteRequest]) {
+      handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
+    }
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
@@ -115,7 +121,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
   private def dispatchToActor(request: RemoteRequest, channel: Channel) = {
     import Actor._    
     log.debug("Dispatching to remote actor [%s]", request.getTarget)
-    val actor = createActor(request.getTarget, request.getTimeout)
+    val actor = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actor.start
     val message = RemoteProtocolBuilder.getMessage(request)
     if (request.getIsOneWay) actor ! message
@@ -158,7 +164,8 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
     //continueTransaction(request)
     try {
-      val messageReceiver = activeObject.getClass.getDeclaredMethod(request.getMethod, unescapedArgClasses: _*)
+      val messageReceiver = activeObject.getClass.getDeclaredMethod(
+        request.getMethod, unescapedArgClasses: _*)
       if (request.getIsOneWay) messageReceiver.invoke(activeObject, unescapedArgs: _*)
       else {
         val result = messageReceiver.invoke(activeObject, unescapedArgs: _*)
@@ -174,7 +181,9 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
       }
     } catch {
       case e: InvocationTargetException =>
-        log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.getMethod, request.getTarget, e.getCause)
+        log.error(
+          "Could not invoke remote active object [%s :: %s] due to: %s", 
+          request.getMethod, request.getTarget, e.getCause)
         e.getCause.printStackTrace
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
@@ -185,7 +194,9 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
       case e: Throwable =>
-        log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.getMethod, request.getTarget, e)
+        log.error(
+          "Could not invoke remote active object [%s :: %s] due to: %s",
+          request.getMethod, request.getTarget, e)
         e.printStackTrace
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
@@ -250,21 +261,22 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
     } else activeObjectOrNull
   }
 
-  private def createActor(name: String, timeout: Long): Actor = {
-    val actorOrNull = actors.get(name)
+  private def createActor(name: String, uuid: String, timeout: Long): Actor = {
+    val actorOrNull = actors.get(uuid)
     if (actorOrNull == null) {
       try {
-        log.info("Creating a new remote actor [%s]", name)
+        log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
         val newInstance = clazz.newInstance.asInstanceOf[Actor]
+        newInstance._uuid = uuid
         newInstance.timeout = timeout
         newInstance._remoteAddress = None
-        actors.put(name, newInstance)
+        actors.put(uuid, newInstance)
         newInstance
       } catch {
         case e =>
-          log.debug("Could not create remote actor instance due to: %s", e)
+          log.error(e, "Could not create remote actor instance due to: " + e.getMessage)
           e.printStackTrace
           throw e
       }
