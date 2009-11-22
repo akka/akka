@@ -367,7 +367,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
         case e: PrivilegedActionException => {
-          e.printStackTrace
+          log.error(e, "Action not allowed")
           return None
         }
       }

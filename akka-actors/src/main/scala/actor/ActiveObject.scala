@@ -10,12 +10,13 @@ import se.scalablesolutions.akka.dispatch.{MessageDispatcher, FutureResult}
 import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
-import se.scalablesolutions.akka.serialization.Serializer
+
 import java.lang.reflect.{InvocationTargetException, Method}
 
 object Annotations {
