@@ -26,7 +26,14 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
 object RemoteServer extends Logging {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
-  val COMPRESSION = config.getBool("akka.remote.compression", true)
+  val COMPRESSION_SCHEME = config.getString("akka.remote.compression-scheme", "zlib")
+  val ZLIB_COMPRESSION_LEVEL = {
+    val level = config.getInt("akka.remote.zlib-compression-level", 6)
+    if (level < 1 && level > 9) throw new IllegalArgumentException(
+      "zlib compression level has to be within 1-9, with 1 being fastest and 9 being the most compressed")
+    level
+  }
+
   val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
 
   private var hostname = HOSTNAME 
@@ -73,10 +80,18 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
     extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline  = {
     val pipeline = Channels.pipeline()
-    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibDecoder", new ZlibDecoder())
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
+      //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteRequest.getDefaultInstance))
-    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibEncoder", new ZlibEncoder())
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibEncoder", new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL))
+      //case "lzf" => pipeline.addLast("lzfEncoder", new LzfEncoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder)
     pipeline.addLast("handler", new RemoteServerHandler(name, loader))
