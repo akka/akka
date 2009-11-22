@@ -105,6 +105,8 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
 @ChannelPipelineCoverage { val value = "all" }
 class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader])
     extends SimpleChannelUpstreamHandler with Logging {
+  val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
+  
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
  
@@ -126,8 +128,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    log.error("Unexpected exception from remote downstream: %s", event.getCause)
-    event.getCause.printStackTrace
+    log.error(event.getCause, "Unexpected exception from remote downstream")
     event.getChannel.close
   }
 
@@ -159,8 +160,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         channel.write(replyMessage)
       } catch {
         case e: Throwable =>
-          log.error("Could not invoke remote actor [%s] due to: %s", request.getTarget, e)
-          e.printStackTrace
+          log.error(e, "Could not invoke remote actor [%s]", request.getTarget)
           val replyBuilder = RemoteReply.newBuilder
             .setId(request.getId)
             .setException(e.getClass.getName + "$" + e.getMessage)
@@ -200,10 +200,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
       }
     } catch {
       case e: InvocationTargetException =>
-        log.error(
-          "Could not invoke remote active object [%s :: %s] due to: %s", 
-          request.getMethod, request.getTarget, e.getCause)
-        e.getCause.printStackTrace
+        log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
           .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
@@ -213,10 +210,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
       case e: Throwable =>
-        log.error(
-          "Could not invoke remote active object [%s :: %s] due to: %s",
-          request.getMethod, request.getTarget, e)
-        e.printStackTrace
+        log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
           .setException(e.getClass.getName + "$" + e.getMessage)
@@ -247,9 +241,9 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
     val escapedArgs = for (i <- 0 until args.size) {
       val arg = args(i)
-      if (arg.isInstanceOf[String] && arg.asInstanceOf[String].startsWith("$$ProxiedByAW")) {
+      if (arg.isInstanceOf[String] && arg.asInstanceOf[String].startsWith(AW_PROXY_PREFIX)) {
         val argString = arg.asInstanceOf[String]
-        val proxyName = argString.replace("$$ProxiedByAW", "") //argString.substring(argString.indexOf("$$ProxiedByAW"), argString.length)
+        val proxyName = argString.replace(AW_PROXY_PREFIX, "") //argString.substring(argString.indexOf("$$ProxiedByAW"), argString.length)
         val activeObject = createActiveObject(proxyName, timeout)
         unescapedArgs(i) = activeObject
         unescapedArgClasses(i) = Class.forName(proxyName)       
@@ -273,8 +267,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         newInstance
       } catch {
         case e =>
-          log.debug("Could not create remote active object instance due to: %s", e)
-          e.printStackTrace
+          log.error(e, "Could not create remote active object instance")
           throw e
       }
     } else activeObjectOrNull
@@ -295,8 +288,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         newInstance
       } catch {
         case e =>
-          log.error(e, "Could not create remote actor instance due to: " + e.getMessage)
-          e.printStackTrace
+          log.error(e, "Could not create remote actor object instance")
           throw e
       }
     } else actorOrNull

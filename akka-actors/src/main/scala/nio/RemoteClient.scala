@@ -80,8 +80,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
       // Wait until the connection attempt succeeds or fails.
       connection.awaitUninterruptibly
       if (!connection.isSuccess) {
-        log.error("Remote connection to [%s:%s] has failed due to [%s]", hostname, port, connection.getCause)
-        connection.getCause.printStackTrace
+        log.error(connection.getCause, "Remote connection to [%s:%s] has failed", hostname, port)
       }
       isRunning = true
     }
@@ -212,8 +211,7 @@ class RemoteClientHandler(val name: String,
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress);
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    log.error("Unexpected exception from downstream in remote client: %s", event.getCause)
-    event.getCause.printStackTrace
+    log.error(event.getCause, "Unexpected exception from downstream in remote client")
     event.getChannel.close
   }
 

@@ -25,10 +25,18 @@ import org.multiverse.utils.ThreadLocalTransaction._
 
 /**
  * Mix in this trait to give an actor TransactionRequired semantics.
- * Equivalent to invoking the 'makeTransactionRequired' method in the actor.  
+ * Equivalent to invoking the 'makeTransactionRequired' method in the actor.
  */
 trait TransactionRequired { this: Actor =>
-  makeTransactionRequired  
+  makeTransactionRequired
+}
+
+/**
+ * Extend this abstract class to create a remote actor.
+ * Equivalent to invoking the 'makeRemote(..)' method in or on the actor.
+ */
+abstract class RemoteActor(hostname: String, port: Int) extends Actor {
+  makeRemote(hostname, port)
 }
 
 @serializable sealed trait LifeCycleMessage
@@ -64,21 +72,80 @@ object Actor {
 
   implicit val any: AnyRef = this  
 
+  /**
+   * Use to create an anonymous event-driven actor.
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = actor {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
   def actor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
     start
     def receive = body
   }
 
+  /**
+   * Use to create an anonymous event-driven actor with both an init block and a message loop block.
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = actor {
+   *   ... // init stuff
+   * } {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
   def actor(body: => Unit)(matcher: PartialFunction[Any, Unit]): Actor = new Actor() {
     start
     body
     def receive = matcher
   }
 
+  /**
+   * Use to create an anonymous event-driven actor with a life-cycle configuration.
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = actor(LifeCycle(Temporary)) {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
   def actor(lifeCycleConfig: LifeCycle)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
     lifeCycle = lifeCycleConfig
     start
     def receive = body
+  }
+
+  /**
+   * Use to create an anonymous event-driven actor with both an init block and a message loop block
+   * as well as a life-cycle configuration.
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = actor(LifeCycle(Temporary)) {
+   *   ... // init stuff
+   * } {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
+  def actor(lifeCycleConfig: LifeCycle)(body: => Unit)(matcher: PartialFunction[Any, Unit]): Actor = new Actor() {
+    start
+    body
+    def receive = matcher
   }
 }
 
@@ -607,7 +674,8 @@ trait Actor extends Logging with TransactionManagement {
     }
   }
 
-  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long): CompletableFutureResult = _remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
+  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long):
+    CompletableFutureResult = _remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder                                                                                                
         .setId(RemoteRequestIdFactory.nextId)
@@ -636,8 +704,14 @@ trait Actor extends Logging with TransactionManagement {
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods
    */
   private[akka] def invoke(messageHandle: MessageInvocation) = synchronized {
-    if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
-    else dispatch(messageHandle)
+    try {
+      if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
+      else dispatch(messageHandle)
+    } catch {
+      case e =>
+        log.error(e, e.getMessage) // for logging the exception to log file
+        throw e
+    }
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
@@ -652,10 +726,10 @@ trait Actor extends Logging with TransactionManagement {
       else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
     } catch {
       case e =>
+        log.error(e, e.getMessage)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
-        else e.printStackTrace
     } finally {
       clearTransaction
     }
@@ -692,9 +766,8 @@ trait Actor extends Logging with TransactionManagement {
       } else proceed
     } catch {
       case e =>
-        e.printStackTrace
+        log.error(e, e.getMessage)
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
-        else e.printStackTrace
         clearTransaction // need to clear currentTransaction before call to supervisor
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
