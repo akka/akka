@@ -129,10 +129,18 @@ class RemoteClientPipelineFactory(name: String,
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
     pipeline.addLast("timeout", new ReadTimeoutHandler(RemoteClient.TIMER, RemoteClient.READ_TIMEOUT))
-    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibDecoder", new ZlibDecoder())
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
+      //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteReply.getDefaultInstance))
-    if (RemoteServer.COMPRESSION) pipeline.addLast("zlibEncoder", new ZlibEncoder())
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibEncoder", new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL))
+      //case "lzf" => pipeline.addLast("lzfEncoder", new LzfEncoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder())
     pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap))
