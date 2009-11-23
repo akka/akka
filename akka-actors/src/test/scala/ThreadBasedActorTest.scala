@@ -8,7 +8,8 @@ import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
 class ThreadBasedActorTest extends JUnitSuite {
-  import Actor._
+  import Actor.Sender.Self
+
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {

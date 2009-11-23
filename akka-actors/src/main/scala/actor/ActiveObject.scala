@@ -161,7 +161,6 @@ private[akka] sealed case class AspectInit(
  */
 @Aspect("perInstance")
 private[akka] sealed class ActiveObjectAspect {
-  import Actor._
   
   @volatile var isInitialized = false
   var target: Class[_] = _
@@ -188,6 +187,7 @@ private[akka] sealed class ActiveObjectAspect {
   }
 
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
+    import Actor.Sender.Self
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     if (isOneWay(rtti)) actor ! Invocation(joinPoint, true, true)
     else {

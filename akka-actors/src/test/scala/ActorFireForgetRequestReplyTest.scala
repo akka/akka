@@ -27,25 +27,27 @@ class ActorFireForgetRequestReplyTest extends JUnitSuite {
 
   @Test
   def shouldReplyToBangMessageUsingReply = {
-    import Actor._
+    import Actor.Sender.Self
+
     val replyActor = new ReplyActor
     replyActor.start
     val senderActor = new SenderActor(replyActor)
     senderActor.start
     senderActor ! "Init"
-    Thread.sleep(10000)
+    Thread.sleep(1000)
     assert("Reply" === state.s)
   }
 
   @Test
   def shouldReplyToBangMessageUsingImplicitSender = {
-    import Actor._
+    import Actor.Sender.Self
+
     val replyActor = new ReplyActor
     replyActor.start
     val senderActor = new SenderActor(replyActor)
     senderActor.start
     senderActor ! "InitImplicit"
-    Thread.sleep(10000)
+    Thread.sleep(1000)
     assert("ReplyImplicit" === state.s)
   }
 }

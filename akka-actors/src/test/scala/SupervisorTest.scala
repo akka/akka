@@ -13,7 +13,8 @@ import org.junit.Test
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class SupervisorTest extends JUnitSuite {
-  import Actor._
+  import Actor.Sender.Self
+
 
   var messageLog: String = ""
   var oneWayLog: String = ""

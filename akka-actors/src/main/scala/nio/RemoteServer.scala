@@ -139,12 +139,13 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
   }
 
   private def dispatchToActor(request: RemoteRequest, channel: Channel) = {
-    import Actor._    
     log.debug("Dispatching to remote actor [%s]", request.getTarget)
     val actor = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actor.start
     val message = RemoteProtocolBuilder.getMessage(request)
-    if (request.getIsOneWay) actor ! message
+    if (request.getIsOneWay) {
+      actor.send(message)
+    }
     else {
       try {
         val resultOrNone = actor !! message

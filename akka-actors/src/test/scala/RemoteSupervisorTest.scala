@@ -20,7 +20,8 @@ object Log {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteSupervisorTest extends JUnitSuite {
-  import Actor._
+  import Actor.Sender.Self
+
   akka.Config.config
   new Thread(new Runnable() {
     def run = {
