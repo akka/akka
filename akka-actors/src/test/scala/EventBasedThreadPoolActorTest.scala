@@ -6,7 +6,8 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 class EventBasedThreadPoolActorTest extends JUnitSuite {
-  import Actor._
+  import Actor.Sender.Self
+
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {

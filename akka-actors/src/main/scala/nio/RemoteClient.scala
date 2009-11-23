@@ -156,6 +156,7 @@ class RemoteClientHandler(val name: String,
                           val supervisors: ConcurrentMap[String, Actor],
                           val bootstrap: ClientBootstrap)
  extends SimpleChannelUpstreamHandler with Logging {
+  import Actor.Sender.Self
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] &&
@@ -166,7 +167,6 @@ class RemoteClientHandler(val name: String,
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
-    import Actor._    
     try {
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReply]) {

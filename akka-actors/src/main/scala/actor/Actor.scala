@@ -70,7 +70,18 @@ object Actor {
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
-  implicit val any: AnyRef = this  
+  object Sender extends Actor {
+    implicit val Self: AnyRef = this
+    def receive = {
+      case unknown =>
+        log.error(
+          "Actor.Sender can't process messages. Received message [%s]." +
+          "This error could occur if you either:" +
+          "\n\t- Explicitly send a message to the Actor.Sender object." +
+          "\n\t- Invoking the 'reply(..)' method or sending a message to the 'sender' reference " +
+          "\n\t  when you have sent the original request from a instance *not* being an actor.", unknown)
+    }
+  }
 
   /**
    * Use to create an anonymous event-driven actor.
@@ -165,7 +176,7 @@ object Actor {
 trait Actor extends Logging with TransactionManagement {
   ActorRegistry.register(this)
 
-  implicit val self: AnyRef = this
+  implicit protected val self: Actor = this
   
   // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
   private[akka] var _uuid = Uuid.newUuid.toString
@@ -398,12 +409,30 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    * <p/>
+   *
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
+   * <p/>
+   * 
    * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable.
-   * <p/> 
-   * If invoked from within another object then add this import to resolve the implicit argument:
    * <pre>
-   * import se.scalablesolutions.akka.actor.Actor._
+   *   actor ! message
+   * </pre>
+   * <p/>
+   *
+   * If invoked from within a *non* Actor instance then either add this import to resolve the implicit argument:
+   * <pre>
+   *   import Actor.Sender._
+   *   actor ! message
+   * </pre>
+   *
+   * Or pass in the implicit argument explicitly:
+   * <pre>
+   *   actor.!(message)(this)
+   * </pre>
+   *
+   * Or use the 'send(..)' method;
+   * <pre>
+   *   actor.send(message)
    * </pre>
    */
   def !(message: AnyRef)(implicit sender: AnyRef) = {
