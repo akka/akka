@@ -21,11 +21,34 @@ import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
 
 /**
+ * Use this object if you need a single remote server on a specific node.
+ *
+ * <pre>
+ * RemoteServerNode.start
+ * </pre>
+ *
+ * If you need to create more than one, then you can use the RemoteServer:
+ * 
+ * <pre>
+ * val server = new RemoteServer
+ * server.start
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteServer extends Logging {
+object RemoteServerNode extends RemoteServer
+
+/**
+ * This object holds configuration variables.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object RemoteServer {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
+
+  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
+
   val COMPRESSION_SCHEME = config.getString("akka.remote.compression-scheme", "zlib")
   val ZLIB_COMPRESSION_LEVEL = {
     val level = config.getInt("akka.remote.zlib-compression-level", 6)
@@ -33,11 +56,29 @@ object RemoteServer extends Logging {
       "zlib compression level has to be within 1-9, with 1 being fastest and 9 being the most compressed")
     level
   }
+}
 
-  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
+/**
+ * Use this class if you need a more than one remote server on a specific node.
+ *
+ * <pre>
+ * val server = new RemoteServer
+ * server.start
+ * </pre>
+ *
+ * If you need to create more than one, then you can use the RemoteServer:
+ *
+ * <pre>
+ * RemoteServerNode.start
+ * </pre>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class RemoteServer extends Logging {
+  val name = "RemoteServer@" + hostname + ":" + port
 
-  private var hostname = HOSTNAME 
-  private var port = PORT
+  private var hostname = RemoteServer.HOSTNAME
+  private var port = RemoteServer.PORT
    
   @volatile private var isRunning = false
   @volatile private var isConfigured = false
@@ -48,13 +89,11 @@ object RemoteServer extends Logging {
 
   private val bootstrap = new ServerBootstrap(factory)
 
-  def name = "RemoteServer@" + hostname + ":" + port
-  
   def start: Unit = start(None)
 
-  def start(loader: Option[ClassLoader]): Unit = start(HOSTNAME, PORT, loader)
+  def start(loader: Option[ClassLoader]): Unit = start(hostname, port, loader)
 
-  def start(hostname: String, port: Int): Unit = start(hostname, port, None)
+  def start(_hostname: String, _port: Int): Unit = start(_hostname, _port, None)
 
   def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): Unit = synchronized {
     if (!isRunning) {
@@ -62,14 +101,19 @@ object RemoteServer extends Logging {
       port = _port
       log.info("Starting remote server at [%s:%s]", hostname, port)
       bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, loader))
+
       // FIXME make these RemoteServer options configurable
       bootstrap.setOption("child.tcpNoDelay", true)
       bootstrap.setOption("child.keepAlive", true)
       bootstrap.setOption("child.reuseAddress", true)
-      bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT_MILLIS)
+      bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
       bootstrap.bind(new InetSocketAddress(hostname, port))
       isRunning = true
     }
+  }
+
+  def shutdown = {
+    bootstrap.releaseExternalResources
   }
 }
 
@@ -78,6 +122,8 @@ object RemoteServer extends Logging {
  */
 class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
     extends ChannelPipelineFactory {
+  import RemoteServer._
+
   def getPipeline: ChannelPipeline  = {
     val pipeline = Channels.pipeline()
     RemoteServer.COMPRESSION_SCHEME match {

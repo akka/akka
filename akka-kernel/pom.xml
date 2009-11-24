@@ -19,40 +19,40 @@
   <dependencies>
     <dependency>
       <artifactId>akka-actors</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <artifactId>akka-persistence</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <artifactId>akka-rest</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <artifactId>akka-amqp</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <artifactId>akka-camel</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
 	<dependency>
       <artifactId>akka-security</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- Core deps -->
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>2.7.5</version>
+      <version>${scala.version}</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.aspectwerkz</groupId>
@@ -277,8 +277,8 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-kernel-${akka.version}.jar"
-                      tofile="../dist/akka-${akka.version}.jar"/>
+                <copy file="target/akka-kernel-${project.version}.jar"
+                      tofile="../dist/akka-${project.version}.jar"/>
               </tasks>
             </configuration>
             <goals>

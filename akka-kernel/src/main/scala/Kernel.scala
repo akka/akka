@@ -12,7 +12,7 @@ import javax.ws.rs.core.UriBuilder
 import java.io.File
 import java.net.URLClassLoader
 
-import se.scalablesolutions.akka.nio.RemoteServer
+import se.scalablesolutions.akka.nio.RemoteServerNode
 import se.scalablesolutions.akka.util.Logging
 
 /**
@@ -54,7 +54,7 @@ object Kernel extends Logging {
   def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
-      def run = RemoteServer.start(applicationLoader)
+      def run = RemoteServerNode.start(applicationLoader)
     }, "Akka Remote Service")
     remoteServerThread.start
   }

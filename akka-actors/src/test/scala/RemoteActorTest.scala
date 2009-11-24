@@ -3,9 +3,9 @@ package se.scalablesolutions.akka.actor
 import java.util.concurrent.TimeUnit
 import junit.framework.TestCase
 
-import se.scalablesolutions.akka.nio.{RemoteServer, RemoteClient}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import se.scalablesolutions.akka.nio.{RemoteServerNode, RemoteServer, RemoteClient}
 
 object Global {
   var oneWay = "nada"  
@@ -32,7 +32,7 @@ class RemoteActorTest extends JUnitSuite   {
   akka.Config.config
   new Thread(new Runnable() {
      def run = {
-       RemoteServer.start
+       RemoteServerNode.start
      }
   }).start
   Thread.sleep(1000)

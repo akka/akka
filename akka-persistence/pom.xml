@@ -17,13 +17,13 @@
   <dependencies>
     <dependency>
       <artifactId>akka-util</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <artifactId>akka-actors</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
 
    <!-- For Mongo -->
@@ -48,6 +48,20 @@
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
       <version>1.5.1</version>
+    </dependency>
+
+    <!-- For Testing -->
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest</artifactId>
+      <version>1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.5</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
