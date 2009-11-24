@@ -42,7 +42,7 @@
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
-	<dependency>
+    <dependency>
       <artifactId>akka-security</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
@@ -70,19 +70,9 @@
       <version>1.4</version>
     </dependency>
     <dependency>
-      <groupId>org.guiceyfruit</groupId>
-      <artifactId>guiceyfruit-core</artifactId>
-      <version>2.0</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-core</artifactId>
       <version>2.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.guiceyfruit</groupId>
-      <artifactId>guice-core</artifactId>
-      <version>2.0-beta-4</version>
     </dependency>
     <dependency>
       <groupId>org.jboss.netty</groupId>
@@ -166,36 +156,9 @@
       <version>0.4.1</version>
     </dependency>
     <dependency>
-      <groupId>com.facebook</groupId>
-      <artifactId>thrift</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
       <version>1.5.1</version>
-    </dependency>
-
-   <!-- For third-party logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>1.4.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.4.3</version>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.13</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
-      <version>1.0.4</version>
     </dependency>
 
     <!-- For Jersey & Atmosphere -->
@@ -244,32 +207,32 @@
   <build>
     <plugins>
       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>1.2.1</version>
-          <executions>
-                   <execution>
-                       <phase>install</phase>
-                       <goals>
-                           <goal>shade</goal>
-                       </goals>
-                       <configuration>
-                           <artifactSet>
-                               <excludes>
-                                   <exclude>junit:junit</exclude>
-                               </excludes>
-                           </artifactSet>
-                           <transformers>
-                               <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                               <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
-                               <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                 <mainClass>se.scalablesolutions.akka.Kernel</mainClass>
-                               </transformer>
-                           </transformers>
-                       </configuration>
-                   </execution>
-               </executions>
-           </plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>1.2.1</version>
+        <executions>
+          <execution>
+            <phase>install</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <excludes>
+                  <exclude>junit:junit</exclude>
+                </excludes>
+              </artifactSet>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>se.scalablesolutions.akka.Kernel</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
