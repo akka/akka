@@ -24,16 +24,11 @@
       <artifactId>akka-actors</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
-    	</dependency>
-   <dependency>
+    </dependency>
+    <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>rabbitmq-client</artifactId>
       <version>0.9.1</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>1.4</version>
     </dependency>
   </dependencies>
 
