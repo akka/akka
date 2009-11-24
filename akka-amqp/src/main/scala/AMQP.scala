@@ -366,7 +366,7 @@ object AMQP {
         reconnect(delay)
 
       case Failure(cause) =>
-        log.error(cause, "")
+        log.error(cause, "Error in AMQP consumer")
         throw cause
 
       case Stop =>
@@ -421,8 +421,8 @@ object AMQP {
           } catch {
             case cause =>
               log.error(
-                "Delivery of message to MessageConsumerListener [%s] failed due to [%s]", 
-                listener.toString(exchangeName), cause.toString)
+                cause, "Delivery of message to MessageConsumerListener [%s] failed",
+                listener.toString(exchangeName))
               consumer ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and reconnect
           }
         }

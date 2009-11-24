@@ -91,7 +91,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
             case r if r.isInstanceOf[Response] =>
               throw new WebApplicationException(r.asInstanceOf[Response])
             case x => {
-              log.error("Authenticator replied with unexpected result: ", x);
+              log.error("Authenticator replied with unexpected result [%s]", x);
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }
@@ -100,7 +100,9 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
       }
   }
 
-  lazy val authenticatorFQN = Config.config.getString("akka.rest.authenticator").getOrElse(throw new IllegalStateException("akka.rest.authenticator"))
+  lazy val authenticatorFQN =
+    Config.config.getString("akka.rest.authenticator")
+    .getOrElse(throw new IllegalStateException("akka.rest.authenticator"))
 
   /**
    * Currently we always take the first, since there usually should be at most one authentication actor, but a round-robin
