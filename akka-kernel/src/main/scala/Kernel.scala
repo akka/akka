@@ -94,7 +94,7 @@ object Kernel extends Logging {
       val DEPLOY = HOME.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
-        log.error("Could not find a deploy directory at [" + DEPLOY + "]")
+        log.error("Could not find a deploy directory at [%s]", DEPLOY)
         System.exit(-1)
       }
       val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
