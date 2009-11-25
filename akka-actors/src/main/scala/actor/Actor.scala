@@ -21,7 +21,7 @@ import se.scalablesolutions.akka.util.Logging
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 
-import org.multiverse.utils.ThreadLocalTransaction._
+import org.multiverse.api.ThreadLocalTransaction._
 
 /**
  * Mix in this trait to give an actor TransactionRequired semantics.
