@@ -25,6 +25,7 @@ trait MessageDispatcher {
   def messageQueue: MessageQueue
   def registerHandler(key: AnyRef, handler: MessageInvoker)
   def unregisterHandler(key: AnyRef)
+  def canBeShutDown: Boolean
   def start
   def shutdown
 }
