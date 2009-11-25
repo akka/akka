@@ -24,7 +24,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
  * Use this object if you need a single remote server on a specific node.
  *
  * <pre>
- * RemoteServerNode.start
+ * RemoteNode.start
  * </pre>
  *
  * If you need to create more than one, then you can use the RemoteServer:
@@ -36,7 +36,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteServerNode extends RemoteServer
+object RemoteNode extends RemoteServer
 
 /**
  * This object holds configuration variables.
@@ -69,7 +69,7 @@ object RemoteServer {
  * If you need to create more than one, then you can use the RemoteServer:
  *
  * <pre>
- * RemoteServerNode.start
+ * RemoteNode.start
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

@@ -6,10 +6,10 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.serialization.BinaryString
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.nio.{RemoteNode, RemoteClient, RemoteServer}
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import se.scalablesolutions.akka.nio.{RemoteServerNode, RemoteClient, RemoteServer}
 
 object Log {
   var messageLog: String = ""
@@ -25,7 +25,7 @@ class RemoteSupervisorTest extends JUnitSuite {
   akka.Config.config
   new Thread(new Runnable() {
     def run = {
-      RemoteServerNode.start
+      RemoteNode.start
     }
   }).start
   Thread.sleep(1000)
