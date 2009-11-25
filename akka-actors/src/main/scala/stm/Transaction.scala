@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.util.Logging
 
 import org.multiverse.api.{Stm, Transaction => MultiverseTransaction}
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
-import org.multiverse.utils.ThreadLocalTransaction._
+import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.templates.OrElseTemplate
 
 import scala.collection.mutable.HashMap

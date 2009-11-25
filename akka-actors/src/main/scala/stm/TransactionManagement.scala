@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.util.Logging
 
 import scala.collection.mutable.HashSet
 
-import org.multiverse.utils.ThreadLocalTransaction._
+import org.multiverse.api.ThreadLocalTransaction._
 
 class StmException(msg: String) extends RuntimeException(msg)
 
