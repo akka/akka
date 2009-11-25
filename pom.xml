@@ -68,14 +68,14 @@
 
   <repositories>
     <repository>
-      <id>repo1.maven</id>
-      <name>Maven Main Repository</name>
-      <url>http://repo1.maven.org/maven2</url>
-    </repository>
-    <repository>
       <id>project.embedded.module</id>
       <name>Project Embedded Repository</name>
       <url>file://${basedir}/../embedded-repo</url>
+    </repository>
+    <repository>
+      <id>repo1.maven</id>
+      <name>Maven Main Repository</name>
+      <url>http://repo1.maven.org/maven2</url>
     </repository>
     <repository>
       <id>scala-tools-snapshots</id>

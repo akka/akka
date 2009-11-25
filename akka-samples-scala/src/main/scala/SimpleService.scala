@@ -13,7 +13,7 @@ import java.lang.Integer
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
 
-import org.atmosphere.core.annotation.{Broadcast, Suspend}
+import org.atmosphere.annotation.{Broadcast, Suspend}
 import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.BroadcastFilter
 

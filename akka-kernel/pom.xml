@@ -232,12 +232,17 @@
     <dependency>
       <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-runtime</artifactId>
-      <version>0.4.1</version>
+      <version>0.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.atmosphere</groupId>
-      <artifactId>atmosphere-core</artifactId>
-      <version>0.4-SNAPSHOT</version>
+      <artifactId>atmosphere-jersey</artifactId>
+      <version>0.5-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.atmosphere</groupId>
+      <artifactId>atmosphere-annotations</artifactId>
+      <version>0.5-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
