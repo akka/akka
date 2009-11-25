@@ -272,6 +272,16 @@ class MongoStorageSpec extends TestCase {
       fail("should throw exception")
     } catch { case e => {}}
 
+    // remove key "4"
+    MongoStorage.removeMapStorageFor("U-M1", "4")
+    assertEquals(3,
+      MongoStorage.getMapStorageSizeFor("U-M1"))
+
+    // remove key "2"
+    MongoStorage.removeMapStorageFor("U-M1", "2")
+    assertEquals(2,
+      MongoStorage.getMapStorageSizeFor("U-M1"))
+
     // remove the whole stuff
     MongoStorage.removeMapStorageFor("U-M1")
 

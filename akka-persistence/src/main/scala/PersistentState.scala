@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.state
 
+import util.Logging
 import se.scalablesolutions.akka.stm.TransactionManagement.currentTransaction
 import se.scalablesolutions.akka.collection._
 
@@ -59,9 +60,9 @@ object PersistentState {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Transactional with Committable {
+trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Transactional with Committable with Logging {
   protected val newAndUpdatedEntries = TransactionalState.newMap[AnyRef, AnyRef]
-  protected val removedEntries = TransactionalState.newMap[AnyRef, AnyRef]
+  protected val removedEntries = TransactionalState.newVector[AnyRef]
   protected val shouldClearOnCommit = TransactionalRef[Boolean]()
 
   // to be concretized in subclasses
@@ -91,7 +92,7 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   
   def remove(key: AnyRef) = { 
     register
-    removedEntries.remove(key)
+    removedEntries.add(key)
   }
   
   def slice(start: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]] = slice(start, None, count)
@@ -114,7 +115,9 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   } catch { case e: Exception => 0 }
 
   override def get(key: AnyRef): Option[AnyRef] = {
-    if (newAndUpdatedEntries.contains(key)) newAndUpdatedEntries.get(key)
+    if (newAndUpdatedEntries.contains(key)) {
+      newAndUpdatedEntries.get(key)
+    }
     else try {
       storage.getMapStorageEntryFor(uuid, key)
     } catch { case e: Exception => None }
