@@ -398,8 +398,7 @@ trait Actor extends Logging with TransactionManagement {
   def stop = synchronized {
     if (_isRunning) {
       messageDispatcher.unregisterHandler(this)
-      if (messageDispatcher.isInstanceOf[ThreadBasedDispatcher]) messageDispatcher.shutdown
-      // FIXME: Need to do reference count to know if EventBasedThreadPoolDispatcher and EventBasedSingleThreadDispatcher can be shut down
+      if (messageDispatcher.canBeShutDown) messageDispatcher.shutdown // shut down in the dispatcher's references is zero
       _isRunning = false
       _isShutDown = true
       shutdown

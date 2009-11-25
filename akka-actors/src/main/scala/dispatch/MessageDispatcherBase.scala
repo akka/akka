@@ -29,6 +29,10 @@ abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher
     messageHandlers.remove(key)
   }
 
+  def canBeShutDown: Boolean = guard.synchronized {
+    messageHandlers.isEmpty
+  }
+  
   def shutdown = if (active) {
     active = false
     selectorThread.interrupt
