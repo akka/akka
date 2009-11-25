@@ -90,7 +90,12 @@ object MongoStorage extends MapStorage with VectorStorage with RefStorage with L
       case None => 
       case Some(dbo) => {
         val orig = dbo.get(VALUE).asInstanceOf[DBObject].toMap
-        orig.remove(key.asInstanceOf[String])
+        if (key.isInstanceOf[List[_]]) {
+          val keys = key.asInstanceOf[List[_]]
+          keys.foreach(k => orig.remove(k.asInstanceOf[String]))
+        } else {
+          orig.remove(key.asInstanceOf[String])
+        }
 
         // remove existing reference
         removeMapStorageFor(name)
