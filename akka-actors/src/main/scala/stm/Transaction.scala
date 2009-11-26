@@ -91,14 +91,21 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
 object Transaction extends TransactionManagement {
   val idFactory = new AtomicLong(-1L)
 
-  // -- monadic api --------------------------
+  /**
+   * See ScalaDoc on class.
+   */
   def map[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def flatMap[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def foreach(f: Transaction => Unit): Unit = atomic { f(getTransactionInScope) }
 
-  // -- atomic block --------------------------
   /**
    * Creates a "pure" STM atomic transaction and by-passes all transactions hooks such as persistence etc.
    * Only for internal usage.
@@ -108,6 +115,9 @@ object Transaction extends TransactionManagement {
     def execute(mtx: MultiverseTransaction): T = body
   }.execute()
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomic[T](body: => T): T = new AtomicTemplate[T](
     getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
@@ -122,6 +132,9 @@ object Transaction extends TransactionManagement {
     }
   }.execute()
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomic[T](retryCount: Int)(body: => T): T = {
     new AtomicTemplate[T](getGlobalStmInstance, "akka", false, false, retryCount) {
       def execute(mtx: MultiverseTransaction): T = body
@@ -137,6 +150,9 @@ object Transaction extends TransactionManagement {
     }.execute
   }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomicReadOnly[T](retryCount: Int)(body: => T): T = {
     new AtomicTemplate[T](getGlobalStmInstance, "akka", false, true, retryCount) {
       def execute(mtx: MultiverseTransaction): T = body
@@ -152,6 +168,9 @@ object Transaction extends TransactionManagement {
     }.execute
   }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomicReadOnly[T](body: => T): T = {
     new AtomicTemplate[T](true) {
       def execute(mtx: MultiverseTransaction): T = body
@@ -167,12 +186,19 @@ object Transaction extends TransactionManagement {
     }.execute
   }
 
-  // -- atomically-orElse --------------------------
-  def atomically[A](orBody: => A) = elseBody(orBody)
-  def elseBody[A](orBody: => A) = new {
-    def orElse(elseBody: => A) = new OrElseTemplate[A] {
-      def run(t: MultiverseTransaction) = orBody
-      def orelserun(t: MultiverseTransaction) = elseBody
+  /**
+   * See ScalaDoc on class.
+   */
+  def atomically[A](firstBody: => A) = elseBody(firstBody)
+
+  /**
+   * Should only be used together with <code>atomically</code> to form atomically-orElse constructs.
+   * See ScalaDoc on class.
+   */
+  def elseBody[A](firstBody: => A) = new {
+    def orElse(secondBody: => A) = new OrElseTemplate[A] {
+      def run(t: MultiverseTransaction) = firstBody
+      def orelserun(t: MultiverseTransaction) = secondBody
     }.execute()
   }
 }
