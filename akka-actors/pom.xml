@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>akka-actors</artifactId>
-  <name>Akka Actors Module</name>
+  <name>Akka Actors and STM Module</name>
 
   <packaging>jar</packaging>
 

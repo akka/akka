@@ -66,7 +66,7 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Actor {
+object Actor {  
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
@@ -109,15 +109,45 @@ object Actor {
    *
    * val a = actor {
    *   ... // init stuff
-   * } {
+   * } receive {
    *   case msg => ... // handle message
    * }
    * </pre>
+   *
    */
-  def actor(body: => Unit)(matcher: PartialFunction[Any, Unit]): Actor = new Actor() {
+  def actor[A](body: => Unit) = { 
+    def handler[A](body: Unit) = new {
+      def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
+        start
+        body
+        def receive = handler
+      }
+    }
+    handler(body)
+  }
+
+ /**
+  * Use to create an anonymous event-driven actor with a body but no message loop block.
+  * <p/>
+  * This actor can <b>not</b> respond to any messages but can be used as a simple way to 
+  * spawn a lightweight thread to process some task.
+  * <p/>
+  * The actor is started when created.
+  * Example:
+  * <pre>
+  * import Actor._
+  *
+  * spawn {
+  *   ... // do stuff
+  * }
+  * </pre>
+  */
+  def spawn(body: => Unit): Actor = new Actor() {
     start
     body
-    def receive = matcher
+    def receive = {
+      case _ => throw new IllegalArgumentException("Actors created with 'actor(body: => Unit)' do not respond to messages.")
+    }
   }
 
   /**
@@ -148,16 +178,22 @@ object Actor {
    *
    * val a = actor(LifeCycle(Temporary)) {
    *   ... // init stuff
-   * } {
+   * } receive {
    *   case msg => ... // handle message
    * }
    * </pre>
    */
-  def actor(lifeCycleConfig: LifeCycle)(body: => Unit)(matcher: PartialFunction[Any, Unit]): Actor = new Actor() {
-    start
-    body
-    def receive = matcher
-  }
+   def actor[A](lifeCycleConfig: LifeCycle)(body: => Unit) = { 
+     def handler[A](body: Unit) = new {
+       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
+         lifeCycle = lifeCycleConfig
+         start
+         body
+         def receive = handler
+       }
+     }
+     handler(body)
+   }
 }
 
 /**
