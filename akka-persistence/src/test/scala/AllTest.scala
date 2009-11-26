@@ -1,6 +1,6 @@
 package se.scalablesolutions.akka
 
-import akka.state.{MongoStorageSpec, MongoPersistentActorSpec, CassandraPersistentActorSpec}
+import se.scalablesolutions.akka.state.{MongoStorageSpec, MongoPersistentActorSpec, CassandraPersistentActorSpec}
 import junit.framework.Test
 import junit.framework.TestCase
 import junit.framework.TestSuite

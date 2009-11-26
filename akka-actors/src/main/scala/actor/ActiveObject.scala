@@ -10,12 +10,13 @@ import se.scalablesolutions.akka.dispatch.{MessageDispatcher, FutureResult}
 import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
-import se.scalablesolutions.akka.serialization.Serializer
+
 import java.lang.reflect.{InvocationTargetException, Method}
 
 object Annotations {
@@ -127,11 +128,9 @@ object ActiveObject {
 
 
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig = SupervisorConfig(restartStrategy, components)
-    }
-    val supervisor = factory.newSupervisor
-    supervisor ! StartSupervisor
+    val factory = SupervisorFactory(SupervisorConfig(restartStrategy, components))
+    val supervisor = factory.newInstance
+    supervisor.start
     supervisor
   }
 }
@@ -162,6 +161,7 @@ private[akka] sealed case class AspectInit(
  */
 @Aspect("perInstance")
 private[akka] sealed class ActiveObjectAspect {
+  
   @volatile var isInitialized = false
   var target: Class[_] = _
   var actor: Dispatcher = _            
@@ -187,6 +187,7 @@ private[akka] sealed class ActiveObjectAspect {
   }
 
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
+    import Actor.Sender.Self
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     if (isOneWay(rtti)) actor ! Invocation(joinPoint, true, true)
     else {
@@ -204,6 +205,7 @@ private[akka] sealed class ActiveObjectAspect {
       .setId(RemoteRequestIdFactory.nextId)
       .setMethod(rtti.getMethod.getName)
       .setTarget(target.getName)
+      .setUuid(actor.uuid)
       .setTimeout(timeout)
       .setIsActor(false)
       .setIsOneWay(oneWay_?)
@@ -325,7 +327,7 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
     //if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive: PartialFunction[Any, Unit] = {
     case Invocation(joinPoint, isOneWay, _) =>
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed

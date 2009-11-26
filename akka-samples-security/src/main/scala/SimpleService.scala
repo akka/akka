@@ -11,75 +11,69 @@ import se.scalablesolutions.akka.security.{DigestAuthenticationActor, UserInfo}
 import se.scalablesolutions.akka.state.TransactionalState
 
 class Boot {
+  val factory = SupervisorFactory(
+    SupervisorConfig(
+      RestartStrategy(OneForOne, 3, 100),
+      // Dummy implementations of all authentication actors
+      // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
+      Supervise(
+        new BasicAuthenticationService,
+        LifeCycle(Permanent)) ::
+     /**
+      Supervise(
+        new DigestAuthenticationService,
+        LifeCycle(Permanent)) ::
+      Supervise(
+        new SpnegoAuthenticationService,
+        LifeCycle(Permanent)) ::
+      **/
+      Supervise(
+        new SecureTickActor,
+        LifeCycle(Permanent)):: Nil))
 
-  object factory extends SupervisorFactory {
 
-    override def getSupervisorConfig: SupervisorConfig = {
-      SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100),
-        // Dummy implementations of all authentication actors
-        // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
-        Supervise(
-          new BasicAuthenticationService,
-          LifeCycle(Permanent)) ::
-       /**
-        Supervise(
-          new DigestAuthenticationService,
-          LifeCycle(Permanent)) ::
-        Supervise(
-          new SpnegoAuthenticationService,
-          LifeCycle(Permanent)) ::
-        **/
-        Supervise(
-          new SecureTickActor,
-          LifeCycle(Permanent)):: Nil)
-    }
-
-  }
-
-  val supervisor = factory.newSupervisor
-  supervisor.startSupervisor
+  val supervisor = factory.newInstance
+ supervisor.start
 }
 
 /*
  * In akka.conf you can set the FQN of any AuthenticationActor of your wish, under the property name: akka.rest.authenticator
  */
 class DigestAuthenticationService extends DigestAuthenticationActor {
-    //If you want to have a distributed nonce-map, you can use something like below,
-    //don't forget to configure your standalone Cassandra instance
-    //
-    //makeTransactionRequired
-    //override def mkNonceMap = PersistentState.newMap(CassandraStorageConfig()).asInstanceOf[scala.collection.mutable.Map[String,Long]]
+  //If you want to have a distributed nonce-map, you can use something like below,
+  //don't forget to configure your standalone Cassandra instance
+  //
+  //makeTransactionRequired
+  //override def mkNonceMap = PersistentState.newMap(CassandraStorageConfig()).asInstanceOf[scala.collection.mutable.Map[String,Long]]
 
-    //Use an in-memory nonce-map as default
-    override def mkNonceMap = new scala.collection.mutable.HashMap[String,Long]
+  //Use an in-memory nonce-map as default
+  override def mkNonceMap = new scala.collection.mutable.HashMap[String, Long]
 
-    //Change this to whatever you want
-    override def realm = "test"
+  //Change this to whatever you want
+  override def realm = "test"
 
-    //Dummy method that allows you to log on with whatever username with the password "bar"
-    override def userInfo(username : String) : Option[UserInfo] = Some(UserInfo(username,"bar","ninja" :: "chef" :: Nil))
+  //Dummy method that allows you to log on with whatever username with the password "bar"
+  override def userInfo(username: String): Option[UserInfo] = Some(UserInfo(username, "bar", "ninja" :: "chef" :: Nil))
 }
 
 class BasicAuthenticationService extends BasicAuthenticationActor {
 
-    //Change this to whatever you want
-    override def realm = "test"
+  //Change this to whatever you want
+  override def realm = "test"
 
-    //Dummy method that allows you to log on with whatever username
-    def verify(odc : Option[BasicCredentials]) : Option[UserInfo] = odc match {
-        case Some(dc) => userInfo(dc.username)
-        case _ => None
-    }
+  //Dummy method that allows you to log on with whatever username
+  def verify(odc: Option[BasicCredentials]): Option[UserInfo] = odc match {
+    case Some(dc) => userInfo(dc.username)
+    case _ => None
+  }
 
-    //Dummy method that allows you to log on with whatever username with the password "bar"
-    def userInfo(username : String) : Option[UserInfo] = Some(UserInfo(username,"bar","ninja" :: "chef" :: Nil))
+  //Dummy method that allows you to log on with whatever username with the password "bar"
+  def userInfo(username: String): Option[UserInfo] = Some(UserInfo(username, "bar", "ninja" :: "chef" :: Nil))
 
 }
 
 class SpnegoAuthenticationService extends SpnegoAuthenticationActor {
-
-    def rolesFor(user: String) = "ninja" :: "chef" :: Nil
+  def rolesFor(user: String) = "ninja" :: "chef" :: Nil
 
 }
 
@@ -87,16 +81,16 @@ class SpnegoAuthenticationService extends SpnegoAuthenticationActor {
  * a REST Actor with class level paranoia settings to deny all access
  *
  * The interesting part is
- *  @RolesAllowed
- *  @PermitAll
- *  @DenyAll
+ * @RolesAllowed
+ * @PermitAll
+ * @DenyAll
  */
 import java.lang.Integer
 import javax.annotation.security.{RolesAllowed, DenyAll, PermitAll}
 import javax.ws.rs.{GET, Path, Produces}
+
 @Path("/secureticker")
 class SecureTickActor extends Actor with Logging {
-
   makeTransactionRequired
 
   case object Tick
@@ -131,11 +125,13 @@ class SecureTickActor extends Actor with Logging {
   def paranoiaTick = tick
 
   def tick = (this !! Tick) match {
-    case(Some(counter)) => (<success>Tick: {counter}</success>)
+    case (Some(counter)) => (<success>Tick:
+      {counter}
+    </success>)
     case _ => (<error>Error in counter</error>)
   }
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.intValue
       storage.put(KEY, counter + 1)

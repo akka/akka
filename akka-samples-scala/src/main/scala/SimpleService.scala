@@ -18,24 +18,20 @@ import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.BroadcastFilter
 
 class Boot {
-  object factory extends SupervisorFactory {
-    override def getSupervisorConfig: SupervisorConfig = {
-      SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100),
-        Supervise(
-          new SimpleService,
-          LifeCycle(Permanent)) ::
-        Supervise(
-          new Chat,
-          LifeCycle(Permanent)) ::
-        Supervise(
-           new PersistentSimpleService,
-           LifeCycle(Permanent))
-        :: Nil)
-    }
-  }
-  val supervisor = factory.newSupervisor
-  supervisor.startSupervisor
+  val factory = SupervisorFactory(
+    SupervisorConfig(
+      RestartStrategy(OneForOne, 3, 100),
+      Supervise(
+        new SimpleService,
+        LifeCycle(Permanent)) ::
+      Supervise(
+        new Chat,
+        LifeCycle(Permanent)) ::
+      Supervise(
+         new PersistentSimpleService,
+         LifeCycle(Permanent))
+      :: Nil))
+  factory.newInstance.start
 }
 
 /**
@@ -58,7 +54,7 @@ class SimpleService extends Actor {
   @Produces(Array("text/html"))
   def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
@@ -91,7 +87,7 @@ class PersistentSimpleService extends Actor {
   @Produces(Array("text/html"))
   def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
@@ -121,7 +117,7 @@ class Chat extends Actor with Logging {
       s toString
   }
 
-  override def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Chat(who, what, msg) => {
       what match {
         case "login" => reply("System Message__" + who + " has joined.")

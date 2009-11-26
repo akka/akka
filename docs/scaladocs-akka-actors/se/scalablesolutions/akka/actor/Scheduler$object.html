@@ -282,7 +282,7 @@
    <p/>
    Example code:
    <pre>
-     def receive: PartialFunction[Any, Unit] = {
+     def receive = {
        case Ping =>
          println("got a ping")
          reply("pong")

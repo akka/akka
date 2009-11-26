@@ -13,9 +13,9 @@ import se.scalablesolutions.akka.actor.Actor
 
 class ThreadBasedDispatcherTest extends JUnitSuite {
   private var threadingIssueDetected: AtomicBoolean = null
-  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key1 = new Actor { def receive = { case _ => {}} }
+  val key2 = new Actor { def receive = { case _ => {}} }
+  val key3 = new Actor { def receive = { case _ => {}} }
   
   class TestMessageHandle(handleLatch: CountDownLatch) extends MessageInvoker {
     val guardLock: Lock = new ReentrantLock
@@ -57,7 +57,7 @@ class ThreadBasedDispatcherTest extends JUnitSuite {
     val dispatcher = new ThreadBasedDispatcher("name", new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)
@@ -78,7 +78,7 @@ class ThreadBasedDispatcherTest extends JUnitSuite {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation(key1, new Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Integer(i), None, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)

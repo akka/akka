@@ -7,7 +7,8 @@ package se.scalablesolutions.akka.api;
 import se.scalablesolutions.akka.Config;
 import se.scalablesolutions.akka.actor.ActiveObject;
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
-import se.scalablesolutions.akka.nio.RemoteServer;
+import se.scalablesolutions.akka.nio.RemoteNode;
+
 import junit.framework.TestCase;
 
 public class RemoteInMemoryStateTest extends TestCase {
@@ -16,7 +17,7 @@ public class RemoteInMemoryStateTest extends TestCase {
   static {
     new Thread(new Runnable() {
        public void run() {
-         RemoteServer.start();         
+         RemoteNode.start();
        }
     }).start();
     try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}

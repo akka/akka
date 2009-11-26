@@ -63,7 +63,7 @@
    val consumer = AMQP.newConsumer(params, hostname, port, exchange, ExchangeType.Direct, Serializer.ScalaJSON, None, 100)
 
    consumer ! MessageConsumerListener(queue, routingKey, new Actor() {
-     def receive: PartialFunction[Any, Unit] = {
+     def receive = {
        case Message(payload, _, _, _, _) => log.debug("Received message: %s", payload)
      }
    })

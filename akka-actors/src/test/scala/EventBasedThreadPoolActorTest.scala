@@ -6,10 +6,12 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 class EventBasedThreadPoolActorTest extends JUnitSuite {
+  import Actor.Sender.Self
+
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case "Hello" =>
         reply("World")
       case "Failure" =>
@@ -21,7 +23,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
     implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
-      def receive: PartialFunction[Any, Unit] = {
+      def receive = {
         case "OneWay" => oneWay = "received"
       }
     }
@@ -36,7 +38,7 @@ class EventBasedThreadPoolActorTest extends JUnitSuite {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
-    val result: String = actor !? "Hello"
+    val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
     actor.stop
   }

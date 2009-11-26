@@ -8,12 +8,14 @@ import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
 class EventBasedSingleThreadActorTest extends JUnitSuite {
+  import Actor.Sender.Self
+
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
     dispatcher = Dispatchers.newEventBasedSingleThreadDispatcher(uuid)
 
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case "Hello" =>
         reply("World")
       case "Failure" =>
@@ -25,7 +27,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
-      def receive: PartialFunction[Any, Unit] = {
+      def receive = {
         case "OneWay" => oneWay = "received"
       }
     }
@@ -40,7 +42,7 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
     implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
-    val result: String = actor !? "Hello"
+    val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
     actor.stop
   }

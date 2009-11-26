@@ -50,9 +50,9 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
     internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder
   }
 
-  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key1 = new Actor { def receive = { case _ => {}} }
+  val key2 = new Actor { def receive = { case _ => {}} }
+  val key3 = new Actor { def receive = { case _ => {}} }
 
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
@@ -61,7 +61,7 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)
@@ -73,8 +73,8 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
     dispatcher.start
-    dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
-    dispatcher.messageQueue.append(new MessageInvocation(key2, new Object, None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key2, new Object, None, None, None))
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)
   }
@@ -106,8 +106,8 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation(key1, new java.lang.Integer(i), None, None))
-      dispatcher.messageQueue.append(new MessageInvocation(key2, new java.lang.Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new java.lang.Integer(i), None, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key2, new java.lang.Integer(i), None, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)

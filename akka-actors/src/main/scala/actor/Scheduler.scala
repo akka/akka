@@ -28,13 +28,13 @@ case class SchedulerException(msg: String, e: Throwable) extends RuntimeExceptio
  * which is licensed under the Apache 2 License.
  */
 class ScheduleActor(val receiver: Actor, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
-  lifeCycle = Some(LifeCycle(Permanent))
+  lifeCycle = LifeCycle(Permanent)
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case UnSchedule =>
       Scheduler.stopSupervising(this)
       future.cancel(true)
-      stop
+      exit
   }
 }
 
@@ -69,7 +69,7 @@ object Scheduler extends Actor {
     service.shutdown
   }
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case _ => {} // ignore all messages
   }
 }

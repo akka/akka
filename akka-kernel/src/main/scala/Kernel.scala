@@ -12,7 +12,7 @@ import javax.ws.rs.core.UriBuilder
 import java.io.File
 import java.net.URLClassLoader
 
-import se.scalablesolutions.akka.nio.RemoteServer
+import se.scalablesolutions.akka.nio.RemoteNode
 import se.scalablesolutions.akka.util.Logging
 
 /**
@@ -54,7 +54,7 @@ object Kernel extends Logging {
   def startRemoteService = {
     // FIXME manage remote serve thread for graceful shutdown
     val remoteServerThread = new Thread(new Runnable() {
-      def run = RemoteServer.start(applicationLoader)
+      def run = RemoteNode.start(applicationLoader)
     }, "Akka Remote Service")
     remoteServerThread.start
   }
@@ -94,7 +94,7 @@ object Kernel extends Logging {
       val DEPLOY = HOME.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
-        log.error("Could not find a deploy directory at [" + DEPLOY + "]")
+        log.error("Could not find a deploy directory at [%s]", DEPLOY)
         System.exit(-1)
       }
       val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL

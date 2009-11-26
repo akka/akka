@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>akka-actors</artifactId>
-  <name>Akka Actors Module</name>
+  <name>Akka Actors and STM Module</name>
 
   <packaging>jar</packaging>
 
@@ -19,18 +19,18 @@
   <dependencies>
     <dependency>
       <artifactId>akka-util-java</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <artifactId>akka-util</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>2.7.5</version>
+      <version>${scala.version}</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.aspectwerkz</groupId>
@@ -58,11 +58,6 @@
       <version>1.4</version>
     </dependency>
     <dependency>
-      <groupId>org.guiceyfruit</groupId>
-      <artifactId>guice-core</artifactId>
-      <version>2.0-beta-4</version>
-    </dependency>
-    <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
       <version>3.2.0.ALPHA1</version>
@@ -74,6 +69,11 @@
     </dependency>
 
     <!-- For Protocol/Serialization -->
+    <dependency>
+      <groupId>org.h2.compress</groupId>
+      <artifactId>h2-lzf</artifactId>
+      <version>1.0</version>
+    </dependency>
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-core-asl</artifactId>
@@ -108,28 +108,6 @@
       <groupId>sjson.json</groupId>
       <artifactId>sjson</artifactId>
       <version>0.2</version>
-    </dependency>
-
-    <!-- For third-party logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>1.4.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.4.3</version>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.13</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
-      <version>1.0.4</version>
     </dependency>
 
     <!-- For Testing -->

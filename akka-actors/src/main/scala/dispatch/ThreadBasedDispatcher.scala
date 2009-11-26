@@ -39,6 +39,8 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
     selectorThread.start
   }
                        
+  def canBeShutDown = true
+
   def shutdown = if (active) {
     active = false
     selectorThread.interrupt

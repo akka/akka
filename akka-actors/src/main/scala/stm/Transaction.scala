@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.util.Logging
 
 import org.multiverse.api.{Stm, Transaction => MultiverseTransaction}
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
-import org.multiverse.utils.ThreadLocalTransaction._
+import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.templates.OrElseTemplate
 
 import scala.collection.mutable.HashMap
@@ -21,25 +21,37 @@ class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
 
 /**
- * Example of atomic transaction management using high-order functions:
+ * Example of atomic transaction management using the atomic block:
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
+ * 
  * atomic {
  *   .. // do something within a transaction
  * }
  * </pre>
  *
- * Example of Run-OrElse transaction management.
+ * Example of atomic transaction management using atomic block with retry count:
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
- * run {
+ * 
+ * atomic(maxNrOfRetries) {
+ *   .. // do something within a transaction
+ * }
+ * </pre>
+ *
+ * Example of atomically-orElse transaction management. 
+ * Which is a good way to reduce contention and transaction collisions.
+ * <pre>
+ * import se.scalablesolutions.akka.stm.Transaction._
+ * 
+ * atomically {
  *   .. // try to do something
  * } orElse {
  *   .. // if transaction clashes try do do something else to minimize contention
  * }
  * </pre>
  *
- * Example of atomic transaction management using for comprehensions (monadic usage):
+ * Example of atomic transaction management using for comprehensions (monadic):
  *
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
@@ -52,7 +64,7 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  * }
  * </pre>
  *
- * Example of using Transaction and TransactionalRef in for comprehensions (monadic usage):
+ * Example of using Transaction and TransactionalRef in for comprehensions (monadic):
  *
  * <pre>
  * // For example, if you have a List with TransactionalRef
@@ -79,19 +91,33 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
 object Transaction extends TransactionManagement {
   val idFactory = new AtomicLong(-1L)
 
-  // -- monadic api --------------------------
+  /**
+   * See ScalaDoc on class.
+   */
   def map[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def flatMap[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def foreach(f: Transaction => Unit): Unit = atomic { f(getTransactionInScope) }
 
-  // -- atomic block --------------------------
-  private[akka] def atomically[T](body: => T): T = new AtomicTemplate[T](
+  /**
+   * Creates a "pure" STM atomic transaction and by-passes all transactions hooks such as persistence etc.
+   * Only for internal usage.
+   */
+  private[akka] def pureAtomic[T](body: => T): T = new AtomicTemplate[T](
     getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
   }.execute()
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomic[T](body: => T): T = new AtomicTemplate[T](
     getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
@@ -106,6 +132,9 @@ object Transaction extends TransactionManagement {
     }
   }.execute()
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomic[T](retryCount: Int)(body: => T): T = {
     new AtomicTemplate[T](getGlobalStmInstance, "akka", false, false, retryCount) {
       def execute(mtx: MultiverseTransaction): T = body
@@ -121,6 +150,9 @@ object Transaction extends TransactionManagement {
     }.execute
   }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomicReadOnly[T](retryCount: Int)(body: => T): T = {
     new AtomicTemplate[T](getGlobalStmInstance, "akka", false, true, retryCount) {
       def execute(mtx: MultiverseTransaction): T = body
@@ -136,6 +168,9 @@ object Transaction extends TransactionManagement {
     }.execute
   }
 
+  /**
+   * See ScalaDoc on class.
+   */
   def atomicReadOnly[T](body: => T): T = {
     new AtomicTemplate[T](true) {
       def execute(mtx: MultiverseTransaction): T = body
@@ -151,12 +186,19 @@ object Transaction extends TransactionManagement {
     }.execute
   }
 
-  // -- Run-OrElse --------------------------
-  def run[A](orBody: => A) = elseBody(orBody)
-  def elseBody[A](orBody: => A) = new {
-    def orElse(elseBody: => A) = new OrElseTemplate[A] {
-      def run(t: MultiverseTransaction) = orBody
-      def orelserun(t: MultiverseTransaction) = elseBody
+  /**
+   * See ScalaDoc on class.
+   */
+  def atomically[A](firstBody: => A) = elseBody(firstBody)
+
+  /**
+   * Should only be used together with <code>atomically</code> to form atomically-orElse constructs.
+   * See ScalaDoc on class.
+   */
+  def elseBody[A](firstBody: => A) = new {
+    def orElse(secondBody: => A) = new OrElseTemplate[A] {
+      def run(t: MultiverseTransaction) = firstBody
+      def orelserun(t: MultiverseTransaction) = secondBody
     }.execute()
   }
 }
@@ -176,7 +218,7 @@ object Transaction extends TransactionManagement {
   // --- public methods ---------
 
   def commit = synchronized {
-    atomically {
+    pureAtomic {
       persistentStateMap.values.foreach(_.commit)
       TransactionManagement.clearTransaction
     }
