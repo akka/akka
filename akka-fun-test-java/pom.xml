@@ -17,8 +17,8 @@
   <dependencies>
     <dependency>
       <artifactId>akka-kernel</artifactId>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.6</version>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.sun.grizzly</groupId>

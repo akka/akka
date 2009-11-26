@@ -86,12 +86,12 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
     override def filter(request: ContainerRequest): ContainerRequest =
       rolesAllowed match {
         case Some(roles) => {
-          (authenticator !? Authenticate(request, roles)).asInstanceOf[AnyRef] match {
+          (authenticator !! (Authenticate(request, roles), 10000)).get.asInstanceOf[AnyRef] match {
             case OK => request
             case r if r.isInstanceOf[Response] =>
               throw new WebApplicationException(r.asInstanceOf[Response])
             case x => {
-              log.error("Authenticator replied with unexpected result: ", x);
+              log.error("Authenticator replied with unexpected result [%s]", x);
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }
@@ -100,7 +100,9 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
       }
   }
 
-  lazy val authenticatorFQN = Config.config.getString("akka.rest.authenticator").getOrElse(throw new IllegalStateException("akka.rest.authenticator"))
+  lazy val authenticatorFQN =
+    Config.config.getString("akka.rest.authenticator")
+    .getOrElse(throw new IllegalStateException("akka.rest.authenticator"))
 
   /**
    * Currently we always take the first, since there usually should be at most one authentication actor, but a round-robin
@@ -264,17 +266,18 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
   override def receive = authenticate orElse invalidateNonces
 
   override def unauthorized: Response = {
-    val nonce = randomString(64);
+    val nonce = randomString(64)
     nonceMap.put(nonce, System.currentTimeMillis)
     unauthorized(nonce, "auth", randomString(64))
   }
 
   def unauthorized(nonce: String, qop: String, opaque: String): Response = {
-    Response.status(401).header("WWW-Authenticate",
+    Response.status(401).header(
+      "WWW-Authenticate",
       "Digest realm=\"" + realm + "\", " +
-          "qop=\"" + qop + "\", " +
-          "nonce=\"" + nonce + "\", " +
-          "opaque=\"" + opaque + "\"").build
+      "qop=\"" + qop + "\", " +
+      "nonce=\"" + nonce + "\", " +
+      "opaque=\"" + opaque + "\"").build
   }
 
   //Tests wether the specified credentials are valid
@@ -284,9 +287,10 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
     val ha1 = h(auth.userName + ":" + auth.realm + ":" + user.password)
     val ha2 = h(auth.method + ":" + auth.uri)
 
-    val response = h(ha1 + ":" + auth.nonce + ":" +
-        auth.nc + ":" + auth.cnonce + ":" +
-        auth.qop + ":" + ha2)
+    val response = h(
+      ha1 + ":" + auth.nonce + ":" +
+      auth.nc + ":" + auth.cnonce + ":" +
+      auth.qop + ":" + ha2)
 
     (response == auth.response) && (nonceMap.getOrElse(auth.nonce, -1) != -1)
   }
@@ -365,7 +369,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
         Some(UserInfo(user, null, rolesFor(user)))
       } catch {
         case e: PrivilegedActionException => {
-          e.printStackTrace
+          log.error(e, "Action not allowed")
           return None
         }
       }

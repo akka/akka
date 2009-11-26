@@ -11,14 +11,14 @@ class SchedulerTest extends JUnitSuite {
     var count = 0
     case object Tick
     val actor = new Actor() {
-      def receive: PartialFunction[Any, Unit] = {
+      def receive = {
         case Tick => count += 1
       }}
     actor.start
     Thread.sleep(1000)
     Scheduler.schedule(actor, Tick, 0L, 1L, TimeUnit.SECONDS)
     Thread.sleep(5000)
-    Scheduler.shutdown
+    Scheduler.stop
     assert(count > 0)
   }
 }

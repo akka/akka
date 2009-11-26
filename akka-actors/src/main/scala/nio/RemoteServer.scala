@@ -18,17 +18,67 @@ import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
+import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
 
 /**
+ * Use this object if you need a single remote server on a specific node.
+ *
+ * <pre>
+ * RemoteNode.start
+ * </pre>
+ *
+ * If you need to create more than one, then you can use the RemoteServer:
+ * 
+ * <pre>
+ * val server = new RemoteServer
+ * server.start
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteServer extends Logging {
+object RemoteNode extends RemoteServer
+
+/**
+ * This object holds configuration variables.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object RemoteServer {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
-  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)  
 
-  private var hostname = HOSTNAME 
-  private var port = PORT
+  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
+
+  val COMPRESSION_SCHEME = config.getString("akka.remote.compression-scheme", "zlib")
+  val ZLIB_COMPRESSION_LEVEL = {
+    val level = config.getInt("akka.remote.zlib-compression-level", 6)
+    if (level < 1 && level > 9) throw new IllegalArgumentException(
+      "zlib compression level has to be within 1-9, with 1 being fastest and 9 being the most compressed")
+    level
+  }
+}
+
+/**
+ * Use this class if you need a more than one remote server on a specific node.
+ *
+ * <pre>
+ * val server = new RemoteServer
+ * server.start
+ * </pre>
+ *
+ * If you need to create more than one, then you can use the RemoteServer:
+ *
+ * <pre>
+ * RemoteNode.start
+ * </pre>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class RemoteServer extends Logging {
+  val name = "RemoteServer@" + hostname + ":" + port
+
+  private var hostname = RemoteServer.HOSTNAME
+  private var port = RemoteServer.PORT
    
   @volatile private var isRunning = false
   @volatile private var isConfigured = false
@@ -39,13 +89,11 @@ object RemoteServer extends Logging {
 
   private val bootstrap = new ServerBootstrap(factory)
 
-  def name = "RemoteServer@" + hostname + ":" + port
-  
   def start: Unit = start(None)
 
-  def start(loader: Option[ClassLoader]): Unit = start(HOSTNAME, PORT, loader)
+  def start(loader: Option[ClassLoader]): Unit = start(hostname, port, loader)
 
-  def start(hostname: String, port: Int): Unit = start(hostname, port, None)
+  def start(_hostname: String, _port: Int): Unit = start(_hostname, _port, None)
 
   def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): Unit = synchronized {
     if (!isRunning) {
@@ -53,29 +101,47 @@ object RemoteServer extends Logging {
       port = _port
       log.info("Starting remote server at [%s:%s]", hostname, port)
       bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, loader))
+
       // FIXME make these RemoteServer options configurable
       bootstrap.setOption("child.tcpNoDelay", true)
       bootstrap.setOption("child.keepAlive", true)
       bootstrap.setOption("child.reuseAddress", true)
-      bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT_MILLIS)
+      bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
       bootstrap.bind(new InetSocketAddress(hostname, port))
       isRunning = true
     }
+  }
+
+  def shutdown = {
+    bootstrap.releaseExternalResources
   }
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) extends ChannelPipelineFactory {
+class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
+    extends ChannelPipelineFactory {
+  import RemoteServer._
+
   def getPipeline: ChannelPipeline  = {
-    val p = Channels.pipeline()
-    p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
-    p.addLast("protobufDecoder", new ProtobufDecoder(RemoteRequest.getDefaultInstance))
-    p.addLast("frameEncoder", new LengthFieldPrepender(4))
-    p.addLast("protobufEncoder", new ProtobufEncoder)
-    p.addLast("handler", new RemoteServerHandler(name, loader))
-    p
+    val pipeline = Channels.pipeline()
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
+      //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
+      case _ => {} // no compression
+    }
+    pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
+    pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteRequest.getDefaultInstance))
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibEncoder", new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL))
+      //case "lzf" => pipeline.addLast("lzfEncoder", new LzfEncoder)
+      case _ => {} // no compression
+    }
+    pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
+    pipeline.addLast("protobufEncoder", new ProtobufEncoder)
+    pipeline.addLast("handler", new RemoteServerHandler(name, loader))
+    pipeline
   }
 }
 
@@ -83,12 +149,16 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader]) ext
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelPipelineCoverage { val value = "all" }
-class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader]) extends SimpleChannelUpstreamHandler with Logging {
+class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader])
+    extends SimpleChannelUpstreamHandler with Logging {
+  val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
+  
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
  
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
-    if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
+    if (event.isInstanceOf[ChannelStateEvent] &&
+        event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
       log.debug(event.toString)
     }
     super.handleUpstream(ctx, event)
@@ -96,13 +166,15 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
-    if (message == null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
-    if (message.isInstanceOf[RemoteRequest]) handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
+    if (message == null) throw new IllegalStateException(
+      "Message in remote MessageEvent is null: " + event)
+    if (message.isInstanceOf[RemoteRequest]) {
+      handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
+    }
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    log.error("Unexpected exception from remote downstream: %s", event.getCause)
-    event.getCause.printStackTrace
+    log.error(event.getCause, "Unexpected exception from remote downstream")
     event.getChannel.close
   }
 
@@ -114,10 +186,12 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
   private def dispatchToActor(request: RemoteRequest, channel: Channel) = {
     log.debug("Dispatching to remote actor [%s]", request.getTarget)
-    val actor = createActor(request.getTarget, request.getTimeout)
+    val actor = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actor.start
     val message = RemoteProtocolBuilder.getMessage(request)
-    if (request.getIsOneWay) actor ! message
+    if (request.getIsOneWay) {
+      actor.send(message)
+    }
     else {
       try {
         val resultOrNone = actor !! message
@@ -133,8 +207,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         channel.write(replyMessage)
       } catch {
         case e: Throwable =>
-          log.error("Could not invoke remote actor [%s] due to: %s", request.getTarget, e)
-          e.printStackTrace
+          log.error(e, "Could not invoke remote actor [%s]", request.getTarget)
           val replyBuilder = RemoteReply.newBuilder
             .setId(request.getId)
             .setException(e.getClass.getName + "$" + e.getMessage)
@@ -157,7 +230,8 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
     //continueTransaction(request)
     try {
-      val messageReceiver = activeObject.getClass.getDeclaredMethod(request.getMethod, unescapedArgClasses: _*)
+      val messageReceiver = activeObject.getClass.getDeclaredMethod(
+        request.getMethod, unescapedArgClasses: _*)
       if (request.getIsOneWay) messageReceiver.invoke(activeObject, unescapedArgs: _*)
       else {
         val result = messageReceiver.invoke(activeObject, unescapedArgs: _*)
@@ -173,8 +247,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
       }
     } catch {
       case e: InvocationTargetException =>
-        log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.getMethod, request.getTarget, e.getCause)
-        e.getCause.printStackTrace
+        log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
           .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
@@ -184,8 +257,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
       case e: Throwable =>
-        log.error("Could not invoke remote active object [%s :: %s] due to: %s", request.getMethod, request.getTarget, e)
-        e.printStackTrace
+        log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReply.newBuilder
           .setId(request.getId)
           .setException(e.getClass.getName + "$" + e.getMessage)
@@ -216,9 +288,9 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
     val escapedArgs = for (i <- 0 until args.size) {
       val arg = args(i)
-      if (arg.isInstanceOf[String] && arg.asInstanceOf[String].startsWith("$$ProxiedByAW")) {
+      if (arg.isInstanceOf[String] && arg.asInstanceOf[String].startsWith(AW_PROXY_PREFIX)) {
         val argString = arg.asInstanceOf[String]
-        val proxyName = argString.replace("$$ProxiedByAW", "") //argString.substring(argString.indexOf("$$ProxiedByAW"), argString.length)
+        val proxyName = argString.replace(AW_PROXY_PREFIX, "") //argString.substring(argString.indexOf("$$ProxiedByAW"), argString.length)
         val activeObject = createActiveObject(proxyName, timeout)
         unescapedArgs(i) = activeObject
         unescapedArgClasses(i) = Class.forName(proxyName)       
@@ -242,29 +314,28 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
         newInstance
       } catch {
         case e =>
-          log.debug("Could not create remote active object instance due to: %s", e)
-          e.printStackTrace
+          log.error(e, "Could not create remote active object instance")
           throw e
       }
     } else activeObjectOrNull
   }
 
-  private def createActor(name: String, timeout: Long): Actor = {
-    val actorOrNull = actors.get(name)
+  private def createActor(name: String, uuid: String, timeout: Long): Actor = {
+    val actorOrNull = actors.get(uuid)
     if (actorOrNull == null) {
       try {
-        log.info("Creating a new remote actor [%s]", name)
+        log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
         val newInstance = clazz.newInstance.asInstanceOf[Actor]
+        newInstance._uuid = uuid
         newInstance.timeout = timeout
         newInstance._remoteAddress = None
-        actors.put(name, newInstance)
+        actors.put(uuid, newInstance)
         newInstance
       } catch {
         case e =>
-          log.debug("Could not create remote actor instance due to: %s", e)
-          e.printStackTrace
+          log.error(e, "Could not create remote actor object instance")
           throw e
       }
     } else actorOrNull

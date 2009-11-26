@@ -6,23 +6,24 @@ package se.scalablesolutions.akka.nio
 
 import scala.collection.mutable.HashMap
 
-import protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFutureResult, CompletableFutureResult}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.Config.config
 
-import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
+import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
+import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibEncoder}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler
 import org.jboss.netty.util.{TimerTask, Timeout, HashedWheelTimer}
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap}
-
+                                 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -79,8 +80,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
       // Wait until the connection attempt succeeds or fails.
       connection.awaitUninterruptibly
       if (!connection.isSuccess) {
-        log.error("Remote connection to [%s:%s] has failed due to [%s]", hostname, port, connection.getCause)
-        connection.getCause.printStackTrace
+        log.error(connection.getCause, "Remote connection to [%s:%s] has failed", hostname, port)
       }
       isRunning = true
     }
@@ -128,8 +128,18 @@ class RemoteClientPipelineFactory(name: String,
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
     pipeline.addLast("timeout", new ReadTimeoutHandler(RemoteClient.TIMER, RemoteClient.READ_TIMEOUT))
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
+      //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteReply.getDefaultInstance))
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibEncoder", new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL))
+      //case "lzf" => pipeline.addLast("lzfEncoder", new LzfEncoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder())
     pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap))
@@ -146,9 +156,11 @@ class RemoteClientHandler(val name: String,
                           val supervisors: ConcurrentMap[String, Actor],
                           val bootstrap: ClientBootstrap)
  extends SimpleChannelUpstreamHandler with Logging {
+  import Actor.Sender.Self
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
-    if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
+    if (event.isInstanceOf[ChannelStateEvent] &&
+        event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
       log.debug(event.toString)
     }
     super.handleUpstream(ctx, event)
@@ -199,8 +211,7 @@ class RemoteClientHandler(val name: String,
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress);
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    log.error("Unexpected exception from downstream in remote client: %s", event.getCause)
-    event.getCause.printStackTrace
+    log.error(event.getCause, "Unexpected exception from downstream in remote client")
     event.getChannel.close
   }
 

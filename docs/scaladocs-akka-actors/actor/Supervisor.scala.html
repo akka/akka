@@ -133,7 +133,7 @@ class Supervisor private[akka] (handler: FaultHandlingStrategy) extends Actor wi
   
   def stopSupervisor = this ! StopSupervisor
 
-  protected def receive: PartialFunction[Any, Unit] = {
+  protected def receive = {
     case StartSupervisor =>
       linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor => actor.start; log.info("Starting actor: %s", actor) }
 

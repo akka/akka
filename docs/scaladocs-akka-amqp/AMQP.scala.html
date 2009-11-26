@@ -41,7 +41,7 @@ import java.io.IOException
  *   val consumer = AMQP.newConsumer(params, hostname, port, exchange, ExchangeType.Direct, Serializer.ScalaJSON, None, 100)
  *
  *   consumer ! MessageConsumerListener(queue, routingKey, new Actor() {
- *     def receive: PartialFunction[Any, Unit] = {
+ *     def receive = {
  *       case Message(payload, _, _, _, _) => log.debug("Received message: %s", payload)
  *     }
  *   })
@@ -209,7 +209,7 @@ object AMQP extends Actor {
 
     log.info("AMQP.Producer [%s] is started", toString)
 
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case message @ Message(payload, routingKey, mandatory, immediate, properties) =>
         log.debug("Sending message [%s]", message)
         channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties, serializer.out(payload))
@@ -312,7 +312,7 @@ object AMQP extends Actor {
       listener.tag = Some(listenerTag)
     }
 
-    def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case listener: MessageConsumerListener =>
         startLink(listener.actor)
         listeners.put(listener, listener)
@@ -425,7 +425,7 @@ object AMQP extends Actor {
     override def postRestart(reason: AnyRef, config: Option[AnyRef]) = reconnect(initReconnectDelay)
   }
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case _ => {} // ignore all messages
   }
 }

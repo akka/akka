@@ -17,7 +17,7 @@ public class InMemNestedStateTest extends TestCase {
 
   final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
 
-  protected void setUp() {
+  public InMemNestedStateTest() {
     conf.configure(
         new RestartStrategy(new AllForOne(), 3, 5000),
         new Component[]{
@@ -26,16 +26,12 @@ public class InMemNestedStateTest extends TestCase {
             new Component(InMemStatefulNested.class, new LifeCycle(new Permanent()), 10000000),
             new Component(InMemFailer.class, new LifeCycle(new Permanent()), 1000)
             //new Component("inmem-clasher", InMemClasher.class, InMemClasherImpl.class, new LifeCycle(new Permanent()), 100000)
-        }).inject().supervise();
+        }).supervise();
     Config.config();
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.init();
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.init();
-  }
-
-  protected void tearDown() {
-    conf.stop();
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {

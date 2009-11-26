@@ -4,7 +4,6 @@ import _root_.net.liftweb.util._
 import _root_.net.liftweb.http._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
-//import _root_.net.liftweb.common._
 import _root_.net.liftweb.http.auth._
 import Helpers._
 
@@ -15,9 +14,9 @@ import se.scalablesolutions.akka.util.Logging
 import sample.lift.{PersistentSimpleService, SimpleService}
 
 /**
-  * A class that's instantiated early and run.  It allows the application
-  * to modify lift's environment
-  */
+ * A class that's instantiated early and run.  It allows the application
+ * to modify lift's environment
+ */
 class Boot {
   def boot {
     // where to search snippet
@@ -37,21 +36,17 @@ class Boot {
     
     LiftRules.passNotFoundToChain = true
     
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
-        SupervisorConfig(
-          RestartStrategy(OneForOne, 3, 100),
-          Supervise(
-            new SimpleService,      
-            LifeCycle(Permanent)) ::
-          Supervise(
-            new PersistentSimpleService,
-            LifeCycle(Permanent)) ::
-          Nil)
-      }
-    }
-    val supervisor = factory.newSupervisor
-    supervisor.startSupervisor
+    val factory = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(OneForOne, 3, 100),
+        Supervise(
+          new SimpleService,
+          LifeCycle(Permanent)) ::
+        Supervise(
+          new PersistentSimpleService,
+          LifeCycle(Permanent)) ::
+        Nil))
+    factory.newInstance.start
     
     // Build SiteMap
     // val entries = Menu(Loc("Home", List("index"), "Home")) :: Nil

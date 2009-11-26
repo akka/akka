@@ -3,22 +3,23 @@ package se.scalablesolutions.akka.actor
 import java.util.concurrent.TimeUnit
 import junit.framework.TestCase
 
-import se.scalablesolutions.akka.nio.{RemoteServer, RemoteClient}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+
+import se.scalablesolutions.akka.nio.{RemoteNode, RemoteServer, RemoteClient}
 
 object Global {
   var oneWay = "nada"  
 }
 class RemoteActorSpecActorUnidirectional extends Actor {
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case "OneWay" =>
       Global.oneWay = "received"
   }
 }
 
 class RemoteActorSpecActorBidirectional extends Actor {
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case "Hello" =>
       reply("World")
     case "Failure" =>
@@ -27,10 +28,12 @@ class RemoteActorSpecActorBidirectional extends Actor {
 }
 
 class RemoteActorTest extends JUnitSuite   {
+  import Actor.Sender.Self
+
   akka.Config.config
   new Thread(new Runnable() {
      def run = {
-       RemoteServer.start
+       RemoteNode.start
      }
   }).start
   Thread.sleep(1000)
@@ -46,17 +49,6 @@ class RemoteActorTest extends JUnitSuite   {
     val result = actor ! "OneWay"
     Thread.sleep(100)
     assert("received" === Global.oneWay)
-    actor.stop
-  }
-
-  @Test
-  def shouldSendReplySync = {
-    implicit val timeout = 500000000L
-    val actor = new RemoteActorSpecActorBidirectional
-    actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
-    actor.start
-    val result: String = actor !? "Hello"
-    assert("World" === result)
     actor.stop
   }
 

@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="war" name="akka-samples-lift:war">
-    <output-path>$PROJECT_DIR$/akka-samples-lift/target</output-path>
-    <root id="archive" name="akka-samples-lift-0.6.war">
-      <element id="artifact" artifact-name="akka-samples-lift:war exploded" />
-    </root>
-  </artifact>
-</component>

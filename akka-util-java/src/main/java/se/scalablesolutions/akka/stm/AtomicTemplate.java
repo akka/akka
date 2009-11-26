@@ -1,16 +1,18 @@
 package se.scalablesolutions.akka.stm;
 
-import org.multiverse.templates.AbortedException;
+import static org.multiverse.api.GlobalStmInstance.getGlobalStmInstance;
 import org.multiverse.api.Stm;
+import static org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction;
+import static org.multiverse.api.ThreadLocalTransaction.setThreadLocalTransaction;
 import org.multiverse.api.Transaction;
 import org.multiverse.api.TransactionStatus;
 import org.multiverse.api.exceptions.CommitFailureException;
 import org.multiverse.api.exceptions.LoadException;
 import org.multiverse.api.exceptions.RetryError;
 import org.multiverse.api.exceptions.TooManyRetriesException;
-import static org.multiverse.api.GlobalStmInstance.getGlobalStmInstance;
-import static org.multiverse.utils.ThreadLocalTransaction.getThreadLocalTransaction;
-import static org.multiverse.utils.ThreadLocalTransaction.setThreadLocalTransaction;
+import org.multiverse.templates.AbortedException;
+import org.multiverse.utils.latches.CheapLatch;
+import org.multiverse.utils.latches.Latch;
 
 import static java.lang.String.format;
 import java.util.logging.Logger;
@@ -259,7 +261,9 @@ public abstract class AtomicTemplate<E> {
                         postCommit();
                         return result;
                     } catch (RetryError e) {
-                        t.abortAndWaitForRetry();
+                        Latch latch = new CheapLatch();
+                        t.abortAndRegisterRetryLatch(latch);
+                        latch.awaitUninterruptible();
                         //since the abort is already done, no need to do it again.
                         abort = false;
                     } catch (CommitFailureException ex) {
@@ -274,7 +278,8 @@ public abstract class AtomicTemplate<E> {
                         if (abort) {
                             t.abort();
                             if (reset) {
-                                t.restart();
+                                t =  t.abortAndReturnRestarted();
+                                setTransaction(t);
                             }
                         }
                     }

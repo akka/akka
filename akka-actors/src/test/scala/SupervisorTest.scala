@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
-import config.ScalaConfig._
+import se.scalablesolutions.akka.config.ScalaConfig._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -13,6 +13,8 @@ import org.junit.Test
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class SupervisorTest extends JUnitSuite {
+  import Actor.Sender.Self
+
 
   var messageLog: String = ""
   var oneWayLog: String = ""
@@ -24,7 +26,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldStartServer = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
 
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -34,7 +36,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! Die
@@ -48,7 +50,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -76,7 +78,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! Die
@@ -90,7 +92,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -118,7 +120,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong3 !! Die
@@ -132,7 +134,7 @@ class SupervisorTest extends JUnitSuite {
   def tesCallKillCallMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -176,7 +178,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldKillMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong2 !! Die
@@ -190,7 +192,7 @@ class SupervisorTest extends JUnitSuite {
   def tesCallKillCallMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
@@ -234,7 +236,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     pingpong1 ! Die
     Thread.sleep(500)
@@ -246,7 +248,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayCallKillCallSingleActorOneForOne = {
     messageLog = ""
     val sup = getSingleActorOneForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     pingpong1 ! OneWay
     Thread.sleep(500)
@@ -269,7 +271,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 ! Die
@@ -283,7 +285,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayCallKillCallSingleActorAllForOne = {
     messageLog = ""
     val sup = getSingleActorAllForOneSupervisor
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 ! Ping).getOrElse("nil")
@@ -311,7 +313,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong3 ! Die
@@ -325,7 +327,7 @@ class SupervisorTest extends JUnitSuite {
   def tesOneWayCallKillCallMultipleActorsOneForOne = {
     messageLog = ""
     val sup = getMultipleActorsOneForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       (pingpong1 ! Ping).getOrElse("nil")
@@ -369,7 +371,7 @@ class SupervisorTest extends JUnitSuite {
   @Test def shouldOneWayKillMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong2 ! Die
@@ -383,7 +385,7 @@ class SupervisorTest extends JUnitSuite {
   def tesOneWayCallKillCallMultipleActorsAllForOne = {
     messageLog = ""
     val sup = getMultipleActorsAllForOneConf
-    sup ! StartSupervisor
+    sup.start
     Thread.sleep(500)
     expect("pong") {
       pingpong1 ! Ping
@@ -429,7 +431,7 @@ class SupervisorTest extends JUnitSuite {
    @Test def shouldNestedSupervisorsTerminateFirstLevelActorAllForOne = {
     messageLog = ""
      val sup = getNestedSupervisorsAllForOneConf
-     sup ! StartSupervisor
+     sup.start
      intercept[RuntimeException] {
        pingpong1 !! Die
      }
@@ -453,33 +455,27 @@ class SupervisorTest extends JUnitSuite {
 
     pingpong1 = new PingPong1Actor
     
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
             pingpong1,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
     pingpong1 = new PingPong1Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
           Supervise(
             pingpong1,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
@@ -487,8 +483,7 @@ class SupervisorTest extends JUnitSuite {
     pingpong2 = new PingPong2Actor
     pingpong3 = new PingPong3Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
@@ -502,10 +497,8 @@ class SupervisorTest extends JUnitSuite {
           Supervise(
             pingpong3,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
@@ -513,8 +506,7 @@ class SupervisorTest extends JUnitSuite {
     pingpong2 = new PingPong2Actor
     pingpong3 = new PingPong3Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 100),
           Supervise(
@@ -528,10 +520,8 @@ class SupervisorTest extends JUnitSuite {
           Supervise(
             pingpong3,
             LifeCycle(Permanent))
-          :: Nil)
-      }
-    }
-    factory.newSupervisor
+          :: Nil))
+    factory.newInstance
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
@@ -539,8 +529,7 @@ class SupervisorTest extends JUnitSuite {
     pingpong2 = new PingPong2Actor
     pingpong3 = new PingPong3Actor
 
-    object factory extends SupervisorFactory {
-      override def getSupervisorConfig: SupervisorConfig = {
+    val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100),
           Supervise(
@@ -557,14 +546,12 @@ class SupervisorTest extends JUnitSuite {
               pingpong3,
               LifeCycle(Permanent))
             :: Nil)
-          :: Nil)
-       }
-     }
-     factory.newSupervisor
+          :: Nil))
+     factory.newInstance
    }
 
   class PingPong1Actor extends Actor {
-    override def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case Ping =>
         messageLog += "ping"
         reply("pong")
@@ -581,7 +568,7 @@ class SupervisorTest extends JUnitSuite {
   }
 
   class PingPong2Actor extends Actor {
-    override def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case Ping =>
         messageLog += "ping"
         reply("pong")
@@ -594,7 +581,7 @@ class SupervisorTest extends JUnitSuite {
   }
 
   class PingPong3Actor extends Actor {
-    override def receive: PartialFunction[Any, Unit] = {
+    def receive = {
       case Ping =>
         messageLog += "ping"
         reply("pong")

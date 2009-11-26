@@ -13,9 +13,9 @@ import se.scalablesolutions.akka.actor.Actor
 
 class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
   private var threadingIssueDetected: AtomicBoolean = null
-  val key1 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key2 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
-  val key3 = new Actor { def receive: PartialFunction[Any, Unit] = { case _ => {}} }
+  val key1 = new Actor { def receive = { case _ => {}} }
+  val key2 = new Actor { def receive = { case _ => {}} }
+  val key3 = new Actor { def receive = { case _ => {}} }
 
   @Before
   def setUp = {
@@ -67,7 +67,7 @@ class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
     })
     dispatcher.start
     for (i <- 0 until 10) {
-      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new Object, None, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)
@@ -109,10 +109,10 @@ class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
       }
     })
     dispatcher.start
-    dispatcher.messageQueue.append(new MessageInvocation(key1, "Sending Message 1", None, None))
-    dispatcher.messageQueue.append(new MessageInvocation(key1, "Sending Message 1.1", None, None))
-    dispatcher.messageQueue.append(new MessageInvocation(key2, "Sending Message 2", None, None))
-    dispatcher.messageQueue.append(new MessageInvocation(key2, "Sending Message 2.2", None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key1, "Sending Message 1", None, None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key1, "Sending Message 1.1", None, None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key2, "Sending Message 2", None, None, None))
+    dispatcher.messageQueue.append(new MessageInvocation(key2, "Sending Message 2.2", None, None, None))
 
     handlersBarrier.await(5, TimeUnit.SECONDS)
     assert(!threadingIssueDetected.get)
@@ -151,8 +151,8 @@ class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.messageQueue.append(new MessageInvocation(key1, new java.lang.Integer(i), None, None))
-      dispatcher.messageQueue.append(new MessageInvocation(key2, new java.lang.Integer(i), None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key1, new java.lang.Integer(i), None, None, None))
+      dispatcher.messageQueue.append(new MessageInvocation(key2, new java.lang.Integer(i), None, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)

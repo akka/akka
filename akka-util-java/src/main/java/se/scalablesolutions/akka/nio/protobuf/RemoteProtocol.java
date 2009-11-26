@@ -73,36 +73,43 @@ public final class RemoteProtocol {
     public boolean hasTarget() { return hasTarget; }
     public java.lang.String getTarget() { return target_; }
     
-    // required uint64 timeout = 7;
-    public static final int TIMEOUT_FIELD_NUMBER = 7;
+    // required string uuid = 7;
+    public static final int UUID_FIELD_NUMBER = 7;
+    private boolean hasUuid;
+    private java.lang.String uuid_ = "";
+    public boolean hasUuid() { return hasUuid; }
+    public java.lang.String getUuid() { return uuid_; }
+    
+    // required uint64 timeout = 8;
+    public static final int TIMEOUT_FIELD_NUMBER = 8;
     private boolean hasTimeout;
     private long timeout_ = 0L;
     public boolean hasTimeout() { return hasTimeout; }
     public long getTimeout() { return timeout_; }
     
-    // optional string supervisorUuid = 8;
-    public static final int SUPERVISORUUID_FIELD_NUMBER = 8;
+    // optional string supervisorUuid = 9;
+    public static final int SUPERVISORUUID_FIELD_NUMBER = 9;
     private boolean hasSupervisorUuid;
     private java.lang.String supervisorUuid_ = "";
     public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
     public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
     
-    // required bool isActor = 9;
-    public static final int ISACTOR_FIELD_NUMBER = 9;
+    // required bool isActor = 10;
+    public static final int ISACTOR_FIELD_NUMBER = 10;
     private boolean hasIsActor;
     private boolean isActor_ = false;
     public boolean hasIsActor() { return hasIsActor; }
     public boolean getIsActor() { return isActor_; }
     
-    // required bool isOneWay = 10;
-    public static final int ISONEWAY_FIELD_NUMBER = 10;
+    // required bool isOneWay = 11;
+    public static final int ISONEWAY_FIELD_NUMBER = 11;
     private boolean hasIsOneWay;
     private boolean isOneWay_ = false;
     public boolean hasIsOneWay() { return hasIsOneWay; }
     public boolean getIsOneWay() { return isOneWay_; }
     
-    // required bool isEscaped = 11;
-    public static final int ISESCAPED_FIELD_NUMBER = 11;
+    // required bool isEscaped = 12;
+    public static final int ISESCAPED_FIELD_NUMBER = 12;
     private boolean hasIsEscaped;
     private boolean isEscaped_ = false;
     public boolean hasIsEscaped() { return hasIsEscaped; }
@@ -113,6 +120,7 @@ public final class RemoteProtocol {
       if (!hasProtocol) return false;
       if (!hasMessage) return false;
       if (!hasTarget) return false;
+      if (!hasUuid) return false;
       if (!hasTimeout) return false;
       if (!hasIsActor) return false;
       if (!hasIsOneWay) return false;
@@ -140,20 +148,23 @@ public final class RemoteProtocol {
       if (hasTarget()) {
         output.writeString(6, getTarget());
       }
+      if (hasUuid()) {
+        output.writeString(7, getUuid());
+      }
       if (hasTimeout()) {
-        output.writeUInt64(7, getTimeout());
+        output.writeUInt64(8, getTimeout());
       }
       if (hasSupervisorUuid()) {
-        output.writeString(8, getSupervisorUuid());
+        output.writeString(9, getSupervisorUuid());
       }
       if (hasIsActor()) {
-        output.writeBool(9, getIsActor());
+        output.writeBool(10, getIsActor());
       }
       if (hasIsOneWay()) {
-        output.writeBool(10, getIsOneWay());
+        output.writeBool(11, getIsOneWay());
       }
       if (hasIsEscaped()) {
-        output.writeBool(11, getIsEscaped());
+        output.writeBool(12, getIsEscaped());
       }
       getUnknownFields().writeTo(output);
     }
@@ -188,25 +199,29 @@ public final class RemoteProtocol {
         size += com.google.protobuf.CodedOutputStream
           .computeStringSize(6, getTarget());
       }
+      if (hasUuid()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeStringSize(7, getUuid());
+      }
       if (hasTimeout()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(7, getTimeout());
+          .computeUInt64Size(8, getTimeout());
       }
       if (hasSupervisorUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(8, getSupervisorUuid());
+          .computeStringSize(9, getSupervisorUuid());
       }
       if (hasIsActor()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(9, getIsActor());
+          .computeBoolSize(10, getIsActor());
       }
       if (hasIsOneWay()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(10, getIsOneWay());
+          .computeBoolSize(11, getIsOneWay());
       }
       if (hasIsEscaped()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(11, getIsEscaped());
+          .computeBoolSize(12, getIsEscaped());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -375,6 +390,9 @@ public final class RemoteProtocol {
         if (other.hasTarget()) {
           setTarget(other.getTarget());
         }
+        if (other.hasUuid()) {
+          setUuid(other.getUuid());
+        }
         if (other.hasTimeout()) {
           setTimeout(other.getTimeout());
         }
@@ -439,23 +457,27 @@ public final class RemoteProtocol {
               setTarget(input.readString());
               break;
             }
-            case 56: {
+            case 58: {
+              setUuid(input.readString());
+              break;
+            }
+            case 64: {
               setTimeout(input.readUInt64());
               break;
             }
-            case 66: {
+            case 74: {
               setSupervisorUuid(input.readString());
               break;
             }
-            case 72: {
+            case 80: {
               setIsActor(input.readBool());
               break;
             }
-            case 80: {
+            case 88: {
               setIsOneWay(input.readBool());
               break;
             }
-            case 88: {
+            case 96: {
               setIsEscaped(input.readBool());
               break;
             }
@@ -584,7 +606,28 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required uint64 timeout = 7;
+      // required string uuid = 7;
+      public boolean hasUuid() {
+        return result.hasUuid();
+      }
+      public java.lang.String getUuid() {
+        return result.getUuid();
+      }
+      public Builder setUuid(java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasUuid = true;
+        result.uuid_ = value;
+        return this;
+      }
+      public Builder clearUuid() {
+        result.hasUuid = false;
+        result.uuid_ = getDefaultInstance().getUuid();
+        return this;
+      }
+      
+      // required uint64 timeout = 8;
       public boolean hasTimeout() {
         return result.hasTimeout();
       }
@@ -602,7 +645,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string supervisorUuid = 8;
+      // optional string supervisorUuid = 9;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
       }
@@ -623,7 +666,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bool isActor = 9;
+      // required bool isActor = 10;
       public boolean hasIsActor() {
         return result.hasIsActor();
       }
@@ -641,7 +684,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bool isOneWay = 10;
+      // required bool isOneWay = 11;
       public boolean hasIsOneWay() {
         return result.hasIsOneWay();
       }
@@ -659,7 +702,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bool isEscaped = 11;
+      // required bool isEscaped = 12;
       public boolean hasIsEscaped() {
         return result.hasIsEscaped();
       }
@@ -1263,17 +1306,17 @@ public final class RemoteProtocol {
     java.lang.String[] descriptorData = {
       "\n;se/scalablesolutions/akka/nio/protobuf" +
       "/RemoteProtocol.proto\022&se.scalablesoluti" +
-      "ons.akka.nio.protobuf\"\326\001\n\rRemoteRequest\022" +
+      "ons.akka.nio.protobuf\"\344\001\n\rRemoteRequest\022" +
       "\n\n\002id\030\001 \002(\004\022\020\n\010protocol\030\002 \002(\r\022\017\n\007message" +
       "\030\003 \002(\014\022\027\n\017messageManifest\030\004 \001(\014\022\016\n\006metho" +
-      "d\030\005 \001(\t\022\016\n\006target\030\006 \002(\t\022\017\n\007timeout\030\007 \002(\004" +
-      "\022\026\n\016supervisorUuid\030\010 \001(\t\022\017\n\007isActor\030\t \002(" +
-      "\010\022\020\n\010isOneWay\030\n \002(\010\022\021\n\tisEscaped\030\013 \002(\010\"\247" +
-      "\001\n\013RemoteReply\022\n\n\002id\030\001 \002(\004\022\020\n\010protocol\030\002" +
-      " \001(\r\022\017\n\007message\030\003 \001(\014\022\027\n\017messageManifest",
-      "\030\004 \001(\014\022\021\n\texception\030\005 \001(\t\022\026\n\016supervisorU" +
-      "uid\030\006 \001(\t\022\017\n\007isActor\030\007 \002(\010\022\024\n\014isSuccessf" +
-      "ul\030\010 \002(\010B\002H\001"
+      "d\030\005 \001(\t\022\016\n\006target\030\006 \002(\t\022\014\n\004uuid\030\007 \002(\t\022\017\n" +
+      "\007timeout\030\010 \002(\004\022\026\n\016supervisorUuid\030\t \001(\t\022\017" +
+      "\n\007isActor\030\n \002(\010\022\020\n\010isOneWay\030\013 \002(\010\022\021\n\tisE" +
+      "scaped\030\014 \002(\010\"\247\001\n\013RemoteReply\022\n\n\002id\030\001 \002(\004" +
+      "\022\020\n\010protocol\030\002 \001(\r\022\017\n\007message\030\003 \001(\014\022\027\n\017m",
+      "essageManifest\030\004 \001(\014\022\021\n\texception\030\005 \001(\t\022" +
+      "\026\n\016supervisorUuid\030\006 \001(\t\022\017\n\007isActor\030\007 \002(\010" +
+      "\022\024\n\014isSuccessful\030\010 \002(\010"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1285,7 +1328,7 @@ public final class RemoteProtocol {
           internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteRequest_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteRequest_descriptor,
-              new java.lang.String[] { "Id", "Protocol", "Message", "MessageManifest", "Method", "Target", "Timeout", "SupervisorUuid", "IsActor", "IsOneWay", "IsEscaped", },
+              new java.lang.String[] { "Id", "Protocol", "Message", "MessageManifest", "Method", "Target", "Uuid", "Timeout", "SupervisorUuid", "IsActor", "IsOneWay", "IsEscaped", },
               se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest.class,
               se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest.Builder.class);
           internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteReply_descriptor =

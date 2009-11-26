@@ -24,11 +24,11 @@ object DataFlow {
     thread
   }
 
-  def thread[MessageType, ReturnType](body: MessageType => ReturnType) = 
+  def thread[MessageType, ReturnType](body: MessageType => ReturnType) =
     new ReactiveEventBasedThread(body).start
 
   private class IsolatedEventBasedThread(body: => Unit) extends Actor {
-    def act = loop { 
+    def act = loop {
       react {
         case 'start => body
         case 'exit => exit()
@@ -37,7 +37,7 @@ object DataFlow {
   }
 
   private class ReactiveEventBasedThread[MessageType, ReturnType](body: MessageType => ReturnType) extends Actor {
-    def act = loop { 
+    def act = loop {
       react {
         case 'exit   => exit()
         case message => sender ! body(message.asInstanceOf[MessageType])
@@ -48,7 +48,7 @@ object DataFlow {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  sealed class DataFlowVariable[T] {                                                                     
+  sealed class DataFlowVariable[T] {
   
     private sealed abstract class DataFlowVariableMessage
     private case class Set[T](value: T) extends DataFlowVariableMessage
@@ -73,7 +73,7 @@ object DataFlow {
     private class Out[T](dataFlow: DataFlowVariable[T]) extends Actor {
       var reader: Option[OutputChannel[Any]] = None
       def act = loop { react {
-        case Get => 
+        case Get =>
           val ref = dataFlow.value.get
           if (ref.isDefined) reply(ref.get) else reader = Some(sender)
         case Set(v) => if (reader.isDefined) reader.get ! v
@@ -380,5 +380,3 @@ object Test5 extends Application {
 
   //System.gc
 }
-
-
