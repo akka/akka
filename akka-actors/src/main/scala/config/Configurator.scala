@@ -6,7 +6,10 @@ package se.scalablesolutions.akka.config
 
 import ScalaConfig.{RestartStrategy, Component}
 
-trait Configurator {
+/**
+ * Manages the active abject or actor that has been put under supervision for the class specified.
+ */
+private[akka] trait Configurator {
   /**
    * Returns the active abject or actor that has been put under supervision for the class specified.
    *

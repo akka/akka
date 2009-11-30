@@ -19,6 +19,8 @@ import java.net.InetSocketAddress
 import java.lang.reflect.Method
 
 /**
+ * This is an class for internal usage. Instead use the <code>se.scalablesolutions.akka.config.ActiveObjectConfigurator</code> class for creating ActiveObjects.
+ *  
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfiguratorBase with Logging { // with CamelConfigurator {
@@ -44,9 +46,12 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
    */
   override def getInstance[T](clazz: Class[T]): T = synchronized {
     log.debug("Retrieving active object [%s]", clazz.getName)
-    if (injector == null) throw new IllegalStateException("inject() and/or supervise() must be called before invoking getInstance(clazz)")
+    if (injector == null) throw new IllegalStateException(
+      "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
-        activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException("Class [" + clazz.getName + "] has not been put under supervision (by passing in the config to the 'configure' and then invoking 'supervise') method"))
+        activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException(
+          "Class [" + clazz.getName + "] has not been put under supervision " +
+          "(by passing in the config to the 'configure' and then invoking 'supervise') method"))
     injector.injectMembers(targetInstance)
     proxy.asInstanceOf[T]
   }
@@ -96,10 +101,12 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
-    val actor = new Dispatcher(component.lifeCycle.callbacks)
+    val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
     if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
     val remoteAddress =
-      if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+      if (component.remoteAddress.isDefined)
+        Some(new InetSocketAddress(
+          component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = ActiveObject.newInstance(targetClass, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     supervised ::= Supervise(actor, component.lifeCycle)
@@ -111,12 +118,14 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val targetClass = component.intf.get
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
-    val actor = new Dispatcher(component.lifeCycle.callbacks)
+    val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
     if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
     val remoteAddress =
-      if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+      if (component.remoteAddress.isDefined)
+        Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
-    val proxy = ActiveObject.newInstance(targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    val proxy = ActiveObject.newInstance(
+      targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     supervised ::= Supervise(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
