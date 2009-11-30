@@ -95,7 +95,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
 
   override def start = synchronized {
     ConfiguratorRepository.registerConfigurator(this)
-    _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
       actor.start
       log.info("Starting actor: %s", actor)
     }
@@ -104,7 +104,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
   
   override def stop = synchronized {
     super[Actor].stop
-    _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
       actor.stop
       log.info("Shutting actor down: %s", actor)
     }
@@ -121,7 +121,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
         server match {
           case Supervise(actor, lifeCycle) =>
             actors.put(actor.getClass.getName, actor)
-            actor.lifeCycle = lifeCycle
+            actor.lifeCycle = Some(lifeCycle)
             startLink(actor)
 
            case SupervisorConfig(_, _) => // recursive configuration

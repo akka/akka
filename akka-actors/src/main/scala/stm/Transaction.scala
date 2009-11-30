@@ -70,7 +70,8 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  * // For example, if you have a List with TransactionalRef
  * val refs: List[TransactionalRef] = ...
  *
- * // You can use them together with Transaction in a for comprehension since TransactionalRef is also monadic
+ * // You can use them together with Transaction in a for comprehension since
+ * // TransactionalRef is also monadic
  * for {
  *   tx <- Transaction
  *   ref <- refs
@@ -107,7 +108,8 @@ object Transaction extends TransactionManagement {
   def foreach(f: Transaction => Unit): Unit = atomic { f(getTransactionInScope) }
 
   /**
-   * Creates a "pure" STM atomic transaction and by-passes all transactions hooks such as persistence etc.
+   * Creates a "pure" STM atomic transaction and by-passes all transactions hooks
+   * such as persistence etc.
    * Only for internal usage.
    */
   private[akka] def pureAtomic[T](body: => T): T = new AtomicTemplate[T](
@@ -246,13 +248,18 @@ object Transaction extends TransactionManagement {
   private[akka] def register(uuid: String, storage: Committable) = persistentStateMap.put(uuid, storage)
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
-    throw new IllegalStateException("Expected ACTIVE transaction - current status [" + status + "]: " + toString)
+    throw new IllegalStateException(
+      "Expected ACTIVE transaction - current status [" + status + "]: " + toString)
 
-  private def ensureIsActiveOrAborted = if (!(status == TransactionStatus.Active || status == TransactionStatus.Aborted))
-    throw new IllegalStateException("Expected ACTIVE or ABORTED transaction - current status [" + status + "]: " + toString)
+  private def ensureIsActiveOrAborted =
+    if (!(status == TransactionStatus.Active || status == TransactionStatus.Aborted))
+    throw new IllegalStateException(
+      "Expected ACTIVE or ABORTED transaction - current status [" + status + "]: " + toString)
 
-  private def ensureIsActiveOrNew = if (!(status == TransactionStatus.Active || status == TransactionStatus.New))
-    throw new IllegalStateException("Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
+  private def ensureIsActiveOrNew =
+    if (!(status == TransactionStatus.Active || status == TransactionStatus.New))
+    throw new IllegalStateException(
+      "Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
   // For reinitialize transaction after sending it over the wire 
   private[akka] def reinit = synchronized {
