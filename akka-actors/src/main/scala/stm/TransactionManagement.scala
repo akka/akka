@@ -8,24 +8,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import se.scalablesolutions.akka.util.Logging
 
-import scala.collection.mutable.HashSet
-
 import org.multiverse.api.ThreadLocalTransaction._
 
 class StmException(msg: String) extends RuntimeException(msg)
 
-class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause) {
+class TransactionAwareWrapperException(
+    val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause) {
   override def toString(): String = "TransactionAwareWrapperException[" + cause + ", " + tx + "]"
 }
 
 object TransactionManagement extends TransactionManagement {
   import se.scalablesolutions.akka.Config._
-  // FIXME reenable 'akka.stm.restart-on-collision' when new STM is in place
-  val RESTART_TRANSACTION_ON_COLLISION =   false //akka.Kernel.config.getBool("akka.stm.restart-on-collision", true)
-  val TIME_WAITING_FOR_COMPLETION =        config.getInt("akka.stm.wait-for-completion", 1000)
-  val NR_OF_TIMES_WAITING_FOR_COMPLETION = config.getInt("akka.stm.wait-nr-of-times", 3)
-  val MAX_NR_OF_RETRIES =                  config.getInt("akka.stm.max-nr-of-retries", 100)
-  val TRANSACTION_ENABLED =                new AtomicBoolean(config.getBool("akka.stm.service", false))
+
+  val MAX_NR_OF_RETRIES = config.getInt("akka.stm.max-nr-of-retries", 100)
+  val TRANSACTION_ENABLED = new AtomicBoolean(config.getBool("akka.stm.service", false))
 
   def isTransactionalityEnabled = TRANSACTION_ENABLED.get
   def disableTransactions = TRANSACTION_ENABLED.set(false)
@@ -37,7 +33,6 @@ object TransactionManagement extends TransactionManagement {
 
 trait TransactionManagement extends Logging {
   import TransactionManagement.currentTransaction
-  private[akka] val activeTransactions = new HashSet[Transaction]
 
   private[akka] def createNewTransaction = currentTransaction.set(Some(new Transaction))
 
@@ -60,7 +55,5 @@ trait TransactionManagement extends Logging {
   private[akka] def incrementTransaction = if (isTransactionInScope) getTransactionInScope.increment
 
   private[akka] def decrementTransaction = if (isTransactionInScope) getTransactionInScope.decrement
-
-  private[akka] def removeTransactionIfTopLevel(tx: Transaction) = if (tx.isTopLevel) { activeTransactions -= tx }
 }
 

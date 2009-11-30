@@ -66,7 +66,7 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Actor {  
+object Actor extends Logging {  
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
@@ -74,7 +74,7 @@ object Actor {
     implicit val Self: AnyRef = this
     def receive = {
       case unknown =>
-        log.error(
+        Actor.log.error(
           "Actor.Sender can't process messages. Received message [%s]." +
           "This error could occur if you either:" +
           "\n\t- Explicitly send a message to the Actor.Sender object." +
@@ -163,7 +163,7 @@ object Actor {
    * </pre>
    */
   def actor(lifeCycleConfig: LifeCycle)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
-    lifeCycle = lifeCycleConfig
+    lifeCycle = Some(lifeCycleConfig)
     start
     def receive = body
   }
@@ -186,7 +186,7 @@ object Actor {
    def actor[A](lifeCycleConfig: LifeCycle)(body: => Unit) = { 
      def handler[A](body: Unit) = new {
        def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
-         lifeCycle = lifeCycleConfig
+         lifeCycle = Some(lifeCycleConfig)
          start
          body
          def receive = handler
@@ -209,7 +209,7 @@ object Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait Actor extends Logging with TransactionManagement {
+trait Actor extends TransactionManagement {
   ActorRegistry.register(this)
 
   implicit protected val self: Actor = this
@@ -228,7 +228,7 @@ trait Actor extends Logging with TransactionManagement {
   private var _config: Option[AnyRef] = None
   private val _remoteFlagLock = new ReadWriteLock 
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
-  private[akka] val _linkedActors = new HashSet[Actor]
+  private[akka] var _linkedActors: Option[HashSet[Actor]] = None
   private[akka] var _mailbox: MessageQueue = _
   private[akka] var _supervisor: Option[Actor] = None
 
@@ -328,9 +328,9 @@ trait Actor extends Logging with TransactionManagement {
   /**
    * User overridable callback/setting.
    *
-   * Defines the life-cycle for a supervised actor. Default is 'LifeCycle(Permanent)' but can be overridden.
+   * Defines the life-cycle for a supervised actor.
    */
-  @volatile var lifeCycle: LifeCycle = LifeCycle(Permanent)
+  @volatile var lifeCycle: Option[LifeCycle] = None
 
   /**
    * User overridable callback/setting.
@@ -418,7 +418,7 @@ trait Actor extends Logging with TransactionManagement {
       _isRunning = true
       //if (isTransactional) this !! TransactionalInit
     }
-    log.info("[%s] has started", toString)
+    Actor.log.info("[%s] has started", toString)
     this
   }
 
@@ -438,6 +438,7 @@ trait Actor extends Logging with TransactionManagement {
       _isRunning = false
       _isShutDown = true
       shutdown
+      ActorRegistry.unregister(this)
     }
   }
 
@@ -615,11 +616,11 @@ trait Actor extends Logging with TransactionManagement {
    */
   protected[this] def link(actor: Actor) = {
     if (_isRunning) {
-      _linkedActors.add(actor)
+      getLinkedActors.add(actor)
       if (actor._supervisor.isDefined) throw new IllegalStateException(
         "Actor can only have one supervisor [" + actor + "], e.g. link(actor) fails")
       actor._supervisor = Some(this)
-      log.debug("Linking actor [%s] to actor [%s]", actor, this)
+      Actor.log.debug("Linking actor [%s] to actor [%s]", actor, this)
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
@@ -631,10 +632,10 @@ trait Actor extends Logging with TransactionManagement {
    */
   protected[this] def unlink(actor: Actor) = {
     if (_isRunning) {
-      if (!_linkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
-      _linkedActors.remove(actor)
+      if (!getLinkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
+      getLinkedActors.remove(actor)
       actor._supervisor = None
-      log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
+      Actor.log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
@@ -773,7 +774,7 @@ trait Actor extends Logging with TransactionManagement {
       else dispatch(messageHandle)
     } catch {
       case e =>
-        log.error(e, "Could not invoke actor [%s]", this)
+        Actor.log.error(e, "Could not invoke actor [%s]", this)
         throw e
     }
   }
@@ -790,7 +791,7 @@ trait Actor extends Logging with TransactionManagement {
       else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
     } catch {
       case e =>
-        log.error(e, "Could not invoke actor [%s]", this)
+        Actor.log.error(e, "Could not invoke actor [%s]", this)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
@@ -830,7 +831,7 @@ trait Actor extends Logging with TransactionManagement {
       } else proceed
     } catch {
       case e =>
-        log.error(e, "Could not invoke actor [%s]", this)
+        Actor.log.error(e, "Could not invoke actor [%s]", this)
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
         clearTransaction // need to clear currentTransaction before call to supervisor
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
@@ -871,15 +872,16 @@ trait Actor extends Logging with TransactionManagement {
   }
 
   private[this] def restartLinkedActors(reason: AnyRef) = {
-    _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
-      actor.lifeCycle match {
+    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+      if (actor.lifeCycle.isEmpty) actor.lifeCycle = Some(LifeCycle(Permanent))
+      actor.lifeCycle.get match {
         case LifeCycle(scope, _) => {
           scope match {
             case Permanent =>
               actor.restart(reason)
             case Temporary =>
-              log.info("Actor [%s] configured as TEMPORARY will not be restarted.", actor.id)
-              _linkedActors.remove(actor) // remove the temporary actor
+              Actor.log.info("Actor [%s] configured as TEMPORARY will not be restarted.", actor.id)
+              getLinkedActors.remove(actor) // remove the temporary actor
           }
         }
       }
@@ -888,7 +890,7 @@ trait Actor extends Logging with TransactionManagement {
 
   private[Actor] def restart(reason: AnyRef) = synchronized {
     preRestart(reason, _config)
-    log.info("Restarting actor [%s] configured as PERMANENT.", id)
+    Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
     postRestart(reason, _config)
   }
 
@@ -899,6 +901,13 @@ trait Actor extends Logging with TransactionManagement {
     } else None
   }
 
+  protected def getLinkedActors: HashSet[Actor] = {
+    if (_linkedActors.isEmpty) {
+      val set = new HashSet[Actor]
+      _linkedActors = Some(set)
+      set
+    } else _linkedActors.get
+  }
 
   private[akka] def swapDispatcher(disp: MessageDispatcher) = synchronized {
     messageDispatcher = disp

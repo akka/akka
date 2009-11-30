@@ -43,4 +43,9 @@ object ActorRegistry {
       case None => actorsById + (id -> (actor :: Nil))
     }
   }
+
+  def unregister(actor: Actor) = synchronized {
+    actorsByClassName - actor.getClass.getName
+    actorsById - actor.getClass.getName
+  }
 }
