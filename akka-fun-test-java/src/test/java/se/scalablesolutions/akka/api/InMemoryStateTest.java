@@ -23,7 +23,7 @@ public class InMemoryStateTest extends TestCase {
   public InMemoryStateTest() {
     Config.config();
     conf.configure(
-        new RestartStrategy(new AllForOne(), 3, 5000),
+        new RestartStrategy(new AllForOne(), 3, 5000, new Class[] {Exception.class}),
         new Component[]{
             new Component(InMemStateful.class,
                 new LifeCycle(new Permanent()),

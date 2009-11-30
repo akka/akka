@@ -17,7 +17,7 @@ public class PersistentStateTest extends TestCase {
   protected void setUp() {
     PersistenceManager.init();
     conf.configure(
-        new RestartStrategy(new AllForOne(), 3, 5000),
+        new RestartStrategy(new AllForOne(), 3, 5000, new Class[] {Exception.class}),
         new Component[] {
           new Component(PersistentStateful.class, new LifeCycle(new Permanent()), 10000000),
           new Component(PersistentFailer.class, new LifeCycle(new Permanent()), 1000)
