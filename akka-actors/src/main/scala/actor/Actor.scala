@@ -552,7 +552,8 @@ trait Actor extends TransactionManagement {
               "\n\t\t1. Send a message to a remote actor" +
               "\n\t\t2. Send a message from an instance that is *not* an actor" +
               "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
-              "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future that will be bound by the argument passed to 'reply'." )
+              "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
+               "\n\tthat will be bound by the argument passed to 'reply'." )
           case Some(future) =>
             future.completeWithResult(message)
         }
@@ -632,7 +633,8 @@ trait Actor extends TransactionManagement {
    */
   protected[this] def unlink(actor: Actor) = {
     if (_isRunning) {
-      if (!getLinkedActors.contains(actor)) throw new IllegalStateException("Actor [" + actor + "] is not a linked actor, can't unlink")
+      if (!getLinkedActors.contains(actor)) throw new IllegalStateException(
+        "Actor [" + actor + "] is not a linked actor, can't unlink")
       getLinkedActors.remove(actor)
       actor._supervisor = None
       Actor.log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
