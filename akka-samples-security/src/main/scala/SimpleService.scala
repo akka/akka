@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.state.TransactionalState
 class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100),
+      RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
       // Dummy implementations of all authentication actors
       // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
       Supervise(

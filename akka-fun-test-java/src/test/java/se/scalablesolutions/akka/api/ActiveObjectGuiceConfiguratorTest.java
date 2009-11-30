@@ -37,7 +37,8 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
         bind(Ext.class).to(ExtImpl.class).in(Scopes.SINGLETON);
       }
     }).configure(
-        new RestartStrategy(new AllForOne(), 3, 5000), new Component[]{
+        new RestartStrategy(new AllForOne(), 3, 5000, new Class[]{Exception.class}),
+        new Component[]{
              new Component(
                 Foo.class,
                 new LifeCycle(new Permanent()),

@@ -22,7 +22,11 @@ object ScalaConfig {
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
   case class Supervise(actor: Actor, lifeCycle: LifeCycle) extends Server
 
-  case class RestartStrategy(scheme: FailOverScheme, maxNrOfRetries: Int, withinTimeRange: Int) extends ConfigElement
+  case class RestartStrategy(
+      scheme: FailOverScheme,
+      maxNrOfRetries: Int,
+      withinTimeRange: Int,
+      trapExceptions: List[Class[_ <: Throwable]]) extends ConfigElement
 
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
@@ -114,9 +118,10 @@ object JavaConfig {
   class RestartStrategy(
       @BeanProperty val scheme: FailOverScheme,
       @BeanProperty val maxNrOfRetries: Int,
-      @BeanProperty val withinTimeRange: Int) extends ConfigElement {
+      @BeanProperty val withinTimeRange: Int,
+      @BeanProperty val trapExceptions: Array[Class[_ <: Throwable]]) extends ConfigElement {
     def transform = se.scalablesolutions.akka.config.ScalaConfig.RestartStrategy(
-      scheme.transform, maxNrOfRetries, withinTimeRange)
+      scheme.transform, maxNrOfRetries, withinTimeRange, trapExceptions.toList)
   }
   
   class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
