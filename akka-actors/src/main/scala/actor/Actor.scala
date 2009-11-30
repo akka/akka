@@ -411,7 +411,7 @@ trait Actor extends TransactionManagement {
    * Starts up the actor and its message queue.
    */
   def start: Actor = synchronized  {
-    if (_isShutDown) throw new IllegalStateException("Can't restart an actor that have been shut down with 'exit'")
+    if (_isShutDown) throw new IllegalStateException("Can't restart an actor that has been shut down with 'exit'")
     if (!_isRunning) {
       dispatcher.registerHandler(this, new ActorMessageInvoker(this))
       messageDispatcher.start
@@ -530,10 +530,10 @@ trait Actor extends TransactionManagement {
   def !![T](message: AnyRef): Option[T] = !![T](message, timeout)
 
   /**
-   * This method is evil and have been removed. Use '!!' with a timeout instead. 
+   * This method is evil and has been removed. Use '!!' with a timeout instead. 
    */
   def !?[T](message: AnyRef): T = throw new UnsupportedOperationException(
-    "'!?' is evil and have been removed. Use '!!' with a timeout instead")
+    "'!?' is evil and has been removed. Use '!!' with a timeout instead")
 
   /**
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
