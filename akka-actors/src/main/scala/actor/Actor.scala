@@ -66,7 +66,7 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Actor extends Logging {  
+object Actor extends Logging {
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
@@ -115,7 +115,7 @@ object Actor extends Logging {
    * </pre>
    *
    */
-  def actor[A](body: => Unit) = { 
+  def actor[A](body: => Unit) = {
     def handler[A](body: Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
         start
@@ -129,7 +129,7 @@ object Actor extends Logging {
  /**
   * Use to create an anonymous event-driven actor with a body but no message loop block.
   * <p/>
-  * This actor can <b>not</b> respond to any messages but can be used as a simple way to 
+  * This actor can <b>not</b> respond to any messages but can be used as a simple way to
   * spawn a lightweight thread to process some task.
   * <p/>
   * The actor is started when created.
@@ -183,7 +183,7 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-   def actor[A](lifeCycleConfig: LifeCycle)(body: => Unit) = { 
+   def actor[A](lifeCycleConfig: LifeCycle)(body: => Unit) = {
      def handler[A](body: Unit) = new {
        def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
          lifeCycle = Some(lifeCycleConfig)
@@ -213,11 +213,11 @@ trait Actor extends TransactionManagement {
   ActorRegistry.register(this)
 
   implicit protected val self: Actor = this
-  
+
   // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
   private[akka] var _uuid = Uuid.newUuid.toString
   def uuid = _uuid
-  
+
   // ====================================
   // private fields
   // ====================================
@@ -226,7 +226,7 @@ trait Actor extends TransactionManagement {
   @volatile private var _isShutDown: Boolean = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private var _config: Option[AnyRef] = None
-  private val _remoteFlagLock = new ReadWriteLock 
+  private val _remoteFlagLock = new ReadWriteLock
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] var _linkedActors: Option[HashSet[Actor]] = None
   private[akka] var _mailbox: MessageQueue = _
@@ -244,7 +244,7 @@ trait Actor extends TransactionManagement {
    * <p/>
    * This sender reference can be used together with the '!' method for request/reply
    * message exchanges and which is in many ways better than using the '!!' method
-   * which will make the sender wait for a reply using a *blocking* future. 
+   * which will make the sender wait for a reply using a *blocking* future.
    */
   protected[this] var sender: Option[Actor] = None
 
@@ -284,7 +284,7 @@ trait Actor extends TransactionManagement {
    * <p/>
    * You can override it so it fits the specific use-case that the actor is used for.
    * See the <tt>se.scalablesolutions.akka.dispatch.Dispatchers</tt> class for the different
-   * dispatchers available.  
+   * dispatchers available.
    * <p/>
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
@@ -301,7 +301,7 @@ trait Actor extends TransactionManagement {
    * Set trapExit to the list of exception classes that the actor should be able to trap
    * from the actor it is supervising. When the supervising actor throws these exceptions
    * then they will trigger a restart.
-   * <p/>  
+   * <p/>
    * <pre>
    * // trap all exceptions
    * trapExit = List(classOf[Throwable])
@@ -448,7 +448,7 @@ trait Actor extends TransactionManagement {
    *
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
    * <p/>
-   * 
+   *
    * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable.
    * <pre>
    *   actor ! message
@@ -514,7 +514,7 @@ trait Actor extends TransactionManagement {
     getResultOrThrowException(future)
   } else throw new IllegalStateException(
     "Actor has not been started, you need to invoke 'actor.start' before using it")
-  
+
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
    * <p/>
@@ -530,7 +530,7 @@ trait Actor extends TransactionManagement {
   def !![T](message: AnyRef): Option[T] = !![T](message, timeout)
 
   /**
-   * This method is evil and has been removed. Use '!!' with a timeout instead. 
+   * This method is evil and has been removed. Use '!!' with a timeout instead.
    */
   def !?[T](message: AnyRef): T = throw new UnsupportedOperationException(
     "'!?' is evil and has been removed. Use '!!' with a timeout instead")
@@ -576,7 +576,7 @@ trait Actor extends TransactionManagement {
     } else throw new IllegalArgumentException(
       "Can not swap dispatcher for " + toString + " after it has been started")
   }
-  
+
   /**
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
    */
@@ -744,7 +744,7 @@ trait Actor extends TransactionManagement {
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long):
     CompletableFutureResult = _remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (_remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequest.newBuilder                                                                                                
+      val requestBuilder = RemoteRequest.newBuilder
         .setId(RemoteRequestIdFactory.nextId)
         .setTarget(this.getClass.getName)
         .setTimeout(timeout)
@@ -804,7 +804,7 @@ trait Actor extends TransactionManagement {
 
   private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
     setTransaction(messageHandle.tx)
-    
+
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     senderFuture = messageHandle.future
     sender = messageHandle.sender
@@ -820,7 +820,7 @@ trait Actor extends TransactionManagement {
         decrementTransaction
       }
     }
-    
+
     try {
       if (isTransactionRequiresNew && !isTransactionInScope) {
         if (senderFuture.isEmpty) throw new StmException(
