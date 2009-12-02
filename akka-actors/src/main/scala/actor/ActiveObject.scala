@@ -223,7 +223,10 @@ private[akka] sealed case class AspectInit(
   val target: Class[_],
   val actor: Dispatcher,          
   val remoteAddress: Option[InetSocketAddress],
-  val timeout: Long)
+  val timeout: Long){
+
+    def this(target: Class[_],actor: Dispatcher, timeout: Long) = this(target,actor,None,timeout)
+  }
       
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
@@ -362,6 +365,8 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
   private var initTxState: Option[Method] = None
+
+  def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
     if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactionRequired
