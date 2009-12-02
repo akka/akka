@@ -48,6 +48,7 @@
     <module>akka-samples-lift</module>
     <module>akka-samples-java</module>
     <module>akka-samples-security</module>
+    <module>akka-spring</module>
   </modules>
 
   <organization>
