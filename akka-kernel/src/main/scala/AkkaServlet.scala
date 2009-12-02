@@ -17,7 +17,7 @@ import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
-import org.atmosphere.core.JerseyBroadcaster
+import org.atmosphere.jersey.JerseyBroadcaster
 
 /**
  * Akka's servlet to be used when deploying actors exposed as REST services in a standard servlet container,
@@ -72,6 +72,7 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
   }
 
   override def loadConfiguration(sc: ServletConfig) {
+    config = new AtmosphereConfig { supportSession = false }
     atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
 
     loadCometSupport(sc.getInitParameter("cometSupport")) map( setCometSupport(_) )
