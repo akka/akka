@@ -37,73 +37,145 @@ object ActiveObject {
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
 
   def newInstance[T](target: Class[T], timeout: Long): T =
-    newInstance(target, new Dispatcher(None), None, timeout)
+    newInstance(target, new Dispatcher(false, None), None, timeout)
 
   def newInstance[T](target: Class[T], timeout: Long, restartCallbacks: Option[RestartCallbacks]): T =
-    newInstance(target, new Dispatcher(restartCallbacks), None, timeout)
+    newInstance(target, new Dispatcher(false, restartCallbacks), None, timeout)
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
-    newInstance(intf, target, new Dispatcher(None), None, timeout)
+    newInstance(intf, target, new Dispatcher(false, None), None, timeout)
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, restartCallbacks: Option[RestartCallbacks]): T =
-    newInstance(intf, target, new Dispatcher(restartCallbacks), None, timeout)
+    newInstance(intf, target, new Dispatcher(false, restartCallbacks), None, timeout)
+
+  def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean): T =
+    newInstance(target, new Dispatcher(transactionRequired, None), None, timeout)
+
+  def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, restartCallbacks: Option[RestartCallbacks]): T =
+    newInstance(target, new Dispatcher(transactionRequired, restartCallbacks), None, timeout)
+
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean): T =
+    newInstance(intf, target, new Dispatcher(transactionRequired, None), None, timeout)
+
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, restartCallbacks: Option[RestartCallbacks]): T =
+    newInstance(intf, target, new Dispatcher(transactionRequired, restartCallbacks), None, timeout)
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
-    newInstance(target, new Dispatcher(None), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(target, new Dispatcher(false, None), Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T =
-    newInstance(target, new Dispatcher(restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(target, new Dispatcher(false, restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int): T =
-    newInstance(intf, target, new Dispatcher(None), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(intf, target, new Dispatcher(false, None), Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T =
-    newInstance(intf, target, new Dispatcher(restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(intf, target, new Dispatcher(false, restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
+
+  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, hostname: String, port: Int): T =
+    newInstance(target, new Dispatcher(transactionRequired, None), Some(new InetSocketAddress(hostname, port)), timeout)
+
+  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T =
+    newInstance(target, new Dispatcher(transactionRequired, restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, hostname: String, port: Int): T =
+    newInstance(intf, target, new Dispatcher(transactionRequired, None), Some(new InetSocketAddress(hostname, port)), timeout)
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T =
+    newInstance(intf, target, new Dispatcher(transactionRequired, restartCallbacks), Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher): T = {
-    val actor = new Dispatcher(None)
+    val actor = new Dispatcher(false, None)
     actor.messageDispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
   def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
+    val actor = new Dispatcher(false, restartCallbacks)
     actor.messageDispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher): T = {
-    val actor = new Dispatcher(None)
+    val actor = new Dispatcher(false, None)
     actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
+    val actor = new Dispatcher(false, restartCallbacks)
+    actor.messageDispatcher = dispatcher
+    newInstance(intf, target, actor, None, timeout)
+  }
+
+  def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher): T = {
+    val actor = new Dispatcher(transactionRequired, None)
+    actor.messageDispatcher = dispatcher
+    newInstance(target, actor, None, timeout)
+  }
+
+  def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
+    val actor = new Dispatcher(transactionRequired, restartCallbacks)
+    actor.messageDispatcher = dispatcher
+    newInstance(target, actor, None, timeout)
+  }
+
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher): T = {
+    val actor = new Dispatcher(transactionRequired, None)
+    actor.messageDispatcher = dispatcher
+    newInstance(intf, target, actor, None, timeout)
+  }
+
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
+    val actor = new Dispatcher(transactionRequired, restartCallbacks)
     actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
-    val actor = new Dispatcher(None)
+    val actor = new Dispatcher(false, None)
     actor.messageDispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
+    val actor = new Dispatcher(false, restartCallbacks)
     actor.messageDispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
-    val actor = new Dispatcher(None)
+    val actor = new Dispatcher(false, None)
     actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
-    val actor = new Dispatcher(restartCallbacks)
+    val actor = new Dispatcher(false, restartCallbacks)
+    actor.messageDispatcher = dispatcher
+    newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
+    val actor = new Dispatcher(transactionRequired, None)
+    actor.messageDispatcher = dispatcher
+    newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
+    val actor = new Dispatcher(transactionRequired, restartCallbacks)
+    actor.messageDispatcher = dispatcher
+    newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
+    val actor = new Dispatcher(transactionRequired, None)
+    actor.messageDispatcher = dispatcher
+    newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
+  }
+
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
+    val actor = new Dispatcher(transactionRequired, restartCallbacks)
     actor.messageDispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
@@ -282,7 +354,7 @@ private[akka] sealed class ActiveObjectAspect {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends Actor {
+private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Option[RestartCallbacks]) extends Actor {
   private val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
   private val ZERO_ITEM_OBJECT_ARRAY = Array[Object[_]]()
 
@@ -292,7 +364,7 @@ private[akka] class Dispatcher(val callbacks: Option[RestartCallbacks]) extends 
   private var initTxState: Option[Method] = None
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
-    if (targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactionRequired
+    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactionRequired
     id = targetClass.getName
     target = Some(targetInstance)
     val methods = targetInstance.getClass.getDeclaredMethods.toList

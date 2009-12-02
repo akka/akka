@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.amqp
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.Actor.Sender.Self
 
 import com.rabbitmq.client.ConnectionParameters
@@ -30,10 +30,8 @@ object ExampleSession {
 
   def direct = {
     val consumer = AMQP.newConsumer(CONFIG, HOSTNAME, PORT, IM, ExchangeType.Direct, None, 100, false, false, Map[String, AnyRef]())
-    consumer ! MessageConsumerListener("@george_bush", "direct", new Actor() {
-      def receive = {
-        case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload.asInstanceOf[Array[Byte]]))
-      }
+    consumer ! MessageConsumerListener("@george_bush", "direct", actor {
+      case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload.asInstanceOf[Array[Byte]]))
     })
     val producer = AMQP.newProducer(CONFIG, HOSTNAME, PORT, IM, None, None, 100)
     producer ! Message("@jonas_boner: You sucked!!".getBytes, "direct")
@@ -41,15 +39,11 @@ object ExampleSession {
 
   def fanout = {
     val consumer = AMQP.newConsumer(CONFIG, HOSTNAME, PORT, CHAT, ExchangeType.Fanout, None, 100, false, false, Map[String, AnyRef]())
-    consumer ! MessageConsumerListener("@george_bush", "", new Actor() {
-      def receive = {
-        case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload.asInstanceOf[Array[Byte]]))
-      }
+    consumer ! MessageConsumerListener("@george_bush", "", actor {
+      case Message(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload.asInstanceOf[Array[Byte]]))
     })
-    consumer ! MessageConsumerListener("@barack_obama", "", new Actor() {
-      def receive = {
-        case Message(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", new String(payload.asInstanceOf[Array[Byte]]))
-      }
+    consumer ! MessageConsumerListener("@barack_obama", "", actor {
+      case Message(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", new String(payload.asInstanceOf[Array[Byte]]))
     })
     val producer = AMQP.newProducer(CONFIG, HOSTNAME, PORT, CHAT, None, None, 100)
     producer ! Message("@jonas_boner: I'm going surfing".getBytes, "")

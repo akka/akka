@@ -8,7 +8,7 @@ public class Boot {
 
   public Boot() throws Exception  {
     manager.configure(
-      new RestartStrategy(new OneForOne(), 3, 5000),
+      new RestartStrategy(new OneForOne(), 3, 5000, new Class[]{Exception.class}),
         new Component[] {
           new Component(
             sample.java.SimpleService.class,

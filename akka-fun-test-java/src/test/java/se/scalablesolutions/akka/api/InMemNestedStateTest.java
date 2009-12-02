@@ -19,7 +19,7 @@ public class InMemNestedStateTest extends TestCase {
 
   public InMemNestedStateTest() {
     conf.configure(
-        new RestartStrategy(new AllForOne(), 3, 5000),
+        new RestartStrategy(new AllForOne(), 3, 5000, new Class[]{Exception.class}),
         new Component[]{
             // FIXME: remove string-name, add ctor to only accept target class
             new Component(InMemStateful.class, new LifeCycle(new Permanent()), 10000000),

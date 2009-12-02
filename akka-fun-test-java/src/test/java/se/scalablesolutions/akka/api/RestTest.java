@@ -32,7 +32,7 @@ public class RestTest extends TestCase {
   @BeforeClass
   protected void setUp() {
     conf.configure(
-        new RestartStrategy(new AllForOne(), 3, 5000),
+        new RestartStrategy(new AllForOne(), 3, 5000, new Class[]{Exception.class}),
         new Component[] {
           new Component(
               JerseyFoo.class,

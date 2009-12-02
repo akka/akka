@@ -23,7 +23,7 @@ case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends 
  * <pre>
  *  val factory = SupervisorFactory(
  *    SupervisorConfig(
- *      RestartStrategy(OneForOne, 3, 10),
+ *      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception]),
  *      Supervise(
  *        myFirstActor,
  *        LifeCycle(Permanent)) ::
@@ -43,6 +43,7 @@ case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class SupervisorFactory(val config: SupervisorConfig) extends Logging {
+  type ExceptionList = List[Class[_ <: Throwable]]
 
   def newInstance: Supervisor = newInstanceFor(config)
 
@@ -55,10 +56,10 @@ class SupervisorFactory(val config: SupervisorConfig) extends Logging {
   }
 
   protected def create(strategy: RestartStrategy): Supervisor = strategy match {
-    case RestartStrategy(scheme, maxNrOfRetries, timeRange) =>
+    case RestartStrategy(scheme, maxNrOfRetries, timeRange, trapExceptions: ExceptionList) =>
       scheme match {
-        case AllForOne => new Supervisor(AllForOneStrategy(maxNrOfRetries, timeRange))
-        case OneForOne => new Supervisor(OneForOneStrategy(maxNrOfRetries, timeRange))
+        case AllForOne => new Supervisor(AllForOneStrategy(maxNrOfRetries, timeRange), trapExceptions)
+        case OneForOne => new Supervisor(OneForOneStrategy(maxNrOfRetries, timeRange), trapExceptions)
       }
   }
 }
@@ -79,23 +80,23 @@ object SupervisorFactory {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */                                  
-sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
-  extends Actor with Logging with Configurator {  
-  trapExit = List(classOf[Throwable])
+sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
+  extends Actor with Logging with Configurator {
+  
+  trapExit = trapExceptions
   faultHandler = Some(handler)
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
-  val actors = new ConcurrentHashMap[String, Actor]
+  private val actors = new ConcurrentHashMap[String, Actor]
   
+  // Cheating, should really go through the dispatcher rather than direct access to a CHM
   def getInstance[T](clazz: Class[T]) = actors.get(clazz.getName).asInstanceOf[T]
-
   def getComponentInterfaces: List[Class[_]] = actors.values.toArray.toList.map(_.getClass)
-
   def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
 
-  override def start = synchronized {
+  override def start: Actor = synchronized {
     ConfiguratorRepository.registerConfigurator(this)
-    _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
       actor.start
       log.info("Starting actor: %s", actor)
     }
@@ -104,7 +105,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
   
   override def stop = synchronized {
     super[Actor].stop
-    _linkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
+    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
       actor.stop
       log.info("Shutting actor down: %s", actor)
     }
@@ -112,7 +113,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
   }
 
   def receive = {
-    case unknown => throw new IllegalArgumentException("Supervisor does not respond to any messages. Unknown message [" + unknown + "]")
+    case unknown => throw new IllegalArgumentException("Supervisor " + toString + " does not respond to any messages. Unknown message [" + unknown + "]")
   }
 
   def configure(config: SupervisorConfig, factory: SupervisorFactory) = config match {
@@ -121,12 +122,14 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy)
         server match {
           case Supervise(actor, lifeCycle) =>
             actors.put(actor.getClass.getName, actor)
-            actor.lifeCycle = lifeCycle
+            actor.lifeCycle = Some(lifeCycle)
             startLink(actor)
 
-           case SupervisorConfig(_, _) => // recursive configuration
-             factory.newInstanceFor(server.asInstanceOf[SupervisorConfig]).start
-             // FIXME what to do with recursively supervisors?
+           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
+             val supervisor = factory.newInstanceFor(supervisorConfig).start
+             supervisor.lifeCycle = Some(LifeCycle(Permanent))
+             actors.put(supervisor.getClass.getName, supervisor)
+             link(supervisor)
         })
   }
 }
