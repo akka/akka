@@ -63,6 +63,7 @@
     <module>akka-kernel</module>
     <module>akka-fun-test-java</module>
     <module>akka-samples</module>
+    <module>akka-spring</module>
   </modules>
 
   <organization>
