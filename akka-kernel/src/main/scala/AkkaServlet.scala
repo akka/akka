@@ -75,6 +75,7 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
   }
 
   override def loadConfiguration(sc: ServletConfig) {
+    config = new AtmosphereConfig { supportSession = false }
     atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
   }
 
