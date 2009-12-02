@@ -15,8 +15,7 @@ import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes
 
 import org.atmosphere.annotation.{Broadcast, Suspend}
 import org.atmosphere.util.XSSHtmlFilter
-import org.atmosphere.cpr.BroadcastFilter
-import org.atmosphere.cpr.Broadcaster
+import org.atmosphere.cpr.{BroadcastFilter,Broadcaster}
 import org.atmosphere.jersey.Broadcastable
 
 class Boot {
@@ -32,10 +31,10 @@ class Boot {
       Supervise(
          new PersistentSimpleService,
          LifeCycle(Permanent)) ::
-      Supervise(
+   Supervise(
          new PubSub,
-         LifeCycle(Permanent)) ::
-       Nil) )
+         LifeCycle(Permanent))
+      :: Nil))
   factory.newInstance.start
 }
 
