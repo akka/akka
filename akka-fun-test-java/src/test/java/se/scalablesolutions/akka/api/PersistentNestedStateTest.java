@@ -20,7 +20,7 @@ public class PersistentNestedStateTest extends TestCase {
   protected void setUp() {
       PersistenceManager.init();
     conf.configure(
-        new RestartStrategy(new AllForOne(), 3, 5000),
+        new RestartStrategy(new AllForOne(), 3, 5000, new Class[] {Exception.class}),
         new Component[]{
             // FIXME: remove string-name, add ctor to only accept target class
             new Component(PersistentStateful.class, new LifeCycle(new Permanent()), 10000000),

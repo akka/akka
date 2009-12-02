@@ -44,8 +44,7 @@ object TransactionalState {
  */
 @serializable
 trait Transactional {
-  // FIXME: won't work across the remote machines, use [http://johannburkard.de/software/uuid/]
-  var uuid = Uuid.newUuid.toString
+  val uuid: String
 }
 
 /**
@@ -75,6 +74,7 @@ object TransactionalRef {
  */
 class TransactionalRef[T] extends Transactional {
   import org.multiverse.api.ThreadLocalTransaction._
+  val uuid = Uuid.newUuid.toString
 
   private[this] val ref: Ref[T] = atomic { new Ref }
 
@@ -126,6 +126,8 @@ object TransactionalMap {
  */
 class TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
   protected[this] val ref = TransactionalRef[HashTrie[K, V]]
+  val uuid = Uuid.newUuid.toString
+
   ref.swap(new HashTrie[K, V])
  
   def -=(key: K) = remove(key)
@@ -176,7 +178,10 @@ object TransactionalVector {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
+  val uuid = Uuid.newUuid.toString
+
   private[this] val ref = TransactionalRef[Vector[T]]
+
   ref.swap(EmptyVector)
  
   def clear = ref.swap(EmptyVector)

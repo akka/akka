@@ -4,9 +4,11 @@
 
 package se.scalablesolutions.akka.state
 
-import util.Logging
 import se.scalablesolutions.akka.stm.TransactionManagement.currentTransaction
 import se.scalablesolutions.akka.collection._
+import se.scalablesolutions.akka.util.Logging
+
+import org.codehaus.aspectwerkz.proxy.Uuid
 
 class NoTransactionInScopeException extends RuntimeException
 
@@ -18,34 +20,67 @@ case class TokyoCabinetStorageConfig() extends PersistentStorageConfig
 case class MongoStorageConfig() extends PersistentStorageConfig
 
 /**
- * Example Scala usage:
+ * Example Scala usage.
+ * <p/>
+ * New map with generated id.
  * <pre>
  * val myMap = PersistentState.newMap(CassandraStorageConfig)
  * </pre>
- * <p/>
+ *
+ * New map with user-defined id.
+ * <pre>
+ * val myMap = PersistentState.newMap(CassandraStorageConfig, id)
+ * </pre>
+ *
+ * Get map by user-defined id.
+ * <pre>
+ * val myMap = PersistentState.getMap(CassandraStorageConfig, id)
+ * </pre>
+ * 
  * Example Java usage:
  * <pre>
  * TransactionalMap myMap = PersistentState.newMap(new CassandraStorageConfig());
  * </pre>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object PersistentState {
-  def newMap(config: PersistentStorageConfig): PersistentMap = config match {
-    case CassandraStorageConfig() => new CassandraPersistentMap
-    case MongoStorageConfig() => new MongoPersistentMap
+  def newMap(config: PersistentStorageConfig): PersistentMap =
+    // FIXME: won't work across the remote machines, use [http://johannburkard.de/software/uuid/]
+    newMap(config, Uuid.newUuid.toString)
+
+  def newVector(config: PersistentStorageConfig): PersistentVector =
+    newVector(config, Uuid.newUuid.toString)
+
+  def newRef(config: PersistentStorageConfig): PersistentRef =
+    newRef(config, Uuid.newUuid.toString)
+
+  def getMap(config: PersistentStorageConfig, id: String): PersistentMap =
+    newMap(config, id)
+
+  def getVector(config: PersistentStorageConfig, id: String): PersistentVector =
+    newVector(config, id)
+
+  def getRef(config: PersistentStorageConfig, id: String): PersistentRef =
+    newRef(config, id)
+
+  def newMap(config: PersistentStorageConfig, id: String): PersistentMap = config match {
+    case CassandraStorageConfig() => new CassandraPersistentMap(id)
+    case MongoStorageConfig() => new MongoPersistentMap(id)
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  def newVector(config: PersistentStorageConfig): PersistentVector = config match {
-    case CassandraStorageConfig() => new CassandraPersistentVector
-    case MongoStorageConfig() => new MongoPersistentVector
+  def newVector(config: PersistentStorageConfig, id: String): PersistentVector = config match {
+    case CassandraStorageConfig() => new CassandraPersistentVector(id)
+    case MongoStorageConfig() => new MongoPersistentVector(id)
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
 
-  def newRef(config: PersistentStorageConfig): PersistentRef = config match {
-    case CassandraStorageConfig() => new CassandraPersistentRef
-    case MongoStorageConfig() => new MongoPersistentRef
+  def newRef(config: PersistentStorageConfig, id: String): PersistentRef = config match {
+    case CassandraStorageConfig() => new CassandraPersistentRef(id)
+    case MongoStorageConfig() => new MongoPersistentRef(id)
     case TerracottaStorageConfig() => throw new UnsupportedOperationException
     case TokyoCabinetStorageConfig() => throw new UnsupportedOperationException
   }
@@ -60,7 +95,8 @@ object PersistentState {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Transactional with Committable with Logging {
+trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef]
+  with Transactional with Committable with Logging {
   protected val newAndUpdatedEntries = TransactionalState.newMap[AnyRef, AnyRef]
   protected val removedEntries = TransactionalState.newVector[AnyRef]
   protected val shouldClearOnCommit = TransactionalRef[Boolean]()
@@ -71,7 +107,8 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   def commit = {
     storage.removeMapStorageFor(uuid, removedEntries.toList)
     storage.insertMapStorageEntriesFor(uuid, newAndUpdatedEntries.toList)
-    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get) storage.removeMapStorageFor(uuid)
+    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get)
+      storage.removeMapStorageFor(uuid)
     newAndUpdatedEntries.clear
     removedEntries.clear
   }
@@ -95,9 +132,11 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
     removedEntries.add(key)
   }
   
-  def slice(start: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]] = slice(start, None, count)
+  def slice(start: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]] =
+    slice(start, None, count)
 
-  def slice(start: Option[AnyRef], finish: Option[AnyRef], count: Int): List[Tuple2[AnyRef, AnyRef]] = try {
+  def slice(start: Option[AnyRef], finish: Option[AnyRef], count: Int):
+    List[Tuple2[AnyRef, AnyRef]] = try {
     storage.getMapStorageRangeFor(uuid, start, finish, count)
   } catch { case e: Exception => Nil }
 
@@ -107,7 +146,8 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
   }
   
   override def contains(key: AnyRef): Boolean = try {
-    newAndUpdatedEntries.contains(key) || storage.getMapStorageEntryFor(uuid, key).isDefined
+    newAndUpdatedEntries.contains(key) ||
+    storage.getMapStorageEntryFor(uuid, key).isDefined
   } catch { case e: Exception => false }
 
   override def size: Int = try {
@@ -148,22 +188,22 @@ trait PersistentMap extends scala.collection.mutable.Map[AnyRef, AnyRef] with Tr
 }
 
 /**
- * Implements a persistent transaction
- 
- al map based on the Cassandra distributed P2P key-value storage.
+ * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
  *
- * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentMap extends PersistentMap {
+class CassandraPersistentMap(id: String) extends PersistentMap {
+  val uuid = id
   val storage = CassandraStorage
 }
 
 /**
- * Implements a persistent transactional map based on the MongoDB distributed P2P key-value storage.
+ * Implements a persistent transactional map based on the MongoDB document storage.
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class MongoPersistentMap extends PersistentMap {
+class MongoPersistentMap(id: String) extends PersistentMap {
+  val uuid = id
   val storage = MongoStorage
 }
 
@@ -244,20 +284,24 @@ trait PersistentVector extends RandomAccessSeq[AnyRef] with Transactional with C
 }
 
 /**
- * Implements a persistent transactional vector based on the Cassandra distributed P2P key-value storage.
+ * Implements a persistent transactional vector based on the Cassandra
+ * distributed P2P key-value storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentVector extends PersistentVector {
+class CassandraPersistentVector(id: String) extends PersistentVector {
+  val uuid = id
   val storage = CassandraStorage
 }
 
 /**                                                                                                                                           
- * Implements a persistent transactional vector based on the MongoDB distributed P2P key-value storage.
+ * Implements a persistent transactional vector based on the MongoDB
+ * document  storage.
  *
  * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
  */
-class MongoPersistentVector extends PersistentVector {
+class MongoPersistentVector(id: String) extends PersistentVector {
+  val uuid = id
   val storage = MongoStorage
 } 
 
@@ -297,10 +341,12 @@ trait PersistentRef extends Transactional with Committable {
   }
 }
 
-class CassandraPersistentRef extends PersistentRef {
+class CassandraPersistentRef(id: String) extends PersistentRef {
+  val uuid = id
   val storage = CassandraStorage
 }
 
-class MongoPersistentRef extends PersistentRef {
+class MongoPersistentRef(id: String) extends PersistentRef {
+  val uuid = id
   val storage = MongoStorage
 }

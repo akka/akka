@@ -471,7 +471,7 @@ class RemoteSupervisorTest extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100),
+        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
@@ -486,7 +486,7 @@ class RemoteSupervisorTest extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100),
+        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
@@ -504,7 +504,7 @@ class RemoteSupervisorTest extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100),
+        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
@@ -530,7 +530,7 @@ class RemoteSupervisorTest extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100),
+        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
@@ -556,13 +556,13 @@ class RemoteSupervisorTest extends JUnitSuite {
 
     val factory = SupervisorFactory(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100),
+        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
             ::
             SupervisorConfig(
-              RestartStrategy(AllForOne, 3, 100),
+              RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
               Supervise(
                 pingpong2,
                 LifeCycle(Permanent))

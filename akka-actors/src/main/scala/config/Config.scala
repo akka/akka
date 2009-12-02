@@ -22,7 +22,11 @@ object ScalaConfig {
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
   case class Supervise(actor: Actor, lifeCycle: LifeCycle) extends Server
 
-  case class RestartStrategy(scheme: FailOverScheme, maxNrOfRetries: Int, withinTimeRange: Int) extends ConfigElement
+  case class RestartStrategy(
+      scheme: FailOverScheme,
+      maxNrOfRetries: Int,
+      withinTimeRange: Int,
+      trapExceptions: List[Class[_ <: Throwable]]) extends ConfigElement
 
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
@@ -44,6 +48,7 @@ object ScalaConfig {
                   val target: Class[_],
                   val lifeCycle: LifeCycle,
                   val timeout: Int,
+                  val transactionRequired: Boolean,
                   _dispatcher: MessageDispatcher, // optional
                   _remoteAddress: RemoteAddress   // optional
           ) extends Server {
@@ -53,28 +58,52 @@ object ScalaConfig {
   }
   object Component {
     def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
-      new Component(intf, target, lifeCycle, timeout, null, null)
+      new Component(intf, target, lifeCycle, timeout, false, null, null)
 
     def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
-      new Component(null, target, lifeCycle, timeout, null, null)
+      new Component(null, target, lifeCycle, timeout, false, null, null)
 
     def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
-      new Component(intf, target, lifeCycle, timeout, dispatcher, null)
+      new Component(intf, target, lifeCycle, timeout, false, dispatcher, null)
 
     def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
-      new Component(null, target, lifeCycle, timeout, dispatcher, null)
+      new Component(null, target, lifeCycle, timeout, false, dispatcher, null)
 
     def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
-      new Component(intf, target, lifeCycle, timeout, null, remoteAddress)
+      new Component(intf, target, lifeCycle, timeout, false, null, remoteAddress)
 
     def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
-      new Component(null, target, lifeCycle, timeout, null, remoteAddress)
+      new Component(null, target, lifeCycle, timeout, false, null, remoteAddress)
 
     def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
-      new Component(intf, target, lifeCycle, timeout, dispatcher, remoteAddress)
+      new Component(intf, target, lifeCycle, timeout, false, dispatcher, remoteAddress)
 
     def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
-      new Component(null, target, lifeCycle, timeout, dispatcher, remoteAddress)
+      new Component(null, target, lifeCycle, timeout, false, dispatcher, remoteAddress)
+
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean) =
+      new Component(intf, target, lifeCycle, timeout, transactionRequired, null, null)
+
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean) =
+      new Component(null, target, lifeCycle, timeout, transactionRequired, null, null)
+
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, dispatcher: MessageDispatcher) =
+      new Component(intf, target, lifeCycle, timeout, transactionRequired, dispatcher, null)
+
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, dispatcher: MessageDispatcher) =
+      new Component(null, target, lifeCycle, timeout, transactionRequired, dispatcher, null)
+
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, remoteAddress: RemoteAddress) =
+      new Component(intf, target, lifeCycle, timeout, transactionRequired, null, remoteAddress)
+
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, remoteAddress: RemoteAddress) =
+      new Component(null, target, lifeCycle, timeout, transactionRequired, null, remoteAddress)
+
+    def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
+      new Component(intf, target, lifeCycle, timeout, transactionRequired, dispatcher, remoteAddress)
+
+    def apply(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
+      new Component(null, target, lifeCycle, timeout, transactionRequired, dispatcher, remoteAddress)
   }
 }
 
@@ -89,9 +118,10 @@ object JavaConfig {
   class RestartStrategy(
       @BeanProperty val scheme: FailOverScheme,
       @BeanProperty val maxNrOfRetries: Int,
-      @BeanProperty val withinTimeRange: Int) extends ConfigElement {
+      @BeanProperty val withinTimeRange: Int,
+      @BeanProperty val trapExceptions: Array[Class[_ <: Throwable]]) extends ConfigElement {
     def transform = se.scalablesolutions.akka.config.ScalaConfig.RestartStrategy(
-      scheme.transform, maxNrOfRetries, withinTimeRange)
+      scheme.transform, maxNrOfRetries, withinTimeRange, trapExceptions.toList)
   }
   
   class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
@@ -133,33 +163,56 @@ object JavaConfig {
                   @BeanProperty val target: Class[_],
                   @BeanProperty val lifeCycle: LifeCycle,
                   @BeanProperty val timeout: Int,
+                  @BeanProperty val transactionRequired: Boolean,  // optional
                   @BeanProperty val dispatcher: MessageDispatcher, // optional
                   @BeanProperty val remoteAddress: RemoteAddress   // optional
           ) extends Server {
 
     def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
-      this(intf, target, lifeCycle, timeout, null, null)
+      this(intf, target, lifeCycle, timeout, false, null, null)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
-      this(null, target, lifeCycle, timeout, null, null)
+      this(null, target, lifeCycle, timeout, false, null, null)
 
     def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
-      this(intf, target, lifeCycle, timeout, null, remoteAddress)
+      this(intf, target, lifeCycle, timeout, false, null, remoteAddress)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, remoteAddress: RemoteAddress) =
-      this(null, target, lifeCycle, timeout, null, remoteAddress)
+      this(null, target, lifeCycle, timeout, false, null, remoteAddress)
 
     def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
-      this(intf, target, lifeCycle, timeout, dispatcher, null)
+      this(intf, target, lifeCycle, timeout, false, dispatcher, null)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher) =
-      this(null, target, lifeCycle, timeout, dispatcher, null)
+      this(null, target, lifeCycle, timeout, false, dispatcher, null)
 
     def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
-      this(null, target, lifeCycle, timeout, dispatcher, remoteAddress)
+      this(null, target, lifeCycle, timeout, false, dispatcher, remoteAddress)
+
+    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean) =
+      this(intf, target, lifeCycle, timeout, transactionRequired, null, null)
+
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean) =
+      this(null, target, lifeCycle, timeout, transactionRequired, null, null)
+
+    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, remoteAddress: RemoteAddress) =
+      this(intf, target, lifeCycle, timeout, transactionRequired, null, remoteAddress)
+
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, remoteAddress: RemoteAddress) =
+      this(null, target, lifeCycle, timeout, transactionRequired, null, remoteAddress)
+
+    def this(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, dispatcher: MessageDispatcher) =
+      this(intf, target, lifeCycle, timeout, transactionRequired, dispatcher, null)
+
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, dispatcher: MessageDispatcher) =
+      this(null, target, lifeCycle, timeout, transactionRequired, dispatcher, null)
+
+    def this(target: Class[_], lifeCycle: LifeCycle, timeout: Int, transactionRequired: Boolean, dispatcher: MessageDispatcher, remoteAddress: RemoteAddress) =
+      this(null, target, lifeCycle, timeout, transactionRequired, dispatcher, remoteAddress)
 
     def transform =
-      se.scalablesolutions.akka.config.ScalaConfig.Component(intf, target, lifeCycle.transform, timeout, dispatcher,
+      se.scalablesolutions.akka.config.ScalaConfig.Component(
+        intf, target, lifeCycle.transform, timeout, transactionRequired, dispatcher,
         if (remoteAddress != null) se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
 
     def newSupervised(actor: Actor) =
