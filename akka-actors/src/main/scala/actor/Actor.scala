@@ -418,7 +418,7 @@ trait Actor extends TransactionManagement {
       _isRunning = true
       //if (isTransactional) this !! TransactionalInit
     }
-    Actor.log.info("[%s] has started", toString)
+    Actor.log.debug("[%s] has started", toString)
     this
   }
 
@@ -648,8 +648,11 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def startLink(actor: Actor) = {
-    actor.start
-    link(actor)
+    try { 
+      actor.start 
+    } finally { 
+      link(actor) 
+    }
   }
 
   /**
@@ -658,9 +661,12 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def startLinkRemote(actor: Actor, hostname: String, port: Int) = {
-    actor.makeRemote(hostname, port)
-    actor.start
-    link(actor)
+    try { 
+      actor.makeRemote(hostname, port)
+      actor.start
+    } finally { 
+      link(actor) 
+    }
   }
 
   /**
@@ -669,11 +675,7 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def spawn[T <: Actor](actorClass: Class[T]): T = {
-    val actor = actorClass.newInstance.asInstanceOf[T]
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
-      actor.dispatcher = dispatcher
-      actor._mailbox = _mailbox
-    }
+    val actor = spawnButDoNotStart(actorClass)
     actor.start
     actor
   }
@@ -684,12 +686,8 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def spawnRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
-    val actor = actorClass.newInstance.asInstanceOf[T]
+    val actor = spawnButDoNotStart(actorClass)    
     actor.makeRemote(hostname, port)
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
-      actor.dispatcher = dispatcher
-      actor._mailbox = _mailbox
-    }
     actor.start
     actor
   }
@@ -700,8 +698,12 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def spawnLink[T <: Actor](actorClass: Class[T]): T = {
-    val actor = spawn[T](actorClass)
-    link(actor)
+    val actor = spawnButDoNotStart(actorClass)
+    try { 
+      actor.start
+    } finally { 
+      link(actor) 
+    }
     actor
   }
 
@@ -711,9 +713,13 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def spawnLinkRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
-    val actor = spawn[T](actorClass)
-    actor.makeRemote(hostname, port)
-    link(actor)
+    val actor = spawnButDoNotStart(actorClass)
+    try { 
+      actor.makeRemote(hostname, port)
+      actor.start
+    } finally { 
+      link(actor) 
+    }
     actor
   }
 
@@ -721,6 +727,15 @@ trait Actor extends TransactionManagement {
   // ==== IMPLEMENTATION DETAILS ====
   // ================================
 
+  private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
+    val actor = actorClass.newInstance.asInstanceOf[T]
+    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
+      actor.dispatcher = dispatcher
+      actor._mailbox = _mailbox
+    }
+    actor
+  }
+  
   private def postMessageToMailbox(message: AnyRef, sender: Option[Actor]): Unit = _remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder

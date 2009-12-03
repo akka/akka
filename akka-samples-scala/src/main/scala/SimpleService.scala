@@ -155,7 +155,10 @@ class Chat extends Actor with Logging {
   @Consumes(Array("application/x-www-form-urlencoded"))
   @POST
   @Produces(Array("text/html"))
-  def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"), form.getFirst("action"), form.getFirst("message"))).getOrElse("System__error")
+  def publishMessage(form: MultivaluedMap[String, String]) =
+    (this !! Chat(form.getFirst("name"),
+                  form.getFirst("action"),
+                  form.getFirst("message"))).getOrElse("System__error")
 }
 
 
@@ -171,8 +174,6 @@ class JsonpFilter extends BroadcastFilter[String] with Logging {
     }
 
     ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" +
-            name + "\", message: \"" +
-            message +
-     "\" }); \n</script>\n")
+    name + "\", message: \"" + message + "\" }); \n</script>\n")
   }
 }

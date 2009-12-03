@@ -23,7 +23,7 @@
     <dependency>
       <groupId>com.sun.grizzly</groupId>
       <artifactId>grizzly-servlet-webserver</artifactId>
-      <version>1.8.6.3</version>
+      <version>${grizzly.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
