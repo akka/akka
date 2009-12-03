@@ -28,6 +28,8 @@
     <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
+    <atmosphere.version>0.4.1</atmosphere.version>
+    <jersey.version>1.1.4</jersey.version>
   </properties>
 
   <modules>
