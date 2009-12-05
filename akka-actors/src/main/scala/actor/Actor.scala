@@ -116,7 +116,7 @@ object Actor extends Logging {
    *
    */
   def actor[A](body: => Unit) = {
-    def handler[A](body: Unit) = new {
+    def handler[A](body: => Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
         start
         body
