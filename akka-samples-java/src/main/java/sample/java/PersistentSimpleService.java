@@ -12,9 +12,9 @@ import se.scalablesolutions.akka.annotation.transactionrequired;
 import se.scalablesolutions.akka.annotation.prerestart;
 import se.scalablesolutions.akka.annotation.postrestart;
 import se.scalablesolutions.akka.state.PersistentMap;
-import se.scalablesolutions.akka.state.PersistentState;
-import se.scalablesolutions.akka.state.PersistentMap;
-import se.scalablesolutions.akka.state.CassandraStorageConfig;
+import se.scalablesolutions.akka.state.CassandraStorage;
+
+import java.nio.ByteBuffer;
 
 /**
  * Try service out by invoking (multiple times):
@@ -26,21 +26,22 @@ import se.scalablesolutions.akka.state.CassandraStorageConfig;
 @Path("/persistentjavacount")
 @transactionrequired
 public class PersistentSimpleService {
-  private Object KEY = "COUNTER";
+  private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private PersistentMap storage = PersistentState.newMap(new CassandraStorageConfig());
+  private PersistentMap<byte[], byte[]> storage = CassandraStorage.newMap();
 
   @GET
   @Produces({"application/html"})
   public String count() {
     if (!hasStartedTicking) {
-      storage.put(KEY, 0);
+      storage.put(KEY.getBytes(), ByteBuffer.allocate(2).putInt(0).array());
       hasStartedTicking = true;
       return "Tick: 0\n";
     } else {
-      int counter = (Integer)storage.get(KEY).get() + 1;
-      storage.put(KEY, counter);
+      byte[] bytes = (byte[])storage.get(KEY.getBytes()).get();
+      int counter = ByteBuffer.wrap(bytes).getInt();
+      storage.put(KEY.getBytes(), ByteBuffer.allocate(4).putInt(counter + 1).array());
       return "Tick: " + counter + "\n";
     }
   }

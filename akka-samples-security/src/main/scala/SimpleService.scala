@@ -44,7 +44,7 @@ class DigestAuthenticationService extends DigestAuthenticationActor {
   //don't forget to configure your standalone Cassandra instance
   //
   //makeTransactionRequired
-  //override def mkNonceMap = PersistentState.newMap(CassandraStorageConfig()).asInstanceOf[scala.collection.mutable.Map[String,Long]]
+  //override def mkNonceMap = Storage.newMap(CassandraStorageConfig()).asInstanceOf[scala.collection.mutable.Map[String,Long]]
 
   //Use an in-memory nonce-map as default
   override def mkNonceMap = new scala.collection.mutable.HashMap[String, Long]
