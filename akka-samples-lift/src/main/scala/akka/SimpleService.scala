@@ -1,13 +1,13 @@
 package sample.lift
 
-import se.scalablesolutions.akka.state.{PersistentState, TransactionalState, CassandraStorageConfig}
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.state.{CassandraStorage, TransactionalState}
 
 import java.lang.Integer
-import javax.ws.rs.core.MultivaluedMap
-import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes}
+import javax.ws.rs.{GET, Path, Produces}
+import java.nio.ByteBuffer
+
 
 /**
  * Try service out by invoking (multiple times):
@@ -56,7 +56,7 @@ class PersistentSimpleService extends Actor {
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private val storage = PersistentState.newMap(CassandraStorageConfig())
+  private val storage = CassandraStorage.newMap
 
   @GET
   @Produces(Array("text/html"))
@@ -64,13 +64,14 @@ class PersistentSimpleService extends Actor {
 
   def receive = {
     case Tick => if (hasStartedTicking) {
-      val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
-      storage.put(KEY, new Integer(counter + 1))
-      reply(<h1>Tick: {counter + 1}</h1>)
+      val bytes = storage.get(KEY.getBytes).get
+      val counter = ByteBuffer.wrap(bytes).getInt
+      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
+      reply(<success>Tick:{counter + 1}</success>)
     } else {
-      storage.put(KEY, new Integer(0))
+      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(0).array)
       hasStartedTicking = true
-      reply(<h1>Tick: 0</h1>)
+      reply(<success>Tick: 0</success>)
     }
   }
 }

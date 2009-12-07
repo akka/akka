@@ -13,7 +13,6 @@ import se.scalablesolutions.akka.annotation.prerestart;
 import se.scalablesolutions.akka.annotation.postrestart;
 import se.scalablesolutions.akka.state.TransactionalState;
 import se.scalablesolutions.akka.state.TransactionalMap;
-import se.scalablesolutions.akka.state.CassandraStorageConfig;
 
 /**                                
  * Try service out by invoking (multiple times):
