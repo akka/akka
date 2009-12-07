@@ -8,7 +8,7 @@ public class PersistentClasher {
 
   @inittransactionalstate
   public void init() {
-    state = PersistentState.newMap(new CassandraStorageConfig());
+    state = CassandraStorage.newMap();
   }
   
   public String getState(String key) {
