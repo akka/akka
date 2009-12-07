@@ -1,10 +1,7 @@
 package se.scalablesolutions.akka.actor
 
-import junit.framework.TestCase
-
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import scala.collection.mutable.HashSet
 
 class MemoryFootprintTest extends JUnitSuite   {
   class Mem extends Actor {
@@ -13,20 +10,24 @@ class MemoryFootprintTest extends JUnitSuite   {
     }
   }
 
+  val NR_OF_ACTORS = 100000
+  val MAX_MEMORY_FOOTPRINT_PER_ACTOR = 600
+
   @Test
-  def shouldCreateManyActors = {
-  /*  println("============== MEMORY TEST ==============")
-    val actors = new HashSet[Actor]
-    println("Total memory: " + Runtime.getRuntime.totalMemory)
-    (1 until 1000000).foreach {i =>
-      val mem = new Mem
-      actors += mem
-      if ((i % 100000) == 0) {
-        println("Nr actors: " + i)
-        println("Total memory: " + (Runtime.getRuntime.totalMemory - Runtime.getRuntime.freeMemory))
-      }
-    }
-    */
-    assert(true)
+  def actorsShouldHaveLessMemoryFootprintThan630Bytes = {
+    println("============== MEMORY FOOTPRINT TEST ==============")
+    // warm up
+    (1 until 10000).foreach(i => new Mem)
+
+    // Actors are put in AspectRegistry when created so they won't be GCd here
+
+    val totalMem = Runtime.getRuntime.totalMemory - Runtime.getRuntime.freeMemory
+    (1 until NR_OF_ACTORS).foreach(i => new Mem)
+    
+    val newTotalMem = Runtime.getRuntime.totalMemory - Runtime.getRuntime.freeMemory
+    val memPerActor = (newTotalMem - totalMem) / NR_OF_ACTORS
+
+    println("Memory footprint per actor is : " + memPerActor)
+    assert(memPerActor < MAX_MEMORY_FOOTPRINT_PER_ACTOR) // memory per actor should be less than 630 bytes
   }
 }

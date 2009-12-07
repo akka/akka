@@ -14,6 +14,7 @@ import java.net.URLClassLoader
 
 import se.scalablesolutions.akka.nio.RemoteNode
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.actor.ActorRegistry
 
 /**
  * The Akka Kernel. 
@@ -32,9 +33,13 @@ object Kernel extends Logging {
 
   // FIXME add API to shut server down gracefully
   @volatile private var hasBooted = false
-  private var jerseySelectorThread: SelectorThread = _
+  private var jerseySelectorThread: Option[SelectorThread] = None
   private val startTime = System.currentTimeMillis
   private var applicationLoader: Option[ClassLoader] = None
+
+  private lazy val remoteServerThread = new Thread(new Runnable() {
+    def run = RemoteNode.start(applicationLoader)
+  }, "Akka Remote Service")
 
   def main(args: Array[String]) = boot
 
@@ -61,20 +66,33 @@ object Kernel extends Logging {
       hasBooted = true
     }
   }
-  
-  def startRemoteService = {
-    // FIXME manage remote serve thread for graceful shutdown
-    val remoteServerThread = new Thread(new Runnable() {
-      def run = RemoteNode.start(applicationLoader)
-    }, "Akka Remote Service")
-    remoteServerThread.start
+
+  // TODO document Kernel.shutdown
+  def shutdown = synchronized {
+    if (hasBooted) {
+      log.info("Shutting down Akka...")
+      ActorRegistry.shutdownAll
+      if (jerseySelectorThread.isDefined) {
+        log.info("Shutting down REST service (Jersey)")
+        jerseySelectorThread.get.stopEndpoint
+      }
+      if (remoteServerThread.isAlive) {
+        log.info("Shutting down remote service")
+        RemoteNode.shutdown
+        remoteServerThread.join(1000)
+      }
+      log.info("Akka succesfully shut down")
+    }
   }
+
+  def startRemoteService = remoteServerThread.start
 
   def startREST = {
     val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
 
     val scheme = uri.getScheme
-    if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException("The URI scheme, of the URI " + REST_URL + ", must be equal (ignoring case) to 'http'")
+    if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException(
+      "The URI scheme, of the URI " + REST_URL + ", must be equal (ignoring case) to 'http'")
 
     val adapter = new ServletAdapter
     adapter.setHandleStaticResources(true)
@@ -83,19 +101,19 @@ object Kernel extends Logging {
     //Using autodetection for now
     adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
     if (HOME.isDefined) adapter.setRootFolder(HOME.get + "/deploy/root")
-    log.info("REST service root path: [" + adapter.getRootFolder + "] and context path [" + adapter.getContextPath + "] ")
+    log.info("REST service root path [%s] and context path [%s]", adapter.getRootFolder, adapter.getContextPath)
 
     val ah = new com.sun.grizzly.arp.DefaultAsyncHandler
     ah.addAsyncFilter(new com.sun.grizzly.comet.CometAsyncFilter)
-    jerseySelectorThread = new SelectorThread
-    jerseySelectorThread.setAlgorithmClassName(classOf[StaticStreamAlgorithm].getName)
-    jerseySelectorThread.setPort(REST_PORT)
-    jerseySelectorThread.setAdapter(adapter)
-    jerseySelectorThread.setEnableAsyncExecution(true)
-    jerseySelectorThread.setAsyncHandler(ah)
-    jerseySelectorThread.listen
+    jerseySelectorThread = Some(new SelectorThread)
+    jerseySelectorThread.get.setAlgorithmClassName(classOf[StaticStreamAlgorithm].getName)
+    jerseySelectorThread.get.setPort(REST_PORT)
+    jerseySelectorThread.get.setAdapter(adapter)
+    jerseySelectorThread.get.setEnableAsyncExecution(true)
+    jerseySelectorThread.get.setAsyncHandler(ah)
+    jerseySelectorThread.get.listen
 
-    log.info("REST service started successfully. Listening to port [" + REST_PORT + "]")
+    log.info("REST service started successfully. Listening to port [%s]", REST_PORT)
   }
 
   private def runApplicationBootClasses = {
@@ -113,7 +131,8 @@ object Kernel extends Logging {
       new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
     } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") != null) {
       getClass.getClassLoader
-    } else throw new IllegalStateException("AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+    } else throw new IllegalStateException(
+      "AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
     for (clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
@@ -132,7 +151,7 @@ object Kernel extends Logging {
  (____  /__|_ \__|_ \(____  /
       \/     \/    \/     \/
 """)
-    log.info("     Running version " + VERSION)
+    log.info("     Running version %s", VERSION)
     log.info("==============================")
   }
 }

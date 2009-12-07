@@ -723,9 +723,9 @@ trait Actor extends TransactionManagement {
     actor
   }
 
-  // ================================
-  // ==== IMPLEMENTATION DETAILS ====
-  // ================================
+  // =========================================
+  // ==== INTERNAL IMPLEMENTATION DETAILS ====
+  // =========================================
 
   private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
@@ -848,7 +848,7 @@ trait Actor extends TransactionManagement {
       } else proceed
     } catch {
       case e =>
-        Actor.log.error(e, "Could not invoke actor [%s]", this)
+        Actor.log.error(e, "Exception when invoking actor [%s] with message [%s]", this, message)
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
         clearTransaction // need to clear currentTransaction before call to supervisor
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
@@ -897,8 +897,9 @@ trait Actor extends TransactionManagement {
             case Permanent =>
               actor.restart(reason)
             case Temporary =>
-              Actor.log.info("Actor [%s] configured as TEMPORARY will not be restarted.", actor.id)
+              Actor.log.info("Actor [%s] configured as TEMPORARY and will not be restarted.", actor.id)
               getLinkedActors.remove(actor) // remove the temporary actor
+              actor.stop
           }
         }
       }
