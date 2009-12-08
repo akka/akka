@@ -49,8 +49,8 @@ private[akka] object MongoStorageBackend extends
   val MONGODB_SERVER_DBNAME = config.getString("akka.storage.mongodb.dbname", "testdb")
   val MONGODB_SERVER_PORT = config.getInt("akka.storage.mongodb.port", 27017)
 
-  val db = new Mongo(MONGODB_SERVER_HOSTNAME, MONGODB_SERVER_PORT, MONGODB_SERVER_DBNAME)
-  val coll = db.getCollection(COLLECTION)
+  val db = new Mongo(MONGODB_SERVER_HOSTNAME, MONGODB_SERVER_PORT)
+  val coll = db.getDB(MONGODB_SERVER_DBNAME).getCollection(COLLECTION)
 
   // FIXME: make this pluggable
   private[this] val serializer = SJSON

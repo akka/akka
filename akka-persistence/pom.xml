@@ -30,7 +30,7 @@
     <dependency>
       <groupId>com.mongodb</groupId>
       <artifactId>mongo</artifactId>
-      <version>0.6</version>
+      <version>1.0</version>
     </dependency>
 
     <!-- For Cassandra -->
