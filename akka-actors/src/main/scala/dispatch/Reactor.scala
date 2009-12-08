@@ -67,10 +67,12 @@ class MessageInvocation(val receiver: Actor,
   }
   
   override def toString(): String = synchronized { 
-    "MessageInvocation[message = " + message +
-        ", receiver = " + receiver +
-        ", sender = " + sender +
-        ", future = " + future +
-        ", tx = " + tx + "]"
+    "MessageInvocation[" +
+     "\n\tmessage = " + message +
+     "\n\treceiver = " + receiver +
+     "\n\tsender = " + sender +
+     "\n\tfuture = " + future +
+     "\n\ttx = " + tx +
+     "\n]"
   }
 }
