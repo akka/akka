@@ -38,7 +38,7 @@ trait MessageDemultiplexer {
 }
 
 class MessageInvocation(val receiver: Actor,
-                        val message: AnyRef,
+                        val message: Any,
                         val future: Option[CompletableFutureResult],
                         val sender: Option[Actor],
                         val tx: Option[Transaction]) {
