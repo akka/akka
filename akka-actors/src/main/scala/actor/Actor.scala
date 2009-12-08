@@ -17,11 +17,10 @@ import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
-import se.scalablesolutions.akka.util.Logging
-
 import org.codehaus.aspectwerkz.proxy.Uuid
 
 import org.multiverse.api.ThreadLocalTransaction._
+import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 /**
  * Mix in this trait to give an actor TransactionRequired semantics.
@@ -215,6 +214,7 @@ trait Actor extends TransactionManagement {
   implicit protected val self: Actor = this
 
   // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
+  // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = Uuid.newUuid.toString
   def uuid = _uuid
 
@@ -958,6 +958,18 @@ trait Actor extends TransactionManagement {
       Serializer.Java.deepClone(message)
     } else message
   } else message
+
+  override def hashCode(): Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, _uuid)
+    result
+  }
+
+  override def equals(that: Any): Boolean = {
+    that != null &&
+    that.isInstanceOf[Actor] &&
+    that.asInstanceOf[Actor]._uuid == _uuid
+  }
 
   override def toString(): String = "Actor[" + id + ":" + uuid + "]"
 }
