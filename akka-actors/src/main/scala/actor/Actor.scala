@@ -865,7 +865,7 @@ trait Actor extends TransactionManagement {
   private def base: PartialFunction[Any, Unit] = lifeCycles orElse (_hotswap getOrElse receive)
 
   private val lifeCycles: PartialFunction[Any, Unit] = {
-    case Init(config) =>       init(config)
+    case Init(config) =>       _config = Some(config); init(config)
     case HotSwap(code) =>      _hotswap = code
     case Restart(reason) =>    restart(reason)
     case Exit(dead, reason) => handleTrapExit(dead, reason)
