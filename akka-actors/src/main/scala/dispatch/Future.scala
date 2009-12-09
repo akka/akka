@@ -18,12 +18,12 @@ sealed trait FutureResult {
   def isCompleted: Boolean
   def isExpired: Boolean
   def timeoutInNanos: Long
-  def result: Option[AnyRef]
+  def result: Option[Any]
   def exception: Option[Tuple2[AnyRef, Throwable]]
 }
 
 trait CompletableFutureResult extends FutureResult {
-  def completeWithResult(result: AnyRef)
+  def completeWithResult(result: Any)
   def completeWithException(toBlame: AnyRef, exception: Throwable)
 }
 
@@ -36,7 +36,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
   private val _lock = new ReentrantLock
   private val _signal = _lock.newCondition
   private var _completed: Boolean = _
-  private var _result: Option[AnyRef] = None
+  private var _result: Option[Any] = None
   private var _exception: Option[Tuple2[AnyRef, Throwable]] = None
 
   def await = try {
@@ -79,7 +79,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  def result: Option[AnyRef] = try {
+  def result: Option[Any] = try {
     _lock.lock
     _result
   } finally {
@@ -93,7 +93,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
     _lock.unlock
   }
 
-  def completeWithResult(result: AnyRef) = try {
+  def completeWithResult(result: Any) = try {
     _lock.lock
     if (!_completed) {
       _completed = true

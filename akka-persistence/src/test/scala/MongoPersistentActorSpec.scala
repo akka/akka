@@ -31,10 +31,8 @@ case object LogSize
 
 class BankAccountActor extends Actor {
   makeTransactionRequired
-  private val accountState =
-    PersistentState.newMap(MongoStorageConfig())
-  private val txnLog =
-    PersistentState.newVector(MongoStorageConfig())
+  private val accountState = MongoStorage.newMap
+  private val txnLog = MongoStorage.newVector
 
   def receive: PartialFunction[Any, Unit] = {
     // check balance

@@ -4,18 +4,19 @@
 
 package sample.scala
 
-import se.scalablesolutions.akka.state.{PersistentState, TransactionalState, CassandraStorageConfig}
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.state.{CassandraStorage, TransactionalState}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
 import java.lang.Integer
+import java.nio.ByteBuffer
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes,PathParam}
 
 import org.atmosphere.annotation.{Broadcast, Suspend}
 import org.atmosphere.util.XSSHtmlFilter
-import org.atmosphere.cpr.{BroadcastFilter,Broadcaster}
+import org.atmosphere.cpr.{Broadcaster, BroadcastFilter}
 import org.atmosphere.jersey.Broadcastable
 
 class Boot {
@@ -104,7 +105,7 @@ class PersistentSimpleService extends Actor {
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private val storage = PersistentState.newMap(CassandraStorageConfig())
+  private val storage = CassandraStorage.newMap
 
   @GET
   @Produces(Array("text/html"))
@@ -112,11 +113,12 @@ class PersistentSimpleService extends Actor {
 
   def receive = {
     case Tick => if (hasStartedTicking) {
-      val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
-      storage.put(KEY, new Integer(counter + 1))
+      val bytes = storage.get(KEY.getBytes).get
+      val counter = ByteBuffer.wrap(bytes).getInt
+      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
       reply(<success>Tick:{counter + 1}</success>)
     } else {
-      storage.put(KEY, new Integer(0))
+      storage.put(KEY.getBytes, Array(0.toByte))
       hasStartedTicking = true
       reply(<success>Tick: 0</success>)
     }
@@ -155,7 +157,10 @@ class Chat extends Actor with Logging {
   @Consumes(Array("application/x-www-form-urlencoded"))
   @POST
   @Produces(Array("text/html"))
-  def publishMessage(form: MultivaluedMap[String, String]) = (this !! Chat(form.getFirst("name"), form.getFirst("action"), form.getFirst("message"))).getOrElse("System__error")
+  def publishMessage(form: MultivaluedMap[String, String]) =
+    (this !! Chat(form.getFirst("name"),
+                  form.getFirst("action"),
+                  form.getFirst("message"))).getOrElse("System__error")
 }
 
 
@@ -171,8 +176,6 @@ class JsonpFilter extends BroadcastFilter[String] with Logging {
     }
 
     ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" +
-            name + "\", message: \"" +
-            message +
-     "\" }); \n</script>\n")
+    name + "\", message: \"" + message + "\" }); \n</script>\n")
   }
 }

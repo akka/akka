@@ -1,13 +1,10 @@
 package se.scalablesolutions.akka.state
 
-import akka.actor.Actor
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.TimeUnit
+import se.scalablesolutions.akka.actor.Actor
 
 import junit.framework.TestCase
-import dispatch._
 
-import org.junit.{Test, Before}
+import org.junit.Test
 import org.junit.Assert._
 
 case class GetMapState(key: String)
@@ -31,35 +28,35 @@ class CassandraPersistentActor extends Actor {
   timeout = 100000
   makeTransactionRequired
 
-  private lazy val mapState: PersistentMap = PersistentState.newMap(CassandraStorageConfig())
-  private lazy val vectorState: PersistentVector = PersistentState.newVector(CassandraStorageConfig())
-  private lazy val refState: PersistentRef = PersistentState.newRef(CassandraStorageConfig())
+  private lazy val mapState = CassandraStorage.newMap
+  private lazy val vectorState = CassandraStorage.newVector
+  private lazy val refState = CassandraStorage.newRef
 
   def receive = {
     case GetMapState(key) =>
-      reply(mapState.get(key).get)
+      reply(mapState.get(key.getBytes("UTF-8")).get)
     case GetVectorSize =>
       reply(vectorState.length.asInstanceOf[AnyRef])
     case GetRefState =>
       reply(refState.get.get)
     case SetMapState(key, msg) =>
-      mapState.put(key, msg)
+      mapState.put(key.getBytes("UTF-8"), msg.getBytes("UTF-8"))
       reply(msg)
     case SetVectorState(msg) =>
-      vectorState.add(msg)
+      vectorState.add(msg.getBytes("UTF-8"))
       reply(msg)
     case SetRefState(msg) =>
-      refState.swap(msg)
+      refState.swap(msg.getBytes("UTF-8"))
       reply(msg)
     case Success(key, msg) =>
-      mapState.put(key, msg)
-      vectorState.add(msg)
-      refState.swap(msg)
+      mapState.put(key.getBytes("UTF-8"), msg.getBytes("UTF-8"))
+      vectorState.add(msg.getBytes("UTF-8"))
+      refState.swap(msg.getBytes("UTF-8"))
       reply(msg)
     case Failure(key, msg, failer) =>
-      mapState.put(key, msg)
-      vectorState.add(msg)
-      refState.swap(msg)
+      mapState.put(key.getBytes("UTF-8"), msg.getBytes("UTF-8"))
+      vectorState.add(msg.getBytes("UTF-8"))
+      refState.swap(msg.getBytes("UTF-8"))
       failer !! "Failure"
       reply(msg)
   }
@@ -74,14 +71,15 @@ class CassandraPersistentActor extends Actor {
 }
 
 class CassandraPersistentActorSpec extends TestCase {
-
+ 
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new CassandraPersistentActor
     stateful.start
     stateful !! SetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    assertEquals("new state", (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get)
+    val result: Array[Byte] = (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get
+    assertEquals("new state", new String(result, 0, result.length, "UTF-8"))
   }
 
   @Test
@@ -95,7 +93,8 @@ class CassandraPersistentActorSpec extends TestCase {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    assertEquals("init", (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
+    val result: Array[Byte] = (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get
+    assertEquals("init", new String(result, 0, result.length, "UTF-8")) // check that state is == init state
   }
 
   @Test
@@ -127,7 +126,8 @@ class CassandraPersistentActorSpec extends TestCase {
     stateful.start
     stateful !! SetRefState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    assertEquals("new state", (stateful !! GetRefState).get)
+    val result: Array[Byte] = (stateful !! GetRefState).get
+    assertEquals("new state", new String(result, 0, result.length, "UTF-8"))
   }
 
   @Test
@@ -141,6 +141,7 @@ class CassandraPersistentActorSpec extends TestCase {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    assertEquals("init", (stateful !! GetRefState).get) // check that state is == init state
+    val result: Array[Byte] = (stateful !! GetRefState).get
+    assertEquals("init",  new String(result, 0, result.length, "UTF-8")) // check that state is == init state
   }
 }

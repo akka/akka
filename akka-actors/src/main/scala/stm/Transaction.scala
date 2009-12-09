@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import se.scalablesolutions.akka.state.Committable
 import se.scalablesolutions.akka.util.Logging
 
-import org.multiverse.api.{Stm, Transaction => MultiverseTransaction}
+import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.templates.OrElseTemplate
