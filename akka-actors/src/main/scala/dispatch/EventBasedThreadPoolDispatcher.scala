@@ -126,14 +126,13 @@ class EventBasedThreadPoolDispatcher(name: String, private val concurrentMode: B
     val iterator = invocations.iterator
     while (iterator.hasNext) {
       val invocation = iterator.next
+      if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
       if (concurrentMode) {
         val invoker = messageHandlers.get(invocation.receiver)
-        if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
         if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
-        result.put(invocation, invoker)        
+        result.put(invocation, invoker)
       } else if (!busyInvokers.contains(invocation.receiver)) {
         val invoker = messageHandlers.get(invocation.receiver)
-        if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
         if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
         result.put(invocation, invoker)
         busyInvokers.add(invocation.receiver)
