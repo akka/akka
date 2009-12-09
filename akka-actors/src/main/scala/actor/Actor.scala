@@ -17,11 +17,10 @@ import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
-import se.scalablesolutions.akka.util.Logging
-
 import org.codehaus.aspectwerkz.proxy.Uuid
 
 import org.multiverse.api.ThreadLocalTransaction._
+import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 /**
  * Mix in this trait to give an actor TransactionRequired semantics.
@@ -116,7 +115,7 @@ object Actor extends Logging {
    *
    */
   def actor[A](body: => Unit) = {
-    def handler[A](body: Unit) = new {
+    def handler[A](body: => Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
         start
         body
@@ -215,6 +214,7 @@ trait Actor extends TransactionManagement {
   implicit protected val self: Actor = this
 
   // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
+  // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = Uuid.newUuid.toString
   def uuid = _uuid
 
@@ -471,7 +471,7 @@ trait Actor extends TransactionManagement {
    *   actor.send(message)
    * </pre>
    */
-  def !(message: AnyRef)(implicit sender: AnyRef) = {
+  def !(message: Any)(implicit sender: AnyRef) = {
     val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
                else None
     if (_isRunning) postMessageToMailbox(message, from)
@@ -482,7 +482,7 @@ trait Actor extends TransactionManagement {
   /**
    * Same as the '!' method but does not take an implicit sender as second parameter.
    */
-  def send(message: AnyRef) = {
+  def send(message: Any) = {
     if (_isRunning) postMessageToMailbox(message, None)
     else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -500,7 +500,7 @@ trait Actor extends TransactionManagement {
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !![T](message: AnyRef, timeout: Long): Option[T] = if (_isRunning) {
+  def !![T](message: Any, timeout: Long): Option[T] = if (_isRunning) {
     val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
     val isActiveObject = message.isInstanceOf[Invocation]
     if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
@@ -527,19 +527,19 @@ trait Actor extends TransactionManagement {
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !![T](message: AnyRef): Option[T] = !![T](message, timeout)
+  def !![T](message: Any): Option[T] = !![T](message, timeout)
 
   /**
    * This method is evil and has been removed. Use '!!' with a timeout instead.
    */
-  def !?[T](message: AnyRef): T = throw new UnsupportedOperationException(
+  def !?[T](message: Any): T = throw new UnsupportedOperationException(
     "'!?' is evil and has been removed. Use '!!' with a timeout instead")
 
   /**
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
    */
-  protected[this] def reply(message: AnyRef) = {
+  protected[this] def reply(message: Any) = {
     sender match {
       case Some(senderActor) =>
         senderActor ! message
@@ -723,9 +723,9 @@ trait Actor extends TransactionManagement {
     actor
   }
 
-  // ================================
-  // ==== IMPLEMENTATION DETAILS ====
-  // ================================
+  // =========================================
+  // ==== INTERNAL IMPLEMENTATION DETAILS ====
+  // =========================================
 
   private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
@@ -736,7 +736,7 @@ trait Actor extends TransactionManagement {
     actor
   }
   
-  private def postMessageToMailbox(message: AnyRef, sender: Option[Actor]): Unit = _remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
+  private def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = _remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
         .setId(RemoteRequestIdFactory.nextId)
@@ -756,7 +756,7 @@ trait Actor extends TransactionManagement {
     }
   }
 
-  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: AnyRef, timeout: Long):
+  private def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Long):
     CompletableFutureResult = _remoteFlagLock.withReadLock { // the price you pay for being able to make an actor remote at runtime
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
@@ -848,7 +848,7 @@ trait Actor extends TransactionManagement {
       } else proceed
     } catch {
       case e =>
-        Actor.log.error(e, "Could not invoke actor [%s]", this)
+        Actor.log.error(e, "Exception when invoking actor [%s] with message [%s]", this, message)
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
         clearTransaction // need to clear currentTransaction before call to supervisor
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
@@ -865,7 +865,7 @@ trait Actor extends TransactionManagement {
   private def base: PartialFunction[Any, Unit] = lifeCycles orElse (_hotswap getOrElse receive)
 
   private val lifeCycles: PartialFunction[Any, Unit] = {
-    case Init(config) =>       init(config)
+    case Init(config) =>       _config = Some(config); init(config)
     case HotSwap(code) =>      _hotswap = code
     case Restart(reason) =>    restart(reason)
     case Exit(dead, reason) => handleTrapExit(dead, reason)
@@ -897,8 +897,9 @@ trait Actor extends TransactionManagement {
             case Permanent =>
               actor.restart(reason)
             case Temporary =>
-              Actor.log.info("Actor [%s] configured as TEMPORARY will not be restarted.", actor.id)
+              Actor.log.info("Actor [%s] configured as TEMPORARY and will not be restarted.", actor.id)
               getLinkedActors.remove(actor) // remove the temporary actor
+              actor.stop
           }
         }
       }
@@ -957,6 +958,18 @@ trait Actor extends TransactionManagement {
       Serializer.Java.deepClone(message)
     } else message
   } else message
+
+  override def hashCode(): Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, _uuid)
+    result
+  }
+
+  override def equals(that: Any): Boolean = {
+    that != null &&
+    that.isInstanceOf[Actor] &&
+    that.asInstanceOf[Actor]._uuid == _uuid
+  }
 
   override def toString(): String = "Actor[" + id + ":" + uuid + "]"
 }

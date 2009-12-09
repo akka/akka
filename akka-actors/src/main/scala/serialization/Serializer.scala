@@ -4,11 +4,12 @@
 
 package se.scalablesolutions.akka.serialization
 
-import com.google.protobuf.Message
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
-import reflect.{BeanProperty, Manifest}
-import sbinary.DefaultProtocol
+
+import com.google.protobuf.Message
+
 import org.codehaus.jackson.map.ObjectMapper
+
 import sjson.json.{Serializer =>SJSONSerializer}
 
 /**
