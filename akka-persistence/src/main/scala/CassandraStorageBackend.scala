@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.state
 
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.util.Helpers._
-import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.Config.config
 
 import org.apache.cassandra.service._
@@ -14,8 +13,14 @@ import org.apache.cassandra.service._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object CassandraStorage extends MapStorage 
-  with VectorStorage with RefStorage with Logging {
+private[akka] object CassandraStorageBackend extends
+  MapStorageBackend[Array[Byte], Array[Byte]] with
+  VectorStorageBackend[Array[Byte]] with
+  RefStorageBackend[Array[Byte]] with
+  Logging {
+
+  type ElementType = Array[Byte]
+
   val KEYSPACE = "akka"
   val MAP_COLUMN_PARENT = new ColumnParent("map", null)
   val VECTOR_COLUMN_PARENT = new ColumnParent("vector", null)
@@ -31,35 +36,14 @@ object CassandraStorage extends MapStorage
       case "ONE" =>    1
       case "QUORUM" => 2
       case "ALL" =>    3
-      case unknown => throw new IllegalArgumentException("Consistency level [" + unknown + "] is not supported. Expected one of [ZERO, ONE, QUORUM, ALL]")
+      case unknown => throw new IllegalArgumentException(
+        "Cassandra consistency level [" + unknown + "] is not supported. Expected one of [ZERO, ONE, QUORUM, ALL]")
     }
   }
   val IS_ASCENDING = true
 
   @volatile private[this] var isRunning = false
   private[this] val protocol: Protocol = Protocol.Binary
-/*   {
-     config.getString("akka.storage.cassandra.procotol", "binary") match {
-      case "binary" => Protocol.Binary
-      case "json" => Protocol.JSON
-      case "simple-json" => Protocol.SimpleJSON
-      case unknown => throw new UnsupportedOperationException("Unknown storage serialization protocol [" + unknown + "]")
-    }
-  }
-*/
-
-  private[this] val serializer: Serializer = {
-    config.getString("akka.storage.cassandra.storage-format", "manual") match {
-      case "scala-json" => Serializer.ScalaJSON
-      case "java-json" =>  Serializer.JavaJSON
-      case "protobuf" =>   Serializer.Protobuf
-      case "java" =>       Serializer.Java
-      case "manual" =>     Serializer.NOOP
-      case "sbinary" =>    throw new UnsupportedOperationException("SBinary serialization protocol is not yet supported for storage")
-      case "avro" =>       throw new UnsupportedOperationException("Avro serialization protocol is not yet supported for storage")
-      case unknown =>      throw new UnsupportedOperationException("Unknown storage serialization protocol [" + unknown + "]")
-    }
-  }
 
   private[this] val sessions = new CassandraSessionPool(
     KEYSPACE,
@@ -71,22 +55,22 @@ object CassandraStorage extends MapStorage
   // For Ref
   // ===============================================================
 
-  def insertRefStorageFor(name: String, element: AnyRef) = {
+  def insertRefStorageFor(name: String, element: Array[Byte]) = {
     sessions.withSession {
       _ ++| (name,
         new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY),
-        serializer.out(element),
+        element,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
   }
 
-  def getRefStorageFor(name: String): Option[AnyRef] = {
+  def getRefStorageFor(name: String): Option[Array[Byte]] = {
     try {
       val column: Option[ColumnOrSuperColumn] = sessions.withSession {
         _ | (name, new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY))
       }
-      if (column.isDefined) Some(serializer.in(column.get.getColumn.value, None))
+      if (column.isDefined) Some(column.get.getColumn.value)
       else None
     } catch {
       case e =>
@@ -99,40 +83,40 @@ object CassandraStorage extends MapStorage
   // For Vector
   // ===============================================================
 
-  def insertVectorStorageEntryFor(name: String, element: AnyRef) = {
+  def insertVectorStorageEntryFor(name: String, element: Array[Byte]) = {
     sessions.withSession {
       _ ++| (name,
         new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(getVectorStorageSizeFor(name))),
-        serializer.out(element),
+        element,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
   }
 
   // FIXME implement insertVectorStorageEntriesFor
-  def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
-    throw new UnsupportedOperationException("insertVectorStorageEntriesFor for CassandraStorage is not implemented yet")
+  def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = {
+    throw new UnsupportedOperationException("insertVectorStorageEntriesFor for CassandraStorageBackend is not implemented yet")
   }
 
-  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = {
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
     sessions.withSession {
       _ ++| (name,
         new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)),
-        serializer.out(elem),
+        elem,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
   }
 
-  def getVectorStorageEntryFor(name: String, index: Int): AnyRef =  {
+  def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] =  {
     val column: Option[ColumnOrSuperColumn] = sessions.withSession {
       _ | (name, new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)))
     }
-    if (column.isDefined) serializer.in(column.get.column.value, None)
+    if (column.isDefined) column.get.column.value
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
   }
 
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = {
     val startBytes = if (start.isDefined) intToBytes(start.get) else null
     val finishBytes = if (finish.isDefined) intToBytes(finish.get) else null
     val columns: List[ColumnOrSuperColumn] = sessions.withSession {
@@ -143,7 +127,7 @@ object CassandraStorage extends MapStorage
         count,
         CONSISTENCY_LEVEL)
     }
-    columns.map(column => serializer.in(column.getColumn.value, None))
+    columns.map(column => column.getColumn.value)
   }
 
   def getVectorStorageSizeFor(name: String): Int = {
@@ -156,21 +140,21 @@ object CassandraStorage extends MapStorage
   // For Map
   // ===============================================================
 
-  def insertMapStorageEntryFor(name: String, key: AnyRef, element: AnyRef) = {
+  def insertMapStorageEntryFor(name: String, key: Array[Byte], element: Array[Byte]) = {
     sessions.withSession {
       _ ++| (name,
-        new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)),
-        serializer.out(element),
+        new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, key),
+        element,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
   }
 
-  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) = {
+  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[Array[Byte], Array[Byte]]]) = {
     val batch = new scala.collection.mutable.HashMap[String, List[ColumnOrSuperColumn]]
     for (entry <- entries) {
       val columnOrSuperColumn = new ColumnOrSuperColumn
-      columnOrSuperColumn.setColumn(new Column(serializer.out(entry._1), serializer.out(entry._2), System.currentTimeMillis))
+      columnOrSuperColumn.setColumn(new Column(entry._1, entry._2, System.currentTimeMillis))
       batch + (MAP_COLUMN_PARENT.getColumn_family -> List(columnOrSuperColumn))
     }
     sessions.withSession {
@@ -178,12 +162,12 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] = {
+  def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
     try {
       val column: Option[ColumnOrSuperColumn] = sessions.withSession {
-        _ | (name, new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, serializer.out(key)))
+        _ | (name, new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, key))
       }
-      if (column.isDefined) Some(serializer.in(column.get.getColumn.value, None))
+      if (column.isDefined) Some(column.get.getColumn.value)
       else None
     } catch {
       case e =>
@@ -192,13 +176,16 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = {
+  def getMapStorageFor(name: String): List[Tuple2[Array[Byte], Array[Byte]]]  = {
     val size = getMapStorageSizeFor(name)
     sessions.withSession { session =>
-      val columns = session / (name, MAP_COLUMN_PARENT, EMPTY_BYTE_ARRAY, EMPTY_BYTE_ARRAY, true, size, CONSISTENCY_LEVEL)
+      val columns = session /
+          (name, MAP_COLUMN_PARENT,
+           EMPTY_BYTE_ARRAY, EMPTY_BYTE_ARRAY,
+           true, size, CONSISTENCY_LEVEL)
       for {
         columnOrSuperColumn <- columns
-        entry = (serializer.in(columnOrSuperColumn.column.name, None), serializer.in(columnOrSuperColumn.column.value, None))
+        entry = (columnOrSuperColumn.column.name, columnOrSuperColumn.column.value)
       } yield entry
     }
   }
@@ -209,8 +196,8 @@ object CassandraStorage extends MapStorage
 
   def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
 
-  def removeMapStorageFor(name: String, key: AnyRef): Unit = {
-    val keyBytes = if (key == null) null else serializer.out(key)
+  def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
+    val keyBytes = if (key == null) null else key
     sessions.withSession {
       _ -- (name,
         new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, keyBytes),
@@ -219,13 +206,13 @@ object CassandraStorage extends MapStorage
     }
   }
 
-  def getMapStorageRangeFor(name: String, start: Option[AnyRef], finish: Option[AnyRef], count: Int):
-  List[Tuple2[AnyRef, AnyRef]] = {
-    val startBytes = if (start.isDefined) serializer.out(start.get) else null
-    val finishBytes = if (finish.isDefined) serializer.out(finish.get) else null
+  def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int):
+    List[Tuple2[Array[Byte], Array[Byte]]] = {
+    val startBytes = if (start.isDefined) start.get else null
+    val finishBytes = if (finish.isDefined) finish.get else null
     val columns: List[ColumnOrSuperColumn] = sessions.withSession {
       _ / (name, MAP_COLUMN_PARENT, startBytes, finishBytes, IS_ASCENDING, count, CONSISTENCY_LEVEL)
     }
-    columns.map(column => (column.getColumn.name, serializer.in(column.getColumn.value, None)))
+    columns.map(column => (column.getColumn.name, column.getColumn.value))
   }
 }

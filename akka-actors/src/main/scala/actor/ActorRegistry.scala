@@ -13,7 +13,7 @@ import scala.collection.mutable.HashMap
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ActorRegistry {
+object ActorRegistry extends Logging {
   private val actorsByClassName = new HashMap[String, List[Actor]]
   private val actorsById = new HashMap[String, List[Actor]]
 
@@ -47,5 +47,12 @@ object ActorRegistry {
   def unregister(actor: Actor) = synchronized {
     actorsByClassName - actor.getClass.getName
     actorsById - actor.getClass.getName
+  }
+
+  // TODO: document ActorRegistry.shutdownAll
+  def shutdownAll = {
+    log.info("Shutting down all actors in the system...")
+    actorsById.foreach(entry => entry._2.map(_.stop))
+    log.info("All actors have been shut down")
   }
 }
