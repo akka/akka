@@ -40,6 +40,7 @@
     <module>akka-persistence</module>
     <module>akka-rest</module>
     <module>akka-camel</module>
+    <module>akka-cluster</module>
     <module>akka-amqp</module>
     <module>akka-security</module>
     <module>akka-kernel</module>
@@ -72,6 +73,17 @@
         <role>Founder</role>
         <role>Hacker</role>
         <role>Despot</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>viktorklang</id>
+      <name>Viktor Klang</name>
+      <timezone>+1</timezone>
+      <email>viktor.klang [REMOVE] AT gmail DOT com</email>
+      <roles>
+        <role>Crazy hermit</role>
+        <role>Tinkerer</role>
+        <role>Visionary</role>
       </roles>
     </developer>
   </developers>
