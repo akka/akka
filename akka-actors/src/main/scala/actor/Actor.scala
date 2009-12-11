@@ -535,6 +535,17 @@ trait Actor extends TransactionManagement {
   def !?[T](message: Any): T = throw new UnsupportedOperationException(
     "'!?' is evil and has been removed. Use '!!' with a timeout instead")
 
+   /**
+   * Forwards the message and passes the original sender actor as the sender.
+   */
+  def forward(message: Any)(implicit sender: AnyRef) = {
+    val forwarder = if (sender != null && sender.isInstanceOf[Actor]) sender.asInstanceOf[Actor]
+                    else throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor")
+    if (forwarder.getSender.isEmpty) throw new IllegalStateException("Can't forward message when initial sender is not an actor")
+    if (_isRunning) postMessageToMailbox(message, forwarder.getSender)
+    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+
   /**
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
@@ -727,6 +738,8 @@ trait Actor extends TransactionManagement {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
+  private[akka] def getSender = sender
+  
   private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
