@@ -40,7 +40,6 @@
     <module>akka-persistence</module>
     <module>akka-rest</module>
     <module>akka-camel</module>
-    <module>akka-cluster</module>
     <module>akka-amqp</module>
     <module>akka-security</module>
     <module>akka-kernel</module>
