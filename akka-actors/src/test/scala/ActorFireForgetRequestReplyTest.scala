@@ -27,7 +27,7 @@ class ActorFireForgetRequestReplyTest extends JUnitSuite {
 
   @Test
   def shouldReplyToBangMessageUsingReply = {
-    import Actor.Sender.Self
+    import Actor.Sender.Self  
 
     val replyActor = new ReplyActor
     replyActor.start

@@ -6,12 +6,15 @@ import junit.framework.TestCase
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import se.scalablesolutions.akka.nio.{RemoteNode, RemoteServer, RemoteClient}
+import se.scalablesolutions.akka.nio.{RemoteNode, RemoteServer}
+import se.scalablesolutions.akka.dispatch.Dispatchers
 
 object Global {
   var oneWay = "nada"  
 }
 class RemoteActorSpecActorUnidirectional extends Actor {
+  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+
   def receive = {
     case "OneWay" =>
       Global.oneWay = "received"
@@ -19,6 +22,8 @@ class RemoteActorSpecActorUnidirectional extends Actor {
 }
 
 class RemoteActorSpecActorBidirectional extends Actor {
+  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+
   def receive = {
     case "Hello" =>
       reply("World")
@@ -42,7 +47,6 @@ class RemoteActorTest extends JUnitSuite   {
 
   @Test
   def shouldSendOneWay = {
-    implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorUnidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start
@@ -54,7 +58,6 @@ class RemoteActorTest extends JUnitSuite   {
 
   @Test
   def shouldSendReplyAsync = {
-    implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(RemoteServer.HOSTNAME, RemoteServer.PORT)
     actor.start

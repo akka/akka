@@ -12,11 +12,11 @@ package se.scalablesolutions.akka.dispatch
 
 import java.util.{LinkedList, List}
 
-class EventBasedSingleThreadDispatcher(name: String) extends MessageDispatcherBase(name) {
+class ReactorBasedSingleThreadEventDrivenDispatcher(name: String) extends AbstractReactorBasedEventDrivenDispatcher(name) {
   def start = if (!active) {
     active = true
-    val messageDemultiplexer = new EventBasedSingleThreadDemultiplexer(queue)
-    selectorThread = new Thread {
+    val messageDemultiplexer = new Demultiplexer(queue)
+    selectorThread = new Thread("event-driven:reactor:single-thread:dispatcher:" + name) {
       override def run = {
         while (active) {
           try {
@@ -35,17 +35,18 @@ class EventBasedSingleThreadDispatcher(name: String) extends MessageDispatcherBa
     }
     selectorThread.start
   }
+
+  class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
+
+    private val selectedQueue: List[MessageInvocation] = new LinkedList[MessageInvocation]
+
+    def select = messageQueue.read(selectedQueue)
+
+    def acquireSelectedInvocations: List[MessageInvocation] = selectedQueue
+
+    def releaseSelectedInvocations = throw new UnsupportedOperationException("Demultiplexer can't release its queue")
+
+    def wakeUp = throw new UnsupportedOperationException("Demultiplexer can't be woken up")
+  }
 }
 
-class EventBasedSingleThreadDemultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
-
-  private val selectedQueue: List[MessageInvocation] = new LinkedList[MessageInvocation]
-
-  def select = messageQueue.read(selectedQueue)
-
-  def acquireSelectedInvocations: List[MessageInvocation] = selectedQueue
-
-  def releaseSelectedInvocations = throw new UnsupportedOperationException("EventBasedSingleThreadDemultiplexer can't release its queue")
-
-  def wakeUp = throw new UnsupportedOperationException("EventBasedSingleThreadDemultiplexer can't be woken up")
-}

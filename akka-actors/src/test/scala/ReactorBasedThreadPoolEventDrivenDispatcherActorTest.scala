@@ -4,17 +4,15 @@ import java.util.concurrent.TimeUnit
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-class ThreadBasedActorTest extends JUnitSuite {
+class ReactorBasedThreadPoolEventDrivenDispatcherActorTest extends JUnitSuite {
   import Actor.Sender.Self
 
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
-    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
-    
+    dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
     def receive = {
       case "Hello" =>
         reply("World")
@@ -22,11 +20,11 @@ class ThreadBasedActorTest extends JUnitSuite {
         throw new RuntimeException("expected")
     }
   }
-  
+
   @Test def shouldSendOneWay = {
     var oneWay = "nada"
     val actor = new Actor {
-      dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+      dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
       def receive = {
         case "OneWay" => oneWay = "received"
       }

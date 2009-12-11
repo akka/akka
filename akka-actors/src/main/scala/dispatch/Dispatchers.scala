@@ -39,20 +39,25 @@ import se.scalablesolutions.akka.actor.Actor
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers {
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global")
+  object globalForkJoinBasedEventDrivenDispatcher extends ForkJoinBasedEventDrivenDispatcher("global")
+  object globalReactorBasedSingleThreadEventDrivenDispatcher extends ReactorBasedSingleThreadEventDrivenDispatcher("global")
+  object globalReactorBasedThreadPoolEventDrivenDispatcher extends ReactorBasedThreadPoolEventDrivenDispatcher("global")
 
-  object globalEventBasedThreadPoolDispatcher extends EventBasedThreadPoolDispatcher("global:eventbased:dispatcher")
- 
   /**
    * Creates an event based dispatcher serving multiple (millions) of actors through a thread pool.
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newEventBasedThreadPoolDispatcher(name: String) = new EventBasedThreadPoolDispatcher(name)
-  def newConcurrentEventBasedThreadPoolDispatcher(name: String) = new EventBasedThreadPoolDispatcher(name, true)
+  def newReactorBasedThreadPoolEventDrivenDispatcher(name: String) = new ReactorBasedThreadPoolEventDrivenDispatcher(name)
 
   /**
    * Creates an event based dispatcher serving multiple (millions) of actors through a single thread.
    */
-  def newEventBasedSingleThreadDispatcher(name: String) = new EventBasedSingleThreadDispatcher(name)
+  def newReactorBasedSingleThreadEventDrivenDispatcher(name: String) = new ReactorBasedSingleThreadEventDrivenDispatcher(name)
+
+  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
+
+  def newForkJoinBasedEventDrivenDispatcher(name: String) = new ForkJoinBasedEventDrivenDispatcher(name)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
