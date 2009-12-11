@@ -22,7 +22,7 @@ trait MessageInvoker {
 }
 
 trait MessageDispatcher {
-  def messageQueue: MessageQueue
+  def dispatch(invocation: MessageInvocation)
   def registerHandler(key: AnyRef, handler: MessageInvoker)
   def unregisterHandler(key: AnyRef)
   def canBeShutDown: Boolean
@@ -48,7 +48,7 @@ class MessageInvocation(val receiver: Actor,
   private [akka] val nrOfDeliveryAttempts = new AtomicInteger(0)
   
   def send = synchronized {
-    receiver._mailbox.append(this)
+    receiver.dispatcher.dispatch(this)
     nrOfDeliveryAttempts.incrementAndGet
   }
   

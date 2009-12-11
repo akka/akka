@@ -23,8 +23,8 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
 
-  def messageQueue = queue
-  
+  def dispatch(invocation: MessageInvocation) = queue.append(invocation) 
+
   def start = if (!active) {
     active = true
     selectorThread = new Thread {
@@ -53,8 +53,8 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
 class BlockingMessageQueue(name: String) extends MessageQueue {
   // FIXME: configure the LinkedBlockingQueue in BlockingMessageQueue, use a Builder like in the EventBasedThreadPoolDispatcher
   private val queue = new LinkedBlockingQueue[MessageInvocation]
-  def append(handle: MessageInvocation) = queue.put(handle)
-  def prepend(handle: MessageInvocation) = queue.add(handle) // FIXME is add prepend???
+  def append(invocation: MessageInvocation) = queue.put(invocation)
+  def prepend(invocation: MessageInvocation) = queue.add(invocation) // FIXME is add prepend???
   def take: MessageInvocation = queue.take
   def read(destination: Queue[MessageInvocation]) = throw new UnsupportedOperationException
   def interrupt = throw new UnsupportedOperationException
