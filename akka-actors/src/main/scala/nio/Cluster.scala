@@ -1,7 +1,6 @@
-package se.scalablesolutions.akka.cluster
+package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.Config.config
-import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.util.Logging
 import org.jgroups.{JChannel,View,Address,Message,ExtendedMembershipListener,Receiver,SetStateEvent}
 import se.scalablesolutions.akka.serialization.Serializer.Protobuf
