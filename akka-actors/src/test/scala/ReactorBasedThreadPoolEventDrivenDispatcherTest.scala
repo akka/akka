@@ -11,7 +11,7 @@ import org.junit.{Test, Before}
 
 import se.scalablesolutions.akka.actor.Actor
 
-class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
+class ReactorBasedThreadPoolEventDrivenDispatcherTest extends JUnitSuite {
   private var threadingIssueDetected: AtomicBoolean = null
   val key1 = new Actor { def receive = { case _ => {}} }
   val key2 = new Actor { def receive = { case _ => {}} }
@@ -40,7 +40,7 @@ class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(10)
-    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
+    val dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
             .setMaxPoolSize(4)
@@ -77,7 +77,7 @@ class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
     val guardLock1 = new ReentrantLock
     val guardLock2 = new ReentrantLock
     val handlersBarrier = new CyclicBarrier(3)
-    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
+    val dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
             .setMaxPoolSize(4)
@@ -120,7 +120,7 @@ class EventBasedThreadPoolDispatcherTest extends JUnitSuite {
 
   private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
     val handleLatch = new CountDownLatch(200)
-    val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
+    val dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher("name")
     dispatcher.withNewThreadPoolWithBoundedBlockingQueue(100)
             .setCorePoolSize(2)
             .setMaxPoolSize(4)

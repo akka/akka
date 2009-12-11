@@ -11,7 +11,6 @@ import junit.framework.TestCase;
 
 import se.scalablesolutions.akka.Config;
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
-import se.scalablesolutions.akka.dispatch.EventBasedThreadPoolDispatcher;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 import java.util.concurrent.ThreadPoolExecutor;
@@ -23,7 +22,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
     protected void setUp() {
       Config.config();
-      EventBasedThreadPoolDispatcher dispatcher = new EventBasedThreadPoolDispatcher("name");
+      se.scalablesolutions.akka.dispatch.ReactorBasedThreadPoolDispatcher dispatcher = new se.scalablesolutions.akka.dispatch.ReactorBasedThreadPoolDispatcher("name");
         dispatcher
        .withNewThreadPoolWithBoundedBlockingQueue(100)
        .setCorePoolSize(16)

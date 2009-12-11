@@ -23,10 +23,12 @@ import org.multiverse.api.ThreadLocalTransaction._
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 /**
- * Mix in this trait to give an actor TransactionRequired semantics.
- * Equivalent to invoking the 'makeTransactionRequired' method in the actor.
+ * Implements the Transactor abstraction. E.g. a transactional actor.
+ * <p/>
+ * Can also be achived by invoking <code>makeTransactionRequired</code>
+ * in the body of the <code>Actor</code>. 
  */
-trait TransactionRequired { this: Actor =>
+trait Transactor extends Actor {
   makeTransactionRequired
 }
 
@@ -278,8 +280,8 @@ trait Actor extends TransactionManagement {
   /**
    * User overridable callback/setting.
    * <p/>
-   * The default dispatcher is the <tt>Dispatchers.globalEventBasedThreadPoolDispatcher</tt>.
-   * This means that all actors will share the same event-driven thread-pool based dispatcher.
+   * The default dispatcher is the <tt>Dispatchers.globalExecutorBasedEventDrivenDispatcher</tt>.
+   * This means that all actors will share the same event-driven executor based dispatcher.
    * <p/>
    * You can override it so it fits the specific use-case that the actor is used for.
    * See the <tt>se.scalablesolutions.akka.dispatch.Dispatchers</tt> class for the different
@@ -288,7 +290,7 @@ trait Actor extends TransactionManagement {
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  protected[akka] var messageDispatcher: MessageDispatcher = Dispatchers.globalEventBasedThreadPoolDispatcher
+  protected[akka] var messageDispatcher: MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
 
   /**
    * User overridable callback/setting.

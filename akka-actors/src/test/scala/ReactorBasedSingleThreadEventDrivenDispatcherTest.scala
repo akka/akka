@@ -11,7 +11,7 @@ import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
 
-class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
+class ReactorBasedSingleThreadEventDrivenDispatcherTest extends JUnitSuite {
   private var threadingIssueDetected: AtomicBoolean = null
 
   class TestMessageHandle(handleLatch: CountDownLatch) extends MessageInvoker {
@@ -57,7 +57,7 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
   private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(100)
-    val dispatcher = new EventBasedSingleThreadDispatcher("name")
+    val dispatcher = new ReactorBasedSingleThreadEventDrivenDispatcher("name")
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
@@ -69,7 +69,7 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
 
   private def internalTestMessagesDispatchedToDifferentHandlersAreExecutedSequentially: Unit = {
     val handleLatch = new CountDownLatch(2)
-    val dispatcher = new EventBasedSingleThreadDispatcher("name")
+    val dispatcher = new ReactorBasedSingleThreadEventDrivenDispatcher("name")
     dispatcher.registerHandler(key1, new TestMessageHandle(handleLatch))
     dispatcher.registerHandler(key2, new TestMessageHandle(handleLatch))
     dispatcher.start
@@ -81,7 +81,7 @@ class EventBasedSingleThreadDispatcherTest extends JUnitSuite {
 
   private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
     val handleLatch = new CountDownLatch(200)
-    val dispatcher = new EventBasedSingleThreadDispatcher("name")
+    val dispatcher = new ReactorBasedSingleThreadEventDrivenDispatcher("name")
     dispatcher.registerHandler(key1, new MessageInvoker {
       var currentValue = -1;
       def invoke(message: MessageInvocation) {

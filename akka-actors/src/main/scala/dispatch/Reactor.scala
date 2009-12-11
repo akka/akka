@@ -45,13 +45,10 @@ class MessageInvocation(val receiver: Actor,
   if (receiver == null) throw new IllegalArgumentException("receiver is null")
   if (message == null) throw new IllegalArgumentException("message is null")
 
-  private [akka] val nrOfDeliveryAttempts = new AtomicInteger(0)
-  
-  def send = synchronized {
-    receiver.dispatcher.dispatch(this)
-    nrOfDeliveryAttempts.incrementAndGet
-  }
-  
+  def invoke = receiver.invoke(this)
+
+  def send = receiver.dispatcher.dispatch(this)
+
   override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
     result = HashCode.hash(result, receiver)

@@ -11,10 +11,10 @@ class MemoryFootprintTest extends JUnitSuite   {
   }
 
   val NR_OF_ACTORS = 100000
-  val MAX_MEMORY_FOOTPRINT_PER_ACTOR = 600
+  val MAX_MEMORY_FOOTPRINT_PER_ACTOR = 700
 
   @Test
-  def actorsShouldHaveLessMemoryFootprintThan630Bytes = {
+  def actorsShouldHaveLessMemoryFootprintThan700Bytes = {
     println("============== MEMORY FOOTPRINT TEST ==============")
     // warm up
     (1 until 10000).foreach(i => new Mem)
