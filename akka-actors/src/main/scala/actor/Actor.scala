@@ -229,7 +229,6 @@ trait Actor extends TransactionManagement {
   private val _remoteFlagLock = new ReadWriteLock
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] var _linkedActors: Option[HashSet[Actor]] = None
-  private[akka] var _mailbox: MessageQueue = _
   private[akka] var _supervisor: Option[Actor] = None
 
   // ====================================
@@ -289,11 +288,7 @@ trait Actor extends TransactionManagement {
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  protected[akka] var messageDispatcher: MessageDispatcher = {
-    val dispatcher = Dispatchers.globalEventBasedThreadPoolDispatcher
-    _mailbox = dispatcher.messageQueue
-    dispatcher
-  }
+  protected[akka] var messageDispatcher: MessageDispatcher = Dispatchers.globalEventBasedThreadPoolDispatcher
 
   /**
    * User overridable callback/setting.
@@ -574,7 +569,7 @@ trait Actor extends TransactionManagement {
   /**
    * Get the dispatcher for this actor.
    */
-  def dispatcher = synchronized { messageDispatcher }
+  def dispatcher: MessageDispatcher = synchronized { messageDispatcher }
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -582,7 +577,6 @@ trait Actor extends TransactionManagement {
   def dispatcher_=(dispatcher: MessageDispatcher): Unit = synchronized {
     if (!_isRunning) {
       messageDispatcher = dispatcher
-      _mailbox = messageDispatcher.messageQueue
       messageDispatcher.registerHandler(this, new ActorMessageInvoker(this))
     } else throw new IllegalArgumentException(
       "Can not swap dispatcher for " + toString + " after it has been started")
@@ -744,7 +738,6 @@ trait Actor extends TransactionManagement {
     val actor = actorClass.newInstance.asInstanceOf[T]
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
       actor.dispatcher = dispatcher
-      actor._mailbox = _mailbox
     }
     actor
   }
@@ -942,7 +935,6 @@ trait Actor extends TransactionManagement {
 
   private[akka] def swapDispatcher(disp: MessageDispatcher) = synchronized {
     messageDispatcher = disp
-    _mailbox = messageDispatcher.messageQueue
     messageDispatcher.registerHandler(this, new ActorMessageInvoker(this))
   }
 

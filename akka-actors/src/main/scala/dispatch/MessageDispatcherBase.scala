@@ -12,14 +12,14 @@ abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher
 
   //val CONCURRENT_MODE = Config.config.getBool("akka.actor.concurrent-mode", false)
   val MILLISECONDS = TimeUnit.MILLISECONDS
-  val queue = new ReactiveMessageQueue(name)
-  var blockingQueue: BlockingQueue[Runnable] = _
+  protected val queue = new ReactiveMessageQueue(name)
+  protected var blockingQueue: BlockingQueue[Runnable] = _
   @volatile protected var active: Boolean = false
   protected val messageHandlers = new HashMap[AnyRef, MessageInvoker]
   protected var selectorThread: Thread = _
   protected val guard = new Object
 
-  def messageQueue = queue
+  def dispatch(invocation: MessageInvocation) = queue.append(invocation) 
 
   def registerHandler(key: AnyRef, handler: MessageInvoker) = guard.synchronized {
     messageHandlers.put(key, handler)
