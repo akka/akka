@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress
 import scala.collection.immutable.{Map,HashMap,HashSet}
 import org.jgroups.util.Util
 import se.scalablesolutions.akka.nio.RemoteServer
-import se.scalablesolutions.akka.cluster.Cluster.Node
+import se.scalablesolutions.akka.actor.Cluster.Node
 
 trait Cluster {
     def members : List[Node]
