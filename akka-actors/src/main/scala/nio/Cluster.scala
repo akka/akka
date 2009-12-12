@@ -33,8 +33,8 @@ object Cluster extends Cluster {
       
       def name = impl.map(_.name).getOrElse("No cluster")
       def members = impl.map(_.members).getOrElse(Nil)
-      def registerLocalNode(server : RemoteAddress)   : Unit = impl.map(_.registerLocalNode(server))
-      def deregisterLocalNode(server : RemoteAddress) : Unit = impl.map(_.deregisterLocalNode(server))
+      def registerLocalNode(hostname : String, port : Int)   : Unit = impl.map(_.registerLocalNode(RemoteAddress(hostname,port)))
+      def deregisterLocalNode(hostname : String, port : Int) : Unit = impl.map(_.deregisterLocalNode(RemoteAddress(hostname,port)))
 }
 
 object JGroupsClusterActor {
