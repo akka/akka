@@ -111,7 +111,7 @@ class JGroupsClusterActor(name : String) extends ClusterActor(name)
            log info v.printDetails
            //Not present in the cluster anymore = presumably zombies
            //Nodes we have no prior knowledge existed = unknowns
-           val members = Set[Address]() ++ v.getMembers.asScala
+           val members = Set[Address]() ++ v.getMembers.asScala - channel.get.getAddress //Exclude ourselves
            val zombies = Set[Address]() ++ remotes.keySet -- members
            val unknown = members -- remotes.keySet
 
