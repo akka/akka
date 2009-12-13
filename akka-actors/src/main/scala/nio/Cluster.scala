@@ -22,10 +22,12 @@ trait Cluster {
 }
 
 /**
- Extend this class (you have to provide the same signature constructor i.e. XX(name : String) så we can construct it
- Perhaps we'll change this to use ActorRegistry for lookup an instance instead.
+ Baseclass for cluster implementations
 **/
-abstract class ClusterActor(val name : String) extends Actor with Cluster
+abstract class ClusterActor extends Actor with Cluster
+{
+    val name = config.getString("akka.remote.cluster.name") getOrElse "default"
+}
 
 /**
  A singleton representing the Cluster
@@ -38,8 +40,7 @@ object Cluster extends Cluster {
       lazy val impl : Option[ClusterActor] = {
         config.getString("akka.remote.cluster.actor") map ( name => {
              val actor = Class.forName(name)
-                              .getDeclaredConstructor(Array(classOf[String]): _*)
-                              .newInstance(config.getString("akka.remote.cluster.name") getOrElse "default")
+                              .newInstance
                               .asInstanceOf[ClusterActor]
 
             SupervisorFactory(
@@ -48,7 +49,7 @@ object Cluster extends Cluster {
                                 Supervise(actor, LifeCycle(Permanent)):: Nil
                           )
                      ).newInstance.start
-            actor !! Init(None) // FIXME for some reason the actor isn't init:ed here
+            actor !! Init(None) // FIXME for some reason the actor isn't init:ed unless we explicitly send it this Init message
             actor
         })
       }
@@ -77,7 +78,7 @@ object JGroupsClusterActor {
 /**
  Clustering support via JGroups
 **/
-class JGroupsClusterActor(name : String) extends ClusterActor(name)
+class JGroupsClusterActor extends ClusterActor
 {
     import JGroupsClusterActor._
     import org.scala_tools.javautils.Implicits._
@@ -90,6 +91,7 @@ class JGroupsClusterActor(name : String) extends ClusterActor(name)
       log info "Initiating cluster actor"
       remotes = new HashMap[Address,Node]
       val me  = this
+      //Set up the JGroups local endpoint
       channel = Some(new JChannel {
         setReceiver(new Receiver with ExtendedMembershipListener {
                       def getState : Array[Byte]               = null
@@ -150,7 +152,7 @@ class JGroupsClusterActor(name : String) extends ClusterActor(name)
                             broadcast(m.getSrc :: Nil,Papers(local.endpoints))
                         }
                     case Papers(x)           => {
-                            log info "Got papers from " + m.getSrc
+                            log info "Got papers from " + m.getSrc + " = " + x
                             remotes = remotes + (m.getSrc -> Node(x))
                             log info "Installed nodes: " + remotes.keySet
                         }
