@@ -6,7 +6,9 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.serialization.BinaryString
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.nio.{RemoteNode, RemoteClient, RemoteServer}
+import se.scalablesolutions.akka.nio.{RemoteNode, RemoteServer}
+import se.scalablesolutions.akka.OneWay
+import se.scalablesolutions.akka.dispatch.Dispatchers
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -14,6 +16,56 @@ import org.junit.Test
 object Log {
   var messageLog: String = ""
   var oneWayLog: String = ""
+}
+
+
+@serializable class RemotePingPong1Actor extends Actor {
+  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  def receive = {
+    case BinaryString("Ping") =>
+      Log.messageLog += "ping"
+      reply("pong")
+
+    case OneWay =>
+      Log.oneWayLog += "oneway"
+
+    case BinaryString("Die") =>
+      throw new RuntimeException("DIE")
+  }
+
+  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+    Log.messageLog += reason.asInstanceOf[Exception].getMessage
+  }
+}
+
+@serializable class RemotePingPong2Actor extends Actor {
+  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  def receive = {
+    case BinaryString("Ping") =>
+      Log.messageLog += "ping"
+      reply("pong")
+    case BinaryString("Die") =>
+      throw new RuntimeException("DIE")
+  }
+
+  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+    Log.messageLog += reason.asInstanceOf[Exception].getMessage
+  }
+}
+
+@serializable class RemotePingPong3Actor extends Actor {
+  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  def receive = {
+    case BinaryString("Ping") =>
+      Log.messageLog += "ping"
+      reply("pong")
+    case BinaryString("Die") =>
+      throw new RuntimeException("DIE")
+  }
+
+  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+    Log.messageLog += reason.asInstanceOf[Exception].getMessage
+  }
 }
 
 /**
@@ -573,51 +625,5 @@ class RemoteSupervisorTest extends JUnitSuite {
               :: Nil)
             :: Nil))
     factory.newInstance
-  }
-}
-
-@serializable class RemotePingPong1Actor extends Actor {
-  def receive = {
-    case BinaryString("Ping") =>
-      Log.messageLog += "ping"
-      reply("pong")
-
-    case OneWay =>
-      Log.oneWayLog += "oneway"
-
-    case BinaryString("Die") =>
-      throw new RuntimeException("DIE")
-  }
-
-  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
-    Log.messageLog += reason.asInstanceOf[Exception].getMessage
-  }
-}
-
-@serializable class RemotePingPong2Actor extends Actor {
-  def receive = {
-    case BinaryString("Ping") =>
-      Log.messageLog += "ping"
-      reply("pong")
-    case BinaryString("Die") =>
-      throw new RuntimeException("DIE")
-  }
-
-  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
-    Log.messageLog += reason.asInstanceOf[Exception].getMessage
-  }
-}
-
-@serializable class RemotePingPong3Actor extends Actor {
-  def receive = {
-    case BinaryString("Ping") =>
-      Log.messageLog += "ping"
-      reply("pong")
-    case BinaryString("Die") =>
-      throw new RuntimeException("DIE")
-  }
-
-  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
-    Log.messageLog += reason.asInstanceOf[Exception].getMessage
   }
 }
