@@ -39,15 +39,10 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
     selectorThread.start
   }
                        
-  def canBeShutDown = true
-
   def shutdown = if (active) {
     active = false
     selectorThread.interrupt
   }
-  
-  def registerHandler(key: AnyRef, handler: MessageInvoker) = {}
-  def unregisterHandler(key: AnyRef) = {}
 }
 
 class BlockingMessageQueue(name: String) extends MessageQueue {

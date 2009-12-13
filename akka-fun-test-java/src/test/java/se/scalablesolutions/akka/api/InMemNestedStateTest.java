@@ -37,10 +37,14 @@ public class InMemNestedStateTest extends TestCase {
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
+    Thread.sleep(100);
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
+    Thread.sleep(100);
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
+    Thread.sleep(100);
     assertEquals("new state", stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
+    Thread.sleep(100);
     assertEquals("new state", nested.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess"));
   }
 
@@ -66,10 +70,15 @@ public class InMemNestedStateTest extends TestCase {
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() throws Exception {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setVectorState("init"); // set init state
+    Thread.sleep(100);
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
+    Thread.sleep(100);
     nested.setVectorState("init"); // set init state
+    Thread.sleep(100);
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
+    Thread.sleep(100);
     assertEquals("new state", stateful.getVectorState());
+    Thread.sleep(100);
     assertEquals("new state", nested.getVectorState());
   }
 
@@ -96,9 +105,13 @@ public class InMemNestedStateTest extends TestCase {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     InMemStatefulNested nested = conf.getInstance(InMemStatefulNested.class);
     stateful.setRefState("init"); // set init state
+    Thread.sleep(100);
     nested.setRefState("init"); // set init state
+    Thread.sleep(100);
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
+    Thread.sleep(100);
     assertEquals("new state", stateful.getRefState());
+    Thread.sleep(100);
     assertEquals("new state", nested.getRefState());
   }
 

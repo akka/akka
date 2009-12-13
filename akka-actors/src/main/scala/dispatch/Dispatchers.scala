@@ -40,27 +40,31 @@ import se.scalablesolutions.akka.actor.Actor
  */
 object Dispatchers {
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global")
-  object globalForkJoinBasedEventDrivenDispatcher extends ForkJoinBasedEventDrivenDispatcher("global")
   object globalReactorBasedSingleThreadEventDrivenDispatcher extends ReactorBasedSingleThreadEventDrivenDispatcher("global")
   object globalReactorBasedThreadPoolEventDrivenDispatcher extends ReactorBasedThreadPoolEventDrivenDispatcher("global")
 
   /**
-   * Creates an event based dispatcher serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
+
+  /**
+   * Creates a reactor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
   def newReactorBasedThreadPoolEventDrivenDispatcher(name: String) = new ReactorBasedThreadPoolEventDrivenDispatcher(name)
 
   /**
-   * Creates an event based dispatcher serving multiple (millions) of actors through a single thread.
+   * Creates a reactor-based event-driven dispatcher serving multiple (millions) of actors through a single thread.
    */
   def newReactorBasedSingleThreadEventDrivenDispatcher(name: String) = new ReactorBasedSingleThreadEventDrivenDispatcher(name)
 
-  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
-
-  def newForkJoinBasedEventDrivenDispatcher(name: String) = new ForkJoinBasedEventDrivenDispatcher(name)
-
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * <p/>
    * E.g. each actor consumes its own thread.
    */
   def newThreadBasedDispatcher(actor: Actor) = new ThreadBasedDispatcher(actor)
