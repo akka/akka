@@ -22,7 +22,7 @@ import org.atmosphere.jersey.Broadcastable
 class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+      RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
       Supervise(
         new SimpleService,
         LifeCycle(Permanent)) ::
@@ -37,6 +37,25 @@ class Boot {
          LifeCycle(Permanent))
       :: Nil))
   factory.newInstance.start
+}
+
+@Path("/pubsub/")
+class PubSub extends Actor {
+ case class Msg(topic: String, message: String)
+
+ @GET
+ @Suspend
+ @Produces(Array("text/plain;charset=ISO-8859-1"))
+ @Path("/topic/{topic}/")
+ def subscribe(@PathParam("topic") topic: Broadcaster): Broadcastable = new Broadcastable("", topic)
+
+ @GET
+ @Broadcast
+ @Path("/topic/{topic}/{message}/")
+ @Produces(Array("text/plain;charset=ISO-8859-1"))
+ def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
+
+ override def receive = { case _ => }
 }
 
 /**
@@ -71,26 +90,6 @@ class SimpleService extends Actor {
     }
   }
 }
-
-@Path("/pubsub/")
-class PubSub extends Actor {
- case class Msg(topic: String, message: String)
-
- @GET
- @Suspend
- @Produces(Array("text/plain;charset=ISO-8859-1"))
- @Path("/topic/{topic}/")
- def subscribe(@PathParam("topic") topic: Broadcaster): Broadcastable = new Broadcastable("", topic)
-
- @GET
- @Broadcast
- @Path("/topic/{topic}/{message}/")
- @Produces(Array("text/plain;charset=ISO-8859-1"))
- def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
-
- override def receive = { case _ => }
-}
-
 
 /**
  * Try service out by invoking (multiple times):

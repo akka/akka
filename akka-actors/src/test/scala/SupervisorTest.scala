@@ -5,6 +5,8 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.{OneWay, Die, Ping}
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -14,7 +16,6 @@ import org.junit.Test
  */
 class SupervisorTest extends JUnitSuite {
   import Actor.Sender.Self
-
 
   var messageLog: String = ""
   var oneWayLog: String = ""
@@ -446,13 +447,6 @@ class SupervisorTest extends JUnitSuite {
   // Creat some supervisors with different configurations
 
   def getSingleActorAllForOneSupervisor: Supervisor = {
-
-    // Create an abstract SupervisorContainer that works for all implementations
-    // of the different Actors (Services).
-    //
-    // Then create a concrete container in which we mix in support for the specific
-    // implementation of the Actors we want to use.
-
     pingpong1 = new PingPong1Actor
     
     val factory = SupervisorFactory(
@@ -593,29 +587,4 @@ class SupervisorTest extends JUnitSuite {
       messageLog += reason.asInstanceOf[Exception].getMessage
     }
   }
-
-  // =============================================
-/*
-  class TestAllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends AllForOneStrategy(maxNrOfRetries, withinTimeRange) {
-    override def postRestart(serverContainer: ActorContainer) = {
-      messageLog += "allforone"
-    }
-  }
-
-  class TestOneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends OneForOneStrategy(maxNrOfRetries, withinTimeRange) {
-    override def postRestart(serverContainer: ActorContainer) = {
-      messageLog += "oneforone"
-    }
-  }
-
-  abstract class TestSupervisorFactory extends SupervisorFactory {
-    override def create(strategy: RestartStrategy): Supervisor = strategy match {
-      case RestartStrategy(scheme, maxNrOfRetries, timeRange) =>
-        scheme match {
-          case AllForOne => new Supervisor(new TestAllForOneStrategy(maxNrOfRetries, timeRange))
-          case OneForOne => new Supervisor(new TestOneForOneStrategy(maxNrOfRetries, timeRange))
-        }
-    }
-  }
-  */
 }
