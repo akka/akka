@@ -5,34 +5,29 @@
 package se.scalablesolutions.akka.dispatch
 
 import java.util.{LinkedList, Queue, List}
-import java.util.concurrent.{TimeUnit, BlockingQueue}
 import java.util.HashMap
 
-abstract class MessageDispatcherBase(val name: String) extends MessageDispatcher {
+import se.scalablesolutions.akka.actor.{ActorMessageInvoker, Actor}
 
-  //val CONCURRENT_MODE = Config.config.getBool("akka.actor.concurrent-mode", false)
-  val MILLISECONDS = TimeUnit.MILLISECONDS
-  val queue = new ReactiveMessageQueue(name)
-  var blockingQueue: BlockingQueue[Runnable] = _
+abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) extends MessageDispatcher {
   @volatile protected var active: Boolean = false
-  protected val messageHandlers = new HashMap[AnyRef, MessageInvoker]
+  protected val queue = new ReactiveMessageQueue(name)
+  protected val messageInvokers = new HashMap[AnyRef, MessageInvoker]
   protected var selectorThread: Thread = _
   protected val guard = new Object
 
-  def messageQueue = queue
+  def dispatch(invocation: MessageInvocation) = queue.append(invocation) 
 
-  def registerHandler(key: AnyRef, handler: MessageInvoker) = guard.synchronized {
-    messageHandlers.put(key, handler)
+  override def register(actor: Actor) = synchronized {
+    messageInvokers.put(actor, new ActorMessageInvoker(actor))
+    super.register(actor)
   }
 
-  def unregisterHandler(key: AnyRef) = guard.synchronized {
-    messageHandlers.remove(key)
+  override def unregister(actor: Actor) = synchronized {
+    messageInvokers.remove(actor)
+    super.register(actor)
   }
 
-  def canBeShutDown: Boolean = guard.synchronized {
-    messageHandlers.isEmpty
-  }
-  
   def shutdown = if (active) {
     active = false
     selectorThread.interrupt
