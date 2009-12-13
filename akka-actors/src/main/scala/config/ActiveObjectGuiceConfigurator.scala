@@ -102,7 +102,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
     val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
-    if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
+    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(
@@ -119,7 +119,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
     val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
-    if (component.dispatcher.isDefined) actor.swapDispatcher(component.dispatcher.get)
+    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))

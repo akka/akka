@@ -38,6 +38,7 @@
     <module>akka-util</module>
     <module>akka-actors</module>
     <module>akka-persistence</module>
+    <module>akka-cluster</module>
     <module>akka-rest</module>
     <module>akka-camel</module>
     <module>akka-amqp</module>
