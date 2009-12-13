@@ -126,9 +126,8 @@ class JGroupsClusterActor(name : String) extends ClusterActor(name)
           }
 
       case m : Message => {
-            val payload = serializer in(m.getRawBuffer,None)
             if(m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) //handle non-own messages only, and only if we're connected
-                payload match {
+                (serializer in(m.getRawBuffer,None)) match {
                     case PapersPlease        => {
                             log info "Asked for papers by " + m.getSrc
                             broadcast(m.getSrc :: Nil,Papers(local.endpoints))
@@ -144,8 +143,6 @@ class JGroupsClusterActor(name : String) extends ClusterActor(name)
                         }
                     case unknown             => log info "Unknown message: "+unknown.toString
                 }
-            //else
-            //    log info "Self-originating message: " + m + " msg: " + payload
           }
 
       case rm@RelayedMessage => {
@@ -165,11 +162,12 @@ class JGroupsClusterActor(name : String) extends ClusterActor(name)
            broadcast(Papers(local.endpoints))
           }
       
-      case Block                    => log info "Asked to block" //TODO HotSwap to a buffering body
-      case Unblock                  => log info "Asked to unblock" //TODO HotSwap back and flush the buffer
+      case Block                    => log info "UNSUPPORTED: block" //TODO HotSwap to a buffering body
+      case Unblock                  => log info "UNSUPPORTED: unblock" //TODO HotSwap back and flush the buffer
     }
 
     override def shutdown = {
+      log info "Shutting down "+this.getClass.getName
       channel.map(_.close)
       remotes = Map()
       channel = None
