@@ -10,6 +10,9 @@ import org.jgroups.util.Util
 import se.scalablesolutions.akka.actor.{Init,SupervisorFactory,Actor,ActorRegistry}
 import se.scalablesolutions.akka.nio.Cluster.{Node,RelayedMessage}
 
+/**
+ Interface for interacting with the cluster
+**/
 trait Cluster {
     def members : List[Node]
     def name : String
@@ -18,8 +21,16 @@ trait Cluster {
     def relayMessage(to : Class[_ <: Actor],msg : AnyRef) : Unit
 }
 
+/**
+ Extend this class (you have to provide the same signature constructor i.e. XX(name : String) så we can construct it
+ Perhaps we'll change this to use ActorRegistry for lookup an instance instead.
+**/
 abstract class ClusterActor(val name : String) extends Actor with Cluster
 
+/**
+ A singleton representing the Cluster
+ Loads a specified ClusterActor and delegates to that instance
+**/
 object Cluster extends Cluster {
       case class Node(endpoints : List[RemoteAddress])
       case class RelayedMessage(actorClass : Class[_ <: Actor],msg : AnyRef)
@@ -49,6 +60,9 @@ object Cluster extends Cluster {
       def relayMessage(to : Class[_ <: Actor],msg : AnyRef)  : Unit = impl.map(_.send(to,msg))
 }
 
+/**
+ Just a placeholder for the JGroupsClusterActor message types
+**/
 object JGroupsClusterActor {
     //Message types
     case object PapersPlease
@@ -60,6 +74,9 @@ object JGroupsClusterActor {
     case class DeregisterLocalNode(server : RemoteAddress)
 }
 
+/**
+ Clustering support via JGroups
+**/
 class JGroupsClusterActor(name : String) extends ClusterActor(name)
 {
     import JGroupsClusterActor._
