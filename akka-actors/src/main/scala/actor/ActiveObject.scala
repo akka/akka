@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.actor
 
 import java.net.InetSocketAddress
 
-import se.scalablesolutions.akka.dispatch.{MessageDispatcher, FutureResult}
 import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.config.ScalaConfig._
@@ -18,6 +17,7 @@ import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 
 import java.lang.reflect.{InvocationTargetException, Method}
+import se.scalablesolutions.akka.dispatch.{Dispatchers, MessageDispatcher, FutureResult}
 
 object Annotations {
   import se.scalablesolutions.akka.annotation._
@@ -30,11 +30,13 @@ object Annotations {
 }
 
 /**
+ * Factory class for creating Active Objects out of plain POJOs and/or POJOs with interfaces.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActiveObject {
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
+  private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern  
 
   def newInstance[T](target: Class[T], timeout: Long): T =
     newInstance(target, new Dispatcher(false, None), None, timeout)
@@ -233,12 +235,11 @@ private[akka] sealed case class AspectInit(
  */
 @Aspect("perInstance")
 private[akka] sealed class ActiveObjectAspect {
-  
-  @volatile var isInitialized = false
-  var target: Class[_] = _
-  var actor: Dispatcher = _            
-  var remoteAddress: Option[InetSocketAddress] = _
-  var timeout: Long = _
+  @volatile private var isInitialized = false
+  private var target: Class[_] = _
+  private var actor: Dispatcher = _
+  private var remoteAddress: Option[InetSocketAddress] = _
+  private var timeout: Long = _
 
   @Around("execution(* *.*(..))")
   def invoke(joinPoint: JoinPoint): AnyRef = {
@@ -312,9 +313,9 @@ private[akka] sealed class ActiveObjectAspect {
     var isEscaped = false
     val escapedArgs = for (arg <- args) yield {
       val clazz = arg.getClass
-      if (clazz.getName.contains("$$ProxiedByAW")) {
+      if (clazz.getName.contains(ActiveObject.AW_PROXY_PREFIX)) {
         isEscaped = true
-        "$$ProxiedByAW" + clazz.getSuperclass.getName
+        ActiveObject.AW_PROXY_PREFIX + clazz.getSuperclass.getName
       } else arg
     }
     (escapedArgs, isEscaped)
@@ -375,10 +376,12 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
       case Some(RestartCallbacks(pre, post)) =>
         preRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(pre, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalStateException("Could not find pre restart method [" + pre + "] in [" + targetClass.getName + "]. It must have a zero argument definition.") })
+        } catch { case e => throw new IllegalStateException(
+          "Could not find pre restart method [" + pre + "] \nin [" + targetClass.getName + "]. \nIt must have a zero argument definition.") })
         postRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(post, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalStateException("Could not find post restart method [" + post + "] in [" + targetClass.getName + "]. It must have a zero argument definition.") })
+        } catch { case e => throw new IllegalStateException(
+          "Could not find post restart method [" + post + "] \nin [" + targetClass.getName + "]. \nIt must have a zero argument definition.") })
     }
 
     // See if we have any annotation defined restart callbacks 
@@ -386,9 +389,11 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
     if (!postRestart.isDefined) postRestart = methods.find(m => m.isAnnotationPresent(Annotations.postrestart))
 
     if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
-      throw new IllegalStateException("Method annotated with @prerestart or defined as a restart callback in [" + targetClass.getName + "] must have a zero argument definition")
+      throw new IllegalStateException(
+        "Method annotated with @prerestart or defined as a restart callback in \n[" + targetClass.getName + "] must have a zero argument definition")
     if (postRestart.isDefined && postRestart.get.getParameterTypes.length != 0)
-      throw new IllegalStateException("Method annotated with @postrestart or defined as a restart callback in [" + targetClass.getName + "] must have a zero argument definition")
+      throw new IllegalStateException(
+        "Method annotated with @postrestart or defined as a restart callback in \n[" + targetClass.getName + "] must have a zero argument definition")
 
     if (preRestart.isDefined) preRestart.get.setAccessible(true)
     if (postRestart.isDefined) postRestart.get.setAccessible(true)
@@ -399,7 +404,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
     //if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     case Invocation(joinPoint, isOneWay, _) =>
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed
@@ -449,7 +454,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
         !arg.getClass.isAnnotationPresent(Annotations.immutable)) {
         hasMutableArgument = true
       }
-      if (arg.getClass.getName.contains("$$ProxiedByAWSubclassing$$")) unserializable = true
+      if (arg.getClass.getName.contains(ActiveObject.AW_PROXY_PREFIX)) unserializable = true
     }
     if (!unserializable && hasMutableArgument) {
       // FIXME: can we have another default deep cloner?
