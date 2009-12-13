@@ -18,7 +18,7 @@ import javax.servlet.{ServletConfig}
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport,CometSupportResolver,DefaultCometSupportResolver}
-import org.atmosphere.container.{GrizzlyCometSupport,GlassFishv3CometSupport}
+import org.atmosphere.container.{GrizzlyCometSupport}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
 import org.atmosphere.jersey.JerseyBroadcaster
 
@@ -85,9 +85,9 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
       new DefaultCometSupportResolver(config) {
          type CS = CometSupport[_ <: AtmosphereResource[_,_]]
          override def resolveMultipleNativeSupportConflict(available : JList[Class[_ <: CS]]) : CS = {
-             available.asScala.filter(c => c != classOf[GrizzlyCometSupport] && c != classOf[GlassFishv3CometSupport]).toList match {
+             available.asScala.filter(_ != classOf[GrizzlyCometSupport]).toList match {
                  case Nil      => new GrizzlyCometSupport(config)
-                 case x :: Nil => newCometSupport(x)
+                 case (x:AnyRef) :: Nil => newCometSupport(x)
                  case _        => super.resolveMultipleNativeSupportConflict(available)
              }
         }
