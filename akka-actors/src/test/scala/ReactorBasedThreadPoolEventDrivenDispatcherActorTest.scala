@@ -4,17 +4,15 @@ import java.util.concurrent.TimeUnit
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-class EventBasedSingleThreadActorTest extends JUnitSuite {
+class ReactorBasedThreadPoolEventDrivenDispatcherActorTest extends JUnitSuite {
   import Actor.Sender.Self
 
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
-    dispatcher = Dispatchers.newEventBasedSingleThreadDispatcher(uuid)
-
+    dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
     def receive = {
       case "Hello" =>
         reply("World")
@@ -24,22 +22,21 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
   }
 
   @Test def shouldSendOneWay = {
-    implicit val timeout = 5000L
     var oneWay = "nada"
     val actor = new Actor {
+      dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
       def receive = {
         case "OneWay" => oneWay = "received"
       }
     }
     actor.start
     val result = actor ! "OneWay"
-    Thread.sleep(100)
+    Thread.sleep(1000)
     assert("received" === oneWay)
     actor.stop
   }
 
   @Test def shouldSendReplySync = {
-    implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
     val result: String = (actor !! ("Hello", 10000)).get
@@ -48,7 +45,6 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
   }
 
   @Test def shouldSendReplyAsync = {
-    implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
     val result = actor !! "Hello"
@@ -57,7 +53,6 @@ class EventBasedSingleThreadActorTest extends JUnitSuite {
   }
 
   @Test def shouldSendReceiveException = {
-    implicit val timeout = 5000L
     val actor = new TestActor
     actor.start
     try {
