@@ -49,7 +49,7 @@ object Cluster extends Cluster {
                                 Supervise(actor, LifeCycle(Permanent)):: Nil
                           )
                      ).newInstance.start
-            actor !! Init(None) // FIXME for some reason the actor isn't init:ed unless we explicitly send it this Init message
+            //actor !! Init(None) // FIXME for some reason the actor isn't init:ed unless we explicitly send it this Init message
             actor
         })
       }
