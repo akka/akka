@@ -10,38 +10,13 @@ import se.scalablesolutions.akka.util.HashCode
 import se.scalablesolutions.akka.stm.Transaction
 import se.scalablesolutions.akka.actor.Actor
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentHashMap
 
-trait MessageQueue {
-  def append(handle: MessageInvocation)
-  def prepend(handle: MessageInvocation)
-}
-
-trait MessageInvoker {
-  def invoke(message: MessageInvocation)
-}
-
-trait MessageDispatcher {
-  def dispatch(invocation: MessageInvocation)
-  def registerHandler(key: AnyRef, handler: MessageInvoker)
-  def unregisterHandler(key: AnyRef)
-  def canBeShutDown: Boolean
-  def start
-  def shutdown
-}
-
-trait MessageDemultiplexer {
-  def select
-  def acquireSelectedInvocations: List[MessageInvocation]
-  def releaseSelectedInvocations
-  def wakeUp
-}
-
-class MessageInvocation(val receiver: Actor,
-                        val message: Any,
-                        val future: Option[CompletableFutureResult],
-                        val sender: Option[Actor],
-                        val tx: Option[Transaction]) {
+final class MessageInvocation(val receiver: Actor,
+                              val message: Any,
+                              val future: Option[CompletableFutureResult],
+                              val sender: Option[Actor],
+                              val tx: Option[Transaction]) {
   if (receiver == null) throw new IllegalArgumentException("receiver is null")
   if (message == null) throw new IllegalArgumentException("message is null")
 
@@ -62,8 +37,8 @@ class MessageInvocation(val receiver: Actor,
     that.asInstanceOf[MessageInvocation].receiver == receiver &&
     that.asInstanceOf[MessageInvocation].message == message
   }
-  
-  override def toString(): String = synchronized { 
+
+  override def toString(): String = synchronized {
     "MessageInvocation[" +
      "\n\tmessage = " + message +
      "\n\treceiver = " + receiver +
@@ -72,4 +47,30 @@ class MessageInvocation(val receiver: Actor,
      "\n\ttx = " + tx +
      "\n]"
   }
+}
+
+trait MessageQueue {
+  def append(handle: MessageInvocation)
+  def prepend(handle: MessageInvocation)
+}
+
+trait MessageInvoker {
+  def invoke(message: MessageInvocation)
+}
+
+trait MessageDispatcher {
+  protected val references = new ConcurrentHashMap[String, Actor]  
+  def dispatch(invocation: MessageInvocation)
+  def start
+  def shutdown
+  def register(actor: Actor) = references.put(actor.uuid, actor)
+  def unregister(actor: Actor) = references.remove(actor.uuid)
+  def canBeShutDown: Boolean = references.isEmpty
+}
+
+trait MessageDemultiplexer {
+  def select
+  def wakeUp
+  def acquireSelectedInvocations: List[MessageInvocation]
+  def releaseSelectedInvocations
 }

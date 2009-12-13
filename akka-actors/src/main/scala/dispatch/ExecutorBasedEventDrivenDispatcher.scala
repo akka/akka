@@ -4,8 +4,6 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import java.util.concurrent.Executors
-
 /**
  * Default settings are:
  * <pre/>
@@ -57,16 +55,24 @@ import java.util.concurrent.Executors
  */
 class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
-
+  
   val name = "event-driven:executor:dispatcher:" + _name
 
   withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
-  //private val _executor = Executors.newFixedThreadPool(4)
-
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
-      def run = invocation.invoke
+      def run = {
+        val mailbox = invocation.receiver._mailbox
+        mailbox.synchronized {
+          val messages = mailbox.iterator
+          while (messages.hasNext) {
+            messages.next.invoke
+            messages.remove
+          }
+          invocation.receiver._suspend
+        }
+      }
     })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
 
@@ -74,15 +80,10 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
     active = true
   }
 
-  def canBeShutDown = true
-
   def shutdown = if (active) {
     executor.shutdownNow
     active = false
   }
-
-  def registerHandler(key: AnyRef, handler: MessageInvoker) = {}
-  def unregisterHandler(key: AnyRef) = {}
 
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")

@@ -15,9 +15,7 @@ class ForkJoinBasedEventDrivenDispatcher(val name: String) extends MessageDispat
   // FIXME: add name "event-driven:fork-join:dispatcher" + name
   def dispatch(invocation: MessageInvocation) = {
     scheduler.execute(new Runnable() {
-      def run = {
-        invocation.invoke
-      }
+      def run = invocation.invoke
     })
   }
 
@@ -25,12 +23,8 @@ class ForkJoinBasedEventDrivenDispatcher(val name: String) extends MessageDispat
     active = true
   }
 
-  def canBeShutDown = true
-
   def shutdown = if (active) {
+    scheduler.shutdown
     active = false
   }
-
-  def registerHandler(key: AnyRef, handler: MessageInvoker) = {}
-  def unregisterHandler(key: AnyRef) = {}
 }

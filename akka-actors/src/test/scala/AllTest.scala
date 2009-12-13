@@ -5,7 +5,6 @@ import junit.framework.TestCase
 import junit.framework.TestSuite
 
 import se.scalablesolutions.akka.actor.{RemoteActorTest, InMemoryActorTest, ThreadBasedActorTest, SupervisorTest, RemoteSupervisorTest, SchedulerTest}
-import se.scalablesolutions.akka.dispatch.{ReactorBasedSingleThreadEventDrivenDispatcherTest, ReactorBasedThreadPoolEventDrivenDispatcherTest}
 
 object AllTest extends TestCase {
   def suite(): Test = {
