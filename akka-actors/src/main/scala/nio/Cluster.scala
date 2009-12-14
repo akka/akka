@@ -178,6 +178,10 @@ class JGroupsClusterActor extends ClusterActor {
           case PapersPlease => {
             log info ("Asked for papers by %s", m.getSrc)
             broadcast(m.getSrc :: Nil, Papers(local.endpoints))
+            remotes.get(m.getSrc) match {
+              case Some(x) =>
+              case None    => broadcast(m.getSrc :: Nil, PapersPlease) //If we were asked for papers from someone we don't know, ask them!
+            }
           }
           case Papers(x) => {
             log info ("Got papers from %s = %s", m.getSrc, x)
