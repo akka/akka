@@ -115,6 +115,34 @@ public final class RemoteProtocol {
     public boolean hasIsEscaped() { return hasIsEscaped; }
     public boolean getIsEscaped() { return isEscaped_; }
     
+    // optional string sourceHostname = 13;
+    public static final int SOURCEHOSTNAME_FIELD_NUMBER = 13;
+    private boolean hasSourceHostname;
+    private java.lang.String sourceHostname_ = "";
+    public boolean hasSourceHostname() { return hasSourceHostname; }
+    public java.lang.String getSourceHostname() { return sourceHostname_; }
+    
+    // optional uint32 sourcePort = 14;
+    public static final int SOURCEPORT_FIELD_NUMBER = 14;
+    private boolean hasSourcePort;
+    private int sourcePort_ = 0;
+    public boolean hasSourcePort() { return hasSourcePort; }
+    public int getSourcePort() { return sourcePort_; }
+    
+    // optional string sourceTarget = 15;
+    public static final int SOURCETARGET_FIELD_NUMBER = 15;
+    private boolean hasSourceTarget;
+    private java.lang.String sourceTarget_ = "";
+    public boolean hasSourceTarget() { return hasSourceTarget; }
+    public java.lang.String getSourceTarget() { return sourceTarget_; }
+    
+    // optional string sourceUuid = 16;
+    public static final int SOURCEUUID_FIELD_NUMBER = 16;
+    private boolean hasSourceUuid;
+    private java.lang.String sourceUuid_ = "";
+    public boolean hasSourceUuid() { return hasSourceUuid; }
+    public java.lang.String getSourceUuid() { return sourceUuid_; }
+    
     public final boolean isInitialized() {
       if (!hasId) return false;
       if (!hasProtocol) return false;
@@ -165,6 +193,18 @@ public final class RemoteProtocol {
       }
       if (hasIsEscaped()) {
         output.writeBool(12, getIsEscaped());
+      }
+      if (hasSourceHostname()) {
+        output.writeString(13, getSourceHostname());
+      }
+      if (hasSourcePort()) {
+        output.writeUInt32(14, getSourcePort());
+      }
+      if (hasSourceTarget()) {
+        output.writeString(15, getSourceTarget());
+      }
+      if (hasSourceUuid()) {
+        output.writeString(16, getSourceUuid());
       }
       getUnknownFields().writeTo(output);
     }
@@ -222,6 +262,22 @@ public final class RemoteProtocol {
       if (hasIsEscaped()) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(12, getIsEscaped());
+      }
+      if (hasSourceHostname()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeStringSize(13, getSourceHostname());
+      }
+      if (hasSourcePort()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(14, getSourcePort());
+      }
+      if (hasSourceTarget()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeStringSize(15, getSourceTarget());
+      }
+      if (hasSourceUuid()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeStringSize(16, getSourceUuid());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -408,6 +464,18 @@ public final class RemoteProtocol {
         if (other.hasIsEscaped()) {
           setIsEscaped(other.getIsEscaped());
         }
+        if (other.hasSourceHostname()) {
+          setSourceHostname(other.getSourceHostname());
+        }
+        if (other.hasSourcePort()) {
+          setSourcePort(other.getSourcePort());
+        }
+        if (other.hasSourceTarget()) {
+          setSourceTarget(other.getSourceTarget());
+        }
+        if (other.hasSourceUuid()) {
+          setSourceUuid(other.getSourceUuid());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -479,6 +547,22 @@ public final class RemoteProtocol {
             }
             case 96: {
               setIsEscaped(input.readBool());
+              break;
+            }
+            case 106: {
+              setSourceHostname(input.readString());
+              break;
+            }
+            case 112: {
+              setSourcePort(input.readUInt32());
+              break;
+            }
+            case 122: {
+              setSourceTarget(input.readString());
+              break;
+            }
+            case 130: {
+              setSourceUuid(input.readString());
               break;
             }
           }
@@ -717,6 +801,87 @@ public final class RemoteProtocol {
       public Builder clearIsEscaped() {
         result.hasIsEscaped = false;
         result.isEscaped_ = false;
+        return this;
+      }
+      
+      // optional string sourceHostname = 13;
+      public boolean hasSourceHostname() {
+        return result.hasSourceHostname();
+      }
+      public java.lang.String getSourceHostname() {
+        return result.getSourceHostname();
+      }
+      public Builder setSourceHostname(java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasSourceHostname = true;
+        result.sourceHostname_ = value;
+        return this;
+      }
+      public Builder clearSourceHostname() {
+        result.hasSourceHostname = false;
+        result.sourceHostname_ = getDefaultInstance().getSourceHostname();
+        return this;
+      }
+      
+      // optional uint32 sourcePort = 14;
+      public boolean hasSourcePort() {
+        return result.hasSourcePort();
+      }
+      public int getSourcePort() {
+        return result.getSourcePort();
+      }
+      public Builder setSourcePort(int value) {
+        result.hasSourcePort = true;
+        result.sourcePort_ = value;
+        return this;
+      }
+      public Builder clearSourcePort() {
+        result.hasSourcePort = false;
+        result.sourcePort_ = 0;
+        return this;
+      }
+      
+      // optional string sourceTarget = 15;
+      public boolean hasSourceTarget() {
+        return result.hasSourceTarget();
+      }
+      public java.lang.String getSourceTarget() {
+        return result.getSourceTarget();
+      }
+      public Builder setSourceTarget(java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasSourceTarget = true;
+        result.sourceTarget_ = value;
+        return this;
+      }
+      public Builder clearSourceTarget() {
+        result.hasSourceTarget = false;
+        result.sourceTarget_ = getDefaultInstance().getSourceTarget();
+        return this;
+      }
+      
+      // optional string sourceUuid = 16;
+      public boolean hasSourceUuid() {
+        return result.hasSourceUuid();
+      }
+      public java.lang.String getSourceUuid() {
+        return result.getSourceUuid();
+      }
+      public Builder setSourceUuid(java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasSourceUuid = true;
+        result.sourceUuid_ = value;
+        return this;
+      }
+      public Builder clearSourceUuid() {
+        result.hasSourceUuid = false;
+        result.sourceUuid_ = getDefaultInstance().getSourceUuid();
         return this;
       }
     }
@@ -1306,17 +1471,19 @@ public final class RemoteProtocol {
     java.lang.String[] descriptorData = {
       "\n;se/scalablesolutions/akka/nio/protobuf" +
       "/RemoteProtocol.proto\022&se.scalablesoluti" +
-      "ons.akka.nio.protobuf\"\344\001\n\rRemoteRequest\022" +
+      "ons.akka.nio.protobuf\"\272\002\n\rRemoteRequest\022" +
       "\n\n\002id\030\001 \002(\004\022\020\n\010protocol\030\002 \002(\r\022\017\n\007message" +
       "\030\003 \002(\014\022\027\n\017messageManifest\030\004 \001(\014\022\016\n\006metho" +
       "d\030\005 \001(\t\022\016\n\006target\030\006 \002(\t\022\014\n\004uuid\030\007 \002(\t\022\017\n" +
       "\007timeout\030\010 \002(\004\022\026\n\016supervisorUuid\030\t \001(\t\022\017" +
       "\n\007isActor\030\n \002(\010\022\020\n\010isOneWay\030\013 \002(\010\022\021\n\tisE" +
-      "scaped\030\014 \002(\010\"\247\001\n\013RemoteReply\022\n\n\002id\030\001 \002(\004" +
-      "\022\020\n\010protocol\030\002 \001(\r\022\017\n\007message\030\003 \001(\014\022\027\n\017m",
-      "essageManifest\030\004 \001(\014\022\021\n\texception\030\005 \001(\t\022" +
-      "\026\n\016supervisorUuid\030\006 \001(\t\022\017\n\007isActor\030\007 \002(\010" +
-      "\022\024\n\014isSuccessful\030\010 \002(\010"
+      "scaped\030\014 \002(\010\022\026\n\016sourceHostname\030\r \001(\t\022\022\n\n" +
+      "sourcePort\030\016 \001(\r\022\024\n\014sourceTarget\030\017 \001(\t\022\022",
+      "\n\nsourceUuid\030\020 \001(\t\"\247\001\n\013RemoteReply\022\n\n\002id" +
+      "\030\001 \002(\004\022\020\n\010protocol\030\002 \001(\r\022\017\n\007message\030\003 \001(" +
+      "\014\022\027\n\017messageManifest\030\004 \001(\014\022\021\n\texception\030" +
+      "\005 \001(\t\022\026\n\016supervisorUuid\030\006 \001(\t\022\017\n\007isActor" +
+      "\030\007 \002(\010\022\024\n\014isSuccessful\030\010 \002(\010"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1328,7 +1495,7 @@ public final class RemoteProtocol {
           internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteRequest_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteRequest_descriptor,
-              new java.lang.String[] { "Id", "Protocol", "Message", "MessageManifest", "Method", "Target", "Uuid", "Timeout", "SupervisorUuid", "IsActor", "IsOneWay", "IsEscaped", },
+              new java.lang.String[] { "Id", "Protocol", "Message", "MessageManifest", "Method", "Target", "Uuid", "Timeout", "SupervisorUuid", "IsActor", "IsOneWay", "IsEscaped", "SourceHostname", "SourcePort", "SourceTarget", "SourceUuid", },
               se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest.class,
               se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest.Builder.class);
           internal_static_se_scalablesolutions_akka_nio_protobuf_RemoteReply_descriptor =

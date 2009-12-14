@@ -70,6 +70,8 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 object Actor extends Logging {
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
+  val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
+  val PORT = config.getInt("akka.remote.server.port", 9999)  
 
   object Sender extends Actor {
     implicit val Self: AnyRef = this
@@ -233,6 +235,7 @@ trait Actor extends TransactionManagement {
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] var _linkedActors: Option[HashSet[Actor]] = None
   private[akka] var _supervisor: Option[Actor] = None
+  private[akka] var _contactAddress: Option[InetSocketAddress] = None
   private[akka] val _mailbox: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
 
   // ====================================
@@ -561,11 +564,11 @@ trait Actor extends TransactionManagement {
             throw new IllegalStateException(
               "\n\tNo sender in scope, can't reply. " +
               "\n\tYou have probably used the '!' method to either; " +
-              "\n\t\t1. Send a message to a remote actor" +
+              "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
               "\n\t\t2. Send a message from an instance that is *not* an actor" +
               "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
               "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-               "\n\tthat will be bound by the argument passed to 'reply'." )
+               "\n\tthat will be bound by the argument passed to 'reply'. Alternatively, you can use setContactAddress to make sure the actor can be contacted over the network." )
           case Some(future) =>
             future.completeWithResult(message)
         }
@@ -605,6 +608,17 @@ trait Actor extends TransactionManagement {
    */
   def makeRemote(address: InetSocketAddress): Unit = _remoteFlagLock.withWriteLock {
     _remoteAddress = Some(address)
+  }
+
+  /**
+	* Set the contact address for this actor. This is used for replying to messages sent asynchronously when no reply channel exists.
+	*/
+  def setContactAddress(hostname:String, port:Int): Unit = {
+	 setContactAddress(new InetSocketAddress(hostname, port))
+  }
+
+  def setContactAddress(address: InetSocketAddress): Unit = {
+	 _contactAddress = Some(address)	 
   }
 
   /**
@@ -768,6 +782,27 @@ trait Actor extends TransactionManagement {
         .setIsEscaped(false)
       val id = registerSupervisorAsRemoteActor
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
+
+		// set the source fields used to reply back to the original sender
+		// (i.e. not the remote proxy actor)
+		if(sender.isDefined) {
+		  requestBuilder.setSourceTarget(sender.get.getClass.getName)
+		  requestBuilder.setSourceUuid(sender.get.uuid)
+		  log.debug("Setting sending actor as " + sender.get.getClass.getName + ", " + _contactAddress)
+
+		  if (sender.get._contactAddress.isDefined) {
+			 val addr = sender.get._contactAddress.get
+			 requestBuilder.setSourceHostname(addr.getHostName())
+			 requestBuilder.setSourcePort(addr.getPort())
+		  } else {
+			 // set the contact address to the default values from the
+			 // configuration file
+			 requestBuilder.setSourceHostname(Actor.HOSTNAME)
+			 requestBuilder.setSourcePort(Actor.PORT)
+		  }
+
+		}
+
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build)
     } else {
