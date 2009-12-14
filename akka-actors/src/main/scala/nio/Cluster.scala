@@ -20,7 +20,6 @@ import scala.collection.immutable.{Map, HashMap, HashSet}
  * Interface for interacting with the cluster.
  */
 trait Cluster {
-  def members: List[Node]
 
   def name: String
 
@@ -29,6 +28,10 @@ trait Cluster {
   def deregisterLocalNode(hostname: String, port: Int): Unit
 
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit
+
+  def lookup[T](pf : PartialFunction[RemoteAddress,T]) : Option[T]
+
+  def lookup[T](pred : (RemoteAddress) => Boolean)(f:(RemoteAddress) => T) : Option[T] = lookup({case x if pred(x) => f(x)})
 }
 
 /**
@@ -44,13 +47,13 @@ abstract class ClusterActor extends Actor with Cluster {
  */
 object Cluster extends Cluster {
   case class Node(endpoints: List[RemoteAddress])
-  case class RelayedMessage(actorClass: Class[_ <: Actor], msg: AnyRef)
+  case class RelayedMessage(actorClassFQN:String, msg: AnyRef)
 
   lazy val impl: Option[ClusterActor] = {
     config.getString("akka.remote.cluster.actor") map (name => {
       val actor = Class.forName(name)
-          .newInstance
-          .asInstanceOf[ClusterActor]
+                       .newInstance
+                       .asInstanceOf[ClusterActor]
 
       SupervisorFactory(
         SupervisorConfig(
@@ -58,20 +61,20 @@ object Cluster extends Cluster {
           Supervise(actor, LifeCycle(Permanent)) :: Nil
           )
         ).newInstance.start
-      //actor !! Init(None) // FIXME for some reason the actor isn't init:ed unless we explicitly send it this Init message
+      actor send Init(None)
       actor
     })
   }
 
   def name = impl.map(_.name).getOrElse("No cluster")
 
-  def members = impl.map(_.members).getOrElse(Nil)
+  def lookup[T](pf : PartialFunction[RemoteAddress,T]) : Option[T] = impl.flatMap(_.lookup(pf))
 
   def registerLocalNode(hostname: String, port: Int): Unit = impl.map(_.registerLocalNode(hostname, port))
 
   def deregisterLocalNode(hostname: String, port: Int): Unit = impl.map(_.deregisterLocalNode(hostname, port))
 
-  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = impl.map(_.send(to, msg))
+  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = impl.map(_.relayMessage(to, msg))
 }
 
 /**
@@ -96,9 +99,9 @@ class JGroupsClusterActor extends ClusterActor {
   import JGroupsClusterActor._
   import org.scala_tools.javautils.Implicits._
 
-  private var local: Node = Node(Nil)
-  private var channel: Option[JChannel] = None
-  private var remotes: Map[Address, Node] = Map()
+  @volatile private var local: Node = Node(Nil)
+  @volatile private var channel: Option[JChannel] = None
+  @volatile private var remotes: Map[Address, Node] = Map()
 
   override def init(config: AnyRef) = {
     log info "Initiating cluster actor"
@@ -111,15 +114,15 @@ class JGroupsClusterActor extends ClusterActor {
 
         def setState(state: Array[Byte]): Unit = ()
 
-        def receive(msg: Message): Unit = me ! msg
+        def receive(msg: Message): Unit = me send msg
 
-        def viewAccepted(view: View): Unit = me ! view
+        def viewAccepted(view: View): Unit = me send view
 
-        def suspect(a: Address): Unit = me ! Zombie(a)
+        def suspect(a: Address): Unit = me send Zombie(a)
 
-        def block: Unit = me ! Block
+        def block: Unit = me send Block
 
-        def unblock: Unit = me ! Unblock
+        def unblock: Unit = me send Unblock
       })
     })
     channel.map(_.connect(name))
@@ -127,16 +130,19 @@ class JGroupsClusterActor extends ClusterActor {
 
   protected def serializer = Serializer.Java //FIXME make this configurable
 
-  def members = remotes.values.toList //FIXME We probably want to make this a !! InstalledRemotes
+  def lookup[T](pf : PartialFunction[RemoteAddress,T]) : Option[T] = remotes.values.toList.flatMap(_.endpoints).find(pf isDefinedAt _).map(pf)
 
-  def registerLocalNode(hostname: String, port: Int): Unit = this ! RegisterLocalNode(RemoteAddress(hostname, port))
+  def registerLocalNode(hostname: String, port: Int): Unit = this send RegisterLocalNode(RemoteAddress(hostname, port))
 
-  def deregisterLocalNode(hostname: String, port: Int): Unit = this ! DeregisterLocalNode(RemoteAddress(hostname, port))
+  def deregisterLocalNode(hostname: String, port: Int): Unit = this send DeregisterLocalNode(RemoteAddress(hostname, port))
 
-  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = this ! RelayedMessage(to, msg)
+  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = this send RelayedMessage(to.getName, msg)
 
-  private def broadcast[T <: AnyRef](recipients: Iterable[Address], msg: T): Unit =
-    for (c <- channel; r <- recipients) c.send(new Message(r, null, serializer out msg))
+  private def broadcast[T <: AnyRef](recipients: Iterable[Address], msg: T): Unit = {
+    lazy val m = serializer out msg
+    for (c <- channel; r <- recipients) c.send(new Message(r, null, m))
+
+  }
 
   private def broadcast[T <: AnyRef](msg: T): Unit =
     channel.map(_.send(new Message(null, null, serializer out msg)))
@@ -179,14 +185,14 @@ class JGroupsClusterActor extends ClusterActor {
             log info ("Installed nodes: %s", remotes.keySet)
           }
           case RelayedMessage(c, m) => {
-            log info ("Relaying [%s] to [%s]", m, c.getName)
-            ActorRegistry.actorsFor(c).firstOption.map(_ ! m)
+            log info ("Relaying [%s] to [%s]", m, c)
+            ActorRegistry.actorsFor(c).map(_ send m)
           }
           case unknown => log info ("Unknown message: %s", unknown.toString)
         }
     }
 
-    case rm@RelayedMessage => {
+    case rm @ RelayedMessage(_,_) => {
       log info ("Relaying message: %s", rm)
       broadcast(rm)
     }
