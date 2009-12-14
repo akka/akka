@@ -30,8 +30,6 @@ trait Cluster {
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit
 
   def lookup[T](pf : PartialFunction[RemoteAddress,T]) : Option[T]
-
-  def lookup[T](pred : (RemoteAddress) => Boolean)(f:(RemoteAddress) => T) : Option[T] = lookup({case x if pred(x) => f(x)})
 }
 
 /**
