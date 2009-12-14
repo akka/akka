@@ -12,10 +12,13 @@ import com.sun.jersey.api.core.ResourceConfig
 import com.sun.jersey.spi.container.servlet.ServletContainer
 import com.sun.jersey.spi.container.WebApplication
 
+import java.util.{List => JList}
+
 import javax.servlet.{ServletConfig}
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
-import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport}
+import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport,CometSupportResolver,DefaultCometSupportResolver}
+import org.atmosphere.container.{GrizzlyCometSupport}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
 import org.atmosphere.jersey.JerseyBroadcaster
 
@@ -74,22 +77,28 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
   override def loadConfiguration(sc: ServletConfig) {
     config = new AtmosphereConfig { supportSession = false }
     atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
-
-    loadCometSupport(sc.getInitParameter("cometSupport")) map( setCometSupport(_) )
   }
 
-  private def loadCometSupport(fqn : String) = {
+  override def createCometSupportResolver() : CometSupportResolver = {
+      import org.scala_tools.javautils.Imports._
 
-      log.info("Trying to load: " + fqn)
-      try {
-        Some(Class.forName(fqn)
-                  .getConstructor(Array(classOf[AtmosphereConfig]): _*)
-                  .newInstance(config)
-                  .asInstanceOf[CometSupport[_ <: AtmosphereResource[_,_]]])
-      } catch {
-          case e : Exception =>
-              log.error(e, "Couldn't load comet support", fqn)
-              None
+      new DefaultCometSupportResolver(config) {
+         type CS = CometSupport[_ <: AtmosphereResource[_,_]]
+         override def resolveMultipleNativeSupportConflict(available : JList[Class[_ <: CS]]) : CS = {
+             available.asScala.filter(_ != classOf[GrizzlyCometSupport]).toList match {
+                 case Nil      => new GrizzlyCometSupport(config)
+                 case x :: Nil => newCometSupport(x.asInstanceOf[Class[_ <: CS]])
+                 case _        => super.resolveMultipleNativeSupportConflict(available)
+             }
+        }
+
+        override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CS = {
+           val predef = config.getInitParameter("cometSupport")
+           if(testClassExists(predef))
+             newCometSupport(predef)
+           else
+             super.resolve(useNativeIfPossible, useBlockingAsDefault)
+        }
       }
   }
 }
