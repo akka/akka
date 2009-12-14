@@ -28,7 +28,7 @@
     <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
-    <atmosphere.version>0.4.1</atmosphere.version>
+    <atmosphere.version>0.5-SNAPSHOT</atmosphere.version>
     <jersey.version>1.1.4</jersey.version>
     <grizzly.version>1.9.18-i</grizzly.version>
   </properties>
@@ -72,6 +72,16 @@
         <role>Founder</role>
         <role>Hacker</role>
         <role>Despot</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>viktorklang</id>
+      <name>Viktor Klang</name>
+      <timezone>+1</timezone>
+      <email>viktor.klang [REMOVE] AT gmail DOT com</email>
+      <roles>
+      	<role>Sourceror</role>
+        <role>Ninja-Zombie</role>
       </roles>
     </developer>
   </developers>
