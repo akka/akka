@@ -32,7 +32,7 @@ object RemoteClient extends Logging {
   val RECONNECT_DELAY = config.getInt("akka.remote.client.reconnect-delay", 5000)
 
   // TODO: add configuration optons: 'HashedWheelTimer(long tickDuration, TimeUnit unit, int ticksPerWheel)'
-  private[akka] val TIMER = new HashedWheelTimer
+//  private[akka] val TIMER = new HashedWheelTimer
   private val clients = new HashMap[String, RemoteClient]
 
   def clientFor(address: InetSocketAddress): RemoteClient = synchronized {
@@ -46,6 +46,15 @@ object RemoteClient extends Logging {
       clients += hash -> client
       client
     }
+  }
+
+  /*
+	* Clean-up all open connections
+	*/
+  def shutdownAll() = synchronized {
+	 clients.foreach({case (addr, client) => client.shutdown})
+	 clients.clear
+//	 TIMER.stop
   }
 }
 
@@ -66,7 +75,9 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
 
   private val bootstrap = new ClientBootstrap(channelFactory)
 
-  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap))
+  private val timer = new HashedWheelTimer
+
+  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, timer))
   bootstrap.setOption("tcpNoDelay", true)
   bootstrap.setOption("keepAlive", true)
 
@@ -91,6 +102,8 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
       connection.getChannel.getCloseFuture.awaitUninterruptibly
       channelFactory.releaseExternalResources
     }
+	 
+	 timer.stop
   }
 
   def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
@@ -124,10 +137,11 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
 class RemoteClientPipelineFactory(name: String, 
                                   futures: ConcurrentMap[Long, CompletableFutureResult],
                                   supervisors: ConcurrentMap[String, Actor],
-                                  bootstrap: ClientBootstrap) extends ChannelPipelineFactory {
+                                  bootstrap: ClientBootstrap,
+										    timer: HashedWheelTimer) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
-    pipeline.addLast("timeout", new ReadTimeoutHandler(RemoteClient.TIMER, RemoteClient.READ_TIMEOUT))
+    pipeline.addLast("timeout", new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT))
     RemoteServer.COMPRESSION_SCHEME match {
       case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
       //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
@@ -142,7 +156,7 @@ class RemoteClientPipelineFactory(name: String,
     }
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder())
-    pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap))
+    pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap, timer))
     pipeline
   }
 }
@@ -154,7 +168,8 @@ class RemoteClientPipelineFactory(name: String,
 class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor],
-                          val bootstrap: ClientBootstrap)
+                          val bootstrap: ClientBootstrap,
+								  val timer: HashedWheelTimer)
  extends SimpleChannelUpstreamHandler with Logging {
   import Actor.Sender.Self
 
@@ -196,7 +211,7 @@ class RemoteClientHandler(val name: String,
   }                 
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    RemoteClient.TIMER.newTimeout(new TimerTask() {
+    timer.newTimeout(new TimerTask() {
       def run(timeout: Timeout) = {
         log.debug("Remote client reconnecting to [%s]", ctx.getChannel.getRemoteAddress)
         bootstrap.connect
