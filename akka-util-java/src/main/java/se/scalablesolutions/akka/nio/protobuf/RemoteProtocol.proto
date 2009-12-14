@@ -23,6 +23,10 @@ message RemoteRequest {
   required bool isActor = 10;
   required bool isOneWay = 11;
   required bool isEscaped = 12;
+  optional string sourceHostname = 13;
+  optional uint32 sourcePort = 14;
+  optional string sourceTarget = 15;
+  optional string sourceUuid = 16;
 }
 
 message RemoteReply {

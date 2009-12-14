@@ -15,6 +15,7 @@ import se.scalablesolutions.akka.Config.config
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
+import org.jboss.netty.channel.group.{DefaultChannelGroup, ChannelGroup}
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
@@ -79,7 +80,7 @@ class RemoteServer extends Logging {
 
   private var hostname = RemoteServer.HOSTNAME
   private var port = RemoteServer.PORT
-   
+
   @volatile private var isRunning = false
   @volatile private var isConfigured = false
 
@@ -88,6 +89,9 @@ class RemoteServer extends Logging {
     Executors.newCachedThreadPool)
 
   private val bootstrap = new ServerBootstrap(factory)
+
+  // group of open channels, used for clean-up
+  private val openChannels:ChannelGroup = new DefaultChannelGroup("akka-server")
 
   def start: Unit = start(None)
 
@@ -100,19 +104,20 @@ class RemoteServer extends Logging {
       hostname = _hostname
       port = _port
       log.info("Starting remote server at [%s:%s]", hostname, port)
-      bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, loader))
+      bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, openChannels, loader))
 
       // FIXME make these RemoteServer options configurable
       bootstrap.setOption("child.tcpNoDelay", true)
       bootstrap.setOption("child.keepAlive", true)
       bootstrap.setOption("child.reuseAddress", true)
       bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
-      bootstrap.bind(new InetSocketAddress(hostname, port))
+		openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
       isRunning = true
     }
   }
 
   def shutdown = {
+	 openChannels.close.awaitUninterruptibly()
     bootstrap.releaseExternalResources
   }
 }
@@ -120,7 +125,7 @@ class RemoteServer extends Logging {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
+class RemoteServerPipelineFactory(name: String, openChannels: ChannelGroup, loader: Option[ClassLoader])
     extends ChannelPipelineFactory {
   import RemoteServer._
 
@@ -140,7 +145,7 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
     }
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder)
-    pipeline.addLast("handler", new RemoteServerHandler(name, loader))
+    pipeline.addLast("handler", new RemoteServerHandler(name, openChannels, loader))
     pipeline
   }
 }
@@ -149,13 +154,22 @@ class RemoteServerPipelineFactory(name: String, loader: Option[ClassLoader])
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelPipelineCoverage { val value = "all" }
-class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassLoader])
+class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val applicationLoader: Option[ClassLoader])
     extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
   
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
  
+  /*
+	* channelOpen overriden to store open channels for a clean shutdown
+	* of a RemoteServer. If a channel is closed before, it is
+	* automatically removed from the open channels group.
+	*/
+  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
+	 openChannels.add(ctx.getChannel)
+  }
+
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] &&
         event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
@@ -190,7 +204,25 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
     actor.start
     val message = RemoteProtocolBuilder.getMessage(request)
     if (request.getIsOneWay) {
-      actor.send(message)
+		if(request.hasSourceHostname && request.hasSourcePort) {
+		// re-create the sending actor 
+		  val targetClass = if(request.hasSourceTarget) request.getSourceTarget
+							 else request.getTarget
+/*        val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(targetClass)
+                    else Class.forName(targetClass)
+        val remoteActor = clazz.newInstance.asInstanceOf[Actor]
+		  log.debug("Re-creating sending actor [%s]", targetClass)
+        remoteActor._uuid = request.getSourceUuid
+		  remoteActor.timeout = request.getTimeout
+*/
+		  val remoteActor = createActor(targetClass, request.getSourceUuid, request.getTimeout)
+		  remoteActor.makeRemote(request.getSourceHostname, request.getSourcePort)
+		  remoteActor.start
+        actor.!(message)(remoteActor)
+		} else {
+		  // couldnt find a way to reply, send the message without a source/sender
+		  actor.send(message)
+		}
     }
     else {
       try {
