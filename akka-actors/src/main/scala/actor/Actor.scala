@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.actor
 import java.net.InetSocketAddress
 import se.scalablesolutions.akka.Config._
 import se.scalablesolutions.akka.dispatch._
+import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction._
 import se.scalablesolutions.akka.stm.TransactionManagement._
@@ -48,7 +49,8 @@ case class Restart(reason: AnyRef) extends LifeCycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
-class ActorKilledException private[akka] (val killed: Actor) extends RuntimeException("Actor [" + killed + "] was killed by a Kill message")
+class ActorKilledException private[akka] (val killed: Actor) 
+  extends RuntimeException("Actor [" + killed + "] was killed by a Kill message")
 
 sealed abstract class DispatcherType
 object DispatcherType {
