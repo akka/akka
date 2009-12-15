@@ -56,9 +56,10 @@ package se.scalablesolutions.akka.dispatch
 class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
   
-  val name = "event-driven:executor:dispatcher:" + _name
+  val name: String = "event-driven:executor:dispatcher:" + _name
 
   withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
+  
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
