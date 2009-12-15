@@ -33,7 +33,7 @@ object Log {
       throw new RuntimeException("DIE")
   }
 
-  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+  override protected def postRestart(reason: AnyRef) {
     Log.messageLog += reason.asInstanceOf[Exception].getMessage
   }
 }
@@ -48,7 +48,7 @@ object Log {
       throw new RuntimeException("DIE")
   }
 
-  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+  override protected def postRestart(reason: AnyRef) {
     Log.messageLog += reason.asInstanceOf[Exception].getMessage
   }
 }
@@ -63,7 +63,7 @@ object Log {
       throw new RuntimeException("DIE")
   }
 
-  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+  override protected def postRestart(reason: AnyRef) {
     Log.messageLog += reason.asInstanceOf[Exception].getMessage
   }
 }
