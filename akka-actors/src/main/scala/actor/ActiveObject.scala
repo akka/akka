@@ -413,13 +413,13 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
       throw new IllegalStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
 
-  override protected def preRestart(reason: AnyRef, config: Option[AnyRef]) {
+  override protected def preRestart(reason: AnyRef) {
     try {
       if (preRestart.isDefined) preRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
-  override protected def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+  override protected def postRestart(reason: AnyRef) {
     try {
       if (postRestart.isDefined) postRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
     } catch { case e: InvocationTargetException => throw e.getCause }

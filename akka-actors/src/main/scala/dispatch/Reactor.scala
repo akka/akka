@@ -27,7 +27,7 @@ final class MessageInvocation(val receiver: Actor,
   override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
     result = HashCode.hash(result, receiver)
-    result = HashCode.hash(result, message)
+    result = HashCode.hash(result, message.asInstanceOf[AnyRef])
     result
   }
 
