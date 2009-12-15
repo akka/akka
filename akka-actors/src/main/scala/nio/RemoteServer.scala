@@ -29,7 +29,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
  * </pre>
  *
  * If you need to create more than one, then you can use the RemoteServer:
- * 
+ *
  * <pre>
  * val server = new RemoteServer
  * server.start
@@ -41,7 +41,7 @@ object RemoteNode extends RemoteServer
 
 /**
  * This object holds configuration variables.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteServer {
@@ -91,7 +91,7 @@ class RemoteServer extends Logging {
   private val bootstrap = new ServerBootstrap(factory)
 
   // group of open channels, used for clean-up
-  private val openChannels:ChannelGroup = new DefaultChannelGroup("akka-server")
+  private val openChannels: ChannelGroup = new DefaultChannelGroup("akka-server")
 
   def start: Unit = start(None)
 
@@ -111,13 +111,13 @@ class RemoteServer extends Logging {
       bootstrap.setOption("child.keepAlive", true)
       bootstrap.setOption("child.reuseAddress", true)
       bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
-		openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
+      openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
       isRunning = true
     }
   }
 
   def shutdown = {
-	 openChannels.close.awaitUninterruptibly()
+    openChannels.close.awaitUninterruptibly()
     bootstrap.releaseExternalResources
   }
 }
@@ -129,7 +129,7 @@ class RemoteServerPipelineFactory(name: String, openChannels: ChannelGroup, load
     extends ChannelPipelineFactory {
   import RemoteServer._
 
-  def getPipeline: ChannelPipeline  = {
+  def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
     RemoteServer.COMPRESSION_SCHEME match {
       case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
@@ -153,21 +153,21 @@ class RemoteServerPipelineFactory(name: String, openChannels: ChannelGroup, load
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@ChannelPipelineCoverage { val value = "all" }
+@ChannelPipelineCoverage {val value = "all"}
 class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val applicationLoader: Option[ClassLoader])
     extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
-  
+
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
- 
-  /*
-	* channelOpen overriden to store open channels for a clean shutdown
-	* of a RemoteServer. If a channel is closed before, it is
-	* automatically removed from the open channels group.
-	*/
+
+  /**
+   * ChannelOpen overridden to store open channels for a clean shutdown
+   * of a RemoteServer. If a channel is closed before, it is
+   * automatically removed from the open channels group.
+   */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
-	 openChannels.add(ctx.getChannel)
+    openChannels.add(ctx.getChannel)
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
@@ -202,37 +202,33 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
     log.debug("Dispatching to remote actor [%s]", request.getTarget)
     val actor = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actor.start
+
     val message = RemoteProtocolBuilder.getMessage(request)
     if (request.getIsOneWay) {
-		if(request.hasSourceHostname && request.hasSourcePort) {
-		// re-create the sending actor 
-		  val targetClass = if(request.hasSourceTarget) request.getSourceTarget
-							 else request.getTarget
-/*        val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(targetClass)
-                    else Class.forName(targetClass)
-        val remoteActor = clazz.newInstance.asInstanceOf[Actor]
-		  log.debug("Re-creating sending actor [%s]", targetClass)
-        remoteActor._uuid = request.getSourceUuid
-		  remoteActor.timeout = request.getTimeout
-*/
-		  val remoteActor = createActor(targetClass, request.getSourceUuid, request.getTimeout)
-		  remoteActor.makeRemote(request.getSourceHostname, request.getSourcePort)
-		  remoteActor.start
+      if (request.hasSourceHostname && request.hasSourcePort) {
+        // re-create the sending actor
+        val targetClass = if (request.hasSourceTarget) request.getSourceTarget
+        else request.getTarget
+
+        val remoteActor = createActor(targetClass, request.getSourceUuid, request.getTimeout)
+        if (!remoteActor.isRunning) {
+          remoteActor.makeRemote(request.getSourceHostname, request.getSourcePort)
+          remoteActor.start
+        }
         actor.!(message)(remoteActor)
-		} else {
-		  // couldnt find a way to reply, send the message without a source/sender
-		  actor.send(message)
-		}
-    }
-    else {
+      } else {
+        // couldn't find a way to reply, send the message without a source/sender
+        actor.send(message)
+      }
+    } else {
       try {
         val resultOrNone = actor !! message
         val result: AnyRef = if (resultOrNone.isDefined) resultOrNone.get else null
         log.debug("Returning result from actor invocation [%s]", result)
         val replyBuilder = RemoteReply.newBuilder
-          .setId(request.getId)
-          .setIsSuccessful(true)
-          .setIsActor(true)
+            .setId(request.getId)
+            .setIsSuccessful(true)
+            .setIsActor(true)
         RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
@@ -241,15 +237,15 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
         case e: Throwable =>
           log.error(e, "Could not invoke remote actor [%s]", request.getTarget)
           val replyBuilder = RemoteReply.newBuilder
-            .setId(request.getId)
-            .setException(e.getClass.getName + "$" + e.getMessage)
-            .setIsSuccessful(false)
-            .setIsActor(true)
+              .setId(request.getId)
+              .setException(e.getClass.getName + "$" + e.getMessage)
+              .setIsSuccessful(false)
+              .setIsActor(true)
           if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
           val replyMessage = replyBuilder.build
           channel.write(replyMessage)
       }
-    }    
+    }
   }
 
   private def dispatchToActiveObject(request: RemoteRequest, channel: Channel) = {
@@ -269,9 +265,9 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
         val result = messageReceiver.invoke(activeObject, unescapedArgs: _*)
         log.debug("Returning result from remote active object invocation [%s]", result)
         val replyBuilder = RemoteReply.newBuilder
-          .setId(request.getId)
-          .setIsSuccessful(true)
-          .setIsActor(false)
+            .setId(request.getId)
+            .setIsSuccessful(true)
+            .setIsActor(false)
         RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
@@ -281,20 +277,20 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
       case e: InvocationTargetException =>
         log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReply.newBuilder
-          .setId(request.getId)
-          .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
-          .setIsSuccessful(false)
-          .setIsActor(false)
+            .setId(request.getId)
+            .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
+            .setIsSuccessful(false)
+            .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
       case e: Throwable =>
         log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReply.newBuilder
-          .setId(request.getId)
-          .setException(e.getClass.getName + "$" + e.getMessage)
-          .setIsSuccessful(false)
-          .setIsActor(false)
+            .setId(request.getId)
+            .setException(e.getClass.getName + "$" + e.getMessage)
+            .setIsSuccessful(false)
+            .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
@@ -325,10 +321,10 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
         val proxyName = argString.replace(AW_PROXY_PREFIX, "") //argString.substring(argString.indexOf("$$ProxiedByAW"), argString.length)
         val activeObject = createActiveObject(proxyName, timeout)
         unescapedArgs(i) = activeObject
-        unescapedArgClasses(i) = Class.forName(proxyName)       
+        unescapedArgClasses(i) = Class.forName(proxyName)
       } else {
         unescapedArgs(i) = args(i)
-        unescapedArgClasses(i) = argClasses(i)        
+        unescapedArgClasses(i) = argClasses(i)
       }
     }
     (unescapedArgs, unescapedArgClasses)
@@ -340,7 +336,7 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
       try {
         log.info("Creating a new remote active object [%s]", name)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
-                    else Class.forName(name)
+        else Class.forName(name)
         val newInstance = ActiveObject.newInstance(clazz, timeout).asInstanceOf[AnyRef]
         activeObjects.put(name, newInstance)
         newInstance
@@ -358,7 +354,7 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
       try {
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
-                    else Class.forName(name)
+        else Class.forName(name)
         val newInstance = clazz.newInstance.asInstanceOf[Actor]
         newInstance._uuid = uuid
         newInstance.timeout = timeout
