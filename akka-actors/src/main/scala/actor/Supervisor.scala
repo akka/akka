@@ -96,10 +96,6 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
 
   override def start: Actor = synchronized {
     ConfiguratorRepository.registerConfigurator(this)
-    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
-      actor.start
-      log.info("Starting actor: %s", actor)
-    }
     super[Actor].start
   }
   
