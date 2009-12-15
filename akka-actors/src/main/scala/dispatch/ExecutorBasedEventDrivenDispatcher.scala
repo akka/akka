@@ -59,20 +59,27 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
   val name = "event-driven:executor:dispatcher:" + _name
 
   withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
-
+  
+  def processMessages(invocation: MessageInvocation): Unit = while (true) {
+    val message = invocation.receiver._mailbox.poll
+    if (message == null) return
+    else message.invoke
+  }
+  
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
-        val mailbox = invocation.receiver._mailbox
-        mailbox.synchronized {
-          val messages = mailbox.iterator
+        invocation.receiver.synchronized {
+          processMessages(invocation)
+        }
+/*        invocation.receiver.synchronized {
+          val messages = invocation.receiver._mailbox.iterator
           while (messages.hasNext) {
-            messages.next.invoke
+            messages.next.asInstanceOf[MessageInvocation].invoke
             messages.remove
           }
-          invocation.receiver._suspend
         }
-      }
+*/      }
     })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
 
@@ -87,5 +94,4 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
 
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
-
 }

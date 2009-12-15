@@ -557,8 +557,8 @@ object AMQP {
       }
     }
 
-    override def preRestart(reason: AnyRef, config: Option[AnyRef]) = disconnect
+    override def preRestart(reason: AnyRef) = disconnect
 
-    override def postRestart(reason: AnyRef, config: Option[AnyRef]) = reconnect(initReconnectDelay)
+    override def postRestart(reason: AnyRef) = reconnect(initReconnectDelay)
   }
 }
