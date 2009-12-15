@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
 import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.dispatch.CompletableFutureResult
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.
@@ -46,7 +47,7 @@ object DataFlow {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   sealed class DataFlowVariable[T <: Any] {
-    val TIME_OUT = 10000
+    val TIME_OUT = 10000 * 60 // 60 seconds default timeout
 
     private sealed abstract class DataFlowVariableMessage
     private case class Set[T <: Any](value: T) extends DataFlowVariableMessage
@@ -56,6 +57,8 @@ object DataFlow {
     private val blockedReaders = new ConcurrentLinkedQueue[Actor]
 
     private class In[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
+      timeout = TIME_OUT
+      start
       def receive = {
         case Set(v) =>
           if (dataFlow.value.compareAndSet(None, Some(v.asInstanceOf[T]))) {
@@ -69,18 +72,20 @@ object DataFlow {
     }
 
     private class Out[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
-      var reader: Option[Actor] = None
+      timeout = TIME_OUT
+      start
+      private var readerFuture: Option[CompletableFutureResult] = None
       def receive = {
         case Get =>
           val ref = dataFlow.value.get
           if (ref.isDefined) reply(ref.get)
-          else reader = Some(sender.getOrElse(throw new IllegalStateException("No reader to DataFlowVariable is in scope")))
-        case Set(v) => if (reader.isDefined) reader.get ! v
+          else readerFuture = senderFuture
+        case Set(v) => if (readerFuture.isDefined) readerFuture.get.completeWithResult(v)
         case Exit =>  exit
       }
     }
 
-    private[this] val in = { val in = new In(this); in.start; in }
+    private[this] val in = new In(this)
 
     def <<(ref: DataFlowVariable[T]) = in send Set(ref())
 
@@ -90,9 +95,9 @@ object DataFlow {
       val ref = value.get
       if (ref.isDefined) ref.get
       else {
-        val out = { val out = new Out(this); out.start; out }
+        val out = new Out(this)
         blockedReaders.offer(out)
-        val result = out !! (Get, TIME_OUT)
+        val result = out !! Get
         out send Exit
         result.getOrElse(throw new DataFlowVariableException(
           "Timed out (after " + TIME_OUT + " milliseconds) while waiting for result"))

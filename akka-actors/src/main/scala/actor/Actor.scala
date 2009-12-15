@@ -422,9 +422,9 @@ trait Actor extends TransactionManagement {
       messageDispatcher.register(this)
       messageDispatcher.start
       _isRunning = true
+      init // call user-defined init method
       //if (isTransactional) this !! TransactionalInit
     }
-    init // call user-defined init method
     Actor.log.debug("[%s] has started", toString)
     this
   }
