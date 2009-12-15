@@ -4,7 +4,7 @@
 
 package sample.scala
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
 import se.scalablesolutions.akka.state.{CassandraStorage, TransactionalState}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
@@ -32,7 +32,7 @@ class Boot {
       Supervise(
          new PersistentSimpleService,
          LifeCycle(Permanent)) ::
-   Supervise(
+      Supervise(
          new PubSub,
          LifeCycle(Permanent))
       :: Nil))
@@ -47,9 +47,8 @@ class Boot {
  * Or browse to the URL from a web browser.
  */
 @Path("/scalacount")
-class SimpleService extends Actor {
-  makeTransactionRequired
-
+class SimpleService extends Transactor {
+  
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
@@ -74,21 +73,21 @@ class SimpleService extends Actor {
 
 @Path("/pubsub/")
 class PubSub extends Actor {
- case class Msg(topic: String, message: String)
+  case class Msg(topic: String, message: String)
 
- @GET
- @Suspend
- @Produces(Array("text/plain;charset=ISO-8859-1"))
- @Path("/topic/{topic}/")
- def subscribe(@PathParam("topic") topic: Broadcaster): Broadcastable = new Broadcastable("", topic)
+  @GET
+  @Suspend
+  @Produces(Array("text/plain;charset=ISO-8859-1"))
+  @Path("/topic/{topic}/")
+  def subscribe(@PathParam("topic") topic: Broadcaster): Broadcastable = new Broadcastable("", topic)
 
- @GET
- @Broadcast
- @Path("/topic/{topic}/{message}/")
- @Produces(Array("text/plain;charset=ISO-8859-1"))
- def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
+  @GET
+  @Broadcast
+  @Path("/topic/{topic}/{message}/")
+  @Produces(Array("text/plain;charset=ISO-8859-1"))
+  def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
 
- override def receive = { case _ => }
+  def receive = { case _ => }
 }
 
 
@@ -127,9 +126,7 @@ class PersistentSimpleService extends Actor {
 }
 
 @Path("/chat")
-class Chat extends Actor with Logging {
-  makeTransactionRequired
-
+class Chat extends Transactor {
   case class Chat(val who: String, val what: String, val msg: String)
 
   @Suspend
