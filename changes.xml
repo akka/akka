@@ -32,18 +32,21 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Viktor Klang" type="add">Support for using Scala XML tags in RESTful Actors (scala-jersey)</action>
       <action dev="Viktor Klang" type="add">Support for Comet Actors using Atmosphere</action>
       <action dev="Eckhart Hertzler" type="add">Kerberos/SPNEGO support for Security module</action>
+      <action dev="Mikael Högqvist" type="fix">Implicit sender for remote actors: Remote actors are able to use reply to answer a request</action>
       <action dev="Jonas Bon&#233;r" type="add">Rewritten STM, now integrated with Multiverse STM</action>
       <action dev="Jonas Bon&#233;r" type="add">Added STM API for atomic {..} and run {..} orElse {..}</action>
       <action dev="Jonas Bon&#233;r" type="add">Added STM retry</action>
       <action dev="Jonas Bon&#233;r" type="add">Complete rewrite of the persistence transaction management, now based on Unit of Work and Multiverse STM</action>
       <action dev="Jonas Bon&#233;r" type="add">Monadic API to TransactionalRef (use it in for-comprehension)</action>
-      <action dev="Jonas Bon&#233;r" type="add">Lightweight actor syntax using one of the Actor.actor(..) methods. F.e: 'actor { case _ => .. }'</action>
+      <action dev="Jonas Bon&#233;r" type="add">Lightweight actor syntax using one of the Actor.actor(..) methods. F.e: 'val a = actor { case _ => .. }'</action>
+      <action dev="Jonas Bon&#233;r" type="add">Rewritten event-based dispatcher which improved perfomance by 10x, now substantially faster than event-driven Scala Actors</action>
       <action dev="Jonas Bon&#233;r" type="add">New Scala JSON parser based on sjson</action>
       <action dev="Jonas Bon&#233;r" type="add">Added zlib compression to remote actors</action>
       <action dev="Jonas Bon&#233;r" type="add">Added implicit sender reference for fire-forget ('!') message sends</action>
       <action dev="Jonas Bon&#233;r" type="add">Monadic API to TransactionalRef (use it in for-comprehension)</action>
       <action dev="Jonas Bon&#233;r" type="add">Smoother web app integration; just add akka.conf to the classpath (WEB-INF/classes), no need for AKKA_HOME or -Dakka.conf=..</action>
       <action dev="Jonas Bon&#233;r" type="add">Modularization of distribution into a thin core (actors, remoting and STM) and the rest in submodules</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added 'forward' to Actor</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Java objects (using Jackson)</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using SJSON)</action>
       <action dev="Jonas Bon&#233;r" type="add">Added implementation for remote actor reconnect upon failure</action>
@@ -62,11 +65,10 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Jonas Bon&#233;r" type="add">New URL: http://akkasource.org</action>
       <action dev="Jonas Bon&#233;r" type="add">Enhanced trapping of failures: 'trapExit = List(classOf[..], classOf[..])'</action>
       <action dev="Jonas Bon&#233;r" type="add">Upgraded to Netty 3.2, Protobuf 2.2, ScalaTest 1.0, Jersey 1.1.3, Atmosphere 0.4.1, Cassandra 0.4.1, Configgy 1.4</action>
-      <action dev="Mikael Högqvist" type="fix">Remote actors are able to use reply to answer a request</action>
-      <action dev="Jonas Bon&#233;r" type="fix">Lowered actor memory footprint; now an actor consumes ~625 bytes, which mean that you can create 6.5 million on 4 G RAM</action>
-      <action dev="Jonas Bon&#233;r" type="fix">Concurrent mode is now per actor basis</action>
+      <action dev="Jonas Bon&#233;r" type="fix">Lowered actor memory footprint; now an actor consumes ~600 bytes, which mean that you can create 6.5 million on 4 G RAM</action>
+      <action dev="Jonas Bon&#233;r" type="remove">Removed concurrent mode</action>
       <action dev="Jonas Bon&#233;r" type="fix">Remote actors are now defined by their UUID (not class name)</action>
-      <action dev="Jonas Bon&#233;r" type="fix">Fixed dispatcher bug</action>
+      <action dev="Jonas Bon&#233;r" type="fix">Fixed dispatcher bugs</action>
       <action dev="Jonas Bon&#233;r" type="fix">Cleaned up Maven scripts and distribution in general</action>
       <action dev="Jonas Bon&#233;r" type="fix">Fixed many many bugs and minor issues</action>
       <action dev="Jonas Bon&#233;r" type="fix">Fixed inconsistencies and uglyness in Actors API</action>
