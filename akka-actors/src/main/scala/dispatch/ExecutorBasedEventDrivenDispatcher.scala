@@ -66,6 +66,9 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
     else message.invoke
   }
   
+  // FIXME try this 
+  // val queue = Collections.synchronizedList(new LinkedList[MessageInvocation])
+  
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {

@@ -7,6 +7,10 @@ package se.scalablesolutions.akka.config
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
+sealed abstract class FaultHandlingStrategy
+case class AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends FaultHandlingStrategy
+case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends FaultHandlingStrategy
+
 /**
  * Configuration classes - not to be used as messages.
  *
