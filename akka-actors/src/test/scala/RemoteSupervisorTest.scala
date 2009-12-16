@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.serialization.BinaryString
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.nio.{RemoteNode, RemoteServer}
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer}
 import se.scalablesolutions.akka.OneWay
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
