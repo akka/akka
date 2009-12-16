@@ -2,11 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.nio
+package se.scalablesolutions.akka.remote
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFutureResult, CompletableFutureResult}
 import se.scalablesolutions.akka.util.Logging

@@ -2,11 +2,11 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.nio
+package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.serialization.Serializable.SBinary
 import se.scalablesolutions.akka.serialization.{Serializer, Serializable, SerializationProtocol}
-import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 
 import com.google.protobuf.{Message, ByteString}
 

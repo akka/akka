@@ -2,7 +2,7 @@
  * Copyright (C) 2009 Scalable Solutions.
  */
 
-package se.scalablesolutions.akka.nio
+package se.scalablesolutions.akka.remote
 
 import org.h2.compress.{LZFInputStream, LZFOutputStream}
 
