@@ -4,7 +4,6 @@
 
 package se.scalablesolutions.akka.actor
 
-import java.net.InetSocketAddress
 import se.scalablesolutions.akka.Config._
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
@@ -12,10 +11,9 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.{StmException, TransactionManagement}
-import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
-import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
+import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 import org.codehaus.aspectwerkz.proxy.Uuid
@@ -24,6 +22,7 @@ import org.multiverse.api.ThreadLocalTransaction._
 
 import java.util.{Queue, HashSet}
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.net.InetSocketAddress
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
