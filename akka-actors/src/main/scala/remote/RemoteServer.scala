@@ -25,14 +25,19 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
  * Use this object if you need a single remote server on a specific node.
  *
  * <pre>
+ * // takes hostname and port from 'akka.conf'
  * RemoteNode.start
+ * </pre>
+ *
+ * <pre>
+ * RemoteNode.start(hostname, port)
  * </pre>
  *
  * If you need to create more than one, then you can use the RemoteServer:
  *
  * <pre>
  * val server = new RemoteServer
- * server.start
+ * server.start(hostname, port)
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -201,8 +206,7 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
   private def dispatchToActor(request: RemoteRequest, channel: Channel) = {
     log.debug("Dispatching to remote actor [%s]", request.getTarget)
     val actor = createActor(request.getTarget, request.getUuid, request.getTimeout)
-    actor.start
-
+    
     val message = RemoteProtocolBuilder.getMessage(request)
     if (request.getIsOneWay) {
       if (request.hasSourceHostname && request.hasSourcePort) {
@@ -360,6 +364,7 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
         newInstance.timeout = timeout
         newInstance._remoteAddress = None
         actors.put(uuid, newInstance)
+        newInstance.start
         newInstance
       } catch {
         case e =>
