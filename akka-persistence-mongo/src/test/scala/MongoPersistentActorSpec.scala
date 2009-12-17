@@ -91,6 +91,14 @@ class BankAccountActor extends Actor {
   }
 }
 
+@serializable class PersistentFailerActor extends Actor {
+  makeTransactionRequired
+  def receive = {
+    case "Failure" =>
+      throw new RuntimeException("expected")
+  }
+}
+
 class MongoPersistentActorSpec extends TestCase {
   @Test
   def testSuccessfulDebit = {

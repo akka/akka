@@ -58,37 +58,9 @@ trait Storage {
   def newRef(id: String): PersistentRef[ElementType]
 }
 
-object CassandraStorage extends Storage {
-  type ElementType = Array[Byte]
 
-  def newMap: PersistentMap[ElementType, ElementType] = newMap(Uuid.newUuid.toString)
-  def newVector: PersistentVector[ElementType] = newVector(Uuid.newUuid.toString)
-  def newRef: PersistentRef[ElementType] = newRef(Uuid.newUuid.toString)
 
-  def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
-  def getVector(id: String): PersistentVector[ElementType] = newVector(id)
-  def getRef(id: String): PersistentRef[ElementType] = newRef(id)
 
-  def newMap(id: String): PersistentMap[ElementType, ElementType] = new CassandraPersistentMap(id)
-  def newVector(id: String): PersistentVector[ElementType] = new CassandraPersistentVector(id)
-  def newRef(id: String): PersistentRef[ElementType] = new CassandraPersistentRef(id)
-}
-
-object MongoStorage extends Storage {
-  type ElementType = AnyRef
-
-  def newMap: PersistentMap[ElementType, ElementType] = newMap(Uuid.newUuid.toString)
-  def newVector: PersistentVector[ElementType] = newVector(Uuid.newUuid.toString)
-  def newRef: PersistentRef[ElementType] = newRef(Uuid.newUuid.toString)
-
-  def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
-  def getVector(id: String): PersistentVector[ElementType] = newVector(id)
-  def getRef(id: String): PersistentRef[ElementType] = newRef(id)
-
-  def newMap(id: String): PersistentMap[ElementType, ElementType] = new MongoPersistentMap(id)
-  def newVector(id: String): PersistentVector[ElementType] = new MongoPersistentVector(id)
-  def newRef(id: String): PersistentRef[ElementType] = new MongoPersistentRef(id)
-}
 
 /**
  * Implementation of <tt>PersistentMap</tt> for every concrete 
@@ -191,26 +163,6 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
 }
 
 /**
- * Implements a persistent transactional map based on the Cassandra distributed P2P key-value storage.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class CassandraPersistentMap(id: String) extends PersistentMap[Array[Byte], Array[Byte]] {
-  val uuid = id
-  val storage = CassandraStorageBackend
-}
-
-/**
- * Implements a persistent transactional map based on the MongoDB document storage.
- *
- * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
- */
-class MongoPersistentMap(id: String) extends PersistentMap[AnyRef, AnyRef] {
-  val uuid = id
-  val storage = MongoStorageBackend
-}
-
-/**
  * Implements a template for a concrete persistent transactional vector based storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -287,28 +239,6 @@ trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Com
 }
 
 /**
- * Implements a persistent transactional vector based on the Cassandra
- * distributed P2P key-value storage.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class CassandraPersistentVector(id: String) extends PersistentVector[Array[Byte]] {
-  val uuid = id
-  val storage = CassandraStorageBackend
-}
-
-/**                                                                                                                                           
- * Implements a persistent transactional vector based on the MongoDB
- * document  storage.
- *
- * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
- */
-class MongoPersistentVector(id: String) extends PersistentVector[AnyRef] {
-  val uuid = id
-  val storage = MongoStorageBackend
-} 
-
-/**
  * Implements a persistent reference with abstract storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -342,14 +272,4 @@ trait PersistentRef[T] extends Transactional with Committable {
     if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
     currentTransaction.get.get.register(uuid, this)
   }
-}
-
-class CassandraPersistentRef(id: String) extends PersistentRef[Array[Byte]] {
-  val uuid = id
-  val storage = CassandraStorageBackend
-}
-
-class MongoPersistentRef(id: String) extends PersistentRef[AnyRef] {
-  val uuid = id
-  val storage = MongoStorageBackend
 }
