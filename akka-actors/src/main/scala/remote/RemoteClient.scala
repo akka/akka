@@ -102,8 +102,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
       connection.getChannel.getCloseFuture.awaitUninterruptibly
       channelFactory.releaseExternalResources
     }
-	 
-	 timer.stop
+	timer.stop
   }
 
   def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
@@ -169,7 +168,7 @@ class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor],
                           val bootstrap: ClientBootstrap,
-								  val timer: HashedWheelTimer)
+				          val timer: HashedWheelTimer)
  extends SimpleChannelUpstreamHandler with Logging {
   import Actor.Sender.Self
 
