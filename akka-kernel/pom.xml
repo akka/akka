@@ -38,11 +38,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>akka-camel</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <artifactId>akka-security</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
