@@ -70,7 +70,7 @@
 
     <!-- For Protocol/Serialization -->
     <dependency>
-      <groupId>org.h2.compress</groupId>
+      <groupId>voldemort.store.compress</groupId>
       <artifactId>h2-lzf</artifactId>
       <version>1.0</version>
     </dependency>
