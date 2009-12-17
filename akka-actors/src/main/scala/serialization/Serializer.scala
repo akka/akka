@@ -10,7 +10,7 @@ import com.google.protobuf.Message
 
 import org.codehaus.jackson.map.ObjectMapper
 
-import sjson.json.{Serializer =>SJSONSerializer}
+import sjson.json.{Serializer => SJSONSerializer}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
