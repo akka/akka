@@ -23,9 +23,9 @@
 
    <!-- For Mongo -->
     <dependency>
-      <groupId>com.mongodb</groupId>
-      <artifactId>mongo</artifactId>
-      <version>1.0</version>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongo-java-driver</artifactId>
+      <version>1.1</version>
     </dependency>
 
     <!-- For Testing -->
