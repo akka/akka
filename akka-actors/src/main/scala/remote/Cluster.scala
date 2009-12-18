@@ -102,7 +102,7 @@ class JGroupsClusterActor extends ClusterActor {
   @volatile private var remotes: Map[Address, Node] = Map()
 
   override def init = {
-    log error "Initiating cluster actor"
+    log debug "Initiating cluster actor"
     remotes = new HashMap[Address, Node]
     val me = this
     //Set up the JGroups local endpoint
