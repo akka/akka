@@ -2,8 +2,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-persistence</artifactId>
-  <name>Akka Persistence Module</name>
+  <artifactId>akka-persistence-mongo</artifactId>
+  <name>Akka Persistence Mongo Module</name>
 
   <packaging>jar</packaging>
 
@@ -16,12 +16,7 @@
 
   <dependencies>
     <dependency>
-      <artifactId>akka-util</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <artifactId>akka-core</artifactId>
+      <artifactId>akka-persistence-common</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
@@ -33,28 +28,6 @@
       <version>1.1</version>
     </dependency>
 
-    <!-- For Cassandra -->
-    <dependency>
-      <groupId>org.apache.cassandra</groupId>
-      <artifactId>cassandra</artifactId>
-      <version>0.4.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.facebook</groupId>
-      <artifactId>thrift</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-pool</groupId>
-      <artifactId>commons-pool</artifactId>
-      <version>1.5.1</version>
-    </dependency>
-     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.13</version>
-    </dependency>
-    
     <!-- For Testing -->
     <dependency>
       <groupId>org.scalatest</groupId>
