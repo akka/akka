@@ -51,7 +51,9 @@
     <module>akka-util-java</module>
     <module>akka-util</module>
     <module>akka-core</module>
-    <module>akka-persistence</module>
+    <module>akka-persistence-common</module>
+    <module>akka-persistence-cassandra</module>
+    <module>akka-persistence-mongo</module>
     <module>akka-rest</module>
     <module>akka-amqp</module>
     <module>akka-security</module>
