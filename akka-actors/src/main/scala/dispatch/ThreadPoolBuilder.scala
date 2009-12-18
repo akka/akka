@@ -12,17 +12,18 @@ import java.util.Collection
 
 trait ThreadPoolBuilder {
   val name: String
-  
+
   private val NR_START_THREADS = 4
   private val NR_MAX_THREADS = 128
   private val KEEP_ALIVE_TIME = 60000L // default is one minute
   private val MILLISECONDS = TimeUnit.MILLISECONDS
   
   private var threadPoolBuilder: ThreadPoolExecutor = _
-  private val threadFactory = new MonitorableThreadFactory(name)
   private var boundedExecutorBound = -1
   private var inProcessOfBuilding = false
   private var blockingQueue: BlockingQueue[Runnable] = _
+
+  private lazy val threadFactory = new MonitorableThreadFactory(name)
 
   protected var executor: ExecutorService = _
 
@@ -38,7 +39,7 @@ trait ThreadPoolBuilder {
     }
   }
 
-  def withNewThreadPoolWithQueue(queue: BlockingQueue[Runnable]): ThreadPoolBuilder = synchronized {
+  def withNewThreadPoolWithCustomBlockingQueue(queue: BlockingQueue[Runnable]): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
     inProcessOfBuilding = false
@@ -52,7 +53,7 @@ trait ThreadPoolBuilder {
    * <p/>
    * The 'bound' variable should specify the number equal to the size of the thread pool PLUS the number of queued tasks that should be followed.
    */
-  def withNewThreadPoolWithBoundedBlockingQueue(bound: Int): ThreadPoolBuilder = synchronized {
+  def withNewBoundedThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity(bound: Int): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
     blockingQueue = new LinkedBlockingQueue[Runnable]
@@ -61,19 +62,19 @@ trait ThreadPoolBuilder {
     this
   }
 
-  def withNewThreadPoolWithLinkedBlockingQueueWithCapacity(capacity: Int): ThreadPoolBuilder = synchronized {
+  def withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity: ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    blockingQueue = new LinkedBlockingQueue[Runnable](capacity)
+    blockingQueue = new LinkedBlockingQueue[Runnable]
     threadPoolBuilder = new ThreadPoolExecutor(
       NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this
   }
 
-  def withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity: ThreadPoolBuilder = synchronized {
+  def withNewThreadPoolWithLinkedBlockingQueueWithCapacity(capacity: Int): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    blockingQueue = new LinkedBlockingQueue[Runnable]
+    blockingQueue = new LinkedBlockingQueue[Runnable](capacity)
     threadPoolBuilder = new ThreadPoolExecutor(
       NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this

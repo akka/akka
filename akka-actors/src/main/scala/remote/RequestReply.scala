@@ -1,11 +1,3 @@
-
-  <html>
-  <head>
-    <link href='./../_highlighter/SyntaxHighlighter.css' rel='stylesheet' type='text/css'/>
-    <script language='javascript' src='./../_highlighter/shAll.js'></script>
-  </head>
-  <body>
-    <pre name="code" class="scala" style="width:100%">
 /**
  * Copyright (C) 2009 Scalable Solutions.
  */
@@ -112,10 +104,4 @@ object RemoteRequestIdFactory {
     that.asInstanceOf[RemoteRequest].supervisorUuid.get == supervisorUuid.get
   }
 }
-*/</pre>
-    <script language='javascript'>
-      dp.SyntaxHighlighter.ClipboardSwf = './../_highlighter/clipboard.swf';
-      dp.SyntaxHighlighter.HighlightAll('code');
-    </script>
-  </body>
-  </html>
+*/
