@@ -56,30 +56,21 @@ package se.scalablesolutions.akka.dispatch
 class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
   
-  val name = "event-driven:executor:dispatcher:" + _name
+  val name: String = "event-driven:executor:dispatcher:" + _name
 
   withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
-  
-  def processMessages(invocation: MessageInvocation): Unit = while (true) {
-    val message = invocation.receiver._mailbox.poll
-    if (message == null) return
-    else message.invoke
-  }
   
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
         invocation.receiver.synchronized {
-          processMessages(invocation)
-        }
-/*        invocation.receiver.synchronized {
           val messages = invocation.receiver._mailbox.iterator
           while (messages.hasNext) {
             messages.next.asInstanceOf[MessageInvocation].invoke
             messages.remove
           }
         }
-*/      }
+      }
     })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
 

@@ -5,16 +5,12 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.{ConfiguratorRepository, Configurator}
+import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy, ConfiguratorRepository, Configurator}
 import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
 import java.util.concurrent.ConcurrentHashMap
-
-sealed abstract class FaultHandlingStrategy
-case class AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends FaultHandlingStrategy
-case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends FaultHandlingStrategy
 
 /**
  * Abstract base class for all supervisor factories.

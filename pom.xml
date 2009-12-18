@@ -13,12 +13,26 @@
   <packaging>pom</packaging>
 
   <description>
-    Akka implements a unique hybrid of the Actor model and Software Transactional Memory (STM).
-    Akka gives you you:
-    * Concurrency (high-level and simple).
-    * Asynchronous, non-blocking, event-driven and highly performant components.
-    * Scalability through very performant remote actors.
-    * Fault-tolerance through supervision hierarchies with “let-it-crash” semantics.
+    Akka implements a unique hybrid of:
+      * Actors , which gives you:
+       * Simple and high-level abstractions for concurrency and parallelism.
+       * Asynchronous, non-blocking and highly performant event-driven programming model.
+       * Very lightweight event-driven processes (create ~6.5 million actors on 4 G RAM).
+       * Supervision hierarchies with let-it-crash semantics. For writing highly fault-tolerant systems that never stops, systems that self-heals.
+      * Software Transactional Memory (STM). (Distributed transactions coming soon).
+      * Transactors: combine actors and STM into transactional actors. Allows you to compose atomic message flows with automatic rollback and retry.
+      * Remoting: highly performant distributed actors with remote supervision and error management.
+      * Cluster membership management.
+
+    Akka also has a set of add-on modules:
+      * Persistence: A set of pluggable back-end storage modules that works in sync with the STM.
+        * Cassandra distributed and highly scalable database.
+        * MongoDB document database.
+        * Redis data structures database (upcoming)
+      * REST (JAX-RS): Expose actors as REST services.
+      * Comet: Expose actors as Comet services.
+      * Security: Digest and Kerberos based security.
+      * Microkernel: Run Akka as a stand-alone kernel.
   </description>
 
   <properties>
@@ -39,7 +53,6 @@
     <module>akka-actors</module>
     <module>akka-persistence</module>
     <module>akka-rest</module>
-    <module>akka-camel</module>
     <module>akka-amqp</module>
     <module>akka-security</module>
     <module>akka-kernel</module>

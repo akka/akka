@@ -7,7 +7,8 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client.{AMQP => RabbitMQ, _}
 import com.rabbitmq.client.ConnectionFactory
 
-import se.scalablesolutions.akka.actor.{OneForOneStrategy, Actor}
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 

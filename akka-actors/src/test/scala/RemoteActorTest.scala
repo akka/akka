@@ -6,7 +6,7 @@ import junit.framework.TestCase
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
-import se.scalablesolutions.akka.nio.{RemoteServer, RemoteClient}
+import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
 object Global {
