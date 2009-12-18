@@ -12,7 +12,7 @@ import javax.ws.rs.core.UriBuilder
 import java.io.File
 import java.net.URLClassLoader
 
-import se.scalablesolutions.akka.nio.RemoteNode
+import se.scalablesolutions.akka.remote.RemoteNode
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.actor.ActorRegistry
 
@@ -99,7 +99,7 @@ object Kernel extends Logging {
     adapter.setServletInstance(new AkkaCometServlet)
     adapter.setContextPath(uri.getPath)
     //Using autodetection for now
-    //adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
+    adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
     if (HOME.isDefined) adapter.setRootFolder(HOME.get + "/deploy/root")
     log.info("REST service root path [%s] and context path [%s]", adapter.getRootFolder, adapter.getContextPath)
 

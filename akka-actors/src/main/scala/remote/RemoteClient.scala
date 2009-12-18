@@ -1,11 +1,3 @@
-
-  <html>
-  <head>
-    <link href='./../_highlighter/SyntaxHighlighter.css' rel='stylesheet' type='text/css'/>
-    <script language='javascript' src='./../_highlighter/shAll.js'></script>
-  </head>
-  <body>
-    <pre name="code" class="scala" style="width:100%">
 /**
  * Copyright (C) 2009 Scalable Solutions.
  */
@@ -14,32 +6,33 @@ package se.scalablesolutions.akka.remote
 
 import scala.collection.mutable.HashMap
 
-import protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFutureResult, CompletableFutureResult}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.Config.config
 
-import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
+import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
+import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibEncoder}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler
 import org.jboss.netty.util.{TimerTask, Timeout, HashedWheelTimer}
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap}
-
+                                 
 /**
- * @author &lt;a href="http://jonasboner.com">Jonas Bon&#233;r&lt;/a>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
   val READ_TIMEOUT = config.getInt("akka.remote.client.read-timeout", 10000)
   val RECONNECT_DELAY = config.getInt("akka.remote.client.reconnect-delay", 5000)
 
   // TODO: add configuration optons: 'HashedWheelTimer(long tickDuration, TimeUnit unit, int ticksPerWheel)'
-  private[akka] val TIMER = new HashedWheelTimer
+//  private[akka] val TIMER = new HashedWheelTimer
   private val clients = new HashMap[String, RemoteClient]
 
   def clientFor(address: InetSocketAddress): RemoteClient = synchronized {
@@ -54,10 +47,19 @@ object RemoteClient extends Logging {
       client
     }
   }
+
+  /*
+	* Clean-up all open connections
+	*/
+  def shutdownAll() = synchronized {
+	 clients.foreach({case (addr, client) => client.shutdown})
+	 clients.clear
+//	 TIMER.stop
+  }
 }
 
 /**
- * @author &lt;a href="http://jonasboner.com">Jonas Bon&#233;r&lt;/a>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteClient(hostname: String, port: Int) extends Logging {
   val name = "RemoteClient@" + hostname
@@ -73,7 +75,9 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
 
   private val bootstrap = new ClientBootstrap(channelFactory)
 
-  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap))
+  private val timer = new HashedWheelTimer
+
+  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, timer))
   bootstrap.setOption("tcpNoDelay", true)
   bootstrap.setOption("keepAlive", true)
 
@@ -87,8 +91,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
       // Wait until the connection attempt succeeds or fails.
       connection.awaitUninterruptibly
       if (!connection.isSuccess) {
-        log.error("Remote connection to [%s:%s] has failed due to [%s]", hostname, port, connection.getCause)
-        connection.getCause.printStackTrace
+        log.error(connection.getCause, "Remote connection to [%s:%s] has failed", hostname, port)
       }
       isRunning = true
     }
@@ -99,6 +102,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
       connection.getChannel.getCloseFuture.awaitUninterruptibly
       channelFactory.releaseExternalResources
     }
+	timer.stop
   }
 
   def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
@@ -116,47 +120,61 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   } else throw new IllegalStateException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.")
 
   def registerSupervisorForActor(actor: Actor) =
-    if (!actor.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actor + " since it is not under supervision")
-    else supervisors.putIfAbsent(actor.supervisor.get.uuid, actor)
+    if (!actor._supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actor + " since it is not under supervision")
+    else supervisors.putIfAbsent(actor._supervisor.get.uuid, actor)
 
   def deregisterSupervisorForActor(actor: Actor) =
-    if (!actor.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actor + " since it is not under supervision")
-    else supervisors.remove(actor.supervisor.get.uuid)
+    if (!actor._supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actor + " since it is not under supervision")
+    else supervisors.remove(actor._supervisor.get.uuid)
   
   def deregisterSupervisorWithUuid(uuid: String) = supervisors.remove(uuid)
 }
 
 /**
- * @author &lt;a href="http://jonasboner.com">Jonas Bon&#233;r&lt;/a>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteClientPipelineFactory(name: String, 
                                   futures: ConcurrentMap[Long, CompletableFutureResult],
                                   supervisors: ConcurrentMap[String, Actor],
-                                  bootstrap: ClientBootstrap) extends ChannelPipelineFactory {
+                                  bootstrap: ClientBootstrap,
+										    timer: HashedWheelTimer) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
-    pipeline.addLast("timeout", new ReadTimeoutHandler(RemoteClient.TIMER, RemoteClient.READ_TIMEOUT))
+    pipeline.addLast("timeout", new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT))
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
+      //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteReply.getDefaultInstance))
+    RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => pipeline.addLast("zlibEncoder", new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL))
+      //case "lzf" => pipeline.addLast("lzfEncoder", new LzfEncoder)
+      case _ => {} // no compression
+    }
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder())
-    pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap))
+    pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap, timer))
     pipeline
   }
 }
 
 /**
- * @author &lt;a href="http://jonasboner.com">Jonas Bon&#233;r&lt;/a>
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelPipelineCoverage { val value = "all" }
 class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor],
-                          val bootstrap: ClientBootstrap)
+                          val bootstrap: ClientBootstrap,
+				          val timer: HashedWheelTimer)
  extends SimpleChannelUpstreamHandler with Logging {
+  import Actor.Sender.Self
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
-    if (event.isInstanceOf[ChannelStateEvent] && event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
+    if (event.isInstanceOf[ChannelStateEvent] &&
+        event.asInstanceOf[ChannelStateEvent].getState != ChannelState.INTEREST_OPS) {
       log.debug(event.toString)
     }
     super.handleUpstream(ctx, event)
@@ -177,8 +195,8 @@ class RemoteClientHandler(val name: String,
             val supervisorUuid = reply.getSupervisorUuid
             if (!supervisors.containsKey(supervisorUuid)) throw new IllegalStateException("Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
-            if (!supervisedActor.supervisor.isDefined) throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-            else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply))
+            if (!supervisedActor._supervisor.isDefined) throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
+            else supervisedActor._supervisor.get ! Exit(supervisedActor, parseException(reply))
           }
           future.completeWithException(null, parseException(reply))
         }
@@ -192,7 +210,7 @@ class RemoteClientHandler(val name: String,
   }                 
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    RemoteClient.TIMER.newTimeout(new TimerTask() {
+    timer.newTimeout(new TimerTask() {
       def run(timeout: Timeout) = {
         log.debug("Remote client reconnecting to [%s]", ctx.getChannel.getRemoteAddress)
         bootstrap.connect
@@ -207,8 +225,7 @@ class RemoteClientHandler(val name: String,
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress);
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    log.error("Unexpected exception from downstream in remote client: %s", event.getCause)
-    event.getCause.printStackTrace
+    log.error(event.getCause, "Unexpected exception from downstream in remote client")
     event.getChannel.close
   }
 
@@ -221,10 +238,3 @@ class RemoteClientHandler(val name: String,
       .newInstance(exceptionMessage).asInstanceOf[Throwable]
   }
 }
-</pre>
-    <script language='javascript'>
-      dp.SyntaxHighlighter.ClipboardSwf = './../_highlighter/clipboard.swf';
-      dp.SyntaxHighlighter.HighlightAll('code');
-    </script>
-  </body>
-  </html>
