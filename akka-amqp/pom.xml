@@ -21,7 +21,7 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>akka-actors</artifactId>
+      <artifactId>akka-core</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
