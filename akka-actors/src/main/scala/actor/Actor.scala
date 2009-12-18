@@ -4,17 +4,16 @@
 
 package se.scalablesolutions.akka.actor
 
-import java.net.InetSocketAddress
 import se.scalablesolutions.akka.Config._
 import se.scalablesolutions.akka.dispatch._
+import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.{StmException, TransactionManagement}
-import se.scalablesolutions.akka.nio.protobuf.RemoteProtocol.RemoteRequest
-import se.scalablesolutions.akka.nio.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
+import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.util.Helpers.ReadWriteLock
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 import org.codehaus.aspectwerkz.proxy.Uuid
@@ -23,6 +22,7 @@ import org.multiverse.api.ThreadLocalTransaction._
 
 import java.util.{Queue, HashSet}
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.net.InetSocketAddress
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -48,7 +48,8 @@ case class Restart(reason: AnyRef) extends LifeCycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
-class ActorKilledException private[akka] (val killed: Actor) extends RuntimeException("Actor [" + killed + "] was killed by a Kill message")
+class ActorKilledException private[akka] (val killed: Actor) 
+  extends RuntimeException("Actor [" + killed + "] was killed by a Kill message")
 
 sealed abstract class DispatcherType
 object DispatcherType {
@@ -218,7 +219,6 @@ trait Actor extends TransactionManagement {
 
   implicit protected val self: Actor = this
 
-  // FIXME http://www.assembla.com/spaces/akka/tickets/56-Change-UUID-generation-for-the-TransactionManagement-trait
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = Uuid.newUuid.toString
   def uuid = _uuid
@@ -227,10 +227,11 @@ trait Actor extends TransactionManagement {
   // private fields
   // ====================================
 
-  @volatile private var _isRunning = false
-  @volatile private var _isSuspended = true
-  @volatile private var _isShutDown: Boolean = false
-  private var _isEventBased: Boolean = false
+  @volatile private[this] var _isRunning = false
+  @volatile private[this] var _isSuspended = true
+  @volatile private[this] var _isShutDown = false
+  @volatile private[this] var _isEventBased: Boolean = false
+  @volatile private[akka] var _isKilled = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] var _linkedActors: Option[HashSet[Actor]] = None
@@ -252,14 +253,14 @@ trait Actor extends TransactionManagement {
    * message exchanges and which is in many ways better than using the '!!' method
    * which will make the sender wait for a reply using a *blocking* future.
    */
-  protected[this] var sender: Option[Actor] = None
+  protected var sender: Option[Actor] = None
 
   /**
    * The 'senderFuture' field should normally not be touched by user code, which should instead use the 'reply' method.
    * But it can be used for advanced use-cases when one might want to store away the future and
    * resolve it later and/or somewhere else.
    */
-  protected[this] var senderFuture: Option[CompletableFutureResult] = None
+  protected var senderFuture: Option[CompletableFutureResult] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -316,7 +317,7 @@ trait Actor extends TransactionManagement {
    * trapExit = List(classOf[MyApplicationException], classOf[MyApplicationError])
    * </pre>
    */
-  protected[this] var trapExit: List[Class[_ <: Throwable]] = Nil
+  protected var trapExit: List[Class[_ <: Throwable]] = Nil
 
   /**
    * User overridable callback/setting.
@@ -490,11 +491,13 @@ trait Actor extends TransactionManagement {
   /**
    * Same as the '!' method but does not take an implicit sender as second parameter.
    */
-  def send(message: Any) =
+  def send(message: Any) = {
+    if (_isKilled) throw new ActorKilledException(this)
     if (_isRunning) postMessageToMailbox(message, None)
     else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
-
+  }
+  
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
    * <p/>
@@ -507,21 +510,24 @@ trait Actor extends TransactionManagement {
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !![T](message: Any, timeout: Long): Option[T] = if (_isRunning) {
-    val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
-    val isActiveObject = message.isInstanceOf[Invocation]
-    if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
-    try {
-      future.await
-    } catch {
-      case e: FutureTimeoutException =>
-        if (isActiveObject) throw e
-        else None
-    }
-    getResultOrThrowException(future)
-  } else throw new IllegalStateException(
-    "Actor has not been started, you need to invoke 'actor.start' before using it")
-
+  def !![T](message: Any, timeout: Long): Option[T] = {
+    if (_isKilled) throw new ActorKilledException(this)
+    if (_isRunning) {
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
+      val isActiveObject = message.isInstanceOf[Invocation]
+      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
+      try {
+        future.await
+      } catch {
+        case e: FutureTimeoutException =>
+          if (isActiveObject) throw e
+          else None
+      }
+      getResultOrThrowException(future)
+    } else throw new IllegalStateException(
+      "Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+  
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
    * <p/>
@@ -868,6 +874,7 @@ trait Actor extends TransactionManagement {
       else throw new IllegalArgumentException("No handler matching message [" + message + "] in " + toString)
     } catch {
       case e =>
+        _isKilled = true
         Actor.log.error(e, "Could not invoke actor [%s]", this)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
@@ -969,6 +976,7 @@ trait Actor extends TransactionManagement {
     preRestart(reason)
     Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
     postRestart(reason)
+    _isKilled = false
   }
 
   private[akka] def registerSupervisorAsRemoteActor: Option[String] = synchronized {
