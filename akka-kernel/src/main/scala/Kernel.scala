@@ -12,7 +12,7 @@ import javax.ws.rs.core.UriBuilder
 import java.io.File
 import java.net.URLClassLoader
 
-import se.scalablesolutions.akka.nio.RemoteNode
+import se.scalablesolutions.akka.remote.RemoteNode
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.actor.ActorRegistry
 
