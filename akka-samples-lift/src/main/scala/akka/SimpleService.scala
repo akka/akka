@@ -1,13 +1,12 @@
 package sample.lift
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Transactor, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.state.{CassandraStorage, TransactionalState}
 
 import java.lang.Integer
 import javax.ws.rs.{GET, Path, Produces}
 import java.nio.ByteBuffer
-
 
 /**
  * Try service out by invoking (multiple times):
@@ -17,9 +16,7 @@ import java.nio.ByteBuffer
  * Or browse to the URL from a web browser.
  */
 @Path("/liftcount")
-class SimpleService extends Actor {
-  makeTransactionRequired
-
+class SimpleService extends Transactor {
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
