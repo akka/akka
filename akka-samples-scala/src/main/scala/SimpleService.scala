@@ -22,7 +22,7 @@ import org.atmosphere.jersey.Broadcastable
 class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+      RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
       Supervise(
         new SimpleService,
         LifeCycle(Permanent)) ::
@@ -89,7 +89,6 @@ class PubSub extends Actor {
 
   def receive = { case _ => }
 }
-
 
 /**
  * Try service out by invoking (multiple times):
