@@ -45,12 +45,12 @@
     <dependency>
       <groupId>org.multiverse</groupId>
       <artifactId>multiverse-core</artifactId>
-      <version>0.3-SNAPSHOT</version>
+      <version>0.3</version>
     </dependency>
     <dependency>
       <groupId>org.multiverse</groupId>
       <artifactId>multiverse-alpha</artifactId>
-      <version>0.3-SNAPSHOT</version>
+      <version>0.3</version>
     </dependency>
     <dependency>
       <groupId>net.lag</groupId>
@@ -60,7 +60,7 @@
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.2.0.ALPHA1</version>
+      <version>3.2.0.ALPHA2</version>
     </dependency>
     <dependency>
       <groupId>org.scala-tools</groupId>
@@ -100,14 +100,14 @@
       <version>0.3</version>
     </dependency>
     <dependency>
-      <groupId>dispatch.json</groupId>
-      <artifactId>dispatch-json</artifactId>
-      <version>0.5.2</version>
+      <groupId>net.databinder</groupId>
+      <artifactId>dispatch-json_2.7.7</artifactId>
+      <version>0.6.4</version>
     </dependency>
     <dependency>
-      <groupId>dispatch.http</groupId>
-      <artifactId>dispatch-http</artifactId>
-      <version>0.5.2</version>
+      <groupId>net.databinder</groupId>
+      <artifactId>dispatch-http_2.7.7</artifactId>
+      <version>0.6.4</version>
     </dependency>
     <dependency>
       <groupId>sjson.json</groupId>
