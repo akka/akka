@@ -118,12 +118,14 @@ class RemoteServer extends Logging {
       bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
       openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
       isRunning = true
+      Cluster.registerLocalNode(hostname,port)
     }
   }
 
   def shutdown = {
     openChannels.close.awaitUninterruptibly()
     bootstrap.releaseExternalResources
+    Cluster.deregisterLocalNode(hostname,port)
   }
 }
 
