@@ -43,21 +43,6 @@
       <version>2.1</version>
     </dependency>
     <dependency>
-      <groupId>org.multiverse</groupId>
-      <artifactId>multiverse-core</artifactId>
-      <version>0.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.multiverse</groupId>
-      <artifactId>multiverse-alpha</artifactId>
-      <version>0.3</version>
-    </dependency>
-    <dependency>
-      <groupId>net.lag</groupId>
-      <artifactId>configgy</artifactId>
-      <version>1.4</version>
-    </dependency>
-    <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
       <version>3.2.0.ALPHA2</version>
@@ -88,11 +73,6 @@
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-mapper-asl</artifactId>
       <version>1.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>2.2.0</version>
     </dependency>
     <dependency>
       <groupId>sbinary</groupId>

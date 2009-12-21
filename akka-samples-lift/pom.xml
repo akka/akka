@@ -35,8 +35,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>akka-persistence</artifactId>
       <groupId>${project.groupId}</groupId>
+      <artifactId>akka-persistence-cassandra</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -75,7 +75,6 @@
       <version>2.5</version>
       <scope>provided</scope>
     </dependency>
-    
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

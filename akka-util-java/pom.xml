@@ -27,13 +27,31 @@
     </dependency>
     <dependency>
       <groupId>org.multiverse</groupId>
-      <artifactId>multiverse-core</artifactId>
-      <version>0.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.multiverse</groupId>
       <artifactId>multiverse-alpha</artifactId>
-      <version>0.3-SNAPSHOT</version>
+      <version>0.3</version>
+      <classifier>jar-with-dependencies</classifier>
+      <exclusions>
+        <exclusion>
+          <groupId>org.multiverse</groupId>
+          <artifactId>multiverse-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm-tree</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm-analysis</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm-commons</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm-util</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

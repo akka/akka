@@ -18,11 +18,6 @@
   <!-- Core deps -->
   <dependencies>
     <dependency>
-      <artifactId>akka-util</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <artifactId>akka-core</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
