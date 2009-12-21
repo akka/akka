@@ -35,7 +35,7 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>akka-persistence</artifactId>
+      <artifactId>akka-persistence-cassandra</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>

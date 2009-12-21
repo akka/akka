@@ -20,18 +20,13 @@
       <artifactId>scala-library</artifactId>
       <version>${scala.version}</version>
     </dependency>
-    <!--<dependency>
-      <artifactId>akka-kernel</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>-->
     <dependency>
       <artifactId>akka-core</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>akka-persistence</artifactId>
+      <artifactId>akka-persistence-cassandra</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
