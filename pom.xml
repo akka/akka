@@ -227,6 +227,14 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
+    <repository>
+      <id>databinder.net/repo/</id>
+      <name>dbDispatch Repository for Maven</name>
+      <url>http://databinder.net/repo</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
   </repositories>
 
   <pluginRepositories>
