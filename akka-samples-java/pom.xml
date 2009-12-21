@@ -31,13 +31,13 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>akka-persistence</artifactId>
+      <artifactId>akka-rest</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <artifactId>akka-rest</artifactId>
       <groupId>${project.groupId}</groupId>
+      <artifactId>akka-persistence-cassandra</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
