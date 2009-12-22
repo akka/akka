@@ -44,7 +44,7 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
 
 @serializable sealed trait LifeCycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMessage
-case class Restart(reason: AnyRef) extends LifeCycleMessage
+case class Restart(reason: Throwable) extends LifeCycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
@@ -389,7 +389,7 @@ trait Actor extends TransactionManagement {
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
-  protected def preRestart(reason: AnyRef) = {}
+  protected def preRestart(reason: Throwable) = {}
 
   /**
    * User overridable callback/setting.
@@ -397,7 +397,7 @@ trait Actor extends TransactionManagement {
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
-  protected def postRestart(reason: AnyRef) = {}
+  protected def postRestart(reason: Throwable) = {}
 
   /**
    * User overridable callback/setting.
@@ -981,7 +981,7 @@ trait Actor extends TransactionManagement {
     }
   }
 
-  private[this] def restartLinkedActors(reason: AnyRef) = {
+  private[this] def restartLinkedActors(reason: Throwable) = {
     getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach {
       actor =>
         if (actor.lifeCycle.isEmpty) actor.lifeCycle = Some(LifeCycle(Permanent))
@@ -1000,7 +1000,7 @@ trait Actor extends TransactionManagement {
     }
   }
 
-  private[Actor] def restart(reason: AnyRef) = synchronized {
+  private[Actor] def restart(reason: Throwable) = synchronized {
     preRestart(reason)
     Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
     postRestart(reason)
