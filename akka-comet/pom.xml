@@ -3,8 +3,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-rest</artifactId>
-  <name>Akka REST Module</name>
+  <artifactId>akka-comet</artifactId>
+  <name>Akka Comet Module</name>
 
   <packaging>jar</packaging>
 
@@ -22,19 +22,45 @@
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <artifactId>akka-rest</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
+    </dependency>
 
-    <!-- For Jersey -->
+    <!-- For the Bootable -->
+    <dependency>
+      <groupId>com.sun.grizzly</groupId>
+      <artifactId>grizzly-comet-webserver</artifactId>
+      <version>${grizzly.version}</version>
+    </dependency>
+    <!--dependency>
+      <groupId>com.sun.grizzly</groupId>
+      <artifactId>grizzly-comet-webserver</artifactId>
+      <version>${grizzly.version}</version>
+    </dependency-->
+    <!-- For Atmosphere -->
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <version>2.5</version>
 	</dependency> 
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-core</artifactId>
-      <version>${jersey.version}</version>
+      <groupId>org.atmosphere</groupId>
+      <artifactId>atmosphere-annotations</artifactId>
+      <version>${atmosphere.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.atmosphere</groupId>
+      <artifactId>atmosphere-jersey</artifactId>
+      <version>${atmosphere.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.atmosphere</groupId>
+      <artifactId>atmosphere-runtime</artifactId>
+      <version>${atmosphere.version}</version>
+    </dependency>
+    <!--dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-core</artifactId>
       <version>${jersey.version}</version>
@@ -43,8 +69,8 @@
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
       <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
+    </dependency-->
+    <!--dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-json</artifactId>
       <version>${jersey.version}</version>
@@ -58,6 +84,6 @@
       <groupId>com.sun.jersey.contribs</groupId>
       <artifactId>jersey-scala</artifactId>
       <version>${jersey.version}</version>
-    </dependency>
+    </dependency-->
   </dependencies>
 </project>

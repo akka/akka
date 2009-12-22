@@ -47,6 +47,11 @@
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <artifactId>akka-comet</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- For Atmosphere -->
     <dependency>
