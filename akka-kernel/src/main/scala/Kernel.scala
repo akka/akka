@@ -11,6 +11,10 @@ import se.scalablesolutions.akka.actor.{ActorRegistry,BootableActorLoaderService
 
 import javax.servlet.{ServletContextListener,ServletContextEvent}
 
+object Main {
+ def main(args: Array[String]) = Kernel.boot
+}
+
 /**
  * The Akka Kernel. 
  * 
@@ -23,8 +27,6 @@ object Kernel extends Logging {
   private val startTime = System.currentTimeMillis
   
   object Bundles extends BootableActorLoaderService with BootableRemoteActorService with BootableCometActorService
-
-  def main(args: Array[String]) = boot
 
   /**
    * Boots up the Kernel. 
