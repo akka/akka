@@ -9,6 +9,8 @@ import se.scalablesolutions.akka.remote.{RemoteNode,BootableRemoteActorService}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.actor.{ActorRegistry,BootableActorLoaderService}
 
+import javax.servlet.{ServletContextListener,ServletContextEvent}
+
 /**
  * The Akka Kernel. 
  * 
@@ -72,3 +74,12 @@ object Kernel extends Logging {
     log.info("==============================")
   }
 }
+ 
+ /*
+  And this one can be added to web.xml mappings as a listener to boot and shutdown Akka
+ */
+ 
+class Kernel extends ServletContextListener {
+   def contextDestroyed(e : ServletContextEvent) : Unit = Kernel.shutdown
+   def contextInitialized(e : ServletContextEvent) : Unit = Kernel.boot
+ }
