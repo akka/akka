@@ -1,0 +1,8 @@
+<!DOCTYPE aspectwerkz PUBLIC "-//AspectWerkz//DTD//EN" "http://aspectwerkz.codehaus.org/dtd/aspectwerkz2.dtd">
+<aspectwerkz>
+  <system id="akka">
+    <package name="se.scalablesolutions.akka.actor">
+      <aspect class="ActiveObjectAspect" />
+    </package>
+  </system>
+</aspectwerkz>

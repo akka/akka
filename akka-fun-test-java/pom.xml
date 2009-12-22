@@ -102,11 +102,11 @@
     <resources>
       <resource>
         <filtering>false</filtering>
-        <directory>src/main/resources</directory>
+        <directory>src/test/resources</directory>
       </resource>
       <resource>
         <filtering>false</filtering>
-        <directory>src/main/java</directory>
+        <directory>src/test/java</directory>
         <includes>
           <include>**</include>
         </includes>
