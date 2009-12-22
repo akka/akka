@@ -17,8 +17,6 @@ import javax.servlet.{ServletContextListener,ServletContextEvent}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
-  import Config._
-
   // FIXME add API to shut server down gracefully
   @volatile private var hasBooted = false
   
@@ -70,7 +68,7 @@ object Kernel extends Logging {
  (____  /__|_ \__|_ \(____  /
       \/     \/    \/     \/
 """)
-    log.info("     Running version %s", VERSION)
+    log.info("     Running version %s", Config.VERSION)
     log.info("==============================")
   }
 }
