@@ -17,7 +17,7 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
 	@BeanProperty var clusterName = ""
 	@BeanProperty var broadcaster : Broadcaster = null
 	
-	override def init : Unit = start
+	override def init : Unit = ()
 	
 	def destroy : Unit = stop
 	
@@ -43,6 +43,8 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
 	                     }
 	     case x => log.info("Not a valid message for cluster[%s] = [%s]",clusterName,x)
 	}
+	
+	start //Make sure it gets started when instantiated
 }
 
 /*class AkkaBroadcaster extends JerseyBroadcaster {
