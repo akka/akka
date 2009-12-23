@@ -17,21 +17,34 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
 	@BeanProperty var clusterName = ""
 	@BeanProperty var broadcaster : Broadcaster = null
 	
-	override def init = ()
+	override def init : Unit = start
 	
-	def destroy = ()
+	def destroy : Unit = stop
 	
 	def filter(o : AnyRef) : AnyRef = {
-		Cluster.relayMessage(classOf[AkkaClusterBroadcastFilter],BroadcastMessage(clusterName,o))
-		log.info("filter invoked for message [%s], message was forwarded to cluster",o)
-		o
+	    o match {
+	      case bm@BroadcastMessage(_,m) => {
+	        log.info("filter invoked for message [%s], message shouldn't be forwarded to cluster",o)
+	      	m
+	      }
+	      
+	      case _ => {
+		      Cluster.relayMessage(classOf[AkkaClusterBroadcastFilter],BroadcastMessage(clusterName,o))
+		      log.info("filter invoked for message [%s], message was forwarded to cluster",o)
+		      o
+	      }
+	    }
 	}
 	
 	def receive = { 
-	     case BroadcastMessage(clusterName,m) if broadcaster ne null => {
+	     case bm@BroadcastMessage(c,m) if (c == clusterName) && (broadcaster ne null) => {
 	                     log.info("Receiving remote message, broadcasting it to listeners: [%s]",m)
-	                     broadcaster broadcast m
+	                     broadcaster broadcast bm
 	                     }
 	     case x => log.info("Not a valid message for cluster[%s] = [%s]",clusterName,x)
 	}
 }
+
+/*class AkkaBroadcaster extends JerseyBroadcaster {
+   super.bc.addFilter()
+}*/
