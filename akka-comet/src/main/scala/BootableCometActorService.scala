@@ -32,6 +32,8 @@ trait BootableCometActorService extends Bootable with Logging {
       val scheme = uri.getScheme
       if (!scheme.equalsIgnoreCase("http")) throw new IllegalArgumentException(
         "The URI scheme, of the URI " + REST_URL + ", must be equal (ignoring case) to 'http'")
+        
+      log.info("Attempting to start REST service on uri [%s]",uri)
 
       val adapter = new ServletAdapter
       adapter.setHandleStaticResources(true)
