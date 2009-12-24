@@ -9,8 +9,8 @@ import se.scalablesolutions.akka.remote.{Cluster}
 import org.atmosphere.cpr.{ClusterBroadcastFilter,Broadcaster}
 import scala.reflect.{BeanProperty}
 
-sealed trait AkkaClusterBroadcastMessage
-case class BroadcastMessage(val name : String, val msg : AnyRef) extends AkkaClusterBroadcastMessage
+sealed trait AkkaClusterCometBroadcastMessage
+case class BroadcastMessage(val name : String, val msg : AnyRef) extends AkkaClusterCometBroadcastMessage
 
 class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRef] {
   @BeanProperty var clusterName = ""
@@ -27,12 +27,12 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
       case _ => {
         Cluster.relayMessage(classOf[AkkaClusterBroadcastFilter],BroadcastMessage(clusterName,o))
         o
-        }
       }
-	}
+    }
+  }
 
   def receive = { 
-    case bm@BroadcastMessage(c,m) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast bm
+    case bm@BroadcastMessage(c,_) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast bm
     case _ =>
   }
 
