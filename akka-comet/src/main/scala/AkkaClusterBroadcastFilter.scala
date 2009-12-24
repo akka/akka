@@ -9,8 +9,8 @@ import se.scalablesolutions.akka.remote.{Cluster}
 import org.atmosphere.cpr.{ClusterBroadcastFilter,Broadcaster}
 import scala.reflect.{BeanProperty}
 
-sealed trait AkkaClusterCometBroadcastMessage
-case class BroadcastMessage(val name : String, val msg : AnyRef) extends AkkaClusterCometBroadcastMessage
+sealed trait ClusterCometMessageType
+case class ClusterCometBroadcast(val name : String, val msg : AnyRef) extends ClusterCometMessageType
 
 class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRef] {
   @BeanProperty var clusterName = ""
@@ -20,19 +20,18 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
 
   def destroy : Unit = stop
 
-  def filter(o : AnyRef) : AnyRef = {
-    o match {
-      case BroadcastMessage(_,m) => m
-
-      case _ => {
-        Cluster.relayMessage(classOf[AkkaClusterBroadcastFilter],BroadcastMessage(clusterName,o))
-        o
-      }
+  def filter(o : AnyRef) : AnyRef = o match { 
+    case ClusterCometBroadcast(_,m) => m   //Do not re-broadcast, just unbox and pass along
+ 
+    case m : AnyRef => {                   //Relay message to the cluster and pass along
+      Cluster.relayMessage(classOf[AkkaClusterBroadcastFilter],ClusterCometBroadcast(clusterName,m))
+      m
     }
   }
 
   def receive = { 
-    case bm@BroadcastMessage(c,_) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast bm
+    //Only handle messages intended for this particular instance
+    case b@ClusterCometBroadcast(c,_) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast b
     case _ =>
   }
 
