@@ -17,10 +17,10 @@ object ActorRegistry extends Logging {
   private val actorsByClassName = new HashMap[String, List[Actor]]
   private val actorsById = new HashMap[String, List[Actor]]
 
-  def actorsFor(clazz: Class[_ <: Actor]): List[Actor] = synchronized {
+  def actorsFor[T <: Actor](clazz: Class[T]): List[T] = synchronized {
     actorsByClassName.get(clazz.getName) match {
       case None => Nil
-      case Some(instances) => instances
+      case Some(instances) => instances.asInstanceOf[List[T]]
     }
   }
 
