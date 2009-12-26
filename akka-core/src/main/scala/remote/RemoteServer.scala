@@ -221,7 +221,7 @@ class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val appl
           remoteActor.makeRemote(request.getSourceHostname, request.getSourcePort)
           remoteActor.start
         }
-        actor.!(message)(remoteActor)
+        actor.!(message)(Some(remoteActor))
       } else {
         // couldn't find a way to reply, send the message without a source/sender
         actor.send(message)

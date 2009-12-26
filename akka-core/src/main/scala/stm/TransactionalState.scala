@@ -73,6 +73,7 @@ object TransactionalRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {
+  implicit val txInitName = "TransactionalRef:Init"
   import org.multiverse.api.ThreadLocalTransaction._
   val uuid = Uuid.newUuid.toString
 

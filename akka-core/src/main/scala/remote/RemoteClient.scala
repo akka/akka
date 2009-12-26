@@ -137,7 +137,7 @@ class RemoteClientPipelineFactory(name: String,
                                   futures: ConcurrentMap[Long, CompletableFutureResult],
                                   supervisors: ConcurrentMap[String, Actor],
                                   bootstrap: ClientBootstrap,
-										    timer: HashedWheelTimer) extends ChannelPipelineFactory {
+							      timer: HashedWheelTimer) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
     pipeline.addLast("timeout", new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT))

@@ -38,7 +38,8 @@ object Serializer {
   val EMPTY_CLASS_ARRAY = Array[Class[_]]()
   val EMPTY_ANY_REF_ARRAY = Array[AnyRef]()
 
-  object NOOP extends Serializer {
+  object NOOP extends NOOP
+  class NOOP extends Serializer {
     def deepClone(obj: AnyRef): AnyRef = obj
     def out(obj: AnyRef): Array[Byte] = obj.asInstanceOf[Array[Byte]]
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = bytes
@@ -47,7 +48,8 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object Java extends Serializer {
+  object Java extends Java
+  class Java extends Serializer {
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
     def out(obj: AnyRef): Array[Byte] = {
@@ -69,7 +71,8 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object Protobuf extends Serializer {
+  object Protobuf extends Protobuf
+  class Protobuf extends Serializer {
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
 
     def out(obj: AnyRef): Array[Byte] = {
@@ -93,7 +96,8 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object JavaJSON extends Serializer {
+  object JavaJSON extends JavaJSON
+  class JavaJSON extends Serializer {
     private val mapper = new ObjectMapper
 
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
@@ -123,7 +127,8 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object ScalaJSON extends Serializer {
+  object ScalaJSON extends ScalaJSON
+  class ScalaJSON extends Serializer {
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
     def out(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
@@ -136,7 +141,8 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object SBinary {
+  object SBinary extends SBinary
+  class SBinary {
     import sbinary.DefaultProtocol._
     
     def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = in[T](out[T](obj), None)
