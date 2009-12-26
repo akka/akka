@@ -75,7 +75,7 @@ object Actor extends Logging {
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
   object Sender extends Actor {
-    implicit val Self: AnyRef = this
+    implicit val Self: Option[Actor] = None
 
     def receive = {
       case unknown =>
@@ -215,7 +215,8 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends TransactionManagement {
-  implicit protected val self: Actor = this
+  implicit protected val self: Option[Actor] = Some(this)
+  implicit protected val transactionFamily: String = this.getClass.getName
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = Uuid.newUuid.toString
@@ -472,13 +473,13 @@ trait Actor extends TransactionManagement {
    *
    * If invoked from within a *non* Actor instance then either add this import to resolve the implicit argument:
    * <pre>
-   *   import Actor.Sender._
+   *   import Actor.Sender.Self
    *   actor ! message
    * </pre>
    *
    * Or pass in the implicit argument explicitly:
    * <pre>
-   *   actor.!(message)(this)
+   *   actor.!(message)(Some(this))
    * </pre>
    *
    * Or use the 'send(..)' method;
@@ -486,14 +487,10 @@ trait Actor extends TransactionManagement {
    *   actor.send(message)
    * </pre>
    */
-  def !(message: Any)(implicit sender: AnyRef) = {
+  def !(message: Any)(implicit sender: Option[Actor]) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (_isRunning) {
-      val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
-      else None
-      postMessageToMailbox(message, from)
-    } else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+    if (_isRunning) postMessageToMailbox(message, sender)
+    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
   /**
@@ -574,11 +571,10 @@ trait Actor extends TransactionManagement {
   /**
    * Forwards the message and passes the original sender actor as the sender.
    */
-  def forward(message: Any)(implicit sender: AnyRef) = {
+  def forward(message: Any)(implicit sender: Option[Actor]) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val forwarder = if (sender != null && sender.isInstanceOf[Actor]) sender.asInstanceOf[Actor]
-      else throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor")
+      val forwarder = sender.getOrElse(throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor"))
       if (forwarder.getSender.isEmpty) throw new IllegalStateException("Can't forward message when initial sender is not an actor")
       postMessageToMailbox(message, forwarder.getSender)
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -597,12 +593,12 @@ trait Actor extends TransactionManagement {
           case None =>
             throw new IllegalStateException(
               "\n\tNo sender in scope, can't reply. " +
-                  "\n\tYou have probably used the '!' method to either; " +
-                  "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
-                  "\n\t\t2. Send a message from an instance that is *not* an actor" +
-                  "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
-                  "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-                  "\n\tthat will be bound by the argument passed to 'reply'. Alternatively, you can use setContactAddress to make sure the actor can be contacted over the network.")
+              "\n\tYou have probably used the '!' method to either; " +
+              "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
+              "\n\t\t2. Send a message from an instance that is *not* an actor" +
+              "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
+              "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
+              "\n\tthat will be bound by the argument passed to 'reply'. Alternatively, you can use setContactAddress to make sure the actor can be contacted over the network.")
           case Some(future) =>
             future.completeWithResult(message)
         }
@@ -838,9 +834,7 @@ trait Actor extends TransactionManagement {
       val invocation = new MessageInvocation(this, message, None, sender, currentTransaction.get)
       if (_isEventBased) {
         _mailbox.add(invocation)
-        if (_isSuspended) {
-          invocation.send
-        }
+        if (_isSuspended) invocation.send
       } else invocation.send
     }
   }
@@ -862,8 +856,7 @@ trait Actor extends TransactionManagement {
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
       val future = RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build)
       if (future.isDefined) future.get
-      else throw new IllegalStateException(
-        "Expected a future from remote call to actor " + toString)
+      else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = new DefaultCompletableFutureResult(timeout)
       val invocation = new MessageInvocation(this, message, Some(future), None, currentTransaction.get)
@@ -924,7 +917,7 @@ trait Actor extends TransactionManagement {
         if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
         else throw new IllegalArgumentException(
           "Actor " + toString + " could not process message [" + message + "]" +
-              "\n\tsince no matching 'case' clause in its 'receive' method could be found")
+           "\n\tsince no matching 'case' clause in its 'receive' method could be found")
       } finally {
         decrementTransaction
       }
@@ -934,8 +927,8 @@ trait Actor extends TransactionManagement {
       if (isTransactionRequiresNew && !isTransactionInScope) {
         if (senderFuture.isEmpty) throw new StmException(
           "Can't continue transaction in a one-way fire-forget message send" +
-              "\n\tE.g. using Actor '!' method or Active Object 'void' method" +
-              "\n\tPlease use the Actor '!!', '!?' methods or Active Object method with non-void return type")
+          "\n\tE.g. using Actor '!' method or Active Object 'void' method" +
+          "\n\tPlease use the Actor '!!', '!?' methods or Active Object method with non-void return type")
         atomic {
           proceed
         }
@@ -975,7 +968,7 @@ trait Actor extends TransactionManagement {
         }
       } else throw new IllegalStateException(
         "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
-            "\n\tto non-empty list of exception classes - can't proceed " + toString)
+        "\n\tto non-empty list of exception classes - can't proceed " + toString)
     } else {
       if (_supervisor.isDefined) _supervisor.get ! Exit(dead, reason) // if 'trapExit' is not defined then pass the Exit on
     }
@@ -1056,8 +1049,8 @@ trait Actor extends TransactionManagement {
 
   override def equals(that: Any): Boolean = {
     that != null &&
-        that.isInstanceOf[Actor] &&
-        that.asInstanceOf[Actor]._uuid == _uuid
+    that.isInstanceOf[Actor] &&
+    that.asInstanceOf[Actor]._uuid == _uuid
   }
 
   override def toString(): String = "Actor[" + id + ":" + uuid + "]"

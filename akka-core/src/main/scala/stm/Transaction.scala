@@ -21,7 +21,13 @@ class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
 
 /**
- * Example of atomic transaction management using the atomic block:
+ * Example of atomic transaction management using the atomic block.
+ * These blocks takes an implicit argument String defining the transaction family name.
+ * If these blocks are used from within an Actor then the name is automatically resolved, if not either:
+ * 1. define an implicit String with the name in the same scope
+ * 2. pass in the name explicitly
+ *
+ * Here are some examples (assuming implicit transaction family name in scope): 
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
  * 
@@ -95,17 +101,17 @@ object Transaction extends TransactionManagement {
   /**
    * See ScalaDoc on class.
    */
-  def map[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
+  def map[T](f: Transaction => T)(implicit transactionFamilyName: String): T = atomic { f(getTransactionInScope) }
 
   /**
    * See ScalaDoc on class.
    */
-  def flatMap[T](f: Transaction => T): T = atomic { f(getTransactionInScope) }
+  def flatMap[T](f: Transaction => T)(implicit transactionFamilyName: String): T = atomic { f(getTransactionInScope) }
 
   /**
    * See ScalaDoc on class.
    */
-  def foreach(f: Transaction => Unit): Unit = atomic { f(getTransactionInScope) }
+  def foreach(f: Transaction => Unit)(implicit transactionFamilyName: String): Unit = atomic { f(getTransactionInScope) }
 
   /**
    * Creates a "pure" STM atomic transaction and by-passes all transactions hooks
@@ -113,15 +119,15 @@ object Transaction extends TransactionManagement {
    * Only for internal usage.
    */
   private[akka] def pureAtomic[T](body: => T): T = new AtomicTemplate[T](
-    getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
+    getGlobalStmInstance, "internal", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
   }.execute()
 
   /**
    * See ScalaDoc on class.
    */
-  def atomic[T](body: => T): T = new AtomicTemplate[T](
-    getGlobalStmInstance, "akka", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
+  def atomic[T](body: => T)(implicit transactionFamilyName: String): T = new AtomicTemplate[T](
+    getGlobalStmInstance, transactionFamilyName, false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
     def execute(mtx: MultiverseTransaction): T = body
     override def postStart(mtx: MultiverseTransaction) = {
       val tx = new Transaction
@@ -137,8 +143,8 @@ object Transaction extends TransactionManagement {
   /**
    * See ScalaDoc on class.
    */
-  def atomic[T](retryCount: Int)(body: => T): T = {
-    new AtomicTemplate[T](getGlobalStmInstance, "akka", false, false, retryCount) {
+  def atomic[T](retryCount: Int)(body: => T)(implicit transactionFamilyName: String): T = {
+    new AtomicTemplate[T](getGlobalStmInstance, transactionFamilyName, false, false, retryCount) {
       def execute(mtx: MultiverseTransaction): T = body
       override def postStart(mtx: MultiverseTransaction) = {
         val tx = new Transaction
@@ -155,8 +161,8 @@ object Transaction extends TransactionManagement {
   /**
    * See ScalaDoc on class.
    */
-  def atomicReadOnly[T](retryCount: Int)(body: => T): T = {
-    new AtomicTemplate[T](getGlobalStmInstance, "akka", false, true, retryCount) {
+  def atomicReadOnly[T](retryCount: Int)(body: => T)(implicit transactionFamilyName: String): T = {
+    new AtomicTemplate[T](getGlobalStmInstance, transactionFamilyName, false, true, retryCount) {
       def execute(mtx: MultiverseTransaction): T = body
       override def postStart(mtx: MultiverseTransaction) = {
         val tx = new Transaction

@@ -94,6 +94,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
+            <exclude>**/InMemNestedStateTest*</exclude>
             <exclude>**/*Persistent*</exclude>
           </excludes>
         </configuration>
