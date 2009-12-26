@@ -4,18 +4,17 @@
 
 package se.scalablesolutions.akka.comet
 
-import se.scalablesolutions.akka.rest.AkkaServlet
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.rest.{AkkaServlet => RestServlet}
 
 import java.util.{List => JList}
-
-import javax.servlet.{ServletConfig}
+import javax.servlet.ServletConfig
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
-import org.atmosphere.container.{GrizzlyCometSupport}
+
+import org.atmosphere.container.GrizzlyCometSupport
 import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport,CometSupportResolver,DefaultCometSupportResolver}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
 import org.atmosphere.jersey.JerseyBroadcaster
-
 
 /**
  * Akka's Comet servlet to be used when deploying actors exposed as Comet (and REST) services in a
@@ -23,8 +22,8 @@ import org.atmosphere.jersey.JerseyBroadcaster
  * <p/>
  * Used by the Akka Kernel to bootstrap REST and Comet.
  */
-class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
-  val servlet = new AkkaServlet with AtmosphereServletProcessor {
+class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
+  val servlet = new RestServlet with AtmosphereServletProcessor {
 
     //Delegate to implement the behavior for AtmosphereHandler
     private val handler = new AbstractReflectorAtmosphereHandler {
@@ -74,10 +73,8 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
  
         override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CS = {
            val predef = config.getInitParameter("cometSupport")
-           if(testClassExists(predef))
-             newCometSupport(predef)
-           else
-             super.resolve(useNativeIfPossible, useBlockingAsDefault)
+           if (testClassExists(predef)) newCometSupport(predef)
+           else super.resolve(useNativeIfPossible, useBlockingAsDefault)
         }
       }
   }

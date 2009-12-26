@@ -76,9 +76,9 @@ public class InMemNestedStateTest extends TestCase {
     nested.setVectorState("init"); // set init state
     Thread.sleep(100);
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested); // transactionrequired
-    Thread.sleep(1000);
+    Thread.sleep(100);
     assertEquals("new state", stateful.getVectorState());
-    Thread.sleep(1000);
+    Thread.sleep(100);
     assertEquals("new state", nested.getVectorState());
   }
 
