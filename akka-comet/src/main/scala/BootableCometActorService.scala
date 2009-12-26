@@ -39,7 +39,7 @@ trait BootableCometActorService extends Bootable with Logging {
 
       val adapter = new ServletAdapter
       adapter.setHandleStaticResources(true)
-      adapter.setServletInstance(new AkkaCometServlet)
+      adapter.setServletInstance(new AkkaServlet)
       adapter.setContextPath(uri.getPath)
       //Using autodetection for now
       //adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")

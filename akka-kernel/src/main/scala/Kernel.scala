@@ -5,11 +5,11 @@
 package se.scalablesolutions.akka
 
 import se.scalablesolutions.akka.comet.BootableCometActorService
-import se.scalablesolutions.akka.remote.{RemoteNode,BootableRemoteActorService}
+import se.scalablesolutions.akka.remote.BootableRemoteActorService
+import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.actor.{ActorRegistry,BootableActorLoaderService}
 
-import javax.servlet.{ServletContextListener,ServletContextEvent}
+import javax.servlet.{ServletContextListener, ServletContextEvent}
 
 object Main {
  def main(args: Array[String]) = Kernel.boot
@@ -25,13 +25,15 @@ object Kernel extends Logging {
   @volatile private var hasBooted = false
   
   private val startTime = System.currentTimeMillis
-  
-  //Bundles is what modules are to be loaded with the Kernel, this uses Jonas' AOP style mixin pattern
+
+  /**
+   * Bundles is what modules are to be loaded with the Kernel, this uses Jonas' AOP style mixin pattern.
+   */
   object Bundles extends BootableActorLoaderService with BootableRemoteActorService with BootableCometActorService
 
   /**
-   * Boots up the Kernel. 
-   */   
+   *  Boots up the Kernel.
+   */
   def boot: Unit = boot(true)
 
   /**
