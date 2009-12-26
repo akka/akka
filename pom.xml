@@ -229,6 +229,14 @@
       </snapshots>
     </repository>
     <repository>
+      <id>nexus.griddynamics.net</id>
+      <name>Grid Dynamics Maven Repository</name>
+      <url>https://nexus.griddynamics.net/nexus/content/groups/public</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
       <id>databinder.net/repo/</id>
       <name>dbDispatch Repository for Maven</name>
       <url>http://databinder.net/repo</url>

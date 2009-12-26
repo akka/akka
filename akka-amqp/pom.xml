@@ -25,15 +25,10 @@
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
-    <!--dependency>
+    <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>amqp-client</artifactId>
       <version>1.7.0</version>
-    </dependency-->
-    <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>rabbitmq-client</artifactId>
-      <version>0.9.1</version>
     </dependency>
   </dependencies>
 

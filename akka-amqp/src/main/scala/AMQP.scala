@@ -66,10 +66,12 @@ object AMQP {
       initReconnectDelay: Long,
       passive: Boolean,
       durable: Boolean,
-      configurationArguments: Map[String, AnyRef]) = 
+      autoDelete: Boolean,
+      configurationArguments: Map[String, AnyRef]) =
     supervisor.newConsumer(
       config, hostname, port, exchangeName, exchangeType,
-      shutdownListener, initReconnectDelay, passive, durable, configurationArguments)
+      shutdownListener, initReconnectDelay,
+      passive, durable, autoDelete, configurationArguments)
 
   def stopConnection(connection: FaultTolerantConnectionActor) = supervisor.stopConnection(connection)
 
@@ -112,6 +114,7 @@ object AMQP {
         initReconnectDelay: Long,
         passive: Boolean,
         durable: Boolean,
+        autoDelete: Boolean,        
         configurationArguments: Map[String, AnyRef]): Consumer = {
       val consumer = new Consumer(
         new ConnectionFactory(config),
@@ -122,6 +125,7 @@ object AMQP {
         initReconnectDelay,
         passive,
         durable,
+        autoDelete,
         configurationArguments)
       startLink(consumer)
       consumer
@@ -352,6 +356,7 @@ object AMQP {
       val initReconnectDelay: Long,
       val passive: Boolean,
       val durable: Boolean,
+      val autoDelete: Boolean,        
       val configurationArguments: Map[java.lang.String, Object])
       extends FaultTolerantConnectionActor {
     consumer: Consumer =>
@@ -406,9 +411,7 @@ object AMQP {
     protected def setupChannel = {
       connection = connectionFactory.newConnection(hostname, port)
       channel = connection.createChannel
-      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString,
-        passive, durable,
-        configurationArguments.asJava)
+      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, configurationArguments.asJava)
       listeners.elements.toList.map(_._2).foreach(registerListener)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
