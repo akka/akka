@@ -21,18 +21,20 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
     <author>Jonas Bon&#233;r</author>
   </properties>
   <body>
-    <release version="0.6" date="2009-12-14" description="
+    <release version="0.6" date="2010-01-04" description="
       The goal with the 0.6 release is to bring together and harden all the new features, modules etc.
       that have been developed since mid-summer 2009 into a production quality release.">
-      <action dev="Debasish Ghosh" type="add">MongoDB as Akka storage backend </action>
-      <action dev="Debasish Ghosh" type="add">Transparent JSON serialization of Scala objects based on SJSON </action>
-      <action dev="Debasish Ghosh" type="add">MongoDB backed actor example</action>
-      <action dev="Tim Perrett" type="add">Support for using the Lift Web framework with Actors</action>
+      <action dev="Viktor Klang" type="add">Clustered Comet using Akka remote actors and clustered membership API</action>
+      <action dev="Viktor Klang" type="add">Cluster membership API and implementation based on JGroups</action>
       <action dev="Viktor Klang" type="add">Security module for HTTP-based authentication and authorization</action>
       <action dev="Viktor Klang" type="add">Support for using Scala XML tags in RESTful Actors (scala-jersey)</action>
       <action dev="Viktor Klang" type="add">Support for Comet Actors using Atmosphere</action>
+      <action dev="Debasish Ghosh" type="add">MongoDB as Akka storage backend </action>
+      <action dev="Debasish Ghosh" type="add">Redis as Akka storage backend </action>
+      <action dev="Debasish Ghosh" type="add">Transparent JSON serialization of Scala objects based on SJSON </action>
       <action dev="Eckhart Hertzler" type="add">Kerberos/SPNEGO support for Security module</action>
       <action dev="Mikael Högqvist" type="fix">Implicit sender for remote actors: Remote actors are able to use reply to answer a request</action>
+      <action dev="Tim Perrett" type="add">Support for using the Lift Web framework with Actors</action>
       <action dev="Jonas Bon&#233;r" type="add">Rewritten STM, now integrated with Multiverse STM</action>
       <action dev="Jonas Bon&#233;r" type="add">Added STM API for atomic {..} and run {..} orElse {..}</action>
       <action dev="Jonas Bon&#233;r" type="add">Added STM retry</action>
@@ -46,7 +48,7 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Jonas Bon&#233;r" type="add">Monadic API to TransactionalRef (use it in for-comprehension)</action>
       <action dev="Jonas Bon&#233;r" type="add">Smoother web app integration; just add akka.conf to the classpath (WEB-INF/classes), no need for AKKA_HOME or -Dakka.conf=..</action>
       <action dev="Jonas Bon&#233;r" type="add">Modularization of distribution into a thin core (actors, remoting and STM) and the rest in submodules</action>
-      <action dev="Jonas Bon&#233;r" type="add">Added 'forward' to Actor</action>
+      <action dev="Jonas Bon&#233;r" type="add">Added 'forward' to Actor, forwards message but keeps original sender address</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Java objects (using Jackson)</action>
       <action dev="Jonas Bon&#233;r" type="add">JSON serialization for Scala objects (using SJSON)</action>
       <action dev="Jonas Bon&#233;r" type="add">Added implementation for remote actor reconnect upon failure</action>
@@ -63,6 +65,7 @@ see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full gui
       <action dev="Jonas Bon&#233;r" type="add">Added mailing list: akka-user@googlegroups.com</action>
       <action dev="Jonas Bon&#233;r" type="add">Improved and restructured documentation</action>
       <action dev="Jonas Bon&#233;r" type="add">New URL: http://akkasource.org</action>
+      <action dev="Jonas Bon&#233;r" type="add">New and much improved docs</action>
       <action dev="Jonas Bon&#233;r" type="add">Enhanced trapping of failures: 'trapExit = List(classOf[..], classOf[..])'</action>
       <action dev="Jonas Bon&#233;r" type="add">Upgraded to Netty 3.2, Protobuf 2.2, ScalaTest 1.0, Jersey 1.1.3, Atmosphere 0.4.1, Cassandra 0.4.1, Configgy 1.4</action>
       <action dev="Jonas Bon&#233;r" type="fix">Lowered actor memory footprint; now an actor consumes ~600 bytes, which mean that you can create 6.5 million on 4 G RAM</action>
