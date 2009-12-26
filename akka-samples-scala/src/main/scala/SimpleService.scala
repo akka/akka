@@ -8,13 +8,14 @@ import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
 import se.scalablesolutions.akka.state.{CassandraStorage, TransactionalState}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.comet.{AkkaClusterBroadcastFilter}
 
 import java.lang.Integer
 import java.nio.ByteBuffer
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes,PathParam}
 
-import org.atmosphere.annotation.{Broadcast, Suspend}
+import org.atmosphere.annotation.{Broadcast, Suspend,Cluster}
 import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.{Broadcaster, BroadcastFilter}
 import org.atmosphere.jersey.Broadcastable
@@ -85,6 +86,7 @@ class PubSub extends Actor {
   @Broadcast
   @Path("/topic/{topic}/{message}/")
   @Produces(Array("text/plain;charset=ISO-8859-1"))
+  @Cluster(Array(classOf[AkkaClusterBroadcastFilter])) { val name = "foo" }
   def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
 
   def receive = { case _ => }
@@ -149,9 +151,10 @@ class Chat extends Actor {
     case x => log.info("recieve unknown: " + x)
   }
 
-  @Broadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
-  @Consumes(Array("application/x-www-form-urlencoded"))
   @POST
+  @Broadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
+  @Cluster(Array(classOf[AkkaClusterBroadcastFilter])) { val name = "bar" }
+  @Consumes(Array("application/x-www-form-urlencoded"))
   @Produces(Array("text/html"))
   def publishMessage(form: MultivaluedMap[String, String]) =
     (this !! Chat(form.getFirst("name"),

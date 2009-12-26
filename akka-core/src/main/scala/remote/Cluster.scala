@@ -151,7 +151,7 @@ class JGroupsClusterActor extends ClusterActor {
 
   def receive = {
     case Zombie(x) => { //Ask the presumed zombie for papers and prematurely treat it as dead
-      log debug ("Zombie: %s", x)
+      log debug ("Killing Zombie Node: %s", x)
       broadcast(x :: Nil, PapersPlease)
       remotes = remotes - x
     }
