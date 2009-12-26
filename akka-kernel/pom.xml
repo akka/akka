@@ -47,8 +47,18 @@
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <artifactId>akka-comet</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- For Atmosphere -->
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-server</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-annotations</artifactId>
@@ -88,7 +98,7 @@
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>se.scalablesolutions.akka.Kernel</mainClass>
+                  <mainClass>se.scalablesolutions.akka.Main</mainClass>
                 </transformer>
               </transformers>
             </configuration>
