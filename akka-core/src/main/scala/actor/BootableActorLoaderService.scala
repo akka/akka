@@ -8,6 +8,9 @@ import java.io.File
 import java.net.URLClassLoader
 import se.scalablesolutions.akka.util.{Bootable,Logging}
 
+/**
+ * Handles all modules in the deploy directory (load and unload)
+ */
 trait BootableActorLoaderService extends Bootable with Logging {
   import Config._
 

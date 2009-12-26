@@ -26,6 +26,7 @@ object Kernel extends Logging {
   
   private val startTime = System.currentTimeMillis
   
+  //Bundles is what modules are to be loaded with the Kernel, this uses Jonas' AOP style mixin pattern
   object Bundles extends BootableActorLoaderService with BootableRemoteActorService with BootableCometActorService
 
   /**
@@ -48,7 +49,9 @@ object Kernel extends Logging {
     }
   }
 
-  // TODO document Kernel.shutdown
+  /**
+   * Shuts down the kernel, unloads all of the bundles
+   */
   def shutdown = synchronized {
     if (hasBooted) {
       log.info("Shutting down Akka...")
@@ -57,6 +60,7 @@ object Kernel extends Logging {
     }
   }
 
+  //FIXME This is only being called by a test
   def startRemoteService = Bundles.startRemoteService
 
   private def printBanner = {
