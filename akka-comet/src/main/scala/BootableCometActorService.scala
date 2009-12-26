@@ -12,7 +12,9 @@ import javax.ws.rs.core.UriBuilder
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.util.{Bootable,Logging}
 
-
+/**
+ * Handles the Akka Comet Support (load/unload)
+ */
 trait BootableCometActorService extends Bootable with Logging {
   self : BootableActorLoaderService =>
   
@@ -40,7 +42,7 @@ trait BootableCometActorService extends Bootable with Logging {
       adapter.setServletInstance(new AkkaCometServlet)
       adapter.setContextPath(uri.getPath)
       //Using autodetection for now
-      adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
+      //adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
       if (HOME.isDefined) adapter.setRootFolder(HOME.get + "/deploy/root")
       log.info("REST service root path [%s] and context path [%s]", adapter.getRootFolder, adapter.getContextPath)
 

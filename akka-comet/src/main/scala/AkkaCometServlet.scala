@@ -46,11 +46,19 @@ class AkkaCometServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging
     }
   }
 
+  /**
+   * We override this to avoid Atmosphere looking for it's atmosphere.xml file
+   * Instead we specify what semantics we want in code.
+   */
   override def loadConfiguration(sc: ServletConfig) {
     config = new AtmosphereConfig { supportSession = false }
     atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
   }
 
+   /**
+    * This method is overridden because Akka Kernel is bundles with Grizzly, so if we deploy the Kernel in another container,
+    * we need to handle that.
+    */
    override def createCometSupportResolver() : CometSupportResolver = {
       import org.scala_tools.javautils.Imports._
  
