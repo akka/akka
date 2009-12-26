@@ -100,8 +100,7 @@ class PubSub extends Actor {
  * Or browse to the URL from a web browser.
  */
 @Path("/persistentscalacount")
-class PersistentSimpleService extends Actor {
-  makeTransactionRequired
+class PersistentSimpleService extends Transactor {
 
   case object Tick
   private val KEY = "COUNTER"
@@ -127,7 +126,7 @@ class PersistentSimpleService extends Actor {
 }
 
 @Path("/chat")
-class Chat extends Transactor {
+class Chat extends Actor {
   case class Chat(val who: String, val what: String, val msg: String)
 
   @Suspend
