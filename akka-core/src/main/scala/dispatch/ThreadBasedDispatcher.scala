@@ -49,7 +49,6 @@ class BlockingMessageQueue(name: String) extends MessageQueue {
   // FIXME: configure the LinkedBlockingQueue in BlockingMessageQueue, use a Builder like in the ReactorBasedThreadPoolEventDrivenDispatcher
   private val queue = new LinkedBlockingQueue[MessageInvocation]
   def append(invocation: MessageInvocation) = queue.put(invocation)
-  def prepend(invocation: MessageInvocation) = queue.add(invocation) // FIXME is add prepend???
   def take: MessageInvocation = queue.take
   def read(destination: Queue[MessageInvocation]) = throw new UnsupportedOperationException
   def interrupt = throw new UnsupportedOperationException

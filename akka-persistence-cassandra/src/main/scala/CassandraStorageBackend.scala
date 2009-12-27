@@ -93,9 +93,8 @@ private[akka] object CassandraStorageBackend extends
     }
   }
 
-  // FIXME implement insertVectorStorageEntriesFor
   def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = {
-    throw new UnsupportedOperationException("insertVectorStorageEntriesFor for CassandraStorageBackend is not implemented yet")
+    throw new UnsupportedOperationException("CassandraStorageBackend::insertVectorStorageEntriesFor is not implemented")
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
@@ -197,7 +196,7 @@ private[akka] object CassandraStorageBackend extends
   def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
 
   def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
-    val keyBytes = if (key == null) null else key
+    val keyBytes = if (key eq null) null else key
     sessions.withSession {
       _ -- (name,
         new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, keyBytes),

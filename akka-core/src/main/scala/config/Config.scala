@@ -40,7 +40,7 @@ object ScalaConfig {
     def apply(scope: Scope) = new LifeCycle(scope, None)
   }
   case class RestartCallbacks(preRestart: String, postRestart: String) {
-    if (preRestart == null || postRestart == null) throw new IllegalArgumentException("Restart callback methods can't be null")
+    if ((preRestart eq null) || (postRestart eq null)) throw new IllegalArgumentException("Restart callback methods can't be null")
   }
 
   case object Permanent extends Scope
@@ -56,9 +56,9 @@ object ScalaConfig {
                   _dispatcher: MessageDispatcher, // optional
                   _remoteAddress: RemoteAddress   // optional
           ) extends Server {
-    val intf: Option[Class[_]] = if (_intf == null) None else Some(_intf)
-    val dispatcher: Option[MessageDispatcher] = if (_dispatcher == null) None else Some(_dispatcher)
-    val remoteAddress: Option[RemoteAddress] = if (_remoteAddress == null) None else Some(_remoteAddress)
+    val intf: Option[Class[_]] = if (_intf eq null) None else Some(_intf)
+    val dispatcher: Option[MessageDispatcher] = if (_dispatcher eq null) None else Some(_dispatcher)
+    val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
   object Component {
     def apply(intf: Class[_], target: Class[_], lifeCycle: LifeCycle, timeout: Int) =
@@ -131,7 +131,7 @@ object JavaConfig {
   class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
     def this(scope: Scope) = this(scope, null)
     def transform = {
-      val callbackOption = if (callbacks == null) None else Some(callbacks.transform)
+      val callbackOption = if (callbacks eq null) None else Some(callbacks.transform)
       se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform, callbackOption)
     }
   }
@@ -217,7 +217,7 @@ object JavaConfig {
     def transform =
       se.scalablesolutions.akka.config.ScalaConfig.Component(
         intf, target, lifeCycle.transform, timeout, transactionRequired, dispatcher,
-        if (remoteAddress != null) se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
+        if (remoteAddress ne null) se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
 
     def newSupervised(actor: Actor) =
       se.scalablesolutions.akka.config.ScalaConfig.Supervise(actor, lifeCycle.transform)

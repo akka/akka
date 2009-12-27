@@ -79,7 +79,6 @@ object Serializable {
 
     def toJSON: String = {
       val out = new StringWriter
-      // FIXME: is this mapper expensive to create? Should I cache it away?
       val mapper = new ObjectMapper
       mapper.writeValue(out, this)
       out.close

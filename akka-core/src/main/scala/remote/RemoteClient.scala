@@ -23,7 +23,16 @@ import org.jboss.netty.util.{TimerTask, Timeout, HashedWheelTimer}
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap}
-                                 
+import java.util.concurrent.atomic.AtomicLong
+
+import org.codehaus.aspectwerkz.proxy.Uuid
+
+object RemoteRequestIdFactory {
+  private val nodeId = Uuid.newUuid
+  private val id = new AtomicLong
+  def nextId: Long = id.getAndIncrement + nodeId
+}
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -31,8 +40,6 @@ object RemoteClient extends Logging {
   val READ_TIMEOUT = config.getInt("akka.remote.client.read-timeout", 10000)
   val RECONNECT_DELAY = config.getInt("akka.remote.client.reconnect-delay", 5000)
 
-  // TODO: add configuration optons: 'HashedWheelTimer(long tickDuration, TimeUnit unit, int ticksPerWheel)'
-//  private[akka] val TIMER = new HashedWheelTimer
   private val clients = new HashMap[String, RemoteClient]
 
   def clientFor(address: InetSocketAddress): RemoteClient = synchronized {
@@ -54,7 +61,6 @@ object RemoteClient extends Logging {
   def shutdownAll() = synchronized {
 	 clients.foreach({case (addr, client) => client.shutdown})
 	 clients.clear
-//	 TIMER.stop
   }
 }
 
@@ -68,7 +74,6 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   private val futures = new ConcurrentHashMap[Long, CompletableFutureResult]
   private val supervisors = new ConcurrentHashMap[String, Actor]
 
-  // TODO is this Netty channelFactory and other options always the best or should it be configurable?
   private val channelFactory = new NioClientSocketChannelFactory(
     Executors.newCachedThreadPool,
     Executors.newCachedThreadPool)

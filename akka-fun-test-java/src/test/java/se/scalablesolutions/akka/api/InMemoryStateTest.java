@@ -158,20 +158,6 @@ class InMemClasherImpl implements InMemClasher {
 
   public void clash() {
     state.put("clasher", "was here");
-    // spend some time here
-    // for (long i = 0; i < 1000000000; i++) {
-    // for (long j = 0; j < 10000000; j++) {
-    // j += i;
-    // }
-    // }
-
-    // FIXME: this statement gives me this error:
-    // se.scalablesolutions.akka.kernel.ActiveObjectException:
-    // Unexpected message [!(scala.actors.Channel@c2b2f6,ResultOrFailure[Right(null)])]
-    // to
-    // [GenericServer[se.scalablesolutions.akka.api.StatefulImpl]] from
-    // [GenericServer[se.scalablesolutions.akka.api.ClasherImpl]]]
-    // try { Thread.sleep(1000); } catch (InterruptedException e) {}
   }
 }
 */

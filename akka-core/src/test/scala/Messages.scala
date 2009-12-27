@@ -13,7 +13,6 @@ case object OneWay extends TestMessage
 case object Die extends TestMessage
 case object NotifySupervisorExit extends TestMessage
 
-// FIXME: add this User class to document on how to use SBinary
 case class User(val usernamePassword: Tuple2[String, String],
                 val email: String,
                 val age: Int)

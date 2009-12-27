@@ -105,10 +105,10 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
     val invocations = selectedInvocations.iterator
     while (invocations.hasNext && totalNrOfActors > totalNrOfBusyActors && passFairnessCheck(nrOfBusyMessages)) {
       val invocation = invocations.next
-      if (invocation == null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
+      if (invocation eq null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
       if (!busyActors.contains(invocation.receiver)) {
         val invoker = messageInvokers.get(invocation.receiver)
-        if (invoker == null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
+        if (invoker eq null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
         resume(invocation.receiver)
         invocations.remove
         executor.execute(new Runnable() {

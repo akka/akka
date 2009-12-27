@@ -34,7 +34,7 @@ Object.extend = function(destination, source) {
 Object.inspect = function(object) {
   try {
     if (object == undefined) return 'undefined';
-    if (object == null) return 'null';
+    if (object eq null) return 'null';
     return object.inspect ? object.inspect() : object.toString();
   } catch (e) {
     if (e instanceof RangeError) return '...';

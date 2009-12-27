@@ -17,8 +17,7 @@ final class MessageInvocation(val receiver: Actor,
                               val future: Option[CompletableFutureResult],
                               val sender: Option[Actor],
                               val tx: Option[Transaction]) {
-  if (receiver == null) throw new IllegalArgumentException("receiver is null")
-  if (message == null) throw new IllegalArgumentException("message is null")
+  if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 
   def invoke = receiver.invoke(this)
 
@@ -51,7 +50,6 @@ final class MessageInvocation(val receiver: Actor,
 
 trait MessageQueue {
   def append(handle: MessageInvocation)
-  def prepend(handle: MessageInvocation)
 }
 
 trait MessageInvoker {

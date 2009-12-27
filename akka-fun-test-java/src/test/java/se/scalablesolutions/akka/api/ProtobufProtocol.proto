@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.api;
 
 /*
   Compile with:
-  cd ./fun-test-java/src/test/java
+  cd ./akka-fun-test-java/src/test/java
   protoc se/scalablesolutions/akka/api/ProtobufProtocol.proto --java_out .
 */
 

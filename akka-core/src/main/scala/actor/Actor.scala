@@ -815,7 +815,7 @@ trait Actor extends TransactionManagement {
       if (sender.isDefined) {
         requestBuilder.setSourceTarget(sender.get.getClass.getName)
         requestBuilder.setSourceUuid(sender.get.uuid)
-        log.debug("Setting sending actor as " + sender.get.getClass.getName + ", " + _contactAddress)
+        log.debug("Setting sending actor as %s, %s", sender.get.getClass.getName, _contactAddress)
 
         if (sender.get._contactAddress.isDefined) {
           val addr = sender.get._contactAddress.get
@@ -839,7 +839,6 @@ trait Actor extends TransactionManagement {
     }
   }
 
-  // FIXME support local and remote sender as postMessageToMailbox above
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any, timeout: Long): CompletableFutureResult = {
     if (_remoteAddress.isDefined) {
@@ -962,7 +961,7 @@ trait Actor extends TransactionManagement {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
       if (faultHandler.isDefined) {
         faultHandler.get match {
-        // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
+          // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
           case AllForOneStrategy(maxNrOfRetries, withinTimeRange) => restartLinkedActors(reason)
           case OneForOneStrategy(maxNrOfRetries, withinTimeRange) => dead.restart(reason)
         }
