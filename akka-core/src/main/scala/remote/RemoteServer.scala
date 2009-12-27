@@ -117,7 +117,7 @@ class RemoteServer extends Logging {
         bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         isRunning = true
-        Cluster.registerLocalNode(hostname,port)
+        Cluster.registerLocalNode(hostname, port)
       }      
     } catch {
       case e => log.error(e, "Could not start up remote server")
@@ -127,15 +127,17 @@ class RemoteServer extends Logging {
   def shutdown = {
     openChannels.close.awaitUninterruptibly()
     bootstrap.releaseExternalResources
-    Cluster.deregisterLocalNode(hostname,port)
+    Cluster.deregisterLocalNode(hostname, port)
   }
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServerPipelineFactory(name: String, openChannels: ChannelGroup, loader: Option[ClassLoader])
-    extends ChannelPipelineFactory {
+class RemoteServerPipelineFactory(
+    name: String,
+    openChannels: ChannelGroup,
+    loader: Option[ClassLoader]) extends ChannelPipelineFactory {
   import RemoteServer._
 
   def getPipeline: ChannelPipeline = {
@@ -163,12 +165,16 @@ class RemoteServerPipelineFactory(name: String, openChannels: ChannelGroup, load
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelPipelineCoverage {val value = "all"}
-class RemoteServerHandler(val name: String, openChannels: ChannelGroup, val applicationLoader: Option[ClassLoader])
-    extends SimpleChannelUpstreamHandler with Logging {
+class RemoteServerHandler(
+    val name: String,
+    openChannels: ChannelGroup,
+    val applicationLoader: Option[ClassLoader]) extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   private val activeObjects = new ConcurrentHashMap[String, AnyRef]
   private val actors = new ConcurrentHashMap[String, Actor]
+
+  applicationLoader.foreach(RemoteProtocolBuilder.setClassLoader(_))
 
   /**
    * ChannelOpen overridden to store open channels for a clean shutdown

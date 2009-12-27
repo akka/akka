@@ -85,6 +85,11 @@
       <version>0.6.4</version>
     </dependency>
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
       <groupId>net.databinder</groupId>
       <artifactId>dispatch-http_2.7.7</artifactId>
       <version>0.6.4</version>

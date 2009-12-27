@@ -429,8 +429,7 @@ trait Actor extends TransactionManagement {
       messageDispatcher.register(this)
       messageDispatcher.start
       _isRunning = true
-      init // call user-defined init method
-      //if (isTransactional) this !! TransactionalInit
+      init 
     }
     Actor.log.debug("[%s] has started", toString)
     this
@@ -520,7 +519,7 @@ trait Actor extends TransactionManagement {
     if (_isRunning) {
       val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
       else None
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout)
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
       val isActiveObject = message.isInstanceOf[Invocation]
       if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
       try {
@@ -544,6 +543,7 @@ trait Actor extends TransactionManagement {
    * <b>NOTE:</b>
    * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
    * implement request/response message exchanges.
+   * <p/>
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
@@ -570,13 +570,16 @@ trait Actor extends TransactionManagement {
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
+   * <p/>
+   * Works with both '!' and '!!'. 
    */
   def forward(message: Any)(implicit sender: Option[Actor]) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
       val forwarder = sender.getOrElse(throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor"))
-      if (forwarder.getSender.isEmpty) throw new IllegalStateException("Can't forward message when initial sender is not an actor")
-      postMessageToMailbox(message, forwarder.getSender)
+      if (forwarder.getSenderFuture.isDefined) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, forwarder.getSenderFuture)
+      else if (forwarder.getSender.isDefined) postMessageToMailbox(message, forwarder.getSender)
+      else throw new IllegalStateException("Can't forward message when initial sender is not an actor")
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -789,6 +792,8 @@ trait Actor extends TransactionManagement {
 
   private[akka] def getSender = sender
 
+  private[akka] def getSenderFuture = senderFuture
+
   private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
@@ -829,7 +834,7 @@ trait Actor extends TransactionManagement {
         }
       }
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
-      RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build)
+      RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
     } else {
       val invocation = new MessageInvocation(this, message, None, sender, currentTransaction.get)
       if (_isEventBased) {
@@ -840,7 +845,9 @@ trait Actor extends TransactionManagement {
   }
 
   private def postMessageToMailboxAndCreateFutureResultWithTimeout(
-      message: Any, timeout: Long): CompletableFutureResult = {
+      message: Any, 
+      timeout: Long,
+      senderFuture: Option[CompletableFutureResult]): CompletableFutureResult = {
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -853,11 +860,12 @@ trait Actor extends TransactionManagement {
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       val id = registerSupervisorAsRemoteActor
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
-      val future = RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build)
+      val future = RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, senderFuture)
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
-      val future = new DefaultCompletableFutureResult(timeout)
+      val future = if (senderFuture.isDefined) senderFuture.get
+                   else new DefaultCompletableFutureResult(timeout)
       val invocation = new MessageInvocation(this, message, Some(future), None, currentTransaction.get)
       if (_isEventBased) {
         _mailbox.add(invocation)

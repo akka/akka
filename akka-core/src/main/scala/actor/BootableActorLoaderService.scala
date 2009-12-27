@@ -6,13 +6,14 @@ package se.scalablesolutions.akka.actor
 
 import java.io.File
 import java.net.URLClassLoader
+
 import se.scalablesolutions.akka.util.{Bootable,Logging}
+import se.scalablesolutions.akka.Config._
 
 /**
  * Handles all modules in the deploy directory (load and unload)
  */
 trait BootableActorLoaderService extends Bootable with Logging {
-  import Config._
 
   val BOOT_CLASSES = config.getList("akka.boot")
   var applicationLoader: Option[ClassLoader] = None
@@ -38,7 +39,6 @@ trait BootableActorLoaderService extends Bootable with Logging {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
-    
     Some(loader)
   }
 

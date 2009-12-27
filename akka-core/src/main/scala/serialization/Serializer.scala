@@ -6,6 +6,8 @@ package se.scalablesolutions.akka.serialization
 
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
 
+import org.apache.commons.io.input.ClassLoaderObjectInputStream
+
 import com.google.protobuf.Message
 
 import org.codehaus.jackson.map.ObjectMapper
@@ -50,6 +52,10 @@ object Serializer {
    */
   object Java extends Java
   class Java extends Serializer {
+    private var classLoader: Option[ClassLoader] = None
+
+    def setClassLoader(cl: ClassLoader) = classLoader = Some(cl)
+
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
     def out(obj: AnyRef): Array[Byte] = {
@@ -61,7 +67,8 @@ object Serializer {
     }
 
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-      val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
+      val in = if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
+               else new ObjectInputStream(new ByteArrayInputStream(bytes))
       val obj = in.readObject
       in.close
       obj
@@ -100,6 +107,10 @@ object Serializer {
   class JavaJSON extends Serializer {
     private val mapper = new ObjectMapper
 
+    private var classLoader: Option[ClassLoader] = None
+
+    def setClassLoader(cl: ClassLoader) = classLoader = Some(cl)
+
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
 
     def out(obj: AnyRef): Array[Byte] = {
@@ -112,7 +123,8 @@ object Serializer {
 
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       if (!clazz.isDefined) throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
-      val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
+      val in = if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
+               else new ObjectInputStream(new ByteArrayInputStream(bytes))
       val obj = mapper.readValue(in, clazz.get).asInstanceOf[AnyRef]
       in.close
       obj
@@ -131,8 +143,13 @@ object Serializer {
   class ScalaJSON extends Serializer {
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
+    private var classLoader: Option[ClassLoader] = None
+
+    def setClassLoader(cl: ClassLoader) = classLoader = Some(cl)
+
     def out(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
 
+    // FIXME set ClassLoader on SJSONSerializer.SJSON
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
     
     def in(json: String): AnyRef = SJSONSerializer.SJSON.in(json)
