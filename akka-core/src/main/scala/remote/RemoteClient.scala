@@ -27,6 +27,9 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.codehaus.aspectwerkz.proxy.Uuid
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 object RemoteRequestIdFactory {
   private val nodeId = Uuid.newUuid
   private val id = new AtomicLong
@@ -55,12 +58,12 @@ object RemoteClient extends Logging {
     }
   }
 
-  /*
-	* Clean-up all open connections
-	*/
+  /**
+   * Clean-up all open connections.
+   */
   def shutdownAll() = synchronized {
-	 clients.foreach({case (addr, client) => client.shutdown})
-	 clients.clear
+    clients.foreach({case (addr, client) => client.shutdown})
+    clients.clear
   }
 }
 
@@ -107,16 +110,17 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
       connection.getChannel.getCloseFuture.awaitUninterruptibly
       channelFactory.releaseExternalResources
     }
-	timer.stop
+    timer.stop
   }
 
-  def send(request: RemoteRequest): Option[CompletableFutureResult] = if (isRunning) {
+  def send(request: RemoteRequest, senderFuture: Option[CompletableFutureResult]): Option[CompletableFutureResult] = if (isRunning) {
     if (request.getIsOneWay) {
       connection.getChannel.write(request)
       None
     } else {
       futures.synchronized {
-        val futureResult = new DefaultCompletableFutureResult(request.getTimeout)
+        val futureResult = if (senderFuture.isDefined) senderFuture.get
+                           else new DefaultCompletableFutureResult(request.getTimeout)
         futures.put(request.getId, futureResult)
         connection.getChannel.write(request)
         Some(futureResult)
@@ -142,7 +146,7 @@ class RemoteClientPipelineFactory(name: String,
                                   futures: ConcurrentMap[Long, CompletableFutureResult],
                                   supervisors: ConcurrentMap[String, Actor],
                                   bootstrap: ClientBootstrap,
-							      timer: HashedWheelTimer) extends ChannelPipelineFactory {
+                    timer: HashedWheelTimer) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
     pipeline.addLast("timeout", new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT))
@@ -173,7 +177,7 @@ class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor],
                           val bootstrap: ClientBootstrap,
-				          val timer: HashedWheelTimer)
+                  val timer: HashedWheelTimer)
  extends SimpleChannelUpstreamHandler with Logging {
   import Actor.Sender.Self
 

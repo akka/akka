@@ -6,6 +6,7 @@ package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.util.{Bootable,Logging}
+import se.scalablesolutions.akka.Config.config
 
 /**
  * This bundle/service is responsible for booting up and shutting down the remote actors facility
@@ -14,9 +15,7 @@ import se.scalablesolutions.akka.util.{Bootable,Logging}
 
 trait BootableRemoteActorService extends Bootable with Logging {
   self : BootableActorLoaderService =>
-  
-  import Config._
-  
+
   protected lazy val remoteServerThread = new Thread(new Runnable() {
     def run = RemoteNode.start(self.applicationLoader)
   }, "Akka Remote Service")

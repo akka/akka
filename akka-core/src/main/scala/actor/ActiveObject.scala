@@ -287,7 +287,7 @@ private[akka] sealed class ActiveObjectAspect {
     val id = actor.registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
     val remoteMessage = requestBuilder.build
-    val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage)
+    val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage, None)
     if (oneWay_?) null // for void methods
     else {
       if (future.isDefined) {
