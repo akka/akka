@@ -105,20 +105,22 @@ class RemoteServer extends Logging {
   def start(_hostname: String, _port: Int): Unit = start(_hostname, _port, None)
 
   def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): Unit = synchronized {
-    if (!isRunning) {
-      hostname = _hostname
-      port = _port
-      log.info("Starting remote server at [%s:%s]", hostname, port)
-      bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, openChannels, loader))
-
-      // FIXME make these RemoteServer options configurable
-      bootstrap.setOption("child.tcpNoDelay", true)
-      bootstrap.setOption("child.keepAlive", true)
-      bootstrap.setOption("child.reuseAddress", true)
-      bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
-      openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
-      isRunning = true
-      Cluster.registerLocalNode(hostname,port)
+    try {
+      if (!isRunning) {
+        hostname = _hostname
+        port = _port
+        log.info("Starting remote server at [%s:%s]", hostname, port)
+        bootstrap.setPipelineFactory(new RemoteServerPipelineFactory(name, openChannels, loader))
+        bootstrap.setOption("child.tcpNoDelay", true)
+        bootstrap.setOption("child.keepAlive", true)
+        bootstrap.setOption("child.reuseAddress", true)
+        bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
+        openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
+        isRunning = true
+        Cluster.registerLocalNode(hostname,port)
+      }      
+    } catch {
+      case e => log.error(e, "Could not start up remote server")
     }
   }
 
