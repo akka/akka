@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Scalable Solutions.
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package se.scalablesolutions.akka.actor
@@ -382,7 +382,7 @@ trait Actor extends TransactionManagement {
    * Optional callback method that is called during initialization.
    * To be implemented by subclassing actor.
    */
-  protected def init = {}
+  protected def init {}
 
   /**
    * User overridable callback/setting.
@@ -390,7 +390,7 @@ trait Actor extends TransactionManagement {
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
-  protected def preRestart(reason: Throwable) = {}
+  protected def preRestart(reason: Throwable) {}
 
   /**
    * User overridable callback/setting.
@@ -398,7 +398,7 @@ trait Actor extends TransactionManagement {
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
-  protected def postRestart(reason: Throwable) = {}
+  protected def postRestart(reason: Throwable) {}
 
   /**
    * User overridable callback/setting.
@@ -406,7 +406,7 @@ trait Actor extends TransactionManagement {
    * Optional callback method that is called during termination.
    * To be implemented by subclassing actor.
    */
-  protected def initTransactionalState() = {}
+  protected def initTransactionalState {}
 
   /**
    * User overridable callback/setting.
