@@ -5,7 +5,7 @@ import junit.framework.TestCase
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.Transactor
 
 /**
  * A persistent actor based on Redis storage.
@@ -26,12 +26,11 @@ case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: Actor)
 case class Credit(accountNo: String, amount: BigInt)
 case object LogSize
 
-class AccountActor extends Actor {
-  makeTransactionRequired
+class AccountActor extends Transactor {
   private val accountState = RedisStorage.newMap
   private val txnLog = RedisStorage.newVector
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive = {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:%s".format(accountNo).getBytes)
