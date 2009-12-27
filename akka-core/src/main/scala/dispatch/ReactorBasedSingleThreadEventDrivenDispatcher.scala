@@ -27,7 +27,7 @@ class ReactorBasedSingleThreadEventDrivenDispatcher(name: String) extends Abstra
           while (iter.hasNext) {
             val invocation = iter.next
             val invoker = messageInvokers.get(invocation.receiver)
-            if (invoker != null) invoker.invoke(invocation)
+            if (invoker ne null) invoker.invoke(invocation)
             iter.remove
           }
         }

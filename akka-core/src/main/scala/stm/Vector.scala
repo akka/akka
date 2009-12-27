@@ -117,7 +117,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
       var (newRoot, expansion) = pushTail(shift - 5, root, tail, null)
       var newShift = shift
       
-      if (expansion != null) {
+      if (expansion ne null) {
         newRoot = array(newRoot, expansion)
         newShift += 5
       }
@@ -130,7 +130,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     val newChild = if (level == 0) tailNode else {
       val (newChild, subExpansion) = pushTail(level - 5, arr(arr.length - 1).asInstanceOf[Array[AnyRef]], tailNode, expansion)
       
-      if (subExpansion == null) {
+      if (subExpansion eq null) {
         val ret = new Array[AnyRef](arr.length)
         Array.copy(arr, 0, ret, 0, arr.length)
         
@@ -169,7 +169,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
       var (newRoot, pTail) = popTail(shift - 5, root, null)
       var newShift = shift
       
-      if (newRoot == null) {
+      if (newRoot eq null) {
         newRoot = EmptyArray
       }
       
@@ -186,7 +186,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     val newPTail = if (shift > 0) {
       val (newChild, subPTail) = popTail(shift - 5, arr(arr.length - 1).asInstanceOf[Array[AnyRef]], pTail)
       
-      if (newChild != null) {
+      if (newChild ne null) {
         val ret = new Array[AnyRef](arr.length)
         Array.copy(arr, 0, ret, 0, arr.length)
         

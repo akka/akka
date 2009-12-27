@@ -278,11 +278,11 @@ private[collection] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, 
   
   def elements = {
     table.foldLeft(emptyElements) { (it, e) =>
-      if (e == null) it else it ++ e.elements
+      if (e eq null) it else it ++ e.elements
     }
   }
   
-  override def toString = "BitmappedNode(" + size + "," + table.filter(_ != null).toList.toString + ")"
+  override def toString = "BitmappedNode(" + size + "," + table.filter(_ ne null).toList.toString + ")"
   
   private lazy val emptyElements: Iterator[(K, V)] = new Iterator[(K, V)] {
     val hasNext = false

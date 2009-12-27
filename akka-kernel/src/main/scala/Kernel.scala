@@ -21,7 +21,6 @@ object Main {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends Logging {
-  // FIXME add API to shut server down gracefully
   @volatile private var hasBooted = false
   
   private val startTime = System.currentTimeMillis
@@ -62,7 +61,6 @@ object Kernel extends Logging {
     }
   }
 
-  //FIXME This is only being called by a test
   def startRemoteService = Bundles.startRemoteService
 
   private def printBanner = {

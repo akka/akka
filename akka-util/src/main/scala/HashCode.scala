@@ -38,7 +38,7 @@ object HashCode {
     case value: Byte => hash(seed, value)
     case value: AnyRef =>
       var result = seed
-      if (value == null) result = hash(result, 0)
+      if (value eq null) result = hash(result, 0)
       else if (!isArray(value)) result = hash(result, value.hashCode())
       else for (id <- 0 until JArray.getLength(value)) result = hash(result, JArray.get(value, id)) // is an array
       result

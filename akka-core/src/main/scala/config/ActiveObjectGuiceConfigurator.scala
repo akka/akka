@@ -46,7 +46,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
    */
   override def getInstance[T](clazz: Class[T]): T = synchronized {
     log.debug("Retrieving active object [%s]", clazz.getName)
-    if (injector == null) throw new IllegalStateException(
+    if (injector eq null) throw new IllegalStateException(
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
         activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException(
@@ -132,13 +132,13 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
   }
 
   override def inject: ActiveObjectConfiguratorBase = synchronized {
-    if (injector != null) throw new IllegalStateException("inject() has already been called on this configurator")
+    if (injector ne null) throw new IllegalStateException("inject() has already been called on this configurator")
     injector = Guice.createInjector(modules)
     this
   }
 
   override def supervise: ActiveObjectConfiguratorBase = synchronized {
-    if (injector == null) inject
+    if (injector eq null) inject
     supervisor = Some(ActiveObject.supervise(restartStrategy, supervised))
     //camelContext.addComponent(AKKA_CAMEL_ROUTING_SCHEME, new ActiveObjectComponent(this))
     //camelContext.start

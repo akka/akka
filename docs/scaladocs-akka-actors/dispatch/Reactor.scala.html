@@ -48,8 +48,8 @@ class MessageInvocation(val receiver: Actor,
                         val message: AnyRef,
                         val future: Option[CompletableFutureResult],
                         val tx: Option[Transaction]) {
-  if (receiver == null) throw new IllegalArgumentException("receiver is null")
-  if (message == null) throw new IllegalArgumentException("message is null")
+  if (receiver eq null) throw new IllegalArgumentException("receiver is null")
+  if (message eq null) throw new IllegalArgumentException("message is null")
 
   private [akka] val nrOfDeliveryAttempts = new AtomicInteger(0)
   

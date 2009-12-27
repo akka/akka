@@ -92,7 +92,7 @@ object Serializer {
     }
 
     def in(bytes: Array[Byte], clazz: Class[_]): AnyRef = {
-      if (clazz == null) throw new IllegalArgumentException("Protobuf message can't be null")
+      if (clazz eq null) throw new IllegalArgumentException("Protobuf message can't be null")
       in(bytes, Some(clazz))
     }
   }
@@ -122,7 +122,7 @@ object Serializer {
     }
 
     def in(json: String, clazz: Class[_]): AnyRef = {
-      if (clazz == null) throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
+      if (clazz eq null) throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
       mapper.readValue(json, clazz).asInstanceOf[AnyRef]
     }
   }

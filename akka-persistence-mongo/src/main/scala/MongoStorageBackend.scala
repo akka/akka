@@ -52,7 +52,6 @@ private[akka] object MongoStorageBackend extends
   val db = new Mongo(MONGODB_SERVER_HOSTNAME, MONGODB_SERVER_PORT)
   val coll = db.getDB(MONGODB_SERVER_DBNAME).getCollection(COLLECTION)
 
-  // FIXME: make this pluggable
   private[this] val serializer = SJSON
 
   def insertMapStorageEntryFor(name: String, key: AnyRef, value: AnyRef) {
@@ -257,8 +256,8 @@ private[akka] object MongoStorageBackend extends
     }
   }
 
-  // FIXME implement updateVectorStorageEntryFor
-  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = throw new UnsupportedOperationException
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) =
+    throw new UnsupportedOperationException("MongoStorageBackend::insertVectorStorageEntriesFor is not implemented")
 
   def getVectorStorageSizeFor(name: String): Int = {
     nullSafeFindOne(name) match {

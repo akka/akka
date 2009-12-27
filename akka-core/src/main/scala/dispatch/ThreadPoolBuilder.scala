@@ -9,6 +9,7 @@ import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
 import java.util.Collection
+import se.scalablesolutions.akka.util.Logging
 
 trait ThreadPoolBuilder {
   val name: String
@@ -207,8 +208,8 @@ trait ThreadPoolBuilder {
     protected val counter = new AtomicLong
 
     def newThread(runnable: Runnable) =
-    //new MonitorableThread(runnable, name)
-      new Thread(runnable, name + "-" + counter.getAndIncrement)
+    new MonitorableThread(runnable, name)
+  //    new Thread(runnable, name + "-" + counter.getAndIncrement)
   }
 
   /**
@@ -218,7 +219,7 @@ trait ThreadPoolBuilder {
     val DEFAULT_NAME = "MonitorableThread"
     val created = new AtomicInteger
     val alive = new AtomicInteger
-    @volatile val debugLifecycle = false
+    @volatile var debugLifecycle = false
   }
 
   // FIXME fix the issues with using the monitoring in MonitorableThread
@@ -227,20 +228,21 @@ trait ThreadPoolBuilder {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   class MonitorableThread(runnable: Runnable, name: String)
-      extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) { //with Logging {
+      extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) with Logging {
+
     setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-      def uncaughtException(thread: Thread, cause: Throwable) = {} //log.error("UNCAUGHT in thread [%s] cause [%s]", thread.getName, cause)
+      def uncaughtException(thread: Thread, cause: Throwable) = log.error(cause, "UNCAUGHT in thread [%s]", thread.getName)
     })
 
     override def run = {
       val debug = MonitorableThread.debugLifecycle
-      //if (debug) log.debug("Created %s", getName)
+      log.debug("Created %s", getName)
       try {
         MonitorableThread.alive.incrementAndGet
         super.run
       } finally {
         MonitorableThread.alive.decrementAndGet
-        //if (debug) log.debug("Exiting %s", getName)
+        log.debug("Exiting %s", getName)
       }
     }
   }

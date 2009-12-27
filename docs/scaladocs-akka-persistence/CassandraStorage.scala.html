@@ -221,7 +221,7 @@ object CassandraStorage extends MapStorage
   def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
 
   def removeMapStorageFor(name: String, key: AnyRef): Unit = {
-    val keyBytes = if (key == null) null else serializer.out(key)
+    val keyBytes = if (key eq null) null else serializer.out(key)
     sessions.withSession {
       _ -- (name,
         new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, keyBytes),
@@ -424,7 +424,7 @@ case object Stop
 
 private[this] val serverEngine: TThreadPoolServer = try  {
 val pidFile = akka.akka.config.getString("akka.storage.cassandra.thrift-server.pidfile", "akka.pid")
-if (pidFile != null) new File(pidFile).deleteOnExit();
+if (pidFile ne null) new File(pidFile).deleteOnExit();
 val listenPort = DatabaseDescriptor.getThriftPort
 
 val processor = new Cassandra.Processor(server)

@@ -457,7 +457,6 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
       if (arg.getClass.getName.contains(ActiveObject.AW_PROXY_PREFIX)) unserializable = true
     }
     if (!unserializable && hasMutableArgument) {
-      // FIXME: can we have another default deep cloner?
       val copyOfArgs = Serializer.Java.deepClone(args)
       joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
     }    
@@ -480,7 +479,7 @@ ublic class CamelInvocationHandler implements InvocationHandler {
         BeanInvocation invocation = new BeanInvocation(method, args);
         ExchangePattern pattern = ExchangePattern.InOut;
         MethodInfo methodInfo = methodInfoCache.getMethodInfo(method);
-        if (methodInfo != null) {
+        if (methodInfo ne null) {
             pattern = methodInfo.getPattern();
         }
         Exchange exchange = new DefaultExchange(endpoint, pattern);
@@ -488,7 +487,7 @@ ublic class CamelInvocationHandler implements InvocationHandler {
 
         producer.process(exchange);
         Throwable fault = exchange.getException();
-        if (fault != null) {
+        if (fault ne null) {
             throw new InvocationTargetException(fault);
         }
         if (pattern.isOutCapable()) {
@@ -511,7 +510,7 @@ ublic class CamelInvocationHandler implements InvocationHandler {
         exchange.getIn().setBody(joinpoint)
         producer.process(exchange)
         val fault = exchange.getException();
-        if (fault != null) throw new InvocationTargetException(fault)
+        if (fault ne null) throw new InvocationTargetException(fault)
 
         // FIXME: need some timeout and future here...
         exchange.getOut.getBody

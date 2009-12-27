@@ -85,7 +85,7 @@ class TransactionWatcher extends Logging with Watcher {
         zk.exists(znode, true, this, null)
       }
     }
-    if (chainedWatcher != null) chainedWatcher.process(event);
+    if (chainedWatcher ne null) chainedWatcher.process(event);
   }
   def run: Unit = synchronized {
     try {

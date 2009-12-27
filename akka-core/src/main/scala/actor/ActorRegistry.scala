@@ -38,7 +38,7 @@ object ActorRegistry extends Logging {
       case None => actorsByClassName + (className -> (actor :: Nil))
     }
     val id = actor.id
-    if (id == null) throw new IllegalStateException("Actor.id is null " + actor)
+    if (id eq null) throw new IllegalStateException("Actor.id is null " + actor)
     actorsById.get(id) match {
       case Some(instances) => actorsById + (id -> (actor :: instances))
       case None => actorsById + (id -> (actor :: Nil))
@@ -50,7 +50,6 @@ object ActorRegistry extends Logging {
     actorsById - actor.getClass.getName
   }
 
-  // TODO: document ActorRegistry.shutdownAll
   def shutdownAll = {
     log.info("Shutting down all actors in the system...")
     actorsById.foreach(entry => entry._2.map(_.stop))

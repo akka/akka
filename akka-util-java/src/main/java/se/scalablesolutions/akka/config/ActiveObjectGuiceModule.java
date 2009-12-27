@@ -24,7 +24,7 @@ public class ActiveObjectGuiceModule extends AbstractModule {
     //bind(ResourceProviderFactory.class);
     for (int i = 0; i < bindings.size(); i++) {
       final DependencyBinding db = bindings.get(i);
-      //if (db.getInterface() != null) bind((Class) db.getInterface()).to((Class) db.getTarget()).in(Singleton.class);
+      //if (db.getInterface() ne null) bind((Class) db.getInterface()).to((Class) db.getTarget()).in(Singleton.class);
       //else 
       this.bind(db.getInterface()).toInstance(db.getTarget());
     }

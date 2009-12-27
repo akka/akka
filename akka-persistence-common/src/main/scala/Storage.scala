@@ -42,7 +42,6 @@ class NoTransactionInScopeException extends RuntimeException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Storage {
-  // FIXME: The UUID won't work across the remote machines, use [http://johannburkard.de/software/uuid/]
   type ElementType
 
   def newMap: PersistentMap[ElementType, ElementType]
@@ -145,8 +144,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
       } catch {
         case e: Throwable => Nil
       }
-      // FIXME how to deal with updated entries, these should be replaced in the originalList not just added
-      private var elements = newAndUpdatedEntries.toList ::: originalList.reverse 
+      private var elements = newAndUpdatedEntries.toList union originalList.reverse 
       override def next: Tuple2[K, V]= synchronized {
         val element = elements.head
         elements = elements.tail        
@@ -176,7 +174,6 @@ trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Com
   val storage: VectorStorageBackend[T]
 
   def commit = {
-    // FIXME: should use batch function once the bug is resolved
     for (element <- newElems) storage.insertVectorStorageEntryFor(uuid, element)
     for (entry <- updatedElems) storage.updateVectorStorageEntryFor(uuid, entry._1, entry._2)
     newElems.clear
@@ -208,10 +205,9 @@ trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Com
   /**
    * Removes the <i>tail</i> element of this vector.
    */
-  // FIXME: implement persistent vector pop 
   def pop: T = {
     register
-    throw new UnsupportedOperationException("need to implement persistent vector pop")
+    throw new UnsupportedOperationException("PersistentVector::pop is not implemented")
   }
 
   def update(index: Int, newElem: T) = {

@@ -104,7 +104,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
-    if (message == null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
+    if (message eq null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
     if (message.isInstanceOf[RemoteRequest]) handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
   }
 
@@ -240,7 +240,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
   private def createActiveObject(name: String, timeout: Long): AnyRef = {
     val activeObjectOrNull = activeObjects.get(name)
-    if (activeObjectOrNull == null) {
+    if (activeObjectOrNull eq null) {
       try {
         log.info("Creating a new remote active object [%s]", name)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
@@ -259,7 +259,7 @@ class RemoteServerHandler(val name: String, val applicationLoader: Option[ClassL
 
   private def createActor(name: String, timeout: Long): Actor = {
     val actorOrNull = actors.get(name)
-    if (actorOrNull == null) {
+    if (actorOrNull eq null) {
       try {
         log.info("Creating a new remote actor [%s]", name)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)

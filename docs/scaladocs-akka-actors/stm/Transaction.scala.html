@@ -149,7 +149,7 @@ object Transaction extends TransactionManagement {
   // For reinitialize transaction after sending it over the wire 
   private[akka] def reinit = synchronized {
     import net.lag.logging.{Logger, Level}
-    if (log == null) {
+    if (log eq null) {
       log = Logger.get(this.getClass.getName)
       log.setLevel(Level.ALL) // TODO: preserve logging level
     }

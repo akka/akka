@@ -38,7 +38,7 @@ class ForwardActorTest extends JUnitSuite {
     val senderActor = new SenderActor
     senderActor.start
     Thread.sleep(1000)
-    assert(ForwardState.sender != null)
+    assert(ForwardState.sender ne null)
     assert(senderActor === ForwardState.sender)
   }
 }

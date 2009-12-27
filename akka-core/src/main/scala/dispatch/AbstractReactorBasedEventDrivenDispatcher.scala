@@ -49,11 +49,6 @@ class ReactiveMessageQueue(name: String) extends MessageQueue {
     queue.notifyAll
   }
 
-  def prepend(handle: MessageInvocation) = queue.synchronized {
-    queue.add(handle)
-    queue.notifyAll
-  }
-
   def read(destination: List[MessageInvocation]) = queue.synchronized {
     while (queue.isEmpty && !interrupted) queue.wait
     if (!interrupted) while (!queue.isEmpty) destination.add(queue.remove)
