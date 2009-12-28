@@ -611,18 +611,15 @@ trait Actor extends TransactionManagement {
   /**
    * Get the dispatcher for this actor.
    */
-  def dispatcher: MessageDispatcher =
-    if (_isRunning) messageDispatcher
-    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-
+  def dispatcher: MessageDispatcher = messageDispatcher
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
-  def dispatcher_=(dispatcher: MessageDispatcher): Unit = synchronized {
+  def dispatcher_=(md: MessageDispatcher): Unit = synchronized {
     if (!_isRunning) {
       messageDispatcher.unregister(this)
-      messageDispatcher = dispatcher
+      messageDispatcher = md
       messageDispatcher.register(this)
       _isEventBased = messageDispatcher.isInstanceOf[ExecutorBasedEventDrivenDispatcher]
     } else throw new IllegalArgumentException(
