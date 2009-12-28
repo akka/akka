@@ -9,6 +9,18 @@ import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{OneForOneStrategy}
 
+/******************************************************************************
+  To run the sample: 
+  1. Run 'mvn install' (builds and deploys jar to AKKA_HOME/deploy)
+  2. In another shell run 'java -jar ./dist/akka-0.6.jar' to start up Akka microkernel
+  3. In the first shell run 'mvn scala:console -o'
+  4. In the REPL you get execute: 
+    - scala> import se.scalablesolutions.akka.sample.chat._
+    - scala> Runner.run
+  5. See the chat simulation run
+  6. Run it again if you like
+******************************************************************************/
+
 /**
  * ChatServer's internal events.
  */
@@ -26,8 +38,8 @@ class ChatClient(val name: String) {
   import Actor.Sender.Self
   def login =                 ChatServer ! Login(name) 
   def logout =                ChatServer ! Logout(name)  
-  def chatLog: ChatLog =     (ChatServer !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
   def post(message: String) = ChatServer ! ChatMessage(name, name + ": " + message)  
+  def chatLog: ChatLog =     (ChatServer !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
 }
 
 /**
