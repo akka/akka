@@ -118,10 +118,12 @@ object ChatServer extends Actor {
     case msg @ GetChatLog(from) =>     sessions(from) forward msg
   }
   
-  override def shutdown = sessions.foreach { case (_, session) => 
-    log.info("Chat server is shutting down...")
-    unlink(session)
-    session.stop
+  override def shutdown = { 
+    sessions.foreach { case (_, session) => 
+      log.info("Chat server is shutting down...")
+      unlink(session)
+      session.stop
+    }
     unlink(storage)
     storage.stop
   }
