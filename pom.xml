@@ -54,6 +54,7 @@
     <module>akka-persistence-common</module>
     <module>akka-persistence-cassandra</module>
     <module>akka-persistence-mongo</module>
+    <module>akka-persistence-redis</module>
     <module>akka-rest</module>
     <module>akka-comet</module>
     <module>akka-amqp</module>
