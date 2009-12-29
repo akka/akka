@@ -269,6 +269,10 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.4.2</version>
         <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+            <!--include>**/*Spec.java</include-->
+          </includes>
           <systemProperties>
             <property>
               <name>akka.home</name>

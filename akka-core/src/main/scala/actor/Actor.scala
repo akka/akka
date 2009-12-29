@@ -199,6 +199,25 @@ object Actor extends Logging {
     }
     handler(body)
   }
+
+  /**
+   * Use to create an anonymous event-driven remote actor.
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = actor("localhost", 9999)  {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
+  def actor(hostname: String, port: Int)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
+    makeRemote(hostname, port)
+    start
+    def receive = body
+  }
+
 }
 
 /**
@@ -672,14 +691,11 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def link(actor: Actor) = {
-    if (_isRunning) {
-      getLinkedActors.add(actor)
-      if (actor._supervisor.isDefined) throw new IllegalStateException(
-        "Actor can only have one supervisor [" + actor + "], e.g. link(actor) fails")
-      actor._supervisor = Some(this)
-      Actor.log.debug("Linking actor [%s] to actor [%s]", actor, this)
-    } else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+    getLinkedActors.add(actor)
+    if (actor._supervisor.isDefined) throw new IllegalStateException(
+      "Actor can only have one supervisor [" + actor + "], e.g. link(actor) fails")
+    actor._supervisor = Some(this)
+    Actor.log.debug("Linking actor [%s] to actor [%s]", actor, this)
   }
 
   /**
@@ -688,14 +704,11 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def unlink(actor: Actor) = {
-    if (_isRunning) {
-      if (!getLinkedActors.contains(actor)) throw new IllegalStateException(
-        "Actor [" + actor + "] is not a linked actor, can't unlink")
-      getLinkedActors.remove(actor)
-      actor._supervisor = None
-      Actor.log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
-    } else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+    if (!getLinkedActors.contains(actor)) throw new IllegalStateException(
+      "Actor [" + actor + "] is not a linked actor, can't unlink")
+    getLinkedActors.remove(actor)
+    actor._supervisor = None
+    Actor.log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
   }
 
   /**

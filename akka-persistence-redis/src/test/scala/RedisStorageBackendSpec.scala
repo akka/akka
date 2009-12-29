@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.serialization.Serializable
 import RedisStorageBackend._
 
 @RunWith(classOf[JUnitRunner])
-class RedisStorageBackendTest extends 
+class RedisStorageBackendSpec extends 
   Spec with 
   ShouldMatchers with 
   BeforeAndAfterAll {
