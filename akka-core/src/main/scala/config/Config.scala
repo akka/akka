@@ -24,7 +24,15 @@ object ScalaConfig {
   abstract class Scope extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
-  case class Supervise(actor: Actor, lifeCycle: LifeCycle) extends Server
+  
+  class Supervise(val actor: Actor, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
+    val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
+  }
+  object Supervise {
+    def apply(actor: Actor, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actor, lifeCycle, remoteAddress)
+    def apply(actor: Actor, lifeCycle: LifeCycle) = new Supervise(actor, lifeCycle, null)
+    def unapply(supervise: Supervise) = Some((supervise.actor, supervise.lifeCycle, supervise.remoteAddress))
+  }
 
   case class RestartStrategy(
       scheme: FailOverScheme,

@@ -21,7 +21,7 @@ import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler
 import org.jboss.netty.util.{TimerTask, Timeout, HashedWheelTimer}
 
-import java.net.InetSocketAddress
+import java.net.{SocketAddress, InetSocketAddress}
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap}
 import java.util.concurrent.atomic.AtomicLong
 
@@ -84,8 +84,9 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
   private val bootstrap = new ClientBootstrap(channelFactory)
 
   private val timer = new HashedWheelTimer
+  private val remoteAddress = new InetSocketAddress(hostname, port)
 
-  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, timer))
+  bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, remoteAddress, timer))
   bootstrap.setOption("tcpNoDelay", true)
   bootstrap.setOption("keepAlive", true)
 
@@ -93,7 +94,7 @@ class RemoteClient(hostname: String, port: Int) extends Logging {
 
   def connect = synchronized {
     if (!isRunning) {
-      connection = bootstrap.connect(new InetSocketAddress(hostname, port))
+      connection = bootstrap.connect(remoteAddress)
       log.info("Starting remote client connection to [%s:%s]", hostname, port)
 
       // Wait until the connection attempt succeeds or fails.
@@ -146,7 +147,8 @@ class RemoteClientPipelineFactory(name: String,
                                   futures: ConcurrentMap[Long, CompletableFutureResult],
                                   supervisors: ConcurrentMap[String, Actor],
                                   bootstrap: ClientBootstrap,
-                    timer: HashedWheelTimer) extends ChannelPipelineFactory {
+                                  remoteAddress: SocketAddress,
+                                  timer: HashedWheelTimer) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val pipeline = Channels.pipeline()
     pipeline.addLast("timeout", new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT))
@@ -164,7 +166,7 @@ class RemoteClientPipelineFactory(name: String,
     }
     pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
     pipeline.addLast("protobufEncoder", new ProtobufEncoder())
-    pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap, timer))
+    pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer))
     pipeline
   }
 }
@@ -177,7 +179,8 @@ class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor],
                           val bootstrap: ClientBootstrap,
-                  val timer: HashedWheelTimer)
+                          val remoteAddress: SocketAddress,
+                          val timer: HashedWheelTimer)
  extends SimpleChannelUpstreamHandler with Logging {
   import Actor.Sender.Self
 
@@ -221,8 +224,8 @@ class RemoteClientHandler(val name: String,
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     timer.newTimeout(new TimerTask() {
       def run(timeout: Timeout) = {
-        log.debug("Remote client reconnecting to [%s]", ctx.getChannel.getRemoteAddress)
-        bootstrap.connect
+        log.debug("Remote client reconnecting to [%s]", remoteAddress)
+        bootstrap.connect(remoteAddress)
       }
     }, RemoteClient.RECONNECT_DELAY, TimeUnit.MILLISECONDS)
   }

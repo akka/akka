@@ -170,7 +170,8 @@ class Boot {
       RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
       Supervise(
         ChatService,
-        LifeCycle(Permanent)) 
+        LifeCycle(Permanent),
+        RemoteAddress("localhost", 9999)) 
       :: Nil))
   factory.newInstance.start
 }
