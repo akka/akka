@@ -112,7 +112,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
     case SupervisorConfig(_, servers) =>
       servers.map(server =>
         server match {
-          case Supervise(actor, lifeCycle) =>
+          case Supervise(actor, lifeCycle, remoteAddress) =>
             actors.put(actor.getClass.getName, actor)
             actor.lifeCycle = Some(lifeCycle)
             startLink(actor)

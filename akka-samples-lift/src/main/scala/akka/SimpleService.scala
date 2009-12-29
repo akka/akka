@@ -47,8 +47,7 @@ class SimpleService extends Transactor {
  * Or browse to the URL from a web browser.
  */
 @Path("/persistentliftcount")
-class PersistentSimpleService extends Actor {
-  makeTransactionRequired
+class PersistentSimpleService extends Transactor {
 
   case object Tick
   private val KEY = "COUNTER"
