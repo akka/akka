@@ -131,6 +131,8 @@ class RemoteServer extends Logging {
   }
 }
 
+case class Codec(encoder : ChannelHandler,decoder : ChannelHandler)
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -141,23 +143,23 @@ class RemoteServerPipelineFactory(
   import RemoteServer._
 
   def getPipeline: ChannelPipeline = {
-    val pipeline = Channels.pipeline()
-    RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
-      //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
-      case _ => {} // no compression
+
+    val lenDec       = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenPrep      = new LengthFieldPrepender(4)
+    val protobufDec  = new ProtobufDecoder(RemoteRequest.getDefaultInstance)
+    val protobufEnc  = new ProtobufEncoder
+    val remoteServer = new RemoteServerHandler(name, openChannels, loader)
+    
+    val zipcodec = RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib"  => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL),new ZlibDecoder))
+      //case "lzf" => Some(Codec(new LzfEncoder, new LzfDecoder))
+      case _ => None
     }
-    pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
-    pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteRequest.getDefaultInstance))
-    RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib" => pipeline.addLast("zlibEncoder", new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL))
-      //case "lzf" => pipeline.addLast("lzfEncoder", new LzfEncoder)
-      case _ => {} // no compression
-    }
-    pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
-    pipeline.addLast("protobufEncoder", new ProtobufEncoder)
-    pipeline.addLast("handler", new RemoteServerHandler(name, openChannels, loader))
-    pipeline
+    
+    val stages : Array[ChannelHandler] = zipcodec.map( z => Array(z.decoder,lenDec,protobufDec,z.encoder,lenPrep,protobufEnc,remoteServer) )
+                                                 .getOrElse(Array(lenDec,protobufDec,lenPrep,protobufEnc,remoteServer))
+    
+    new StaticChannelPipeline(stages:_*)
   }
 }
 
