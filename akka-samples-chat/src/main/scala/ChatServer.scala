@@ -6,8 +6,11 @@ package se.scalablesolutions.akka.sample.chat
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
 import se.scalablesolutions.akka.remote.RemoteServer
+import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{OneForOneStrategy}
+
+import scala.collection.mutable.HashMap
 
 /******************************************************************************
   To run the sample: 
@@ -18,7 +21,7 @@ import se.scalablesolutions.akka.config.{OneForOneStrategy}
     - scala> import se.scalablesolutions.akka.sample.chat._
     - scala> Runner.run
   5. See the chat simulation run
-  6. Run it again if you like
+  6. Run it again to see full speed after first initialization
 ******************************************************************************/
 
 /**
@@ -36,21 +39,20 @@ case class ChatMessage(from: String, message: String) extends Event
  */
 class ChatClient(val name: String) { 
   import Actor.Sender.Self
-  def login =                 ChatServer ! Login(name) 
-  def logout =                ChatServer ! Logout(name)  
-  def post(message: String) = ChatServer ! ChatMessage(name, name + ": " + message)  
-  def chatLog: ChatLog =     (ChatServer !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
+  def login =                 ChatService ! Login(name) 
+  def logout =                ChatService ! Logout(name)  
+  def post(message: String) = ChatService ! ChatMessage(name, name + ": " + message)  
+  def chatLog: ChatLog =     (ChatService !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
 }
 
 /**
  * Internal chat client session.
  */
 class Session(user: String, storage: Actor) extends Actor {
-  lifeCycle = Some(LifeCycle(Permanent))        
   private val loginTime = System.currentTimeMillis
   private var userLog: List[String] = Nil
   
-  log.info("New session for user [%s] has been created", user)
+  log.info("New session for user [%s] has been created at [%s]", user, loginTime)
 
   def receive = {
     case msg @ ChatMessage(from, message) => 
@@ -82,67 +84,105 @@ class Storage extends Actor {
 }
 
 /**
- * Chat server. Manages sessions and redirects all other messages to the Session for the client.
+ * Implements user session management.
+ * <p/>
+ * Uses self-type annotation (this: Actor =>) to declare that it needs to be mixed in with an Actor.
  */
-object ChatServer extends Actor {
-  id = "ChatServer"
-  faultHandler = Some(OneForOneStrategy(5, 5000))
-  trapExit = List(classOf[Exception])
+trait SessionManagement { this: Actor => 
   
-  private var storage: Storage = _
-  private var sessions = Map[String, Actor]()
-
-  log.info("Chat service is starting up...")
-
-  override def init = storage = spawnLink(classOf[Storage])
+  val storage: Storage // needs someone to provide the Storage
+  val sessions = new HashMap[String, Actor]
   
-  def receive = sessionManagement orElse chatting
-  
-  private def sessionManagement: PartialFunction[Any, Unit] = {
+  protected def sessionManagement: PartialFunction[Any, Unit] = {
     case Login(username) => 
       log.info("User [%s] has logged in", username)
       val session = new Session(username, storage)
-      startLink(session)
-      sessions = sessions + (username -> session)
+      session.start
+      sessions += (username -> session)
       
     case Logout(username) =>        
       log.info("User [%s] has logged out", username)
       val session = sessions(username)
-      unlink(session)
       session.stop
-      sessions = sessions - username 
+      sessions -= username 
   }  
   
-  private def chatting: PartialFunction[Any, Unit] = {
+  protected def shutdownSessions = 
+    sessions.foreach { case (_, session) => session.stop }  
+}
+
+/**
+ * Implements chat management, e.g. chat message dispatch.
+ * <p/>
+ * Uses self-type annotation (this: Actor =>) to declare that it needs to be mixed in with an Actor.
+ */
+trait ChatManagement { this: Actor =>
+  val sessions: HashMap[String, Actor] // needs someone to provide the Session map
+  
+  protected def chatManagement: PartialFunction[Any, Unit] = {
     case msg @ ChatMessage(from, _) => sessions(from) ! msg
     case msg @ GetChatLog(from) =>     sessions(from) forward msg
   }
+}
+
+/**
+ * Chat server. Manages sessions and redirects all other messages to the Session for the client.
+ */
+trait ChatServer extends Actor {
+  id = "ChatServer" // setting ID to make sure there is only one single ChatServer on the remote node
   
+  faultHandler = Some(OneForOneStrategy(5, 5000))
+  trapExit = List(classOf[Exception])
+  
+  val storage: Storage = spawnLink(classOf[Storage]) // starts and links Storage
+
+  log.info("Chat service is starting up...")
+
+  // actor message handler
+  def receive = sessionManagement orElse chatManagement
+  
+  // abstract methods to be defined somewhere else
+  protected def chatManagement: PartialFunction[Any, Unit]
+  protected def sessionManagement: PartialFunction[Any, Unit]   
+  protected def shutdownSessions: Unit
+
   override def shutdown = { 
-    sessions.foreach { case (_, session) => 
-      log.info("Chat server is shutting down...")
-      unlink(session)
-      session.stop
-    }
+    log.info("Chat server is shutting down...")
+    shutdownSessions
     unlink(storage)
     storage.stop
   }
 }
 
+/**
+ * Object encapsulating the full Chat Service.
+ */
+object ChatService extends ChatServer with SessionManagement with ChatManagement
+
+/**
+ * Boot class for running the ChatService in the Akka microkernel.
+ * <p/>
+ * Configures supervision of the ChatService for fault-tolerance.
+ */
 class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
       Supervise(
-        ChatServer,
+        ChatService,
         LifeCycle(Permanent)) 
       :: Nil))
   factory.newInstance.start
 }
 
+/**
+ * Test runner emulating a chat session.
+ */
 object Runner {
-  ChatServer.makeRemote("localhost", 9999)
-  ChatServer.start
+  
+  // create a handle to the remote ChatService 
+  ChatService.makeRemote("localhost", 9999)
+  ChatService.start
   
   def run = {
     val client = new ChatClient("jonas")

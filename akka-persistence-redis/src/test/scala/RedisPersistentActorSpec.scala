@@ -5,7 +5,7 @@ import junit.framework.TestCase
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.Transactor
+import se.scalablesolutions.akka.actor.{Actor, Transactor}
 
 /**
  * A persistent actor based on Redis storage.
@@ -85,15 +85,14 @@ class AccountActor extends Transactor {
   }
 }
 
-@serializable class PersistentFailerActor extends Actor {
-  makeTransactionRequired
+@serializable class PersistentFailerActor extends Transactor {
   def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")
   }
 }
 
-class RedisPersistentActorTest extends TestCase {
+class RedisPersistentActorSpec extends TestCase {
   @Test
   def testSuccessfulDebit = {
     val bactor = new AccountActor

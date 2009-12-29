@@ -8,4 +8,4 @@ To run the sample:
   - scala> import se.scalablesolutions.akka.sample.chat._
   - scala> Runner.run
 5. See the chat simulation run
-6. Run it again if you like
+6. Run it again to see full speed after first initialization
