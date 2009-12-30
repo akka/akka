@@ -9,7 +9,7 @@ import scala.collection.mutable.HashMap
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFutureResult, CompletableFutureResult}
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.{UUID, Logging}
 import se.scalablesolutions.akka.Config.config
 
 import org.jboss.netty.channel._
@@ -25,13 +25,12 @@ import java.net.{SocketAddress, InetSocketAddress}
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap}
 import java.util.concurrent.atomic.AtomicLong
 
-import org.codehaus.aspectwerkz.proxy.Uuid
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteRequestIdFactory {
-  private val nodeId = Uuid.newUuid
+  private val nodeId = UUID.newUuid
   private val id = new AtomicLong
   def nextId: Long = id.getAndIncrement + nodeId
 }
@@ -148,6 +147,7 @@ class RemoteClientPipelineFactory(name: String,
                                   timer: HashedWheelTimer,
                                   client: RemoteClient) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
+    /*
     val pipeline = Channels.pipeline()
     pipeline.addLast("timeout", new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT))
     RemoteServer.COMPRESSION_SCHEME match {
@@ -166,6 +166,23 @@ class RemoteClientPipelineFactory(name: String,
     pipeline.addLast("protobufEncoder", new ProtobufEncoder())
     pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client))
     pipeline
+    */
+    val timeout      = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT)
+    val lenDec       = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenPrep      = new LengthFieldPrepender(4)
+    val protobufDec  = new ProtobufDecoder(RemoteReply.getDefaultInstance)
+    val protobufEnc  = new ProtobufEncoder
+    val zipCodec = RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib"  => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL), new ZlibDecoder))
+      //case "lzf" => Some(Codec(new LzfEncoder, new LzfDecoder))
+      case _ => None
+    }
+    val remoteClient = new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
+
+    val stages: Array[ChannelHandler] = 
+      zipCodec.map(codec => Array(timeout, codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteClient))
+              .getOrElse(Array(timeout, lenDec, protobufDec, lenPrep, protobufEnc, remoteClient))
+    new StaticChannelPipeline(stages: _*)
   }
 }
 

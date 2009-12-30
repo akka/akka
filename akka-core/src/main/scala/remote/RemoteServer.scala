@@ -188,14 +188,15 @@ class RemoteServerPipelineFactory(
     val protobufDec  = new ProtobufDecoder(RemoteRequest.getDefaultInstance)
     val protobufEnc  = new ProtobufEncoder
     val zipCodec = RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib"  => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL),new ZlibDecoder))
+      case "zlib"  => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL), new ZlibDecoder))
       //case "lzf" => Some(Codec(new LzfEncoder, new LzfDecoder))
       case _ => None
     }
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, activeObjects)    
 
-    val stages: Array[ChannelHandler] = zipCodec.map(codec => Array(codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteServer))
-                                                .getOrElse(Array(lenDec, protobufDec, lenPrep, protobufEnc, remoteServer))
+    val stages: Array[ChannelHandler] = 
+      zipCodec.map(codec => Array(codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteServer))
+              .getOrElse(Array(lenDec, protobufDec, lenPrep, protobufEnc, remoteServer))
     new StaticChannelPipeline(stages: _*)
   }
 }
