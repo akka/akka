@@ -6,8 +6,9 @@ package se.scalablesolutions.akka.config
 
 import com.google.inject._
 
-import ScalaConfig._
+import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher}
+import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 
 //import org.apache.camel.impl.{DefaultCamelContext}
@@ -50,8 +51,8 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
         activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException(
-          "Class [" + clazz.getName + "] has not been put under supervision " +
-          "(by passing in the config to the 'configure' and then invoking 'supervise') method"))
+          "Class [" + clazz.getName + "] has not been put under supervision" +
+          "\n(by passing in the config to the 'configure' and then invoking 'supervise') method"))
     injector.injectMembers(targetInstance)
     proxy.asInstanceOf[T]
   }
@@ -104,11 +105,14 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
     if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
     val remoteAddress =
-      if (component.remoteAddress.isDefined)
-        Some(new InetSocketAddress(
-          component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+      if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = ActiveObject.newInstance(targetClass, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    if (remoteAddress.isDefined) {
+      RemoteServer
+        .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+        .activeObjects.put(targetClass.getName, proxy)
+    }
     supervised ::= Supervise(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
@@ -121,11 +125,14 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
     if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
     val remoteAddress =
-      if (component.remoteAddress.isDefined)
-        Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+      if (component.remoteAddress.isDefined) Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
-    val proxy = ActiveObject.newInstance(
-      targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    val proxy = ActiveObject.newInstance(targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    if (remoteAddress.isDefined) {
+      RemoteServer
+        .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
+        .activeObjects.put(targetClass.getName, proxy)
+    }
     supervised ::= Supervise(actor, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)

@@ -65,7 +65,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
       String str = conf.getInstance(String.class);
       fail("exception should have been thrown");
     } catch (Exception e) {
-      assertEquals("Class [java.lang.String] has not been put under supervision (by passing in the config to the 'configure' and then invoking 'supervise') method", e.getMessage());
+      assertEquals(IllegalStateException.class, e.getClass());
     }
   }
 

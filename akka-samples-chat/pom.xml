@@ -20,6 +20,11 @@
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <artifactId>akka-persistence-redis</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

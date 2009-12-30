@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.util.Logging
 import javax.servlet.{ServletContextListener, ServletContextEvent}
 
 object Main {
- def main(args: Array[String]) = Kernel.boot
+  def main(args: Array[String]) = Kernel.boot
 }
 
 /**
