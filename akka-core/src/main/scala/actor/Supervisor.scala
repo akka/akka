@@ -117,8 +117,6 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
             actors.put(actor.getClass.getName, actor)
             actor.lifeCycle = Some(lifeCycle)
             startLink(actor)
-            remoteAddress.foreach(address => println("----- ADDING actor for " + address.get.hostname + " - " + address.get.port))
-            remoteAddress.foreach(address => println("----- " + RemoteServer.Address(address.hostname, address.port).hashCode))
             remoteAddress.foreach(address => RemoteServer.actorsFor(RemoteServer.Address(address.hostname, address.port)).actors.put(actor.id, actor))
 
            case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
