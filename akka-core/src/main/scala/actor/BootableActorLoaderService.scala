@@ -44,7 +44,7 @@ trait BootableActorLoaderService extends Bootable with Logging {
 
   abstract override def onLoad   = {
      applicationLoader = runApplicationBootClasses
-  	 super.onLoad
+     super.onLoad
   }
   
   abstract override def onUnload = {

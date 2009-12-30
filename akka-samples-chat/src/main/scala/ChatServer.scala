@@ -5,10 +5,12 @@
 package se.scalablesolutions.akka.sample.chat
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
+import se.scalablesolutions.akka.stm.Transaction._
 import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.{OneForOneStrategy}
+import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.state.RedisStorage
 
 import scala.collection.mutable.HashMap
 
@@ -68,18 +70,24 @@ class Session(user: String, storage: Actor) extends Actor {
  * Chat storage holding the chat log.
  */
 class Storage extends Actor {
-  lifeCycle = Some(LifeCycle(Permanent))        
-  private var chatLog: List[String] = Nil
+  lifeCycle = Some(LifeCycle(Permanent))    
+      
+  private val chatLog = RedisStorage.getVector("akka.chat.log")
 
-  log.info("Chat storage is starting up...")
+  log.info("Redis-based chat storage is starting up...")
 
   def receive = {
     case msg @ ChatMessage(from, message) => 
       log.debug("New chat message [%s]", message)
-      chatLog ::= message
+      atomic { 
+        chatLog + message.getBytes("UTF-8")
+      }
 
     case GetChatLog(_) => 
-      reply(ChatLog(chatLog.reverse))
+      val messageList = atomic {
+        chatLog.map(bytes => new String(bytes, "UTF-8")).toList
+      }
+      reply(ChatLog(messageList))
   }
 }
 
@@ -158,23 +166,6 @@ trait ChatServer extends Actor {
  * Object encapsulating the full Chat Service.
  */
 object ChatService extends ChatServer with SessionManagement with ChatManagement
-
-/**
- * Boot class for running the ChatService in the Akka microkernel.
- * <p/>
- * Configures supervision of the ChatService for fault-tolerance.
- */
-class Boot {
-  val factory = SupervisorFactory(
-    SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-      Supervise(
-        ChatService,
-        LifeCycle(Permanent),
-        RemoteAddress("localhost", 9999)) 
-      :: Nil))
-  factory.newInstance.start
-}
 
 /**
  * Test runner emulating a chat session.

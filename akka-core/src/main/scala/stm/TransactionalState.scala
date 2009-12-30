@@ -6,10 +6,9 @@ package se.scalablesolutions.akka.state
 
 import se.scalablesolutions.akka.stm.Transaction.atomic
 import se.scalablesolutions.akka.collection._
+import se.scalablesolutions.akka.util.UUID
 
 import org.multiverse.datastructures.refs.manual.Ref;
-
-import org.codehaus.aspectwerkz.proxy.Uuid
 
 /**
  * Example Scala usage:
@@ -75,7 +74,7 @@ object TransactionalRef {
 class TransactionalRef[T] extends Transactional {
   implicit val txInitName = "TransactionalRef:Init"
   import org.multiverse.api.ThreadLocalTransaction._
-  val uuid = Uuid.newUuid.toString
+  val uuid = UUID.newUuid.toString
 
   private[this] val ref: Ref[T] = atomic { new Ref }
 
@@ -127,7 +126,7 @@ object TransactionalMap {
  */
 class TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
   protected[this] val ref = TransactionalRef[HashTrie[K, V]]
-  val uuid = Uuid.newUuid.toString
+  val uuid = UUID.newUuid.toString
 
   ref.swap(new HashTrie[K, V])
  
@@ -179,7 +178,7 @@ object TransactionalVector {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
-  val uuid = Uuid.newUuid.toString
+  val uuid = UUID.newUuid.toString
 
   private[this] val ref = TransactionalRef[Vector[T]]
 

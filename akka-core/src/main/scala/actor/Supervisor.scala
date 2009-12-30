@@ -9,6 +9,7 @@ import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, F
 import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.remote.RemoteServer
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -116,6 +117,9 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
             actors.put(actor.getClass.getName, actor)
             actor.lifeCycle = Some(lifeCycle)
             startLink(actor)
+            remoteAddress.foreach(address => println("----- ADDING actor for " + address.get.hostname + " - " + address.get.port))
+            remoteAddress.foreach(address => println("----- " + RemoteServer.Address(address.hostname, address.port).hashCode))
+            remoteAddress.foreach(address => RemoteServer.actorsFor(RemoteServer.Address(address.hostname, address.port)).actors.put(actor.id, actor))
 
            case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
              val supervisor = factory.newInstanceFor(supervisorConfig).start

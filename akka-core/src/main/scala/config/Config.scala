@@ -54,7 +54,7 @@ object ScalaConfig {
   case object Permanent extends Scope
   case object Temporary extends Scope
 
-  case class RemoteAddress(hostname: String, port: Int) extends ConfigElement
+  case class RemoteAddress(val hostname: String, val port: Int) extends ConfigElement
 
   class Component(_intf: Class[_],
                   val target: Class[_],

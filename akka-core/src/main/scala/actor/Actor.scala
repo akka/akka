@@ -14,9 +14,7 @@ import se.scalablesolutions.akka.stm.{StmException, TransactionManagement}
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.util.{HashCode, Logging}
-
-import org.codehaus.aspectwerkz.proxy.Uuid
+import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 
 import org.multiverse.api.ThreadLocalTransaction._
 
@@ -238,7 +236,7 @@ trait Actor extends TransactionManagement {
   implicit protected val transactionFamily: String = this.getClass.getName
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
-  private[akka] var _uuid = Uuid.newUuid.toString
+  private[akka] var _uuid = UUID.newUuid.toString
 
   def uuid = _uuid
 
@@ -291,7 +289,7 @@ trait Actor extends TransactionManagement {
    * Identifier for actor, does not have to be a unique one.
    * Default is the class name.
    *
-   * This field is used for logging, AspectRegistry.actorsFor etc.
+   * This field is used for logging, AspectRegistry.actorsFor, identifier for remote actor in RemoteServer etc.
    * But also as the identifier for persistence, which means that you can
    * use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
@@ -817,8 +815,8 @@ trait Actor extends TransactionManagement {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
           .setTarget(this.getClass.getName)
-          .setTimeout(timeout)
-          .setUuid(uuid)
+          .setTimeout(this.timeout)
+          .setUuid(this.id)
           .setIsActor(true)
           .setIsOneWay(true)
           .setIsEscaped(false)
@@ -862,8 +860,8 @@ trait Actor extends TransactionManagement {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
           .setTarget(this.getClass.getName)
-          .setTimeout(timeout)
-          .setUuid(uuid)
+          .setTimeout(this.timeout)
+          .setUuid(this.id)
           .setIsActor(true)
           .setIsOneWay(false)
           .setIsEscaped(false)
