@@ -8,37 +8,58 @@ class ForwardActorTest extends JUnitSuite {
 
   object ForwardState {
     var sender: Actor = null
+    var result: String = "nada"
   }
 
   class ReceiverActor extends Actor {
     def receive = {
-      case "Send" => ForwardState.sender = sender.get
+      case "SendBang" => ForwardState.sender = sender.get
+      case "SendBangBang" => reply("SendBangBang")
     }
   }
+
 
   class ForwardActor extends Actor {
     val receiverActor = new ReceiverActor
     receiverActor.start
     def receive = {
-      case "Send" => receiverActor.forward("Send")
+      case "SendBang" => receiverActor.forward("SendBang")
+      case "SendBangBang" => receiverActor.forward("SendBangBang")
     }
   }
 
-  class SenderActor extends Actor {
+  class BangSenderActor extends Actor {
     val forwardActor = new ForwardActor
     forwardActor.start
-    forwardActor ! "Send"
+    forwardActor ! "SendBang"
+    def receive = {
+      case _ => {}
+    }
+  }
+
+  class BangBangSenderActor extends Actor {
+    val forwardActor = new ForwardActor
+    forwardActor.start
+    ForwardState.result = (forwardActor !! "SendBangBang").getOrElse("nada")
     def receive = {
       case _ => {}
     }
   }
 
   @Test
-  def shouldForwardActorReferenceWhenInvokingForward = {
-    val senderActor = new SenderActor
+  def shouldForwardActorReferenceWhenInvokingForwardOnBang = {
+    val senderActor = new BangSenderActor
     senderActor.start
     Thread.sleep(1000)
     assert(ForwardState.sender ne null)
     assert(senderActor === ForwardState.sender)
+  }
+
+  @Test
+  def shouldForwardActorReferenceWhenInvokingForwardOnBangBang = {
+    val senderActor = new BangBangSenderActor
+    senderActor.start
+    Thread.sleep(1000)
+    assert(ForwardState.result === "SendBangBang")
   }
 }
