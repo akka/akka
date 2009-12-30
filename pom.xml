@@ -273,6 +273,9 @@
             <include>**/*Test.java</include>
             <!--include>**/*Spec.java</include-->
           </includes>
+          <excludes>
+            <exclude>**/InMemNestedStateTest.java</exclude>
+          </excludes>
           <systemProperties>
             <property>
               <name>akka.home</name>
