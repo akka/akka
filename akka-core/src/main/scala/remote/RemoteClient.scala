@@ -25,7 +25,6 @@ import java.net.{SocketAddress, InetSocketAddress}
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap}
 import java.util.concurrent.atomic.AtomicLong
 
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -147,26 +146,6 @@ class RemoteClientPipelineFactory(name: String,
                                   timer: HashedWheelTimer,
                                   client: RemoteClient) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
-    /*
-    val pipeline = Channels.pipeline()
-    pipeline.addLast("timeout", new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT))
-    RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib" => pipeline.addLast("zlibDecoder", new ZlibDecoder)
-      //case "lzf" => pipeline.addLast("lzfDecoder", new LzfDecoder)
-      case _ => {} // no compression
-    }
-    pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4))
-    pipeline.addLast("protobufDecoder", new ProtobufDecoder(RemoteReply.getDefaultInstance))
-    RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib" => pipeline.addLast("zlibEncoder", new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL))
-      //case "lzf" => pipeline.addLast("lzfEncoder", new LzfEncoder)
-      case _ => {} // no compression
-    }
-    pipeline.addLast("frameEncoder", new LengthFieldPrepender(4))
-    pipeline.addLast("protobufEncoder", new ProtobufEncoder())
-    pipeline.addLast("handler", new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client))
-    pipeline
-    */
     val timeout      = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT)
     val lenDec       = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep      = new LengthFieldPrepender(4)
