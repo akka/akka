@@ -67,29 +67,9 @@ class Session(user: String, storage: Actor) extends Actor {
 }
 
 /**
- * Chat storage holding the chat log.
+ * Abstraction of Chat storage holding the chat log.
  */
-class Storage extends Actor {
-  lifeCycle = Some(LifeCycle(Permanent))    
-      
-  private val chatLog = RedisStorage.getVector("akka.chat.log")
-
-  log.info("Redis-based chat storage is starting up...")
-
-  def receive = {
-    case msg @ ChatMessage(from, message) => 
-      log.debug("New chat message [%s]", message)
-      atomic { 
-        chatLog + message.getBytes("UTF-8")
-      }
-
-    case GetChatLog(_) => 
-      val messageList = atomic {
-        chatLog.map(bytes => new String(bytes, "UTF-8")).toList
-      }
-      reply(ChatLog(messageList))
-  }
-}
+trait Storage
 
 /**
  * Implements user session management.
@@ -137,8 +117,6 @@ trait ChatManagement { this: Actor =>
  * Chat server. Manages sessions and redirects all other messages to the Session for the client.
  */
 trait ChatServer extends Actor {
-  id = "ChatServer" // setting ID to make sure there is only one single ChatServer on the remote node
-  
   faultHandler = Some(OneForOneStrategy(5, 5000))
   trapExit = List(classOf[Exception])
   
@@ -159,6 +137,31 @@ trait ChatServer extends Actor {
     shutdownSessions
     unlink(storage)
     storage.stop
+  }
+}
+
+/**
+ * Redis-backed storage implementation.
+ */
+class RedisStorage extends Actor with Storage {
+  lifeCycle = Some(LifeCycle(Permanent))    
+      
+  private val chatLog = RedisStorage.getVector("akka.chat.log")
+
+  log.info("Redis-based chat storage is starting up...")
+
+  def receive = {
+    case msg @ ChatMessage(from, message) => 
+      log.debug("New chat message [%s]", message)
+      atomic { 
+        chatLog + message.getBytes("UTF-8")
+      }
+
+    case GetChatLog(_) => 
+      val messageList = atomic {
+        chatLog.map(bytes => new String(bytes, "UTF-8")).toList
+      }
+      reply(ChatLog(messageList))
   }
 }
 
