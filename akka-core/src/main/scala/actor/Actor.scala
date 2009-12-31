@@ -172,33 +172,6 @@ object Actor extends Logging {
   }
 
   /**
-   * Use to create an anonymous event-driven actor with both an init block and a message loop block
-   * as well as a life-cycle configuration.
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = actor(LifeCycle(Temporary))  {
-   *   ... // init stuff
-   * } receive  {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def actor[A](lifeCycleConfig: LifeCycle)(body: => Unit) = {
-    def handler[A](body: Unit) = new {
-      def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
-        lifeCycle = Some(lifeCycleConfig)
-        start
-        body
-        def receive = handler
-      }
-    }
-    handler(body)
-  }
-
-  /**
    * Use to create an anonymous event-driven remote actor.
    * The actor is started when created.
    * Example:
@@ -216,6 +189,10 @@ object Actor extends Logging {
     def receive = body
   }
 
+  val a = actor(LifeCycle(Temporary)) {
+   case "test" => println("received test")
+   case _ =>  println("received unknown message")
+  }
 }
 
 /**
