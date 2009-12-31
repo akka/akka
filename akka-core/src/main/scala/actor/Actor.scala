@@ -188,11 +188,6 @@ object Actor extends Logging {
     start
     def receive = body
   }
-
-  val a = actor(LifeCycle(Temporary)) {
-   case "test" => println("received test")
-   case _ =>  println("received unknown message")
-  }
 }
 
 /**

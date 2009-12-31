@@ -77,7 +77,7 @@ trait ChatStorage extends Actor
 class RedisChatStorage extends ChatStorage {
   lifeCycle = Some(LifeCycle(Permanent))    
       
-  private val chatLog = RedisStorage.getVector("akka.chat.log")
+  private var chatLog = RedisStorage.getVector("akka.chat.log")
 
   log.info("Redis-based chat storage is starting up...")
 
@@ -94,6 +94,8 @@ class RedisChatStorage extends ChatStorage {
       }
       reply(ChatLog(messageList))
   }
+  
+  override def postRestart(reason: Throwable) = chatLog = RedisStorage.getVector("akka.chat.log")  
 }
 
 /**
