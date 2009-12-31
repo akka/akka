@@ -32,6 +32,16 @@
       <artifactId>scala-library</artifactId>
       <version>${scala.version}</version>
     </dependency>
+   <dependency>
+      <groupId>org.codehaus.aspectwerkz</groupId>
+      <artifactId>aspectwerkz-nodeps-jdk5</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.aspectwerkz</groupId>
+      <artifactId>aspectwerkz-jdk5</artifactId>
+      <version>2.1</version>
+    </dependency>
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
