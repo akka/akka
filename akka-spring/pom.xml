@@ -29,12 +29,7 @@
             <version>2.5.5</version>
         </dependency>
         <dependency>
-            <artifactId>akka-actors</artifactId>
-            <groupId>se.scalablesolutions.akka</groupId>
-            <version>0.6</version>
-        </dependency>
-        <dependency>
-            <artifactId>akka-util-java</artifactId>
+            <artifactId>akka-core</artifactId>
             <groupId>se.scalablesolutions.akka</groupId>
             <version>0.6</version>
         </dependency>
