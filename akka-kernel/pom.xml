@@ -12,16 +12,10 @@
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.6</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <!-- akka deps -->
   <dependencies>
-    <dependency>
-      <artifactId>akka-core</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <artifactId>akka-rest</artifactId>
       <groupId>${project.groupId}</groupId>

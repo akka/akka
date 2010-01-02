@@ -4,7 +4,7 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Akka Transactors</name>
+  <name>Akka Project</name>
   <artifactId>akka</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
   <version>0.6</version>
@@ -51,22 +51,15 @@
     <module>akka-util-java</module>
     <module>akka-util</module>
     <module>akka-core</module>
-    <module>akka-persistence-common</module>
-    <module>akka-persistence-cassandra</module>
-    <module>akka-persistence-mongo</module>
-    <module>akka-persistence-redis</module>
+    <module>akka-persistence</module>
     <module>akka-rest</module>
     <module>akka-comet</module>
     <module>akka-amqp</module>
     <module>akka-security</module>
+    <module>akka-spring</module>
     <module>akka-kernel</module>
     <module>akka-fun-test-java</module>
-    <module>akka-samples-scala</module>
-    <module>akka-samples-lift</module>
-    <module>akka-samples-chat</module>
-    <module>akka-samples-java</module>
-    <module>akka-samples-security</module>
-    <module>akka-spring</module>
+    <module>akka-samples</module>
   </modules>
 
   <organization>

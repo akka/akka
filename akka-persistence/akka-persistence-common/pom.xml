@@ -8,19 +8,12 @@
   <packaging>jar</packaging>
 
   <parent>
-    <artifactId>akka</artifactId>
+    <artifactId>akka-persistence-parent</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.6</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <dependencies>
-    <dependency>
-      <artifactId>akka-core</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>com.facebook</groupId>
       <artifactId>thrift</artifactId>
@@ -30,20 +23,6 @@
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
       <version>1.5.1</version>
-    </dependency>
-    
-    <!-- For Testing -->
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest</artifactId>
-      <version>1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.5</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
