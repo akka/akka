@@ -47,13 +47,15 @@ public class AkkaSpringInterceptor extends ActiveObjectAspect implements MethodI
   public Object invoke(MethodInvocation methodInvocation) throws Throwable {
     Dispatcher dispatcher = new Dispatcher(isTransactional());
     dispatcher.start();
-    AspectInitRegistry.register(methodInvocation.getThis(), new AspectInit(
-        methodInvocation.getThis().getClass(),
-        dispatcher,
-        TIME_OUT));
-    Object result = this.invoke(AkkaSpringJoinPointWrapper.createSpringAkkaAspectWerkzWrapper(methodInvocation));
-    dispatcher.stop();
-    return result;
+    try {
+      AspectInitRegistry.register(methodInvocation.getThis(), new AspectInit(
+          methodInvocation.getThis().getClass(),
+          dispatcher,
+          TIME_OUT));
+      return this.invoke(AkkaSpringJoinPointWrapper.createSpringAkkaAspectWerkzWrapper(methodInvocation));
+    } finally {
+      dispatcher.stop();
+    }
   }
 
   @Override
