@@ -17,10 +17,28 @@ public class AkkaSpringInterceptorTest extends TestCase {
     return new TestSuite(AkkaSpringInterceptorTest.class);
   }
 
-  public void testInvokingAkkaEnabledSpringBean() {
+  public void testInvokingAkkaEnabledSpringBeanMethodWithReturnValue() {
     ApplicationContext context = new ClassPathXmlApplicationContext("spring-test-config.xml");
     MyService myService = (MyService) context.getBean("actorBeanService");
-    Object obj = myService.getNumbers(12, "vfsh");
+    Object obj = myService.getNumbers(12);
     assertEquals(new Integer(12), obj);
+  }
+
+  public void testThatAkkaEnabledSpringBeanMethodCallIsInvokedInADifferentThreadThanTheTest() {
+    ApplicationContext context = new ClassPathXmlApplicationContext("spring-test-config.xml");
+    MyService myService = (MyService) context.getBean("actorBeanService");
+    assertNotSame(Thread.currentThread().getName(), myService.getThreadName());
+  }
+
+  public void testInvokingAkkaEnabledSpringBeanMethodWithTransactionalMethod() {
+    ApplicationContext context = new ClassPathXmlApplicationContext("spring-test-config.xml");
+    MyService myService = (MyService) context.getBean("actorBeanService");
+    myService.init();
+    myService.setMapState("key", "value");
+    myService.setRefState("value");
+    myService.setVectorState("value");
+    assertEquals("value", myService.getMapState("key"));
+    assertEquals("value", myService.getRefState());
+    assertEquals("value", myService.getVectorState());
   }
 }
