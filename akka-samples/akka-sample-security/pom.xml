@@ -2,8 +2,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-samples-chat</artifactId>
-  <name>Akka Chat Sample Module</name>
+  <artifactId>akka-sample-security</artifactId>
+  <name>Akka Sample Security Module</name>
 
   <packaging>jar</packaging>
 
@@ -12,6 +12,20 @@
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.6</version>
   </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>jsr250-api</artifactId>
+      <version>1.0</version>
+    </dependency>
+
+  </dependencies>
 
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
@@ -23,8 +37,8 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-samples-chat-${project.version}.jar"
-                      tofile="../../deploy/akka-samples-chat-${project.version}.jar"/>
+                <copy file="target/akka-sample-security-${project.version}.jar"
+                      tofile="../../deploy/akka-sample-security-${project.version}.jar"/>
               </tasks>
             </configuration>
             <goals>

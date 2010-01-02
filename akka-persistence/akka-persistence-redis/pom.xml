@@ -2,13 +2,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-persistence-mongo</artifactId>
-  <name>Akka Persistence Mongo Module</name>
+  <artifactId>akka-persistence-redis</artifactId>
+  <name>Akka Persistence Redis Module</name>
 
   <packaging>jar</packaging>
 
   <parent>
-    <artifactId>akka</artifactId>
+    <artifactId>akka-persistence-parent</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.6</version>
   </parent>
@@ -20,25 +20,11 @@
       <version>${project.version}</version>
     </dependency>
 
-   <!-- For Mongo -->
+   <!-- For Redis -->
     <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongo-java-driver</artifactId>
-      <version>1.1</version>
-    </dependency>
-
-    <!-- For Testing -->
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest</artifactId>
-      <version>1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.5</version>
-      <scope>test</scope>
+      <groupId>com.redis</groupId>
+      <artifactId>redisclient</artifactId>
+      <version>1.0.1</version>
     </dependency>
   </dependencies>
 

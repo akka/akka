@@ -2,8 +2,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-samples-rest-java</artifactId>
-  <name>Akka REST Java Samples Module</name>
+  <artifactId>akka-sample-chat</artifactId>
+  <name>Akka Chat Sample Module</name>
 
   <packaging>jar</packaging>
 
@@ -14,19 +14,8 @@
   </parent>
 
   <build>
-    <sourceDirectory>src/main/java</sourceDirectory>
+    <sourceDirectory>src/main/scala</sourceDirectory>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-          <includes>
-            <include>**/*</include>
-          </includes>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
@@ -34,8 +23,8 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-samples-rest-java-${project.version}.jar"
-                      tofile="../../deploy/akka-samples-rest-java-${project.version}.jar"/>
+                <copy file="target/akka-sample-chat-${project.version}.jar"
+                      tofile="../../deploy/akka-sample-chat-${project.version}.jar"/>
               </tasks>
             </configuration>
             <goals>

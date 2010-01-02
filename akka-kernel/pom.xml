@@ -17,11 +17,6 @@
   <!-- akka deps -->
   <dependencies>
     <dependency>
-      <artifactId>akka-core</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <artifactId>akka-rest</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
