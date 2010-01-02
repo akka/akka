@@ -210,25 +210,24 @@ object ActiveObject {
 }
 
 private[akka] object AspectInitRegistry {
-  private val inits = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
+  private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
 
   def initFor(target: AnyRef) = {
-    val init = inits.get(target)
-    inits.remove(target)
+    val init = initializations.get(target)
+    initializations.remove(target)
     init
   }  
 
-  def register(target: AnyRef, init: AspectInit) = inits.put(target, init)
+  def register(target: AnyRef, init: AspectInit) = initializations.put(target, init)
 }
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],
   val actor: Dispatcher,          
   val remoteAddress: Option[InetSocketAddress],
-  val timeout: Long){
-
-    def this(target: Class[_],actor: Dispatcher, timeout: Long) = this(target,actor,None,timeout)
-  }
+  val timeout: Long) {
+  def this(target: Class[_],actor: Dispatcher, timeout: Long) = this(target, actor, None, timeout)
+}
       
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
