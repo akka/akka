@@ -36,6 +36,8 @@ class ReactorBasedSingleThreadEventDrivenDispatcher(name: String) extends Abstra
     selectorThread.start
   }
 
+  def isShutdown = !active
+
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
 
     private val selectedQueue: List[MessageInvocation] = new LinkedList[MessageInvocation]

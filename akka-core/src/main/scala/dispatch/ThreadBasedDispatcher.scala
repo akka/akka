@@ -39,9 +39,13 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
     selectorThread.start
   }
                        
+  def isShutdown = !active
+
   def shutdown = if (active) {
+    log.debug("Shutting down ExecutorBasedEventDrivenDispatcher [%s]", name)
     active = false
     selectorThread.interrupt
+    references.clear
   }
 }
 

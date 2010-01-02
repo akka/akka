@@ -415,6 +415,10 @@ trait Actor extends TransactionManagement {
   def start: Actor = synchronized {
     if (_isShutDown) throw new IllegalStateException("Can't restart an actor that has been shut down with 'exit'")
     if (!_isRunning) {
+      if (messageDispatcher.isShutdown && 
+          messageDispatcher.isInstanceOf[Dispatchers.globalExecutorBasedEventDrivenDispatcher.type]) {
+        messageDispatcher.asInstanceOf[ExecutorBasedEventDrivenDispatcher].init
+      }
       messageDispatcher.register(this)
       messageDispatcher.start
       _isRunning = true
