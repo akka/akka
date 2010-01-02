@@ -93,7 +93,7 @@ public class InMemoryStateTest extends TestCase {
     } // expected
     assertEquals("init", stateful.getRefState()); // check that state is == init state
   }
-  /*
+/*
    public void testNestedNonTransactionalMethodHangs() {
     InMemStateful stateful = conf.getInstance(InMemStateful.class);
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
