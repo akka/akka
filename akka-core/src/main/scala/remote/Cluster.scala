@@ -8,11 +8,11 @@ import org.jgroups.{JChannel, View, Address, Message, ExtendedMembershipListener
 
 import se.scalablesolutions.akka.Config.config
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, ActorRegistry}
 import se.scalablesolutions.akka.remote.Cluster.{Node, RelayedMessage}
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRegistry}
 
 import scala.collection.immutable.{Map, HashMap}
-import se.scalablesolutions.akka.serialization.Serializer
 
 /**
  * Interface for interacting with the Cluster Membership API.
@@ -48,20 +48,24 @@ object Cluster extends Cluster {
   private[remote] case class Node(endpoints: List[RemoteAddress]) extends ClusterMessage
   private[remote] case class RelayedMessage(actorClassFQN: String, msg: AnyRef) extends ClusterMessage
 
-  private[remote] lazy val clusterActor: Option[ClusterActor] = {
-    config.getString("akka.remote.cluster.actor") map (name => {
-      val actor = Class.forName(name)
-          .newInstance
-          .asInstanceOf[ClusterActor]
-      SupervisorFactory(
-        SupervisorConfig(
-          RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
-          Supervise(actor, LifeCycle(Permanent)) :: Nil)
-        ).newInstance.start
-      actor
-    })
-  }
+  private[remote] val clusterActor: Option[ClusterActor] =
+    config.getString("akka.remote.cluster.actor") map { name =>
+      val a = Class.forName(name).newInstance.asInstanceOf[ClusterActor]
+      a.start
+      a
+    }
 
+
+  private[remote] val supervisor: Option[Supervisor] = if (clusterActor.isDefined) {
+    val sup = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
+        Supervise(clusterActor.get, LifeCycle(Permanent)) :: Nil)
+      ).newInstance
+    sup.start
+    Some(sup)
+  } else None
+  
   private[remote] lazy val serializer: Serializer = {
     val className = config.getString("akka.remote.cluster.serializer", Serializer.Java.getClass.getName)
     Class.forName(className).newInstance.asInstanceOf[Serializer]
@@ -71,11 +75,13 @@ object Cluster extends Cluster {
 
   def lookup[T](pf: PartialFunction[RemoteAddress, T]): Option[T] = clusterActor.flatMap(_.lookup(pf))
 
-  def registerLocalNode(hostname: String, port: Int): Unit = clusterActor.map(_.registerLocalNode(hostname, port))
+  def registerLocalNode(hostname: String, port: Int): Unit = clusterActor.foreach(_.registerLocalNode(hostname, port))
 
-  def deregisterLocalNode(hostname: String, port: Int): Unit = clusterActor.map(_.deregisterLocalNode(hostname, port))
+  def deregisterLocalNode(hostname: String, port: Int): Unit = clusterActor.foreach(_.deregisterLocalNode(hostname, port))
 
-  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = clusterActor.map(_.relayMessage(to, msg))
+  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = clusterActor.foreach(_.relayMessage(to, msg))
+
+  def shutdown = supervisor.foreach(_.stop)
 }
 
 /**
@@ -99,6 +105,8 @@ class JGroupsClusterActor extends ClusterActor {
   import JGroupsClusterActor._
   import org.scala_tools.javautils.Implicits._
 
+
+  @volatile private var isActive = false
   @volatile private var local: Node = Node(Nil)
   @volatile private var channel: Option[JChannel] = None
   @volatile private var remotes: Map[Address, Node] = Map()
@@ -107,6 +115,7 @@ class JGroupsClusterActor extends ClusterActor {
     log debug "Initiating JGroups-based cluster actor"
     remotes = new HashMap[Address, Node]
     val me = this
+    isActive = true
 
     // Set up the JGroups local endpoint
     channel = Some(new JChannel {
@@ -115,15 +124,15 @@ class JGroupsClusterActor extends ClusterActor {
 
         def setState(state: Array[Byte]): Unit = ()
 
-        def receive(msg: Message): Unit = me send msg
+        def receive(msg: Message): Unit = if (isActive) me send msg
 
-        def viewAccepted(view: View): Unit = me send view
+        def viewAccepted(view: View): Unit = if (isActive) me send view
 
-        def suspect(a: Address): Unit = me send Zombie(a)
+        def suspect(a: Address): Unit = if (isActive) me send Zombie(a)
 
-        def block: Unit = me send Block
+        def block: Unit = if (isActive) me send Block
 
-        def unblock: Unit = me send Unblock
+        def unblock: Unit = if (isActive) me send Unblock
       })
     })
     channel.map(_.connect(name))
@@ -213,8 +222,9 @@ class JGroupsClusterActor extends ClusterActor {
   }
 
   override def shutdown = {
-    log debug ("Shutting down %s", this.getClass.getName)
-    channel.map(_.shutdown)
+    log debug ("Shutting down %s", toString)
+    isActive = false
+    channel.foreach(_.shutdown)
     remotes = Map()
     channel = None
   }
