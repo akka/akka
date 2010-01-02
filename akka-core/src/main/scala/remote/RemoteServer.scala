@@ -43,7 +43,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteNode extends RemoteServer
+object RemoteNode extends RemoteServer(true)
 
 /**
  * This object holds configuration variables.
@@ -116,8 +116,9 @@ object RemoteServer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServer extends Logging {
+class RemoteServer(val registerNodeInCluster: Boolean) extends Logging {
   val name = "RemoteServer@" + hostname + ":" + port
+  def this() = this(false)
 
   private var hostname = RemoteServer.HOSTNAME
   private var port =     RemoteServer.PORT
@@ -155,7 +156,7 @@ class RemoteServer extends Logging {
         bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         isRunning = true
-        Cluster.registerLocalNode(hostname, port)
+        if (registerNodeInCluster) Cluster.registerLocalNode(hostname, port)
       }      
     } catch {
       case e => log.error(e, "Could not start up remote server")
@@ -163,9 +164,14 @@ class RemoteServer extends Logging {
   }
 
   def shutdown = {
-    openChannels.close.awaitUninterruptibly()
+    openChannels.disconnect
+    openChannels.unbind
+    openChannels.close.awaitUninterruptibly(1000)
     bootstrap.releaseExternalResources
-    Cluster.deregisterLocalNode(hostname, port)
+    if (registerNodeInCluster) {
+      Cluster.deregisterLocalNode(hostname, port)
+      Cluster.shutdown
+    }
   }
 }
 
