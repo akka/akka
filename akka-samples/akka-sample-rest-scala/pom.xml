@@ -2,8 +2,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-samples-security</artifactId>
-  <name>Akka Sample Security Module</name>
+  <artifactId>akka-sample-rest-scala</artifactId>
+  <name>Akka REST Scala Sample Module</name>
 
   <packaging>jar</packaging>
 
@@ -19,12 +19,6 @@
       <artifactId>jsr311-api</artifactId>
       <version>1.0</version>
     </dependency>
-    <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>jsr250-api</artifactId>
-      <version>1.0</version>
-    </dependency>
-
   </dependencies>
 
   <build>
@@ -37,8 +31,8 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-samples-security-${project.version}.jar"
-                      tofile="../../deploy/akka-samples-security-${project.version}.jar"/>
+                <copy file="target/akka-sample-rest-scala-${project.version}.jar"
+                      tofile="../../deploy/akka-sample-rest-scala-${project.version}.jar"/>
               </tasks>
             </configuration>
             <goals>

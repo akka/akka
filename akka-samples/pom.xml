@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>akka-samples-parent</artifactId>
-  <name>Akka Samples Module</name>
+  <name>Akka Sample Modules</name>
 
   <packaging>pom</packaging>
 
@@ -14,11 +14,11 @@
   </parent>
 
   <modules>
-    <module>akka-samples-chat</module>
-    <module>akka-samples-lift</module>
-    <module>akka-samples-security</module>
-    <module>akka-samples-rest-scala</module>
-    <module>akka-samples-rest-java</module>
+    <module>akka-sample-chat</module>
+    <module>akka-sample-lift</module>
+    <module>akka-sample-security</module>
+    <module>akka-sample-rest-scala</module>
+    <module>akka-sample-rest-java</module>
   </modules>
 
   <dependencies>
