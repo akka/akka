@@ -12,16 +12,10 @@
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.6</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <!-- Core deps -->
   <dependencies>
-    <dependency>
-      <artifactId>akka-core</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <artifactId>akka-rest</artifactId>
       <groupId>${project.groupId}</groupId>
@@ -34,11 +28,7 @@
       <artifactId>grizzly-comet-webserver</artifactId>
       <version>${grizzly.version}</version>
     </dependency>
-    <!--dependency>
-      <groupId>com.sun.grizzly</groupId>
-      <artifactId>grizzly-comet-webserver</artifactId>
-      <version>${grizzly.version}</version>
-    </dependency-->
+
     <!-- For Atmosphere -->
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -60,30 +50,5 @@
       <artifactId>atmosphere-runtime</artifactId>
       <version>${atmosphere.version}</version>
     </dependency>
-    <!--dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-core</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-server</artifactId>
-      <version>${jersey.version}</version>
-    </dependency-->
-    <!--dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-json</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.ws.rs</groupId>
-      <artifactId>jsr311-api</artifactId>
-      <version>1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-scala</artifactId>
-      <version>${jersey.version}</version>
-    </dependency-->
   </dependencies>
 </project>

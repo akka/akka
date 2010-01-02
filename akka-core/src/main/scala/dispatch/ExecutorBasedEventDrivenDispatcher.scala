@@ -57,9 +57,8 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
   @volatile private var active: Boolean = false
   
   val name: String = "event-driven:executor:dispatcher:" + _name
-
-  withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
-  
+  init 
+    
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
@@ -79,10 +78,14 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
   }
 
   def shutdown = if (active) {
+    log.debug("Shutting down ThreadBasedDispatcher [%s]", name)
     executor.shutdownNow
     active = false
+    references.clear
   }
-
+  
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
+
+  private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 }

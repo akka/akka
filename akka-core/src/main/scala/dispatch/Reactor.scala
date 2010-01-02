@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.dispatch
 
 import java.util.List
 
-import se.scalablesolutions.akka.util.HashCode
+import se.scalablesolutions.akka.util.{HashCode, Logging}
 import se.scalablesolutions.akka.stm.Transaction
 import se.scalablesolutions.akka.actor.Actor
 
@@ -56,7 +56,7 @@ trait MessageInvoker {
   def invoke(message: MessageInvocation)
 }
 
-trait MessageDispatcher {
+trait MessageDispatcher extends Logging {
   protected val references = new ConcurrentHashMap[String, Actor]  
   def dispatch(invocation: MessageInvocation)
   def start
@@ -64,6 +64,7 @@ trait MessageDispatcher {
   def register(actor: Actor) = references.put(actor.uuid, actor)
   def unregister(actor: Actor) = references.remove(actor.uuid)
   def canBeShutDown: Boolean = references.isEmpty
+  def isShutdown: Boolean
 }
 
 trait MessageDemultiplexer {

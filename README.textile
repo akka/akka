@@ -1,70 +1,15 @@
-h1. Akka Transactors
+h1. Akka
 
-h2. Distributed Transactional RESTful Persistent Actors
+We believe that writing correct concurrent, fault-tolerant and scalable applications is too hard. Most of the time it's because we are using the wrong tools and the wrong level of abstraction. 
 
-h3. "http://akkasource.org":http://akkasource.org
+Akka is here to change that. 
 
-Akka implements a unique hybrid of:
-* The Actor model (Actors and Active Objects), which gives you:
-** Concurrency (high-level and simple)
-** Asynchronous, non-blocking and highly performant components.
-** Supervision with "let-it-crash" semantics. Components are loosely coupled and restarted upon failure.
-* Software Transactional Memory (STM).
-* BASE and ACID persistence - Pluggable Eventually Consistent or ACID distributed scalable persistent storage.
-* Remoting - Distributed services with supervision and error management
-* REST (JAX-RS) and Comet bindings.
-* Monitoring and Management
+Using the Actor Model together with Software Transactional Memory we raise the abstraction level and provides a better platform to build correct concurrent and scalable applications. 
 
-Akka can be used in two different ways:
-* As a library: used by a web app, to be put into ‘WEB-INF/lib’
-* As a kernel: stand-alone kernel, embedding the servlet container
+For fault-tolerance we adopt the "Let it crash" / "Embrace failure" model which have been used with great success in the telecom industry to build applications that self-heals, systems that never stop. 
 
-See the "Use-case and Deployment Scenarios":http://wiki.github.com/jboner/akka/use-case-and-deployment-scenarios for details.
+Actors also provides the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications. 
 
-h1. What's Akka all about? Why should I care?  
+Akka is Open Source and available under the Apache 2 License.
 
-If you are new to Akka then I suggest you start with either the:
-
-* "High Level View":http://wiki.github.com/jboner/akka/modules-the-high-level-view; which is outlining the different modules in Akka.
-* "Use-case and Deployment Scenarios":http://wiki.github.com/jboner/akka/use-case-and-deployment-scenarios; outlining how and in which use-case and deployment scenarios can I use Akka?
-* "Examples":http://wiki.github.com/jboner/akka/examples; showing how to build a RESTful, transactional, persistent Active Object and Actor.
-
-After that you can dive into the "Reference Manual":http://wiki.github.com/jboner/akka/akka-reference-manual.
-
-h1. Documentation
-
-Akka has pretty thorough "reference documentation":https://github.com/jboner/akka/wikis. Covering examples, APIs and configuration.
-
-h1. Distribution
-
-The latest distribution can be found in the "downloads section":https://github.com/jboner/akka/downloads
-
-h1. Mailing List
-
-If you have questions and/or feedback: please sign up to the Akka User mailing list: 
-"http://groups.google.com/group/akka-user":http://groups.google.com/group/akka-user
-
-h1.  Professional Support
-
-Scalable Solutions AB is providing a variety of professional support packages for Akka, please visit their website for details: 
-"http://scalablesolutions.se":http://scalablesolutions.se
-
-h1. License
-
-<pre>
-This software is licensed under the Apache 2 license, quoted below.
-
-Copyright 2009 Scalable Solutions AB <http://scalablesolutions.se>
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-</pre>
+Learn more at "http://akkasource.org":http://akkasource.org
