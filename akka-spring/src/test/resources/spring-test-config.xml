@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
 
-
-   <bean id="akkaService" class="se.scalablesolutions.akka.service.MyService">
+  <bean id="akkaInterceptor" class="se.scalablesolutions.akka.spring.AkkaSpringInterceptor">
   </bean>
 
-  <bean id="interceptor" class="se.scalablesolutions.akka.interceptor.AkkaSpringInterceptor">
+  <bean id="service" class="se.scalablesolutions.akka.spring.MyService">
   </bean>
 
-  <bean id="interceptedService" class="org.springframework.aop.framework.ProxyFactoryBean">
+  <bean id="actorBeanService" class="org.springframework.aop.framework.ProxyFactoryBean">
     <property name="target">
-      <ref bean="akkaService"/>
+      <ref bean="service"/>
     </property>
     <property name="interceptorNames">
       <list>
-        <value>interceptor</value>
+        <value>akkaInterceptor</value>
       </list>
     </property>
   </bean>

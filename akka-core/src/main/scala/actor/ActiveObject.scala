@@ -353,15 +353,19 @@ private[akka] sealed class ActiveObjectAspect {
   }
 }
 
+object Dispatcher {
+  val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
+  val ZERO_ITEM_OBJECT_ARRAY = Array[Object[_]]()  
+}
+
 /**
  * Generic Actor managing Invocation dispatch, transaction and error management.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Option[RestartCallbacks]) extends Actor {
-  private val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
-  private val ZERO_ITEM_OBJECT_ARRAY = Array[Object[_]]()
-
+  import Dispatcher._
+  
   private[actor] var target: Option[AnyRef] = None
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
