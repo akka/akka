@@ -8,7 +8,7 @@ public class AllTest extends TestCase {
   public static Test suite() {
     TestSuite suite = new TestSuite("All Java tests");
     suite.addTestSuite(InMemoryStateTest.class);
-    suite.addTestSuite(InMemNestedStateTest.class);
+    //suite.addTestSuite(InMemNestedStateTest.class);
     suite.addTestSuite(RemoteInMemoryStateTest.class);
     suite.addTestSuite(ActiveObjectGuiceConfiguratorTest.class);
     //suite.addTestSuite(PersistentStateTest.class);

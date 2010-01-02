@@ -1,6 +1,4 @@
-h1. Akka Transactors
-
-h2. Distributed Transactional RESTful Persistent Actors
+h1. Akka Project
 
 h3. "http://akkasource.org":http://akkasource.org
 
@@ -15,25 +13,9 @@ Akka implements a unique hybrid of:
 * REST (JAX-RS) and Comet bindings.
 * Monitoring and Management
 
-Akka can be used in two different ways:
-* As a library: used by a web app, to be put into ‘WEB-INF/lib’
-* As a kernel: stand-alone kernel, embedding the servlet container
-
-See the "Use-case and Deployment Scenarios":http://wiki.github.com/jboner/akka/use-case-and-deployment-scenarios for details.
-
-h1. What's Akka all about? Why should I care?  
-
-If you are new to Akka then I suggest you start with either the:
-
-* "High Level View":http://wiki.github.com/jboner/akka/modules-the-high-level-view; which is outlining the different modules in Akka.
-* "Use-case and Deployment Scenarios":http://wiki.github.com/jboner/akka/use-case-and-deployment-scenarios; outlining how and in which use-case and deployment scenarios can I use Akka?
-* "Examples":http://wiki.github.com/jboner/akka/examples; showing how to build a RESTful, transactional, persistent Active Object and Actor.
-
-After that you can dive into the "Reference Manual":http://wiki.github.com/jboner/akka/akka-reference-manual.
-
 h1. Documentation
 
-Akka has pretty thorough "reference documentation":https://github.com/jboner/akka/wikis. Covering examples, APIs and configuration.
+Akka has pretty thorough "reference documentation":http://doc.akkasource.org. Covering examples, APIs and configuration.
 
 h1. Distribution
 

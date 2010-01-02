@@ -2,28 +2,22 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>akka-samples-chat</artifactId>
-  <name>Akka Chat Sample Module</name>
+  <artifactId>akka-samples-rest-scala</artifactId>
+  <name>Akka REST Scala Samples Module</name>
 
   <packaging>jar</packaging>
 
   <parent>
-    <artifactId>akka</artifactId>
+    <artifactId>akka-samples-parent</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
     <version>0.6</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <dependencies>
     <dependency>
-      <artifactId>akka-core</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <artifactId>akka-persistence-redis</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+      <version>1.0</version>
     </dependency>
   </dependencies>
 
@@ -37,8 +31,8 @@
             <phase>install</phase>
             <configuration>
               <tasks>
-                <copy file="target/akka-samples-chat-${project.version}.jar"
-                      tofile="../deploy/akka-samples-chat-${project.version}.jar"/>
+                <copy file="target/akka-samples-rest-scala-${project.version}.jar"
+                      tofile="../../deploy/akka-samples-rest-scala-${project.version}.jar"/>
               </tasks>
             </configuration>
             <goals>
