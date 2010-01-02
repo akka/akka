@@ -28,6 +28,8 @@ trait ThreadPoolBuilder {
 
   protected var executor: ExecutorService = _
 
+  def isShutdown = executor.isShutdown
+
   def buildThreadPool = synchronized {
     ensureNotActive
     inProcessOfBuilding = false
