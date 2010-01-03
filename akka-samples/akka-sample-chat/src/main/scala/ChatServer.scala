@@ -198,10 +198,10 @@ object Runner {
     client.login
 
     client.post("Hi there")
-    println("CHAT LOG: " + client.chatLog.log)
+    println("CHAT LOG:\n\t" + client.chatLog.log.mkString("\n\t"))
 
     client.post("Hi again")
-    println("CHAT LOG: " + client.chatLog.log)
+    println("CHAT LOG:\n\t" + client.chatLog.log.mkString("\n\t"))
 
     client.logout
   }
