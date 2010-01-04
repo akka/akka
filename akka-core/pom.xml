@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>akka-core</artifactId>
-  <name>Akka Actors, Remote Actors, Transactors and STM Module</name>
+  <name>Akka Core - Actors, Remote Actors, Transactors and STM Module</name>
 
   <packaging>jar</packaging>
 

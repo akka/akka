@@ -187,7 +187,6 @@ object ChatService extends
  * Test runner emulating a chat session.
  */
 object Runner {
-  
   // create a handle to the remote ChatService 
   ChatService.makeRemote("localhost", 9999)
   ChatService.start

@@ -53,12 +53,12 @@ object Config extends Logging {
         log.info("Config loaded from the application classpath.")
       } catch {
         case e: ParseException => throw new IllegalStateException(
-          "Can't find 'akka.conf' configuration file." + 
-          "One of the three ways of locating the 'akka.conf' file needs to be defined:" +
-          "\n\t1. Define '$AKKA_HOME' to the root of the Akka distribution." +
-          "\n\t2. Define the '-Dakka.config=...' environment option." +
+          "\nCan't find 'akka.conf' configuration file." + 
+          "\nOne of the three ways of locating the 'akka.conf' file needs to be defined:" +
+          "\n\t1. Define 'AKKA_HOME' environment variable to the root of the Akka distribution." +
+          "\n\t2. Define the '-Dakka.config=...' system property option." +
           "\n\t3. Put the 'akka.conf' file on the classpath." +
-          "\n\tI have no way of finding the 'akka.conf' configuration file." +
+          "\nI have no way of finding the 'akka.conf' configuration file." +
           "\nAborting.")
       }
     }

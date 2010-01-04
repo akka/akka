@@ -1,11 +1,28 @@
 Akka Chat Client/Server Sample Application
 
-To run the sample: 
-1. Run 'mvn install' (builds and deploys jar to AKKA_HOME/deploy)
-2. In another shell run 'java -jar ./dist/akka-0.6.jar' to start up Akka microkernel
-3. In the first shell run 'mvn scala:console -o'
-4. In the REPL you get execute: 
-  - scala> import se.scalablesolutions.akka.sample.chat._
-  - scala> Runner.run
-5. See the chat simulation run
-6. Run it again to see full speed after first initialization
+First we need to download, build and start up Redis:
+
+1. Download Redis from http://code.google.com/p/redis/downloads/list.
+2. Step into the distribution.
+3. Build: ‘make install’.
+4. Run: ‘./redis-server’.
+For details on how to set up Redis server have a look at http://code.google.com/p/redis/wiki/QuickStart.
+
+Then to run the sample: 
+
+1. Set ‘AKKA_HOME’ environment variable to the root of the Akka distribution.
+2. Open up a shell and step into the Akka distribution root folder.
+3. Build Akka by invoking ‘mvn install -Dmaven.test.skip=true’. This will also bulid the sample application and deploy it to the ‘$AKKA_HOME/deploy’ directory.
+4. Run the microkernel
+  export AKKA_HOME=...
+  cd $AKKA_HOME
+  java -jar ./dist/akka-0.6.jar
+5. Now start up a new shell and go down into the ‘./akka-samples/akka-sample-chat’ directory.
+6. Invoke ‘mvn scala:console -o’. This will give you a Scala REPL (interpreter) with the chat application and all its dependency JARs on the classpath.
+7. Simply paste in the whole code block with the ‘Runner’ object above and invoke ‘Runner.run’. This run a simulated client session that will connect to the running server in the microkernel.
+8. Invoke ‘Runner.run’ again and again…
+
+Now you could test client reconnect by killing the running microkernel and start it up again. See the client reconnect take place in the REPL shell.
+
+That’s it. Have fun.
+
