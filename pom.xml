@@ -508,8 +508,6 @@
       </plugin>
     </plugins>
   </reporting>
-  <distributionManagement>
-  </distributionManagement>
   <profiles>
     <profile>
       <id>release</id>
