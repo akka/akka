@@ -131,7 +131,7 @@
     <repository>
       <id>project.embedded.module</id>
       <name>Project Embedded Repository</name>
-      <url>file://${basedir}/../embedded-repo</url>
+      <url>file://${env.AKKA_HOME}/embedded-repo</url>
     </repository>
     <repository>
       <id>repo1.maven</id>
