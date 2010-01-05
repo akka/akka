@@ -51,6 +51,7 @@ class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
    */
   override def loadConfiguration(sc: ServletConfig) {
     config = new AtmosphereConfig { supportSession = false }
+    setDefaultBroadcasterClassName(classOf[JerseyBroadcaster].getName)
     atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
   }
 
