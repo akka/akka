@@ -46,7 +46,8 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
 object RemoteNode extends RemoteServer
 
 /**
- * This object holds configuration variables.
+ * For internal use only.
+ * Holds configuration variables, remote actors, remote active objects and remote servers.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -90,7 +91,7 @@ object RemoteServer {
   private val remoteActorSets = new ConcurrentHashMap[Address, RemoteActorSet]
   private val remoteServers = new ConcurrentHashMap[Address, RemoteServer]
     
-  def actorsFor(remoteServerAddress: RemoteServer.Address): RemoteActorSet = {
+  private[akka] def actorsFor(remoteServerAddress: RemoteServer.Address): RemoteActorSet = {
     val set = remoteActorSets.get(remoteServerAddress)
     if (set ne null) set
     else {
@@ -100,7 +101,7 @@ object RemoteServer {
     }
   }
 
-  def serverFor(hostname: String, port: Int): Option[RemoteServer] = {
+  private[remote] def serverFor(hostname: String, port: Int): Option[RemoteServer] = {
     val server = remoteServers.get(Address(hostname, port))
     if (server eq null) None
     else Some(server)
@@ -189,7 +190,7 @@ class RemoteServer extends Logging {
   }
 }
 
-case class Codec(encoder : ChannelHandler,decoder : ChannelHandler)
+case class Codec(encoder : ChannelHandler, decoder : ChannelHandler)
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -437,7 +438,7 @@ class RemoteServerHandler(
         newInstance
       } catch {
         case e =>
-          log.error(e, "Could not create remote actor object instance")
+          log.error(e, "Could not create remote actor instance")
           throw e
       }
     } else actorOrNull

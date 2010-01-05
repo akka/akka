@@ -31,12 +31,7 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-core</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-core</artifactId>
-      <version>${jersey.version}</version>
+      <version>1.1.5-ea-20100104</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
