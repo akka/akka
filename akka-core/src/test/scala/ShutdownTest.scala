@@ -1,9 +1,8 @@
-package test
+package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.remote.RemoteNode
 
-object AkkaTest1 {
+object ActorShutdownTest {
   def main(args: Array[String]) {
 
     class MyActor extends Actor {
@@ -17,18 +16,23 @@ object AkkaTest1 {
     myActor.start
     myActor.send("test")
     myActor.stop
-    // does not exit
   }
 }
 
 
 // case 2
 
-object AkkaTest2 {
+object RemoteServerAndClusterShutdownTest {
   def main(args: Array[String]) {
-    RemoteNode.start("localhost", 9999)
-    Thread.sleep(3000)
-    RemoteNode.shutdown
-    // does not exit
+    val s1 = new RemoteServer
+    val s2 = new RemoteServer
+    val s3 = new RemoteServer
+    s1.start("localhost", 9999)
+    s2.start("localhost", 9998)
+    s3.start("localhost", 9997)
+    Thread.sleep(5000)
+    s1.shutdown
+    s2.shutdown
+    s3.shutdown
   }
 }
