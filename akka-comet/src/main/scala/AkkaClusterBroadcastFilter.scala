@@ -26,8 +26,14 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
 
   override def init : Unit = ()
 
+  /** Stops the actor */
   def destroy : Unit = stop
 
+  /**
+   * Relays all non ClusterCometBroadcast messages to the other AkkaClusterBroadcastFilters in the cluster
+   * ClusterCometBroadcasts are not broadcasted because they originate from the cluster,
+   * otherwise we'd start a chain reaction.
+   */
   def filter(o : AnyRef) : AnyRef = o match { 
     case ClusterCometBroadcast(_,m) => m   //Do not re-broadcast, just unbox and pass along
  
