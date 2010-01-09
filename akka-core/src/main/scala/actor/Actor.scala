@@ -480,6 +480,7 @@ trait Actor extends TransactionManagement {
    * </pre>
    */
   def !(message: Any)(implicit sender: Option[Actor]) = {
+//FIXME 2.8   def !(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) postMessageToMailbox(message, sender)
     else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -544,6 +545,7 @@ trait Actor extends TransactionManagement {
 
 
   /*
+ //FIXME 2.8 def !!!(message: Any)(implicit sender: AnyRef = None): FutureResult = {
   def !!!(message: Any)(implicit sender: AnyRef): FutureResult = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
