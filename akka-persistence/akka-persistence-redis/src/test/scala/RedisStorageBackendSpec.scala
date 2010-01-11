@@ -113,6 +113,59 @@ class RedisStorageBackendSpec extends
       n.fromBytes(getRefStorageFor("T-4").get) should equal(n)
     }
   }
+
+  describe("store and query in queue") {
+    it("should give proper queue semantics") {
+      enqueue("T-5", "alan kay".getBytes)
+      enqueue("T-5", "alan turing".getBytes)
+      enqueue("T-5", "richard stallman".getBytes)
+      enqueue("T-5", "yukihiro matsumoto".getBytes)
+      enqueue("T-5", "claude shannon".getBytes)
+      enqueue("T-5", "linus torvalds".getBytes)
+      
+      RedisStorageBackend.size("T-5") should equal(6)
+      
+      new String(dequeue("T-5").get) should equal("alan kay")
+      new String(dequeue("T-5").get) should equal("alan turing")
+      
+      RedisStorageBackend.size("T-5") should equal(4)
+      
+      val l = peek("T-5", 0, 3)
+      l.size should equal(3)
+      new String(l(0)) should equal("richard stallman")
+      new String(l(1)) should equal("yukihiro matsumoto")
+      new String(l(2)) should equal("claude shannon")
+    }
+  }
+
+  describe("store and query in sorted set") {
+    it("should give proper sorted set semantics") {
+      zadd("hackers", "1965", "yukihiro matsumoto".getBytes)
+      zadd("hackers", "1953", "richard stallman".getBytes)
+      zadd("hackers", "1916", "claude shannon".getBytes)
+      zadd("hackers", "1969", "linus torvalds".getBytes)
+      zadd("hackers", "1940", "alan kay".getBytes)
+      zadd("hackers", "1912", "alan turing".getBytes)
+      
+      zcard("hackers") should equal(6)
+      
+      zscore("hackers", "alan turing".getBytes) should equal("1912")
+      zscore("hackers", "richard stallman".getBytes) should equal("1953")
+      zscore("hackers", "claude shannon".getBytes) should equal("1916")
+      zscore("hackers", "linus torvalds".getBytes) should equal("1969")
+
+      val s: List[Array[Byte]] = zrange("hackers", 0, 2)
+      s.size should equal(3)
+      s.map(new String(_)) should equal(List("alan turing", "claude shannon", "alan kay"))
+      
+      var sorted: List[String] = 
+        List("alan turing", "claude shannon", "alan kay", "richard stallman", "yukihiro matsumoto", "linus torvalds")
+      
+      val t: List[Array[Byte]] = zrange("hackers", 0, -1)
+      t.size should equal(6)
+      t.map(new String(_)) should equal(sorted)
+    }
+  }
 }
 
 case class Name(id: Int, name: String, address: String) 

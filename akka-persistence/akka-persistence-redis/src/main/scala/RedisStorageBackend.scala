@@ -38,6 +38,8 @@ private [akka] object RedisStorageBackend extends
   MapStorageBackend[Array[Byte], Array[Byte]] with 
   VectorStorageBackend[Array[Byte]] with 
   RefStorageBackend[Array[Byte]] with
+  QueueStorageBackend[Array[Byte]] with
+  SortedSetStorageBackend[Array[Byte]] with
   Logging {
     
   val REDIS_SERVER_HOSTNAME = config.getString("akka.storage.redis.hostname", "127.0.0.1")
@@ -244,6 +246,91 @@ private [akka] object RedisStorageBackend extends
       case None =>
         throw new Predef.NoSuchElementException(name + " not present")
       case Some(s) => Some(s.getBytes)
+    }
+  }
+
+  // add to the end of the queue
+  def enqueue(name: String, item: Array[Byte]): Boolean = {
+    db.pushTail(new String(encode(name.getBytes)), new String(item))
+  }
+
+  // pop from the front of the queue
+  def dequeue(name: String): Option[Array[Byte]] = {
+    db.popHead(new String(encode(name.getBytes))) match {
+      case None =>
+        throw new Predef.NoSuchElementException(name + " not present")
+      case Some(s) =>
+        Some(s.getBytes)
+    }
+  }
+  
+  // get the size of the queue
+  def size(name: String): Int = {
+    db.listLength(new String(encode(name.getBytes))) match {
+      case None =>
+        throw new Predef.NoSuchElementException(name + " not present")
+      case Some(l) => l
+    }
+  }
+  
+  // return an array of items currently stored in the queue
+  // start is the item to begin, count is how many items to return
+  def peek(name: String, start: Int, count: Int): List[Array[Byte]] = count match {
+    case 1 =>
+      db.listIndex(new String(encode(name.getBytes)), start) match {
+        case None =>
+          throw new Predef.NoSuchElementException("No element at " + start)
+        case Some(s) =>
+          List(s.getBytes)
+      }
+    case n =>
+      db.listRange(new String(encode(name.getBytes)), start, start + count - 1) match {
+        case None => 
+          throw new Predef.NoSuchElementException(
+            "No element found between " + start + " and " + (start + count - 1))
+        case Some(es) =>
+          es.map(_.getBytes)
+      }
+  }
+  
+  // completely delete the queue
+  def remove(name: String): Boolean = {
+    db.delete(new String(encode(name.getBytes)))
+  }
+  
+  // add item to sorted set identified by name
+  def zadd(name: String, zscore: String, item: Array[Byte]): Boolean = {
+    db.zAdd(new String(encode(name.getBytes)), zscore, new String(item))
+  }
+  
+  // remove item from sorted set identified by name
+  def zrem(name: String, item: Array[Byte]): Boolean = {
+    db.zRem(new String(encode(name.getBytes)), new String(item))
+  }
+  
+  // cardinality of the set identified by name
+  def zcard(name: String): Int = {
+    db.zCard(new String(encode(name.getBytes))) match {
+      case None =>
+        throw new Predef.NoSuchElementException(name + " not present")
+      case Some(l) => l
+    }
+  }
+  
+  def zscore(name: String, item: Array[Byte]): String = {
+    db.zScore(new String(encode(name.getBytes)), new String(item)) match {
+      case None =>
+        throw new Predef.NoSuchElementException(new String(item) + " not present")
+      case Some(s) => s
+    }
+  }
+  
+  def zrange(name: String, start: Int, end: Int): List[Array[Byte]] = {
+    db.zRange(new String(encode(name.getBytes)), start.toString, end.toString, SocketOperations.ASC, false) match {
+      case None => 
+        throw new Predef.NoSuchElementException(name + " not present")
+      case Some(s) =>
+        s.map(_.getBytes)
     }
   }
   
