@@ -1,0 +1,24 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>akka-cluster-shoal</artifactId>
+  <name>Akka Cluster Shoal Module</name>
+
+  <packaging>jar</packaging>
+
+  <parent>
+    <artifactId>akka-cluster-parent</artifactId>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <version>0.6</version>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>shoal</artifactId>
+      <version>1.1-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+
+</project>
