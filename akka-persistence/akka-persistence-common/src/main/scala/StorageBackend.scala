@@ -34,3 +34,38 @@ trait RefStorageBackend[T] extends StorageBackend {
   def insertRefStorageFor(name: String, element: T)
   def getRefStorageFor(name: String): Option[T]
 }
+
+// for Queue
+trait QueueStorageBackend[T] extends StorageBackend {
+  // add to the end of the queue
+  def enqueue(name: String, item: T): Boolean
+  
+  // pop from the front of the queue
+  def dequeue(name: String): Option[T]
+  
+  // get the size of the queue
+  def size(name: String): Int
+  
+  // return an array of items currently stored in the queue
+  // start is the item to begin, count is how many items to return
+  def peek(name: String, start: Int, count: Int): List[T]
+  
+  // completely delete the queue
+  def remove(name: String): Boolean
+}
+
+trait SortedSetStorageBackend[T] extends StorageBackend {
+  // add item to sorted set identified by name
+  def zadd(name: String, zscore: String, item: T): Boolean
+  
+  // remove item from sorted set identified by name
+  def zrem(name: String, item: T): Boolean
+  
+  // cardinality of the set idnetified by name
+  def zcard(name: String): Int
+  
+  def zscore(name: String, item: T): String
+  
+  def zrange(name: String, start: Int, end: Int): List[T]
+}
+

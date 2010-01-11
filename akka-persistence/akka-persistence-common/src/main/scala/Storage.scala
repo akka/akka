@@ -40,6 +40,7 @@ class NoTransactionInScopeException extends RuntimeException
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
 trait Storage {
   type ElementType
@@ -47,14 +48,17 @@ trait Storage {
   def newMap: PersistentMap[ElementType, ElementType]
   def newVector: PersistentVector[ElementType]
   def newRef: PersistentRef[ElementType]
+  def newQueue: PersistentQueue[ElementType]
 
   def getMap(id: String): PersistentMap[ElementType, ElementType]
   def getVector(id: String): PersistentVector[ElementType]
   def getRef(id: String): PersistentRef[ElementType]
+  def getQueue(id: String): PersistentQueue[ElementType]
 
   def newMap(id: String): PersistentMap[ElementType, ElementType]
   def newVector(id: String): PersistentVector[ElementType]
   def newRef(id: String): PersistentRef[ElementType]
+  def newQueue(id: String): PersistentQueue[ElementType]
 }
 
 
@@ -263,6 +267,131 @@ trait PersistentRef[T] extends Transactional with Committable {
     if (current.isDefined) current.get
     else default
   }
+
+  private def register = {
+    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
+    currentTransaction.get.get.register(uuid, this)
+  }
+}
+
+/**
+ * Implementation of <tt>PersistentQueue</tt> for every concrete 
+ * storage will have the same workflow. This abstracts the workflow.
+ * <p/>
+ * Enqueue is simpler, we just have to record the operation in a local
+ * transactional store for playback during commit. This store
+ * <tt>enqueueNDequeuedEntries</tt> stores the entire history of enqueue
+ * and dequeue that will be played at commit on the underlying store.
+ * </p>
+ * The main challenge with dequeue is that we need to return the element
+ * that has been dequeued. Hence in addition to the above store, we need to
+ * have another local queue that actually does the enqueue dequeue operations
+ * that take place <em>only during this transaction</em>. This gives us the
+ * element that will be dequeued next from the set of elements enqueued
+ * <em>during this transaction</em>.
+ * </p>
+ * The third item that we need is an index to the underlying storage element
+ * that may also have to be dequeued as part of the current transaction. This
+ * is modeled using a ref to an Int that points to elements in the underlyinng store.
+ * </p>
+ * Subclasses just need to provide the actual concrete instance for the
+ * abstract val <tt>storage</tt>.
+ *
+ * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
+ */
+trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
+  with Transactional with Committable with Logging {
+
+  abstract case class QueueOp
+  case object ENQ extends QueueOp
+  case object DEQ extends QueueOp
+
+  import scala.collection.immutable.Queue
+
+  // current trail that will be played on commit to the underlying store
+  protected val enqueuedNDequeuedEntries = TransactionalState.newVector[(Option[A], QueueOp)]
+  protected val shouldClearOnCommit = TransactionalRef[Boolean]()
+
+  // local queue that will record all enqueues and dequeues in the current txn
+  protected val localQ = TransactionalRef[Queue[A]]()
+
+  // keeps a pointer to the underlying storage for the enxt candidate to be dequeued
+  protected val pickMeForDQ = TransactionalRef[Int]()
+
+  localQ.swap(Queue.Empty)
+  pickMeForDQ.swap(0)
+
+  // to be concretized in subclasses
+  val storage: QueueStorageBackend[A]
+
+  def commit = {
+    enqueuedNDequeuedEntries.toList.foreach { e =>
+      e._2 match {
+        case ENQ => storage.enqueue(uuid, e._1.get)
+        case DEQ => storage.dequeue(uuid)
+      }
+    }
+    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get) {
+      storage.remove(uuid)
+    }
+    enqueuedNDequeuedEntries.clear
+    localQ.swap(Queue.Empty)
+    pickMeForDQ.swap(0)
+  }
+
+  override def enqueue(elems: A*) {
+    register
+    elems.foreach(e => {
+      enqueuedNDequeuedEntries.add((Some(e), ENQ))
+      localQ.get.get.enqueue(e)
+    })
+  }
+
+  override def dequeue: A = {
+    register
+    // record for later playback
+    enqueuedNDequeuedEntries.add((None, DEQ))
+
+    val i = pickMeForDQ.get.get
+    if (i < storage.size(uuid)) {
+      // still we can DQ from storage
+      pickMeForDQ.swap(i + 1)
+      storage.peek(uuid, i, 1)(0)
+    } else {
+      // check we have transient candidates in localQ for DQ
+      if (localQ.get.get.isEmpty == false) {
+        val (a, q) = localQ.get.get.dequeue
+        localQ.swap(q)
+        a
+      }
+      else 
+        throw new NoSuchElementException("trying to dequeue from empty queue")
+    }
+  }
+
+  override def clear = { 
+    register
+    shouldClearOnCommit.swap(true)
+    localQ.swap(Queue.Empty)
+    pickMeForDQ.swap(0)
+  }
+  
+  override def size: Int = try {
+    storage.size(uuid) + localQ.get.get.length
+  } catch { case e: Exception => 0 }
+
+  override def isEmpty: Boolean =
+    size == 0
+
+  override def +=(elem: A): Unit = enqueue(elem)
+  override def ++=(elems: Iterator[A]): Unit = enqueue(elems.toList: _*)
+  override def ++=(elems: Iterable[A]): Unit = this ++= elems.elements
+
+  override def dequeueFirst(p: A => Boolean): Option[A] =
+    throw new UnsupportedOperationException("dequeueFirst not supported")
+
+  override def dequeueAll(p: A => Boolean): Seq[A] =
+    throw new UnsupportedOperationException("dequeueAll not supported")
 
   private def register = {
     if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
