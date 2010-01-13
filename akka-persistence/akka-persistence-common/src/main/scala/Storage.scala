@@ -48,17 +48,20 @@ trait Storage {
   def newMap: PersistentMap[ElementType, ElementType]
   def newVector: PersistentVector[ElementType]
   def newRef: PersistentRef[ElementType]
-  def newQueue: PersistentQueue[ElementType]
+  def newQueue: PersistentQueue[ElementType] = // only implemented for redis
+    throw new UnsupportedOperationException
 
   def getMap(id: String): PersistentMap[ElementType, ElementType]
   def getVector(id: String): PersistentVector[ElementType]
   def getRef(id: String): PersistentRef[ElementType]
-  def getQueue(id: String): PersistentQueue[ElementType]
+  def getQueue(id: String): PersistentQueue[ElementType] = // only implemented for redis
+    throw new UnsupportedOperationException
 
   def newMap(id: String): PersistentMap[ElementType, ElementType]
   def newVector(id: String): PersistentVector[ElementType]
   def newRef(id: String): PersistentRef[ElementType]
-  def newQueue(id: String): PersistentQueue[ElementType]
+  def newQueue(id: String): PersistentQueue[ElementType] = // only implemented for redis
+    throw new UnsupportedOperationException
 }
 
 
