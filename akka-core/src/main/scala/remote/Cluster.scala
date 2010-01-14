@@ -6,10 +6,9 @@ package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.Config.config
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.remote.Cluster.{Node, RelayedMessage}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRegistry}
-
+import se.scalablesolutions.akka.util.Logging
 import scala.collection.immutable.{Map, HashMap}
 
 /**
@@ -41,18 +40,23 @@ abstract class ClusterActor extends Actor with Cluster {
  * <p/>
  * Loads a specified ClusterActor and delegates to that instance.
  */
-object Cluster extends Cluster {
+object Cluster extends Cluster with Logging {
   private[remote] sealed trait ClusterMessage
   private[remote] case class Node(endpoints: List[RemoteAddress]) extends ClusterMessage
   private[remote] case class RelayedMessage(actorClassFQN: String, msg: AnyRef) extends ClusterMessage
 
-  private[remote] val clusterActor: Option[ClusterActor] =
-    config.getString("akka.remote.cluster.actor") map { name =>
-      val a = Class.forName(name).newInstance.asInstanceOf[ClusterActor]
-      a.start
-      a
-    }
-
+  private[remote] val clusterActor: Option[ClusterActor] = {
+    val name = config.getString("akka.remote.cluster.actor","not defined")
+    try { 
+        val a = Class.forName(name).newInstance.asInstanceOf[ClusterActor]
+        a.start
+        Some(a)
+      } 
+      catch { 
+        case e => log.error(e,"Couldn't load Cluster provider: [%s]",name)
+                  None
+      }
+  }
 
   private[remote] val supervisor: Option[Supervisor] = if (clusterActor.isDefined) {
     val sup = SupervisorFactory(
