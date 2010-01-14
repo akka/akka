@@ -12,17 +12,17 @@ object RedisStorage extends Storage {
   def newMap: PersistentMap[ElementType, ElementType] = newMap(Uuid.newUuid.toString)
   def newVector: PersistentVector[ElementType] = newVector(Uuid.newUuid.toString)
   def newRef: PersistentRef[ElementType] = newRef(Uuid.newUuid.toString)
-  def newQueue: PersistentQueue[ElementType] = newQueue(Uuid.newUuid.toString)
+  override def newQueue: PersistentQueue[ElementType] = newQueue(Uuid.newUuid.toString)
 
   def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
   def getVector(id: String): PersistentVector[ElementType] = newVector(id)
   def getRef(id: String): PersistentRef[ElementType] = newRef(id)
-  def getQueue(id: String): PersistentQueue[ElementType] = newQueue(id)
+  override def getQueue(id: String): PersistentQueue[ElementType] = newQueue(id)
 
   def newMap(id: String): PersistentMap[ElementType, ElementType] = new RedisPersistentMap(id)
   def newVector(id: String): PersistentVector[ElementType] = new RedisPersistentVector(id)
   def newRef(id: String): PersistentRef[ElementType] = new RedisPersistentRef(id)
-  def newQueue(id: String): PersistentQueue[ElementType] = new RedisPersistentQueue(id)
+  override def newQueue(id: String): PersistentQueue[ElementType] = new RedisPersistentQueue(id)
 }
 
 /**
