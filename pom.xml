@@ -50,6 +50,7 @@
   <modules>
     <module>akka-util-java</module>
     <module>akka-util</module>
+    <module>akka-cluster</module>
     <module>akka-core</module>
     <module>akka-persistence</module>
     <module>akka-rest</module>
