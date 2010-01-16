@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.stm.Transaction._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.{StmException, TransactionManagement}
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
-import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder,RemoteServer, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 
@@ -633,7 +633,12 @@ trait Actor extends TransactionManagement {
    */
   def makeRemote(address: InetSocketAddress): Unit =
     if (_isRunning) throw new IllegalStateException("Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
-    else _remoteAddress = Some(address)
+    else {
+     _remoteAddress = Some(address)
+     if(_contactAddress.isEmpty)
+       setContactAddress(RemoteServer.HOSTNAME,RemoteServer.PORT)
+    }
+
 
   /**
    * Set the contact address for this actor. This is used for replying to messages sent asynchronously when no reply channel exists.
