@@ -45,6 +45,8 @@
     <atmosphere.version>0.5.v20100104</atmosphere.version>
     <jersey.version>1.1.5-ea-20100104</jersey.version>
     <grizzly.version>1.9.18-i</grizzly.version>
+    <scalatest.version>1.0-for-scala-2.8.0-SNAPSHOT</scalatest.version>
+    <dispatch.version>2.8.0.Beta1-RC6</dispatch.version>
   </properties>
 
   <modules>
