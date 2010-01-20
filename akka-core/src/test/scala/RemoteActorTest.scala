@@ -108,7 +108,7 @@ class RemoteActorTest extends JUnitSuite {
     actor.start
 
     val sender = new RemoteActorSpecActorAsyncSender
-    sender.setContactAddress(HOSTNAME, PORT1)
+    sender.setReplyToAddress(HOSTNAME, PORT1)
     sender.start
     sender.send(actor)
     Thread.sleep(1000)
