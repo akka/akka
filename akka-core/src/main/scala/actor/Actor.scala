@@ -72,18 +72,8 @@ object Actor extends Logging {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
-  object Sender extends Actor {
+  object Sender{
     implicit val Self: Option[Actor] = None
-
-    def receive = {
-      case unknown =>
-        Actor.log.error(
-          "Actor.Sender can't process messages. Received message [%s]." +
-              "This error could occur if you either:" +
-              "\n\t- Explicitly send a message to the Actor.Sender object." +
-              "\n\t- Invoking the 'reply(..)' method or sending a message to the 'sender' reference " +
-              "\n\t  when you have sent the original request from a instance *not* being an actor.", unknown)
-    }
   }
 
   /**
