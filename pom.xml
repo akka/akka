@@ -259,6 +259,33 @@
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>enforce-no-snapshots</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireProperty>
+                  <property>env.AKKA_HOME</property>
+                  <message>"You must have set AKKA_HOME!"</message>
+                </requireProperty>
+                <requireFilesExist>
+                  <files>
+                   <file>${env.AKKA_HOME}/embedded-repo</file>
+                  </files>
+                </requireFilesExist>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
