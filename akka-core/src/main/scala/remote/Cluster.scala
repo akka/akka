@@ -29,7 +29,7 @@ trait Cluster {
 }
 
 trait ClusterActor extends Actor with Cluster {
-  val name = config.getString("akka.remote.cluster.name") getOrElse "default"     
+  val name = config.getString("akka.remote.cluster.name") getOrElse "default"
 }
 
 private[remote] object ClusterActor {
@@ -139,7 +139,7 @@ abstract class BasicClusterActor extends ClusterActor {
   }
 
   protected def broadcast[T <: AnyRef](msg: T): Unit =
-    if (!remotes.isEmpty) toAllNodes(Cluster.serializer out msg)  
+    if (!remotes.isEmpty) toAllNodes(Cluster.serializer out msg)
 
   def lookup[T](handleRemoteAddress: PartialFunction[RemoteAddress, T]): Option[T] =
     remotes.values.toList.flatMap(_.endpoints).find(handleRemoteAddress isDefinedAt _).map(handleRemoteAddress)
