@@ -14,10 +14,20 @@
   </parent>
 
   <dependencies>
-    <dependency>
+    <!--dependency>
       <groupId>org.glassfish</groupId>
       <artifactId>shoal</artifactId>
       <version>1.1-SNAPSHOT</version>
+    </dependency-->
+    <dependency>
+      <groupId>shoal-jxta</groupId>
+      <artifactId>shoal</artifactId>
+      <version>1.1-20090818</version>
+    </dependency>
+    <dependency>
+      <groupId>shoal-jxta</groupId>
+      <artifactId>jxta</artifactId>
+      <version>1.1-20090818</version>
     </dependency>
   </dependencies>
 

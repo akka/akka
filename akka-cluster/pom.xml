@@ -15,8 +15,8 @@
 
   <modules>
     <module>akka-cluster-jgroups</module>
-    <!--module>akka-cluster-tribes</module>
-    <module>akka-cluster-shoal</module-->
+    <!--module>akka-cluster-tribes</module-->
+    <module>akka-cluster-shoal</module>
   </modules>
 
   <dependencies>
