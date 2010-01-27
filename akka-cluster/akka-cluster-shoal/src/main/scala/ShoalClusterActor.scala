@@ -23,7 +23,7 @@ import com.sun.enterprise.ee.cms.impl.client.{FailureNotificationActionFactoryIm
                                        PlannedShutdownActionFactoryImpl
 }
 
-class ShoalClusterActor extends ClusterActor {
+class ShoalClusterActor extends BasicClusterActor {
 
   type ADDR_T = String
 

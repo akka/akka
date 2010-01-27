@@ -5,7 +5,7 @@ import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, Exten
 /**
  * Clustering support via JGroups.
  */
-class JGroupsClusterActor extends ClusterActor {
+class JGroupsClusterActor extends BasicClusterActor {
   import ClusterActor._
   import org.scala_tools.javautils.Imports._
 
