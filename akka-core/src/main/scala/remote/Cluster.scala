@@ -28,6 +28,10 @@ trait Cluster {
   def lookup[T](pf: PartialFunction[RemoteAddress, T]): Option[T]
 }
 
+trait ClusterActor extends Actor with Cluster {
+  val name = config.getString("akka.remote.cluster.name") getOrElse "default"     
+}
+
 private[remote] object ClusterActor {
   sealed trait ClusterMessage
 
@@ -39,7 +43,7 @@ private[remote] object ClusterActor {
 /**
  * Base class for cluster actor implementations.
  */
-abstract class ClusterActor extends Actor with Cluster {
+abstract class BasicClusterActor extends ClusterActor {
   import ClusterActor._
 
   case class Message(sender : ADDR_T,msg : Array[Byte])
@@ -55,11 +59,8 @@ abstract class ClusterActor extends Actor with Cluster {
   type ADDR_T
 
 
-
   @volatile private var local: Node = Node(Nil)
   @volatile private var remotes: Map[ADDR_T, Node] = Map()
-
-  val name = config.getString("akka.remote.cluster.name") getOrElse "default"
 
   override def init = {
       remotes = new HashMap[ADDR_T, Node]
