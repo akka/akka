@@ -3,7 +3,6 @@
  */
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.config.ScalaConfig._
 import com.sun.enterprise.ee.cms.core.{CallBack,
                                        GMSConstants,
                                        GMSFactory,
