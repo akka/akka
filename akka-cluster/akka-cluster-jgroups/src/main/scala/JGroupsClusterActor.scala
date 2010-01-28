@@ -4,6 +4,7 @@ import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, Exten
 
 /**
  * Clustering support via JGroups.
+ * @Author Viktor Klang
  */
 class JGroupsClusterActor extends BasicClusterActor {
   import ClusterActor._
