@@ -3,6 +3,9 @@
  */
 package se.scalablesolutions.akka.remote
 
+import se.scalablesolutions.akka.Config.config
+import java.util.Properties
+
 import com.sun.enterprise.ee.cms.core.{CallBack,
                                        GMSConstants,
                                        GMSFactory,
@@ -21,20 +24,22 @@ import com.sun.enterprise.ee.cms.impl.client.{FailureNotificationActionFactoryIm
                                        MessageActionFactoryImpl,
                                        PlannedShutdownActionFactoryImpl
 }
-
+/**
+ * Clustering support via Shoal.
+ */
 class ShoalClusterActor extends BasicClusterActor {
 
   type ADDR_T = String
 
   @volatile protected var gms : Option[GroupManagementService] = None
-            protected val serverName : String = RemoteServer.HOSTNAME + ":" + RemoteServer.PORT
+            protected lazy val serverName : String = RemoteServer.HOSTNAME + ":" + RemoteServer.PORT
   @volatile private   var isActive = false
 
-  protected def topic : String = "akka-messages"
+  lazy val topic : String = config.getString("akka.remote.cluster.shoal.topic") getOrElse "akka-messages"
 
   override def init = {
     super.init
-    gms = createGMS
+    gms = Some(createGMS)
     isActive = true
   }
 
@@ -45,8 +50,25 @@ class ShoalClusterActor extends BasicClusterActor {
     gms = None
   }
 
-  protected def createGMS : Option[GroupManagementService] = {
-    val g = GMSFactory.startGMSModule(serverName,name, GroupManagementService.MemberType.CORE, null).asInstanceOf[GroupManagementService]
+  /**
+   * Constructs a Properties instance with properties designated for the underlying
+   * Shoal cluster transport (JXTA,JGroups)
+   */
+  protected def properties() : Properties = {
+    config.getConfigMap("akka.remote.cluster.shoal.properties").map( m => {
+      new Properties(){
+        for(key <- m.keys) setProperty(key,m(key))
+      }
+    }).getOrElse(null)
+  }
+
+  /**
+   * Creates a GroupManagementService, provides it with the proper properties
+   * Adds callbacks and boots up the cluster
+   */
+  protected def createGMS : GroupManagementService = {
+
+    val g = GMSFactory.startGMSModule(serverName,name, GroupManagementService.MemberType.CORE, properties()).asInstanceOf[GroupManagementService]
 
     val callback = createCallback
     g.addActionFactory(new JoinNotificationActionFactoryImpl(callback))
@@ -55,9 +77,12 @@ class ShoalClusterActor extends BasicClusterActor {
     g.addActionFactory(new PlannedShutdownActionFactoryImpl(callback))
     g.addActionFactory(new MessageActionFactoryImpl(callback), topic)
     g.join
-    Some(g)
+    g
   }
 
+  /**
+   * Creates a CallBack instance that deals with the cluster signalling
+   */
   protected def createCallback : CallBack = {
     import org.scala_tools.javautils.Imports._
     val me = this
@@ -68,7 +93,7 @@ class ShoalClusterActor extends BasicClusterActor {
           if(isActive) {
             signal match {
               case  ms : MessageSignal => me send Message(ms.getMemberToken,ms.getMessage)
-              case  js : JoinNotificationSignal => me send View(Set[ADDR_T]() ++ js.getCurrentCoreMembers.asScala - serverName)
+              case jns : JoinNotificationSignal => me send View(Set[ADDR_T]() ++ jns.getCurrentCoreMembers.asScala - serverName)
               case fss : FailureSuspectedSignal => me send Zombie(fss.getMemberToken)
               case fns : FailureNotificationSignal => me send Zombie(fns.getMemberToken)
               case _ => log.debug("Unhandled signal: [%s]",signal)
