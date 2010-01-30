@@ -132,13 +132,7 @@ class Chat extends Actor {
   @Suspend
   @GET
   @Produces(Array("text/html"))
-  def suspend = {
-      val s = new StringBuilder
-      s append "<!-- "
-      for(i <- 1 to 10) s append "Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. "
-      s append " -->"
-      s toString
-  }
+  def suspend = ()
 
   def receive = {
     case Chat(who, what, msg) => {
