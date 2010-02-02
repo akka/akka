@@ -199,17 +199,23 @@ abstract class BasicClusterActor extends ClusterActor {
  * Loads a specified ClusterActor and delegates to that instance.
  */
 object Cluster extends Cluster with Logging {
-  private[remote] val clusterActor: Option[ClusterActor] = {
-    val name = config.getString("akka.remote.cluster.actor","not defined")
-    try { 
-        val a = Class.forName(name).newInstance.asInstanceOf[ClusterActor]
+
+  private[remote] val actorName = config.getString("akka.remote.cluster.actor")
+
+  private[remote] val clusterActor = createClusterActor
+  
+  private[remote] def createClusterActor : Option[ClusterActor] = {
+    try {
+      actorName map { s =>
+        val a = Class.forName(s).newInstance.asInstanceOf[ClusterActor]
         a.start
-        Some(a)
-      } 
-      catch { 
-        case e => log.error(e,"Couldn't load Cluster provider: [%s]",name)
-                  None
+        a
       }
+    }
+    catch {
+      case e => log.error(e,"Couldn't load Cluster provider: [%s]",actorName.getOrElse(""))
+                None
+    }
   }
 
   private[remote] val supervisor: Option[Supervisor] = if (clusterActor.isDefined) {
