@@ -42,8 +42,8 @@
     <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
-    <atmosphere.version>0.5.v20100104</atmosphere.version>
-    <jersey.version>1.1.5-ea-20100104</jersey.version>
+    <atmosphere.version>0.5</atmosphere.version>
+    <jersey.version>1.1.5</jersey.version>
     <grizzly.version>1.9.18-i</grizzly.version>
   </properties>
 
