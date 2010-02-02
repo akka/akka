@@ -6,8 +6,8 @@ package se.scalablesolutions.akka.comet
 
 import se.scalablesolutions.akka.actor.{Actor}
 import se.scalablesolutions.akka.remote.{Cluster}
-import org.atmosphere.cpr.{ClusterBroadcastFilter,Broadcaster}
 import scala.reflect.{BeanProperty}
+import org.atmosphere.cpr.{BroadcastFilter, ClusterBroadcastFilter, Broadcaster}
 
 sealed trait ClusterCometMessageType
 case class ClusterCometBroadcast(val name : String, val msg : AnyRef) extends ClusterCometMessageType
@@ -34,14 +34,14 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
    * ClusterCometBroadcasts are not broadcasted because they originate from the cluster,
    * otherwise we'd start a chain reaction.
    */
-  def filter(o : AnyRef) : AnyRef = o match { 
+  def filter(o : AnyRef) = new BroadcastFilter.BroadcastAction(o match {
     case ClusterCometBroadcast(_,m) => m   //Do not re-broadcast, just unbox and pass along
  
     case m : AnyRef => {                   //Relay message to the cluster and pass along
       Cluster.relayMessage(classOf[AkkaClusterBroadcastFilter],ClusterCometBroadcast(clusterName,m))
       m
     }
-  }
+  })
 
   def receive = { 
     //Only handle messages intended for this particular instance
