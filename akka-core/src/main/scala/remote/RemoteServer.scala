@@ -112,8 +112,6 @@ object RemoteServer {
     
   private[remote] def unregister(hostname: String, port: Int) =
     remoteServers.remove(Address(hostname, port))
-
-  private[remote] def canShutDownCluster: Boolean = remoteServers.isEmpty
 }
 
 /**
@@ -186,7 +184,6 @@ class RemoteServer extends Logging {
     openChannels.close.awaitUninterruptibly(1000)
     bootstrap.releaseExternalResources
     Cluster.deregisterLocalNode(hostname, port)
-    if (RemoteServer.canShutDownCluster) Cluster.shutdown
   }
 }
 
