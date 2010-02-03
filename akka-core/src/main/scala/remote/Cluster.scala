@@ -199,33 +199,39 @@ abstract class BasicClusterActor extends ClusterActor {
  * Loads a specified ClusterActor and delegates to that instance.
  */
 object Cluster extends Cluster with Logging {
-  private[remote] val clusterActor: Option[ClusterActor] = {
-    val name = config.getString("akka.remote.cluster.actor","not defined")
-    try { 
-        val a = Class.forName(name).newInstance.asInstanceOf[ClusterActor]
-        a.start
-        Some(a)
-      } 
-      catch { 
-        case e => log.error(e,"Couldn't load Cluster provider: [%s]",name)
-                  None
-      }
-  }
-
-  private[remote] val supervisor: Option[Supervisor] = if (clusterActor.isDefined) {
-    val sup = SupervisorFactory(
-      SupervisorConfig(
-        RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
-        Supervise(clusterActor.get, LifeCycle(Permanent)) :: Nil)
-      ).newInstance
-    sup.start
-    Some(sup)
-  } else None
+  @volatile private[remote] var clusterActor: Option[ClusterActor] = None
+  @volatile private[remote] var supervisor: Option[Supervisor] = None
   
   private[remote] lazy val serializer: Serializer = {
     val className = config.getString("akka.remote.cluster.serializer", Serializer.Java.getClass.getName)
     Class.forName(className).newInstance.asInstanceOf[Serializer]
   }
+
+  private[remote] def createClusterActor : Option[ClusterActor] = {
+    val name = config.getString("akka.remote.cluster.actor")
+
+    try {
+      name map { fqn =>
+        val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
+        a.start
+        a
+      }
+    }
+    catch {
+      case e => log.error(e,"Couldn't load Cluster provider: [%s]",name.getOrElse("Not specified")); None
+    }
+  }
+
+  private[remote] def createSupervisor(actor : ClusterActor) : Option[Supervisor] = {
+    val sup = SupervisorFactory(
+      SupervisorConfig(
+        RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
+        Supervise(actor, LifeCycle(Permanent)) :: Nil)
+      ).newInstance
+    sup.start
+    Some(sup)
+  }
+
 
   def name = clusterActor.map(_.name).getOrElse("No cluster")
 
@@ -237,5 +243,19 @@ object Cluster extends Cluster with Logging {
 
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = clusterActor.foreach(_.relayMessage(to, msg))
 
-  def shutdown = supervisor.foreach(_.stop)
+  def start : Unit = synchronized {
+    if(supervisor.isEmpty) {
+      for(actor <- createClusterActor;
+          sup   <- createSupervisor(actor)) {
+          clusterActor = Some(actor)
+          supervisor   = Some(sup)
+      }
+    }
+  }
+
+  def shutdown : Unit = synchronized {
+    supervisor.foreach(_.stop)
+    supervisor = None
+    clusterActor = None
+  }
 }
