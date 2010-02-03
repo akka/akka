@@ -4,4 +4,6 @@
 
 package se.scalablesolutions.akka.comet
 
-class AkkaBroadcaster extends org.atmosphere.jersey.util.JerseySimpleBroadcaster
+class AkkaBroadcaster extends org.atmosphere.jersey.JerseyBroadcaster {
+  setID(classOf[AkkaBroadcaster].getName)
+}
