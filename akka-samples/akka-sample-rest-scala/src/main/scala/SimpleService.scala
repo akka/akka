@@ -168,7 +168,7 @@ class JsonpFilter extends BroadcastFilter[String] with Logging {
       message = m.substring(m.indexOf("__") + 2)
     }
 
-    ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" +
+    new BroadcastFilter.BroadcastAction("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" +
     name + "\", message: \"" + message + "\" }); \n</script>\n")
   }
 }
