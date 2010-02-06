@@ -16,7 +16,7 @@ import se.scalablesolutions.akka.util.Logging
 case class AkkaBroadcast(resource :  AtmosphereResource[_,_],event : AtmosphereResourceEvent[_,_])
 
 class AkkaBroadcaster extends org.atmosphere.util.SimpleBroadcaster with Logging {
-  setID(classOf[AkkaBroadcaster].getName)
+  name = classOf[AkkaBroadcaster].getName
   
   val actor = new Actor {
                     def receive = {
