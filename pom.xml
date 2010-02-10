@@ -7,7 +7,7 @@
   <name>Akka Project</name>
   <artifactId>akka</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
-  <version>0.6</version>
+  <version>0.7-SNAPSHOT</version>
   <inceptionYear>2009</inceptionYear>
   <url>http://akkasource.org</url>
   <packaging>pom</packaging>
