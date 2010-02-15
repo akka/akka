@@ -435,6 +435,7 @@ trait Actor extends TransactionManagement {
       _isShutDown = true
       shutdown
       ActorRegistry.unregister(this)
+//      _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
     }
   }
 
@@ -470,7 +471,7 @@ trait Actor extends TransactionManagement {
    * </pre>
    */
   def !(message: Any)(implicit sender: Option[Actor]) = {
-//FIXME 2.8   def !(message: Any)(implicit sender: Option[Actor] = None) = {
+    //FIXME 2.8   def !(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) postMessageToMailbox(message, sender)
     else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -624,9 +625,9 @@ trait Actor extends TransactionManagement {
   def makeRemote(address: InetSocketAddress): Unit =
     if (_isRunning) throw new IllegalStateException("Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
     else {
-     _remoteAddress = Some(address)
-     if(_replyToAddress.isEmpty)
-       setReplyToAddress(Actor.HOSTNAME,Actor.PORT)
+      _remoteAddress = Some(address)
+      RemoteClient.register(address.getHostName, address.getPort, uuid)
+      if (_replyToAddress.isEmpty) setReplyToAddress(Actor.HOSTNAME, Actor.PORT)
     }
 
 
