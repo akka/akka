@@ -180,8 +180,7 @@ class RemoteServer extends Logging {
   def shutdown = {
     RemoteServer.unregister(hostname, port)
     openChannels.disconnect
-    openChannels.unbind
-    openChannels.close.awaitUninterruptibly(1000)
+    openChannels.close.awaitUninterruptibly
     bootstrap.releaseExternalResources
     Cluster.deregisterLocalNode(hostname, port)
   }
