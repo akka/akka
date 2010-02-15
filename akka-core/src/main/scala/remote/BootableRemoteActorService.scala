@@ -37,8 +37,8 @@ trait BootableRemoteActorService extends Bootable with Logging {
   }
   
   abstract override def onUnload = {
-  	super.onUnload  	
-  	if (remoteServerThread.isAlive) {
+        super.onUnload          
+        if (remoteServerThread.isAlive) {
         log.info("Shutting down Remote Actors Service")
         RemoteNode.shutdown
         remoteServerThread.join(1000)

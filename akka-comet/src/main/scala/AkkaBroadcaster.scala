@@ -11,9 +11,9 @@ class AkkaBroadcaster extends org.atmosphere.jersey.JerseyBroadcaster {
   name = classOf[AkkaBroadcaster].getName
   
   val caster = new Actor {  
-  	def receive = { case f : Function0[_] => f() }
-  	
-  	start
+        def receive = { case f : Function0[_] => f() }
+        
+        start
   }
 
   override def destroy {

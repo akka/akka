@@ -323,12 +323,12 @@ private[collection] class FullNode[K, +V](shift: Int)(table: Array[Node[K, V]]) 
     val node = (table(i)(shift + 5, key, hash) = value)
     
     if (node == table(i)) this else {
-	    val newTable = new Array[Node[K, A]](32)
-	    Array.copy(table, 0, newTable, 0, 32)
-	    
-	    newTable(i) = node
-	    
-	    new FullNode(shift)(newTable)
+            val newTable = new Array[Node[K, A]](32)
+            Array.copy(table, 0, newTable, 0, 32)
+            
+            newTable(i) = node
+            
+            new FullNode(shift)(newTable)
      }
   }
   
