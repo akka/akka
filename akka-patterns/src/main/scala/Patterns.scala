@@ -34,12 +34,12 @@ object Patterns {
   ) */
 
   def dispatcherActor(routing : PF[Any,Actor], msgTransformer : (Any) => Any) : Actor = new Actor with Dispatcher {
-  	override def transform(msg : Any) = msgTransformer(msg)
+        override def transform(msg : Any) = msgTransformer(msg)
     def routes = routing
   }
   
   def dispatcherActor(routing : PF[Any,Actor]) : Actor = new Actor with Dispatcher {
-  	def routes = routing
+        def routes = routing
   }
 
   def loggerActor(actorToLog : Actor, logger : (Any) => Unit) : Actor = dispatcherActor (

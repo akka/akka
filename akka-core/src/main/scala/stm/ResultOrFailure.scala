@@ -32,10 +32,10 @@ import stm.Transaction
  *
  * scala> res0()
  * java.lang.RuntimeException: Lets see what happens here...
- * 	at ResultOrFailure.apply(RefExcept.scala:11)
- * 	at .<init>(<console>:6)
- * 	at .<clinit>(<console>)
- * 	at Re...
+ *      at ResultOrFailure.apply(RefExcept.scala:11)
+ *      at .<init>(<console>:6)
+ *      at .<clinit>(<console>)
+ *      at Re...
  * </pre>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
