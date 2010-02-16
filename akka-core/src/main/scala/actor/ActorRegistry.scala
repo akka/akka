@@ -6,7 +6,8 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.util.Logging
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{ListBuffer, HashMap}
+import scala.reflect.Manifest
 
 /**
  * Registry holding all actor instances, mapped by class and the actor's id field (which can be set by user-code).
@@ -17,6 +18,30 @@ object ActorRegistry extends Logging {
   private val actorsByClassName = new HashMap[String, List[Actor]]
   private val actorsById = new HashMap[String, List[Actor]]
 
+  /**
+   * Returns all actors in the system.
+   */
+  def actors: List[Actor] = synchronized {
+    val all = new ListBuffer[Actor]
+    actorsById.values.foreach(all ++= _)
+    all.toList
+  }
+
+  /**
+   * Invokes a function for all actors.
+   */
+  def foreach(f: (Actor) => Unit) = actors.foreach(f)
+
+  /**
+   * Finds all actors that are subtypes of the class passed in as the Manifest argument.
+   */
+  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[T] = synchronized {
+    for (actor <- actors; if manifest.erasure.isAssignableFrom(actor.getClass)) yield actor.asInstanceOf[T]
+  }
+
+  /**
+   * Finds all actors of the exact type specified by the class passed in as the Class argument.
+   */
   def actorsFor[T <: Actor](clazz: Class[T]): List[T] = synchronized {
     actorsByClassName.get(clazz.getName) match {
       case None => Nil
@@ -24,6 +49,9 @@ object ActorRegistry extends Logging {
     }
   }
 
+  /**
+   * Finds all actors that has a specific id.
+   */
   def actorsFor(id : String): List[Actor] = synchronized {
     actorsById.get(id) match {
       case None => Nil
