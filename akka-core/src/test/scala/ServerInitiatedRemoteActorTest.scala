@@ -142,3 +142,4 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
     actor.stop
   }
 }
+                          
