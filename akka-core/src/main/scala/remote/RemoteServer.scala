@@ -182,12 +182,18 @@ class RemoteServer extends Logging {
     }
   }
 
-  def shutdown = {
+  def shutdown = if (isRunning) {
     RemoteServer.unregister(hostname, port)
     openChannels.disconnect
     openChannels.close.awaitUninterruptibly
     bootstrap.releaseExternalResources
     Cluster.deregisterLocalNode(hostname, port)
+  }
+
+  // TODO: register active object in RemoteServer as well
+  def register(actor: Actor) = if (isRunning) {
+    log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, actor.id)
+    RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actor.id, actor)
   }
 }
 
@@ -256,8 +262,7 @@ class RemoteServerHandler(
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
-    if (message eq null) throw new IllegalStateException(
-      "Message in remote MessageEvent is null: " + event)
+    if (message eq null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
     if (message.isInstanceOf[RemoteRequest]) {
       handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
     }

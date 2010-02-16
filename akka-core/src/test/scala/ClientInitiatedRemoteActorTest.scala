@@ -9,46 +9,47 @@ import org.junit.{Test, Before, After}
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-object Global {
-  var oneWay = "nada"
-  var remoteReply = "nada"
-}
-class RemoteActorSpecActorUnidirectional extends Actor {
-  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+object ClientInitiatedRemoteActorTest {
+  object Global {
+    var oneWay = "nada"
+    var remoteReply = "nada"
+  }
+  case class Send(actor: Actor)
 
-  def receive = {
-    case "OneWay" =>
-      Global.oneWay = "received"
+  class RemoteActorSpecActorUnidirectional extends Actor {
+    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+
+    def receive = {
+      case "OneWay" =>
+        Global.oneWay = "received"
+    }
+  }
+
+  class RemoteActorSpecActorBidirectional extends Actor {
+    def receive = {
+      case "Hello" =>
+        reply("World")
+      case "Failure" =>
+        throw new RuntimeException("expected")
+    }
+  }
+
+  class RemoteActorSpecActorAsyncSender extends Actor {
+    def receive = {
+      case Send(actor: Actor) =>
+        actor ! "Hello"
+      case "World" =>
+        Global.remoteReply = "replied"
+    }
+
+    def send(actor: Actor) {
+      this ! Send(actor)
+    }
   }
 }
 
-class RemoteActorSpecActorBidirectional extends Actor {
-  def receive = {
-    case "Hello" =>
-      reply("World")
-    case "Failure" =>
-      throw new RuntimeException("expected")
-  }
-}
-
-case class Send(actor: Actor)
-
-class RemoteActorSpecActorAsyncSender extends Actor {
-  def receive = {
-    case Send(actor: Actor) =>
-      actor ! "Hello"
-    case "World" =>
-      Global.remoteReply = "replied"
-  }
-
-  def send(actor: Actor) {
-    this ! Send(actor)
-  }
-}
-
-class RemoteActorTest extends JUnitSuite {
-  import Actor.Sender.Self
-
+class ClientInitiatedRemoteActorTest extends JUnitSuite {
+  import ClientInitiatedRemoteActorTest._
   akka.Config.config
 
   val HOSTNAME = "localhost"
@@ -56,6 +57,8 @@ class RemoteActorTest extends JUnitSuite {
   val PORT2 = 9991
   var s1: RemoteServer = null
   var s2: RemoteServer = null
+
+  import Actor.Sender.Self
 
   @Before
   def init() {
@@ -116,26 +119,7 @@ class RemoteActorTest extends JUnitSuite {
     actor.stop
   }
 
-  /*
-   This test does not throw an exception since the
-   _contactAddress is always defined via the
-   global configuration if not set explicitly.
-
-    @Test
-    def shouldSendRemoteReplyException = {
-      implicit val timeout = 500000000L
-      val actor = new RemoteActorSpecActorBidirectional
-      actor.makeRemote(HOSTNAME, PORT1)
-      actor.start
-
-       val sender = new RemoteActorSpecActorAsyncSender
-       sender.start
-       sender.send(actor)
-       Thread.sleep(500)
-      assert("exception" === Global.remoteReply)
-      actor.stop
-    }
-  */
+ 
   @Test
   def shouldSendReceiveException = {
     implicit val timeout = 500000000L
