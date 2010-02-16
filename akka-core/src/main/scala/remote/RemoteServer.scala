@@ -33,6 +33,11 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
  * <pre>
  * RemoteNode.start(hostname, port)
  * </pre>
+ * 
+ * You can specify the class loader to use to load the remote actors.
+ * <pre>
+ * RemoteNode.start(hostname, port, classLoader)
+ * </pre>
  *
  * If you need to create more than one, then you can use the RemoteServer:
  *
