@@ -435,7 +435,7 @@ trait Actor extends TransactionManagement {
       _isShutDown = true
       shutdown
       ActorRegistry.unregister(this)
-//      _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
+      _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
     }
   }
 
@@ -483,8 +483,7 @@ trait Actor extends TransactionManagement {
   def send(message: Any) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) postMessageToMailbox(message, None)
-    else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
   /**
@@ -784,7 +783,7 @@ trait Actor extends TransactionManagement {
     actor
   }
 
-  private def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = {
+  protected[akka] def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = {
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -826,7 +825,7 @@ trait Actor extends TransactionManagement {
     }
   }
 
-  private def postMessageToMailboxAndCreateFutureResultWithTimeout(
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any, 
       timeout: Long,
       senderFuture: Option[CompletableFutureResult]): CompletableFutureResult = {
