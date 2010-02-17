@@ -16,8 +16,10 @@
 
 package se.scalablesolutions.akka.actor
 
-import java.util.concurrent.atomic.AtomicReference
 import se.scalablesolutions.akka.state.TransactionalState
+import se.scalablesolutions.akka.stm.Transaction.atomic
+
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{CountDownLatch}
 
 /**
@@ -34,7 +36,7 @@ import java.util.concurrent.{CountDownLatch}
 * Date: Oct 18, 2009
 *
 * AKKA retrofit by
-* @Author Viktor Klang
+* @author Viktor Klang
 * Date: Jan 24 2010
 */
 sealed class Agent[T] private (initialValue: T) extends Actor {
@@ -48,11 +50,11 @@ sealed class Agent[T] private (initialValue: T) extends Actor {
   * Periodically handles incoming messages
   */
   def receive = {
-    case FunctionHolder(fun: (T => T)) => updateData(fun(value.getOrWait))
+    case FunctionHolder(fun: (T => T)) => atomic { updateData(fun(value.getOrWait)) }
 
     case ValueHolder(x: T) => updateData(x)
 
-    case ProcedureHolder(fun: (T => Unit)) => fun(copyStrategy(value.getOrWait))
+    case ProcedureHolder(fun: (T => Unit)) => atomic { fun(copyStrategy(value.getOrWait)) }
   }
 
   /**
@@ -64,7 +66,7 @@ sealed class Agent[T] private (initialValue: T) extends Actor {
   /**
   * Updates the internal state with the value provided as a by-name parameter
   */
-  private final def updateData(newData: => T) : Unit =  value.swap(newData)
+  private final def updateData(newData: => T) : Unit = atomic { value.swap(newData) }
 
   /**
   * Submits a request to read the internal state.
