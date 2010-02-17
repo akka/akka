@@ -26,6 +26,8 @@ trait Cluster {
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit
 
   def lookup[T](pf: PartialFunction[RemoteAddress, T]): Option[T]
+  
+  def foreach(f : (RemoteAddress) => Unit) : Unit
 }
 
 /**
@@ -173,6 +175,11 @@ abstract class BasicClusterActor extends ClusterActor {
    */
   def lookup[T](handleRemoteAddress: PartialFunction[RemoteAddress, T]): Option[T] =
     remotes.values.toList.flatMap(_.endpoints).find(handleRemoteAddress isDefinedAt _).map(handleRemoteAddress)
+  
+  /**
+   * Applies the given function to all remote addresses known
+   */
+  def foreach(f : (RemoteAddress) => Unit) : Unit = remotes.values.toList.flatMap(_.endpoints).foreach(f)
 
   /**
    * Registers a local endpoint
@@ -242,6 +249,8 @@ object Cluster extends Cluster with Logging {
   def deregisterLocalNode(hostname: String, port: Int): Unit = clusterActor.foreach(_.deregisterLocalNode(hostname, port))
 
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = clusterActor.foreach(_.relayMessage(to, msg))
+  
+  def foreach(f : (RemoteAddress) => Unit) : Unit = clusterActor.foreach(_.foreach(f))
 
   def start : Unit = synchronized {
     if(supervisor.isEmpty) {

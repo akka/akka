@@ -4,10 +4,9 @@
 
 package se.scalablesolutions.akka
 
-import se.scalablesolutions.akka.comet.BootableCometActorService
 import se.scalablesolutions.akka.remote.BootableRemoteActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.{Logging,Bootable}
 
 import javax.servlet.{ServletContextListener, ServletContextEvent}
 
@@ -24,29 +23,30 @@ object Kernel extends Logging {
   @volatile private var hasBooted = false
   
   private val startTime = System.currentTimeMillis
+  
+  /**
+   * Holds a reference to the services that has been booted
+   */
+  @volatile private var bundles : Option[Bootable] = None
 
   /**
-   * Bundles is what modules are to be loaded with the Kernel, this uses Jonas' AOP style mixin pattern.
+   *  Boots up the Kernel with default bootables
    */
-  object Bundles extends BootableActorLoaderService with BootableRemoteActorService with BootableCometActorService
-
-  /**
-   *  Boots up the Kernel.
-   */
-  def boot: Unit = boot(true)
+  def boot : Unit = boot(true, new BootableActorLoaderService with BootableRemoteActorService with BootableCometActorService)
 
   /**
    * Boots up the Kernel. 
    * If you pass in false as parameter then the Akka banner is not printed out.
    */   
-  def boot(withBanner: Boolean): Unit = synchronized {
+  def boot(withBanner: Boolean, b : Bootable): Unit = synchronized {
     if (!hasBooted) {
       if (withBanner) printBanner
       log.info("Starting Akka...")
-      Bundles.onLoad
+      b.onLoad
       Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
       log.info("Akka started successfully")
       hasBooted = true
+      bundles = Some(b)
     }
   }
 
@@ -56,12 +56,17 @@ object Kernel extends Logging {
   def shutdown = synchronized {
     if (hasBooted) {
       log.info("Shutting down Akka...")
-      Bundles.onUnload  
+      bundles.foreach(_.onUnload)
+      bundles = None
       log.info("Akka succesfully shut down")
     }
   }
 
-  def startRemoteService = Bundles.startRemoteService
+  //For testing purposes only
+  def startRemoteService : Unit = bundles.foreach( _ match {
+    case x : BootableRemoteActorService => x.startRemoteService
+    case _ =>
+  })
 
   private def printBanner = {
     log.info(
@@ -85,5 +90,5 @@ object Kernel extends Logging {
  
 class Kernel extends ServletContextListener {
    def contextDestroyed(e : ServletContextEvent) : Unit = Kernel.shutdown
-   def contextInitialized(e : ServletContextEvent) : Unit = Kernel.boot
+   def contextInitialized(e : ServletContextEvent) : Unit = Kernel.boot(true,new BootableActorLoaderService with BootableRemoteActorService)
  }
