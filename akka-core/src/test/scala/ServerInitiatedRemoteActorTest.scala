@@ -8,38 +8,6 @@ import org.junit.{Test, Before, After}
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-object ServerInitiatedRemoteActorServer {
-
-  class TestActor extends Actor {
-    start
-    def receive = {
-      case "Hello" =>
-        reply("World")
-    }
-  }
-
-  def main(args: Array[String]) = {
-    import ServerInitiatedRemoteActorTest._
-
-    server = new RemoteServer()
-    server.start(HOSTNAME, PORT)
-
-    server.register(new TestActor)
-  }
-}
-
-object ServerInitiatedRemoteActorClient {
-  def main(args: Array[String]) = {
-    import ServerInitiatedRemoteActorTest._
-    val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorServer$TestActor",
-      5000L,
-      HOSTNAME, PORT)
-    val result = actor !! "Hello"
-    println("======== RESULT: " + result)
-  }
-}
-
 object ServerInitiatedRemoteActorTest {
   val HOSTNAME = "localhost"
   val PORT = 9990
