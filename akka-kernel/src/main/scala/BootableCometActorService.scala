@@ -2,13 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
  
-package se.scalablesolutions.akka.comet
+package se.scalablesolutions.akka
 
 import com.sun.grizzly.http.SelectorThread
 import com.sun.grizzly.http.servlet.ServletAdapter
 import com.sun.grizzly.standalone.StaticStreamAlgorithm
 
 import javax.ws.rs.core.UriBuilder
+import se.scalablesolutions.akka.comet.AkkaServlet
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.util.{Bootable,Logging}
 
