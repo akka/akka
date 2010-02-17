@@ -152,7 +152,14 @@ object Serializer {
     // FIXME set ClassLoader on SJSONSerializer.SJSON
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
     
-    def in(json: String): AnyRef = SJSONSerializer.SJSON.in(json)
+    import scala.reflect.Manifest
+    def in[T](json: String)(implicit m: Manifest[T]): AnyRef = {
+      SJSONSerializer.SJSON.in(json)(m)
+    }
+
+    def in[T](bytes: Array[Byte])(implicit m: Manifest[T]): AnyRef = {
+      SJSONSerializer.SJSON.in(bytes)(m)
+    }
   }
 
   /**
