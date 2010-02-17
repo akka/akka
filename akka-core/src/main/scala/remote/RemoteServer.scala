@@ -191,9 +191,21 @@ class RemoteServer extends Logging {
   }
 
   // TODO: register active object in RemoteServer as well
+
+  /**
+   * Register Remote Actor by the Actor's 'id' field.
+   */
   def register(actor: Actor) = if (isRunning) {
     log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, actor.id)
     RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actor.id, actor)
+  }
+
+  /**
+   * Register Remote Actor by a specific 'id' passed as argument. 
+   */
+  def register(id: String, actor: Actor) = if (isRunning) {
+    log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, id)
+    RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(id, actor)
   }
 }
 
