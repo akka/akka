@@ -795,17 +795,17 @@ trait Actor extends TransactionManagement {
           .setIsEscaped(false)
       
       val id = registerSupervisorAsRemoteActor
-      if(id.isDefined)
+      if (id.isDefined)
         requestBuilder.setSupervisorUuid(id.get)
 
       // set the source fields used to reply back to the original sender
       // (i.e. not the remote proxy actor)
-      if(sender.isDefined) {
+      if (sender.isDefined) {
         val s = sender.get
         requestBuilder.setSourceTarget(s.getClass.getName)
         requestBuilder.setSourceUuid(s.uuid)
 
-        val (host,port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME,Actor.PORT))
+        val (host, port) = s._replyToAddress.map(actor => (actor.getHostName, actor.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
         
         log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
 
@@ -819,9 +819,7 @@ trait Actor extends TransactionManagement {
       if (_isEventBased) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
-      } 
-      else 
-        invocation.send
+      } else invocation.send
     }
   }
 
