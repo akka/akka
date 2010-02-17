@@ -26,55 +26,6 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.mutable.{HashSet, HashMap}
 
-/*
-class RemoteActorHandle(id: String, className: String, timeout: Long, hostname: String, port: Int) extends Actor {
-  start
-  val remoteClient = RemoteClient.clientFor(hostname, port)
-
-  override def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = {
-    val requestBuilder = RemoteRequest.newBuilder
-        .setId(RemoteRequestIdFactory.nextId)
-        .setTarget(className)
-        .setTimeout(timeout)
-        .setUuid(id)
-        .setIsActor(true)
-        .setIsOneWay(true)
-        .setIsEscaped(false)
-    if (sender.isDefined) {
-      val s = sender.get
-      requestBuilder.setSourceTarget(s.getClass.getName)
-      requestBuilder.setSourceUuid(s.uuid)
-      val (host, port) = s._replyToAddress.map(a => (a.getHostName, a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
-      requestBuilder.setSourceHostname(host)
-      requestBuilder.setSourcePort(port)
-    }
-    RemoteProtocolBuilder.setMessage(message, requestBuilder)
-    remoteClient.send(requestBuilder.build, None)
-  }
-
-  override def postMessageToMailboxAndCreateFutureResultWithTimeout(
-      message: Any,
-      timeout: Long,
-      senderFuture: Option[CompletableFutureResult]): CompletableFutureResult = {
-    val requestBuilder = RemoteRequest.newBuilder
-        .setId(RemoteRequestIdFactory.nextId)
-        .setTarget(className)
-        .setTimeout(timeout)
-        .setUuid(id)
-        .setIsActor(true)
-        .setIsOneWay(false)
-        .setIsEscaped(false)
-    RemoteProtocolBuilder.setMessage(message, requestBuilder)
-    val future = remoteClient.send(requestBuilder.build, senderFuture)
-    if (future.isDefined) future.get
-    else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
-  }
-
-  def receive = { case _ => {} }
-}
-
-*/
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -96,13 +47,13 @@ object RemoteClient extends Logging {
   private val remoteActors = new HashMap[RemoteServer.Address, HashSet[String]]
 
   // FIXME: simplify overloaded methods when we have Scala 2.8
-/*
+
   def actorFor(className: String, hostname: String, port: Int): Actor =
-    actorFor(className, className, 5000, hostname, port)
+    actorFor(className, className, 5000L, hostname, port)
 
   def actorFor(actorId: String, className: String, hostname: String, port: Int): Actor =
-    actorFor(actorId, className, 5000, hostname, port)
-*/
+    actorFor(actorId, className, 5000L, hostname, port)
+
   def actorFor(className: String, timeout: Long, hostname: String, port: Int): Actor =
     actorFor(className, className, timeout, hostname, port)
 

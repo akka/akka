@@ -16,7 +16,7 @@ object ServerInitiatedRemoteActorServer {
   def run = {
     val server = new RemoteServer()
     server.start("localhost", 9999)
-    server.register(new HelloWorldActor)
+    server.register("hello-service", new HelloWorldActor)
   }
 
   def main(args: Array[String]) = run
@@ -25,9 +25,7 @@ object ServerInitiatedRemoteActorServer {
 object ServerInitiatedRemoteActorClient extends Logging {
   
   def run = {
-    val actor = RemoteClient.actorFor(
-      "sample.HelloWorldActor",
-      5000L, "localhost", 9999)
+    val actor = RemoteClient.actorFor("hello-service", "localhost", 9999)
     val result = actor !! "Hello"
     log.info("Result from Remote Actor: %s", result)
   }
