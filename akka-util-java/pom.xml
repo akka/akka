@@ -27,7 +27,7 @@
     <dependency>
       <groupId>org.multiverse</groupId>
       <artifactId>multiverse-alpha</artifactId>
-      <version>0.3</version>
+      <version>0.4-SNAPSHOT</version>
       <classifier>jar-with-dependencies</classifier>
       <exclusions>
         <exclusion>
