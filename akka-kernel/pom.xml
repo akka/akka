@@ -11,7 +11,7 @@
   <parent>
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.6</version>
+    <version>0.7-SNAPSHOT</version>
   </parent>
 
   <!-- akka deps -->
@@ -56,6 +56,11 @@
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
+    <!--dependency>
+      <artifactId>akka-cluster-shoal</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
+    </dependency-->
 
     <!-- For Atmosphere -->
     <dependency>

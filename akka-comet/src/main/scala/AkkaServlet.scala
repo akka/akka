@@ -14,7 +14,6 @@ import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.atmosphere.container.GrizzlyCometSupport
 import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport,CometSupportResolver,DefaultCometSupportResolver}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
-import org.atmosphere.jersey.JerseyBroadcaster
 
 /**
  * Akka's Comet servlet to be used when deploying actors exposed as Comet (and REST) services in a
@@ -51,8 +50,8 @@ class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
    */
   override def loadConfiguration(sc: ServletConfig) {
     config = new AtmosphereConfig { supportSession = false }
-    setDefaultBroadcasterClassName(classOf[JerseyBroadcaster].getName)
-    atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new JerseyBroadcaster))
+    setDefaultBroadcasterClassName(classOf[AkkaBroadcaster].getName)
+    atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new AkkaBroadcaster))
   }
 
    /**

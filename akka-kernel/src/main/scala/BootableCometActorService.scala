@@ -2,13 +2,14 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
  
-package se.scalablesolutions.akka.comet
+package se.scalablesolutions.akka
 
 import com.sun.grizzly.http.SelectorThread
 import com.sun.grizzly.http.servlet.ServletAdapter
 import com.sun.grizzly.standalone.StaticStreamAlgorithm
 
 import javax.ws.rs.core.UriBuilder
+import se.scalablesolutions.akka.comet.AkkaServlet
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.util.{Bootable,Logging}
 
@@ -54,17 +55,17 @@ trait BootableCometActorService extends Bootable with Logging {
           t.setAdapter(adapter)
           t.setEnableAsyncExecution(true)
           t.setAsyncHandler(ah)
-	      t.listen
-	      t }
+              t.listen
+              t }
 
       log.info("REST service started successfully. Listening to port [%s]", REST_PORT)
     }
   }
   
   abstract override def onUnload = {
-  	super.onUnload
-  	
-  	if (jerseySelectorThread.isDefined) {
+        super.onUnload
+        
+        if (jerseySelectorThread.isDefined) {
         log.info("Shutting down REST service (Jersey)")
         jerseySelectorThread.get.stopEndpoint
       }

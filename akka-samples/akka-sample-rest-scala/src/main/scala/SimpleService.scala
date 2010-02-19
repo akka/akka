@@ -132,13 +132,7 @@ class Chat extends Actor {
   @Suspend
   @GET
   @Produces(Array("text/html"))
-  def suspend = {
-      val s = new StringBuilder
-      s append "<!-- "
-      for(i <- 1 to 10) s append "Comet is a programming technique that enables web servers to send data to the client without having any need for the client to request it. "
-      s append " -->"
-      s toString
-  }
+  def suspend = ()
 
   def receive = {
     case Chat(who, what, msg) => {
@@ -174,7 +168,7 @@ class JsonpFilter extends BroadcastFilter[String] with Logging {
       message = m.substring(m.indexOf("__") + 2)
     }
 
-    ("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" +
+    new BroadcastFilter.BroadcastAction("<script type='text/javascript'>\n (window.app || window.parent.app).update({ name: \"" +
     name + "\", message: \"" + message + "\" }); \n</script>\n")
   }
 }

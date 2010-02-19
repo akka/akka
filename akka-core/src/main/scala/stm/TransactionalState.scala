@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.state
 
 import se.scalablesolutions.akka.stm.Transaction.atomic
+import se.scalablesolutions.akka.stm.NoTransactionInScopeException
 import se.scalablesolutions.akka.collection._
 import se.scalablesolutions.akka.util.UUID
 
@@ -72,45 +73,87 @@ object TransactionalRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T] extends Transactional {
-  implicit val txInitName = "TransactionalRef:Init"
   import org.multiverse.api.ThreadLocalTransaction._
+
+  implicit val txInitName = "TransactionalRef:Init"
   val uuid = UUID.newUuid.toString
 
   private[this] val ref: Ref[T] = atomic { new Ref }
 
-  def swap(elem: T) = ref.set(elem)
-  
+  def swap(elem: T) = {
+    ensureIsInTransaction
+    ref.set(elem)
+  }
+
   def get: Option[T] = {
+    ensureIsInTransaction
     if (ref.isNull) None
     else Some(ref.get)
   }
 
-  def getOrWait: T = ref.getOrAwait
+  def getOrWait: T = {
+    ensureIsInTransaction
+    ref.getOrAwait
+  }
 
   def getOrElse(default: => T): T = {
+    ensureIsInTransaction
     if (ref.isNull) default
     else ref.get
   }
 
-  def isDefined: Boolean = !ref.isNull
+  def isDefined: Boolean = {
+    ensureIsInTransaction
+    !ref.isNull
+  }
   
-  def isEmpty: Boolean = ref.isNull
+  def isEmpty: Boolean = {
+    ensureIsInTransaction
+    ref.isNull
+  }
 
-  def map[B](f: T => B): Option[B] = if (isEmpty) None else Some(f(ref.get))
+  def map[B](f: T => B): Option[B] = {
+    ensureIsInTransaction
+    if (isEmpty) None else Some(f(ref.get))
+  }
 
-  def flatMap[B](f: T => Option[B]): Option[B] = if (isEmpty) None else f(ref.get)
+  def flatMap[B](f: T => Option[B]): Option[B] = {
+    ensureIsInTransaction
+    if (isEmpty) None else f(ref.get)
+  }
 
-  def filter(p: T => Boolean): Option[T] = if (isEmpty || p(ref.get)) Some(ref.get) else None
+  def filter(p: T => Boolean): Option[T] = {
+    ensureIsInTransaction
+    if (isEmpty || p(ref.get)) Some(ref.get) else None
+  }
 
-  def foreach(f: T => Unit) { if (!isEmpty) f(ref.get) }
+  def foreach(f: T => Unit) {
+    ensureIsInTransaction
+    if (!isEmpty) f(ref.get)
+  }
 
-  def elements: Iterator[T] = if (isEmpty) Iterator.empty else Iterator.fromValues(ref.get)
+  def elements: Iterator[T] = {
+    ensureIsInTransaction
+    if (isEmpty) Iterator.empty else Iterator.fromValues(ref.get)
+  }
 
-  def toList: List[T] = if (isEmpty) List() else List(ref.get)
+  def toList: List[T] = {
+    ensureIsInTransaction
+    if (isEmpty) List() else List(ref.get)
+  }
 
-  def toRight[X](left: => X) = if (isEmpty) Left(left) else Right(ref.get)
+  def toRight[X](left: => X) = {
+    ensureIsInTransaction
+    if (isEmpty) Left(left) else Right(ref.get)
+  }
 
-  def toLeft[X](right: => X) = if (isEmpty) Right(right) else Left(ref.get)
+  def toLeft[X](right: => X) = {
+    ensureIsInTransaction
+    if (isEmpty) Right(right) else Left(ref.get)
+  }
+
+  private def ensureIsInTransaction =
+    if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
 }
 
 object TransactionalMap {

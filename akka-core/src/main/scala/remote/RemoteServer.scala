@@ -33,6 +33,11 @@ import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
  * <pre>
  * RemoteNode.start(hostname, port)
  * </pre>
+ * 
+ * You can specify the class loader to use to load the remote actors.
+ * <pre>
+ * RemoteNode.start(hostname, port, classLoader)
+ * </pre>
  *
  * If you need to create more than one, then you can use the RemoteServer:
  *
@@ -112,8 +117,6 @@ object RemoteServer {
     
   private[remote] def unregister(hostname: String, port: Int) =
     remoteServers.remove(Address(hostname, port))
-
-  private[remote] def canShutDownCluster: Boolean = remoteServers.isEmpty
 }
 
 /**
@@ -179,14 +182,30 @@ class RemoteServer extends Logging {
     }
   }
 
-  def shutdown = {
+  def shutdown = if (isRunning) {
     RemoteServer.unregister(hostname, port)
     openChannels.disconnect
-    openChannels.unbind
-    openChannels.close.awaitUninterruptibly(1000)
+    openChannels.close.awaitUninterruptibly
     bootstrap.releaseExternalResources
     Cluster.deregisterLocalNode(hostname, port)
-    if (RemoteServer.canShutDownCluster) Cluster.shutdown
+  }
+
+  // TODO: register active object in RemoteServer as well
+
+  /**
+   * Register Remote Actor by the Actor's 'id' field.
+   */
+  def register(actor: Actor) = if (isRunning) {
+    log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, actor.id)
+    RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actor.id, actor)
+  }
+
+  /**
+   * Register Remote Actor by a specific 'id' passed as argument. 
+   */
+  def register(id: String, actor: Actor) = if (isRunning) {
+    log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, id)
+    RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(id, actor)
   }
 }
 
@@ -255,8 +274,7 @@ class RemoteServerHandler(
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
-    if (message eq null) throw new IllegalStateException(
-      "Message in remote MessageEvent is null: " + event)
+    if (message eq null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
     if (message.isInstanceOf[RemoteRequest]) {
       handleRemoteRequest(message.asInstanceOf[RemoteRequest], event.getChannel)
     }

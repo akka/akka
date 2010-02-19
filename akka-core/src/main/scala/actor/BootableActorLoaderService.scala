@@ -16,10 +16,10 @@ import se.scalablesolutions.akka.Config._
 trait BootableActorLoaderService extends Bootable with Logging {
 
   val BOOT_CLASSES = config.getList("akka.boot")
-  var applicationLoader: Option[ClassLoader] = None
+  lazy val applicationLoader: Option[ClassLoader] = createApplicationClassLoader
   
-  protected def runApplicationBootClasses : Option[ClassLoader] = {
-    val loader =
+  protected def createApplicationClassLoader : Option[ClassLoader] = {
+    Some(
     if (HOME.isDefined) {
       val CONFIG = HOME.get + "/config"
       val DEPLOY = HOME.get + "/deploy"
@@ -30,24 +30,21 @@ trait BootableActorLoaderService extends Bootable with Logging {
       }
       val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
       log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
-      new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+      new URLClassLoader(toDeploy.toArray, ClassLoader.getSystemClassLoader)
     } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") ne null) {
       getClass.getClassLoader
     } else throw new IllegalStateException(
       "AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
-    for (clazz <- BOOT_CLASSES) {
+    )
+  }
+
+  abstract override def onLoad = {
+    for (loader <- applicationLoader; clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
-    Some(loader)
-  }
-
-  abstract override def onLoad   = {
-     applicationLoader = runApplicationBootClasses
-     super.onLoad
+    super.onLoad
   }
   
-  abstract override def onUnload = {
-     ActorRegistry.shutdownAll
-  }
+  abstract override def onUnload = ActorRegistry.shutdownAll
 }
