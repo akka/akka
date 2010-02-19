@@ -141,8 +141,7 @@ object Actor extends Logging {
       start
       send(Spawn)
       def receive = {
-        case Spawn => body
-        case _ => throw new IllegalArgumentException("Actors created with 'actor(body: => Unit)' do not respond to messages.")
+        case Spawn => body; stop
       }
     }
   }
