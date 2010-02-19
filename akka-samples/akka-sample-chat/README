@@ -12,14 +12,14 @@ Then to run the sample:
 
 1. Set ‘AKKA_HOME’ environment variable to the root of the Akka distribution.
 2. Open up a shell and step into the Akka distribution root folder.
-3. Build Akka by invoking ‘mvn install -Dmaven.test.skip=true’. This will also bulid the sample application and deploy it to the ‘$AKKA_HOME/deploy’ directory.
+3. Build Akka by invoking ‘mvn install -Dmaven.test.skip=true’. This will also build the sample application and deploy it to the ‘$AKKA_HOME/deploy’ directory.
 4. Run the microkernel
   export AKKA_HOME=...
   cd $AKKA_HOME
   java -jar ./dist/akka-0.6.jar
 5. Now start up a new shell and go down into the ‘./akka-samples/akka-sample-chat’ directory.
 6. Invoke ‘mvn scala:console -o’. This will give you a Scala REPL (interpreter) with the chat application and all its dependency JARs on the classpath.
-7. Simply paste in the whole code block with the ‘Runner’ object above and invoke ‘Runner.run’. This run a simulated client session that will connect to the running server in the microkernel.
+7. Simply paste in the whole code block with the ‘Runner’ object above and invoke ‘Runner.run’. This runs a simulated client session that will connect to the running server in the microkernel.
 8. Invoke ‘Runner.run’ again and again…
 
 Now you could test client reconnect by killing the running microkernel and start it up again. See the client reconnect take place in the REPL shell.

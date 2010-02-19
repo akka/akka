@@ -10,7 +10,7 @@
   <parent>
     <artifactId>akka-samples-parent</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.6</version>
+    <version>0.7-SNAPSHOT</version>
   </parent>
 
   <build>

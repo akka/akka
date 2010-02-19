@@ -10,13 +10,13 @@
   <parent>
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.6</version>
+    <version>0.7-SNAPSHOT</version>
   </parent>
 
   <modules>
     <module>akka-cluster-jgroups</module>
-    <!--module>akka-cluster-tribes</module>
-    <module>akka-cluster-shoal</module-->
+    <!--module>akka-cluster-tribes</module-->
+    <module>akka-cluster-shoal</module>
   </modules>
 
   <dependencies>

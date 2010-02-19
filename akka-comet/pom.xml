@@ -11,7 +11,7 @@
   <parent>
     <artifactId>akka</artifactId>
     <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.6</version>
+    <version>0.7-SNAPSHOT</version>
   </parent>
 
   <!-- Core deps -->
@@ -34,7 +34,7 @@
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <version>2.5</version>
-	</dependency> 
+        </dependency> 
     <dependency>
       <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-annotations</artifactId>
@@ -48,7 +48,7 @@
     <dependency>
       <groupId>org.atmosphere</groupId>
       <artifactId>atmosphere-runtime</artifactId>
-      <version>0.5.v20100104</version>
+      <version>${atmosphere.version}</version>
     </dependency>
   </dependencies>
 </project>

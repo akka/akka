@@ -20,7 +20,7 @@ case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: Actor)
 case class SZ
 
 class QueueActor extends Transactor {
-  private val accounts = RedisStorage.newQueue
+  private lazy val accounts = RedisStorage.newQueue
 
   def receive = {
     // enqueue

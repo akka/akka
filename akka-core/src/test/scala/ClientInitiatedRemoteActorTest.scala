@@ -46,7 +46,7 @@ class RemoteActorSpecActorAsyncSender extends Actor {
   }
 }
 
-class RemoteActorTest extends JUnitSuite {
+class ClientInitiatedRemoteActorTest extends JUnitSuite {
   import Actor.Sender.Self
 
   akka.Config.config
@@ -108,7 +108,7 @@ class RemoteActorTest extends JUnitSuite {
     actor.start
 
     val sender = new RemoteActorSpecActorAsyncSender
-    sender.setContactAddress(HOSTNAME, PORT1)
+    sender.setReplyToAddress(HOSTNAME, PORT1)
     sender.start
     sender.send(actor)
     Thread.sleep(1000)
@@ -116,26 +116,6 @@ class RemoteActorTest extends JUnitSuite {
     actor.stop
   }
 
-  /*
-   This test does not throw an exception since the
-   _contactAddress is always defined via the
-   global configuration if not set explicitly.
-
-    @Test
-    def shouldSendRemoteReplyException = {
-      implicit val timeout = 500000000L
-      val actor = new RemoteActorSpecActorBidirectional
-      actor.makeRemote(HOSTNAME, PORT1)
-      actor.start
-
-       val sender = new RemoteActorSpecActorAsyncSender
-       sender.start
-       sender.send(actor)
-       Thread.sleep(500)
-      assert("exception" === Global.remoteReply)
-      actor.stop
-    }
-  */
   @Test
   def shouldSendReceiveException = {
     implicit val timeout = 500000000L

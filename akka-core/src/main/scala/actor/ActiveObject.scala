@@ -4,10 +4,9 @@
 
 package se.scalablesolutions.akka.actor
 
-import java.net.InetSocketAddress
-
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.dispatch.{MessageDispatcher, FutureResult}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
@@ -16,8 +15,8 @@ import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 
+import java.net.InetSocketAddress
 import java.lang.reflect.{InvocationTargetException, Method}
-import se.scalablesolutions.akka.dispatch.{Dispatchers, MessageDispatcher, FutureResult}
 
 object Annotations {
   import se.scalablesolutions.akka.annotation._
@@ -234,6 +233,7 @@ private[akka] sealed case class AspectInit(
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @Aspect("perInstance")
+// TODO: add @shutdown callback to ActiveObject in which we get the Aspect through 'Aspects.aspectOf(MyAspect.class, targetInstance)' and shuts down the Dispatcher actor
 private[akka] sealed class ActiveObjectAspect {
   @volatile private var isInitialized = false
   private var target: Class[_] = _
