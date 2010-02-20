@@ -13,8 +13,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 import scala.collection.mutable.HashMap
-
-import org.scala_tools.javautils.Imports._
+import scala.collection.JavaConversions._
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Timer, TimerTask}
@@ -411,7 +410,7 @@ object AMQP {
     protected def setupChannel = {
       connection = connectionFactory.newConnection(hostname, port)
       channel = connection.createChannel
-      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, configurationArguments.asJava)
+      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, configurationArguments)
       listeners.elements.toList.map(_._2).foreach(registerListener)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
@@ -426,7 +425,7 @@ object AMQP {
           listener.queueName, 
           passive, durable, 
           listener.exclusive, listener.autoDelete, 
-          configurationArguments.asJava)
+          configurationArguments)
       }
 
       log.debug("Binding new queue for MessageConsumerListener [%s]", listener.queueName)

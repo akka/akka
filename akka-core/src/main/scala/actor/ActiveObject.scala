@@ -260,9 +260,10 @@ private[akka] sealed class ActiveObjectAspect {
   }
 
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
-    import Actor.Sender.Self
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    if (isOneWay(rtti)) actor ! Invocation(joinPoint, true, true)
+    if (isOneWay(rtti)) {
+      (actor ! Invocation(joinPoint, true, true) ).asInstanceOf[AnyRef]
+    }
     else {
       val result = actor !! Invocation(joinPoint, false, isVoid(rtti))
       if (result.isDefined) result.get
@@ -357,7 +358,7 @@ private[akka] sealed class ActiveObjectAspect {
  */
 private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Option[RestartCallbacks]) extends Actor {
   private val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
-  private val ZERO_ITEM_OBJECT_ARRAY = Array[Object[_]]()
+  private val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
 
   private[actor] var target: Option[AnyRef] = None
   private var preRestart: Option[Method] = None

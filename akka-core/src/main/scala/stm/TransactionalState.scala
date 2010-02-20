@@ -173,11 +173,19 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
 
   ref.swap(new HashTrie[K, V])
  
-  def -=(key: K) = remove(key)
+  def -=(key: K) = { 
+    remove(key)
+    this
+  }
 
   def +=(key: K, value: V) = put(key, value)
 
-  def remove(key: K) = ref.swap(ref.get.get - key)
+  def remove(key: K) = {
+    val map = ref.get.get
+    val oldValue = map.get(key)
+    ref.swap(ref.get.get - key)
+    oldValue
+  }
 
   def get(key: K): Option[V] = ref.get.get.get(key)
  

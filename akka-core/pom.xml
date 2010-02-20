@@ -46,11 +46,6 @@
       <artifactId>netty</artifactId>
       <version>3.2.0.ALPHA3</version>
     </dependency>
-    <dependency>
-      <groupId>org.scala-tools</groupId>
-      <artifactId>javautils</artifactId>
-      <version>2.7.4-0.1</version>
-    </dependency>
 
     <!-- For Protocol/Serialization -->
     <dependency>
@@ -68,11 +63,11 @@
       <artifactId>jackson-mapper-asl</artifactId>
       <version>1.2.1</version>
     </dependency>
-    <dependency>
+    <!--DOESN'T EXIST AS 2.8 port yet dependency> 
       <groupId>sbinary</groupId>
       <artifactId>sbinary</artifactId>
       <version>0.3</version>
-    </dependency>
+    </dependency-->
     <dependency>
       <groupId>net.databinder</groupId>
       <artifactId>dispatch-json_2.8.0.Beta1</artifactId>
@@ -91,7 +86,7 @@
     <dependency>
       <groupId>sjson.json</groupId>
       <artifactId>sjson</artifactId>
-      <version>0.4</version>
+      <version>0.5-SNAPSHOT-2.8.Beta1</version>
     </dependency>
 
     <!-- For Testing -->

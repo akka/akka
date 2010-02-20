@@ -7,12 +7,12 @@ package se.scalablesolutions.akka.serialization
 import org.codehaus.jackson.map.ObjectMapper
 import com.google.protobuf.Message
 import reflect.Manifest
-import sbinary.DefaultProtocol
+//import sbinary.DefaultProtocol
 import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
 import sjson.json.{Serializer=>SJSONSerializer}
 
 object SerializationProtocol {
-  val SBINARY = 1
+  //val SBINARY = 1
   val SCALA_JSON = 2
   val JAVA_JSON = 3
   val PROTOBUF = 4
@@ -60,10 +60,10 @@ object Serializable {
    * </pre>
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait SBinary[T <: AnyRef] extends Serializable {
+  /*trait SBinary[T <: AnyRef] extends Serializable {
     def fromBytes(bytes: Array[Byte]): T
     def toBytes: Array[Byte]
-  }
+  } */
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

@@ -29,7 +29,7 @@ class SerializerFactory {
   def getJava: Java.type = Java
   def getJavaJSON: JavaJSON.type = JavaJSON
   def getScalaJSON: ScalaJSON.type = ScalaJSON
-  def getSBinary: SBinary.type = SBinary
+  //def getSBinary: SBinary.type = SBinary
   def getProtobuf: Protobuf.type = Protobuf  
 }
 
@@ -165,7 +165,7 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object SBinary extends SBinary
+  /*object SBinary extends SBinary
   class SBinary {
     import sbinary.DefaultProtocol._
     
@@ -176,6 +176,6 @@ object Serializer {
     def in[T](array : Array[Byte], clazz: Option[Class[T]])(implicit bin : Reads[T]): T = fromByteArray[T](array)
  
     def in[T](array : Array[Byte])(implicit bin : Reads[T]): T = fromByteArray[T](array)
-  }
+  } */
 }
 

@@ -17,14 +17,14 @@ import com.sun.jersey.spi.container.WebApplication
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class AkkaServlet extends ServletContainer {
-  import org.scala_tools.javautils.Imports._
+  import scala.collection.JavaConversions._
 
   override def initiate(resourceConfig: ResourceConfig, webApplication: WebApplication) = {
     //Kernel.boot // will boot if not already booted by 'main'
 
     val configurators = ConfiguratorRepository.getConfigurators
 
-    resourceConfig.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces).asJava)
+    resourceConfig.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
     resourceConfig.getProperties.put(
       "com.sun.jersey.spi.container.ResourceFilters",
       Config.config.getList("akka.rest.filters").mkString(","))

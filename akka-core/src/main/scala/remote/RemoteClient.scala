@@ -267,7 +267,7 @@ class RemoteClientPipelineFactory(name: String,
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@ChannelPipelineCoverage {val value = "all"}
+@ChannelPipelineCoverage(value = "all")
 class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFutureResult],
                           val supervisors: ConcurrentMap[String, Actor],

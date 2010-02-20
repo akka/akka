@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.serialization.Serializable.SBinary
+//import se.scalablesolutions.akka.serialization.Serializable.SBinary
 import se.scalablesolutions.akka.serialization.{Serializer, Serializable, SerializationProtocol}
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
 
@@ -14,7 +14,7 @@ object RemoteProtocolBuilder {
   private var SERIALIZER_JAVA: Serializer.Java = Serializer.Java
   private var SERIALIZER_JAVA_JSON: Serializer.JavaJSON = Serializer.JavaJSON
   private var SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
-  private var SERIALIZER_SBINARY: Serializer.SBinary = Serializer.SBinary
+  //private var SERIALIZER_SBINARY: Serializer.SBinary = Serializer.SBinary
   private var SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
 
 
@@ -29,9 +29,9 @@ object RemoteProtocolBuilder {
   
   def getMessage(request: RemoteRequest): Any = {
     request.getProtocol match {
-      case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
-        renderer.fromBytes(request.getMessage.toByteArray)
+      //case SerializationProtocol.SBINARY =>
+      //  val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+      //  renderer.fromBytes(request.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
         SERIALIZER_SCALA_JSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
@@ -50,9 +50,9 @@ object RemoteProtocolBuilder {
 
   def getMessage(reply: RemoteReply): Any = {
     reply.getProtocol match {
-      case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
-        renderer.fromBytes(reply.getMessage.toByteArray)
+      //case SerializationProtocol.SBINARY =>
+      //  val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+      //  renderer.fromBytes(reply.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
         SERIALIZER_SCALA_JSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
@@ -70,12 +70,12 @@ object RemoteProtocolBuilder {
   }
 
   def setMessage(message: Any, builder: RemoteRequest.Builder) = {
-    if (message.isInstanceOf[Serializable.SBinary[_]]) {
+    /*if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
       builder.setProtocol(SerializationProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
-    } else if (message.isInstanceOf[Message]) {
+    } else*/ if (message.isInstanceOf[Message]) {
       val serializable = message.asInstanceOf[Message]
       builder.setProtocol(SerializationProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
@@ -98,12 +98,12 @@ object RemoteProtocolBuilder {
   }
 
   def setMessage(message: Any, builder: RemoteReply.Builder) = {
-    if (message.isInstanceOf[Serializable.SBinary[_]]) {
+    /*if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
       builder.setProtocol(SerializationProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
-    } else if (message.isInstanceOf[Message]) {
+    } else*/ if (message.isInstanceOf[Message]) {
       val serializable = message.asInstanceOf[Message]
       builder.setProtocol(SerializationProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))

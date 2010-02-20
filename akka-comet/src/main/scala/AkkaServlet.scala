@@ -59,12 +59,12 @@ class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
     * we need to handle that.
     */
    override def createCometSupportResolver() : CometSupportResolver = {
-      import org.scala_tools.javautils.Imports._
+      import scala.collection.JavaConversions._
  
       new DefaultCometSupportResolver(config) {
          type CS = CometSupport[_ <: AtmosphereResource[_,_]]
          override def resolveMultipleNativeSupportConflict(available : JList[Class[_ <: CS]]) : CS = {
-             available.asScala.filter(_ != classOf[GrizzlyCometSupport]).toList match {
+             available.filter(_ != classOf[GrizzlyCometSupport]).toList match {
                  case Nil => new GrizzlyCometSupport(config)
                  case x :: Nil => newCometSupport(x.asInstanceOf[Class[_ <: CS]])
                  case _ => super.resolveMultipleNativeSupportConflict(available)
