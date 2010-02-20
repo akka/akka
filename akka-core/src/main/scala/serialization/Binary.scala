@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-
+/*
 package se.scalablesolutions.akka.serialization
 
 // --- PRIMITIVES ---
@@ -373,3 +373,4 @@ case class BinaryStringByteArrayMap(val value: Map[String, Array[Byte]]) extends
   def fromBytes(bytes: Array[Byte]) = BinaryStringByteArrayMap(fromByteArray[Map[String, Array[Byte]]](bytes))
   def toBytes: Array[Byte] =          toByteArray(value)
 }
+*/

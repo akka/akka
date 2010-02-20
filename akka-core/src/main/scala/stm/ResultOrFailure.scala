@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.util
 
-import stm.Transaction
+import se.scalablesolutions.akka.stm.Transaction
 
 /**
  * Reference that can hold either a typed value or an exception.

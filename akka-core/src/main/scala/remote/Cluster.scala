@@ -133,7 +133,7 @@ abstract class BasicClusterActor extends ClusterActor {
 
     case RegisterLocalNode(s) => {
       log debug ("RegisterLocalNode: %s", s)
-      local = Node(local.endpoints + s)
+      local = Node(s :: local.endpoints)
       broadcast(Papers(local.endpoints))
     }
 

@@ -73,7 +73,7 @@ object Actor extends Logging {
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
   object Sender{
-    implicit val Self: Option[Actor] = None
+    object Self
   }
 
   /**
@@ -474,7 +474,7 @@ trait Actor extends TransactionManagement {
    *   actor.send(message)
    * </pre>
    */
-  def !(message: Any)(implicit sender: Option[Actor]) = {
+  def !(message: Any)(implicit sender: Option[Actor] = None) = {
     //FIXME 2.8   def !(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) postMessageToMailbox(message, sender)
@@ -539,8 +539,7 @@ trait Actor extends TransactionManagement {
 
 
   /*
- //FIXME 2.8 def !!!(message: Any)(implicit sender: AnyRef = None): FutureResult = {
-  def !!!(message: Any)(implicit sender: AnyRef): FutureResult = {
+  def !!!(message: Any)(implicit sender: Option[Actor] = None): FutureResult = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
       val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
@@ -562,7 +561,7 @@ trait Actor extends TransactionManagement {
    * <p/>
    * Works with both '!' and '!!'. 
    */
-  def forward(message: Any)(implicit sender: Option[Actor]) = {
+  def forward(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
       val forwarder = sender.getOrElse(throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor"))
@@ -1027,7 +1026,8 @@ trait Actor extends TransactionManagement {
         !message.isInstanceOf[List[_]] &&
         !message.isInstanceOf[scala.collection.immutable.Map[_, _]] &&
         !message.isInstanceOf[scala.collection.immutable.Set[_]] &&
-        !message.isInstanceOf[scala.collection.immutable.Tree[_, _]] &&
+        //Removed in Scala 2.8
+        //!message.isInstanceOf[scala.collection.immutable.Tree[_, _]] &&
         !message.getClass.isAnnotationPresent(Annotations.immutable)) {
       Serializer.Java.deepClone(message)
     } else message

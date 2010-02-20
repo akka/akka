@@ -84,7 +84,7 @@ class ShoalClusterActor extends BasicClusterActor {
    * Creates a CallBack instance that deals with the cluster signalling
    */
   protected def createCallback : CallBack = {
-    import org.scala_tools.javautils.Imports._
+    import scala.collection.JavaConversions._
     val me = this
     new CallBack {
       def processNotification(signal : Signal) {
@@ -93,7 +93,7 @@ class ShoalClusterActor extends BasicClusterActor {
           if(isActive) {
             signal match {
               case  ms : MessageSignal => me send Message(ms.getMemberToken,ms.getMessage)
-              case jns : JoinNotificationSignal => me send View(Set[ADDR_T]() ++ jns.getCurrentCoreMembers.asScala - serverName)
+              case jns : JoinNotificationSignal => me send View(Set[ADDR_T]() ++ jns.getCurrentCoreMembers - serverName)
               case fss : FailureSuspectedSignal => me send Zombie(fss.getMemberToken)
               case fns : FailureNotificationSignal => me send Zombie(fns.getMemberToken)
               case _ => log.debug("Unhandled signal: [%s]",signal)

@@ -8,7 +8,7 @@ import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, Exten
  */
 class JGroupsClusterActor extends BasicClusterActor {
   import ClusterActor._
-  import org.scala_tools.javautils.Imports._
+  import scala.collection.JavaConversions._
 
   type ADDR_T = Address
 
@@ -32,7 +32,7 @@ class JGroupsClusterActor extends BasicClusterActor {
           if (isActive && m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) me send Message(m.getSrc,m.getRawBuffer)
 
         def viewAccepted(view: JG_VIEW): Unit =
-          if (isActive) me send View(Set[ADDR_T]() ++ view.getMembers.asScala - channel.get.getAddress)
+          if (isActive) me send View(Set[ADDR_T]() ++ view.getMembers - channel.get.getAddress)
 
         def suspect(a: Address): Unit =
           if (isActive) me send Zombie(a)

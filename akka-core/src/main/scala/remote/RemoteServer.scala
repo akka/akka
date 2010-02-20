@@ -244,7 +244,7 @@ class RemoteServerPipelineFactory(
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@ChannelPipelineCoverage {val value = "all"}
+@ChannelPipelineCoverage(value = "all")
 class RemoteServerHandler(
     val name: String,
     val openChannels: ChannelGroup,
