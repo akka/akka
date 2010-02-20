@@ -36,7 +36,7 @@
   </description>
 
   <properties>
-    <scala.version>2.7.7</scala.version>
+    <scala.version>2.8.0.Beta1</scala.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.5</maven.compiler.source>
     <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
@@ -46,7 +46,9 @@
     <jersey.version>1.1.5</jersey.version>
     <grizzly.version>1.9.18-i</grizzly.version>
     <scalatest.version>1.0-for-scala-2.8.0-SNAPSHOT</scalatest.version>
-    <dispatch.version>2.8.0.Beta1-RC8</dispatch.version>
+    <dispatch.version>0.7.0</dispatch.version>
+    <lift.version>2.0-scala280-SNAPSHOT</lift.version>
+    <configgy.version>2.8.0.Beta1-1.5-SNAPSHOT</configgy.version>
   </properties>
 
   <modules>
