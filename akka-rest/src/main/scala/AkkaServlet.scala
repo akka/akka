@@ -27,7 +27,7 @@ class AkkaServlet extends ServletContainer {
     resourceConfig.getClasses.addAll(configurators.flatMap(_.getComponentInterfaces))
     resourceConfig.getProperties.put(
       "com.sun.jersey.spi.container.ResourceFilters",
-      Config.config.getList("akka.rest.filters").mkString(","))
+      se.scalablesolutions.akka.Config.config.getList("akka.rest.filters").mkString(","))
 
     webApplication.initiate(resourceConfig, new ActorComponentProviderFactory(configurators))
   }

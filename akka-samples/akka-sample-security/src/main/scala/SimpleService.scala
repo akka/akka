@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.security.samples
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.security.{DigestAuthenticationActor, UserInfo}
+import se.scalablesolutions.akka.security._
 import se.scalablesolutions.akka.state.TransactionalState
 
 class Boot {

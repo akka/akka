@@ -13,7 +13,6 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 import scala.collection.mutable.HashMap
-import scala.collection.JavaConversions._
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Timer, TimerTask}
@@ -78,6 +77,8 @@ object AMQP {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   class AMQPSupervisor extends Actor {
+    import scala.collection.JavaConversions._
+  
     private val connections = new ConcurrentHashMap[FaultTolerantConnectionActor, FaultTolerantConnectionActor]
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
@@ -137,7 +138,7 @@ object AMQP {
     }
 
     override def shutdown = {
-      connections.values.asScala.foreach(_ ! Stop)
+      asMap(connections).values.foreach(_ ! Stop)
       exit
     }
 
@@ -360,8 +361,13 @@ object AMQP {
       extends FaultTolerantConnectionActor {
     consumer: Consumer =>
 
+    import scala.collection.JavaConversions._
+
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
+    
+    //FIXME use better strategy to convert scala.immutable.Map to java.util.Map
+    private val jConfigMap = configurationArguments.foldLeft(new java.util.HashMap[String,Object]){ (m,kv) => { m.put(kv._1,kv._2); m } }
 
     private val listeners = new HashMap[MessageConsumerListener, MessageConsumerListener]
 
@@ -410,7 +416,7 @@ object AMQP {
     protected def setupChannel = {
       connection = connectionFactory.newConnection(hostname, port)
       channel = connection.createChannel
-      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, configurationArguments)
+      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, jConfigMap)
       listeners.elements.toList.map(_._2).foreach(registerListener)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
@@ -425,7 +431,7 @@ object AMQP {
           listener.queueName, 
           passive, durable, 
           listener.exclusive, listener.autoDelete, 
-          configurationArguments)
+          jConfigMap)
       }
 
       log.debug("Binding new queue for MessageConsumerListener [%s]", listener.queueName)

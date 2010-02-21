@@ -7,8 +7,8 @@ package se.scalablesolutions.akka.rest
 import com.sun.jersey.core.spi.component.ComponentScope
 import com.sun.jersey.core.spi.component.ioc.IoCFullyManagedComponentProvider
 
-import config.Configurator
-import util.Logging
+import se.scalablesolutions.akka.config.Configurator
+import se.scalablesolutions.akka.util.Logging
 
 class ActorComponentProvider(val clazz: Class[_], val configurators: List[Configurator])
     extends IoCFullyManagedComponentProvider with Logging {
