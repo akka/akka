@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.serialization.BinaryString
+//import se.scalablesolutions.akka.serialization.BinaryString
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer}
 import se.scalablesolutions.akka.OneWay
@@ -18,6 +18,11 @@ object Log {
   var oneWayLog: String = ""
 }
 
+//Dummy until SBinary is fixed for Scala 2.8
+object BinaryString{
+  def apply(string : String) = string
+  def unapply(string : String) = Some(string)
+}
 
 @serializable class RemotePingPong1Actor extends Actor {
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
@@ -74,7 +79,7 @@ object Log {
 class RemoteSupervisorTest extends JUnitSuite {
   import Actor.Sender.Self
 
-  akka.Config.config
+  se.scalablesolutions.akka.Config.config
   new Thread(new Runnable() {
     def run = {
       RemoteNode.start
