@@ -15,7 +15,7 @@
 
   <modules>
     <module>akka-persistence-common</module>
-    <module>akka-persistence-redis</module>
+    <!--module>akka-persistence-redis</module-->
     <module>akka-persistence-mongo</module>
     <module>akka-persistence-cassandra</module>
   </modules>

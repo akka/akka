@@ -90,7 +90,7 @@ trait CassandraSession extends Closeable with Flushable {
 
   def ++|(key: String, batch: Map[String, List[ColumnOrSuperColumn]], consistencyLevel: Int): Unit = {
     val jmap = new java.util.HashMap[String, JList[ColumnOrSuperColumn]]
-    for (entry <- batch; (key, value) = entry) jmap.put(key, value)
+    for (entry <- batch; (key, value) = entry) jmap.put(key, new java.util.ArrayList(value))
     client.batch_insert(keyspace, key, jmap, consistencyLevel)
   }
 

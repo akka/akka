@@ -95,10 +95,21 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     removedEntries.clear
   }
 
-  def -=(key: K) = remove(key)
+  def -=(key: K) = {
+    remove(key)
+    this
+  }
 
-  def +=(key: K, value: V) = put(key, value)
+  override def +=(kv : (K,V)) = {
+    put(kv._1,kv._2)
+    this
+  }
 
+  def +=(key: K, value: V) = {
+    put(key, value)
+    this
+  }
+  
   override def put(key: K, value: V): Option[V] = {
     register
     newAndUpdatedEntries.put(key, value)
@@ -109,9 +120,10 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     newAndUpdatedEntries.update(key, value)
   }
   
-  def remove(key: K) = {
+  override def remove(key: K) = {
     register
     removedEntries.add(key)
+    newAndUpdatedEntries.get(key)
   }
   
   def slice(start: Option[K], count: Int): List[Tuple2[K, V]] =
@@ -143,6 +155,8 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
       storage.getMapStorageEntryFor(uuid, key)
     } catch { case e: Exception => None }
   }
+  
+  def iterator = elements
   
   override def elements: Iterator[Tuple2[K, V]]  = {
     new Iterator[Tuple2[K, V]] {
@@ -386,14 +400,20 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   override def isEmpty: Boolean =
     size == 0
 
-  override def +=(elem: A): Unit = enqueue(elem)
-  override def ++=(elems: Iterator[A]): Unit = enqueue(elems.toList: _*)
-  override def ++=(elems: Iterable[A]): Unit = this ++= elems.elements
+  override def +=(elem: A) = { 
+    enqueue(elem)
+    this
+  }
+  override def ++=(elems: Iterator[A]) = { 
+    enqueue(elems.toList: _*)
+    this
+  }
+  def ++=(elems: Iterable[A]): Unit = this ++= elems.elements
 
   override def dequeueFirst(p: A => Boolean): Option[A] =
     throw new UnsupportedOperationException("dequeueFirst not supported")
 
-  override def dequeueAll(p: A => Boolean): Seq[A] =
+  override def dequeueAll(p: A => Boolean): scala.collection.mutable.Seq[A] =
     throw new UnsupportedOperationException("dequeueAll not supported")
 
   private def register = {

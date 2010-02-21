@@ -1,7 +1,7 @@
 package se.scalablesolutions.akka.actor
 
 
-import config.ScalaConfig._
+import se.scalablesolutions.akka.config.ScalaConfig._
 
 import org.scalatest.Suite
 import patterns.Patterns

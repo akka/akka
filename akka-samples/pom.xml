@@ -14,7 +14,7 @@
   </parent>
 
   <modules>
-    <module>akka-sample-chat</module>
+    <!--module>akka-sample-chat</module-->
     <module>akka-sample-lift</module>
     <module>akka-sample-security</module>
     <module>akka-sample-rest-scala</module>
