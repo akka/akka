@@ -179,8 +179,13 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
   }
 
   def +=(key: K, value: V) = put(key, value)
+  
+  def +=(kv: (K, V)) = {
+    put(kv._1,kv._2)
+    this
+  }
 
-  def remove(key: K) = {
+  override def remove(key: K) = {
     val map = ref.get.get
     val oldValue = map.get(key)
     ref.swap(ref.get.get - key)
@@ -196,19 +201,21 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
     oldValue
   }
 
-  def update(key: K, value: V) = {
+  override def update(key: K, value: V) = {
     val map = ref.get.get
     val oldValue = map.get(key)
     ref.swap(map.update(key, value))
   }
+  
+  def iterator = ref.get.get.iterator
 
-  def elements: Iterator[(K, V)] = ref.get.get.elements
+  override def elements: Iterator[(K, V)] = ref.get.get.elements
 
   override def contains(key: K): Boolean = ref.get.get.contains(key)
 
   override def clear = ref.swap(new HashTrie[K, V])
 
-  def size: Int = ref.get.get.size
+  override def size: Int = ref.get.get.size
  
   override def hashCode: Int = System.identityHashCode(this);
 

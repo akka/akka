@@ -138,7 +138,7 @@ object DataFlow {
         "Access by index other than '0' is not supported by DataFlowStream")
     }
 
-    override def elements: Iterator[T] = new Iterator[T] {
+    def iterator: Iterator[T] = new Iterator[T] {
       private val iter = queue.iterator
       def hasNext: Boolean = iter.hasNext
       def next: T = { val ref = iter.next; ref() }

@@ -45,10 +45,11 @@
     <atmosphere.version>0.5.2</atmosphere.version>
     <jersey.version>1.1.5</jersey.version>
     <grizzly.version>1.9.18-i</grizzly.version>
-    <scalatest.version>1.0-for-scala-2.8.0-SNAPSHOT</scalatest.version>
+    <scalatest.version>1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT</scalatest.version>
     <dispatch.version>0.7.0</dispatch.version>
     <lift.version>2.0-scala280-SNAPSHOT</lift.version>
     <configgy.version>2.8.0.Beta1-1.5-SNAPSHOT</configgy.version>
+    <junit.version>4.5</junit.version>
   </properties>
 
   <modules>
