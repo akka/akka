@@ -24,34 +24,6 @@
       <artifactId>protobuf-java</artifactId>
       <version>2.2.0</version>
     </dependency>
-    <dependency>
-      <groupId>org.multiverse</groupId>
-      <artifactId>multiverse-alpha</artifactId>
-      <version>0.4-SNAPSHOT</version>
-      <classifier>jar-with-dependencies</classifier>
-      <exclusions>
-        <exclusion>
-          <groupId>org.multiverse</groupId>
-          <artifactId>multiverse-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>asm</groupId>
-          <artifactId>asm-tree</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>asm</groupId>
-          <artifactId>asm-analysis</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>asm</groupId>
-          <artifactId>asm-commons</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>asm</groupId>
-          <artifactId>asm-util</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
   </dependencies>
 
   <build>

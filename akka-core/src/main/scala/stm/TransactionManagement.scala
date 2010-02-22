@@ -26,7 +26,7 @@ object TransactionManagement extends TransactionManagement {
   def isTransactionalityEnabled = TRANSACTION_ENABLED.get
   def disableTransactions = TRANSACTION_ENABLED.set(false)
 
-  private[akka] val currentTransaction: ThreadLocal[Option[Transaction]] = new ThreadLocal[Option[Transaction]]() {
+  private[akka] val currentTransaction = new ThreadLocal[Option[Transaction]]() {
     override protected def initialValue: Option[Transaction] = None
   }
 }
@@ -51,6 +51,8 @@ trait TransactionManagement extends Logging {
   private[akka] def getTransactionInScope = currentTransaction.get.get
   
   private[akka] def isTransactionInScope = currentTransaction.get.isDefined
+
+  private[akka] def isTransactionTopLevel = if (isTransactionInScope) getTransactionInScope.isTopLevel
 
   private[akka] def incrementTransaction = if (isTransactionInScope) getTransactionInScope.increment
 

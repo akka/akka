@@ -911,10 +911,10 @@ trait Actor extends TransactionManagement {
 
     try {
       if (isTransactionRequiresNew && !isTransactionInScope) {
-        if (senderFuture.isEmpty) throw new StmException(
-          "Can't continue transaction in a one-way fire-forget message send" +
-          "\n\tE.g. using Actor '!' method or Active Object 'void' method" +
-          "\n\tPlease use the Actor '!!' method or Active Object method with non-void return type")
+        //if (senderFuture.isEmpty) throw new StmException(
+        //  "Can't continue transaction in a one-way fire-forget message send" +
+        //  "\n\tE.g. using Actor '!' method or Active Object 'void' method" +
+        //  "\n\tPlease use the Actor '!!' method or Active Object method with non-void return type")
         atomic {
           proceed
         }
