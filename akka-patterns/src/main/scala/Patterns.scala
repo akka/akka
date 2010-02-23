@@ -28,11 +28,6 @@ object Patterns {
     val seq = actors
   }
 
-  //FIXME 2.8, use default params with CyclicIterator
-  /*def loadBalancerActor(actors : () => List[Actor]) : Actor = loadBalancerActor(
-    new CyclicIterator(actors())
-  ) */
-
   def dispatcherActor(routing : PF[Any,Actor], msgTransformer : (Any) => Any) : Actor = new Actor with Dispatcher {
         override def transform(msg : Any) = msgTransformer(msg)
     def routes = routing
@@ -81,21 +76,4 @@ class CyclicIterator[T](items : List[T]) extends InfiniteIterator[T] {
     current = nc.tail
     nc.head
   }
-}
-
-//Agent
-/*
-val a = agent(startValue)
-a.set(_ + 5)
-a.get
-a.foreach println(_)
-*/
-object Agent {
-  sealed trait AgentMessage
-  case class FunMessage[T](f : (T) => T) extends AgentMessage
-  case class ProcMessage[T](f : (T) => Unit) extends AgentMessage
-  case class ValMessage[T](t : T) extends AgentMessage
-}
-sealed private[akka] class Agent[T] {
-
 }

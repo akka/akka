@@ -27,8 +27,8 @@ case class Credit(accountNo: String, amount: BigInt)
 case object LogSize
 
 class AccountActor extends Transactor {
-  private val accountState = RedisStorage.newMap
-  private val txnLog = RedisStorage.newVector
+  private lazy val accountState = RedisStorage.newMap
+  private lazy val txnLog = RedisStorage.newVector
 
   def receive = {
     // check balance
