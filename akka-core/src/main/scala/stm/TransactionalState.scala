@@ -77,7 +77,7 @@ class TransactionalRef[T] extends Transactional {
   implicit val txInitName = "TransactionalRef:Init"
   val uuid = UUID.newUuid.toString
 
-  private[this] val ref: AlphaRef[T] = atomic { new AlphaRef }
+  private[this] lazy val ref: AlphaRef[T] = new AlphaRef
 
   def swap(elem: T) = {
     ensureIsInTransaction

@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, F
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction._
 import se.scalablesolutions.akka.stm.TransactionManagement._
-import se.scalablesolutions.akka.stm.{StmException, TransactionManagement}
+import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
@@ -21,6 +21,7 @@ import org.multiverse.api.ThreadLocalTransaction._
 import java.util.{Queue, HashSet}
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.net.InetSocketAddress
+import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -72,7 +73,7 @@ object Actor extends Logging {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
-  object Sender{
+  object Sender {
     implicit val Self: Option[Actor] = None
   }
 
@@ -193,7 +194,7 @@ object Actor extends Logging {
  */
 trait Actor extends TransactionManagement {
   implicit protected val self: Option[Actor] = Some(this)
-  implicit protected val transactionFamily: String = this.getClass.getName
+  implicit protected val transactionFamilyName: String = this.getClass.getName
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
@@ -215,6 +216,7 @@ trait Actor extends TransactionManagement {
   private[akka] var _supervisor: Option[Actor] = None
   private[akka] var _replyToAddress: Option[InetSocketAddress] = None
   private[akka] val _mailbox: Queue[MessageInvocation] = new ConcurrentLinkedQueue[MessageInvocation]
+
 
   // ====================================
   // protected fields
@@ -333,8 +335,8 @@ trait Actor extends TransactionManagement {
   /**
    * User overridable callback/setting.
    *
-   * Partial function implementing the server logic.
-   * To be implemented by subclassing server.
+   * Partial function implementing the actor logic.
+   * To be implemented by subclassing actor.
    * <p/>
    * Example code:
    * <pre>
@@ -782,6 +784,11 @@ trait Actor extends TransactionManagement {
   }
 
   protected[akka] def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = {
+    if (isTransactionSetInScope) {
+      log.trace("Adding transaction for %s with message [%s] to transaction set", toString, message)
+      getTransactionSetInScope.incParties
+    }
+
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -793,8 +800,7 @@ trait Actor extends TransactionManagement {
           .setIsEscaped(false)
       
       val id = registerSupervisorAsRemoteActor
-      if (id.isDefined)
-        requestBuilder.setSupervisorUuid(id.get)
+      if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
 
       // set the source fields used to reply back to the original sender
       // (i.e. not the remote proxy actor)
@@ -813,18 +819,24 @@ trait Actor extends TransactionManagement {
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
     } else {
-      val invocation = new MessageInvocation(this, message, None, sender, currentTransaction.get)
+      val invocation = new MessageInvocation(this, message, None, sender, transactionSet.get)
       if (_isEventBased) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
       } else invocation.send
     }
+    clearTransactionSet
   }
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any, 
       timeout: Long,
       senderFuture: Option[CompletableFutureResult]): CompletableFutureResult = {
+    if (isTransactionSetInScope) {
+      log.trace("Adding transaction for %s with message [%s] to transaction set", toString, message)    
+      getTransactionSetInScope.incParties
+    }
+    
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -838,16 +850,18 @@ trait Actor extends TransactionManagement {
       val id = registerSupervisorAsRemoteActor
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
       val future = RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, senderFuture)
+      clearTransactionSet
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFutureResult(timeout)
-      val invocation = new MessageInvocation(this, message, Some(future), None, currentTransaction.get)
+      val invocation = new MessageInvocation(this, message, Some(future), None, transactionSet.get)
       if (_isEventBased) {
         _mailbox.add(invocation)
         invocation.send
       } else invocation.send
+      clearTransactionSet
       future
     }
   }
@@ -856,6 +870,7 @@ trait Actor extends TransactionManagement {
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods.
    */
   private[akka] def invoke(messageHandle: MessageInvocation) = synchronized {
+    log.trace("%s is invoked with message %s", toString, messageHandle)
     try {
       if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
       else dispatch(messageHandle)
@@ -867,7 +882,7 @@ trait Actor extends TransactionManagement {
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    setTransaction(messageHandle.tx)
+    setTransactionSet(messageHandle.transactionSet)
 
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     senderFuture = messageHandle.future
@@ -889,43 +904,55 @@ trait Actor extends TransactionManagement {
   }
 
   private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
-    setTransaction(messageHandle.tx)
+    var topLevelTransaction = false
+    val txSet: Option[CountDownCommitBarrier] =
+      if (messageHandle.transactionSet.isDefined) messageHandle.transactionSet
+      else {
+        topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
+        if (isTransactionRequiresNew) {
+          log.trace("Creating a new transaction set (top-level transaction) \nfor actor %s \nwith message %s", toString, messageHandle)
+          Some(createNewTransactionSet)
+        } else None
+      }
+    setTransactionSet(txSet)
 
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     senderFuture = messageHandle.future
     sender = messageHandle.sender
 
+    def clearTx = {
+      clearTransactionSet
+      clearTransaction
+    }
+
     def proceed = {
-      try {
-        incrementTransaction
-        if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
-        else throw new IllegalArgumentException(
-          "Actor " + toString + " could not process message [" + message + "]" +
-           "\n\tsince no matching 'case' clause in its 'receive' method could be found")
-      } finally {
-        decrementTransaction
-      }
+      if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
+      else throw new IllegalArgumentException(
+        toString + " could not process message [" + message + "]" +
+        "\n\tsince no matching 'case' clause in its 'receive' method could be found")
+      setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
     }
 
     try {
-      if (isTransactionRequiresNew && !isTransactionInScope) {
-        //if (senderFuture.isEmpty) throw new StmException(
-        //  "Can't continue transaction in a one-way fire-forget message send" +
-        //  "\n\tE.g. using Actor '!' method or Active Object 'void' method" +
-        //  "\n\tPlease use the Actor '!!' method or Active Object method with non-void return type")
+      if (isTransactionRequiresNew) {
         atomic {
           proceed
         }
       } else proceed
     } catch {
+      case e: IllegalStateException => {}
       case e =>
+        // abort transaction set
+        if (isTransactionSetInScope) try { getTransactionSetInScope.abort } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
+
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
-        clearTransaction // need to clear currentTransaction before call to supervisor
+        clearTx  // need to clear currentTransaction before call to supervisor
+
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
     } finally {
-      clearTransaction
+      clearTx
     }
   }
 
