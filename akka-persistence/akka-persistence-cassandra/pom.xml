@@ -18,6 +18,12 @@
       <artifactId>akka-persistence-common</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
+      <exclusions>
+          <exclusion>
+            <groupId>com.google.code.google-collections</groupId>
+            <artifactId>google-collect</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- For Cassandra -->
@@ -26,6 +32,50 @@
       <artifactId>cassandra</artifactId>
       <version>0.5.0</version>
     </dependency>
+      <dependency>
+        <groupId>org.apache.cassandra</groupId>
+        <artifactId>high-scale-lib</artifactId>
+        <version>0.5.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.cassandra</groupId>
+        <artifactId>clhm-production</artifactId>
+        <version>0.5.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>com.google.collections</groupId>
+          <artifactId>google-collections</artifactId>
+          <version>1.0-rc1</version>
+          <scope>test</scope>
+     </dependency>
+      <dependency>
+          <groupId>commons-collections</groupId>
+          <artifactId>commons-collections</artifactId>
+          <version>3.2.1</version>
+          <scope>test</scope>
+     </dependency>
+      <dependency>
+          <groupId>commons-lang</groupId>
+          <artifactId>commons-lang</artifactId>
+          <version>2.4</version>
+          <scope>test</scope>
+     </dependency>
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>1.5.8</version>
+          <scope>test</scope>
+     </dependency>
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+          <version>1.5.8</version>
+          <scope>test</scope>
+     </dependency>
+
+
      <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
