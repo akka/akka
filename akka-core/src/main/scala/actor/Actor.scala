@@ -98,9 +98,7 @@ object Actor extends Logging {
    * The actor is started when created.
    * Example:
    * <pre>
-   * import Actor._
-   *
-   * val a = actor  {
+   * val a = Actor.init  {
    *   ... // init stuff
    * } receive  {
    *   case msg => ... // handle message
@@ -108,7 +106,7 @@ object Actor extends Logging {
    * </pre>
    *
    */
-  def actor[A](body: => Unit) = {
+  def init[A](body: => Unit) = {
     def handler[A](body: => Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
         start
