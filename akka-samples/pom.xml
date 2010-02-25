@@ -19,6 +19,7 @@
     <module>akka-sample-security</module>
     <module>akka-sample-rest-scala</module>
     <module>akka-sample-rest-java</module>
+    <module>akka-sample-camel</module>
   </modules>
 
   <dependencies>
@@ -44,6 +45,11 @@
     </dependency>
     <dependency>
       <artifactId>akka-comet</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>akka-camel</artifactId>
       <groupId>${project.groupId}</groupId>
       <version>${project.version}</version>
     </dependency>
