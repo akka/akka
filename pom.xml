@@ -58,6 +58,7 @@
     <module>akka-amqp</module>
     <module>akka-security</module>
     <module>akka-patterns</module>
+    <module>akka-camel</module>
     <module>akka-kernel</module>
     <module>akka-fun-test-java</module>
     <module>akka-samples</module>
