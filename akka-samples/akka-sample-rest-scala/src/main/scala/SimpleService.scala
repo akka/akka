@@ -53,7 +53,7 @@ class SimpleService extends Transactor {
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private val storage = TransactionalState.newMap[String, Integer]
+  private lazy val storage = TransactionalState.newMap[String, Integer]
 
   @GET
   @Produces(Array("text/html"))
@@ -105,7 +105,7 @@ class PersistentSimpleService extends Transactor {
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private val storage = CassandraStorage.newMap
+  private lazy val storage = CassandraStorage.newMap
 
   @GET
   @Produces(Array("text/html"))
