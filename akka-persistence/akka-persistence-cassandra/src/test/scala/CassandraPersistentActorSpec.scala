@@ -9,6 +9,7 @@ import org.junit.Assert._
 import org.apache.cassandra.service.CassandraDaemon
 import org.junit.BeforeClass
 import org.junit.Before
+import org.scalatest.junit.JUnitSuite
 
 case class GetMapState(key: String)
 case object GetVectorState
@@ -73,7 +74,7 @@ class CassandraPersistentActor extends Actor {
   }
 }
 
-class CassandraPersistentActorTest  {
+class CassandraPersistentActorSpec extends JUnitSuite {
 
   @Before
   def startCassandra = EmbeddedCassandraService.start
