@@ -203,8 +203,6 @@ trait Actor extends TransactionManagement {
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
 
-  def uuid = _uuid
-
   // ====================================
   // private fields
   // ====================================
@@ -259,7 +257,7 @@ trait Actor extends TransactionManagement {
    * use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
    */
-  protected[akka] var id: String = this.getClass.getName
+  protected var id: String = this.getClass.getName
 
   /**
    * User overridable callback/setting.
@@ -269,8 +267,6 @@ trait Actor extends TransactionManagement {
    */
   @volatile var timeout: Long = Actor.TIMEOUT
 
-  ActorRegistry.register(this)
-  
   /**
    * User overridable callback/setting.
    * <p/>
@@ -418,6 +414,7 @@ trait Actor extends TransactionManagement {
       init 
     }
     Actor.log.debug("[%s] has started", toString)
+    ActorRegistry.register(this)
     this
   }
 
@@ -759,6 +756,16 @@ trait Actor extends TransactionManagement {
     }
     actor
   }
+
+  /**
+   * Returns the id for the actor.
+   */
+  def getId = id
+
+  /**
+   * Returns the uuid for the actor.
+   */
+  def uuid = _uuid
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
