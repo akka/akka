@@ -8,9 +8,51 @@
 package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.TimeUnit
+
+import java.util.concurrent.{SynchronousQueue, TimeUnit}
 
 class FutureTimeoutException(message: String) extends RuntimeException(message)
+
+object Futures {
+  def awaitAll(futures: List[FutureResult]): Unit = futures.foreach(_.await)
+
+  def awaitOne(futures: List[FutureResult]): FutureResult = {
+    var future: Option[FutureResult] = None
+    do {
+      future = futures.find(_.isCompleted)
+    } while (future.isEmpty)
+    future.get
+  }
+
+  /*
+  def awaitEither(f1: FutureResult, f2: FutureResult): Option[Any] = {
+    import Actor.Sender.Self
+    import Actor.{spawn, actor}
+      
+    case class Result(res: Option[Any])
+    val handOff = new SynchronousQueue[Option[Any]]
+    spawn {
+      try {
+        println("f1 await")
+        f1.await
+        println("f1 offer")
+        handOff.offer(f1.result)
+      } catch {case _ => {}}
+    }
+    spawn {
+      try {
+        println("f2 await")
+        f2.await
+        println("f2 offer")
+        println("f2 offer: " + f2.result)
+        handOff.offer(f2.result)
+      } catch {case _ => {}}
+    }
+    Thread.sleep(100)
+    handOff.take
+  }
+*/
+}
 
 sealed trait FutureResult {
   def await
@@ -46,7 +88,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
       var start = currentTimeInNanos
       try {
         wait = _signal.awaitNanos(wait)
-        if (wait <= 0) throw new FutureTimeoutException("Future timed out after [" + timeout + "] milliseconds") 
+        if (wait <= 0) throw new FutureTimeoutException("Futures timed out after [" + timeout + "] milliseconds")
       } catch {
         case e: InterruptedException =>
           wait = wait - (currentTimeInNanos - start)

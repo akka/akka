@@ -90,7 +90,7 @@ object Actor extends Logging {
    */
   def actor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
     start
-    def receive = body
+    def receive: PartialFunction[Any, Unit] = body
   }
 
   /**
@@ -108,8 +108,8 @@ object Actor extends Logging {
    * </pre>
    *
    */
-  def actor[A](body: => Unit) = {
-    def handler[A](body: => Unit) = new {
+  def actor(body: => Unit) = {
+    def handler(body: => Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
         start
         body
@@ -141,8 +141,7 @@ object Actor extends Logging {
       start
       send(Spawn)
       def receive = {
-        case Spawn => body
-        case _ => throw new IllegalArgumentException("Actors created with 'actor(body: => Unit)' do not respond to messages.")
+        case Spawn => body; stop
       }
     }
   }
@@ -537,19 +536,13 @@ trait Actor extends TransactionManagement {
    */
   def !![T](message: Any): Option[T] = !![T](message, timeout)
 
-
-  /*
- //FIXME 2.8 def !!!(message: Any)(implicit sender: AnyRef = None): FutureResult = {
-  def !!!(message: Any)(implicit sender: AnyRef): FutureResult = {
+  def !!!(message: Any): FutureResult = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
-      else None
-      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, from)
+      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
-  */
   
   /**
    * This method is evil and has been removed. Use '!!' with a timeout instead.
