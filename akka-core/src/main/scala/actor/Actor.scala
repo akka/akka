@@ -90,7 +90,7 @@ object Actor extends Logging {
    */
   def actor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
     start
-    def receive = body
+    def receive: PartialFunction[Any, Unit] = body
   }
 
   /**
@@ -108,8 +108,8 @@ object Actor extends Logging {
    * </pre>
    *
    */
-  def actor[A](body: => Unit) = {
-    def handler[A](body: => Unit) = new {
+  def actor(body: => Unit) = {
+    def handler(body: => Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
         start
         body
@@ -141,8 +141,7 @@ object Actor extends Logging {
       start
       send(Spawn)
       def receive = {
-        case Spawn => body
-        case _ => throw new IllegalArgumentException("Actors created with 'actor(body: => Unit)' do not respond to messages.")
+        case Spawn => body; stop
       }
     }
   }
@@ -204,8 +203,6 @@ trait Actor extends TransactionManagement {
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
 
-  def uuid = _uuid
-
   // ====================================
   // private fields
   // ====================================
@@ -260,7 +257,7 @@ trait Actor extends TransactionManagement {
    * use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
    */
-  protected[akka] var id: String = this.getClass.getName
+  protected var id: String = this.getClass.getName
 
   /**
    * User overridable callback/setting.
@@ -270,8 +267,6 @@ trait Actor extends TransactionManagement {
    */
   @volatile var timeout: Long = Actor.TIMEOUT
 
-  ActorRegistry.register(this)
-  
   /**
    * User overridable callback/setting.
    * <p/>
@@ -419,6 +414,7 @@ trait Actor extends TransactionManagement {
       init 
     }
     Actor.log.debug("[%s] has started", toString)
+    ActorRegistry.register(this)
     this
   }
 
@@ -537,18 +533,13 @@ trait Actor extends TransactionManagement {
    */
   def !![T](message: Any): Option[T] = !![T](message, timeout)
 
-
-  /*
-  def !!!(message: Any)(implicit sender: Option[Actor] = None): FutureResult = {
+  def !!!(message: Any): FutureResult = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
-      else None
-      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, from)
+      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
-  */
   
   /**
    * This method is evil and has been removed. Use '!!' with a timeout instead.
@@ -765,6 +756,16 @@ trait Actor extends TransactionManagement {
     }
     actor
   }
+
+  /**
+   * Returns the id for the actor.
+   */
+  def getId = id
+
+  /**
+   * Returns the uuid for the actor.
+   */
+  def uuid = _uuid
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
