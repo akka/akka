@@ -96,7 +96,7 @@ class SecureTickActor extends Actor with Logging {
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private val storage = TransactionalState.newMap[String, Integer]
+  private lazy val storage = TransactionalState.newMap[String, Integer]
 
   /**
    * allow access for any user to "/secureticker/public"

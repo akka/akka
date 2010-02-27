@@ -27,11 +27,12 @@ public class SimpleService {
   private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private TransactionalMap storage = TransactionalState.newMap();
+  private TransactionalMap<String, Integer> storage;
 
   @GET
   @Produces({"application/json"})
   public String count() {
+    if (storage == null) storage = TransactionalState.newMap();
     if (!hasStartedTicking) {
       storage.put(KEY, 0);
       hasStartedTicking = true;

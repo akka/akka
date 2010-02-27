@@ -65,7 +65,7 @@ object ActorRegistry extends Logging {
       case Some(instances) => actorsByClassName + (className -> (actor :: instances))
       case None => actorsByClassName + (className -> (actor :: Nil))
     }
-    val id = actor.id
+    val id = actor.getId
     if (id eq null) throw new IllegalStateException("Actor.id is null " + actor)
     actorsById.get(id) match {
       case Some(instances) => actorsById + (id -> (actor :: instances))
