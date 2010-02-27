@@ -29,11 +29,12 @@ public class PersistentSimpleService {
   private String KEY = "COUNTER";
 
   private boolean hasStartedTicking = false;
-  private PersistentMap<byte[], byte[]> storage = CassandraStorage.newMap();
+  private PersistentMap<byte[], byte[]> storage;
 
   @GET
   @Produces({"application/html"})
   public String count() {
+    if (storage == null) storage = CassandraStorage.newMap();
     if (!hasStartedTicking) {
       storage.put(KEY.getBytes(), ByteBuffer.allocate(2).putInt(0).array());
       hasStartedTicking = true;
