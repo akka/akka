@@ -6,6 +6,10 @@ import junit.framework.TestCase
 
 import org.junit.Test
 import org.junit.Assert._
+import org.apache.cassandra.service.CassandraDaemon
+import org.junit.BeforeClass
+import org.junit.Before
+import org.scalatest.junit.JUnitSuite
 
 case class GetMapState(key: String)
 case object GetVectorState
@@ -70,7 +74,10 @@ class CassandraPersistentActor extends Actor {
   }
 }
 
-class CassandraPersistentActorSpec extends TestCase {
+class CassandraPersistentActorSpec extends JUnitSuite {
+
+  @Before
+  def startCassandra = EmbeddedCassandraService.start
  
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
@@ -144,4 +151,28 @@ class CassandraPersistentActorSpec extends TestCase {
     val result: Array[Byte] = (stateful !! GetRefState).get
     assertEquals("init",  new String(result, 0, result.length, "UTF-8")) // check that state is == init state
   }
+
+}
+
+import org.apache.cassandra.service.CassandraDaemon
+object EmbeddedCassandraService {
+
+  System.setProperty("storage-config", "src/test/resources");
+
+  val cassandra = new Runnable {
+
+    val cassandraDaemon = new CassandraDaemon
+    cassandraDaemon.init(null)
+
+    def run = cassandraDaemon.start
+
+  }
+
+  // spawn cassandra in a new thread
+  val t = new Thread(cassandra)
+  t.setDaemon(true)
+  t.start
+
+  def start: Unit = {}
+
 }
