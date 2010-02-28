@@ -10,13 +10,15 @@ import scala.collection.mutable.{ListBuffer, HashMap}
 import scala.reflect.Manifest
 
 /**
- * Registry holding all actor instances, mapped by class and the actor's id field (which can be set by user-code).
+ * Registry holding all actor instances, mapped by class, the actor's uuid and the actor's id field (which can be set
+ * by user-code).
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends Logging {
   private val actorsByClassName = new HashMap[String, List[Actor]]
   private val actorsById = new HashMap[String, List[Actor]]
+  private val actorsByUuid = new HashMap[String, Actor]
 
   /**
    * Returns all actors in the system.
@@ -50,13 +52,20 @@ object ActorRegistry extends Logging {
   }
 
   /**
-   * Finds all actors that has a specific id.
+   * Finds all actors that have a specific id.
    */
   def actorsFor(id : String): List[Actor] = synchronized {
     actorsById.get(id) match {
       case None => Nil
       case Some(instances) => instances
     }
+  }
+
+  /**
+   * Finds the actor that has a specific uuid.
+   */
+  def actorFor(uuid : String): Option[Actor] = synchronized {
+    actorsByUuid.get(uuid)
   }
 
   def register(actor: Actor) = synchronized {
@@ -71,11 +80,13 @@ object ActorRegistry extends Logging {
       case Some(instances) => actorsById + (id -> (actor :: instances))
       case None => actorsById + (id -> (actor :: Nil))
     }
+    actorsByUuid + (actor.uuid -> actor)
   }
 
   def unregister(actor: Actor) = synchronized {
     actorsByClassName - actor.getClass.getName
-    actorsById - actor.getClass.getName
+    actorsById - actor.getId
+    actorsByUuid - actor.uuid
   }
 
   def shutdownAll = {
