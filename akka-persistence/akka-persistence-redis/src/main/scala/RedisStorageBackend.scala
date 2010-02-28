@@ -15,10 +15,15 @@ trait Encoder {
 }
 
 trait CommonsCodecBase64 {
-  val base64 = new org.apache.commons.codec.binary.Base64
-  
-  def encode(bytes: Array[Byte]): Array[Byte] = base64.encode(bytes)
-  def decode(bytes: Array[Byte]): Array[Byte] = base64.decode(bytes)
+  import org.apache.commons.codec.binary.Base64._
+
+  def encode(bytes: Array[Byte]): Array[Byte] = encodeBase64(bytes)
+  def decode(bytes: Array[Byte]): Array[Byte] = decodeBase64(bytes)
+}
+
+trait NoOpEncoder {
+  def encode(bytes: Array[Byte]): Array[Byte] = bytes
+  def decode(bytes: Array[Byte]): Array[Byte] = bytes
 }
 
 object Base64Encoder extends Encoder with CommonsCodecBase64
