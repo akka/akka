@@ -2,17 +2,75 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-/**
- * Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
- */
 package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent.locks.ReentrantLock
+
 import java.util.concurrent.TimeUnit
 
 class FutureTimeoutException(message: String) extends RuntimeException(message)
 
-sealed trait FutureResult {
+object Futures {
+
+  /**
+   * FIXME document
+   * <pre>
+   * val future = Futures.future(1000) {
+   *  ... // do stuff
+   * }
+   * </pre>
+   */
+  def future(timeout: Long)(body: => Any): Future = {
+    val promise = new DefaultCompletableFuture(timeout)
+    try {
+      promise completeWithResult body
+    } catch {
+      case e => promise completeWithException (None, e)
+    }
+    promise
+  }
+
+  def awaitAll(futures: List[Future]): Unit = futures.foreach(_.await)
+
+  def awaitOne(futures: List[Future]): Future = {
+    var future: Option[Future] = None
+    do {
+      future = futures.find(_.isCompleted)
+    } while (future.isEmpty)
+    future.get
+  }
+
+  /*
+  def awaitEither(f1: Future, f2: Future): Option[Any] = {
+    import Actor.Sender.Self
+    import Actor.{spawn, actor}
+      
+    case class Result(res: Option[Any])
+    val handOff = new SynchronousQueue[Option[Any]]
+    spawn {
+      try {
+        println("f1 await")
+        f1.await
+        println("f1 offer")
+        handOff.offer(f1.result)
+      } catch {case _ => {}}
+    }
+    spawn {
+      try {
+        println("f2 await")
+        f2.await
+        println("f2 offer")
+        println("f2 offer: " + f2.result)
+        handOff.offer(f2.result)
+      } catch {case _ => {}}
+    }
+    Thread.sleep(100)
+    handOff.take
+  }
+*/
+}
+
+sealed trait Future {
   def await
   def awaitBlocking
   def isCompleted: Boolean
@@ -22,12 +80,13 @@ sealed trait FutureResult {
   def exception: Option[Tuple2[AnyRef, Throwable]]
 }
 
-trait CompletableFutureResult extends FutureResult {
+trait CompletableFuture extends Future {
   def completeWithResult(result: Any)
   def completeWithException(toBlame: AnyRef, exception: Throwable)
 }
 
-class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureResult {
+// Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
+class DefaultCompletableFuture(timeout: Long) extends CompletableFuture {
   private val TIME_UNIT = TimeUnit.MILLISECONDS
   def this() = this(0)
 
@@ -46,7 +105,7 @@ class DefaultCompletableFutureResult(timeout: Long) extends CompletableFutureRes
       var start = currentTimeInNanos
       try {
         wait = _signal.awaitNanos(wait)
-        if (wait <= 0) throw new FutureTimeoutException("Future timed out after [" + timeout + "] milliseconds") 
+        if (wait <= 0) throw new FutureTimeoutException("Futures timed out after [" + timeout + "] milliseconds")
       } catch {
         case e: InterruptedException =>
           wait = wait - (currentTimeInNanos - start)

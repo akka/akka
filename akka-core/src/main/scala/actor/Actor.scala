@@ -17,11 +17,11 @@ import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 
 import org.multiverse.api.ThreadLocalTransaction._
+import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 import java.util.{Queue, HashSet}
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.net.InetSocketAddress
-import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -91,7 +91,7 @@ object Actor extends Logging {
    */
   def actor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
     start
-    def receive = body
+    def receive: PartialFunction[Any, Unit] = body
   }
 
   /**
@@ -134,11 +134,14 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def spawn(body: => Unit): Actor = new Actor() {
-    start
-    body
-    def receive = {
-      case _ => throw new IllegalArgumentException("Actors created with 'actor(body: => Unit)' do not respond to messages.")
+  def spawn(body: => Unit): Actor = {
+    case object Spawn
+    new Actor() {
+      start
+      send(Spawn)
+      def receive = {
+        case Spawn => body; stop
+      }
     }
   }
 
@@ -199,8 +202,6 @@ trait Actor extends TransactionManagement {
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
 
-  def uuid = _uuid
-
   // ====================================
   // private fields
   // ====================================
@@ -239,7 +240,7 @@ trait Actor extends TransactionManagement {
    * But it can be used for advanced use-cases when one might want to store away the future and
    * resolve it later and/or somewhere else.
    */
-  protected var senderFuture: Option[CompletableFutureResult] = None
+  protected var senderFuture: Option[CompletableFuture] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -256,7 +257,7 @@ trait Actor extends TransactionManagement {
    * use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
    */
-  protected[akka] var id: String = this.getClass.getName
+  protected var id: String = this.getClass.getName
 
   /**
    * User overridable callback/setting.
@@ -266,8 +267,6 @@ trait Actor extends TransactionManagement {
    */
   @volatile var timeout: Long = Actor.TIMEOUT
 
-  ActorRegistry.register(this)
-  
   /**
    * User overridable callback/setting.
    * <p/>
@@ -415,6 +414,7 @@ trait Actor extends TransactionManagement {
       init 
     }
     Actor.log.debug("[%s] has started", toString)
+    ActorRegistry.register(this)
     this
   }
 
@@ -533,26 +533,17 @@ trait Actor extends TransactionManagement {
    */
   def !![T](message: Any): Option[T] = !![T](message, timeout)
 
-
-  /*
- //FIXME 2.8 def !!!(message: Any)(implicit sender: AnyRef = None): FutureResult = {
-  def !!!(message: Any)(implicit sender: AnyRef): FutureResult = {
+  /**
+   * FIXME document !!!
+   */
+  def !!!(message: Any): Future = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
-      else None
-      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, from)
+      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
-  */
   
-  /**
-   * This method is evil and has been removed. Use '!!' with a timeout instead.
-   */
-  def !?[T](message: Any): T = throw new UnsupportedOperationException(
-    "'!?' is evil and has been removed. Use '!!' with a timeout instead")
-
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
@@ -763,6 +754,16 @@ trait Actor extends TransactionManagement {
     actor
   }
 
+  /**
+   * Returns the id for the actor.
+   */
+  def getId = id
+
+  /**
+   * Returns the uuid for the actor.
+   */
+  def uuid = _uuid
+
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
@@ -804,12 +805,12 @@ trait Actor extends TransactionManagement {
 
       // set the source fields used to reply back to the original sender
       // (i.e. not the remote proxy actor)
-      if (sender.isDefined) {
+      if(sender.isDefined) {
         val s = sender.get
         requestBuilder.setSourceTarget(s.getClass.getName)
         requestBuilder.setSourceUuid(s.uuid)
 
-        val (host, port) = s._replyToAddress.map(actor => (actor.getHostName, actor.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
+        val (host,port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME,Actor.PORT))
         
         log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
 
@@ -823,7 +824,9 @@ trait Actor extends TransactionManagement {
       if (_isEventBased) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
-      } else invocation.send
+      } 
+      else
+        invocation.send
     }
     clearTransactionSet
   }
@@ -831,7 +834,7 @@ trait Actor extends TransactionManagement {
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any, 
       timeout: Long,
-      senderFuture: Option[CompletableFutureResult]): CompletableFutureResult = {
+      senderFuture: Option[CompletableFuture]): CompletableFuture = {
     if (isTransactionSetInScope) {
       log.trace("Adding transaction for %s with message [%s] to transaction set", toString, message)    
       getTransactionSetInScope.incParties
@@ -855,7 +858,7 @@ trait Actor extends TransactionManagement {
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
-                   else new DefaultCompletableFutureResult(timeout)
+                   else new DefaultCompletableFuture(timeout)
       val invocation = new MessageInvocation(this, message, Some(future), None, transactionSet.get)
       if (_isEventBased) {
         _mailbox.add(invocation)
@@ -956,7 +959,7 @@ trait Actor extends TransactionManagement {
     }
   }
 
-  private def getResultOrThrowException[T](future: FutureResult): Option[T] =
+  private def getResultOrThrowException[T](future: Future): Option[T] =
     if (future.exception.isDefined) throw future.exception.get._2
     else future.result.asInstanceOf[Option[T]]
 
@@ -1064,6 +1067,5 @@ trait Actor extends TransactionManagement {
     that.asInstanceOf[Actor]._uuid == _uuid
   }
 
-  override def toString(): String = "Actor[" + id + ":" + uuid + "]"
-
+  override def toString = "Actor[" + id + ":" + uuid + "]"
 }

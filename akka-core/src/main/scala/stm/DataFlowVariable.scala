@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
 import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.dispatch.CompletableFutureResult
+import se.scalablesolutions.akka.dispatch.CompletableFuture
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.
@@ -74,7 +74,7 @@ object DataFlow {
     private class Out[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
       timeout = TIME_OUT
       start
-      private var readerFuture: Option[CompletableFutureResult] = None
+      private var readerFuture: Option[CompletableFuture] = None
       def receive = {
         case Get =>
           val ref = dataFlow.value.get
