@@ -1,15 +1,14 @@
 package se.scalablesolutions.akka.camel.service
 
-import org.apache.camel.Message
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import org.junit.Assert._
 import org.junit.{Before, After, Test}
 import org.scalatest.junit.JUnitSuite
 
-import se.scalablesolutions.akka.annotation.consume
-import se.scalablesolutions.akka.camel.Consumer
 import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.annotation.consume
+import se.scalablesolutions.akka.camel.{Message, Consumer}
 
 /**
  * @author Martin Krasser
@@ -51,17 +50,17 @@ class CamelServiceTest extends JUnitSuite {
     service.onUnload
   }
 
-  @Test def shouldCommunicateWithAutoDetectedActor1ViaGeneratedRoute = {
+  @Test def shouldReceiveResponseFromActor1ViaGeneratedRoute = {
     val result = template.requestBody("direct:actor1", "Martin")
     assertEquals("Hello Martin (actor1)", result)
   }
 
-  @Test def shouldCommunicateWithAutoDetectedActor2ViaGeneratedRoute = {
+  @Test def shouldReceiveResponseFromActor2ViaGeneratedRoute = {
     val result = template.requestBody("direct:actor2", "Martin")
     assertEquals("Hello Martin (actor2)", result)
   }
 
-  @Test def shouldCommunicateWithAutoDetectedActor3ViaCustomRoute = {
+  @Test def shouldReceiveResponseFromActor3ViaCustomRoute = {
     val result = template.requestBody("direct:actor3", "Martin")
     assertEquals("Hello Tester (actor3)", result)
   }
@@ -72,14 +71,15 @@ class TestActor1 extends Actor with Consumer {
   def endpointUri = "direct:actor1"
 
   protected def receive = {
-    case msg: Message => reply("Hello %s (actor1)" format msg.getBody)
+    case msg: Message => reply("Hello %s (actor1)" format msg.body)
   }
+
 }
 
 @consume("direct:actor2")
 class TestActor2 extends Actor {
   protected def receive = {
-    case msg: Message => reply("Hello %s (actor2)" format msg.getBody)
+    case msg: Message => reply("Hello %s (actor2)" format msg.body)
   }
 }
 
@@ -87,7 +87,7 @@ class TestActor3 extends Actor {
   id = "actor3"
 
   protected def receive = {
-    case msg: Message => reply("Hello %s (actor3)" format msg.getBody)
+    case msg: Message => reply("Hello %s (actor3)" format msg.body)
   }
 }
 

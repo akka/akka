@@ -11,6 +11,7 @@ import org.apache.camel.{Exchange, Consumer, Processor}
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
+import se.scalablesolutions.akka.camel.{CamelMessageWrapper, Message}
 
 /**
  * Camel component for interacting with actors.
@@ -104,25 +105,26 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
   }
 
   protected def processInOnly(exchange: Exchange, actor: Actor) {
-    actor ! exchange.getIn
+    actor ! Message(exchange.getIn)
   }
 
   protected def processInOut(exchange: Exchange, actor: Actor) {
-    val outmsg = exchange.getOut
+
+    import CamelMessageWrapper._
+
     // TODO: make timeout configurable
-    // TODO: send immutable message
     // TODO: support asynchronous communication
     //       - jetty component: jetty continuations
     //       - file component: completion callbacks
-    val result: Any = actor !! exchange.getIn
+    val result: Any = actor !! Message(exchange.getIn)
 
     result match {
-      case Some((body, headers:Map[String, Any])) => {
-        outmsg.setBody(body)
-        for (header <- headers)
-          outmsg.getHeaders.put(header._1, header._2.asInstanceOf[AnyRef])
+      case Some(m:Message) => {
+        exchange.getOut.from(m)
       }
-      case Some(body) => outmsg.setBody(body)
+      case Some(body) => {
+        exchange.getOut.setBody(body)
+      }
     }
   }
 

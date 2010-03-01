@@ -1,9 +1,8 @@
 package sample.camel
 
-import org.apache.camel.Message
-
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.annotation.consume
+import se.scalablesolutions.akka.camel.Message
 
 /**
  * @author Martin Krasser
@@ -12,7 +11,7 @@ import se.scalablesolutions.akka.annotation.consume
 class Consumer2 extends Actor {
 
   def receive = {
-    case msg: Message => reply("Hello %s" format msg.getBody(classOf[String]))
+    case msg: Message => reply("Hello %s" format msg.bodyAs(classOf[String]))
   }
 
 }
