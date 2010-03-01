@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.serialization
 import junit.framework.TestCase
 
 import org.scalatest.junit.JUnitSuite
-import org.junit.{Test, Before, After, Ignore}
+import org.junit.{Test, Before, After}
 
 import scala.reflect.BeanInfo
 @BeanInfo 
@@ -18,7 +18,7 @@ case class MyMessage(val id: String, val value: Tuple2[String, Int]) {
 
 
 class SerializerTest extends JUnitSuite {
-  @Test @Ignore // TODO: resolve test failure
+  @Test
   def shouldSerializeString = {
     val f = Foo("debasish")
     val json = Serializer.ScalaJSON.out(f)
@@ -27,7 +27,7 @@ class SerializerTest extends JUnitSuite {
     assert(fo == f)
   }
 
-  @Test @Ignore // TODO: resolve test failure
+  @Test
   def shouldSerializeTuple2 = {
     val message = MyMessage("id", ("hello", 34))
     val json = Serializer.ScalaJSON.out(message)

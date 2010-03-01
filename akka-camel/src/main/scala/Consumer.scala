@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.actor.Actor
  *
  * @author Martin Krasser
  */
-trait CamelConsumer {
+trait Consumer {
 
   self: Actor =>
 
