@@ -10,9 +10,8 @@ import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
-import se.scalablesolutions.akka.state.RedisStorage
-
 import scala.collection.mutable.HashMap
+import se.scalablesolutions.akka.state.{PersistentVector, RedisStorage}
 
 /******************************************************************************
   To run the sample: 
@@ -77,7 +76,7 @@ trait ChatStorage extends Actor
 class RedisChatStorage extends ChatStorage {
   lifeCycle = Some(LifeCycle(Permanent))    
       
-  private var chatLog = RedisStorage.getVector("akka.chat.log")
+  private var chatLog = atomic { RedisStorage.getVector("akka.chat.log") }
 
   log.info("Redis-based chat storage is starting up...")
 
