@@ -4,11 +4,11 @@
 
 package se.scalablesolutions.akka.dispatch
 
+import java.util.Collection
 import java.util.concurrent._
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
-import java.util.Collection
 import se.scalablesolutions.akka.util.Logging
 
 trait ThreadPoolBuilder {

@@ -240,7 +240,7 @@ trait Actor extends TransactionManagement {
    * But it can be used for advanced use-cases when one might want to store away the future and
    * resolve it later and/or somewhere else.
    */
-  protected var senderFuture: Option[CompletableFutureResult] = None
+  protected var senderFuture: Option[CompletableFuture] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -533,7 +533,10 @@ trait Actor extends TransactionManagement {
    */
   def !![T](message: Any): Option[T] = !![T](message, timeout)
 
-  def !!!(message: Any): FutureResult = {
+  /**
+   * FIXME document !!!
+   */
+  def !!!(message: Any): Future = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
       postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
@@ -541,12 +544,6 @@ trait Actor extends TransactionManagement {
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
   
-  /**
-   * This method is evil and has been removed. Use '!!' with a timeout instead.
-   */
-  def !?[T](message: Any): T = throw new UnsupportedOperationException(
-    "'!?' is evil and has been removed. Use '!!' with a timeout instead")
-
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
@@ -832,7 +829,7 @@ trait Actor extends TransactionManagement {
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any, 
       timeout: Long,
-      senderFuture: Option[CompletableFutureResult]): CompletableFutureResult = {
+      senderFuture: Option[CompletableFuture]): CompletableFuture = {
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -850,7 +847,7 @@ trait Actor extends TransactionManagement {
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
-                   else new DefaultCompletableFutureResult(timeout)
+                   else new DefaultCompletableFuture(timeout)
       val invocation = new MessageInvocation(this, message, Some(future), None, currentTransaction.get)
       if (_isEventBased) {
         _mailbox.add(invocation)
@@ -937,7 +934,7 @@ trait Actor extends TransactionManagement {
     }
   }
 
-  private def getResultOrThrowException[T](future: FutureResult): Option[T] =
+  private def getResultOrThrowException[T](future: Future): Option[T] =
     if (future.exception.isDefined) throw future.exception.get._2
     else future.result.asInstanceOf[Option[T]]
 
