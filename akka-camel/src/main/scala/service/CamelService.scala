@@ -10,7 +10,7 @@ import org.apache.camel.builder.RouteBuilder
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import se.scalablesolutions.akka.annotation.consume
-import se.scalablesolutions.akka.camel.CamelConsumer
+import se.scalablesolutions.akka.camel.Consumer
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 
 /**
@@ -43,7 +43,7 @@ trait CamelService extends Bootable with Logging {
 /**
  * Generic route builder that searches the registry for actors that are
  * either annotated with @se.scalablesolutions.akka.annotation.consume or
- * mixed in se.scalablesolutions.akka.camel.CamelConsumer and exposes them
+ * mixed in se.scalablesolutions.akka.camel.Consumer and exposes them
  * as Camel endpoints.
  *
  * @author Martin Krasser
@@ -55,25 +55,23 @@ class CamelRouteBuilder extends RouteBuilder with Logging {
 
     //
     // TODO: resolve/clarify issues with ActorRegistry
-    //       - custom Actor.id ignored
-    //       - actor de-registration issues
     //       - multiple registration with same id/uuid possible
     //
 
     // TODO: avoid redundant registrations
     actors.filter(isConsumeAnnotated _).foreach { actor: Actor =>
       val fromUri = actor.getClass.getAnnotation(classOf[consume]).value()
-      configure(fromUri, "actor://%s" format actor.id)
+      configure(fromUri, "actor:id:%s" format actor.getId)
       log.debug("registered actor (id=%s) for consuming messages from %s "
-          format (actor.id, fromUri))
+          format (actor.getId, fromUri))
     }
 
     // TODO: avoid redundant registrations
     actors.filter(isConsumerInstance _).foreach { actor: Actor =>
-      val fromUri = actor.asInstanceOf[CamelConsumer].endpointUri
-      configure(fromUri, "actor://%s/%s" format (actor.id, actor.uuid))
-      log.debug("registered actor (id=%s, uuid=%s) for consuming messages from %s "
-          format (actor.id, actor.uuid, fromUri))
+      val fromUri = actor.asInstanceOf[Consumer].endpointUri
+      configure(fromUri, "actor:uuid:%s" format actor.uuid)
+      log.debug("registered actor (uuid=%s) for consuming messages from %s "
+          format (actor.uuid, fromUri))
     }
   }
 
@@ -94,6 +92,6 @@ class CamelRouteBuilder extends RouteBuilder with Logging {
     actor.getClass.getAnnotation(classOf[consume]) ne null
 
   private def isConsumerInstance(actor: Actor) =
-    actor.isInstanceOf[CamelConsumer]
+    actor.isInstanceOf[Consumer]
 
 }
