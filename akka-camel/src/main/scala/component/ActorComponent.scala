@@ -27,12 +27,13 @@ class ActorComponent extends DefaultComponent {
     new ActorEndpoint(uri, this, idAndUuid._1, idAndUuid._2)
   }
   
-  private def idAndUuidPair(remaining: String): Tuple2[String, Option[String]] = {
-    remaining split "/" toList match {
-      case id :: Nil         => (id, None)
-      case id :: uuid :: Nil => (id, Some(uuid))
+  private def idAndUuidPair(remaining: String): Tuple2[Option[String], Option[String]] = {
+    remaining split ":" toList match {
+      case             id :: Nil => (Some(id), None)
+      case   "id" ::   id :: Nil => (Some(id), None)
+      case "uuid" :: uuid :: Nil => (None, Some(uuid))
       case _ => throw new IllegalArgumentException(
-        "invalid path format: %s - should be <actorid>[/<actoruuid>]" format remaining)
+        "invalid path format: %s - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
     }
   }
 
@@ -40,19 +41,17 @@ class ActorComponent extends DefaultComponent {
 
 /**
  * Camel endpoint for interacting with actors. An actor can be addressed by its
- * <code>Actor.id</code> or by an <code>Actor.id</code> - <code>Actor.uuid</code>
- * combination. The URI format is <code>actor://<actorid>[/<actoruuid>]</code>.
+ * <code>Actor.getId</code> or its <code>Actor.uuid</code> combination. Supported URI formats are
+ * <code>actor:&lt;actorid&gt;</code>,
+ * <code>actor:id:&lt;actorid&gt;</code> and
+ * <code>actor:uuid:&lt;actoruuid&gt;</code>.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorProducer
 
  * @author Martin Krasser
  */
-class ActorEndpoint(uri: String, comp: ActorComponent, val id: String, val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
-
-  // TODO: clarify uuid details
-  // - do they change after persist/restore
-  // - what about remote actors and uuids
+class ActorEndpoint(uri: String, comp: ActorComponent, val id: Option[String], val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
 
   /**
    * @throws UnsupportedOperationException 
@@ -80,10 +79,10 @@ class ActorEndpoint(uri: String, comp: ActorComponent, val id: String, val uuid:
  */
 class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
 
-  implicit val sender = Some(Sender)
+  implicit val sender = Some(new Sender)
 
   def process(exchange: Exchange) {
-    val actor = target getOrElse (throw new ActorNotRegisteredException(ep.id, ep.uuid))
+    val actor = target getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
     if (exchange.getPattern.isOutCapable)
       processInOut(exchange, actor)
     else
@@ -92,6 +91,12 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
 
   override def start {
     super.start
+    sender.get.start
+  }
+
+  override def stop {
+    sender.get.stop
+    super.stop
   }
 
   protected def receive = {
@@ -122,16 +127,17 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
   }
 
   private def target: Option[Actor] = {
-    ActorRegistry.actorsFor(ep.id) match {
-      case actor :: Nil if targetMatchesUuid(actor) => Some(actor)
-      case Nil    => None
-      case actors => actors find (targetMatchesUuid _)
-    }
+    if (ep.id.isDefined) targetById(ep.id.get)
+    else targetByUuid(ep.uuid.get)
   }
 
-  private def targetMatchesUuid(target: Actor): Boolean =
-    // if ep.uuid is not defined always return true
-    target.uuid == (ep.uuid getOrElse target.uuid)
+  private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
+    case Nil          => None
+    case actor :: Nil => Some(actor)
+    case actors       => Some(actors.first)
+  }
+
+  private def targetByUuid(uuid: String) = ActorRegistry.actorFor(uuid)
 
 }
 
@@ -140,9 +146,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
  *
  * @author Martin Krasser
  */
-private[component] object Sender extends Actor {
-
-  start
+private[component] class Sender extends Actor {
 
   /**
    * Ignores any message.
@@ -159,8 +163,8 @@ private[component] object Sender extends Actor {
  *
  * @author Martin Krasser
  */
-class ActorNotRegisteredException(name: String, uuid: Option[String]) extends RuntimeException {
+class ActorNotRegisteredException(uri: String) extends RuntimeException {
 
-  override def getMessage = "actor(id=%s,uuid=%s) not registered" format (name, uuid getOrElse "<none>")
+  override def getMessage = "%s not registered" format uri
 
 }
