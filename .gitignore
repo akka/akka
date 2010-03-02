@@ -1,7 +1,7 @@
 *~
 *#
-project/build/target
-project/boot
+*/project/build/target
+*/project/boot
 lib_managed
 etags
 TAGS
