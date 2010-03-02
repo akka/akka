@@ -24,7 +24,7 @@
     <dependency>
       <groupId>com.redis</groupId>
       <artifactId>redisclient</artifactId>
-      <version>1.0.1</version>
+      <version>1.1</version>
     </dependency>
   </dependencies>
 
