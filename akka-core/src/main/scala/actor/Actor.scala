@@ -18,9 +18,9 @@ import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 
 import org.multiverse.api.ThreadLocalTransaction._
 
-import java.util.{Queue, HashSet}
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.{Deque, HashSet}
 import java.net.InetSocketAddress
+import java.util.concurrent.{CopyOnWriteArrayList, LinkedBlockingDeque}
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -212,12 +212,14 @@ trait Actor extends TransactionManagement {
   @volatile private[this] var _isShutDown = false
   @volatile private[this] var _isEventBased: Boolean = false
   @volatile private[akka] var _isKilled = false
+  @volatile private[akka] var _isDispatching = false
+
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] var _linkedActors: Option[HashSet[Actor]] = None
   private[akka] var _supervisor: Option[Actor] = None
   private[akka] var _replyToAddress: Option[InetSocketAddress] = None
-  private[akka] val _mailbox: Queue[MessageInvocation] = new ConcurrentLinkedQueue[MessageInvocation]
+  private[akka] val _mailbox: Deque[MessageInvocation] = new LinkedBlockingDeque[MessageInvocation]
 
   // ====================================
   // protected fields
@@ -860,14 +862,18 @@ trait Actor extends TransactionManagement {
   /**
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods.
    */
-  private[akka] def invoke(messageHandle: MessageInvocation) = synchronized {
-    try {
-      if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
-      else dispatch(messageHandle)
-    } catch {
-      case e =>
-        Actor.log.error(e, "Could not invoke actor [%s]", this)
-        throw e
+  private[akka] def invoke(messageHandle: MessageInvocation) = {
+    _isDispatching = true
+    synchronized {
+      try {
+        if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
+        else dispatch(messageHandle)
+      } catch {
+        case e =>
+          Actor.log.error(e, "Could not invoke actor [%s]", this)
+          throw e
+      }
+      _isDispatching = false
     }
   }
 
