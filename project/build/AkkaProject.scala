@@ -26,7 +26,13 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
     lazy val comet = project("akka-comet", "akka-comet",new AkkaCometProject(_), rest)
     lazy val patterns = project("akka-patterns", "akka-patterns", new AkkaPatternsProject(_), core)
     lazy val security = project("akka-security", "akka-security", new AkkaSecurityProject(_), core)
-    lazy val persitence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
+    lazy val persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
+    lazy val cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
+    lazy val kernel = project("akka-kernel","akka-kernel", new AkkaKernelProject(_),core,rest,persistence,cluster,amqp,security,comet)
+    //examples
+    lazy val funtest = project("akka-fun-test-java","akka-fun-test-java", new AkkaFunTestProject(_),kernel)
+    lazy val samples = project("akka-samples","akka-samples", new AkkaSamplesParentProject(_))
+
 
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends DefaultProject(info) {
@@ -90,7 +96,7 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
     val annotation = "javax.annotation" % "jsr250-api" % "1.0"
     val jerseyserver = "com.sun.jersey" % "jersey-server" % JERSEYVERSION % "compile"
     val jsr = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
-    val lift = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
+    val liftutil = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
     //testing
     val scalatest= "org.scalatest" % "scalatest" % "1.0" % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
@@ -103,7 +109,7 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
    val commonspool = "commons-pool" % "commons-pool" % "1.5.1" % "compile"
   }
   class AkkaRedisProject(info:ProjectInfo) extends DefaultProject(info) {
-    val redis = "com.redis" % "redisclient" % "1.0.1" % "compile"
+    val redis = "com.redis" % "redisclient" % "1.1" % "compile"
   }
 
   class AkkaMongoProject(info:ProjectInfo) extends DefaultProject(info) {
@@ -118,14 +124,79 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
     val googlecoll = "com.google.collections" % "google-collections" % "1.0" % "test"
     val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "test"
     val slf4jlog4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "test"
+      
     val log4j = "log4j" % "log4j" % "1.2.15" % "test"
   }
   
   class AkkaPersistenceParentProject(info:ProjectInfo) extends ParentProject(info) {
-     lazy val akkapersistencecommon = project ("akka-persistence-common", "akka-persistence-common", new AkkaPersistenceCommonProject(_))
+     lazy val akkapersistencecommon = project ("akka-persistence-common", "akka-persistence-common", new AkkaPersistenceCommonProject(_),core)
      lazy val redis = project("akka-persistence-redis","akka-persistence-redis", new AkkaRedisProject(_),akkapersistencecommon)
      lazy val mongo = project("akka-persistence-mongo","akka-persistence-mongo", new AkkaMongoProject(_),akkapersistencecommon)
      lazy val cassandra = project("akka-persistence-cassandra","akka-persistence-cassandra", new AkkaCassandraProject(_),akkapersistencecommon)
 
+  }
+  
+  class AkkaJgroupsProject(info:ProjectInfo) extends DefaultProject(info) {
+    val jgroups = "jgroups" % "jgroups" % "2.8.0.CR7" % "compile"
+  }
+  
+  class AkkaShoalProject(info:ProjectInfo) extends DefaultProject(info) {
+    val shoal = "shoal-jxta" % "shoal" % "1.1-20090818" % "compile"
+    val shoalextra = "shoal-jxta" % "jxta" % "1.1-20090818" % "compile"
+  }
+  
+  class AkkaClusterParentProject(info:ProjectInfo) extends ParentProject(info) {
+    lazy val jgroups = project("akka-cluster-jgroups","akka-cluster-jgroups", new AkkaJgroupsProject(_),core)
+    lazy val shoal = project("akka-cluster-shoal","akka-cluster-shoal", new AkkaShoalProject(_),core)  
+  }
+  
+  class AkkaKernelProject(info:ProjectInfo) extends DefaultProject(info) {
+    val jerseyserver = "com.sun.jersey" % "jersey-server" % JERSEYVERSION % "compile"
+    val atmo = "org.atmosphere" % "atmosphere-annotations" % ATMOVERSION % "compile"
+    val atmojersey = "org.atmosphere" % "atmosphere-jersey" % ATMOVERSION % "compile"
+    val atmoruntime = "org.atmosphere" % "atmosphere-runtime" % ATMOVERSION % "compile"
+  }
+
+  //examples
+  class AkkaFunTestProject(info:ProjectInfo) extends DefaultProject(info) {
+    val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0"
+    val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
+    val jerseyserver = "com.sun.jersey" % "jersey-server" % JERSEYVERSION % "compile"
+    val jerseyjson = "com.sun.jersey" % "jersey-json" % JERSEYVERSION % "compile"
+    val jerseyatom = "com.sun.jersey" % "jersey-atom" % JERSEYVERSION % "compile"
+    //testing
+    val junit = "junit" % "junit" % "4.5" % "test"
+    val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
+  }
+  
+  
+  class AkkaSampleChatProject(info:ProjectInfo) extends DefaultProject(info) 
+  
+  class AkkaSampleLiftProject(info:ProjectInfo) extends DefaultProject(info) {
+    val liftutil = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
+    val lift = "net.liftweb" % "lift-webkit" % "1.1-M6" % "compile"
+    val servlet = "javax.servlet" % "servlet-api" % "2.5" % "provided"
+    //testing
+    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.6" % "test" 
+    val junit = "junit" % "junit" % "4.5" % "test"
+  }
+  
+  class AkkaSampleRestJavaProject(info:ProjectInfo) extends DefaultProject(info) 
+  
+  class AkkaSampleRestScalaProject(info:ProjectInfo) extends DefaultProject(info) {
+    val jsr = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+  }
+  
+  class AkkaSampleSecurityProject(info:ProjectInfo) extends DefaultProject(info) {
+    val jsr = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    val annotation = "javax.annotation" % "jsr250-api" % "1.0"
+  }
+
+  class AkkaSamplesParentProject(info:ProjectInfo) extends ParentProject(info) {
+    lazy val chat = project("akka-sample-chat","akka-sample-chat",new AkkaSampleChatProject(_),kernel)   
+    lazy val lift = project("akka-sample-lift","akka-sample-lift",new AkkaSampleLiftProject(_),kernel)   
+    lazy val restjava = project("akka-sample-rest-java","akka-sample-rest-java",new AkkaSampleRestJavaProject(_),kernel)   
+    lazy val restscala = project("akka-sample-rest-scala","akka-sample-rest-scala",new AkkaSampleRestScalaProject(_),kernel)   
+    lazy val security = project("akka-sample-security","akka-sample-security",new AkkaSampleSecurityProject(_),kernel)   
   }
 }
