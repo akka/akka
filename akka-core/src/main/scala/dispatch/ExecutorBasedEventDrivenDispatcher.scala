@@ -62,22 +62,15 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
-        var messageInvocation = invocation.receiver._mailbox.poll
-        while (messageInvocation != null) {
-          messageInvocation.invoke
-          messageInvocation = invocation.receiver._mailbox.poll
-        }
-      }
-         /*         invocation.receiver.synchronized {
-          val messages = invocation.receiver._mailbox.iterator
-          while (messages.hasNext) {
-            messages.next.invoke
-            messages.remove
+        invocation.receiver.synchronized {
+          var messageInvocation = invocation.receiver._mailbox.poll
+          while (messageInvocation != null) {
+            messageInvocation.invoke
+            messageInvocation = invocation.receiver._mailbox.poll
           }
         }
       }
-        */
-      })
+    })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
 
   def start = if (!active) {
