@@ -212,6 +212,15 @@ trait Actor extends TransactionManagement {
   @volatile private[this] var _isShutDown = false
   @volatile private[this] var _isEventBased: Boolean = false
   @volatile private[akka] var _isKilled = false
+
+  /**
+   * True if a dispatcher is currently dispatching a message on this actor, false otherwise.
+   * <p/>
+   * This flag is guaranteed to be seen as true by other threads only if a dispatcher is really dispatching messages on it.
+   * A thread might however sometimes see this flag as false, even though a dispatcher is still dispatching messages on it.
+   * <p/>
+   * In other words, the flag can be used safely to decide that no extra dispatching is required (if the flag is true).
+   */
   @volatile private[akka] var _isDispatching = false
 
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
@@ -226,7 +235,7 @@ trait Actor extends TransactionManagement {
   // ====================================
 
   /**
-   * The 'sender' field holds the sender of the message currently being processed.
+   *  The 'sender' field holds the sender of the message currently being processed.
    * <p/>
    * If the sender was an actor then it is defined as 'Some(senderActor)' and
    * if the sender was of some other instance then it is defined as 'None'.
