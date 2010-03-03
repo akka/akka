@@ -471,7 +471,6 @@ trait Actor extends TransactionManagement {
    * </pre>
    */
   def !(message: Any)(implicit sender: Option[Actor] = None) = {
-    //FIXME 2.8   def !(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) postMessageToMailbox(message, sender)
     else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -480,11 +479,7 @@ trait Actor extends TransactionManagement {
   /**
    * Same as the '!' method but does not take an implicit sender as second parameter.
    */
-  def send(message: Any) = {
-    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (_isRunning) postMessageToMailbox(message, None)
-    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-  }
+  def send(message: Any) = !(message)(None)
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
@@ -708,8 +703,8 @@ trait Actor extends TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawn[T <: Actor](actorClass: Class[T]): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawn[T <: Actor : Manifest] : T = {
+    val actor = spawnButDoNotStart[T]
     actor.start
     actor
   }
@@ -719,8 +714,8 @@ trait Actor extends TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawnRemote[T <: Actor : Manifest](hostname: String, port: Int): T = {
+    val actor = spawnButDoNotStart[T]
     actor.makeRemote(hostname, port)
     actor.start
     actor
@@ -731,8 +726,8 @@ trait Actor extends TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLink[T <: Actor](actorClass: Class[T]): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawnLink[T <: Actor : Manifest] : T = {
+    val actor = spawnButDoNotStart[T]
     try {
       actor.start
     } finally {
@@ -746,8 +741,8 @@ trait Actor extends TransactionManagement {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLinkRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): T = {
+    val actor = spawnButDoNotStart[T]
     try {
       actor.makeRemote(hostname, port)
       actor.start
@@ -779,8 +774,8 @@ trait Actor extends TransactionManagement {
 
   private[akka] def getSenderFuture = senderFuture
 
-  private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
-    val actor = actorClass.newInstance.asInstanceOf[T]
+  private def spawnButDoNotStart[T <: Actor : Manifest] : T = {
+    val actor = manifest[T].erasure.asInstanceOf[Class[T]].newInstance
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
       actor.dispatcher = dispatcher
     }
@@ -1034,11 +1029,7 @@ trait Actor extends TransactionManagement {
     } else message
   } else message
 
-  override def hashCode(): Int = {
-    var result = HashCode.SEED
-    result = HashCode.hash(result, _uuid)
-    result
-  }
+  override def hashCode(): Int = HashCode.hash(HashCode.SEED, _uuid)
 
   override def equals(that: Any): Boolean = {
     that != null &&
