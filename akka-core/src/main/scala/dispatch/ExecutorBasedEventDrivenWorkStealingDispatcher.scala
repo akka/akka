@@ -22,25 +22,35 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   init
 
   def dispatch(invocation: MessageInvocation) = if (active) {
-    if (!invocation.receiver._isDispatching) {
-      executor.execute(new Runnable() {
-        def run = {
-          processMailbox(invocation)
-          stealAndScheduleWork(invocation.receiver)
-        }
-      })
-    }
+    // TODO: detect blocking with trylock ?! -> good idea... lets try that
+    executor.execute(new Runnable() {
+      def run = {
+        processMailbox(invocation)
+        stealAndScheduleWork(invocation.receiver)
+      }
+    })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
 
   /**
    * Process the messages in the mailbox of the receiver of the invocation.
    */
   private def processMailbox(invocation: MessageInvocation) = {
-    var messageInvocation = invocation.receiver._mailbox.poll
-    while (messageInvocation != null) {
-      log.debug("[%s] is processing [%s] in [%s]", invocation.receiver, messageInvocation.message, Thread.currentThread.getName)
-      messageInvocation.invoke
-      messageInvocation = invocation.receiver._mailbox.poll
+    val lockAcquired = invocation.receiver.lock.tryLock
+    if (lockAcquired) {
+      log.debug("[%s] has acquired lock for [%s] in [%s]", invocation.receiver, invocation.message, Thread.currentThread.getName)
+      try {
+        var messageInvocation = invocation.receiver._mailbox.poll
+        while (messageInvocation != null) {
+          log.debug("[%s] is processing [%s] in [%s]", invocation.receiver, messageInvocation.message, Thread.currentThread.getName)
+          messageInvocation.invoke
+          messageInvocation = invocation.receiver._mailbox.poll
+        }
+      } finally {
+        invocation.receiver.lock.unlock
+      }
+    } else {
+      // lock not acquired -> other dispatcher was busy -> no need to do anything
+      log.debug("[%s] has NOT acquired lock for [%s] in [%s]", invocation.receiver, invocation.message, Thread.currentThread.getName)
     }
   }
 
@@ -71,15 +81,19 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     return None
   }
 
+
+  override def register(actor: Actor) = {
+    super.register(actor)
+    executor.execute(new Runnable() {
+      def run = {
+        stealAndScheduleWork(actor)
+      }
+    })
+    actor // TODO: why is this necessary?
+  }
+
   def start = if (!active) {
     active = true
-    // TODO: prestart
-    //    executor.execute(new Runnable() {
-    //      def run = {
-    //        // TODO: how to know which actor started me?
-    //        //        stealWork()
-    //      }
-    //    })
   }
 
   def shutdown = if (active) {

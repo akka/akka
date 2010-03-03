@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.dispatch.Dispatchers
 import java.util.Random
 
 
-class WorkStealingTest extends JUnitSuite with MustMatchers with ActorTestUtil {
+class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with MustMatchers with ActorTestUtil {
 
   val finishedCounter = new CountDownLatch(101)
 
@@ -18,7 +18,10 @@ class WorkStealingTest extends JUnitSuite with MustMatchers with ActorTestUtil {
   val poolDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
   class SlowActor extends Actor {
+
     messageDispatcher = poolDispatcher
+//    id = "SlowActor"
+
     val rnd = new Random
     def receive = {
       case x: Int => {
@@ -31,7 +34,10 @@ class WorkStealingTest extends JUnitSuite with MustMatchers with ActorTestUtil {
   }
 
   class FastActor extends Actor {
+
     messageDispatcher = poolDispatcher
+//    id = "FastActor"
+
     def receive = {
       case x: Int => {
 //        println("f processing " + x)
