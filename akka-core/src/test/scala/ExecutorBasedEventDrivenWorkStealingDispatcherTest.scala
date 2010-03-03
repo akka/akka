@@ -20,7 +20,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
   class SlowActor extends Actor {
 
     messageDispatcher = poolDispatcher
-//    id = "SlowActor"
+    id = "SlowActor"
 
     val rnd = new Random
     def receive = {
@@ -36,7 +36,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
   class FastActor extends Actor {
 
     messageDispatcher = poolDispatcher
-//    id = "FastActor"
+    id = "FastActor"
 
     def receive = {
       case x: Int => {
