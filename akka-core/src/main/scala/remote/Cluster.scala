@@ -48,7 +48,15 @@ private[remote] object ClusterActor {
   sealed trait ClusterMessage
 
   private[remote] case class RelayedMessage(actorClassFQN: String, msg: AnyRef) extends ClusterMessage
-
+  private[remote] case class Message[ADDR_T](sender : ADDR_T,msg : Array[Byte])
+  private[remote] case object PapersPlease extends ClusterMessage
+  private[remote] case class Papers(addresses: List[RemoteAddress]) extends ClusterMessage
+  private[remote] case object Block extends ClusterMessage
+  private[remote] case object Unblock extends ClusterMessage
+  private[remote] case class View[ADDR_T](othersPresent : Set[ADDR_T]) extends ClusterMessage
+  private[remote] case class Zombie[ADDR_T](address: ADDR_T) extends ClusterMessage
+  private[remote] case class RegisterLocalNode(server: RemoteAddress) extends ClusterMessage
+  private[remote] case class DeregisterLocalNode(server: RemoteAddress) extends ClusterMessage
   private[remote] case class Node(endpoints: List[RemoteAddress])
 }
 
@@ -59,16 +67,6 @@ private[remote] object ClusterActor {
  */
 abstract class BasicClusterActor extends ClusterActor {
   import ClusterActor._
-
-  case class Message(sender : ADDR_T,msg : Array[Byte])
-  case object PapersPlease extends ClusterMessage
-  case class Papers(addresses: List[RemoteAddress]) extends ClusterMessage
-  case object Block extends ClusterMessage
-  case object Unblock extends ClusterMessage
-  case class View(othersPresent : Set[ADDR_T]) extends ClusterMessage
-  case class Zombie(address: ADDR_T) extends ClusterMessage
-  case class RegisterLocalNode(server: RemoteAddress) extends ClusterMessage
-  case class DeregisterLocalNode(server: RemoteAddress) extends ClusterMessage
 
   type ADDR_T
 
@@ -85,14 +83,14 @@ abstract class BasicClusterActor extends ClusterActor {
   }
 
   def receive = {
-    case v @ View(members) => {
+    case v : View[ADDR_T] => {
       // Not present in the cluster anymore = presumably zombies
       // Nodes we have no prior knowledge existed = unknowns
-      val zombies = Set[ADDR_T]() ++ remotes.keySet -- members
-      val unknown = members -- remotes.keySet
+      val zombies = Set[ADDR_T]() ++ remotes.keySet -- v.othersPresent
+      val unknown = v.othersPresent -- remotes.keySet
 
       log debug ("Updating view")
-      log debug ("Other memebers: [%s]",members)
+      log debug ("Other memebers: [%s]",v.othersPresent)
       log debug ("Zombies: [%s]",zombies)
       log debug ("Unknowns: [%s]",unknown)
 
@@ -101,10 +99,10 @@ abstract class BasicClusterActor extends ClusterActor {
       remotes = remotes -- zombies
     }
 
-    case Zombie(x) => { //Ask the presumed zombie for papers and prematurely treat it as dead
-      log debug ("Killing Zombie Node: %s", x)
-      broadcast(x :: Nil, PapersPlease)
-      remotes = remotes - x
+    case z : Zombie[ADDR_T] => { //Ask the presumed zombie for papers and prematurely treat it as dead
+      log debug ("Killing Zombie Node: %s", z.address)
+      broadcast(z.address :: Nil, PapersPlease)
+      remotes = remotes - z.address
     }
 
     case rm @ RelayedMessage(_, _) => {
@@ -112,7 +110,8 @@ abstract class BasicClusterActor extends ClusterActor {
       broadcast(rm)
     }
 
-    case m @ Message(src,msg) => {
+    case m : Message[ADDR_T] => {
+        val (src,msg) = (m.sender,m.msg)
         (Cluster.serializer in (msg, None)) match {
 
           case PapersPlease => {
@@ -207,7 +206,7 @@ abstract class BasicClusterActor extends ClusterActor {
  */
 object Cluster extends Cluster with Logging {
   @volatile private[remote] var clusterActor: Option[ClusterActor] = None
-  @volatile private[remote] var supervisor: Option[Supervisor] = None
+  @volatile private[remote] var supervisor:   Option[Supervisor] = None
   
   private[remote] lazy val serializer: Serializer = {
     val className = config.getString("akka.remote.cluster.serializer", Serializer.Java.getClass.getName)
@@ -219,9 +218,7 @@ object Cluster extends Cluster with Logging {
 
     try {
       name map { fqn =>
-        val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
-        a.start
-        a
+        Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
       }
     }
     catch {
@@ -235,7 +232,6 @@ object Cluster extends Cluster with Logging {
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
         Supervise(actor, LifeCycle(Permanent)) :: Nil)
       ).newInstance
-    sup.start
     Some(sup)
   }
 
@@ -258,6 +254,7 @@ object Cluster extends Cluster with Logging {
           sup   <- createSupervisor(actor)) {
           clusterActor = Some(actor)
           supervisor   = Some(sup)
+          sup.start
       }
     }
   }
