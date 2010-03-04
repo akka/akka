@@ -215,6 +215,7 @@ trait Actor extends TransactionManagement {
   @volatile private[this] var _isEventBased: Boolean = false
   @volatile private[akka] var _isKilled = false
 
+  // TODO: rename to dispatching lock and only use for dispatching decisions?
   private[akka] val lock = new ReentrantLock
 
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
