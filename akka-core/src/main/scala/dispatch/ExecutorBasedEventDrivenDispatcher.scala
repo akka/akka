@@ -57,23 +57,23 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
   @volatile private var active: Boolean = false
   
   val name: String = "event-driven:executor:dispatcher:" + _name
-  init 
-    
+  init
+
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
         val lockedForDispatching = invocation.receiver._dispatcherLock.tryLock
-        try {
-          if (lockedForDispatching) {
+        if (lockedForDispatching) {
+          try {
             // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
             var messageInvocation = invocation.receiver._mailbox.poll
             while (messageInvocation != null) {
               messageInvocation.invoke
               messageInvocation = invocation.receiver._mailbox.poll
             }
+          } finally {
+            invocation.receiver._dispatcherLock.unlock
           }
-        } finally {
-          invocation.receiver._dispatcherLock.unlock
         }
       }
     })
