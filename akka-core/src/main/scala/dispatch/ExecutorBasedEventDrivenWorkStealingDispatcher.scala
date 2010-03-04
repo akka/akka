@@ -22,7 +22,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   init
 
   def dispatch(invocation: MessageInvocation) = if (active) {
-    // TODO: detect blocking with trylock ?! -> good idea... lets try that
     executor.execute(new Runnable() {
       def run = {
         processMailbox(invocation)
@@ -35,8 +34,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * Process the messages in the mailbox of the receiver of the invocation.
    */
   private def processMailbox(invocation: MessageInvocation) = {
-    val lockAcquired = invocation.receiver.lock.tryLock
-    if (lockAcquired) {
+    val lockedForDispatching = invocation.receiver._dispatcherLock.tryLock
+    if (lockedForDispatching) {
       log.debug("[%s] has acquired lock for [%s] in [%s]", invocation.receiver, invocation.message, Thread.currentThread.getName)
       try {
         var messageInvocation = invocation.receiver._mailbox.poll
@@ -46,7 +45,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
           messageInvocation = invocation.receiver._mailbox.poll
         }
       } finally {
-        invocation.receiver.lock.unlock
+        invocation.receiver._dispatcherLock.unlock
       }
     } else {
       // lock not acquired -> other dispatcher was busy -> no need to do anything
