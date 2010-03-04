@@ -1,0 +1,37 @@
+<assembly>
+	<id>runtime</id>
+	<formats>
+		<format>zip</format>
+	</formats>
+	<includeBaseDirectory>false</includeBaseDirectory>
+	<fileSets>
+		<fileSet>
+			<directory>src/main/resources/runtime</directory>
+			<outputDirectory></outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>target/generated/runtime</directory>
+			<outputDirectory></outputDirectory>
+		</fileSet>
+	</fileSets>
+	<dependencySets>
+		<dependencySet>
+            <excludes>
+                <exclude>se.scalablesolutions.akka:akka-deployer</exclude>
+            </excludes>
+			<outputDirectory>${karaf.root.dir}/akka</outputDirectory>
+			<useTransitiveDependencies>false</useTransitiveDependencies>
+			<useProjectArtifact>false</useProjectArtifact>
+			<useProjectAttachments>false</useProjectAttachments>
+		</dependencySet>
+		<dependencySet>
+            <includes>
+                <include>se.scalablesolutions.akka:akka-deployer</include>
+            </includes>
+			<outputDirectory>${karaf.root.dir}/deploy</outputDirectory>
+			<useTransitiveDependencies>false</useTransitiveDependencies>
+			<useProjectArtifact>false</useProjectArtifact>
+			<useProjectAttachments>false</useProjectAttachments>
+		</dependencySet>
+	</dependencySets>
+</assembly>
