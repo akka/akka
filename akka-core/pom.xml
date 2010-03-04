@@ -108,4 +108,20 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+    <build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<configuration>
+					<instructions>
+						<Export-Package>
+                            se.scalablesolutions.akka.*;version=${project.version};-split-package:=merge-first
+						</Export-Package>
+					</instructions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
