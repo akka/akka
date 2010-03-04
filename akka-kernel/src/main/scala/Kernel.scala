@@ -79,7 +79,7 @@ object Kernel extends Logging {
  (____  /__|_ \__|_ \(____  /
       \/     \/    \/     \/
 """)
-    log.info("     Running version %s", Config.VERSION)
+    log.info("  Running version %s", Config.VERSION)
     log.info("==============================")
   }
 }
