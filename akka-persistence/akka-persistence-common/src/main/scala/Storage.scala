@@ -8,9 +8,10 @@ import se.scalablesolutions.akka.stm.TransactionManagement.transaction
 import se.scalablesolutions.akka.collection._
 import se.scalablesolutions.akka.util.Logging
 
-import org.codehaus.aspectwerkz.proxy.Uuid
-
+// FIXME move to 'stm' package + add message with more info
 class NoTransactionInScopeException extends RuntimeException
+
+class StorageException(message: String) extends RuntimeException(message)
 
 /**
  * Example Scala usage.

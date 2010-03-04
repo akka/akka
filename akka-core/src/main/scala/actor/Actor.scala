@@ -309,9 +309,9 @@ trait Actor extends TransactionManagement {
    * If 'trapExit' is set for the actor to act as supervisor, then a faultHandler must be defined.
    * Can be one of:
    * <pre/>
-   *  AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
+   *  faultHandler = Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange))
    *
-   *  OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int)
+   *  faultHandler = Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange))
    * </pre>
    */
   protected var faultHandler: Option[FaultHandlingStrategy] = None
