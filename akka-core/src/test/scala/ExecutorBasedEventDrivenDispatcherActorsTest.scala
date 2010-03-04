@@ -61,27 +61,3 @@ class ExecutorBasedEventDrivenDispatcherActorsTest extends JUnitSuite with MustM
   })
 
 }
-
-trait ActorTestUtil {
-  def handle[T](actors: Actor*)(test: => T): T = {
-    for (a <- actors) a.start
-    try
-    {
-      test
-    }
-    finally
-      {
-        for (a <- actors) a.stop
-      }
-  }
-
-  def verify(actor: TestActor): Unit = handle(actor)
-            {actor.test}
-}
-
-abstract class TestActor extends Actor with ActorTestUtil
-{
-  def test: Unit
-
-  def receive = {case _ =>}
-}
