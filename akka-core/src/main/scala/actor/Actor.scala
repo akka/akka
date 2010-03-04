@@ -659,9 +659,9 @@ trait Actor extends TransactionManagement {
    * To be invoked from within the actor itself.
    */
   protected[this] def link(actor: Actor) = {
-    getLinkedActors.add(actor)
     if (actor._supervisor.isDefined) throw new IllegalStateException(
       "Actor can only have one supervisor [" + actor + "], e.g. link(actor) fails")
+    getLinkedActors.add(actor)
     actor._supervisor = Some(this)
     Actor.log.debug("Linking actor [%s] to actor [%s]", actor, this)
   }
