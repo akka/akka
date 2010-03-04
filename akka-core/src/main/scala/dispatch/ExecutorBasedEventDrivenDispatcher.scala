@@ -49,31 +49,31 @@ package se.scalablesolutions.akka.dispatch
  * <p/>
  *
  * But the preferred way of creating dispatchers is to use
- * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
+ * the   { @link se.scalablesolutions.akka.dispatch.Dispatchers } factory object.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
-  
+
   val name: String = "event-driven:executor:dispatcher:" + _name
-  init 
-    
+  init
+
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
         val lockedForDispatching = invocation.receiver._dispatcherLock.tryLock
-        try {
-          if (lockedForDispatching) {
+        if (lockedForDispatching) {
+          try {
             // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
             var messageInvocation = invocation.receiver._mailbox.poll
             while (messageInvocation != null) {
               messageInvocation.invoke
               messageInvocation = invocation.receiver._mailbox.poll
             }
+          } finally {
+            invocation.receiver._dispatcherLock.unlock
           }
-        } finally {
-          invocation.receiver._dispatcherLock.unlock
         }
       }
     })
@@ -89,7 +89,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
     active = false
     references.clear
   }
-  
+
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 

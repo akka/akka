@@ -9,51 +9,43 @@ import java.util.Random
 
 
 class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with MustMatchers with ActorTestUtil {
-
-  val finishedCounter = new CountDownLatch(101)
-
-  var sCount = 0
-  var fCount = 0
-
   val poolDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
-  class SlowActor extends Actor {
-
+  class SlowActor(finishedCounter:CountDownLatch) extends Actor {
     messageDispatcher = poolDispatcher
     id = "SlowActor"
+    var invocationCount = 0
 
-    val rnd = new Random
     def receive = {
       case x: Int => {
-//        println("s processing " + x)
-        Thread.sleep(150) // slow actor
-        sCount += 1
+        Thread.sleep(50) // slow actor
+        invocationCount += 1
         finishedCounter.countDown
       }
     }
   }
 
-  class FastActor extends Actor {
-
+  class FastActor(finishedCounter:CountDownLatch) extends Actor {
     messageDispatcher = poolDispatcher
     id = "FastActor"
+    var invocationCount = 0
 
     def receive = {
       case x: Int => {
-//        println("f processing " + x)
-        fCount += 1
+        invocationCount += 1
         finishedCounter.countDown
       }
     }
   }
 
-  @Test def test = verify(new TestActor {
+  @Test def fastActorShouldStealWorkFromSlowActor = verify(new TestActor {
     def test = {
-      val s = new SlowActor
-      val f = new FastActor
+      val finishedCounter = new CountDownLatch(100)
+
+      val s = new SlowActor(finishedCounter)
+      val f = new FastActor(finishedCounter)
 
       handle(s, f) {
-        f ! 0
         for (i <- 1 to 100) {
           // send most work to s
           if (i % 20 == 0)
@@ -63,33 +55,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
         }
 
         finishedCounter.await
-        println("sCount = " + sCount)
-        println("fCount = " + fCount)
-        fCount must be > (sCount)
+        f.invocationCount must be > (s.invocationCount)
       }
     }
   })
 
-}
-
-trait ActorTestUtil {
-  def handle[T](actors: Actor*)(test: => T): T = {
-    for (a <- actors) a.start
-    try {
-      test
-    }
-    finally {
-      for (a <- actors) a.stop
-    }
-  }
-
-  def verify(actor: TestActor): Unit = handle(actor) {
-    actor.test
-  }
-}
-
-abstract class TestActor extends Actor with ActorTestUtil {
-  def test: Unit
-
-  def receive = {case _ =>}
 }
