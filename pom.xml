@@ -306,7 +306,7 @@
         <configuration>
           <includes>
             <include>**/*Test.java</include>
-            <include>**/*Spec.java</include>
+            <!--include>**/*Spec.java</include-->
           </includes>
           <!--excludes>
             <exclude>**/InMemNestedStateTest.java</exclude>
