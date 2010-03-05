@@ -11,7 +11,7 @@ import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.spi.Synchronization
 
 import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.dispatch.CompletableFutureResult
+import se.scalablesolutions.akka.dispatch.CompletableFuture
 import se.scalablesolutions.akka.util.Logging
 
 /**
@@ -166,7 +166,7 @@ trait Producer {
 class ProducerResponseSender(
     headers: Map[String, Any],
     sender: Option[Actor],
-    senderFuture: Option[CompletableFutureResult],
+    senderFuture: Option[CompletableFuture],
     producer: Actor) extends Synchronization with Logging {
 
   implicit val producerActor = Some(producer) // the response sender
