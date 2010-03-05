@@ -10,11 +10,15 @@ import org.apache.camel.builder.RouteBuilder
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import se.scalablesolutions.akka.annotation.consume
-import se.scalablesolutions.akka.camel.Consumer
 import se.scalablesolutions.akka.util.{Bootable, Logging}
+import se.scalablesolutions.akka.camel.{CamelContextManager, Consumer}
 
 /**
- * Started by the Kernel to expose actors as Camel endpoints.
+ * Started by the Kernel to expose certain actors as Camel endpoints. It uses
+ * se.scalablesolutions.akka.camel.CamelContextManage to create and manage the
+ * lifecycle of a global CamelContext. This class further uses the
+ * se.scalablesolutions.akka.camel.service.CamelServiceRouteBuilder to implement
+ * routes from Camel endpoints to actors.
  *
  * @see CamelRouteBuilder
  *
@@ -22,41 +26,34 @@ import se.scalablesolutions.akka.util.{Bootable, Logging}
  */
 trait CamelService extends Bootable with Logging {
 
-  import CamelContextManager.context
+  import CamelContextManager._
 
   abstract override def onLoad = {
     super.onLoad
-    context.addRoutes(new CamelRouteBuilder)
+    if (!initialized) init()
+    context.addRoutes(new CamelServiceRouteBuilder)
     context.setStreamCaching(true)
-    context.start
-    log.info("Camel context started")
+    start()
   }
 
   abstract override def onUnload = {
+    stop()
     super.onUnload
-    context.stop
-    log.info("Camel context stopped")
   }
 
 }
 
 /**
- * Generic route builder that searches the registry for actors that are
- * either annotated with @se.scalablesolutions.akka.annotation.consume or
- * mixed in se.scalablesolutions.akka.camel.Consumer and exposes them
- * as Camel endpoints.
+ * Implements routes from Camel endpoints to actors. It searches the registry for actors
+ * that are either annotated with @se.scalablesolutions.akka.annotation.consume or mix in
+ * se.scalablesolutions.akka.camel.Consumer and exposes them as Camel endpoints.
  *
  * @author Martin Krasser
  */
-class CamelRouteBuilder extends RouteBuilder with Logging {
+class CamelServiceRouteBuilder extends RouteBuilder with Logging {
 
   def configure = {
     val actors = ActorRegistry.actors
-
-    //
-    // TODO: resolve/clarify issues with ActorRegistry
-    //       - multiple registration with same id/uuid possible
-    //
 
     // TODO: avoid redundant registrations
     actors.filter(isConsumeAnnotated _).foreach { actor: Actor =>

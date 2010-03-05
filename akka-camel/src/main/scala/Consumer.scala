@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.camel
 import se.scalablesolutions.akka.actor.Actor
 
 /**
- * Mixed in by Actor subclasses to be Camel endpoint consumers.
+ * Mixed in by Actor implementations that consume message from Camel endpoints.
  *
  * @author Martin Krasser
  */

@@ -3,27 +3,24 @@ package se.scalablesolutions.akka.camel.component
 import org.junit._
 import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
+
 import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.camel.Message
-import org.apache.camel.{CamelContext, ExchangePattern}
-import org.apache.camel.impl.{DefaultExchange, SimpleRegistry, DefaultCamelContext}
+import se.scalablesolutions.akka.camel.{CamelContextLifecycle, Message}
 
-/**
- * @author Martin Krasser
- */
-class ActorComponentTest extends JUnitSuite {
+class ActorComponentTest extends JUnitSuite with CamelContextLifecycle {
 
-  val context = new DefaultCamelContext(new SimpleRegistry)
-  val template = context.createProducerTemplate
+  //
+  // TODO: extend/rewrite unit tests
+  // These tests currently only ensure proper functioning of basic features.
+  //
 
   @Before def setUp = {
-    context.start
-    template.start
+    init()
+    start()
   }
 
   @After def tearDown = {
-    template.stop
-    context.stop
+    stop()
   }
 
   @Test def shouldReceiveResponseFromActorReferencedById = {
