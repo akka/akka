@@ -1,0 +1,56 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>se.scalablesolutions.akka</groupId>
+        <artifactId>akka-osgi-parent</artifactId>
+        <version>0.7-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>akka-dependencies-bundle</artifactId>
+    <name>Akka Dependencies Bundle</name>
+
+    <dependencies>
+        <dependency>
+            <artifactId>akka-kernel</artifactId>
+            <groupId>se.scalablesolutions.akka</groupId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Import-Package>
+                            *;resolution:=optional
+                        </Import-Package>
+                        <Export-Package>
+                            <!-- wrong class file declaration, not needed anyway -->
+                            !test.*,
+
+                            <!-- dependencies that provide their own bundle -->
+                            !scala.*,
+                            !org.apache.commons.io.*,
+                            !org.codehaus.jackson.*,
+                            !org.codehaus.jettison.*,
+                            !org.jboss.netty.*,
+
+                            <!-- provided by Akka modules -->
+                            !se.scalablesolutions.akka.*,
+
+                            <!-- include the rest -->
+                            *;-split-package:=merge-first
+                        </Export-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
