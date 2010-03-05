@@ -1,68 +1,50 @@
 package se.scalablesolutions.akka.camel.service
 
 import org.apache.camel.builder.RouteBuilder
-import org.apache.camel.impl.DefaultCamelContext
 import org.junit.Assert._
 import org.junit.{Before, After, Test}
 import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.annotation.consume
-import se.scalablesolutions.akka.camel.{Message, Consumer}
+import se.scalablesolutions.akka.camel.{CamelContextManager, Consumer, Message}
 
-/**
- * @author Martin Krasser
- */
-class CamelServiceTest extends JUnitSuite {
+class CamelServiceTest extends JUnitSuite with CamelService {
 
-  import CamelContextManager.context
+  //
+  // TODO: extend/rewrite unit tests
+  // These tests currently only ensure proper functioning of basic features.
+  //
 
-  context = new DefaultCamelContext
-  context.addRoutes(new TestBuilder)
+  import CamelContextManager._
 
-  val template = context.createProducerTemplate
-  var service: CamelService = _
   var actor1: Actor = _
   var actor2: Actor = _
   var actor3: Actor = _
 
   @Before def setUp = {
-    service = new CamelService {
-      override def onUnload = super.onUnload
-      override def onLoad = super.onLoad
-    }
-
     actor1 = new TestActor1().start
     actor2 = new TestActor2().start
     actor3 = new TestActor3().start
-
-    service.onLoad
-    template.start
-
+    init()
+    context.addRoutes(new TestRouteBuilder)
+    onLoad
   }
 
   @After def tearDown = {
+    onUnload
     actor1.stop
     actor2.stop
     actor3.stop
-
-    template.stop
-    service.onUnload
   }
 
-  @Test def shouldReceiveResponseFromActor1ViaGeneratedRoute = {
-    val result = template.requestBody("direct:actor1", "Martin")
-    assertEquals("Hello Martin (actor1)", result)
+  @Test def shouldReceiveResponseViaGeneratedRoute = {
+    assertEquals("Hello Martin (actor1)", template.requestBody("direct:actor1", "Martin"))
+    assertEquals("Hello Martin (actor2)", template.requestBody("direct:actor2", "Martin"))
   }
 
-  @Test def shouldReceiveResponseFromActor2ViaGeneratedRoute = {
-    val result = template.requestBody("direct:actor2", "Martin")
-    assertEquals("Hello Martin (actor2)", result)
-  }
-
-  @Test def shouldReceiveResponseFromActor3ViaCustomRoute = {
-    val result = template.requestBody("direct:actor3", "Martin")
-    assertEquals("Hello Tester (actor3)", result)
+  @Test def shouldReceiveResponseViaCustomRoute = {
+    assertEquals("Hello Tester (actor3)", template.requestBody("direct:actor3", "Martin"))
   }
 
 }
@@ -91,7 +73,7 @@ class TestActor3 extends Actor {
   }
 }
 
-class TestBuilder extends RouteBuilder {
+class TestRouteBuilder extends RouteBuilder {
   def configure {
     val actorUri = "actor:%s" format classOf[TestActor3].getName
     from("direct:actor3").transform(constant("Tester")).to("actor:actor3")

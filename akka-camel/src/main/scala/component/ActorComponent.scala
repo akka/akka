@@ -11,10 +11,10 @@ import org.apache.camel.{Exchange, Consumer, Processor}
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
-import se.scalablesolutions.akka.camel.{CamelMessageWrapper, Message}
+import se.scalablesolutions.akka.camel.{CamelMessageConversion, Message}
 
 /**
- * Camel component for interacting with actors.
+ * Camel component for sending messages to and receiving replies from actors.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
  * @see se.scalablesolutions.akka.camel.component.ActorProducer
@@ -22,7 +22,6 @@ import se.scalablesolutions.akka.camel.{CamelMessageWrapper, Message}
  * @author Martin Krasser
  */
 class ActorComponent extends DefaultComponent {
-
   def createEndpoint(uri: String, remaining: String, parameters: JavaMap[String, Object]): ActorEndpoint = {
     val idAndUuid = idAndUuidPair(remaining)
     new ActorEndpoint(uri, this, idAndUuid._1, idAndUuid._2)
@@ -37,12 +36,12 @@ class ActorComponent extends DefaultComponent {
         "invalid path format: %s - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
     }
   }
-
 }
 
 /**
- * Camel endpoint for interacting with actors. An actor can be addressed by its
- * <code>Actor.getId</code> or its <code>Actor.uuid</code> combination. Supported URI formats are
+ * Camel endpoint for referencing an actor. The actor reference is given by the endpoint URI.
+ * An actor can be referenced by its <code>Actor.getId</code> or its <code>Actor.uuid</code>.
+ * Supported endpoint URI formats are
  * <code>actor:&lt;actorid&gt;</code>,
  * <code>actor:id:&lt;actorid&gt;</code> and
  * <code>actor:uuid:&lt;actoruuid&gt;</code>.
@@ -53,25 +52,27 @@ class ActorComponent extends DefaultComponent {
  * @author Martin Krasser
  */
 class ActorEndpoint(uri: String, comp: ActorComponent, val id: Option[String], val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
-
   /**
    * @throws UnsupportedOperationException 
    */
   def createConsumer(processor: Processor): Consumer =
     throw new UnsupportedOperationException("actor consumer not supported yet")
 
+  /**
+   * Creates a new ActorProducer instance initialized with this endpoint.
+   */
   def createProducer: ActorProducer = new ActorProducer(this)
 
+  /**
+   * Returns true.
+   */
   def isSingleton: Boolean = true
-  
 }
 
 /**
  * Sends the in-message of an exchange to an actor. If the exchange pattern is out-capable,
  * the producer waits for a reply (using the !! operator), otherwise the ! operator is used
- * for sending the message. Asynchronous communication is not implemented yet but will be
- * added for Camel components that support the Camel Async API (like the jetty component that
- * makes use of Jetty continuations).
+ * for sending the message.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
@@ -79,9 +80,17 @@ class ActorEndpoint(uri: String, comp: ActorComponent, val id: Option[String], v
  * @author Martin Krasser
  */
 class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
+  import CamelMessageConversion.toExchangeAdapter
 
-  implicit val sender = Some(new Sender)
+  implicit val sender = None
 
+  /**
+   * Depending on the exchange pattern, this method either calls processInOut or
+   * processInOnly for interacting with an actor. This methods looks up the actor
+   * from the ActorRegistry according to this producer's endpoint URI.
+   *
+   * @param exchange represents the message exchange with the actor.
+   */
   def process(exchange: Exchange) {
     val actor = target getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
     if (exchange.getPattern.isOutCapable)
@@ -90,40 +99,29 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
       processInOnly(exchange, actor)
   }
 
-  override def start {
-    super.start
-    sender.get.start
-  }
-
-  override def stop {
-    sender.get.stop
-    super.stop
-  }
-
-  protected def receive = {
-    throw new UnsupportedOperationException
-  }
-
+  /**
+   * Send the exchange in-message to the given actor using the ! operator. The message
+   * send to the actor is of type se.scalablesolutions.akka.camel.Message.
+   */
   protected def processInOnly(exchange: Exchange, actor: Actor) {
-    actor ! Message(exchange.getIn)
+    actor ! exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
   }
 
+  /**
+   * Send the exchange in-message to the given actor using the !! operator. The exchange
+   * out-message is populated from the actor's reply message.  The message sent to the
+   * actor is of type se.scalablesolutions.akka.camel.Message.
+   */
   protected def processInOut(exchange: Exchange, actor: Actor) {
 
-    import CamelMessageWrapper._
-
-    // TODO: make timeout configurable
     // TODO: support asynchronous communication
-    //       - jetty component: jetty continuations
-    //       - file component: completion callbacks
-    val result: Any = actor !! Message(exchange.getIn)
+    val result: Any = actor !! exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
 
     result match {
-      case Some(m:Message) => {
-        exchange.getOut.from(m)
-      }
-      case Some(body) => {
-        exchange.getOut.setBody(body)
+      case Some(msg) => exchange.fromResponseMessage(Message.canonicalize(msg))
+      case None      => {
+        // TODO: handle timeout properly
+        // TODO: make timeout configurable
       }
     }
   }
@@ -140,33 +138,14 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
   }
 
   private def targetByUuid(uuid: String) = ActorRegistry.actorFor(uuid)
-
 }
 
 /**
- * Generic message sender used by ActorProducer.
- *
- * @author Martin Krasser
- */
-private[component] class Sender extends Actor {
-
-  /**
-   * Ignores any message.
-   */
-  protected def receive = {
-    case _ => { /* ignore any reply */ }
-  }
-
-}
-
-/**
- * Thrown to indicate that an actor referenced by an endpoint URI cannot be
+ *  Thrown to indicate that an actor referenced by an endpoint URI cannot be
  * found in the ActorRegistry.
  *
  * @author Martin Krasser
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException {
-
   override def getMessage = "%s not registered" format uri
-
 }

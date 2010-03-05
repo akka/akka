@@ -1,18 +1,20 @@
 package se.scalablesolutions.akka.camel.component
 
 import org.apache.camel.{CamelContext, ExchangePattern}
+import org.apache.camel.impl.{DefaultCamelContext, DefaultExchange}
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.camel.Message
-import org.apache.camel.impl.{DefaultCamelContext, DefaultExchange}
 
-/**
- * @author Martin Krasser
- */
 class ActorProducerTest extends JUnitSuite {
+
+  //
+  // TODO: extend/rewrite unit tests
+  // These tests currently only ensure proper functioning of basic features.
+  //
 
   val context = new DefaultCamelContext
   val endpoint = context.getEndpoint("actor:%s" format classOf[TestActor].getName)
