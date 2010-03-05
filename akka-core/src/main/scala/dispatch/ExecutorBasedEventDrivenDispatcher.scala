@@ -63,10 +63,10 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
     executor.execute(new Runnable() {
       def run = {
         invocation.receiver.synchronized {
-          val messages = invocation.receiver._mailbox.iterator
-          while (messages.hasNext) {
-            messages.next.asInstanceOf[MessageInvocation].invoke
-            messages.remove
+          var messageInvocation = invocation.receiver._mailbox.poll
+          while (messageInvocation != null) {
+            messageInvocation.invoke
+            messageInvocation = invocation.receiver._mailbox.poll
           }
         }
       }

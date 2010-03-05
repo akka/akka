@@ -14,25 +14,27 @@
 
   <description>
     Akka implements a unique hybrid of:
-      * Actors , which gives you:
-       * Simple and high-level abstractions for concurrency and parallelism.
-       * Asynchronous, non-blocking and highly performant event-driven programming model.
-       * Very lightweight event-driven processes (create ~6.5 million actors on 4 G RAM).
-       * Supervision hierarchies with let-it-crash semantics. For writing highly fault-tolerant systems that never stop, systems that self-heal.
-      * Software Transactional Memory (STM). (Distributed transactions coming soon).
-      * Transactors: combine actors and STM into transactional actors. Allows you to compose atomic message flows with automatic rollback and retry.
-      * Remoting: highly performant distributed actors with remote supervision and error management.
-      * Cluster membership management.
+    * Actors , which gives you:
+    * Simple and high-level abstractions for concurrency and parallelism.
+    * Asynchronous, non-blocking and highly performant event-driven programming model.
+    * Very lightweight event-driven processes (create ~6.5 million actors on 4 G RAM).
+    * Supervision hierarchies with let-it-crash semantics. For writing highly fault-tolerant systems that never stop,
+    systems that self-heal.
+    * Software Transactional Memory (STM). (Distributed transactions coming soon).
+    * Transactors: combine actors and STM into transactional actors. Allows you to compose atomic message flows with
+    automatic rollback and retry.
+    * Remoting: highly performant distributed actors with remote supervision and error management.
+    * Cluster membership management.
 
     Akka also has a set of add-on modules:
-      * Persistence: A set of pluggable back-end storage modules that works in sync with the STM.
-        * Cassandra distributed and highly scalable database.
-        * MongoDB document database.
-        * Redis data structures database (upcoming)
-      * REST (JAX-RS): Expose actors as REST services.
-      * Comet: Expose actors as Comet services.
-      * Security: Digest and Kerberos based security.
-      * Microkernel: Run Akka as a stand-alone kernel.
+    * Persistence: A set of pluggable back-end storage modules that works in sync with the STM.
+    * Cassandra distributed and highly scalable database.
+    * MongoDB document database.
+    * Redis data structures database (upcoming)
+    * REST (JAX-RS): Expose actors as REST services.
+    * Comet: Expose actors as Comet services.
+    * Security: Digest and Kerberos based security.
+    * Microkernel: Run Akka as a stand-alone kernel.
   </description>
 
   <properties>
@@ -156,15 +158,14 @@
       <url>http://www.lag.net/repo</url>
     </repository>
     <repository>
-      <id>multiverse-releases</id>
-      <url>http://multiverse.googlecode.com/svn/maven-repository/releases</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
+      <id>repository.codehaus.org</id>
+      <name>Codehaus Maven Repository</name>
+      <url>http://repository.codehaus.org</url>
     </repository>
     <repository>
-      <id>multiverse-snaphosts</id>
-      <url>http://multiverse.googlecode.com/svn/maven-repository/snapshots</url>
+      <id>snapshots.repository.codehaus.org</id>
+      <name>Codehaus Maven Snapshot Repository</name>
+      <url>http://snapshots.repository.codehaus.org</url>
     </repository>
     <repository>
       <id>maven2-repository.dev.java.net</id>
@@ -259,7 +260,7 @@
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
-    <plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>1.0-beta-1</version>
@@ -277,7 +278,7 @@
                 </requireProperty>
                 <requireFilesExist>
                   <files>
-                   <file>${env.AKKA_HOME}/embedded-repo</file>
+                    <file>${env.AKKA_HOME}/embedded-repo</file>
                   </files>
                 </requireFilesExist>
               </rules>
@@ -308,9 +309,9 @@
             <include>**/*Test.java</include>
             <!--include>**/*Spec.java</include-->
           </includes>
-          <excludes>
+          <!--excludes>
             <exclude>**/InMemNestedStateTest.java</exclude>
-          </excludes>
+          </excludes-->
           <systemProperties>
             <property>
               <name>akka.home</name>

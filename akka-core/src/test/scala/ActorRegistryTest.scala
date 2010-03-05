@@ -10,6 +10,7 @@ class ActorRegistryTest extends JUnitSuite {
     def receive = {
       case "ping" =>
         record = "pong" + record
+        reply("got ping")
     }
   }
 
@@ -128,8 +129,7 @@ class ActorRegistryTest extends JUnitSuite {
     val actor2 = new TestActor
     actor2.start
     record = ""
-    ActorRegistry.foreach(actor => actor send "ping")
-    Thread.sleep(1000)
+    ActorRegistry.foreach(actor => actor !! "ping")
     assert(record === "pongpong")
     actor1.stop
     actor2.stop
