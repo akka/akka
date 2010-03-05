@@ -36,20 +36,16 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def processMailbox(invocation: MessageInvocation) = {
     val lockedForDispatching = invocation.receiver._dispatcherLock.tryLock
     if (lockedForDispatching) {
-      log.debug("[%s] has acquired lock for [%s] in [%s]", invocation.receiver, invocation.message, Thread.currentThread.getName)
       try {
+        // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
         var messageInvocation = invocation.receiver._mailbox.poll
         while (messageInvocation != null) {
-          log.debug("[%s] is processing [%s] in [%s]", invocation.receiver, messageInvocation.message, Thread.currentThread.getName)
           messageInvocation.invoke
           messageInvocation = invocation.receiver._mailbox.poll
         }
       } finally {
         invocation.receiver._dispatcherLock.unlock
       }
-    } else {
-      // lock not acquired -> other dispatcher was busy -> no need to do anything
-      log.debug("[%s] has NOT acquired lock for [%s] in [%s]", invocation.receiver, invocation.message, Thread.currentThread.getName)
     }
   }
 
@@ -60,7 +56,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def stealAndScheduleWork(thief: Actor) = {
     tryStealWork(thief).foreach {
       invocation => {
-        log.debug("[%s] has stolen work [%s] in [%s]", thief, invocation.message, Thread.currentThread.getName)
         thief.send(invocation.message)
         // TODO: thief.forward(invocation.message)(invocation.sender) (doesn't work?)
       }
@@ -68,8 +63,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   def tryStealWork(thief: Actor): Option[MessageInvocation] = {
-    // TODO: functional style?
-    //    log.debug("[%s] is trying to steal work in [%s] from one of [%s]", thief, Thread.currentThread.getName, references.values)
     for (actor <- new Wrapper(references.values.iterator)) {
       if (actor != thief) {
         val stolenWork: MessageInvocation = actor._mailbox.pollLast
