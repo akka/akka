@@ -44,7 +44,8 @@ class JGroupsClusterActor extends BasicClusterActor {
           log debug "UNSUPPORTED: JGroupsClusterActor::unblock" //TODO HotSwap back and flush the buffer
       })
     })
-    channel.map(_.connect(name))
+
+    channel.foreach(_.connect(name))
   }
 
   protected def toOneNode(dest : Address, msg: Array[Byte]): Unit =
