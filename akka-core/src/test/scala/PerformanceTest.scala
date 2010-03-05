@@ -1,4 +1,4 @@
-package test
+package se.scalablesolutions.akka
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -279,7 +279,7 @@ class PerformanceTest extends JUnitSuite {
 
     var nrOfMessages = 2000000
     var nrOfActors = 4
-    var akkaTime = stressTestAkkaActors(nrOfMessages, nrOfActors, 1000 * 20)
+    var akkaTime = stressTestAkkaActors(nrOfMessages, nrOfActors, 1000 * 30)
     var scalaTime = stressTestScalaActors(nrOfMessages, nrOfActors, 1000 * 40)
     var ratio: Double = scalaTime.toDouble / akkaTime.toDouble
 

@@ -2,9 +2,8 @@ package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.actor.Actor
 
-object ActorShutdownSpec {
+object ActorShutdownRunner {
   def main(args: Array[String]) {
-
     class MyActor extends Actor {
       def receive = {
         case "test" => println("received test")
@@ -22,7 +21,7 @@ object ActorShutdownSpec {
 
 // case 2
 
-object RemoteServerAndClusterShutdownSpec {
+object RemoteServerAndClusterShutdownRunner {
   def main(args: Array[String]) {
     val s1 = new RemoteServer
     val s2 = new RemoteServer
