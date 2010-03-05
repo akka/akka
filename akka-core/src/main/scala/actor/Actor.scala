@@ -873,7 +873,7 @@ trait Actor extends TransactionManagement {
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods.
    */
   private[akka] def invoke(messageHandle: MessageInvocation) = synchronized {
-    log.trace("%s is invoked with message %s", toString, messageHandle)
+    //log.trace("%s is invoked with message %s", toString, messageHandle)
     try {
       if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
       else dispatch(messageHandle)
