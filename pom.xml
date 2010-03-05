@@ -59,6 +59,7 @@
     <module>akka-security</module>
     <module>akka-patterns</module>
     <module>akka-kernel</module>
+    <module>akka-osgi</module>
     <module>akka-fun-test-java</module>
     <module>akka-samples</module>
   </modules>
