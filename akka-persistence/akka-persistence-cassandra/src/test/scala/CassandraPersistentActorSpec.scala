@@ -1,13 +1,9 @@
 package se.scalablesolutions.akka.state
 
-import se.scalablesolutions.akka.actor.Actor
-
-import junit.framework.TestCase
+import se.scalablesolutions.akka.actor.{Actor, Transactor}
 
 import org.junit.Test
 import org.junit.Assert._
-import org.apache.cassandra.service.CassandraDaemon
-import org.junit.BeforeClass
 import org.junit.Before
 import org.scalatest.junit.JUnitSuite
 
@@ -28,9 +24,8 @@ case class SetRefStateOneWay(key: String)
 case class SuccessOneWay(key: String, value: String)
 case class FailureOneWay(key: String, value: String, failer: Actor)
 
-class CassandraPersistentActor extends Actor {
+class CassandraPersistentActor extends Transactor {
   timeout = 100000
-  makeTransactionRequired
 
   private lazy val mapState = CassandraStorage.newMap
   private lazy val vectorState = CassandraStorage.newVector
@@ -66,8 +61,7 @@ class CassandraPersistentActor extends Actor {
   }
 }
 
-@serializable class PersistentFailerActor extends Actor {
-  makeTransactionRequired
+@serializable class PersistentFailerActor extends Transactor {
   def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")
@@ -76,8 +70,8 @@ class CassandraPersistentActor extends Actor {
 
 class CassandraPersistentActorSpec extends JUnitSuite {
 
-  @Before
-  def startCassandra = EmbeddedCassandraService.start
+  //@Before
+  //def startCassandra = EmbeddedCassandraService.start
  
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {

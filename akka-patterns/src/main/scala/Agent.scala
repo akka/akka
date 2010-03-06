@@ -50,30 +50,30 @@ sealed class Agent[T] private (initialValue: T) extends Actor {
   * Periodically handles incoming messages
   */
   def receive = {
-    case FunctionHolder(fun: (T => T)) => atomic { updateData(fun(value.getOrWait)) }
+    case FunctionHolder(fun: (T => T)) => updateData(fun(value.getOrWait))
 
     case ValueHolder(x: T) => updateData(x)
 
-    case ProcedureHolder(fun: (T => Unit)) => atomic { fun(copyStrategy(value.getOrWait)) }
+    case ProcedureHolder(fun: (T => Unit)) => fun(copyStrategy(value.getOrWait))
   }
 
   /**
    * Specifies how a copy of the value is made, defaults to using identity
    */
-  protected def copyStrategy(t : T) : T = t
+  protected def copyStrategy(t: T): T = t
 
 
   /**
   * Updates the internal state with the value provided as a by-name parameter
   */
-  private final def updateData(newData: => T) : Unit = atomic { value.swap(newData) }
+  private final def updateData(newData: => T): Unit = value.swap(newData)
 
   /**
   * Submits a request to read the internal state.
   * A copy of the internal state will be returned, depending on the underlying effective copyStrategy.
   * Internally leverages the asynchronous getValue() method and then waits for its result on a CountDownLatch.
   */
-  final def get : T = {
+  final def get: T = {
     val ref = new AtomicReference[T]
     val latch = new CountDownLatch(1)
     get((x: T) => {ref.set(x); latch.countDown})
@@ -85,14 +85,14 @@ sealed class Agent[T] private (initialValue: T) extends Actor {
   * Asynchronously submits a request to read the internal state. The supplied function will be executed on the returned internal state value.
   * A copy of the internal state will be used, depending on the underlying effective copyStrategy.
   */
-  final def get(message: (T => Unit)) : Unit = this ! ProcedureHolder(message)
+  final def get(message: (T => Unit)): Unit = this ! ProcedureHolder(message)
 
   /**
   * Submits a request to read the internal state.
   * A copy of the internal state will be returned, depending on the underlying effective copyStrategy.
   * Internally leverages the asynchronous getValue() method and then waits for its result on a CountDownLatch.
   */
-  final def apply() : T = get
+  final def apply(): T = get
 
   /**
   * Asynchronously submits a request to read the internal state. The supplied function will be executed on the returned internal state value.
@@ -103,22 +103,22 @@ sealed class Agent[T] private (initialValue: T) extends Actor {
   /**
   * Submits the provided function for execution against the internal agent's state
   */
-  final def apply(message: (T => T)) : Unit = this ! FunctionHolder(message)
+  final def apply(message: (T => T)): Unit = this ! FunctionHolder(message)
 
   /**
   * Submits a new value to be set as the new agent's internal state
   */
-  final def apply(message: T) : Unit = this ! ValueHolder(message)
+  final def apply(message: T): Unit = this ! ValueHolder(message)
 
   /**
   * Submits the provided function for execution against the internal agent's state
   */
-  final def update(message: (T => T)) : Unit = this ! FunctionHolder(message)
+  final def update(message: (T => T)): Unit = this ! FunctionHolder(message)
 
   /**
   * Submits a new value to be set as the new agent's internal state
   */
-  final def update(message: T) : Unit = this ! ValueHolder(message)
+  final def update(message: T): Unit = this ! ValueHolder(message)
 }
 
 /**
@@ -135,7 +135,7 @@ object Agent {
   /**
    * Creates a new Agent of type T with the initial value of value
    */
-  def apply[T](value:T) : Agent[T] = new Agent(value)
+  def apply[T](value:T): Agent[T] = new Agent(value)
 
   /**
    * Creates a new Agent of type T with the initial value of value and with the specified copy function
