@@ -44,7 +44,22 @@ trait CamelService extends Bootable with Logging {
 }
 
 /**
- * Implements routes from Camel endpoints to actors. It searches the registry for actors
+ * CamelService companion object used by standalone applications to create their own
+ * CamelService instances.
+ *
+ * @author Martin Krasser
+ */
+object CamelService {
+
+  /**
+   * Creates a new CamelService instance.
+   */
+  def newInstance: CamelService = new CamelService {}
+
+}
+
+/**
+ *  Implements routes from Camel endpoints to actors. It searches the registry for actors
  * that are either annotated with @se.scalablesolutions.akka.annotation.consume or mix in
  * se.scalablesolutions.akka.camel.Consumer and exposes them as Camel endpoints.
  *
