@@ -41,6 +41,10 @@ trait CamelService extends Bootable with Logging {
     super.onUnload
   }
 
+  def load = onLoad
+
+  def unload = onUnload
+
 }
 
 /**
