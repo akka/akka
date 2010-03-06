@@ -30,7 +30,7 @@
     * Persistence: A set of pluggable back-end storage modules that works in sync with the STM.
     * Cassandra distributed and highly scalable database.
     * MongoDB document database.
-    * Redis data structures database (upcoming)
+    * Redis data structures database.
     * REST (JAX-RS): Expose actors as REST services.
     * Comet: Expose actors as Comet services.
     * Security: Digest and Kerberos based security.
