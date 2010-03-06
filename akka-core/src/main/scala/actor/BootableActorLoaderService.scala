@@ -31,10 +31,10 @@ trait BootableActorLoaderService extends Bootable with Logging {
       val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
       log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
       new URLClassLoader(toDeploy.toArray, ClassLoader.getSystemClassLoader)
-    } else if (getClass.getClassLoader.getResourceAsStream("akka.conf") ne null) {
+    } else if (getClass.getClassLoader.getResourceAsStream("aop.xml") ne null) {
       getClass.getClassLoader
     } else throw new IllegalStateException(
-      "AKKA_HOME is not defined and no 'akka.conf' can be found on the classpath, aborting")
+      "AKKA_HOME is not defined and akka-<version>.jar can not be found on the classpath; aborting...")
     )
   }
 

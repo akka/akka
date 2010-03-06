@@ -4,13 +4,14 @@
 
 package se.scalablesolutions.akka.state
 
-import se.scalablesolutions.akka.stm.TransactionManagement.currentTransaction
+import se.scalablesolutions.akka.stm.TransactionManagement.transaction
 import se.scalablesolutions.akka.collection._
 import se.scalablesolutions.akka.util.Logging
 
-import org.codehaus.aspectwerkz.proxy.Uuid
-
+// FIXME move to 'stm' package + add message with more info
 class NoTransactionInScopeException extends RuntimeException
+
+class StorageException(message: String) extends RuntimeException(message)
 
 /**
  * Example Scala usage.
@@ -63,10 +64,6 @@ trait Storage {
   def newQueue(id: String): PersistentQueue[ElementType] = // only implemented for redis
     throw new UnsupportedOperationException
 }
-
-
-
-
 
 /**
  * Implementation of <tt>PersistentMap</tt> for every concrete 
@@ -162,8 +159,8 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
   }
 
   private def register = {
-    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
-    currentTransaction.get.get.register(uuid, this)
+    if (transaction.get.isEmpty) throw new NoTransactionInScopeException
+    transaction.get.get.register(uuid, this)
   }
 }
 
@@ -236,8 +233,8 @@ trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Com
   def length: Int = storage.getVectorStorageSizeFor(uuid) + newElems.length
 
   private def register = {
-    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
-    currentTransaction.get.get.register(uuid, this)
+    if (transaction.get.isEmpty) throw new NoTransactionInScopeException
+    transaction.get.get.register(uuid, this)
   }
 }
 
@@ -272,8 +269,8 @@ trait PersistentRef[T] extends Transactional with Committable {
   }
 
   private def register = {
-    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
-    currentTransaction.get.get.register(uuid, this)
+    if (transaction.get.isEmpty) throw new NoTransactionInScopeException
+    transaction.get.get.register(uuid, this)
   }
 }
 
@@ -397,7 +394,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     throw new UnsupportedOperationException("dequeueAll not supported")
 
   private def register = {
-    if (currentTransaction.get.isEmpty) throw new NoTransactionInScopeException
-    currentTransaction.get.get.register(uuid, this)
+    if (transaction.get.isEmpty) throw new NoTransactionInScopeException
+    transaction.get.get.register(uuid, this)
   }
 }
