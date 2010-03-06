@@ -23,6 +23,8 @@ trait Producer {
 
   self: Actor =>
 
+  private val headersToCopyDefault = Set(Message.MessageExchangeId)
+
   /**
    * If set to true (default), communication with the Camel endpoint is done via the Camel
    * <a href="http://camel.apache.org/async.html">Async API</a>. Camel then processes the
@@ -48,7 +50,7 @@ trait Producer {
    * By default only the Message.MessageExchangeId is copied. Applications may override this to
    * define an application-specific set of message headers to copy.
    */
-  def headersToCopy: Set[String] = Set(Message.MessageExchangeId)
+  def headersToCopy: Set[String] = headersToCopyDefault
 
   /**
    * Returns the producer template from the CamelContextManager. Applications either have to ensure
