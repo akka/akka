@@ -71,6 +71,11 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
   lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
+  def akkaHome = {
+    val home = System.getenv("AKKA_HOME")
+    if (home == null) throw new Error("You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
+    home
+  }
 
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends DefaultProject(info) {
@@ -189,12 +194,13 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_cluster_shoal = project("akka-cluster-shoal", "akka-cluster-shoal", new AkkaShoalProject(_), akka_core)
   }
 
-  class AkkaKernelProject(info: ProjectInfo) extends DefaultProject(info) {
+  class AkkaKernelProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject {
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
     val atmo = "org.atmosphere" % "atmosphere-annotations" % ATMO_VERSION % "compile"
     val atmo_jersey = "org.atmosphere" % "atmosphere-jersey" % ATMO_VERSION % "compile"
     val atmo_runtime = "org.atmosphere" % "atmosphere-runtime" % ATMO_VERSION % "compile"
 
+    val assemblyDistPath = Path.fromFile(new java.io.File(akkaHome + "/dist/akka-" + version.toString + ".jar"))
     def mainMethod = Some("se.scalablesolutions.akka.Main")
     override def packageOptions: Seq[PackageOption] = MainClass("se.scalablesolutions.akka.Main") :: Nil
   }
@@ -240,5 +246,33 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java", new AkkaSampleRestJavaProject(_), akka_kernel)
     lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala", new AkkaSampleRestScalaProject(_), akka_kernel)
     lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", new AkkaSampleSecurityProject(_), akka_kernel)
+    
+    //FileUtilities.copyFile(assemblyOutputPath, assemblyDistPath, log)
+  }
+}
+
+trait AssemblyProject extends BasicScalaProject {
+  val assemblyDistPath: Path
+
+  def assemblyExclude(base: PathFinder) = base / "META-INF" ** "*"
+  def assemblyOutputPath = outputPath / assemblyJarName
+  def assemblyJarName = artifactID + "-assembly-" + version + ".jar"
+  def assemblyTemporaryPath = outputPath / "assembly-libs"
+  def assemblyClasspath = runClasspath
+  def assemblyExtraJars = mainDependencies.scalaJars
+
+  def assemblyPaths(tempDir: Path, classpath: PathFinder, extraJars: PathFinder, exclude: PathFinder => PathFinder) = {
+    val (libs, directories) = classpath.get.toList.partition(ClasspathUtilities.isArchive)
+    for(jar <- extraJars.get ++ libs) FileUtilities.unzip(jar, tempDir, log)
+    val base = (Path.lazyPathFinder(tempDir :: directories) ##)
+    (descendents(base, "*") --- exclude(base)).get
+  }
+
+  lazy val assembly = assemblyTask(assemblyTemporaryPath, assemblyClasspath, assemblyExtraJars, assemblyExclude) dependsOn(compile) describedAs("Packaging assembly")
+ 
+  lazy val dist = task({ log.info("Creating distribution " + assemblyDistPath); FileUtilities.copyFile(assemblyOutputPath, assemblyDistPath, log) }) dependsOn(assembly) describedAs("Creating distribution")
+  
+  def assemblyTask(tempDir: Path, classpath: PathFinder, extraJars: PathFinder, exclude: PathFinder => PathFinder) = {
+    packageTask(Path.lazyPathFinder(assemblyPaths(tempDir, classpath, extraJars, exclude)), assemblyOutputPath, packageOptions)
   }
 }
