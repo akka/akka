@@ -24,8 +24,8 @@ trait BootableRemoteActorService extends Bootable with Logging {
   
   abstract override def onLoad   = {
     if(config.getBool("akka.remote.server.service", true)){
-      Cluster.start
       super.onLoad //Initialize BootableActorLoaderService before remote service
+      Cluster.start(self.applicationLoader)
       log.info("Initializing Remote Actors Service...")
       startRemoteService
       log.info("Remote Actors Service initialized!")
