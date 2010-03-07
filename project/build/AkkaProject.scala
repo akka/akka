@@ -1,3 +1,39 @@
+/*-------------------------------------------------------------------------------
+   Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+
+   ----------------------------------------------------
+   -------- sbt buildfile for the Akka project --------
+   ----------------------------------------------------
+
+   Akka implements a unique hybrid of:
+    * Actors , which gives you:
+    * Simple and high-level abstractions for concurrency and parallelism.
+    * Asynchronous, non-blocking and highly performant event-driven programming 
+      model.
+    * Very lightweight event-driven processes (create ~6.5 million actors on 
+      4 G RAM).
+    * Supervision hierarchies with let-it-crash semantics. For writing highly 
+      fault-tolerant systems that never stop, systems that self-heal.
+    * Software Transactional Memory (STM). (Distributed transactions coming soon).
+    * Transactors: combine actors and STM into transactional actors. Allows you to 
+      compose atomic message flows with automatic rollback and retry.
+    * Remoting: highly performant distributed actors with remote supervision and 
+      error management.
+    * Cluster membership management.
+
+  Akka also has a set of add-on modules:
+    * Persistence: A set of pluggable back-end storage modules that works in sync 
+      with the STM.
+    * Cassandra distributed and highly scalable database.
+    * MongoDB document database.
+    * Redis data structures database (upcoming)
+    * REST (JAX-RS): Expose actors as REST services.
+    * Comet: Expose actors as Comet services.
+    * Security: Digest and Kerberos based security.
+    * Microkernel: Run Akka as a stand-alone kernel.
+    
+-------------------------------------------------------------------------------*/
+
 import sbt._
 
 class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
@@ -5,7 +41,8 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   val configgy = "Configgy" at "http://www.lag.net/repo"
-  val multiverse = "Multiverse" at "http://multiverse.googlecode.com/svn/maven-repository/releases"
+  val codehaus = "Codehaus" at "http://repository.codehaus.org"
+  val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val jboss = "jBoss" at "http://repository.jboss.org/maven2"
   val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val embeddedrepo = "embedded repo" at "http://guice-maven.googlecode.com/svn/trunk"
@@ -63,7 +100,7 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
   class AkkaJavaUtilProject(info: ProjectInfo) extends DefaultProject(info) {
     val guicey = "org.guiceyfruit" % "guice-core" % "2.0-beta-4" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
-    val multiverse = "org.multiverse" % "multiverse-alpha" % "0.3" % "compile"
+    val multiverse = "org.multiverse" % "multiverse-alpha" % "0.4-SNAPSHOT" % "compile"
   }
 
   class AkkaAMQPProject(info: ProjectInfo) extends DefaultProject(info) {

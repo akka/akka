@@ -8,7 +8,7 @@ import org.junit.Assert._
 import _root_.dispatch.json.{JsNumber, JsValue}
 import _root_.dispatch.json.Js._
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Transactor, Actor}
 
 /**
  * A persistent actor based on MongoDB storage.
@@ -29,10 +29,10 @@ case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: Actor)
 case class Credit(accountNo: String, amount: BigInt)
 case object LogSize
 
-class BankAccountActor extends Actor {
-  makeTransactionRequired
-  private val accountState = MongoStorage.newMap
-  private val txnLog = MongoStorage.newVector
+class BankAccountActor extends Transactor {
+
+  private lazy val accountState = MongoStorage.newMap
+  private lazy val txnLog = MongoStorage.newVector
 
   def receive: PartialFunction[Any, Unit] = {
     // check balance
@@ -91,8 +91,7 @@ class BankAccountActor extends Actor {
   }
 }
 
-@serializable class PersistentFailerActor extends Actor {
-  makeTransactionRequired
+@serializable class PersistentFailerActor extends Transactor {
   def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")

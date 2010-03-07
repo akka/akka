@@ -21,12 +21,12 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
       val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
 
       var targetOk = 0
-      val t1 = actor() receive {
+      val t1: Actor = actor {
         case `testMsg1` => targetOk += 2
         case `testMsg2` => targetOk += 4
       }
 
-      val t2 = actor() receive {
+      val t2: Actor = actor {
           case `testMsg3` => targetOk += 8
       }
 
@@ -48,7 +48,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
   @Test def testLogger = verify(new TestActor {
     def test = {
       val msgs = new HashSet[Any]
-      val t1 = actor() receive {
+      val t1: Actor = actor {
         case _ =>
       }
       val l = loggerActor(t1,(x) => msgs += x)

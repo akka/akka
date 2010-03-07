@@ -11,7 +11,7 @@ import static se.scalablesolutions.akka.config.JavaConfig.*;
 import se.scalablesolutions.akka.actor.*;
 import se.scalablesolutions.akka.Kernel;
 import junit.framework.TestCase;
-/*
+
 public class InMemNestedStateTest extends TestCase {
   static String messageLog = "";
 
@@ -133,4 +133,3 @@ public class InMemNestedStateTest extends TestCase {
     assertEquals("init", nested.getRefState()); // check that state is == init state
   }
 }
-*/
