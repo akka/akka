@@ -6,18 +6,30 @@ package se.scalablesolutions.akka.dispatch
 
 import scala.collection.jcl.MutableIterator.Wrapper
 import se.scalablesolutions.akka.actor.Actor
-import java.util.concurrent.ConcurrentHashMap
 
 /**
- * TODO: doc
+ * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
+ * that all actors using the same instance of this dispatcher can process all messages that have been sent to one of the actors. I.e. the
+ * actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
+ * <p/>
+ * The preferred way of creating dispatchers is to use
+ * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
+ *
+ *
  * TODO: make sure everything in the pool is the same type of actor
+ *
+ * TODO: make the work stealing a bit more clever. Find a way to only send new work to an actor if that actor will actually be scheduled
+ * immidiately afterwards. Otherwize the work gets a change of being stolen back again... which is not optimal. 
+ *
+ * @see se.scalablesolutions.akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
+ * @see se.scalablesolutions.akka.dispatch.Dispatchers
  *
  * @author Jan Van Besien
  */
 class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
 
-  // TODO: how to construct this name
+  // TODO: is there a naming convention for this name?
   val name: String = "event-driven-work-stealing:executor:dispatcher:" + _name
   init
 

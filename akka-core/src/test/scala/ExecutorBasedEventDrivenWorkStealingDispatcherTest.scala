@@ -5,9 +5,10 @@ import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import org.scalatest.matchers.MustMatchers
 import se.scalablesolutions.akka.dispatch.Dispatchers
-import java.util.Random
 
-
+/**
+ * @author Jan Van Besien
+ */
 class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with MustMatchers with ActorTestUtil {
   val poolDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 

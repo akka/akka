@@ -49,7 +49,7 @@ package se.scalablesolutions.akka.dispatch
  * <p/>
  *
  * But the preferred way of creating dispatchers is to use
- * the   { @link se.scalablesolutions.akka.dispatch.Dispatchers } factory object.
+ * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
