@@ -22,6 +22,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
         Thread.sleep(50) // slow actor
         invocationCount += 1
         finishedCounter.countDown
+        println("slow processed " + x)
       }
     }
   }
@@ -33,8 +34,10 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
 
     def receive = {
       case x: Int => {
+        Thread.sleep(10) // fast actor
         invocationCount += 1
         finishedCounter.countDown
+        println("fast processed " + x)
       }
     }
   }

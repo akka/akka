@@ -18,8 +18,8 @@ import se.scalablesolutions.akka.actor.Actor
  *
  * TODO: make sure everything in the pool is the same type of actor
  *
- * TODO: make the work stealing a bit more clever. Find a way to only send new work to an actor if that actor will actually be scheduled
- * immidiately afterwards. Otherwize the work gets a change of being stolen back again... which is not optimal. 
+ * TODO: Find a way to only send new work to an actor if that actor will actually be scheduled
+ * immidiately afterwards. Otherwize the work gets a change of being stolen back again... which is not optimal.
  *
  * @see se.scalablesolutions.akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
  * @see se.scalablesolutions.akka.dispatch.Dispatchers
@@ -36,8 +36,16 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   def dispatch(invocation: MessageInvocation) = if (active) {
     executor.execute(new Runnable() {
       def run = {
-        processMailbox(invocation)
-        stealAndScheduleWork(invocation.receiver)
+        val lockedForDispatching = invocation.receiver._dispatcherLock.tryLock
+        if (lockedForDispatching) {
+          // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
+          try {
+            processMailbox(invocation)
+          } finally {
+            invocation.receiver._dispatcherLock.unlock
+          }
+          stealAndScheduleWork(invocation.receiver)
+        }
       }
     })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
@@ -46,18 +54,10 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * Process the messages in the mailbox of the receiver of the invocation.
    */
   private def processMailbox(invocation: MessageInvocation) = {
-    val lockedForDispatching = invocation.receiver._dispatcherLock.tryLock
-    if (lockedForDispatching) {
-      try {
-        // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
-        var messageInvocation = invocation.receiver._mailbox.poll
-        while (messageInvocation != null) {
-          messageInvocation.invoke
-          messageInvocation = invocation.receiver._mailbox.poll
-        }
-      } finally {
-        invocation.receiver._dispatcherLock.unlock
-      }
+    var messageInvocation = invocation.receiver._mailbox.poll
+    while (messageInvocation != null) {
+      messageInvocation.invoke
+      messageInvocation = invocation.receiver._mailbox.poll
     }
   }
 
@@ -68,6 +68,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def stealAndScheduleWork(thief: Actor) = {
     tryStealWork(thief).foreach {
       invocation => {
+        log.debug("[%s] stole work [%s] from [%s]", thief, invocation.message, invocation.receiver)
         thief.send(invocation.message)
         // TODO: thief.forward(invocation.message)(invocation.sender) (doesn't work?)
       }
