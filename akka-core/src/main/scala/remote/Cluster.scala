@@ -17,16 +17,41 @@ import scala.collection.immutable.{Map, HashMap}
  * @author Viktor Klang
  */
 trait Cluster {
+  /**
+  * Specifies the cluster name
+  */
   def name: String
 
+  /**
+  * Adds the specified hostname + port as a local node
+  * This information will be propagated to other nodes in the cluster
+  * and will be available at the other nodes through lookup and foreach
+  */
   def registerLocalNode(hostname: String, port: Int): Unit
 
+  /**
+  * Removes the specified hostname + port from the local node
+  * This information will be propagated to other nodes in the cluster
+  * and will no longer be available at the other nodes through lookup and foreach
+  */
   def deregisterLocalNode(hostname: String, port: Int): Unit
 
+  /**
+  * Sends the message to all Actors of the specified type on all other nodes in the cluster
+  */
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit
 
+  /**
+  * Traverses all known remote addresses avaiable at all other nodes in the cluster
+  * and applies the given PartialFunction on the first address that it's defined at
+  * The order of application is undefined and may vary
+  */
   def lookup[T](pf: PartialFunction[RemoteAddress, T]): Option[T]
 
+  /**
+  * Applies the specified function to all known remote addresses on al other nodes in the cluster
+  * The order of application is undefined and may vary
+  */
   def foreach(f: (RemoteAddress) => Unit): Unit
 }
 
