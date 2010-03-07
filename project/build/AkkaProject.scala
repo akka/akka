@@ -85,7 +85,7 @@ class AkkaParent(info: ProjectInfo) extends ParentProject(info) {
     val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val voldemort = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
     val javautils = "org.scala-tools" % "javautils" % "2.7.4-0.1" % "compile"
-    val netty = "org.jboss.netty" % "netty" % "3.2.0.ALPHA3" % "compile"
+    val netty = "org.jboss.netty" % "netty" % "3.2.0.BETA1" % "compile"
     // testing
     val scalatest = "org.scalatest" % "scalatest" % "1.0" % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
