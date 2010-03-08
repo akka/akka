@@ -117,7 +117,7 @@ object Message {
  *
  * @author Martin Krasser
  */
-case class Failure(val cause: Throwable, val headers: Map[String, Any])
+case class Failure(val cause: Exception, val headers: Map[String, Any])
 
 /**
  * Adapter for converting an org.apache.camel.Exchange to and from Message and Failure objects.
@@ -139,6 +139,12 @@ class CamelExchangeAdapter(exchange: Exchange) {
    * Exchange.getIn.
    */
   def fromResponseMessage(msg: Message): Exchange = { responseMessage.fromMessage(msg); exchange }
+
+  /**
+   * Sets Exchange.getException from the given Failure message. Headers of the Failure message
+   * are ignored.
+   */
+  def fromFailureMessage(msg: Failure): Exchange = { exchange.setException(msg.cause); exchange }
 
   /**
    * Creates a Message object from Exchange.getIn.
