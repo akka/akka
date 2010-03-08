@@ -36,8 +36,6 @@ trait BootableRemoteActorService extends Bootable with Logging {
   }
 
   abstract override def onUnload = {
-    super.onUnload
-
     log.info("Shutting down Remote Actors Service")
 
     RemoteNode.shutdown
@@ -49,6 +47,8 @@ trait BootableRemoteActorService extends Bootable with Logging {
     Cluster.shutdown
 
     log.info("Remote Actors Service has been shut down")
+
+    super.onUnload
   }
 
 }
