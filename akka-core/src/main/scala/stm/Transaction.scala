@@ -7,15 +7,18 @@ package se.scalablesolutions.akka.stm
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.mutable.HashMap
+
 import se.scalablesolutions.akka.state.Committable
 import se.scalablesolutions.akka.util.Logging
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.api.ThreadLocalTransaction._
-import org.multiverse.templates.OrElseTemplate
-
-import scala.collection.mutable.HashMap
+import org.multiverse.templates.{TransactionTemplate, OrElseTemplate}
+import org.multiverse.utils.backoff.ExponentialBackoffPolicy
+import org.multiverse.stms.alpha.AlphaStm
+import java.util.concurrent.TimeUnit
 
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
@@ -30,8 +33,8 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  * Here are some examples (assuming implicit transaction family name in scope): 
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
- * 
- * atomic {
+ *
+ * atomic  {
  *   .. // do something within a transaction
  * }
  * </pre>
@@ -39,8 +42,8 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  * Example of atomic transaction management using atomic block with retry count:
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
- * 
- * atomic(maxNrOfRetries) {
+ *
+ * atomic(maxNrOfRetries)  {
  *   .. // do something within a transaction
  * }
  * </pre>
@@ -49,10 +52,10 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  * Which is a good way to reduce contention and transaction collisions.
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
- * 
- * atomically {
+ *
+ * atomically  {
  *   .. // try to do something
- * } orElse {
+ * } orElse  {
  *   .. // if transaction clashes try do do something else to minimize contention
  * }
  * </pre>
@@ -61,11 +64,11 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  *
  * <pre>
  * import se.scalablesolutions.akka.stm.Transaction._
- * for (tx <- Transaction) {
+ * for (tx <- Transaction)  {
  *   ... // do transactional stuff
  * }
  *
- * val result = for (tx <- Transaction) yield {
+ * val result = for (tx <- Transaction) yield  {
  *   ... // do transactional stuff yielding a result
  * }
  * </pre>
@@ -78,17 +81,17 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  *
  * // You can use them together with Transaction in a for comprehension since
  * // TransactionalRef is also monadic
- * for {
+ * for  {
  *   tx <- Transaction
  *   ref <- refs
  * } {
  *   ... // use the ref inside a transaction
  * }
  *
- * val result = for {
+ * val result = for  {
  *   tx <- Transaction
  *   ref <- refs
- * } yield {
+ * } yield  {
  *   ... // use the ref inside a transaction, yield a result
  * }
  * </pre>
@@ -97,101 +100,87 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  */
 object Transaction extends TransactionManagement {
   val idFactory = new AtomicLong(-1L)
+/*
+  import AlphaStm._
+  private val defaultTxBuilder = new AlphaTransactionFactoryBuilder
+  defaultTxBuilder.setReadonly(false)
+  defaultTxBuilder.setInterruptible(INTERRUPTIBLE)
+  defaultTxBuilder.setMaxRetryCount(MAX_NR_OF_RETRIES)
+  defaultTxBuilder.setPreventWriteSkew(PREVENT_WRITE_SKEW)
+  defaultTxBuilder.setAutomaticReadTracking(AUTOMATIC_READ_TRACKING)
+  defaultTxBuilder.setSmartTxLengthSelector(SMART_TX_LENGTH_SELECTOR)
+  defaultTxBuilder.setBackoffPolicy(new ExponentialBackoffPolicy)
+  private val readOnlyTxBuilder = new AlphaStm.AlphaTransactionFactoryBuilder
+  readOnlyTxBuilder.setReadonly(true)
+  readOnlyTxBuilder.setInterruptible(INTERRUPTIBLE)
+  readOnlyTxBuilder.setMaxRetryCount(MAX_NR_OF_RETRIES)
+  readOnlyTxBuilder.setPreventWriteSkew(PREVENT_WRITE_SKEW)
+  readOnlyTxBuilder.setAutomaticReadTracking(AUTOMATIC_READ_TRACKING)
+  readOnlyTxBuilder.setSmartTxLengthSelector(SMART_TX_LENGTH_SELECTOR)
+  readOnlyTxBuilder.setBackoffPolicy(new ExponentialBackoffPolicy)
+  */
+  /**
+   * See ScalaDoc on class.
+   */
+  def map[T](f: => T)(implicit transactionFamilyName: String): T =
+    atomic {f}
 
   /**
    * See ScalaDoc on class.
    */
-  def map[T](f: Transaction => T)(implicit transactionFamilyName: String): T = atomic { f(getTransactionInScope) }
+  def flatMap[T](f: => T)(implicit transactionFamilyName: String): T =
+    atomic {f}
 
   /**
    * See ScalaDoc on class.
    */
-  def flatMap[T](f: Transaction => T)(implicit transactionFamilyName: String): T = atomic { f(getTransactionInScope) }
-
-  /**
-   * See ScalaDoc on class.
-   */
-  def foreach(f: Transaction => Unit)(implicit transactionFamilyName: String): Unit = atomic { f(getTransactionInScope) }
+  def foreach(f: => Unit)(implicit transactionFamilyName: String): Unit =
+    atomic {f}
 
   /**
    * Creates a "pure" STM atomic transaction and by-passes all transactions hooks
    * such as persistence etc.
    * Only for internal usage.
    */
-  private[akka] def pureAtomic[T](body: => T): T = new AtomicTemplate[T](
-    getGlobalStmInstance, "internal", false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
+  private[akka] def pureAtomic[T](body: => T): T = new TransactionTemplate[T]() {
     def execute(mtx: MultiverseTransaction): T = body
   }.execute()
 
   /**
    * See ScalaDoc on class.
    */
-  def atomic[T](body: => T)(implicit transactionFamilyName: String): T = new AtomicTemplate[T](
-    getGlobalStmInstance, transactionFamilyName, false, false, TransactionManagement.MAX_NR_OF_RETRIES) {
-    def execute(mtx: MultiverseTransaction): T = body
-    override def postStart(mtx: MultiverseTransaction) = {
-      val tx = new Transaction
-      tx.transaction = Some(mtx)
-      setTransaction(Some(tx))
-    }
-    override def postCommit =  {
-      if (isTransactionInScope) getTransactionInScope.commit
-      else throw new IllegalStateException("No transaction in scope")
-    }
-  }.execute()
+  def atomic[T](body: => T)(implicit transactionFamilyName: String): T = {
+    //    defaultTxBuilder.setFamilyName(transactionFamilyName)
+    //    new TransactionTemplate[T](defaultTxBuilder.build) {
+    new TransactionTemplate[T]() { // FIXME take factory
+      def execute(mtx: MultiverseTransaction): T = {
+        val result = body
 
-  /**
-   * See ScalaDoc on class.
-   */
-  def atomic[T](retryCount: Int)(body: => T)(implicit transactionFamilyName: String): T = {
-    new AtomicTemplate[T](getGlobalStmInstance, transactionFamilyName, false, false, retryCount) {
-      def execute(mtx: MultiverseTransaction): T = body
-      override def postStart(mtx: MultiverseTransaction) = {
+        log.trace("Committing transaction [%s] \nwith family name [%s] \nby joining transaction set")
+        getTransactionSetInScope.joinCommit(mtx)
+
+        // FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS) 
+        //getTransactionSetInScope.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
+
+        clearTransaction
+        result
+      }
+
+      override def onStart(mtx: MultiverseTransaction) = {
+        val txSet = if (!isTransactionSetInScope) createNewTransactionSet
+                    else getTransactionSetInScope
         val tx = new Transaction
         tx.transaction = Some(mtx)
         setTransaction(Some(tx))
-      }
-      override def postCommit =  {
-        if (isTransactionInScope) getTransactionInScope.commit
-        else throw new IllegalStateException("No transaction in scope")
-      }
-    }.execute
-  }
 
-  /**
-   * See ScalaDoc on class.
-   */
-  def atomicReadOnly[T](retryCount: Int)(body: => T)(implicit transactionFamilyName: String): T = {
-    new AtomicTemplate[T](getGlobalStmInstance, transactionFamilyName, false, true, retryCount) {
-      def execute(mtx: MultiverseTransaction): T = body
-      override def postStart(mtx: MultiverseTransaction) = {
-        val tx = new Transaction
-        tx.transaction = Some(mtx)
-        setTransaction(Some(tx))
+        txSet.registerOnCommitTask(new Runnable() {
+          def run = tx.commit
+        })
+        txSet.registerOnAbortTask(new Runnable() {
+          def run = tx.abort
+        })
       }
-      override def postCommit =  {
-        if (isTransactionInScope) getTransactionInScope.commit
-        else throw new IllegalStateException("No transaction in scope")
-      }
-    }.execute
-  }
-
-  /**
-   * See ScalaDoc on class.
-   */
-  def atomicReadOnly[T](body: => T): T = {
-    new AtomicTemplate[T](true) {
-      def execute(mtx: MultiverseTransaction): T = body
-      override def postStart(mtx: MultiverseTransaction) = {
-        val tx = new Transaction
-        tx.transaction = Some(mtx)
-        setTransaction(Some(tx))
-      }
-      override def postCommit =  {
-        if (isTransactionInScope) getTransactionInScope.commit
-        else throw new IllegalStateException("No transaction in scope")
-      }
-    }.execute
+    }.execute()
   }
 
   /**
@@ -216,21 +205,26 @@ object Transaction extends TransactionManagement {
  */
 @serializable class Transaction extends Logging {
   import Transaction._
-  
+
+  log.trace("Creating %s", toString)
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: Option[MultiverseTransaction] = None
   private[this] val persistentStateMap = new HashMap[String, Committable]
   private[akka] val depth = new AtomicInteger(0)
-  
+
   // --- public methods ---------
 
   def commit = synchronized {
+    log.trace("Committing transaction %s", toString)    
     pureAtomic {
       persistentStateMap.values.foreach(_.commit)
-      TransactionManagement.clearTransaction
     }
     status = TransactionStatus.Completed
+  }
+
+  def abort = synchronized {
+    log.trace("Aborting transaction %s", toString)    
   }
 
   def isNew = synchronized { status == TransactionStatus.New }
@@ -259,13 +253,13 @@ object Transaction extends TransactionManagement {
 
   private def ensureIsActiveOrAborted =
     if (!(status == TransactionStatus.Active || status == TransactionStatus.Aborted))
-    throw new IllegalStateException(
-      "Expected ACTIVE or ABORTED transaction - current status [" + status + "]: " + toString)
+      throw new IllegalStateException(
+        "Expected ACTIVE or ABORTED transaction - current status [" + status + "]: " + toString)
 
   private def ensureIsActiveOrNew =
     if (!(status == TransactionStatus.Active || status == TransactionStatus.New))
-    throw new IllegalStateException(
-      "Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
+      throw new IllegalStateException(
+        "Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
   // For reinitialize transaction after sending it over the wire 
   private[akka] def reinit = synchronized {
@@ -277,14 +271,14 @@ object Transaction extends TransactionManagement {
   }
 
   override def equals(that: Any): Boolean = synchronized {
-    that != null && 
-    that.isInstanceOf[Transaction] && 
-    that.asInstanceOf[Transaction].id == this.id
+    that != null &&
+        that.isInstanceOf[Transaction] &&
+        that.asInstanceOf[Transaction].id == this.id
   }
- 
+
   override def hashCode(): Int = synchronized { id.toInt }
- 
-  override def toString(): String = synchronized { "Transaction[" + id + ", " + status + "]" }
+
+  override def toString = synchronized { "Transaction[" + id + ", " + status + "]" }
 }
 
 /**
