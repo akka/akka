@@ -250,6 +250,38 @@ private [akka] object RedisStorageBackend extends
     }
   }
 
+  override def incrementAtomically(name: String): Option[Int] = withErrorHandling {
+    db.incr(new String(encode(name.getBytes))) match {
+      case Some(i) => Some(i)
+      case None => 
+        throw new Predef.IllegalArgumentException(name + " exception in incr")
+    }
+  }
+
+  override def incrementByAtomically(name: String, by: Int): Option[Int] = withErrorHandling {
+    db.incrBy(new String(encode(name.getBytes)), by) match {
+      case Some(i) => Some(i)
+      case None => 
+        throw new Predef.IllegalArgumentException(name + " exception in incrby")
+    }
+  }
+
+  override def decrementAtomically(name: String): Option[Int] = withErrorHandling {
+    db.decr(new String(encode(name.getBytes))) match {
+      case Some(i) => Some(i)
+      case None => 
+        throw new Predef.IllegalArgumentException(name + " exception in decr")
+    }
+  }
+
+  override def decrementByAtomically(name: String, by: Int): Option[Int] = withErrorHandling {
+    db.decrBy(new String(encode(name.getBytes)), by) match {
+      case Some(i) => Some(i)
+      case None => 
+        throw new Predef.IllegalArgumentException(name + " exception in decrby")
+    }
+  }
+
   // add to the end of the queue
   def enqueue(name: String, item: Array[Byte]): Boolean = withErrorHandling {
     db.rpush(new String(encode(name.getBytes)), new String(item))
