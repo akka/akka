@@ -12,32 +12,16 @@ import se.scalablesolutions.akka.dispatch.Dispatchers
 class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with MustMatchers with ActorTestUtil {
   val poolDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
-  class SlowActor(finishedCounter:CountDownLatch) extends Actor {
+  class DelayableActor(id: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
     messageDispatcher = poolDispatcher
-    id = "SlowActor"
     var invocationCount = 0
 
     def receive = {
       case x: Int => {
-        Thread.sleep(50) // slow actor
+        Thread.sleep(delay)
         invocationCount += 1
         finishedCounter.countDown
-        println("slow processed " + x)
-      }
-    }
-  }
-
-  class FastActor(finishedCounter:CountDownLatch) extends Actor {
-    messageDispatcher = poolDispatcher
-    id = "FastActor"
-    var invocationCount = 0
-
-    def receive = {
-      case x: Int => {
-        Thread.sleep(10) // fast actor
-        invocationCount += 1
-        finishedCounter.countDown
-        println("fast processed " + x)
+//        println(id + " processed " + x)
       }
     }
   }
@@ -46,22 +30,34 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
     def test = {
       val finishedCounter = new CountDownLatch(100)
 
-      val s = new SlowActor(finishedCounter)
-      val f = new FastActor(finishedCounter)
+      val slow = new DelayableActor("slow", 50, finishedCounter)
+      val fast = new DelayableActor("fast", 10, finishedCounter)
 
-      handle(s, f) {
+      handle(slow, fast) {
         for (i <- 1 to 100) {
-          // send most work to s
+          // send most work to slow actor
           if (i % 20 == 0)
-            f ! i
+            fast ! i
           else
-            s ! i
+            slow ! i
         }
 
         finishedCounter.await
-        f.invocationCount must be > (s.invocationCount)
+        fast.invocationCount must be > (slow.invocationCount)
       }
     }
   })
+
+//  @Test def canNotRegisterTwoDifferentActors = {
+//    new Actor() {
+//      override var messageDispatcher = poolDispatcher
+//    }
+//
+//    intercept(classOf[NullPointerException]) {
+//      new Actor() {
+//        override var messageDispatcher = poolDispatcher
+//      }
+//    }
+//  }
 
 }
