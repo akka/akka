@@ -8,8 +8,7 @@ import se.scalablesolutions.akka.stm.Transaction.atomic
 import se.scalablesolutions.akka.stm.NoTransactionInScopeException
 import se.scalablesolutions.akka.collection._
 import se.scalablesolutions.akka.util.UUID
-
-import org.multiverse.datastructures.refs.manual.Ref;
+import org.multiverse.stms.alpha.AlphaRef
 
 /**
  * Example Scala usage:
@@ -78,7 +77,7 @@ class TransactionalRef[T] extends Transactional {
   implicit val txInitName = "TransactionalRef:Init"
   val uuid = UUID.newUuid.toString
 
-  private[this] val ref: Ref[T] = atomic { new Ref }
+  private[this] lazy val ref: AlphaRef[T] = new AlphaRef
 
   def swap(elem: T) = {
     ensureIsInTransaction
