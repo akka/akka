@@ -38,12 +38,28 @@ import sbt._
 import java.util.jar.Attributes
 
 class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
+
+  // ------------------------------------------------------------
   // project versions
   val JERSEY_VERSION = "1.1.5"
   val ATMO_VERSION = "0.6-SNAPSHOT"
   val CASSANDRA_VERSION = "0.5.0"
 
-  // repos
+  // ------------------------------------------------------------
+  lazy val akkaHome = {
+    val home = System.getenv("AKKA_HOME")
+    if (home == null) throw new Error("You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
+    home
+  }
+  lazy val deployPath = Path.fromFile(new java.io.File(akkaHome + "/deploy"))
+  lazy val distPath = Path.fromFile(new java.io.File(akkaHome + "/dist"))
+
+  lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
+
+  def distName = "%s_%s-%s.zip".format(name, defScalaVersion.value, version)
+  
+  // ------------------------------------------------------------
+  // repositories
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   val configgy = "Configgy" at "http://www.lag.net/repo"
@@ -55,6 +71,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val google = "google" at "http://google-maven-repository.googlecode.com/svn/repository"
   val m2 = "m2" at "http://download.java.net/maven/2"
 
+  // ------------------------------------------------------------
   // project defintions
   lazy val akka_java_util = project("akka-util-java", "akka-util-java", new AkkaJavaUtilProject(_))
   lazy val akka_util = project("akka-util", "akka-util", new AkkaUtilProject(_))
@@ -66,92 +83,46 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_security = project("akka-security", "akka-security", new AkkaSecurityProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
-  lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), akka_core, akka_rest, akka_persistence, akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns)
+  lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
+    akka_core, akka_rest, akka_persistence, akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns)
+
+  // functional tests in java
+  lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
 
   // examples
-  lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
   lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
-  def distName = "%s-%s.zip".format(name, version)
-
-  lazy val akkaHome = {
-    val home = System.getenv("AKKA_HOME")
-    if (home == null) throw new Error("You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
-    home
-  }
-
-  lazy val deployPath = Path.fromFile(new java.io.File(akkaHome + "/deploy"))
-  lazy val distPath = Path.fromFile(new java.io.File(akkaHome + "/dist"))
-
+  // ------------------------------------------------------------
+  // create executable jar
   override def mainClass = Some("se.scalablesolutions.akka.Main")
 
   override def packageOptions = 
     manifestClassPath.map(cp => ManifestAttributes((Attributes.Name.CLASS_PATH, cp))).toList :::
     getMainClass(false).map(MainClass(_)).toList
-  
-    override def manifestClassPath = Some(allArtifacts.getFiles
-      .filter(_.getName.endsWith(".jar"))
-      .map("lib_managed/scala_%s/compile/".format(defScalaVersion.value) + _.getName)
-      .mkString(" ") + 
-      " dist/akka-util_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-util-java_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-core_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-rest_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-comet_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-security_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-persistence-common_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-persistence-redis_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-persistence-cassandra_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-persistence-mongo_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-cluster-jgroups_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-cluster-shoal_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-amqp_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-patterns_%s-%s.jar".format(defScalaVersion.value, version) +
-      " dist/akka-kernel_%s-%s.jar".format(defScalaVersion.value, version)
-    ) 
-  /*
+
+  // create a manifest with all akka jars and dependency jars on classpath
   override def manifestClassPath = Some(allArtifacts.getFiles
     .filter(_.getName.endsWith(".jar"))
-    .map { jar => 
-      println("------- " + jar)
-      if (jar.getName.contains("akka")) "dist/" + jar.getName
-      else "lib_managed/scala_2.7.7/compile/" + jar.getName
-    }.mkString(" "))
-*/
-  def removeDupEntries(paths: PathFinder) =
-   Path.lazyPathFinder {
-     val mapped = paths.get map { p => (p.relativePath, p) }
-     (Map() ++ mapped).values.toList
-   }
+    .map("lib_managed/scala_%s/compile/".format(defScalaVersion.value) + _.getName)
+    .mkString(" ") + 
+    " dist/akka-util_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-util-java_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-core_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-cluster-shoal_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-cluster-jgroups_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-rest_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-comet_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-security_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-amqp_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-patterns_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-persistence-common_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-persistence-redis_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-persistence-mongo_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-persistence-cassandra_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-kernel_%s-%s.jar".format(defScalaVersion.value, version)
+    ) 
 
-  def allArtifacts = {
-    removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) +++
-    ((outputPath ##) / defaultJarName) +++
-    mainResources +++
-    mainDependencies.scalaJars +++
-    descendents(info.projectPath, "*.conf") +++
-    descendents(info.projectPath / "dist", "*.jar") +++
-    descendents(path("lib") ##, "*.jar") +++
-    descendents(configurationPath(Configurations.Compile) ##, "*.jar") 
-  }
-
-  def deployTask(info: ProjectInfo, toDir: Path) = task {
-    val projectPath = info.projectPath.toString
-    val moduleName = projectPath.substring(projectPath.lastIndexOf('/') + 1, projectPath.length)
-
-    // FIXME need to find out a way to grab these paths from the sbt system 
-    val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(defScalaVersion.value, version)
-    val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(defScalaVersion.value) + JAR_FILE_NAME
-
-    val from = Path.fromFile(new java.io.File(JAR_FILE_PATH))
-    val to = Path.fromFile(new java.io.File(toDir + "/" + JAR_FILE_NAME))
-
-    log.info("Deploying " + to)
-    FileUtilities.copyFile(from, to, log)
-  }
-  
-  lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
-
+  // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends DefaultProject(info) {
     val netty = "org.jboss.netty" % "netty" % "3.2.0.BETA1" % "compile"
@@ -333,29 +304,40 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala", new AkkaSampleRestScalaProject(_), akka_kernel)
     lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", new AkkaSampleSecurityProject(_), akka_kernel)
   }
-}
 
-trait AssemblyProject extends BasicScalaProject {
-  //def assemblyExclude(base: PathFinder) = base / "META-INF" ** "*"
-  def assemblyExclude(base: PathFinder) = Path.emptyPathFinder
-  def assemblyOutputPath = outputPath / assemblyJarName
-  def assemblyJarName = artifactID + "-assembly-" + version + ".jar"
-  def assemblyTemporaryPath = outputPath / "assembly-libs"
-  def assemblyClasspath = runClasspath
-  def assemblyExtraJars = mainDependencies.scalaJars
-
-  def assemblyPaths(tempDir: Path, classpath: PathFinder, extraJars: PathFinder, exclude: PathFinder => PathFinder) = {
-    val (libs, directories) = classpath.get.toList.partition(ClasspathUtilities.isArchive)
-    val filter = new NameFilter {
-      def accept(name: String) = !name.endsWith("LICENSE") && !name.endsWith("MANIFEST.MF")
-    }
-    for(jar <- extraJars.get ++ libs) FileUtilities.unzip(jar, tempDir, filter, log).left.foreach(error)
-    val base = (Path.lazyPathFinder(tempDir :: directories) ##)
-    (descendents(base, "*") --- exclude(base)).get
+  // ------------------------------------------------------------
+  // helper functions
+  def removeDupEntries(paths: PathFinder) =
+   Path.lazyPathFinder {
+     val mapped = paths.get map { p => (p.relativePath, p) }
+    (Map() ++ mapped).values.toList
   }
 
-  lazy val assembly = assemblyTask(assemblyTemporaryPath, assemblyClasspath, assemblyExtraJars, assemblyExclude) dependsOn(compile) describedAs("Packaging assembly ")
-  
-  def assemblyTask(tempDir: Path, classpath: PathFinder, extraJars: PathFinder, exclude: PathFinder => PathFinder) = 
-    packageTask(Path.lazyPathFinder(assemblyPaths(tempDir, classpath, extraJars, exclude)), assemblyOutputPath, packageOptions)
+  def allArtifacts = {
+    (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) +++
+    ((outputPath ##) / defaultJarName) +++
+    mainResources +++
+    mainDependencies.scalaJars +++
+    descendents(info.projectPath, "*.conf") +++
+    descendents(info.projectPath / "dist", "*.jar") +++
+    descendents(info.projectPath / "deploy", "*.jar") +++
+    descendents(path("lib") ##, "*.jar") +++
+    descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
+    .filter(jar =>
+      !jar.toString.endsWith("scala-library-2.7.5.jar") && // remove redundant scala libs
+      !jar.toString.endsWith("scala-library-2.7.6.jar")) 
+  }
+
+  def deployTask(info: ProjectInfo, toDir: Path) = task {
+    val projectPath = info.projectPath.toString
+    val moduleName = projectPath.substring(projectPath.lastIndexOf('/') + 1, projectPath.length)
+    // FIXME need to find out a way to grab these paths from the sbt system 
+    val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(defScalaVersion.value, version)
+    val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(defScalaVersion.value) + JAR_FILE_NAME
+
+    val from = Path.fromFile(new java.io.File(JAR_FILE_PATH))
+    val to = Path.fromFile(new java.io.File(toDir + "/" + JAR_FILE_NAME))
+    log.info("Deploying " + to)
+    FileUtilities.copyFile(from, to, log)
+  }
 }
