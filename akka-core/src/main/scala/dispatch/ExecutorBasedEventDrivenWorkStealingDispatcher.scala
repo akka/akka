@@ -62,15 +62,15 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   /**
-   * Help another busy actor in the pool by stealing some work from its queue and dispatching it on the actor
+   * Help another busy actor in the pool by stealing some work from its queue and forwarding it to the actor
    * we were being invoked for (because we are done with the mailbox messages).
    */
   private def stealAndScheduleWork(thief: Actor) = {
     tryStealWork(thief).foreach {
       invocation => {
         log.debug("[%s] stole work [%s] from [%s]", thief, invocation.message, invocation.receiver)
-        thief.send(invocation.message)
-        // TODO: thief.forward(invocation.message)(invocation.sender) (doesn't work?)
+        // as if the original receiving actor would forward it to the thief
+        thief.forward(invocation.message)(Some(invocation.receiver))
       }
     }
   }
