@@ -6,10 +6,10 @@ package se.scalablesolutions.akka.util
 
 import net.lag.logging.Logger
 
-import java.io.StringWriter;
-import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.io.StringWriter
+import java.io.PrintWriter
+import java.net.InetAddress
+import java.net.UnknownHostException
 
 /**
  * Base trait for all classes that wants to be able use the logging infrastructure.
@@ -30,6 +30,7 @@ trait Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
+ // FIXME make use of LoggableException
 class LoggableException extends Exception with Logging {
   private val uniqueId = getExceptionID
   private var originalException: Option[Exception] = None

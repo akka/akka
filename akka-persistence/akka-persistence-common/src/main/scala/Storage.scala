@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.common
 
+import se.scalablesolutions.akka.stm._
 import se.scalablesolutions.akka.stm.TransactionManagement.transaction
-import se.scalablesolutions.akka.collection._
 import se.scalablesolutions.akka.util.Logging
 
 // FIXME move to 'stm' package + add message with more info

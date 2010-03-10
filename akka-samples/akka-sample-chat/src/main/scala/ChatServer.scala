@@ -6,12 +6,14 @@ package se.scalablesolutions.akka.sample.chat
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
 import se.scalablesolutions.akka.stm.Transaction._
+import se.scalablesolutions.akka.persistence.common.PersistentVector
+import se.scalablesolutions.akka.persistence.redis.RedisStorage
 import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
+
 import scala.collection.mutable.HashMap
-import se.scalablesolutions.akka.state.{PersistentVector, RedisStorage}
 
 /******************************************************************************
   To run the sample: 
