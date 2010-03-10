@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka
 
-import util.Logging
+import se.scalablesolutions.akka.util.Logging
 
 import net.lag.configgy.{Configgy, ParseException}
 
