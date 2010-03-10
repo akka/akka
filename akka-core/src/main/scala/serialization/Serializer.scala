@@ -21,6 +21,10 @@ trait Serializer {
   def deepClone(obj: AnyRef): AnyRef
   def out(obj: AnyRef): Array[Byte]
   def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+  
+  protected var classLoader: Option[ClassLoader] = None
+
+  def setClassLoader(cl: ClassLoader) = classLoader = Some(cl)
 }
 
 // For Java API
@@ -52,10 +56,6 @@ object Serializer {
    */
   object Java extends Java
   class Java extends Serializer {
-    private var classLoader: Option[ClassLoader] = None
-
-    def setClassLoader(cl: ClassLoader) = classLoader = Some(cl)
-
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
 
     def out(obj: AnyRef): Array[Byte] = {
@@ -107,10 +107,6 @@ object Serializer {
   class JavaJSON extends Serializer {
     private val mapper = new ObjectMapper
 
-    private var classLoader: Option[ClassLoader] = None
-
-    def setClassLoader(cl: ClassLoader) = classLoader = Some(cl)
-
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
 
     def out(obj: AnyRef): Array[Byte] = {
@@ -142,10 +138,6 @@ object Serializer {
   object ScalaJSON extends ScalaJSON
   class ScalaJSON extends Serializer {
     def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
-
-    private var classLoader: Option[ClassLoader] = None
-
-    def setClassLoader(cl: ClassLoader) = classLoader = Some(cl)
 
     def out(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
 

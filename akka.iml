@@ -2,6 +2,23 @@
 <module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Scala" name="Scala">
+      <configuration>
+        <option name="myScalaCompilerJarPaths">
+          <array>
+            <option value="$APPLICATION_HOME_DIR$/plugins/Scala/lib/scala-compiler.jar" />
+          </array>
+        </option>
+        <option name="myScalaSdkJarPaths">
+          <array>
+            <option value="$APPLICATION_HOME_DIR$/plugins/Scala/lib/scala-library.jar" />
+          </array>
+        </option>
+      </configuration>
+    </facet>
+    <facet type="Spring" name="Spring">
+      <configuration />
+    </facet>
+    <facet type="WebBeans" name="Web Beans">
       <configuration />
     </facet>
   </component>
