@@ -6,10 +6,10 @@ package se.scalablesolutions.akka.stm
 
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.TimeUnit
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.state.Committable
 import se.scalablesolutions.akka.util.Logging
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
@@ -18,7 +18,6 @@ import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.templates.{TransactionTemplate, OrElseTemplate}
 import org.multiverse.utils.backoff.ExponentialBackoffPolicy
 import org.multiverse.stms.alpha.AlphaStm
-import java.util.concurrent.TimeUnit
 
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)

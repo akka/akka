@@ -1,5 +1,4 @@
-package se.scalablesolutions.akka.actor
-
+package se.scalablesolutions.akka.patterns
 
 import config.ScalaConfig._
 
