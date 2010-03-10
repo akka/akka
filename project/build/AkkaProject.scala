@@ -123,6 +123,34 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     ) 
 
   // ------------------------------------------------------------
+  // publishing
+  Credentials(Path.userHome / ".akka_publish_credentials", log)
+  override def managedStyle = ManagedStyle.Maven
+
+  val publishTo = "Scalable Solutions Maven Repository" at "http://scalablesolutions.se/akka/repository/"
+  val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
+  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("javadoc"), Nil, None)
+
+  override def packageDocsJar = defaultJarPath("-javadoc.jar")
+  override def packageSrcJar= defaultJarPath("-sources.jar")
+  override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
+  
+  override def pomExtra =
+    <inceptionYear>2009</inceptionYear>
+    <url>http://akkasource.org</url>
+    <organization>
+      <name>Scalable Solutions AB</name>
+      <url>http://scalablesolutions.se</url>
+    </organization>
+    <licenses>
+      <license>
+        <name>Apache 2</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+
+    // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends DefaultProject(info) {
     val netty = "org.jboss.netty" % "netty" % "3.2.0.BETA1" % "compile"
