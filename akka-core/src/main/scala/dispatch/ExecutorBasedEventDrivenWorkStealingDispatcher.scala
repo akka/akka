@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.actor.Actor
  * actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
  * <p/>
  * The preferred way of creating dispatchers is to use
- * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
+ * the  { @link se.scalablesolutions.akka.dispatch.Dispatchers } factory object.
  *
  *
  * TODO: make sure everything in the pool is the same type of actor
@@ -76,6 +76,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   def tryStealWork(thief: Actor): Option[MessageInvocation] = {
+    // TODO: use random or round robin scheme to not always steal from the same actor?
     for (actor <- new Wrapper(references.values.iterator)) {
       if (actor != thief) {
         val stolenWork: MessageInvocation = actor._mailbox.pollLast
@@ -83,6 +84,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
           return Some(stolenWork)
       }
     }
+
+    // nothing found to steal
     return None
   }
 
