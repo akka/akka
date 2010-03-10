@@ -156,9 +156,6 @@ class RedisStorageBackendSpec extends
     }
   }
 
-  describe("atomic increment in ref") {
-  }
-
   describe("store and query in queue") {
     it("should give proper queue semantics") {
       enqueue("T-5", "alan kay".getBytes)
