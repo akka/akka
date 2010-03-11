@@ -122,8 +122,8 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
       case Some(msg: Failure) => exchange.fromFailureMessage(msg)
       case Some(msg)          => exchange.fromResponseMessage(Message.canonicalize(msg))
       case None               => {
-        throw new TimeoutException("communication with %s timed out after %d ms"
-            format (ep.getEndpointUri, actor.timeout))
+        throw new TimeoutException("timeout (%d ms) while waiting response from %s"
+            format (actor.timeout, ep.getEndpointUri))
       }
     }
   }

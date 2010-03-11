@@ -2,12 +2,12 @@ package se.scalablesolutions.akka.camel.service
 
 import org.apache.camel.builder.RouteBuilder
 import org.junit.Assert._
-import org.junit.{Before, After, Test}
 import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.annotation.consume
 import se.scalablesolutions.akka.camel.{CamelContextManager, Consumer, Message}
+import org.junit.{Ignore, Before, After, Test}
 
 class CamelServiceTest extends JUnitSuite with CamelService {
 
@@ -23,24 +23,38 @@ class CamelServiceTest extends JUnitSuite with CamelService {
   var actor3: Actor = _
 
   @Before def setUp = {
+    // register actors before starting the CamelService
     actor1 = new TestActor1().start
     actor2 = new TestActor2().start
     actor3 = new TestActor3().start
-    init()
+    // initialize global CamelContext
+    init
+    // customize global CamelContext
     context.addRoutes(new TestRouteBuilder)
-    onLoad
+    consumerPublisher.expectPublishCount(2)
+    load
+    consumerPublisher.awaitPublish
   }
 
   @After def tearDown = {
-    onUnload
+    unload
     actor1.stop
     actor2.stop
     actor3.stop
   }
 
-  @Test def shouldReceiveResponseViaGeneratedRoute = {
+  @Test def shouldReceiveResponseViaPreStartGeneratedRoutes = {
     assertEquals("Hello Martin (actor1)", template.requestBody("direct:actor1", "Martin"))
     assertEquals("Hello Martin (actor2)", template.requestBody("direct:actor2", "Martin"))
+  }
+
+  @Test def shouldReceiveResponseViaPostStartGeneratedRoute = {
+    consumerPublisher.expectPublishCount(1)
+    // register actor after starting CamelService
+    val actor4 = new TestActor4().start
+    consumerPublisher.awaitPublish
+    assertEquals("Hello Martin (actor4)", template.requestBody("direct:actor4", "Martin"))
+    actor4.stop
   }
 
   @Test def shouldReceiveResponseViaCustomRoute = {
@@ -55,7 +69,6 @@ class TestActor1 extends Actor with Consumer {
   protected def receive = {
     case msg: Message => reply("Hello %s (actor1)" format msg.body)
   }
-
 }
 
 @consume("direct:actor2")
@@ -70,6 +83,14 @@ class TestActor3 extends Actor {
 
   protected def receive = {
     case msg: Message => reply("Hello %s (actor3)" format msg.body)
+  }
+}
+
+class TestActor4 extends Actor with Consumer {
+  def endpointUri = "direct:actor4"
+
+  protected def receive = {
+    case msg: Message => reply("Hello %s (actor4)" format msg.body)
   }
 }
 
