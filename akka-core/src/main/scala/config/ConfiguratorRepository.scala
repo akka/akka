@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.config
 
 import scala.collection.mutable.HashSet
 
-import util.Logging
+import se.scalablesolutions.akka.util.Logging
 
 object ConfiguratorRepository extends Logging {
 

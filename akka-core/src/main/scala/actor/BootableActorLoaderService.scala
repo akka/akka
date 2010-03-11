@@ -7,8 +7,8 @@ package se.scalablesolutions.akka.actor
 import java.io.File
 import java.net.URLClassLoader
 
-import se.scalablesolutions.akka.util.{Bootable,Logging}
-import se.scalablesolutions.akka.Config._
+import se.scalablesolutions.akka.util.{Bootable, Logging}
+import se.scalablesolutions.akka.config.Config._
 
 /**
  * Handles all modules in the deploy directory (load and unload)
@@ -31,11 +31,7 @@ trait BootableActorLoaderService extends Bootable with Logging {
       val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURL
       log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
       new URLClassLoader(toDeploy.toArray, ClassLoader.getSystemClassLoader)
-    } else if (getClass.getClassLoader.getResourceAsStream("aop.xml") ne null) {
-      getClass.getClassLoader
-    } else throw new IllegalStateException(
-      "AKKA_HOME is not defined and akka-<version>.jar can not be found on the classpath; aborting...")
-    )
+    } else getClass.getClassLoader)
   }
 
   abstract override def onLoad = {

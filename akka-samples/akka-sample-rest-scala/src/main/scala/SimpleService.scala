@@ -5,10 +5,11 @@
 package sample.scala
 
 import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
-import se.scalablesolutions.akka.state.{CassandraStorage, TransactionalState}
+import se.scalablesolutions.akka.stm.TransactionalState
+import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.comet.{AkkaClusterBroadcastFilter}
+import se.scalablesolutions.akka.comet.AkkaClusterBroadcastFilter
 
 import java.lang.Integer
 import java.nio.ByteBuffer

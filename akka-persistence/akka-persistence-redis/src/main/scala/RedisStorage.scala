@@ -2,17 +2,19 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.redis
 
-import org.codehaus.aspectwerkz.proxy.Uuid
+import se.scalablesolutions.akka.util.UUID
+import se.scalablesolutions.akka.stm._
+import se.scalablesolutions.akka.persistence.common._
 
 object RedisStorage extends Storage {
   type ElementType = Array[Byte]
 
-  def newMap: PersistentMap[ElementType, ElementType] = newMap(Uuid.newUuid.toString)
-  def newVector: PersistentVector[ElementType] = newVector(Uuid.newUuid.toString)
-  def newRef: PersistentRef[ElementType] = newRef(Uuid.newUuid.toString)
-  override def newQueue: PersistentQueue[ElementType] = newQueue(Uuid.newUuid.toString)
+  def newMap: PersistentMap[ElementType, ElementType] = newMap(UUID.newUuid.toString)
+  def newVector: PersistentVector[ElementType] = newVector(UUID.newUuid.toString)
+  def newRef: PersistentRef[ElementType] = newRef(UUID.newUuid.toString)
+  override def newQueue: PersistentQueue[ElementType] = newQueue(UUID.newUuid.toString)
 
   def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
   def getVector(id: String): PersistentVector[ElementType] = newVector(id)

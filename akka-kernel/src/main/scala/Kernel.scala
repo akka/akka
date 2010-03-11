@@ -2,11 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka
+package se.scalablesolutions.akka.kernel
 
 import se.scalablesolutions.akka.remote.BootableRemoteActorService
+import se.scalablesolutions.akka.comet.BootableCometActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.util.{Logging,Bootable}
+import se.scalablesolutions.akka.config.Config
+import se.scalablesolutions.akka.util.{Logging, Bootable}
 
 import javax.servlet.{ServletContextListener, ServletContextEvent}
 
@@ -27,12 +29,15 @@ object Kernel extends Logging {
   /**
    * Holds a reference to the services that has been booted
    */
-  @volatile private var bundles : Option[Bootable] = None
+  @volatile private var bundles: Option[Bootable] = None
 
   /**
-   *  Boots up the Kernel with default bootables
+   * Boots up the Kernel with default bootables
    */
-  def boot : Unit = boot(true, new BootableActorLoaderService with BootableRemoteActorService with BootableCometActorService)
+  def boot: Unit = boot(true, 
+    new BootableActorLoaderService 
+    with BootableRemoteActorService 
+    with BootableCometActorService)
 
   /**
    * Boots up the Kernel. 
@@ -63,8 +68,8 @@ object Kernel extends Logging {
   }
 
   //For testing purposes only
-  def startRemoteService : Unit = bundles.foreach( _ match {
-    case x : BootableRemoteActorService => x.startRemoteService
+  def startRemoteService: Unit = bundles.foreach( _ match {
+    case x: BootableRemoteActorService => x.startRemoteService
     case _ =>
   })
 
@@ -84,11 +89,13 @@ object Kernel extends Logging {
   }
 }
  
- /*
-  And this one can be added to web.xml mappings as a listener to boot and shutdown Akka
- */
- 
+ /**
+  * This class can be added to web.xml mappings as a listener to boot and shutdown Akka.
+  */ 
 class Kernel extends ServletContextListener {
-   def contextDestroyed(e : ServletContextEvent) : Unit = Kernel.shutdown
-   def contextInitialized(e : ServletContextEvent) : Unit = Kernel.boot(true,new BootableActorLoaderService with BootableRemoteActorService)
+   def contextDestroyed(e: ServletContextEvent): Unit = 
+     Kernel.shutdown
+     
+   def contextInitialized(e: ServletContextEvent): Unit = 
+     Kernel.boot(true, new BootableActorLoaderService with BootableRemoteActorService)
  }

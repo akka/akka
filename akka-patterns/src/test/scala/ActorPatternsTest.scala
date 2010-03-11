@@ -1,11 +1,11 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.patterns
 
-
-import config.ScalaConfig._
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.util.Logging
 
 import org.scalatest.Suite
-import patterns.Patterns
-import se.scalablesolutions.akka.util.Logging
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
@@ -14,7 +14,6 @@ import scala.collection.mutable.HashSet
 
 @RunWith(classOf[JUnitRunner])
 class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMatchers with ActorTestUtil with Logging {
-  import Actor._
   import Patterns._
   @Test def testDispatcher = verify(new TestActor {
      def test = {
