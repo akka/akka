@@ -8,8 +8,7 @@ import se.scalablesolutions.akka.util.Logging
 
 import scala.collection.mutable.ListBuffer
 import scala.reflect.Manifest
-
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 
 /**
  * Registry holding all Actor instances in the whole system.
@@ -23,9 +22,10 @@ import java.util.concurrent.ConcurrentHashMap
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends Logging {
-  private val actorsByUUID =      new ConcurrentHashMap[String, Actor]
-  private val actorsById =        new ConcurrentHashMap[String, List[Actor]]
-  private val actorsByClassName = new ConcurrentHashMap[String, List[Actor]]
+  private val actorsByUUID =          new ConcurrentHashMap[String, Actor]
+  private val actorsById =            new ConcurrentHashMap[String, List[Actor]]
+  private val actorsByClassName =     new ConcurrentHashMap[String, List[Actor]]
+  private val registrationListeners = new CopyOnWriteArrayList[Actor]
 
   /**
    * Returns all actors in the system.
@@ -103,6 +103,9 @@ object ActorRegistry extends Logging {
     if (actorsByClassName.containsKey(className)) {
       actorsByClassName.put(className, actor :: actorsByClassName.get(className))
     } else actorsByClassName.put(className, actor :: Nil)
+
+    // notify listeners
+    foreachListener(_.!(ActorRegistered(actor))(None))
   }
 
   /**
@@ -112,6 +115,8 @@ object ActorRegistry extends Logging {
     actorsByUUID remove actor.uuid
     actorsById remove actor.getId
     actorsByClassName remove actor.getClass.getName
+    // notify listeners
+    foreachListener(_.!(ActorUnregistered(actor))(None))
   }
 
   /**
@@ -125,4 +130,26 @@ object ActorRegistry extends Logging {
     actorsByClassName.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
   }
+
+  /**
+   * Adds the registration <code>listener</code> this this registry's listener list.
+   */
+  def addRegistrationListener(listener: Actor) = {
+    registrationListeners.add(listener)
+  }
+
+  /**
+   * Removes the registration <code>listener</code> this this registry's listener list.
+   */
+  def removeRegistrationListener(listener: Actor) = {
+    registrationListeners.remove(listener)
+  }
+
+  private def foreachListener(f: (Actor) => Unit) {
+    val iterator = registrationListeners.iterator
+    while (iterator.hasNext) f(iterator.next)
+  }
 }
+
+case class ActorRegistered(actor: Actor)
+case class ActorUnregistered(actor: Actor)

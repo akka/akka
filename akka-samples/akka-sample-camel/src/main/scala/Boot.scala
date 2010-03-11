@@ -33,7 +33,6 @@ class Boot {
 }
 
 class CustomRouteBuilder extends RouteBuilder {
-
   def configure {
     val actorUri = "actor:%s" format classOf[Consumer2].getName
     from("jetty:http://0.0.0.0:8877/camel/test2").to(actorUri)
@@ -42,7 +41,5 @@ class CustomRouteBuilder extends RouteBuilder {
         exchange.getOut.setBody("Welcome %s" format exchange.getIn.getBody)
       }
     })
-
   }
-
 }

@@ -33,6 +33,7 @@ class ProducerTest extends JUnitSuite {
 
   //
   // TODO: test replies to messages sent with ! (bang)
+  // TODO: test copying of custom message headers 
   //
 
   @Test def shouldProduceMessageSyncAndReceiveResponse = {
