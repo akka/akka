@@ -5,8 +5,8 @@
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.util.{Bootable,Logging}
-import se.scalablesolutions.akka.Config.config
+import se.scalablesolutions.akka.util.{Bootable, Logging}
+import se.scalablesolutions.akka.config.Config.config
 
 /**
  * This bundle/service is responsible for booting up and shutting down the remote actors facility

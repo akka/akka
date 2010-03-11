@@ -4,13 +4,13 @@
  
 package se.scalablesolutions.akka.comet
 
-import se.scalablesolutions.akka.actor.{Actor}
-import se.scalablesolutions.akka.remote.{Cluster}
-import scala.reflect.{BeanProperty}
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.remote.Cluster
+import scala.reflect.BeanProperty
 import org.atmosphere.cpr.{BroadcastFilter, ClusterBroadcastFilter, Broadcaster}
 
 sealed trait ClusterCometMessageType
-case class ClusterCometBroadcast(val name : String, val msg : AnyRef) extends ClusterCometMessageType
+case class ClusterCometBroadcast(name: String, msg: AnyRef) extends ClusterCometMessageType
 
 /**
  * Enables explicit clustering of Atmosphere (Comet) resources

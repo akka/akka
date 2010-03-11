@@ -7,8 +7,8 @@ package se.scalablesolutions.akka.actor
 import java.io.File
 import java.net.URLClassLoader
 
-import se.scalablesolutions.akka.util.{Bootable,Logging}
-import se.scalablesolutions.akka.Config._
+import se.scalablesolutions.akka.util.{Bootable, Logging}
+import se.scalablesolutions.akka.config.Config._
 
 /**
  * Handles all modules in the deploy directory (load and unload)

@@ -2,7 +2,8 @@ package sample.lift
 
 import se.scalablesolutions.akka.actor.{Transactor, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.state.{CassandraStorage, TransactionalState}
+import se.scalablesolutions.akka.stm.TransactionalState
+import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
 
 import java.lang.Integer
 import javax.ws.rs.{GET, Path, Produces}

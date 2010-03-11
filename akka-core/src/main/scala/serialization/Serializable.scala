@@ -5,10 +5,15 @@
 package se.scalablesolutions.akka.serialization
 
 import org.codehaus.jackson.map.ObjectMapper
+
 import com.google.protobuf.Message
-import reflect.Manifest
+
+import scala.reflect.Manifest
+
 import sbinary.DefaultProtocol
+
 import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
+
 import sjson.json.{Serializer=>SJSONSerializer}
 
 object SerializationProtocol {
