@@ -17,16 +17,41 @@ import scala.collection.immutable.{Map, HashMap}
  * @author Viktor Klang
  */
 trait Cluster {
+  /**
+  * Specifies the cluster name
+  */
   def name: String
 
+  /**
+  * Adds the specified hostname + port as a local node
+  * This information will be propagated to other nodes in the cluster
+  * and will be available at the other nodes through lookup and foreach
+  */
   def registerLocalNode(hostname: String, port: Int): Unit
 
+  /**
+  * Removes the specified hostname + port from the local node
+  * This information will be propagated to other nodes in the cluster
+  * and will no longer be available at the other nodes through lookup and foreach
+  */
   def deregisterLocalNode(hostname: String, port: Int): Unit
 
+  /**
+  * Sends the message to all Actors of the specified type on all other nodes in the cluster
+  */
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit
 
+  /**
+  * Traverses all known remote addresses avaiable at all other nodes in the cluster
+  * and applies the given PartialFunction on the first address that it's defined at
+  * The order of application is undefined and may vary
+  */
   def lookup[T](pf: PartialFunction[RemoteAddress, T]): Option[T]
 
+  /**
+  * Applies the specified function to all known remote addresses on al other nodes in the cluster
+  * The order of application is undefined and may vary
+  */
   def foreach(f: (RemoteAddress) => Unit): Unit
 }
 
@@ -37,6 +62,10 @@ trait Cluster {
  */
 trait ClusterActor extends Actor with Cluster {
   val name = config.getString("akka.remote.cluster.name") getOrElse "default"
+  
+  @volatile protected var serializer : Serializer = _
+  
+  private[remote] def setSerializer(s : Serializer) : Unit = serializer = s
 }
 
 /**
@@ -110,7 +139,7 @@ abstract class BasicClusterActor extends ClusterActor {
 
     case m: Message[ADDR_T] => {
       val (src, msg) = (m.sender, m.msg)
-      (Cluster.serializer in (msg, None)) match {
+      (serializer in (msg, None)) match {
 
         case PapersPlease => {
           log debug ("Asked for papers by %s", src)
@@ -156,7 +185,7 @@ abstract class BasicClusterActor extends ClusterActor {
    * that's been set in the akka-conf
    */
   protected def broadcast[T <: AnyRef](recipients: Iterable[ADDR_T], msg: T): Unit = {
-    lazy val m = Cluster.serializer out msg
+    lazy val m = serializer out msg
     for (r <- recipients) toOneNode(r, m)
   }
 
@@ -165,7 +194,7 @@ abstract class BasicClusterActor extends ClusterActor {
    * that's been set in the akka-conf
    */
   protected def broadcast[T <: AnyRef](msg: T): Unit =
-    if (!remotes.isEmpty) toAllNodes(Cluster.serializer out msg)
+    if (!remotes.isEmpty) toAllNodes(serializer out msg)
 
   /**
    * Applies the given PartialFunction to all known RemoteAddresses
@@ -205,23 +234,21 @@ abstract class BasicClusterActor extends ClusterActor {
 object Cluster extends Cluster with Logging {
   lazy val DEFAULT_SERIALIZER_CLASS_NAME = Serializer.Java.getClass.getName
 
-  @volatile private[akka] var clusterActor: Option[ClusterActor] = None
+  @volatile private[remote] var clusterActor: Option[ClusterActor] = None 
 
-  // FIXME Use the supervisor member field
-  @volatile private[akka] var supervisor: Option[Supervisor] = None
-
-  private[akka] lazy val serializer: Serializer =
-  Class.forName(config.getString("akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
-      .newInstance.asInstanceOf[Serializer]
-
-  private[akka] def createClusterActor: Option[ClusterActor] = {
+  private[remote] def createClusterActor(loader : ClassLoader): Option[ClusterActor] = {
     val name = config.getString("akka.remote.cluster.actor")
     if (name.isEmpty) throw new IllegalArgumentException(
       "Can't start cluster since the 'akka.remote.cluster.actor' configuration option is not defined")
+      
+    val serializer = Class.forName(config.getString("akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME)).newInstance.asInstanceOf[Serializer]
+    serializer setClassLoader loader 
     try {
       name map {
         fqn =>
-          Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
+          val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
+          a setSerializer serializer
+          a
       }
     }
     catch {
@@ -251,13 +278,14 @@ object Cluster extends Cluster with Logging {
 
   def foreach(f: (RemoteAddress) => Unit): Unit = clusterActor.foreach(_.foreach(f))
 
-  def start: Unit = synchronized {
+  def start: Unit = start(None)
+
+  def start(serializerClassLoader : Option[ClassLoader]): Unit = synchronized {
     log.info("Starting up Cluster Service...")
-    if (supervisor.isEmpty) {
-      for (actor <- createClusterActor;
-           sup <- createSupervisor(actor)) {
+    if (clusterActor.isEmpty) {
+      for{ actor <- createClusterActor(serializerClassLoader getOrElse getClass.getClassLoader)
+             sup <- createSupervisor(actor) } {
         clusterActor = Some(actor)
-        supervisor = Some(sup)
         sup.start
       }
     }
@@ -265,8 +293,10 @@ object Cluster extends Cluster with Logging {
 
   def shutdown: Unit = synchronized {
     log.info("Shutting down Cluster Service...")
-    supervisor.foreach(_.stop)
-    supervisor = None
+    for{
+      c <- clusterActor
+      s <- c._supervisor
+    } s.stop
     clusterActor = None
   }
 }
