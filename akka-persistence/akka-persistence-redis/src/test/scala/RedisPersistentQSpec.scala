@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.redis
 
 import junit.framework.TestCase
 
@@ -15,9 +15,9 @@ import se.scalablesolutions.akka.actor.{Actor, Transactor}
  */
 
 case class NQ(accountNo: String)
-case class DQ
+case object DQ
 case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: Actor)
-case class SZ
+case object SZ
 
 class QueueActor extends Transactor {
   private lazy val accounts = RedisStorage.newQueue

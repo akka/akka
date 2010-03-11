@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.cassandra
 
 import se.scalablesolutions.akka.actor.{Actor, Transactor}
 

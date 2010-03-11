@@ -18,7 +18,7 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
 }
 
 object TransactionManagement extends TransactionManagement {
-  import se.scalablesolutions.akka.Config._
+  import se.scalablesolutions.akka.config.Config._
 
   val TRANSACTION_ENABLED =      new AtomicBoolean(config.getBool("akka.stm.service", false))
   val FAIR_TRANSACTIONS =        config.getBool("akka.stm.fair", true)

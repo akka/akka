@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.Config.config
+import se.scalablesolutions.akka.config.Config.config
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRegistry}
@@ -44,20 +44,20 @@ trait ClusterActor extends Actor with Cluster {
  *
  * @author Viktor Klang
  */
-private[remote] object ClusterActor {
+private[akka] object ClusterActor {
   sealed trait ClusterMessage
 
-  private[remote] case class RelayedMessage(actorClassFQN: String, msg: AnyRef) extends ClusterMessage
-  private[remote] case class Message[ADDR_T](sender: ADDR_T, msg: Array[Byte])
-  private[remote] case object PapersPlease extends ClusterMessage
-  private[remote] case class Papers(addresses: List[RemoteAddress]) extends ClusterMessage
-  private[remote] case object Block extends ClusterMessage
-  private[remote] case object Unblock extends ClusterMessage
-  private[remote] case class View[ADDR_T](othersPresent: Set[ADDR_T]) extends ClusterMessage
-  private[remote] case class Zombie[ADDR_T](address: ADDR_T) extends ClusterMessage
-  private[remote] case class RegisterLocalNode(server: RemoteAddress) extends ClusterMessage
-  private[remote] case class DeregisterLocalNode(server: RemoteAddress) extends ClusterMessage
-  private[remote] case class Node(endpoints: List[RemoteAddress])
+  private[akka] case class RelayedMessage(actorClassFQN: String, msg: AnyRef) extends ClusterMessage
+  private[akka] case class Message[ADDR_T](sender: ADDR_T, msg: Array[Byte])
+  private[akka] case object PapersPlease extends ClusterMessage
+  private[akka] case class Papers(addresses: List[RemoteAddress]) extends ClusterMessage
+  private[akka] case object Block extends ClusterMessage
+  private[akka] case object Unblock extends ClusterMessage
+  private[akka] case class View[ADDR_T](othersPresent: Set[ADDR_T]) extends ClusterMessage
+  private[akka] case class Zombie[ADDR_T](address: ADDR_T) extends ClusterMessage
+  private[akka] case class RegisterLocalNode(server: RemoteAddress) extends ClusterMessage
+  private[akka] case class DeregisterLocalNode(server: RemoteAddress) extends ClusterMessage
+  private[akka] case class Node(endpoints: List[RemoteAddress])
 }
 
 /**
@@ -205,16 +205,16 @@ abstract class BasicClusterActor extends ClusterActor {
 object Cluster extends Cluster with Logging {
   lazy val DEFAULT_SERIALIZER_CLASS_NAME = Serializer.Java.getClass.getName
 
-  @volatile private[remote] var clusterActor: Option[ClusterActor] = None
+  @volatile private[akka] var clusterActor: Option[ClusterActor] = None
 
   // FIXME Use the supervisor member field
-  @volatile private[remote] var supervisor: Option[Supervisor] = None
+  @volatile private[akka] var supervisor: Option[Supervisor] = None
 
-  private[remote] lazy val serializer: Serializer =
+  private[akka] lazy val serializer: Serializer =
   Class.forName(config.getString("akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
       .newInstance.asInstanceOf[Serializer]
 
-  private[remote] def createClusterActor: Option[ClusterActor] = {
+  private[akka] def createClusterActor: Option[ClusterActor] = {
     val name = config.getString("akka.remote.cluster.actor")
     if (name.isEmpty) throw new IllegalArgumentException(
       "Can't start cluster since the 'akka.remote.cluster.actor' configuration option is not defined")
@@ -229,7 +229,7 @@ object Cluster extends Cluster with Logging {
     }
   }
 
-  private[remote] def createSupervisor(actor: ClusterActor): Option[Supervisor] = {
+  private[akka] def createSupervisor(actor: ClusterActor): Option[Supervisor] = {
     val sup = SupervisorFactory(
       SupervisorConfig(
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),

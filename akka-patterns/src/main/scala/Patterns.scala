@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.actor.patterns
+package se.scalablesolutions.akka.patterns
 
 import se.scalablesolutions.akka.actor.Actor
 

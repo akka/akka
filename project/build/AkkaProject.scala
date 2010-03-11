@@ -94,7 +94,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // create executable jar
-  override def mainClass = Some("se.scalablesolutions.akka.Main")
+  override def mainClass = Some("se.scalablesolutions.akka.kernel.Main")
 
   override def packageOptions = 
     manifestClassPath.map(cp => ManifestAttributes((Attributes.Name.CLASS_PATH, cp))).toList :::

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka
+package se.scalablesolutions.akka.config
 
 import se.scalablesolutions.akka.util.Logging
 
