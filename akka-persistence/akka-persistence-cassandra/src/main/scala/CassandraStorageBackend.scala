@@ -2,11 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.cassandra
 
+import se.scalablesolutions.akka.stm._
+import se.scalablesolutions.akka.persistence.common._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.util.Helpers._
-import se.scalablesolutions.akka.Config.config
+import se.scalablesolutions.akka.config.Config.config
 
 import org.apache.cassandra.service._
 

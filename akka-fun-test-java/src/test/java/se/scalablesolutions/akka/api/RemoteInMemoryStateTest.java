@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.Config;
+import se.scalablesolutions.akka.config.Config;
 import se.scalablesolutions.akka.actor.ActiveObject;
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import se.scalablesolutions.akka.remote.RemoteNode;

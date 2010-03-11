@@ -11,8 +11,8 @@ import javax.ws.rs.Produces;
 import se.scalablesolutions.akka.annotation.transactionrequired;
 import se.scalablesolutions.akka.annotation.prerestart;
 import se.scalablesolutions.akka.annotation.postrestart;
-import se.scalablesolutions.akka.state.PersistentMap;
-import se.scalablesolutions.akka.state.CassandraStorage;
+import se.scalablesolutions.akka.persistence.common.PersistentMap;
+import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage;
 
 import java.nio.ByteBuffer;
 

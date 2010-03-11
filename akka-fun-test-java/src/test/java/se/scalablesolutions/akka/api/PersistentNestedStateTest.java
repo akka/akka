@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.config.*;
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 import se.scalablesolutions.akka.actor.*;
-        import se.scalablesolutions.akka.Kernel;
+import se.scalablesolutions.akka.kernel.Kernel;
 
 import junit.framework.TestCase;
 

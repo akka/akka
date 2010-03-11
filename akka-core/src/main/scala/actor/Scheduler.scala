@@ -17,7 +17,7 @@ import java.util.concurrent._
 
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
-import se.scalablesolutions.akka.util.{Logging}
+import se.scalablesolutions.akka.util.Logging
 
 import org.scala_tools.javautils.Imports._
 
