@@ -87,10 +87,11 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
     override def filter(request: ContainerRequest): ContainerRequest =
       rolesAllowed match {
         case Some(roles) => {
-          (authenticator !! (Authenticate(request, roles), 10000)).get.asInstanceOf[AnyRef] match {
-            case OK => request
-            case r if r.isInstanceOf[Response] =>
+          (authenticator.!![AnyRef](Authenticate(request, roles), 10000)) match {
+            case Some(OK) => request
+            case Some(r) if r.isInstanceOf[Response] =>
               throw new WebApplicationException(r.asInstanceOf[Response])
+            case None => throw new WebApplicationException(408)
             case x => {
               log.error("Authenticator replied with unexpected result [%s]", x);
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
