@@ -1,77 +1,76 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
+  <artifactId>akka-spring</artifactId>
+  <name>Akka Spring Integration</name>
+  <packaging>jar</packaging>
 
-    <artifactId>akka-spring</artifactId>
-    <name>Akka Spring Module</name>
+  <parent>
+    <artifactId>akka</artifactId>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <version>0.7-SNAPSHOT</version>
+  </parent>
 
-    <packaging>jar</packaging>
-
-    <parent>
-        <artifactId>akka</artifactId>
-        <groupId>se.scalablesolutions.akka</groupId>
-        <version>0.6</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
-
+   
 
     <dependencies>
+        <!-- Core deps -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>3.8.1</version>
-            <scope>test</scope>
+            <artifactId>akka-core</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <artifactId>akka-util-java</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <artifactId>akka-util</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring</artifactId>
-            <version>2.5.5</version>
+            <version>2.5.6</version>
         </dependency>
-        <dependency>
-            <artifactId>akka-core</artifactId>
-            <groupId>se.scalablesolutions.akka</groupId>
-            <version>0.6</version>
+               <!--dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>3.0.1.RELEASE</version>
         </dependency>
+       <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>3.0.1.RELEASE</version>
+        </dependency-->
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.7.5</version>
+            <version>${scala.version}</version>
+        </dependency>
+       <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <!-- For Testing -->
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.codehaus.aspectwerkz</groupId>
-            <artifactId>aspectwerkz-nodeps-jdk5</artifactId>
-            <version>2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.aspectwerkz</groupId>
-            <artifactId>aspectwerkz-jdk5</artifactId>
-            <version>2.1</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.5</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>src/test/java</testSourceDirectory>
-        <testResources>
-          <testResource>
-            <directory>src/test/resources</directory>
-          </testResource>
-        </testResources>
-
-        
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                    <includes>
-                        <include>**/*</include>
-                    </includes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+  
 </project>

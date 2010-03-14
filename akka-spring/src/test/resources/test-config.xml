@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:akka="http://www.akkasource.org/schema/akka"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+       http://www.akkasource.org/schema/akka
+       file:////../../main/resources/se/scalablesolutions/akka/spring/akka.xsd">
+
+<bean   id="wrappedService"
+            class="se.scalablesolutions.akka.actor.ActiveObject"
+            factory-method="newInstance">
+        <constructor-arg index="0" type="java.lang.Class" value="foo.bar.MyPojo"/>
+        <constructor-arg index="1" value="1000"/>
+    </bean>
+
+    <akka:active-object id="active-object1"
+    					target="foo.bar.MyPojo"
+    					timeout="1000"/>
+
+    <akka:active-object id="service2"
+    					target="foo.bar.MyPojo"
+    					timeout="2000"
+    					transactional="true"/>
+
+    <akka:active-object id="service3"
+    					target="foo.bar.MyPojo"
+    					timeout="2000"
+    					transactional="true">
+    	<akka:restart-callbacks pre="preRestart"/>
+    </akka:active-object>
+
+    <akka:active-object id="active-object2"
+    					target="foo.bar.MyPojo"
+    					timeout="2000"
+    					transactional="true">
+    	<akka:restart-callbacks pre="preRestartMethod" post="postRestartMethod"/>
+    	<akka:remote host="localhost" port="9998" />
+    </akka:active-object>
+
+    <akka:active-object id="remote-service1" target="foo.bar.MyPojo" timeout="1000">
+    	<akka:remote host="localhost" port="9998" />
+    </akka:active-object>
+
+    <akka:supervision id="supervision1">
+		<akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
+		  <akka:trap-exits>
+		      <akka:trap-exit>java.io.IOException</akka:trap-exit>
+		      <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
+		  </akka:trap-exits>
+          </akka:restart-strategy>
+		  <akka:active-objects>
+			  <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+			  <akka:active-object interface="foo.bar.Bar" target="foo.bar.BarImpl" lifecycle="permanent" timeout="1000"/>
+			  <akka:active-object target="foo.bar.SomeService" lifecycle="temporary" timeout="1000">
+				  <akka:restart-callbacks pre="preRestartMethod" post="postRestartMethod"/>
+			  </akka:active-object>
+		  </akka:active-objects>
+    </akka:supervision>
+
+    
+</beans>
