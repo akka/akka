@@ -1,7 +1,9 @@
 package sample.camel
 
 import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.camel.Message
 import se.scalablesolutions.akka.remote.RemoteClient
+
 /**
  * @author Martin Krasser
  */
@@ -19,8 +21,8 @@ object Application1 {
 
     actor1.start
 
-    actor1 ! "hello"
-    actor2 ! "hello"
+    println(actor1 !! Message("actor1"))
+    println(actor2 !! Message("actor2"))
   }
 
 }

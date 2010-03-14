@@ -2,7 +2,7 @@ package sample.camel
 
 import se.scalablesolutions.akka.actor.{Actor, RemoteActor}
 import se.scalablesolutions.akka.annotation.consume
-import se.scalablesolutions.akka.camel.{Message, Consumer}
+import se.scalablesolutions.akka.camel.{Producer, Message, Consumer}
 import se.scalablesolutions.akka.util.Logging
 
 /**
@@ -12,7 +12,7 @@ class RemoteActor1 extends RemoteActor("localhost", 7777) with Consumer {
   def endpointUri = "jetty:http://localhost:6644/remote1"
 
   protected def receive = {
-    case msg => reply("response from remote actor 1")
+    case msg: Message => reply(Message("hello %s" format msg.body, Map("sender" -> "remote1")))
   }
 }
 
@@ -23,8 +23,17 @@ class RemoteActor2 extends Actor with Consumer {
   def endpointUri = "jetty:http://localhost:6644/remote2"
 
   protected def receive = {
-    case msg => reply("response from remote actor 2")
+    case msg: Message => reply(Message("hello %s" format msg.body, Map("sender" -> "remote2")))
   }
+}
+
+class Producer1 extends Actor with Producer {
+  def endpointUri = "direct:welcome"
+
+  override def oneway = false // default
+  override def async = true   // default
+
+  protected def receive = produce
 }
 
 class Consumer1 extends Actor with Consumer with Logging {
@@ -53,5 +62,31 @@ class Consumer3(transformer: Actor) extends Actor with Consumer {
 class Transformer(producer: Actor) extends Actor {
   protected def receive = {
     case msg: Message => producer.forward(msg.transformBody[String]("- %s -" format _))
+  }
+}
+
+class Subscriber(name:String, uri: String) extends Actor with Consumer {
+  def endpointUri = uri
+
+  protected def receive = {
+    case msg: Message => log.info("%s received: %s" format (name, msg.body))
+  }
+}
+
+class Publisher(name: String, uri: String) extends Actor with Producer {
+  id = name
+  def endpointUri = uri
+  override def oneway = true
+  protected def receive = produce
+}
+
+class PublisherBridge(uri: String, publisher: Actor) extends Actor with Consumer {
+  def endpointUri = uri
+
+  protected def receive = {
+    case msg: Message => {
+      publisher ! msg.bodyAs(classOf[String])
+      reply("message published")
+    }
   }
 }
