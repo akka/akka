@@ -127,9 +127,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   Credentials(Path.userHome / ".akka_publish_credentials", log)
   override def managedStyle = ManagedStyle.Maven
 
-  val publishTo = "Scalable Solutions Maven Repository" at "http://scalablesolutions.se/akka/repository/"
+  val publishTo = "Scalable Solutions Maven Repository" at "~/tmp/akka"
+//  val publishTo = "Scalable Solutions Maven Repository" at "http://scalablesolutions.se/akka/repository/"
   val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
-  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("javadoc"), Nil, None)
+//  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("javadoc"), Nil, None)
 
   override def packageDocsJar = defaultJarPath("-javadoc.jar")
   override def packageSrcJar= defaultJarPath("-sources.jar")
