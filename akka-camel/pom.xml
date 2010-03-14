@@ -27,10 +27,57 @@
       <artifactId>camel-core</artifactId>
       <version>2.2.0</version>
     </dependency>
+
+    <!--
+       TODO: do not include dependencies to Camel components here.
+             (should go to sample-camel module or akka application)
+    -->
+
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-jetty</artifactId>
       <version>2.2.0</version>
+      <exclusions>
+        <!--
+           Exclude Jetty 6.1.22 (doesn't work with camel-cometd) 
+        -->
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty-client</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!--
+       Jetty 6.1.11 is required for camel-cometd
+    -->
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty</artifactId>
+      <version>6.1.11</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>6.1.11</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-cometd</artifactId>
+      <version>2.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-jms</artifactId>
+      <version>2.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-core</artifactId>
+      <version>5.3.0</version>
     </dependency>
 
     <!-- For Testing -->
