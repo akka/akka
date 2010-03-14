@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+  <bean id="akkaInterceptor" class="se.scalablesolutions.akka.spring.AkkaSpringInterceptor">
+  </bean>
+
+  <bean id="service" class="se.scalablesolutions.akka.spring.MyService">
+  </bean>
+
+  <bean id="actorBeanService" class="org.springframework.aop.framework.ProxyFactoryBean">
+    <property name="target">
+      <ref bean="service"/>
+    </property>
+    <property name="interceptorNames">
+      <list>
+        <value>akkaInterceptor</value>
+      </list>
+    </property>
+  </bean>
+
+</beans>
