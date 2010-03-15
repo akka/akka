@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.redis
 
 import junit.framework.TestCase
 

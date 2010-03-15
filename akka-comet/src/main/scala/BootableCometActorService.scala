@@ -2,16 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
  
-package se.scalablesolutions.akka
+package se.scalablesolutions.akka.comet
 
 import com.sun.grizzly.http.SelectorThread
 import com.sun.grizzly.http.servlet.ServletAdapter
 import com.sun.grizzly.standalone.StaticStreamAlgorithm
 
 import javax.ws.rs.core.UriBuilder
-import se.scalablesolutions.akka.comet.AkkaServlet
+
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.util.{Bootable,Logging}
+import se.scalablesolutions.akka.util.{Bootable, Logging}
 
 /**
  * Handles the Akka Comet Support (load/unload)
@@ -19,16 +19,17 @@ import se.scalablesolutions.akka.util.{Bootable,Logging}
 trait BootableCometActorService extends Bootable with Logging {
   self : BootableActorLoaderService =>
   
-  import Config._
+  import config.Config._
   
   val REST_HOSTNAME = config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
   val REST_PORT = config.getInt("akka.rest.port", 9998)
+  
   protected var jerseySelectorThread: Option[SelectorThread] = None
   
   abstract override def onLoad   = {
     super.onLoad
-    if(config.getBool("akka.rest.service", true)){
+    if (config.getBool("akka.rest.service", true)) {
     
       val uri = UriBuilder.fromUri(REST_URL).port(REST_PORT).build()
 
@@ -42,8 +43,7 @@ trait BootableCometActorService extends Bootable with Logging {
       adapter.setHandleStaticResources(true)
       adapter.setServletInstance(new AkkaServlet)
       adapter.setContextPath(uri.getPath)
-      //Using autodetection for now
-      //adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
+      adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
       if (HOME.isDefined) adapter.setRootFolder(HOME.get + "/deploy/root")
       log.info("REST service root path [%s] and context path [%s]", adapter.getRootFolder, adapter.getContextPath)
 

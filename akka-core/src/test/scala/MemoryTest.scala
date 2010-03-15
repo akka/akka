@@ -22,9 +22,11 @@ class MemoryFootprintTest extends JUnitSuite   {
     // Actors are put in AspectRegistry when created so they won't be GCd here
 
     val totalMem = Runtime.getRuntime.totalMemory - Runtime.getRuntime.freeMemory
+    println("Memory before " + totalMem)
     (1 until NR_OF_ACTORS).foreach(i => new Mem)
     
     val newTotalMem = Runtime.getRuntime.totalMemory - Runtime.getRuntime.freeMemory
+    println("Memory aftor " + newTotalMem)
     val memPerActor = (newTotalMem - totalMem) / NR_OF_ACTORS
 
     println("Memory footprint per actor is : " + memPerActor)
