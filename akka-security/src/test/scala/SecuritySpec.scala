@@ -14,9 +14,9 @@ import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.junit.{Before, After, Test}
 
-import _root_.javax.ws.rs.core.{SecurityContext, Context, Response}
-import _root_.com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
-import _root_.com.sun.jersey.core.util.Base64
+import javax.ws.rs.core.{SecurityContext, Context, Response}
+import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
+import com.sun.jersey.core.util.Base64
 
 class BasicAuthenticatorSpec extends junit.framework.TestCase
     with Suite with MockitoSugar with MustMatchers {

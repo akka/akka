@@ -22,20 +22,21 @@
 
 package se.scalablesolutions.akka.security
 
-import _root_.se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorRegistry}
-import _root_.se.scalablesolutions.akka.util.Logging
-import _root_.se.scalablesolutions.akka.Config
+import se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorRegistry}
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.config.Config
 
-import _root_.com.sun.jersey.api.model.AbstractMethod
-import _root_.com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
-import _root_.com.sun.jersey.core.util.Base64
-import _root_.javax.ws.rs.core.{SecurityContext, Context, Response}
-import _root_.javax.ws.rs.WebApplicationException
-import _root_.javax.annotation.security.{DenyAll, PermitAll, RolesAllowed}
-import _root_.java.security.Principal
-import _root_.java.util.concurrent.TimeUnit
+import com.sun.jersey.api.model.AbstractMethod
+import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
+import com.sun.jersey.core.util.Base64
 
-import _root_.net.liftweb.util.{SecurityHelpers, StringHelpers, IoHelpers}
+import javax.ws.rs.core.{SecurityContext, Context, Response}
+import javax.ws.rs.WebApplicationException
+import javax.annotation.security.{DenyAll, PermitAll, RolesAllowed}
+import java.security.Principal
+import java.util.concurrent.TimeUnit
+
+import net.liftweb.util.{SecurityHelpers, StringHelpers, IoHelpers}
 
 object Enc extends SecurityHelpers with StringHelpers with IoHelpers
 
@@ -86,10 +87,11 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
     override def filter(request: ContainerRequest): ContainerRequest =
       rolesAllowed match {
         case Some(roles) => {
-          (authenticator !! (Authenticate(request, roles), 10000)).get.asInstanceOf[AnyRef] match {
-            case OK => request
-            case r if r.isInstanceOf[Response] =>
+          (authenticator.!![AnyRef](Authenticate(request, roles), 10000)) match {
+            case Some(OK) => request
+            case Some(r) if r.isInstanceOf[Response] =>
               throw new WebApplicationException(r.asInstanceOf[Response])
+            case None => throw new WebApplicationException(408)
             case x => {
               log.error("Authenticator replied with unexpected result [%s]", x);
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
@@ -329,19 +331,19 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
   def noncePurgeInterval = 2 * 60 * 1000 //ms
 }
 
-import _root_.java.security.Principal
-import _root_.java.security.PrivilegedActionException
-import _root_.java.security.PrivilegedExceptionAction
+import java.security.Principal
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 
-import _root_.javax.security.auth.login.AppConfigurationEntry
-import _root_.javax.security.auth.login.Configuration
-import _root_.javax.security.auth.login.LoginContext
-import _root_.javax.security.auth.Subject
-import _root_.javax.security.auth.kerberos.KerberosPrincipal
+import javax.security.auth.login.AppConfigurationEntry
+import javax.security.auth.login.Configuration
+import javax.security.auth.login.LoginContext
+import javax.security.auth.Subject
+import javax.security.auth.kerberos.KerberosPrincipal
 
-import _root_.org.ietf.jgss.GSSContext
-import _root_.org.ietf.jgss.GSSCredential
-import _root_.org.ietf.jgss.GSSManager
+import org.ietf.jgss.GSSContext
+import org.ietf.jgss.GSSCredential
+import org.ietf.jgss.GSSManager
 
 trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
   override def unauthorized =
@@ -349,7 +351,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
 
   // for some reason the jersey Base64 class does not work with kerberos
   // but the commons Base64 does
-  import _root_.org.apache.commons.codec.binary.Base64
+  import org.apache.commons.codec.binary.Base64
   override def extractCredentials(r: Req): Option[SpnegoCredentials] = {
     val AuthHeader = """Negotiate\s(.*)""".r
 

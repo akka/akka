@@ -32,7 +32,7 @@
  POSSIBILITY OF SUCH DAMAGE.
  **/
 
-package se.scalablesolutions.akka.collection
+package se.scalablesolutions.akka.stm
 
 import Vector._
 
@@ -54,7 +54,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
    * (somewhat dynamically-typed) implementation in place.
    */
   
-  private[collection] def this() = this(0, 5, EmptyArray, EmptyArray)
+  private[stm] def this() = this(0, 5, EmptyArray, EmptyArray)
   
   def apply(i: Int): T = {
     if (i >= 0 && i < length) {
@@ -317,14 +317,14 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
 }
 
 object Vector {
-  private[collection] val EmptyArray = new Array[AnyRef](0)
+  private[stm] val EmptyArray = new Array[AnyRef](0)
   
   def apply[T](elems: T*) = elems.foldLeft(EmptyVector:Vector[T]) { _ + _ }
   
   def unapplySeq[T](vec: Vector[T]): Option[Seq[T]] = Some(vec)
   
   @inline
-  private[collection] def array(elems: AnyRef*) = {
+  private[stm] def array(elems: AnyRef*) = {
     val back = new Array[AnyRef](elems.length)
     Array.copy(elems, 0, back, 0, back.length)
 
@@ -334,7 +334,7 @@ object Vector {
 
 object EmptyVector extends Vector[Nothing]
 
-private[collection] abstract class VectorProjection[+T] extends Vector[T] {
+private[stm] abstract class VectorProjection[+T] extends Vector[T] {
   override val length: Int
   override def apply(i: Int): T
   

@@ -31,12 +31,12 @@ class PerformanceTest extends JUnitSuite {
 
       case class Meet(from: Actor, colour: Colour)
       case class Change(colour: Colour)
-      case class MeetingCount(count: int)
+      case class MeetingCount(count: Int)
       case class ExitActor(actor: Actor, reason: String)
 
       var totalTime = 0L
 
-      class Mall(var nrMeets: int, numChameneos: int) extends Actor {
+      class Mall(var nrMeets: Int, numChameneos: Int) extends Actor {
         var waitingChameneo: Option[Actor] = None
         var sumMeetings = 0
         var numFaded = 0
@@ -86,7 +86,7 @@ class PerformanceTest extends JUnitSuite {
         }
       }
 
-      case class Chameneo(var mall: Mall, var colour: Colour, cid: int) extends Actor {
+      case class Chameneo(var mall: Mall, var colour: Colour, cid: Int) extends Actor {
         var meetings = 0
 
         override def start = {
@@ -160,10 +160,10 @@ class PerformanceTest extends JUnitSuite {
 
       case class Meet(colour: Colour)
       case class Change(colour: Colour)
-      case class MeetingCount(count: int)
+      case class MeetingCount(count: Int)
 
 
-      class Mall(var n: int, numChameneos: int) extends Actor {
+      class Mall(var n: Int, numChameneos: Int) extends Actor {
         var waitingChameneo: Option[OutputChannel[Any]] = None
         var startTime: Long = 0L
 
@@ -218,7 +218,7 @@ class PerformanceTest extends JUnitSuite {
         }
       }
 
-      case class Chameneo(var mall: Mall, var colour: Colour, id: int) extends Actor {
+      case class Chameneo(var mall: Mall, var colour: Colour, id: Int) extends Actor {
         var meetings = 0
 
         def act() {
