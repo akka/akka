@@ -4,8 +4,8 @@
 
 package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.Config._
 import se.scalablesolutions.akka.dispatch._
+import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction._

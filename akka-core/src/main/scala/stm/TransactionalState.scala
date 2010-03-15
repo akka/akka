@@ -2,12 +2,11 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.stm
 
 import se.scalablesolutions.akka.stm.Transaction.atomic
-import se.scalablesolutions.akka.stm.NoTransactionInScopeException
-import se.scalablesolutions.akka.collection._
 import se.scalablesolutions.akka.util.UUID
+
 import org.multiverse.stms.alpha.AlphaRef
 
 /**

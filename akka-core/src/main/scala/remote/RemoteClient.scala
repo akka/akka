@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, 
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.util.{UUID, Logging}
-import se.scalablesolutions.akka.Config.config
+import se.scalablesolutions.akka.config.Config.config
 
 import org.jboss.netty.channel._
 import group.DefaultChannelGroup
