@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.redis
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -111,6 +111,48 @@ class RedisStorageBackendSpec extends
       val n = Name(100, "debasish", "kolkata")
       insertRefStorageFor("T-4", n.toBytes)
       n.fromBytes(getRefStorageFor("T-4").get) should equal(n)
+    }
+  }
+
+  describe("atomic increment in ref") {
+    it("should increment an existing key value by 1") {
+      insertRefStorageFor("T-4-1", "1200".getBytes)
+      new String(getRefStorageFor("T-4-1").get) should equal("1200")
+      incrementAtomically("T-4-1").get should equal(1201)
+    }
+    it("should create and increment a non-existing key value by 1") {
+      incrementAtomically("T-4-2").get should equal(1)
+      new String(getRefStorageFor("T-4-2").get) should equal("1")
+    }
+    it("should increment an existing key value by the amount specified") {
+      insertRefStorageFor("T-4-3", "1200".getBytes)
+      new String(getRefStorageFor("T-4-3").get) should equal("1200")
+      incrementByAtomically("T-4-3", 50).get should equal(1250)
+    }
+    it("should create and increment a non-existing key value by the amount specified") {
+      incrementByAtomically("T-4-4", 20).get should equal(20)
+      new String(getRefStorageFor("T-4-4").get) should equal("20")
+    }
+  }
+
+  describe("atomic decrement in ref") {
+    it("should decrement an existing key value by 1") {
+      insertRefStorageFor("T-4-5", "1200".getBytes)
+      new String(getRefStorageFor("T-4-5").get) should equal("1200")
+      decrementAtomically("T-4-5").get should equal(1199)
+    }
+    it("should create and decrement a non-existing key value by 1") {
+      decrementAtomically("T-4-6").get should equal(-1)
+      new String(getRefStorageFor("T-4-6").get) should equal("-1")
+    }
+    it("should decrement an existing key value by the amount specified") {
+      insertRefStorageFor("T-4-7", "1200".getBytes)
+      new String(getRefStorageFor("T-4-7").get) should equal("1200")
+      decrementByAtomically("T-4-7", 50).get should equal(1150)
+    }
+    it("should create and decrement a non-existing key value by the amount specified") {
+      decrementByAtomically("T-4-8", 20).get should equal(-20)
+      new String(getRefStorageFor("T-4-8").get) should equal("-20")
     }
   }
 
