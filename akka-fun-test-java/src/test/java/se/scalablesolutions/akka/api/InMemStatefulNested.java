@@ -2,7 +2,7 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.annotation.transactionrequired;
 import se.scalablesolutions.akka.annotation.inittransactionalstate;
-import se.scalablesolutions.akka.state.*;
+import se.scalablesolutions.akka.stm.*;
 
 @transactionrequired
 public class InMemStatefulNested {

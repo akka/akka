@@ -6,7 +6,7 @@ import Actor.Sender.Self
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-
+/*
 class RemoteClientShutdownTest extends JUnitSuite {
   @Test def shouldShutdownRemoteClient = {
     RemoteNode.start("localhost", 9999)
@@ -28,3 +28,4 @@ class TravelingActor extends RemoteActor("localhost", 9999) {
     case _ => log.info("message received")
   }
 }
+*/
