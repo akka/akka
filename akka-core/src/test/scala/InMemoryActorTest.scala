@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import se.scalablesolutions.akka.state.{TransactionalState, TransactionalMap, TransactionalRef, TransactionalVector}
+import se.scalablesolutions.akka.stm.{TransactionalState, TransactionalMap, TransactionalRef, TransactionalVector}
 
 case class GetMapState(key: String)
 case object GetVectorState

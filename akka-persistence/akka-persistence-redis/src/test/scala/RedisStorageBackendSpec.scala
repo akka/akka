@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.redis
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -154,9 +154,6 @@ class RedisStorageBackendSpec extends
       decrementByAtomically("T-4-8", 20).get should equal(-20)
       new String(getRefStorageFor("T-4-8").get) should equal("-20")
     }
-  }
-
-  describe("atomic increment in ref") {
   }
 
   describe("store and query in queue") {

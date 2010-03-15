@@ -32,7 +32,7 @@
  POSSIBILITY OF SUCH DAMAGE.
  **/
 
-package se.scalablesolutions.akka.collection
+package se.scalablesolutions.akka.stm
 
 trait PersistentDataStructure
 
@@ -77,7 +77,7 @@ object HashTrie {
 // nodes
 
 @serializable
-private[collection] sealed trait Node[K, +V] {
+private[stm] sealed trait Node[K, +V] {
   val size: Int
   
   def apply(key: K, hash: Int): Option[V]
@@ -90,7 +90,7 @@ private[collection] sealed trait Node[K, +V] {
 }
 
 @serializable
-private[collection] class EmptyNode[K] extends Node[K, Nothing] {
+private[stm] class EmptyNode[K] extends Node[K, Nothing] {
   val size = 0
   
   def apply(key: K, hash: Int) = None
@@ -106,12 +106,12 @@ private[collection] class EmptyNode[K] extends Node[K, Nothing] {
   }
 }
 
-private[collection] abstract class SingleNode[K, +V] extends Node[K, V] {
+private[stm] abstract class SingleNode[K, +V] extends Node[K, V] {
   val hash: Int
 }
 
 
-private[collection] class LeafNode[K, +V](key: K, val hash: Int, value: V) extends SingleNode[K, V] {
+private[stm] class LeafNode[K, +V](key: K, val hash: Int, value: V) extends SingleNode[K, V] {
   val size = 1
   
   def apply(key: K, hash: Int) = if (this.key == key) Some(value) else None
@@ -141,7 +141,7 @@ private[collection] class LeafNode[K, +V](key: K, val hash: Int, value: V) exten
 }
 
 
-private[collection] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V)]) extends SingleNode[K, V] {
+private[stm] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V)]) extends SingleNode[K, V] {
   lazy val size = bucket.length
   
   def this(hash: Int, pairs: (K, V)*) = this(hash, pairs.toList)
@@ -185,7 +185,7 @@ private[collection] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V
   override def toString = "CollisionNode(" + bucket.toString + ")"
 }
 
-private[collection] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, V]], bits: Int) extends Node[K, V] {
+private[stm] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, V]], bits: Int) extends Node[K, V] {
   lazy val size = {
     val sizes = for {
       n <- table
@@ -284,7 +284,7 @@ private[collection] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, 
 }
 
 
-private[collection] object BitmappedNode {
+private[stm] object BitmappedNode {
   def apply[K, V](shift: Int)(node: SingleNode[K, V], key: K, hash: Int, value: V) = {
     val table = new Array[Node[K, V]](Math.max((hash >>> shift) & 0x01f, (node.hash >>> shift) & 0x01f) + 1)
     
@@ -312,7 +312,7 @@ private[collection] object BitmappedNode {
 }
 
 
-private[collection] class FullNode[K, +V](shift: Int)(table: Array[Node[K, V]]) extends Node[K, V] {
+private[stm] class FullNode[K, +V](shift: Int)(table: Array[Node[K, V]]) extends Node[K, V] {
   lazy val size = table.foldLeft(0) { _ + _.size }
   
   def apply(key: K, hash: Int) = table((hash >>> shift) & 0x01f)(key, hash)

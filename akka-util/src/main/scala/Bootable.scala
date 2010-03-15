@@ -5,6 +5,6 @@
 package se.scalablesolutions.akka.util
 
 trait Bootable {
-  def onLoad : Unit = ()
-  def onUnload : Unit = ()
+  def onLoad {}
+  def onUnload {}
 }
