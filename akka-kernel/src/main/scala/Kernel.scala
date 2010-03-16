@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.kernel
 import se.scalablesolutions.akka.remote.BootableRemoteActorService
 import se.scalablesolutions.akka.comet.BootableCometActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
+import se.scalablesolutions.akka.camel.service.CamelService
 import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.util.{Logging, Bootable}
 
@@ -37,7 +38,8 @@ object Kernel extends Logging {
   def boot: Unit = boot(true, 
     new BootableActorLoaderService 
     with BootableRemoteActorService 
-    with BootableCometActorService)
+    with BootableCometActorService
+    with CamelService)
 
   /**
    * Boots up the Kernel. 

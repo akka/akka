@@ -79,12 +79,13 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_amqp = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
   lazy val akka_rest = project("akka-rest", "akka-rest", new AkkaRestProject(_), akka_core)
   lazy val akka_comet = project("akka-comet", "akka-comet", new AkkaCometProject(_), akka_rest)
+  lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
   lazy val akka_patterns = project("akka-patterns", "akka-patterns", new AkkaPatternsProject(_), akka_core)
   lazy val akka_security = project("akka-security", "akka-security", new AkkaSecurityProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
-    akka_core, akka_rest, akka_persistence, akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns)
+    akka_core, akka_rest, akka_persistence, akka_cluster, akka_amqp, akka_security, akka_comet, akka_camel, akka_patterns)
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -112,6 +113,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-cluster-jgroups_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-rest_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-comet_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-camel_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-security_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-amqp_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-patterns_%s-%s.jar".format(defScalaVersion.value, version) +
@@ -205,6 +207,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atmo = "org.atmosphere" % "atmosphere-annotations" % ATMO_VERSION % "compile"
     val atmo_jersey = "org.atmosphere" % "atmosphere-jersey" % ATMO_VERSION % "compile"
     val atmo_runtime = "org.atmosphere" % "atmosphere-runtime" % ATMO_VERSION % "compile"
+    lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
+  }
+
+  class AkkaCamelProject(info: ProjectInfo) extends DefaultProject(info) {
+    val camel_core = "org.apache.camel" % "camel-core" % "2.2.0" % "compile"
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
 
@@ -306,7 +313,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val lift_util = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
     // testing
-    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.6" % "test"
+    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.11" % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
@@ -317,6 +324,17 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleRestScalaProject(info: ProjectInfo) extends DefaultProject(info) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
+  }
+
+  class AkkaSampleCamelProject(info: ProjectInfo) extends DefaultProject(info) {
+    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.11" % "compile"
+    val jetty_client = "org.mortbay.jetty" % "jetty-client" % "6.1.11" % "compile"
+    val camel_http = "org.apache.camel" % "camel-http" % "2.2.0" % "compile"
+    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile" intransitive()
+    val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
+    val camel_cometd = "org.apache.camel" % "camel-cometd" % "2.2.0" % "compile"
+    val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.0" % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
 
@@ -331,6 +349,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift", new AkkaSampleLiftProject(_), akka_kernel)
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java", new AkkaSampleRestJavaProject(_), akka_kernel)
     lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala", new AkkaSampleRestScalaProject(_), akka_kernel)
+    lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel", new AkkaSampleCamelProject(_), akka_kernel)
     lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", new AkkaSampleSecurityProject(_), akka_kernel)
   }
 
