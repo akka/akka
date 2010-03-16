@@ -11,13 +11,10 @@ import se.scalablesolutions.akka.actor.Actor
  *
  * @author Martin Krasser
  */
-trait Consumer {
-
-  self: Actor =>
+trait Consumer { self: Actor =>
 
   /**
    * Returns the Camel endpoint URI to consume messages from.
    */
   def endpointUri: String
-
 }

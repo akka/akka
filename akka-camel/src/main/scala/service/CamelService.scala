@@ -17,6 +17,7 @@ import se.scalablesolutions.akka.util.{Bootable, Logging}
  */
 trait CamelService extends Bootable with Logging {
 
+  import se.scalablesolutions.akka.actor.Actor.Sender.Self
   import CamelContextManager._
 
   private[camel] val consumerPublisher = new ConsumerPublisher
@@ -31,8 +32,8 @@ trait CamelService extends Bootable with Logging {
     super.onLoad
 
     // Only init and start if not already done by application
-    if (!initialized) init()
-    if (!started) start()
+    if (!initialized) init
+    if (!started) start
 
     // Camel should cache input streams
     context.setStreamCaching(true)
@@ -44,7 +45,7 @@ trait CamelService extends Bootable with Logging {
     ActorRegistry.addRegistrationListener(publishRequestor.start)
 
     // publish already registered consumer actors
-    for (publish <- Publish.forConsumers(ActorRegistry.actors)) consumerPublisher.!(publish)(None)
+    for (publish <- Publish.forConsumers(ActorRegistry.actors)) consumerPublisher ! publish
   }
 
   /**
@@ -54,7 +55,7 @@ trait CamelService extends Bootable with Logging {
     ActorRegistry.removeRegistrationListener(publishRequestor)
     publishRequestor.stop
     consumerPublisher.stop
-    stop()
+    stop
     super.onUnload
   }
 

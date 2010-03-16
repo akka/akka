@@ -51,7 +51,7 @@ trait CamelContextLifecycle extends Logging {
   /**
    * Starts the CamelContext and ProducerTemplate.
    */
-  def start() {
+  def start = {
     context.start
     template.start
     _started = true
@@ -61,7 +61,7 @@ trait CamelContextLifecycle extends Logging {
   /**
    * Stops the CamelContext and ProducerTemplate.
    */
-  def stop() {
+  def stop = {
     template.stop
     context.stop
     _initialized = false
@@ -72,9 +72,7 @@ trait CamelContextLifecycle extends Logging {
   /**
    * Initializes this lifecycle object with the a DefaultCamelContext.
    */
-  def init() {
-    init(new DefaultCamelContext)
-  }
+  def init: Unit = init(new DefaultCamelContext)
 
   /**
    * Initializes this lifecycle object with the given CamelContext.
