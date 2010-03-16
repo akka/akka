@@ -501,8 +501,6 @@ trait Actor extends TransactionManagement {
   def !![T](message: Any, timeout: Long): Option[T] = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val from = if (sender != null && sender.isInstanceOf[Actor]) Some(sender.asInstanceOf[Actor])
-      else None
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
       val isActiveObject = message.isInstanceOf[Invocation]
       if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
