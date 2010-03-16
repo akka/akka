@@ -22,6 +22,7 @@ import org.multiverse.commitbarriers.CountDownCommitBarrier
 import java.util.{Queue, HashSet}
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.net.InetSocketAddress
+import java.util.concurrent.locks.{Lock, ReentrantLock}
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -218,6 +219,10 @@ trait Actor extends TransactionManagement {
   private[akka] var _replyToAddress: Option[InetSocketAddress] = None
   private[akka] val _mailbox: Queue[MessageInvocation] = new ConcurrentLinkedQueue[MessageInvocation]
 
+  /**
+   * This lock ensures thread safety in the dispatching: only one message can be dispatched at once on the actor.
+   */
+  private[akka] val _dispatcherLock:Lock = new ReentrantLock
 
   // ====================================
   // protected fields
