@@ -113,6 +113,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-cluster-jgroups_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-rest_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-comet_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-camel_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-security_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-amqp_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-patterns_%s-%s.jar".format(defScalaVersion.value, version) +
