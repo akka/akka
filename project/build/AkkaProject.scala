@@ -42,7 +42,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // project versions
   val JERSEY_VERSION = "1.1.5"
-  val ATMO_VERSION = "0.6-SNAPSHOT"
+  val ATMO_VERSION = "0.5.4"
   val CASSANDRA_VERSION = "0.5.0"
 
   // ------------------------------------------------------------
@@ -359,7 +359,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   def deployTask(info: ProjectInfo, toDir: Path) = task {
     val projectPath = info.projectPath.toString
-    val moduleName = projectPath.substring(projectPath.lastIndexOf('/') + 1, projectPath.length)
+    val moduleName = projectPath.substring(projectPath.lastIndexOf(System.getProperty("file.separator")) + 1, projectPath.length)
     // FIXME need to find out a way to grab these paths from the sbt system 
     val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(defScalaVersion.value, version)
     val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(defScalaVersion.value) + JAR_FILE_NAME
