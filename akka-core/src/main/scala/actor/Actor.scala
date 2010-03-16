@@ -224,7 +224,6 @@ trait Actor extends TransactionManagement {
    */
   private[akka] val _dispatcherLock:Lock = new ReentrantLock
 
-
   // ====================================
   // protected fields
   // ====================================

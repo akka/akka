@@ -60,14 +60,21 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * @return true if the mailbox was processed, false otherwise
    */
   private def tryProcessMailbox(receiver: Actor): Boolean = {
-    if (receiver._dispatcherLock.tryLock) {
-      try {
-        processMailbox(receiver)
-      } finally {
-        receiver._dispatcherLock.unlock
+    var lockAcquiredOnce = false
+    // this do-wile loop is required to prevent missing new messages between the end of processing
+    // the mailbox and releasing the lock
+    do {
+      if (receiver._dispatcherLock.tryLock) {
+        lockAcquiredOnce = true
+        try {
+          processMailbox(receiver)
+        } finally {
+          receiver._dispatcherLock.unlock
+        }
       }
-      return true
-    } else return false
+    } while ((lockAcquiredOnce && !receiver._mailbox.isEmpty))
+
+    return lockAcquiredOnce
   }
 
   /**
@@ -127,7 +134,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def donateMessage(receiver: Actor, thief: Actor): Option[MessageInvocation] = {
     val donated = receiver._mailbox.pollLast
     if (donated != null) {
-      thief.forward(donated.message)(Some(donated.receiver))
+      //TODO: forward seems to fail from time to time ?!
+      //thief.forward(donated.message)(Some(donated.receiver))
+      thief.send(donated.message)
       return Some(donated)
     } else return None
   }
