@@ -220,9 +220,10 @@ trait Actor extends TransactionManagement {
   private[akka] val _mailbox: Queue[MessageInvocation] = new ConcurrentLinkedQueue[MessageInvocation]
 
   /**
-   * This lock ensures thread safety in the dispatching: only one message can be dispatched at once on the actor.
+   * This lock ensures thread safety in the dispatching: only one message can 
+   * be dispatched at once on the actor.
    */
-  private[akka] val _dispatcherLock:Lock = new ReentrantLock
+  private[akka] val _dispatcherLock: Lock = new ReentrantLock
 
   // ====================================
   // protected fields
@@ -876,7 +877,6 @@ trait Actor extends TransactionManagement {
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods.
    */
   private[akka] def invoke(messageHandle: MessageInvocation) = synchronized {
-    //log.trace("%s is invoked with message %s", toString, messageHandle)
     try {
       if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
       else dispatch(messageHandle)
