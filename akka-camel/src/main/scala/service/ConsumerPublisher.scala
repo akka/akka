@@ -35,9 +35,7 @@ class ConsumerPublisher extends Actor with Logging {
    * Sets the number of expected Publish messages received by this actor. Used for testing
    * only.
    */
-  private[camel] def expectPublishCount(count: Int) {
-    latch = new CountDownLatch(count)
-  }
+  private[camel] def expectPublishCount(count: Int): Unit = latch = new CountDownLatch(count)
 
   /**
    * Waits for the number of expected Publish messages to arrive. Used for testing only.
@@ -109,37 +107,29 @@ case class Publish(endpointUri: String, id: String, uuid: Boolean)
  * @author Martin Krasser
  */
 object Publish {
+
   /**
    * Creates a list of Publish request messages for all consumer actors in the <code>actors</code>
    * list.
    */
-  def forConsumers(actors: List[Actor]): List[Publish] = {
+  def forConsumers(actors: List[Actor]): List[Publish] =
     for (actor <- actors; pub = forConsumer(actor); if pub.isDefined) yield pub.get
-  }
 
   /**
    * Creates a Publish request message if <code>actor</code> is a consumer actor.
    */
-  def forConsumer(actor: Actor): Option[Publish] = {
+  def forConsumer(actor: Actor): Option[Publish] =
     forConsumeAnnotated(actor) orElse forConsumerType(actor)
-  }
 
   private def forConsumeAnnotated(actor: Actor): Option[Publish] = {
     val annotation = actor.getClass.getAnnotation(classOf[consume])
-    if (annotation eq null)
-      None
-    else if (actor._remoteAddress.isDefined)
-      None // do not publish proxies
-    else
-      Some(Publish(annotation.value, actor.getId, false))
+    if (annotation eq null) None
+    else if (actor._remoteAddress.isDefined) None // do not publish proxies
+    else Some(Publish(annotation.value, actor.getId, false))
   }
 
-  private def forConsumerType(actor: Actor): Option[Publish] = {
-    if (!actor.isInstanceOf[Consumer])
-      None
-    else if (actor._remoteAddress.isDefined)
-      None
-    else
-      Some(Publish(actor.asInstanceOf[Consumer].endpointUri, actor.uuid, true))
-  }
+  private def forConsumerType(actor: Actor): Option[Publish] =
+    if (!actor.isInstanceOf[Consumer]) None
+    else if (actor._remoteAddress.isDefined) None
+    else Some(Publish(actor.asInstanceOf[Consumer].endpointUri, actor.uuid, true))
 }

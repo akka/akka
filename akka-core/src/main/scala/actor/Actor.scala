@@ -218,7 +218,6 @@ trait Actor extends TransactionManagement {
   private[akka] var _replyToAddress: Option[InetSocketAddress] = None
   private[akka] val _mailbox: Queue[MessageInvocation] = new ConcurrentLinkedQueue[MessageInvocation]
 
-
   // ====================================
   // protected fields
   // ====================================

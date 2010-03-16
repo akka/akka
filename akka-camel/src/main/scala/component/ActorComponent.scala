@@ -52,7 +52,10 @@ class ActorComponent extends DefaultComponent {
 
  * @author Martin Krasser
  */
-class ActorEndpoint(uri: String, comp: ActorComponent, val id: Option[String], val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
+class ActorEndpoint(uri: String, 
+                    comp: ActorComponent, 
+                    val id: Option[String], 
+                    val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
 
   /**
    * @throws UnsupportedOperationException 
@@ -95,19 +98,16 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
    */
   def process(exchange: Exchange) {
     val actor = target getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
-    if (exchange.getPattern.isOutCapable)
-      processInOut(exchange, actor)
-    else
-      processInOnly(exchange, actor)
+    if (exchange.getPattern.isOutCapable) processInOut(exchange, actor)
+    else processInOnly(exchange, actor)
   }
 
   /**
    * Send the exchange in-message to the given actor using the ! operator. The message
    * send to the actor is of type se.scalablesolutions.akka.camel.Message.
    */
-  protected def processInOnly(exchange: Exchange, actor: Actor) {
+  protected def processInOnly(exchange: Exchange, actor: Actor): Unit = 
     actor ! exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
-  }
 
   /**
    * Send the exchange in-message to the given actor using the !! operator. The exchange
@@ -128,10 +128,9 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
     }
   }
 
-  private def target: Option[Actor] = {
+  private def target: Option[Actor] =
     if (ep.id.isDefined) targetById(ep.id.get)
     else targetByUuid(ep.uuid.get)
-  }
 
   private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
     case Nil          => None
@@ -143,7 +142,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
 }
 
 /**
- *  Thrown to indicate that an actor referenced by an endpoint URI cannot be
+ * Thrown to indicate that an actor referenced by an endpoint URI cannot be
  * found in the ActorRegistry.
  *
  * @author Martin Krasser

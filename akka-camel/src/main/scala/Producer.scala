@@ -19,9 +19,7 @@ import se.scalablesolutions.akka.util.Logging
  *
  * @author Martin Krasser
  */
-trait Producer {
-
-  self: Actor =>
+trait Producer { self: Actor =>
 
   private val headersToCopyDefault = Set(Message.MessageExchangeId)
 
@@ -68,9 +66,8 @@ trait Producer {
    * @param msg: the message to produce. The message is converted to its canonical
    *             representation via Message.canonicalize.
    */
-  protected def produceOneway(msg: Any): Unit = {
+  protected def produceOneway(msg: Any): Unit =
     template.send(endpointUri, createInOnlyExchange.fromRequestMessage(Message.canonicalize(msg)))
-  }
 
   /**
    * Initiates a one-way (in-only) message exchange to the Camel endpoint given by
@@ -80,9 +77,9 @@ trait Producer {
    * @param msg: the message to produce. The message is converted to its canonical
    *             representation via Message.canonicalize.
    */
-  protected def produceOnewayAsync(msg: Any): Unit = {
-    template.asyncSend(endpointUri, createInOnlyExchange.fromRequestMessage(Message.canonicalize(msg)))
-  }
+  protected def produceOnewayAsync(msg: Any): Unit =
+    template.asyncSend(
+      endpointUri, createInOnlyExchange.fromRequestMessage(Message.canonicalize(msg)))
 
   /**
    * Initiates a two-way (in-out) message exchange to the Camel endpoint given by
@@ -99,10 +96,8 @@ trait Producer {
       def process(exchange: Exchange) = exchange.fromRequestMessage(cmsg)
     }
     val result = template.request(endpointUri, requestProcessor)
-    if (result.isFailed)
-      result.toFailureMessage(cmsg.headers(headersToCopy))
-    else
-      result.toResponseMessage(cmsg.headers(headersToCopy))
+    if (result.isFailed) result.toFailureMessage(cmsg.headers(headersToCopy))
+    else                 result.toResponseMessage(cmsg.headers(headersToCopy))
   }
 
   /**
@@ -118,7 +113,8 @@ trait Producer {
    */
   protected def produceAsync(msg: Any): Unit = {
     val cmsg = Message.canonicalize(msg)
-    val sync = new ProducerResponseSender(cmsg.headers(headersToCopy), this.sender, this.senderFuture, this)
+    val sync = new ProducerResponseSender(
+      cmsg.headers(headersToCopy), this.sender, this.senderFuture, this)
     template.asyncCallback(endpointUri, createInOutExchange.fromRequestMessage(cmsg), sync)
   }
 
@@ -154,9 +150,8 @@ trait Producer {
    *
    * @see CamelContextManager.
    */
-  protected def createExchange(pattern: ExchangePattern): Exchange = {
+  protected def createExchange(pattern: ExchangePattern): Exchange =
     new DefaultExchange(CamelContextManager.context, pattern)
-  }
 }
 
 /**
@@ -177,24 +172,20 @@ class ProducerResponseSender(
    * Replies a Failure message, created from the given exchange, to <code>sender</code> (or
    * <code>senderFuture</code> if applicable).
    */
-  def onFailure(exchange: Exchange) = {
-    reply(exchange.toFailureMessage(headers))
-  }
+  def onFailure(exchange: Exchange) = reply(exchange.toFailureMessage(headers))
 
   /**
    * Replies a response Message, created from the given exchange, to <code>sender</code> (or
    * <code>senderFuture</code> if applicable).
    */
-  def onComplete(exchange: Exchange) = {
-    reply(exchange.toResponseMessage(headers))
-  }
+  def onComplete(exchange: Exchange) = reply(exchange.toResponseMessage(headers))
 
   private def reply(message: Any) = {
     sender match {
       case Some(actor) => actor ! message
       case None => senderFuture match {
         case Some(future) => future.completeWithResult(message)
-        case None => log.warning("no destination for sending response")
+        case None => log.warning("No destination for sending response")
       }
     }
   }
