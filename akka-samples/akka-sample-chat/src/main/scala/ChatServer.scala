@@ -16,22 +16,32 @@ import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.util.Logging
 
 /******************************************************************************
-  To run the sample
+Akka Chat Client/Server Sample Application
 
-  1. Install the Redis network storage. Download it from [http://code.google.com/p/redis/].
-  2. Open up a shell and start up an instance of Redis.
-  3. Fire up two shells. For each of them:
-    - Step down into to the root of the Akka distribution.
-    - Set 'export AKKA_HOME=<root of distribution>.
-    - Run 'sbt console' to start up a REPL (interpreter).
-  4. In the first REPL you get execute: 
+First we need to download, build and start up Redis:
+
+1. Download Redis from http://code.google.com/p/redis/downloads/list.
+2. Step into the distribution.
+3. Build: ‘make install’.
+4. Run: ‘./redis-server’.
+For details on how to set up Redis server have a look at http://code.google.com/p/redis/wiki/QuickStart.
+
+Then to run the sample: 
+
+1. Fire up two shells. For each of them:
+  - Step down into to the root of the Akka distribution.
+  - Set 'export AKKA_HOME=<root of distribution>.
+  - Run 'sbt console' to start up a REPL (interpreter).
+2. In the first REPL you get execute: 
+  - scala> import se.scalablesolutions.akka.sample.chat._
+  - scala> ChatService.start
+3. In the first REPL you get execute: 
     - scala> import se.scalablesolutions.akka.sample.chat._
-    - scala> ChatService.start
-  5. In the first REPL you get execute: 
-      - scala> import se.scalablesolutions.akka.sample.chat._
-      - scala> Runner.run
-  6. See the chat simulation run.
-  7. Run it again to see full speed after first initialization.
+    - scala> Runner.run
+4. See the chat simulation run.
+5. Run it again to see full speed after first initialization.
+
+That’s it. Have fun.
 
 ******************************************************************************/
 
