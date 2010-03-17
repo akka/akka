@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import scala.collection.jcl.MutableIterator.Wrapper
+import scala.collection.jcl._
 import se.scalablesolutions.akka.actor.Actor
 
 /**
@@ -89,10 +89,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   private def findThief(receiver: Actor): Option[Actor] = {
-    // TODO: round robin or random? and maybe best to pick an actor which is currently not dispatching (lock not held)
-    for (actor <- new Wrapper(references.values.iterator)) {
+    // TODO: round robin, don't always start with first actor in the list
+    for (actor <- new MutableIterator.Wrapper(references.values.iterator)) {
       if (actor != receiver) { // skip ourselves
-        return Some(actor)
+        if (actor._mailbox.isEmpty) { // only pick actors which will most likely be able to process the messages
+          return Some(actor)
+        }
       }
     }
     return None
