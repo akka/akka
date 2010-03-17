@@ -463,6 +463,8 @@ trait Actor extends TransactionManagement with Logging {
 
   def isRunning = _isRunning
 
+  def mailboxSize = _mailbox.size
+
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    * <p/>

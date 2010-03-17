@@ -1,5 +1,6 @@
 package se.scalablesolutions.akka.patterns
 
+import java.util.concurrent.atomic.AtomicInteger
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.actor.Actor._
@@ -61,6 +62,35 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
       }
     }
   })
+
+  @Test def testSmallestMailboxFirstDispatcher = verify(new TestActor {
+    def test = {
+      val t1ProcessedCount = new AtomicInteger(0)
+      val t1: Actor = actor {
+        case x => {
+          Thread.sleep(50) // slow actor
+          t1ProcessedCount.incrementAndGet
+        }
+      }
+
+      val t2ProcessedCount = new AtomicInteger(0)
+      val t2: Actor = actor {
+        case x => {
+          t2ProcessedCount.incrementAndGet
+        }
+      }
+
+      val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
+
+      handle(d, t1, t2) {
+        for (i <- 1 to 500)
+          d ! i
+        Thread.sleep(6000)
+        t1ProcessedCount.get must be < (t2ProcessedCount.get) // because t1 is much slower and thus has a bigger mailbox all the time
+      }
+    }
+  })
+
 }
 
 trait ActorTestUtil {
