@@ -18,19 +18,17 @@ object Patterns {
   /**
    * Interceptor is a filter(x,y) where x.isDefinedAt is considered to be always true
    */
-  def intercept[A, B](interceptor: (A) => Unit, interceptee: PF[A, B]): PF[A, B] = filter(
-    {case a if a.isInstanceOf[A] => interceptor(a)},
-    interceptee
-    )
+  def intercept[A, B](interceptor: (A) => Unit, interceptee: PF[A, B]): PF[A, B] = 
+    filter({case a if a.isInstanceOf[A] => interceptor(a)}, interceptee)
 
   //FIXME 2.8, use default params with CyclicIterator
   def loadBalancerActor(actors: => InfiniteIterator[Actor]): Actor = new Actor with LoadBalancer {
     val seq = actors
   }
 
-  def dispatcherActor(routing: PF[Any, Actor], msgTransformer: (Any) => Any): Actor = new Actor with Dispatcher {
+  def dispatcherActor(routing: PF[Any, Actor], msgTransformer: (Any) => Any): Actor = 
+    new Actor with Dispatcher {
     override def transform(msg: Any) = msgTransformer(msg)
-
     def routes = routing
   }
 
@@ -38,36 +36,29 @@ object Patterns {
     def routes = routing
   }
 
-  def loggerActor(actorToLog: Actor, logger: (Any) => Unit): Actor = dispatcherActor(
-    {case _ => actorToLog},
-    logger
-    )
+  def loggerActor(actorToLog: Actor, logger: (Any) => Unit): Actor = 
+    dispatcherActor({case _ => actorToLog}, logger)
 }
 
-trait Dispatcher {
-  self: Actor =>
+trait Dispatcher { self: Actor =>
 
   protected def transform(msg: Any): Any = msg
 
   protected def routes: PartialFunction[Any, Actor]
 
   protected def dispatch: PartialFunction[Any, Unit] = {
-    case a if routes.isDefinedAt(a) => {
-      if (self.sender.isDefined)
-        routes(a) forward transform(a)
-      else
-        routes(a) send transform(a)
-    }
+    case a if routes.isDefinedAt(a) =>
+      if (self.sender.isDefined) routes(a) forward transform(a)
+      else routes(a) send transform(a)
   }
 
   def receive = dispatch
 }
 
-trait LoadBalancer extends Dispatcher {
-  self: Actor =>
+trait LoadBalancer extends Dispatcher { self: Actor =>
   protected def seq: InfiniteIterator[Actor]
 
-  protected def routes = {case x if seq.hasNext => seq.next}
+  protected def routes = { case x if seq.hasNext => seq.next }
 }
 
 trait InfiniteIterator[T] extends Iterator[T]
