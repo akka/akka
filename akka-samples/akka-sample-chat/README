@@ -25,7 +25,7 @@ Then to run the sample:
 6. See the chat simulation run.
 7. Run it again to see full speed after first initialization.
 
-Now you could test client reconnect by killing the running microkernel and start it up again. See the client reconnect take place in the REPL shell.
+Now you could test client reconnect by killing the console running the ChatService and start it up again. See the client reconnect take place in the REPL shell.
 
 That’s it. Have fun.
 
