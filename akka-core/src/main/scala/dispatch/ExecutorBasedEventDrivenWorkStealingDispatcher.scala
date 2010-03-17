@@ -22,8 +22,6 @@ import se.scalablesolutions.akka.actor.Actor
  * The preferred way of creating dispatchers is to use
  * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
  *
- * TODO: make sure everything in the pool is the same type of actor
- *
  * @see se.scalablesolutions.akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
  * @see se.scalablesolutions.akka.dispatch.Dispatchers
  *
@@ -31,6 +29,9 @@ import se.scalablesolutions.akka.actor.Actor
  */
 class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
+
+  /** Type of the actors registered in this dispatcher. */
+  private var actorType:Option[Class[_]] = None
 
   // TODO: is there a naming convention for this name?
   val name: String = "event-driven-work-stealing:executor:dispatcher:" + _name
@@ -158,4 +159,21 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
+
+  override def register(actor: Actor) = {
+    super.register(actor)
+  }
+
+  private def verifyActorsAreOfSameType(newActor: Actor) = {
+    actorType match {
+      case None => {
+        actorType = Some(newActor.getClass)
+      }
+      case Some(aType) => {
+        if (aType != newActor.getClass) // TODO: is assignable from ?!
+          throw new IllegalStateException(String.format("Can't register actor %s in a work stealing dispatcher which already knows actors of type %s", newActor, aType))
+      }
+    }
+
+  }
 }
