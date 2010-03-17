@@ -14,19 +14,19 @@ import reflect.BeanProperty
  * Factory bean for supervisor configuration.
  * @author michaelkober
  */
-class SupervisionFactoryBean extends AbstractFactoryBean {
+class SupervisionFactoryBean extends AbstractFactoryBean[ActiveObjectConfigurator] {
   @BeanProperty var restartStrategy: RestartStrategy = _
   @BeanProperty var supervised: List[ActiveObjectProperties] = _
 
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
    */
-  def getObjectType = classOf[ActiveObjectConfigurator]
+  def getObjectType: Class[ActiveObjectConfigurator] = classOf[ActiveObjectConfigurator]
 
   /*
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
    */
-  def createInstance: AnyRef =  {
+  def createInstance: ActiveObjectConfigurator =  {
     val configurator = new ActiveObjectConfigurator()
 
     configurator.configure(
