@@ -302,7 +302,7 @@ trait PersistentRef[T] extends Transactional with Committable {
 trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   with Transactional with Committable with Logging {
 
-  abstract case class QueueOp
+  sealed trait QueueOp
   case object ENQ extends QueueOp
   case object DEQ extends QueueOp
 
