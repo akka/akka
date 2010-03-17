@@ -74,3 +74,14 @@ class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
     nc.head
   }
 }
+
+class SmallestMailboxFirstIterator(items : List[Actor]) extends InfiniteIterator[Actor] {
+  def hasNext = items != Nil
+
+  def next = {
+    def actorWithSmallestMailbox(a1: Actor, a2: Actor) = {
+      if (a1.mailboxSize < a2.mailboxSize) a1 else a2
+    }
+    items.reduceLeft((actor1, actor2) => actorWithSmallestMailbox(actor1,actor2))
+  }
+} 
