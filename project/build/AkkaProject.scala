@@ -85,6 +85,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
     akka_core, akka_rest, akka_persistence, akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns)
+  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core, akka_util, akka_java_util)
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -119,7 +120,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-persistence-redis_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-persistence-mongo_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-persistence-cassandra_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-kernel_%s-%s.jar".format(defScalaVersion.value, version)
+    " dist/akka-kernel_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-spring_%s-%s.jar".format(defScalaVersion.value, version)
     ) 
 
   // ------------------------------------------------------------
@@ -281,6 +283,15 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaKernelProject(info: ProjectInfo) extends DefaultProject(info) {
+    lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
+  }
+
+  class AkkaSpringProject(info: ProjectInfo) extends DefaultProject(info) {
+    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE"
+    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE"
+    // testing
+    val scalatest = "org.scalatest" % "scalatest" % "1.0" % "test"
+    val junit = "junit" % "junit" % "4.5" % "test"
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
 

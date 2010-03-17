@@ -16,7 +16,7 @@ import se.scalablesolutions.akka.config.ScalaConfig.RestartCallbacks
  * Factory bean for active objects.
  * @author michaelkober
  */
-class ActiveObjectFactoryBean extends AbstractFactoryBean {
+class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] {
   import StringReflect._
 
   @BeanProperty var target: String = ""
@@ -33,7 +33,7 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean {
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
    */
-  def getObjectType = target.toClass
+  def getObjectType: Class[AnyRef] = target.toClass
 
 
   /*
