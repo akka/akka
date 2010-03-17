@@ -1,6 +1,6 @@
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.annotation.oneway;
+import se.scalablesolutions.akka.actor.annotation.oneway;
 
 public interface Bar {
   @oneway

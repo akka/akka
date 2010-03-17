@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch
 import org.apache.camel.builder.RouteBuilder
 
 import se.scalablesolutions.akka.actor.{ActorUnregistered, ActorRegistered, Actor}
-import se.scalablesolutions.akka.annotation.consume
+import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.{Consumer, CamelContextManager}
 import se.scalablesolutions.akka.util.Logging
 

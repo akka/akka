@@ -1,9 +1,9 @@
 package se.scalablesolutions.akka.api;
 
-import se.scalablesolutions.akka.annotation.transactionrequired;
-import se.scalablesolutions.akka.annotation.prerestart;
-import se.scalablesolutions.akka.annotation.postrestart;
-import se.scalablesolutions.akka.annotation.inittransactionalstate;
+import se.scalablesolutions.akka.actor.annotation.transactionrequired;
+import se.scalablesolutions.akka.actor.annotation.prerestart;
+import se.scalablesolutions.akka.actor.annotation.postrestart;
+import se.scalablesolutions.akka.actor.annotation.inittransactionalstate;
 import se.scalablesolutions.akka.stm.*;
 
 @transactionrequired

@@ -5,7 +5,7 @@ import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.annotation.consume
+import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.{CamelContextManager, Consumer, Message}
 import org.junit.{Ignore, Before, After, Test}
 
