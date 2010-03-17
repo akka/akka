@@ -8,9 +8,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 
-import se.scalablesolutions.akka.annotation.transactionrequired;
-import se.scalablesolutions.akka.annotation.prerestart;
-import se.scalablesolutions.akka.annotation.postrestart;
+import se.scalablesolutions.akka.actor.annotation.transactionrequired;
+import se.scalablesolutions.akka.actor.annotation.prerestart;
+import se.scalablesolutions.akka.actor.annotation.postrestart;
 import se.scalablesolutions.akka.stm.TransactionalState;
 import se.scalablesolutions.akka.stm.TransactionalMap;
 
