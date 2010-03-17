@@ -1,30 +1,38 @@
-/**ChatStorage
+/**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>.
  */
 
 package se.scalablesolutions.akka.sample.chat
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
-import se.scalablesolutions.akka.stm.Transaction._
-import se.scalablesolutions.akka.persistence.common.PersistentVector
-import se.scalablesolutions.akka.persistence.redis.RedisStorage
-import se.scalablesolutions.akka.remote.RemoteServer
-import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.OneForOneStrategy
-
 import scala.collection.mutable.HashMap
 
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
+import se.scalablesolutions.akka.persistence.common.PersistentVector
+import se.scalablesolutions.akka.persistence.redis.RedisStorage
+import se.scalablesolutions.akka.stm.Transaction._
+import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.util.Logging
+
 /******************************************************************************
-  To run the sample: 
-  1. Run 'mvn install' (builds and deploys jar to AKKA_HOME/deploy)
-  2. In another shell run 'java -jar ./dist/akka-0.6.jar' to start up Akka microkernel
-  3. In the first shell run 'mvn scala:console -o'
-  4. In the REPL you get execute: 
+  To run the sample
+
+  1. Install the Redis network storage. Download it from [http://code.google.com/p/redis/].
+  2. Open up a shell and start up an instance of Redis.
+  3. Fire up two shells. For each of them:
+    - Step down into to the root of the Akka distribution.
+    - Set 'export AKKA_HOME=<root of distribution>.
+    - Run 'sbt console' to start up a REPL (interpreter).
+  4. In the first REPL you get execute: 
     - scala> import se.scalablesolutions.akka.sample.chat._
-    - scala> Runner.run
-  5. See the chat simulation run
-  6. Run it again to see full speed after first initialization
+    - scala> ChatService.start
+  5. In the first REPL you get execute: 
+      - scala> import se.scalablesolutions.akka.sample.chat._
+      - scala> Runner.run
+  6. See the chat simulation run.
+  7. Run it again to see full speed after first initialization.
+
 ******************************************************************************/
 
 /**
@@ -42,10 +50,12 @@ case class ChatMessage(from: String, message: String) extends Event
  */
 class ChatClient(val name: String) { 
   import Actor.Sender.Self
-  def login =                 ChatService ! Login(name) 
-  def logout =                ChatService ! Logout(name)  
-  def post(message: String) = ChatService ! ChatMessage(name, name + ": " + message)  
-  def chatLog: ChatLog =     (ChatService !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
+  val chat = RemoteClient.actorFor("chat:service", "localhost", 9999)
+
+  def login =                 chat ! Login(name) 
+  def logout =                chat ! Logout(name)  
+  def post(message: String) = chat ! ChatMessage(name, name + ": " + message)  
+  def chatLog: ChatLog =     (chat !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
 }
 
 /**
@@ -182,16 +192,19 @@ object ChatService extends
   ChatServer with 
   SessionManagement with 
   ChatManagement with 
-  RedisChatStorageFactory
+  RedisChatStorageFactory {
+  override def start: Actor = {
+    super.start
+    RemoteNode.start("localhost", 9999)
+    RemoteNode.register("chat:service", this)
+    this
+  }
+}
 
 /**
  * Test runner emulating a chat session.
  */
 object Runner {
-  // create a handle to the remote ChatService 
-  ChatService.makeRemote("localhost", 9999)
-  ChatService.start
-  
   def run = {
     val client = new ChatClient("jonas")
   
