@@ -1,7 +1,7 @@
 package sample.camel
 
 import se.scalablesolutions.akka.actor.{Actor, RemoteActor}
-import se.scalablesolutions.akka.annotation.consume
+import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.{Producer, Message, Consumer}
 import se.scalablesolutions.akka.util.Logging
 
