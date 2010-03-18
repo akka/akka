@@ -2,7 +2,6 @@ package se.scalablesolutions.akka.camel.component
 
 import org.apache.camel.impl.DefaultCamelContext
 import org.junit._
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitSuite
 
 class ActorComponentTest extends JUnitSuite {
