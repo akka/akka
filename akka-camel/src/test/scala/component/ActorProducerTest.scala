@@ -2,15 +2,16 @@ package se.scalablesolutions.akka.camel.component
 
 import ActorComponentTest._
 
+import java.util.concurrent.TimeoutException
+
 import org.apache.camel.ExchangePattern
 import org.junit.{After, Test}
 import org.scalatest.junit.JUnitSuite
+import org.scalatest.BeforeAndAfterAll
 
 import se.scalablesolutions.akka.actor.ActorRegistry
 import se.scalablesolutions.akka.camel.support.{Countdown, Retain, Tester, Respond}
-import org.scalatest.BeforeAndAfterAll
 import se.scalablesolutions.akka.camel.{Failure, Message}
-import java.util.concurrent.TimeoutException
 
 class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 

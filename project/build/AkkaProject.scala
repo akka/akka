@@ -35,6 +35,7 @@
 -------------------------------------------------------------------------------*/
 
 import sbt._
+import java.io.File
 import java.util.jar.Attributes
 
 class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
@@ -60,7 +61,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   
   // ------------------------------------------------------------
   // repositories
-  val embeddedrepo = "embedded repo" at "file://" + akkaHome + "/embedded-repo"
+  val embeddedrepo = "embedded repo" at new File(akkaHome, "embedded-repo").toURI.toString
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   val configgy = "Configgy" at "http://www.lag.net/repo"
