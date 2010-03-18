@@ -28,6 +28,8 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
  * Implements the Transactor abstraction. E.g. a transactional actor.
  * <p/>
  * Equivalent to invoking the <code>makeTransactionRequired</code> method in the body of the <code>Actor</code
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Transactor extends Actor {
   makeTransactionRequired
@@ -37,6 +39,8 @@ trait Transactor extends Actor {
  * Extend this abstract class to create a remote actor.
  * <p/>
  * Equivalent to invoking the <code>makeRemote(..)</code> method in the body of the <code>Actor</code
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class RemoteActor(hostname: String, port: Int) extends Actor {
   makeRemote(hostname, port)
@@ -66,6 +70,8 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 }
 
 /**
+ * Utility class with factory methods for creating Actors.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
