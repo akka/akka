@@ -10,19 +10,22 @@ For details on how to set up Redis server have a look at http://code.google.com/
 
 Then to run the sample: 
 
-1. Set ‘AKKA_HOME’ environment variable to the root of the Akka distribution.
-2. Open up a shell and step into the Akka distribution root folder.
-3. Build Akka by invoking ‘mvn install -Dmaven.test.skip=true’. This will also build the sample application and deploy it to the ‘$AKKA_HOME/deploy’ directory.
-4. Run the microkernel
-  export AKKA_HOME=...
-  cd $AKKA_HOME
-  java -jar ./dist/akka-0.6.jar
-5. Now start up a new shell and go down into the ‘./akka-samples/akka-sample-chat’ directory.
-6. Invoke ‘mvn scala:console -o’. This will give you a Scala REPL (interpreter) with the chat application and all its dependency JARs on the classpath.
-7. Simply paste in the whole code block with the ‘Runner’ object above and invoke ‘Runner.run’. This runs a simulated client session that will connect to the running server in the microkernel.
-8. Invoke ‘Runner.run’ again and again…
+1. Install the Redis network storage. Download it from [http://code.google.com/p/redis/].
+2. Open up a shell and start up an instance of Redis.
+3. Fire up two shells. For each of them:
+  - Step down into to the root of the Akka distribution.
+  - Set 'export AKKA_HOME=<root of distribution>.
+  - Run 'sbt console' to start up a REPL (interpreter).
+4. In the first REPL you get execute: 
+  - scala> import se.scalablesolutions.akka.sample.chat._
+  - scala> ChatService.start
+5. In the first REPL you get execute: 
+    - scala> import se.scalablesolutions.akka.sample.chat._
+    - scala> Runner.run
+6. See the chat simulation run.
+7. Run it again to see full speed after first initialization.
 
-Now you could test client reconnect by killing the running microkernel and start it up again. See the client reconnect take place in the REPL shell.
+Now you could test client reconnect by killing the console running the ChatService and start it up again. See the client reconnect take place in the REPL shell.
 
 That’s it. Have fun.
 

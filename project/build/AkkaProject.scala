@@ -60,6 +60,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   
   // ------------------------------------------------------------
   // repositories
+  val embeddedrepo = "embedded repo" at "file://" + akkaHome + "/embedded-repo"
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   val configgy = "Configgy" at "http://www.lag.net/repo"
@@ -67,7 +68,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val jboss = "jBoss" at "http://repository.jboss.org/maven2"
   val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
-  val embeddedrepo = "embedded repo" at "http://guice-maven.googlecode.com/svn/trunk"
   val google = "google" at "http://google-maven-repository.googlecode.com/svn/repository"
   val m2 = "m2" at "http://download.java.net/maven/2"
 
@@ -126,18 +126,17 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // publishing
-  Credentials(Path.userHome / ".akka_publish_credentials", log)
   override def managedStyle = ManagedStyle.Maven
+  val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
-  val publishTo = "Scalable Solutions Maven Repository" at "~/tmp/akka"
-//  val publishTo = "Scalable Solutions Maven Repository" at "http://scalablesolutions.se/akka/repository/"
+  // Credentials(Path.userHome / ".akka_publish_credentials", log)
   val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
-//  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("javadoc"), Nil, None)
+  //val docsArtifact = Artifact(artifactID, "docs", "jar", Some("javadoc"), Nil, None)
 
   override def packageDocsJar = defaultJarPath("-javadoc.jar")
   override def packageSrcJar= defaultJarPath("-sources.jar")
   override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
-  
+
   override def pomExtra =
     <inceptionYear>2009</inceptionYear>
     <url>http://akkasource.org</url>
@@ -153,7 +152,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       </license>
     </licenses>
 
-    // ------------------------------------------------------------
+  // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends DefaultProject(info) {
     val netty = "org.jboss.netty" % "netty" % "3.2.0.BETA1" % "compile"
@@ -241,7 +240,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends DefaultProject(info) {
-    val redis = "com.redis" % "redisclient" % "1.1" % "compile"
+    val redis = "com.redis" % "redisclient" % "1.2-SNAPSHOT" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
