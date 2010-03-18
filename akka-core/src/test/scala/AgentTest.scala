@@ -7,23 +7,21 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.junit.{Test}
 
-/*
 @RunWith(classOf[JUnitRunner])
-class AgentTest extends junit.framework.TestCase with Suite with MustMatchers with ActorTestUtil with Logging {
+class AgentTest extends junit.framework.TestCase 
+with Suite with MustMatchers 
+with ActorTestUtil with Logging {
 
   @Test def testAgent = verify(new TestActor {
     def test = {
-      atomic {
-        val t = Agent(5)
-        handle(t) {
-          t.update(_ + 1)
-          t.update(_ * 2)
+      val agent = Agent(5)
+      handle(agent) {
+        agent update (_ + 1)
+        agent update (_ * 2)
 
-          val r = t()
-          r must be(12)
-        }
+        val result = agent()
+        result must be(12)
       }
     }
   })
 }
-*/
