@@ -53,6 +53,17 @@ trait Committable {
 }
 
 /**
+ * Alias to TransactionalRef.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object Ref {
+  def apply[T]() = new Ref[T]
+}
+
+/**
+ * Alias to Ref.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionalRef {
@@ -66,7 +77,16 @@ object TransactionalRef {
 }
 
 /**
+ * Implements a transactional managed reference. 
+ * Alias to TransactionalRef.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class Ref[T] extends TransactionalRef[T]
+
+/**
  * Implements a transactional managed reference.
+ * Alias to Ref.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

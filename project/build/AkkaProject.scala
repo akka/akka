@@ -127,11 +127,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // publishing
   override def managedStyle = ManagedStyle.Maven
-  val publishTo = Resolver.file("maven-local", new java.io.File((Path.userHome / ".m2" / "repository").toString))
+  val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
   val sourceArtifact = Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
-//  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("javadoc"), Nil, None)
+  //val docsArtifact = Artifact(artifactID, "docs", "jar", Some("javadoc"), Nil, None)
 
   override def packageDocsJar = defaultJarPath("-javadoc.jar")
   override def packageSrcJar= defaultJarPath("-sources.jar")
@@ -240,7 +240,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends DefaultProject(info) {
-    val redis = "com.redis" % "redisclient" % "1.1" % "compile"
+    val redis = "com.redis" % "redisclient" % "1.2-SNAPSHOT" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
