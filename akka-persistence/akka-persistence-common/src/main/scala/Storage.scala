@@ -51,17 +51,23 @@ trait Storage {
   def newRef: PersistentRef[ElementType]
   def newQueue: PersistentQueue[ElementType] = // only implemented for redis
     throw new UnsupportedOperationException
+  def newSortedSet: PersistentSortedSet[ElementType] = // only implemented for redis
+    throw new UnsupportedOperationException
 
   def getMap(id: String): PersistentMap[ElementType, ElementType]
   def getVector(id: String): PersistentVector[ElementType]
   def getRef(id: String): PersistentRef[ElementType]
   def getQueue(id: String): PersistentQueue[ElementType] = // only implemented for redis
     throw new UnsupportedOperationException
+  def getSortedSet(id: String): PersistentSortedSet[ElementType] = // only implemented for redis
+    throw new UnsupportedOperationException
 
   def newMap(id: String): PersistentMap[ElementType, ElementType]
   def newVector(id: String): PersistentVector[ElementType]
   def newRef(id: String): PersistentRef[ElementType]
   def newQueue(id: String): PersistentQueue[ElementType] = // only implemented for redis
+    throw new UnsupportedOperationException
+  def newSortedSet(id: String): PersistentSortedSet[ElementType] = // only implemented for redis
     throw new UnsupportedOperationException
 }
 
@@ -392,6 +398,122 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
 
   override def dequeueAll(p: A => Boolean): Seq[A] =
     throw new UnsupportedOperationException("dequeueAll not supported")
+
+  private def register = {
+    if (transaction.get.isEmpty) throw new NoTransactionInScopeException
+    transaction.get.get.register(uuid, this)
+  }
+}
+
+/**
+ * Implements a template for a concrete persistent transactional sorted set based storage.
+ * <p/>
+ * Sorting is done based on a <i>zscore</i>. But the computation of zscore has been kept
+ * outside the abstraction. 
+ * <p/>
+ * zscore can be implemented in a variety of ways by the calling class:
+ * <pre>
+ * trait ZScorable {
+ *   def toZScore: Float
+ * }
+ *
+ * class Foo extends ZScorable {
+ *   //.. implemnetation
+ * }
+ * </pre>
+ * Or we can also use views:
+ * <pre>
+ * class Foo {
+ *   //..
+ * }
+ * 
+ * implicit def Foo2Scorable(foo: Foo): ZScorable = new ZScorable {
+ *   def toZScore = {
+ *     //..
+ *   }
+ * }
+ * </pre>
+ *
+ * and use <tt>foo.toZScore</tt> to compute the zscore and pass to the APIs.
+ *
+ * @author <a href="http://debasishg.blogspot.com"</a>
+ */
+trait PersistentSortedSet[A] 
+  extends Transactional 
+  with Committable {
+
+  protected val newElems = TransactionalState.newMap[A, Float]
+  protected val removedElems = TransactionalState.newVector[A]
+
+  val storage: SortedSetStorageBackend[A]
+
+  def commit = {
+    for ((element, score) <- newElems) storage.zadd(uuid, String.valueOf(score), element)
+    for (element <- removedElems) storage.zrem(uuid, element)
+    newElems.clear
+    removedElems.clear
+  }
+
+  def +(elem: A, score: Float) = add(elem, score)
+
+  def add(elem: A, score: Float) = {
+    register
+    newElems.put(elem, score)
+  }
+
+  def -(elem: A) = remove(elem)
+
+  def remove(elem: A) = {
+    register
+    removedElems.add(elem)
+  }
+
+  private def inStorage(elem: A): Option[Float] = storage.zscore(uuid, elem) match {
+      case Some(s) => Some(s.toFloat)
+      case None => None
+  }
+
+  def contains(elem: A): Boolean = {
+    if (newElems contains elem) true
+    else {
+      inStorage(elem) match {
+        case Some(f) => true
+        case None => false
+      }
+    }
+  }
+ 
+  def size: Int = newElems.size + storage.zcard(uuid) - removedElems.size
+
+  def zscore(elem: A): Float = {
+    if (newElems contains elem) newElems.get(elem).get
+    inStorage(elem) match {
+      case Some(f) => f
+      case None =>
+        throw new Predef.NoSuchElementException(elem + " not present")
+    }
+  }
+
+  implicit def order(x: (A, Float)) = new Ordered[(A, Float)] {
+    def compare(that: (A, Float)) = x._2 compare that._2
+  }
+
+  def zrange(start: Int, end: Int): List[(A, Float)] = {
+    // need to operate on the whole range
+    // get all from the underlying storage
+    val fromStore = storage.zrangeWithScore(uuid, 0, -1)
+    val ts = scala.collection.immutable.TreeSet(fromStore: _*) ++ newElems.toList
+    val l = ts.size
+
+    // -1 means the last element, -2 means the second last
+    val s = if (start < 0) start + l else start
+    val e = 
+      if (end < 0) end + l
+      else if (end >= l) (l - 1)
+      else end
+    // slice is open at the end, we need a closed end range
+    ts.elements.slice(s, e + 1).toList
+  }
 
   private def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException

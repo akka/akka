@@ -364,11 +364,10 @@ private [akka] object RedisStorageBackend extends
     }
   }
   
-  def zscore(name: String, item: Array[Byte]): String = withErrorHandling {
+  def zscore(name: String, item: Array[Byte]): Option[Float] = withErrorHandling {
     db.zscore(new String(encode(name.getBytes)), new String(item)) match {
-      case None =>
-        throw new Predef.NoSuchElementException(new String(item) + " not present")
-      case Some(s) => s
+      case Some(s) => Some(s.toFloat)
+      case None => None
     }
   }
   
@@ -378,6 +377,16 @@ private [akka] object RedisStorageBackend extends
         throw new Predef.NoSuchElementException(name + " not present")
       case Some(s) =>
         s.map(_.get.getBytes)
+    }
+  }
+
+  def zrangeWithScore(name: String, start: Int, end: Int): List[(Array[Byte], Float)] = withErrorHandling {
+    db.zrangeWithScore(
+      new String(encode(name.getBytes)), start.toString, end.toString, RedisClient.ASC) match {
+        case None => 
+          throw new Predef.NoSuchElementException(name + " not present")
+        case Some(l) =>
+          l.map{ case (elem, score) => (elem.get.getBytes, score.get.toFloat) }
     }
   }
   
