@@ -17,41 +17,42 @@ import scala.collection.immutable.{Map, HashMap}
  * @author Viktor Klang
  */
 trait Cluster {
+
   /**
-  * Specifies the cluster name
-  */
+   * Specifies the cluster name
+   */
   def name: String
 
   /**
-  * Adds the specified hostname + port as a local node
-  * This information will be propagated to other nodes in the cluster
-  * and will be available at the other nodes through lookup and foreach
-  */
+   * Adds the specified hostname + port as a local node
+   * This information will be propagated to other nodes in the cluster
+   * and will be available at the other nodes through lookup and foreach
+   */
   def registerLocalNode(hostname: String, port: Int): Unit
 
   /**
-  * Removes the specified hostname + port from the local node
-  * This information will be propagated to other nodes in the cluster
-  * and will no longer be available at the other nodes through lookup and foreach
-  */
+   * Removes the specified hostname + port from the local node
+   * This information will be propagated to other nodes in the cluster
+   * and will no longer be available at the other nodes through lookup and foreach
+   */
   def deregisterLocalNode(hostname: String, port: Int): Unit
 
   /**
-  * Sends the message to all Actors of the specified type on all other nodes in the cluster
-  */
+   * Sends the message to all Actors of the specified type on all other nodes in the cluster
+   */
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit
 
   /**
-  * Traverses all known remote addresses avaiable at all other nodes in the cluster
-  * and applies the given PartialFunction on the first address that it's defined at
-  * The order of application is undefined and may vary
-  */
+   * Traverses all known remote addresses avaiable at all other nodes in the cluster
+   * and applies the given PartialFunction on the first address that it's defined at
+   * The order of application is undefined and may vary
+   */
   def lookup[T](pf: PartialFunction[RemoteAddress, T]): Option[T]
 
   /**
-  * Applies the specified function to all known remote addresses on al other nodes in the cluster
-  * The order of application is undefined and may vary
-  */
+   * Applies the specified function to all known remote addresses on al other nodes in the cluster
+   * The order of application is undefined and may vary
+   */
   def foreach(f: (RemoteAddress) => Unit): Unit
 }
 
@@ -159,7 +160,7 @@ abstract class BasicClusterActor extends ClusterActor {
 
     case RegisterLocalNode(s) => {
       log debug ("RegisterLocalNode: %s", s)
-      local = Node(local.endpoints + s)
+      local = Node(s :: local.endpoints)
       broadcast(Papers(local.endpoints))
     }
 
@@ -242,7 +243,7 @@ object Cluster extends Cluster with Logging {
       "Can't start cluster since the 'akka.remote.cluster.actor' configuration option is not defined")
       
     val serializer = Class.forName(config.getString("akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME)).newInstance.asInstanceOf[Serializer]
-    serializer setClassLoader loader 
+    serializer.classLoader = Some(loader)
     try {
       name map {
         fqn =>
