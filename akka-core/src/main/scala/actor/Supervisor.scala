@@ -84,11 +84,14 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   faultHandler = Some(handler)
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
-  private val actors = new ConcurrentHashMap[String, Actor]
+  private val actors = new ConcurrentHashMap[String, List[Actor]]
   
   // Cheating, should really go through the dispatcher rather than direct access to a CHM
-  def getInstance[T](clazz: Class[T]) = actors.get(clazz.getName).asInstanceOf[T]
-  def getComponentInterfaces: List[Class[_]] = actors.values.toArray.toList.map(_.getClass)
+  def getInstance[T](clazz: Class[T]): List[T] = actors.get(clazz.getName).asInstanceOf[List[T]]
+
+  def getComponentInterfaces: List[Class[_]] = List.flatten(
+    actors.values.toArray.toList.asInstanceOf[List[List[Class[_]]]]).map(_.getClass)
+
   def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
 
   override def start: Actor = synchronized {
@@ -106,7 +109,8 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   }
 
   def receive = {
-    case unknown => throw new IllegalArgumentException("Supervisor " + toString + " does not respond to any messages. Unknown message [" + unknown + "]")
+    case unknown => throw new IllegalArgumentException(
+      "Supervisor " + toString + " does not respond to any messages. Unknown message [" + unknown + "]")
   }
 
   def configure(config: SupervisorConfig, factory: SupervisorFactory) = config match {
@@ -114,15 +118,29 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
       servers.map(server =>
         server match {
           case Supervise(actor, lifeCycle, remoteAddress) =>
-            actors.put(actor.getClass.getName, actor)
+            val className = actor.getClass.getName
+            val currentActors = { 
+              val list = actors.get(className)
+              if (list eq null) List[Actor]()
+              else list
+            }
+            actors.put(className, actor :: currentActors)
             actor.lifeCycle = Some(lifeCycle)
             startLink(actor)
-            remoteAddress.foreach(address => RemoteServer.actorsFor(RemoteServer.Address(address.hostname, address.port)).actors.put(actor.getId, actor))
+            remoteAddress.foreach(address => RemoteServer.actorsFor(
+              RemoteServer.Address(address.hostname, address.port))
+              .actors.put(actor.getId, actor))
 
            case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
              val supervisor = factory.newInstanceFor(supervisorConfig).start
              supervisor.lifeCycle = Some(LifeCycle(Permanent))
-             actors.put(supervisor.getClass.getName, supervisor)
+             val className = supervisor.getClass.getName
+             val currentSupervisors = { 
+               val list = actors.get(className)
+               if (list eq null) List[Actor]()
+               else list
+             }
+             actors.put(className, supervisor :: currentSupervisors)
              link(supervisor)
         })
   }

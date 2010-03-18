@@ -19,6 +19,12 @@ object DataFlow {
   case object Start
   case object Exit
 
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
+
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.dispatch.CompletableFuture
+
   def thread(body: => Unit) = {
     val thread = new IsolatedEventBasedThread(body).start
     thread send Start
