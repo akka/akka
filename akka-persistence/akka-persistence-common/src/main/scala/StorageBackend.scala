@@ -69,11 +69,15 @@ trait SortedSetStorageBackend[T] extends StorageBackend {
   // remove item from sorted set identified by name
   def zrem(name: String, item: T): Boolean
   
-  // cardinality of the set idnetified by name
+  // cardinality of the set identified by name
   def zcard(name: String): Int
   
-  def zscore(name: String, item: T): String
+  // zscore of the item from sorted set identified by name
+  def zscore(name: String, item: T): Option[Float]
   
+  // zrange from the sorted set identified by name
   def zrange(name: String, start: Int, end: Int): List[T]
-}
 
+  // zrange with score from the sorted set identified by name
+  def zrangeWithScore(name: String, start: Int, end: Int): List[(T, Float)] 
+}
