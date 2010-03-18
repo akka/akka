@@ -18,19 +18,17 @@ object RemoteProtocolBuilder {
   private var SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
 
 
-  def setClassLoader(classLoader: ClassLoader) = {
-    SERIALIZER_JAVA = new Serializer.Java
-    SERIALIZER_JAVA_JSON = new Serializer.JavaJSON
-    SERIALIZER_SCALA_JSON = new Serializer.ScalaJSON
-    SERIALIZER_JAVA.setClassLoader(classLoader)
-    SERIALIZER_JAVA_JSON.setClassLoader(classLoader)
-    SERIALIZER_SCALA_JSON.setClassLoader(classLoader)
+  def setClassLoader(cl: ClassLoader) = {
+    SERIALIZER_JAVA.classLoader = Some(cl)
+    SERIALIZER_JAVA_JSON.classLoader = Some(cl)
+    SERIALIZER_SCALA_JSON.classLoader = Some(cl)
   }
   
   def getMessage(request: RemoteRequest): Any = {
     request.getProtocol match {
       case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+        val renderer = Class.forName(
+          new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(request.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
