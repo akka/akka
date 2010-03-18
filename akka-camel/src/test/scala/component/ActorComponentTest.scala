@@ -1,49 +1,36 @@
 package se.scalablesolutions.akka.camel.component
 
+import org.apache.camel.impl.DefaultCamelContext
 import org.junit._
-import org.junit.Assert._
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitSuite
 
-import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.camel.{CamelContextLifecycle, Message}
+class ActorComponentTest extends JUnitSuite {
 
-class ActorComponentTest extends JUnitSuite with CamelContextLifecycle {
+  val component: ActorComponent = ActorComponentTest.mockComponent
 
-  //
-  // TODO: extend/rewrite unit tests
-  // These tests currently only ensure proper functioning of basic features.
-  //
-
-  @Before def setUp = {
-    init
-    start
+  @Test def shouldCreateEndpointWithIdDefined = {
+    val ep1: ActorEndpoint = component.createEndpoint("actor:abc").asInstanceOf[ActorEndpoint]
+    val ep2: ActorEndpoint = component.createEndpoint("actor:id:abc").asInstanceOf[ActorEndpoint]
+    assert(ep1.id === Some("abc"))
+    assert(ep2.id === Some("abc"))
+    assert(ep1.uuid === None)
+    assert(ep2.uuid === None)
   }
 
-  @After def tearDown = {
-    stop
+  @Test def shouldCreateEndpointWithUuidDefined = {
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:abc").asInstanceOf[ActorEndpoint]
+    assert(ep.uuid === Some("abc"))
+    assert(ep.id === None)
   }
-
-  @Test def shouldReceiveResponseFromActorReferencedById = {
-    val actor = new TestActor
-    actor.start
-    assertEquals("Hello Martin", template.requestBody("actor:%s" format actor.getId, "Martin"))
-    assertEquals("Hello Martin", template.requestBody("actor:id:%s" format actor.getId, "Martin"))
-    actor.stop
-  }
-
-  @Test def shouldReceiveResponseFromActorReferencedByUuid = {
-    val actor = new TestActor
-    actor.start
-    assertEquals("Hello Martin", template.requestBody("actor:uuid:%s" format actor.uuid, "Martin"))
-    actor.stop
-  }
-
-  class TestActor extends Actor {
-    protected def receive = {
-      case msg: Message => reply("Hello %s" format msg.body)
-    }
-  }
-
 }
 
+object ActorComponentTest {
+  def mockComponent = {
+    val component = new ActorComponent
+    component.setCamelContext(new DefaultCamelContext)
+    component
+  }
 
+  def mockEndpoint(uri:String) = mockComponent.createEndpoint(uri)
+}
