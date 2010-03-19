@@ -4,8 +4,8 @@ import org.apache.camel.RuntimeCamelException
 import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.ActorRegistry
-import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.camel.support.{Respond, Countdown, Tester, Retain}
+import se.scalablesolutions.akka.camel.{Message, CamelContextManager}
 
 class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   override protected def beforeAll() = {
@@ -22,7 +22,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     import CamelContextManager.template
 
     scenario("one-way communication using actor id") {
-      val actor = new Tester with Retain with Countdown
+      val actor = new Tester with Retain with Countdown[Message]
       actor.start
       template.sendBody("actor:%s" format actor.getId, "Martin")
       assert(actor.waitFor)
@@ -30,7 +30,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     }
 
     scenario("one-way communication using actor uuid") {
-      val actor = new Tester with Retain with Countdown
+      val actor = new Tester with Retain with Countdown[Message]
       actor.start
       template.sendBody("actor:uuid:%s" format actor.uuid, "Martin")
       assert(actor.waitFor)
