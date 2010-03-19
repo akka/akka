@@ -161,6 +161,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
   override def register(actor: Actor) = {
+    verifyActorsAreOfSameType(actor)
     super.register(actor)
   }
 
@@ -170,8 +171,10 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
         actorType = Some(newActor.getClass)
       }
       case Some(aType) => {
-        if (aType != newActor.getClass) // TODO: is assignable from ?!
-          throw new IllegalStateException(String.format("Can't register actor %s in a work stealing dispatcher which already knows actors of type %s", newActor, aType))
+        if (aType != newActor.getClass)
+          throw new IllegalStateException(
+            String.format("Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
+              newActor, aType))
       }
     }
 
