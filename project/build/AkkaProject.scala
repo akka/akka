@@ -313,7 +313,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val lift_util = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
     // testing
-    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.11" % "test"
+    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.22" % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
@@ -328,12 +328,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends DefaultProject(info) {
-    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.11" % "compile"
-    val jetty_client = "org.mortbay.jetty" % "jetty-client" % "6.1.11" % "compile"
-    val camel_http = "org.apache.camel" % "camel-http" % "2.2.0" % "compile"
-    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile" intransitive()
+    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile"
     val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
-    val camel_cometd = "org.apache.camel" % "camel-cometd" % "2.2.0" % "compile"
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.0" % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
