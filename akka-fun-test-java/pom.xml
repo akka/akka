@@ -5,30 +5,42 @@
 
   <name>Akka Functional Tests in Java</name>
   <artifactId>akka-fun-test-java</artifactId>
-
+  <groupId>se.scalablesolutions.akka</groupId>
+  <version>0.7-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <parent>
-    <artifactId>akka</artifactId>
-    <groupId>se.scalablesolutions.akka</groupId>
-    <version>0.7-SNAPSHOT</version>
-  </parent>
+  <properties>
+    <scala.version>2.7.7</scala.version>
+    <atmosphere.version>0.5.2</atmosphere.version>
+    <jersey.version>1.1.5</jersey.version>
+    <grizzly.version>1.9.18-i</grizzly.version>
+  </properties>
 
   <dependencies>
     <dependency>
       <artifactId>akka-kernel</artifactId>
-      <groupId>${project.groupId}</groupId>
-      <version>${project.version}</version>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <version>0.7-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-persistence-cassandra</artifactId>
-      <version>${project.version}</version>
+      <version>0.7-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
       <version>2.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-core-asl</artifactId>
+      <version>1.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.2.1</version>
     </dependency>
     <dependency>
       <groupId>com.sun.grizzly</groupId>
@@ -94,7 +106,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>**/InMemNestedStateTest*</exclude>
             <exclude>**/*Persistent*</exclude>
           </excludes>
         </configuration>

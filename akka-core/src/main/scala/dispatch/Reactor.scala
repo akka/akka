@@ -7,16 +7,17 @@ package se.scalablesolutions.akka.dispatch
 import java.util.List
 
 import se.scalablesolutions.akka.util.{HashCode, Logging}
-import se.scalablesolutions.akka.stm.Transaction
 import se.scalablesolutions.akka.actor.Actor
 
 import java.util.concurrent.ConcurrentHashMap
+
+import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 final class MessageInvocation(val receiver: Actor,
                               val message: Any,
                               val future: Option[CompletableFuture],
                               val sender: Option[Actor],
-                              val tx: Option[Transaction]) {
+                              val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 
   def invoke = receiver.invoke(this)
@@ -37,13 +38,13 @@ final class MessageInvocation(val receiver: Actor,
     that.asInstanceOf[MessageInvocation].message == message
   }
 
-  override def toString(): String = synchronized {
+  override def toString = synchronized {
     "MessageInvocation[" +
      "\n\tmessage = " + message +
      "\n\treceiver = " + receiver +
      "\n\tsender = " + sender +
      "\n\tfuture = " + future +
-     "\n\ttx = " + tx +
+     "\n\ttransactionSet = " + transactionSet +
      "\n]"
   }
 }

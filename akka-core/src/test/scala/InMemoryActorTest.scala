@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import se.scalablesolutions.akka.state.{TransactionalState, TransactionalMap, TransactionalRef, TransactionalVector}
+import se.scalablesolutions.akka.stm.{TransactionalState, TransactionalMap, TransactionalRef, TransactionalVector}
 
 case class GetMapState(key: String)
 case object GetVectorState
@@ -23,7 +23,7 @@ case class SuccessOneWay(key: String, value: String)
 case class FailureOneWay(key: String, value: String, failer: Actor)
 
 class InMemStatefulActor extends Actor {
-  timeout = 100000
+  timeout = 5000
   makeTransactionRequired
 
   private lazy val mapState = TransactionalState.newMap[String, String]
@@ -86,8 +86,8 @@ class InMemFailerActor extends Actor {
 }
                                                         
 class InMemoryActorTest extends JUnitSuite {
+  import Actor.Sender.Self
 
-  /*
   @Test
   def shouldOneWayMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor
@@ -98,7 +98,7 @@ class InMemoryActorTest extends JUnitSuite {
     Thread.sleep(1000)
     assert("new state" === (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get)
   }
-  */
+
   @Test
   def shouldMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor
@@ -107,7 +107,7 @@ class InMemoryActorTest extends JUnitSuite {
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
     assert("new state" === (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get)
   }
-  /*
+
   @Test
   def shouldOneWayMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor
@@ -120,7 +120,7 @@ class InMemoryActorTest extends JUnitSuite {
     Thread.sleep(1000)
     assert("init" === (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
   }
-  */
+
   @Test
   def shouldMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor
@@ -134,7 +134,7 @@ class InMemoryActorTest extends JUnitSuite {
     } catch {case e: RuntimeException => {}}
     assert("init" === (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
   }
-  /*
+
   @Test
   def shouldOneWayVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor
@@ -145,7 +145,7 @@ class InMemoryActorTest extends JUnitSuite {
     Thread.sleep(1000)
     assert(2 === (stateful !! GetVectorSize).get)
   }
-  */
+
   @Test
   def shouldVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor
@@ -154,7 +154,7 @@ class InMemoryActorTest extends JUnitSuite {
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
     assert(2 === (stateful !! GetVectorSize).get)
   }
-  /*
+
   @Test
   def shouldOneWayVectorShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor
@@ -167,7 +167,7 @@ class InMemoryActorTest extends JUnitSuite {
     Thread.sleep(1000)
     assert(1 === (stateful !! GetVectorSize).get)
   }
-  */
+
   @Test
   def shouldVectorShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor
@@ -181,7 +181,7 @@ class InMemoryActorTest extends JUnitSuite {
     } catch {case e: RuntimeException => {}}
     assert(1 === (stateful !! GetVectorSize).get)
   }
-  /*
+
   @Test
   def shouldOneWayRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor
@@ -192,7 +192,7 @@ class InMemoryActorTest extends JUnitSuite {
     Thread.sleep(1000)
     assert("new state" === (stateful !! GetRefState).get)
   }
-  */
+
   @Test
   def shouldRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor
@@ -201,7 +201,7 @@ class InMemoryActorTest extends JUnitSuite {
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
     assert("new state" === (stateful !! GetRefState).get)
   }
-  /*
+
   @Test
   def shouldOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor
@@ -212,9 +212,9 @@ class InMemoryActorTest extends JUnitSuite {
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
     Thread.sleep(1000)
-    assert("init" === (stateful !! GetRefState).get) // check that state is == init state
+    assert("init" === (stateful !! (GetRefState, 1000000)).get) // check that state is == init state
   }
-  */
+
   @Test
   def shouldRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = new InMemStatefulActor

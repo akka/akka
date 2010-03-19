@@ -1,28 +1,48 @@
-/**ChatStorage
+/**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>.
  */
 
 package se.scalablesolutions.akka.sample.chat
 
+import scala.collection.mutable.HashMap
+
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
+import se.scalablesolutions.akka.persistence.common.PersistentVector
+import se.scalablesolutions.akka.persistence.redis.RedisStorage
 import se.scalablesolutions.akka.stm.Transaction._
-import se.scalablesolutions.akka.remote.RemoteServer
-import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
-import scala.collection.mutable.HashMap
-import se.scalablesolutions.akka.state.{PersistentVector, RedisStorage}
+import se.scalablesolutions.akka.util.Logging
 
 /******************************************************************************
-  To run the sample: 
-  1. Run 'mvn install' (builds and deploys jar to AKKA_HOME/deploy)
-  2. In another shell run 'java -jar ./dist/akka-0.6.jar' to start up Akka microkernel
-  3. In the first shell run 'mvn scala:console -o'
-  4. In the REPL you get execute: 
+Akka Chat Client/Server Sample Application
+
+First we need to download, build and start up Redis:
+
+1. Download Redis from http://code.google.com/p/redis/downloads/list.
+2. Step into the distribution.
+3. Build: ‘make install’.
+4. Run: ‘./redis-server’.
+For details on how to set up Redis server have a look at http://code.google.com/p/redis/wiki/QuickStart.
+
+Then to run the sample: 
+
+1. Fire up two shells. For each of them:
+  - Step down into to the root of the Akka distribution.
+  - Set 'export AKKA_HOME=<root of distribution>.
+  - Run 'sbt console' to start up a REPL (interpreter).
+2. In the first REPL you get execute: 
+  - scala> import se.scalablesolutions.akka.sample.chat._
+  - scala> ChatService.start
+3. In the first REPL you get execute: 
     - scala> import se.scalablesolutions.akka.sample.chat._
     - scala> Runner.run
-  5. See the chat simulation run
-  6. Run it again to see full speed after first initialization
+4. See the chat simulation run.
+5. Run it again to see full speed after first initialization.
+
+That’s it. Have fun.
+
 ******************************************************************************/
 
 /**
@@ -40,10 +60,12 @@ case class ChatMessage(from: String, message: String) extends Event
  */
 class ChatClient(val name: String) { 
   import Actor.Sender.Self
-  def login =                 ChatService ! Login(name) 
-  def logout =                ChatService ! Logout(name)  
-  def post(message: String) = ChatService ! ChatMessage(name, name + ": " + message)  
-  def chatLog: ChatLog =     (ChatService !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
+  val chat = RemoteClient.actorFor("chat:service", "localhost", 9999)
+
+  def login =                 chat ! Login(name) 
+  def logout =                chat ! Logout(name)  
+  def post(message: String) = chat ! ChatMessage(name, name + ": " + message)  
+  def chatLog: ChatLog =     (chat !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
 }
 
 /**
@@ -75,8 +97,9 @@ trait ChatStorage extends Actor
  */
 class RedisChatStorage extends ChatStorage {
   lifeCycle = Some(LifeCycle(Permanent))    
-      
-  private var chatLog = atomic { RedisStorage.getVector("akka.chat.log") }
+  val CHAT_LOG = "akka.chat.log"
+  
+  private var chatLog = atomic { RedisStorage.getVector(CHAT_LOG) }
 
   log.info("Redis-based chat storage is starting up...")
 
@@ -94,7 +117,7 @@ class RedisChatStorage extends ChatStorage {
       reply(ChatLog(messageList))
   }
   
-  override def postRestart(reason: Throwable) = chatLog = RedisStorage.getVector("akka.chat.log")  
+  override def postRestart(reason: Throwable) = chatLog = RedisStorage.getVector(CHAT_LOG)  
 }
 
 /**
@@ -180,16 +203,19 @@ object ChatService extends
   ChatServer with 
   SessionManagement with 
   ChatManagement with 
-  RedisChatStorageFactory
+  RedisChatStorageFactory {
+  override def start: Actor = {
+    super.start
+    RemoteNode.start("localhost", 9999)
+    RemoteNode.register("chat:service", this)
+    this
+  }
+}
 
 /**
  * Test runner emulating a chat session.
  */
 object Runner {
-  // create a handle to the remote ChatService 
-  ChatService.makeRemote("localhost", 9999)
-  ChatService.start
-  
   def run = {
     val client = new ChatClient("jonas")
   

@@ -5,8 +5,8 @@
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.util.{Bootable,Logging}
-import se.scalablesolutions.akka.Config.config
+import se.scalablesolutions.akka.util.{Bootable, Logging}
+import se.scalablesolutions.akka.config.Config.config
 
 /**
  * This bundle/service is responsible for booting up and shutting down the remote actors facility
@@ -23,22 +23,19 @@ trait BootableRemoteActorService extends Bootable with Logging {
   def startRemoteService = remoteServerThread.start
   
   abstract override def onLoad   = {
+    super.onLoad //Initialize BootableActorLoaderService before remote service
     if(config.getBool("akka.remote.server.service", true)){
-      log.info("Starting up Cluster Service")
-      Cluster.start
-      super.onLoad //Initialize BootableActorLoaderService before remote service
+      
+      if(config.getBool("akka.remote.cluster.service", true))
+        Cluster.start(self.applicationLoader)
+     
       log.info("Initializing Remote Actors Service...")
       startRemoteService
       log.info("Remote Actors Service initialized!")
     }
-    else
-      super.onLoad
-
   }
 
   abstract override def onUnload = {
-    super.onUnload
-
     log.info("Shutting down Remote Actors Service")
 
     RemoteNode.shutdown
@@ -50,6 +47,8 @@ trait BootableRemoteActorService extends Bootable with Logging {
     Cluster.shutdown
 
     log.info("Remote Actors Service has been shut down")
+
+    super.onUnload
   }
 
 }

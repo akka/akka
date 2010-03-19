@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.common
 
 // abstracts persistence storage
 trait StorageBackend
@@ -33,6 +33,14 @@ trait VectorStorageBackend[T] extends StorageBackend {
 trait RefStorageBackend[T] extends StorageBackend {
   def insertRefStorageFor(name: String, element: T)
   def getRefStorageFor(name: String): Option[T]
+  def incrementAtomically(name: String): Option[Int] =
+    throw new UnsupportedOperationException // only for redis
+  def incrementByAtomically(name: String, by: Int): Option[Int] =
+    throw new UnsupportedOperationException // only for redis
+  def decrementAtomically(name: String): Option[Int] =
+    throw new UnsupportedOperationException // only for redis
+  def decrementByAtomically(name: String, by: Int): Option[Int] =
+    throw new UnsupportedOperationException // only for redis
 }
 
 // for Queue
@@ -61,11 +69,15 @@ trait SortedSetStorageBackend[T] extends StorageBackend {
   // remove item from sorted set identified by name
   def zrem(name: String, item: T): Boolean
   
-  // cardinality of the set idnetified by name
+  // cardinality of the set identified by name
   def zcard(name: String): Int
   
-  def zscore(name: String, item: T): String
+  // zscore of the item from sorted set identified by name
+  def zscore(name: String, item: T): Option[Float]
   
+  // zrange from the sorted set identified by name
   def zrange(name: String, start: Int, end: Int): List[T]
-}
 
+  // zrange with score from the sorted set identified by name
+  def zrangeWithScore(name: String, start: Int, end: Int): List[(T, Float)] 
+}
