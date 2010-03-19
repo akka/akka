@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.redis
 
 import junit.framework.TestCase
 
@@ -29,6 +29,7 @@ case object LogSize
 class AccountActor extends Transactor {
   private lazy val accountState = RedisStorage.newMap
   private lazy val txnLog = RedisStorage.newVector
+  //timeout = 5000
 
   def receive = {
     // check balance
@@ -86,6 +87,7 @@ class AccountActor extends Transactor {
 }
 
 @serializable class PersistentFailerActor extends Transactor {
+  // timeout = 5000
   def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")
@@ -138,7 +140,7 @@ class RedisPersistentActorSpec extends TestCase {
     bactor.start
     bactor !! Credit("a-123", 5000)
 
-    assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
+    assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
     val failer = new PersistentFailerActor
     failer.start
@@ -147,7 +149,7 @@ class RedisPersistentActorSpec extends TestCase {
       fail("should throw exception")
     } catch { case e: RuntimeException => {}}
 
-    assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
+    assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
     // should not count the failed one
     assertEquals(3, (bactor !! LogSize).get)

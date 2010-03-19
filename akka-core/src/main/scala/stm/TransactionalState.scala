@@ -2,14 +2,12 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.stm
 
 import se.scalablesolutions.akka.stm.Transaction.atomic
-import se.scalablesolutions.akka.stm.NoTransactionInScopeException
-import se.scalablesolutions.akka.collection._
 import se.scalablesolutions.akka.util.UUID
 
-import org.multiverse.datastructures.refs.manual.Ref;
+import org.multiverse.stms.alpha.AlphaRef
 
 /**
  * Example Scala usage:
@@ -55,6 +53,17 @@ trait Committable {
 }
 
 /**
+ * Alias to TransactionalRef.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object Ref {
+  def apply[T]() = new Ref[T]
+}
+
+/**
+ * Alias to Ref.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionalRef {
@@ -68,7 +77,16 @@ object TransactionalRef {
 }
 
 /**
+ * Implements a transactional managed reference. 
+ * Alias to TransactionalRef.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class Ref[T] extends TransactionalRef[T]
+
+/**
  * Implements a transactional managed reference.
+ * Alias to Ref.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -78,7 +96,7 @@ class TransactionalRef[T] extends Transactional {
   implicit val txInitName = "TransactionalRef:Init"
   val uuid = UUID.newUuid.toString
 
-  private[this] val ref: Ref[T] = atomic { new Ref }
+  private[this] lazy val ref: AlphaRef[T] = new AlphaRef
 
   def swap(elem: T) = {
     ensureIsInTransaction

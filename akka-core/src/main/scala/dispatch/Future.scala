@@ -13,6 +13,7 @@ class FutureTimeoutException(message: String) extends RuntimeException(message)
 object Futures {
 
   /**
+   * FIXME document
    * <pre>
    * val future = Futures.future(1000) {
    *  ... // do stuff

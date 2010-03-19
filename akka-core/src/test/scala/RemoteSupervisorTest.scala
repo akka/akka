@@ -74,7 +74,7 @@ object Log {
 class RemoteSupervisorTest extends JUnitSuite {
   import Actor.Sender.Self
 
-  akka.Config.config
+  akka.config.Config.config
   new Thread(new Runnable() {
     def run = {
       RemoteNode.start

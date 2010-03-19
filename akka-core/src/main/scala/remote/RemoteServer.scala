@@ -12,7 +12,7 @@ import java.util.{Map => JMap}
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteReply, RemoteRequest}
-import se.scalablesolutions.akka.Config.config
+import se.scalablesolutions.akka.config.Config.config
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -58,7 +58,7 @@ object RemoteNode extends RemoteServer
  */
 object RemoteServer {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
-  val PORT = config.getInt("akka.remote.server.port", 9966)
+  val PORT = config.getInt("akka.remote.server.port", 9999)
 
   val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
 

@@ -19,7 +19,7 @@ import java.net.InetSocketAddress
 import java.lang.reflect.{InvocationTargetException, Method}
 
 object Annotations {
-  import se.scalablesolutions.akka.annotation._
+  import se.scalablesolutions.akka.actor.annotation._
   val oneway =                 classOf[oneway]
   val transactionrequired =    classOf[transactionrequired]
   val prerestart =             classOf[prerestart]

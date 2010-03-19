@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.redis
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -114,6 +114,48 @@ class RedisStorageBackendSpec extends
     }
   }
 
+  describe("atomic increment in ref") {
+    it("should increment an existing key value by 1") {
+      insertRefStorageFor("T-4-1", "1200".getBytes)
+      new String(getRefStorageFor("T-4-1").get) should equal("1200")
+      incrementAtomically("T-4-1").get should equal(1201)
+    }
+    it("should create and increment a non-existing key value by 1") {
+      incrementAtomically("T-4-2").get should equal(1)
+      new String(getRefStorageFor("T-4-2").get) should equal("1")
+    }
+    it("should increment an existing key value by the amount specified") {
+      insertRefStorageFor("T-4-3", "1200".getBytes)
+      new String(getRefStorageFor("T-4-3").get) should equal("1200")
+      incrementByAtomically("T-4-3", 50).get should equal(1250)
+    }
+    it("should create and increment a non-existing key value by the amount specified") {
+      incrementByAtomically("T-4-4", 20).get should equal(20)
+      new String(getRefStorageFor("T-4-4").get) should equal("20")
+    }
+  }
+
+  describe("atomic decrement in ref") {
+    it("should decrement an existing key value by 1") {
+      insertRefStorageFor("T-4-5", "1200".getBytes)
+      new String(getRefStorageFor("T-4-5").get) should equal("1200")
+      decrementAtomically("T-4-5").get should equal(1199)
+    }
+    it("should create and decrement a non-existing key value by 1") {
+      decrementAtomically("T-4-6").get should equal(-1)
+      new String(getRefStorageFor("T-4-6").get) should equal("-1")
+    }
+    it("should decrement an existing key value by the amount specified") {
+      insertRefStorageFor("T-4-7", "1200".getBytes)
+      new String(getRefStorageFor("T-4-7").get) should equal("1200")
+      decrementByAtomically("T-4-7", 50).get should equal(1150)
+    }
+    it("should create and decrement a non-existing key value by the amount specified") {
+      decrementByAtomically("T-4-8", 20).get should equal(-20)
+      new String(getRefStorageFor("T-4-8").get) should equal("-20")
+    }
+  }
+
   describe("store and query in queue") {
     it("should give proper queue semantics") {
       enqueue("T-5", "alan kay".getBytes)
@@ -149,10 +191,10 @@ class RedisStorageBackendSpec extends
       
       zcard("hackers") should equal(6)
       
-      zscore("hackers", "alan turing".getBytes) should equal("1912")
-      zscore("hackers", "richard stallman".getBytes) should equal("1953")
-      zscore("hackers", "claude shannon".getBytes) should equal("1916")
-      zscore("hackers", "linus torvalds".getBytes) should equal("1969")
+      zscore("hackers", "alan turing".getBytes).get should equal(1912.0f)
+      zscore("hackers", "richard stallman".getBytes).get should equal(1953.0f)
+      zscore("hackers", "claude shannon".getBytes).get should equal(1916.0f)
+      zscore("hackers", "linus torvalds".getBytes).get should equal(1969.0f)
 
       val s: List[Array[Byte]] = zrange("hackers", 0, 2)
       s.size should equal(3)
@@ -164,6 +206,10 @@ class RedisStorageBackendSpec extends
       val t: List[Array[Byte]] = zrange("hackers", 0, -1)
       t.size should equal(6)
       t.map(new String(_)) should equal(sorted)
+
+      val u: List[(Array[Byte], Float)] = zrangeWithScore("hackers", 0, -1)
+      u.size should equal(6)
+      u.map{ case (e, s) => new String(e) } should equal(sorted)
     }
   }
 }

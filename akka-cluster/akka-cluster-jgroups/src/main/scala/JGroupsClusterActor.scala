@@ -1,15 +1,17 @@
-package se.scalablesolutions.akka.remote
+package se.scalablesolutions.akka.cluster.jgroups
 
 import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, ExtendedMembershipListener, Receiver}
+
+import se.scalablesolutions.akka.remote.ClusterActor._
+import se.scalablesolutions.akka.remote.BasicClusterActor
+
+import org.scala_tools.javautils.Imports._
 
 /**
  * Clustering support via JGroups.
  * @Author Viktor Klang
  */
 class JGroupsClusterActor extends BasicClusterActor {
-  import ClusterActor._
-  import org.scala_tools.javautils.Imports._
-
   type ADDR_T = Address
 
   @volatile private var isActive = false
