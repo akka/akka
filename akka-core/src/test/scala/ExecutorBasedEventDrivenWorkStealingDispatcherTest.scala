@@ -58,4 +58,42 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
     }
   })
 
+  @Test def canNotUseActorsOfDifferentTypesInSameDispatcher:Unit = {
+    val first = new FirstActor
+    val second = new SecondActor
+
+    first.start
+    intercept[IllegalStateException] {
+      second.start
+    }
+  }
+
+  class FirstActor extends Actor {
+    messageDispatcher = poolDispatcher
+    def receive = {case _ => {}}
+  }
+
+  class SecondActor extends Actor {
+    messageDispatcher = poolDispatcher
+    def receive = {case _ => {}}
+  }
+
+  @Test def canNotUseActorsOfDifferentSubTypesInSameDispatcher:Unit = {
+    val parent = new ParentActor
+    val child = new ChildActor
+
+    parent.start
+    intercept[IllegalStateException] {
+      child.start
+    }
+  }
+
+  class ParentActor extends Actor {
+    messageDispatcher = poolDispatcher
+    def receive = {case _ => {}}
+  }
+
+  class ChildActor extends ParentActor {
+  }
+
 }
