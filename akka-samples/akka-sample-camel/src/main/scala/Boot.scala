@@ -43,16 +43,22 @@ class Boot {
 
   // Publish subscribe example
 
-  val cometdUri = "cometd://localhost:8111/test/abc?resourceBase=target"
-  val cometdSubscriber = new Subscriber("cometd-subscriber", cometdUri).start
-  val cometdPublisher = new Publisher("cometd-publisher", cometdUri).start
+  //
+  // Cometd example is disabled because of unresolved sbt/ivy dependency resolution issues.
+  // If you want to run this example, make sure to replace all jetty-*-6.1.22.jar files
+  //  on the classpath with corresponding jetty-*-6.1.11.jar files.
+  //
+
+  //val cometdUri = "cometd://localhost:8111/test/abc?resourceBase=target"
+  //val cometdSubscriber = new Subscriber("cometd-subscriber", cometdUri).start
+  //val cometdPublisher = new Publisher("cometd-publisher", cometdUri).start
 
   val jmsUri = "jms:topic:test"
   val jmsSubscriber1 = new Subscriber("jms-subscriber-1", jmsUri).start
   val jmsSubscriber2 = new Subscriber("jms-subscriber-2", jmsUri).start
   val jmsPublisher = new Publisher("jms-publisher", jmsUri).start
 
-  val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
+  //val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
   val jmsPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher).start
   
 }
