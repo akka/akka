@@ -10,6 +10,10 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.Manifest
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 
+sealed trait ActorRegistryEvent
+case class ActorRegistered(actor: Actor) extends ActorRegistryEvent
+case class ActorUnregistered(actor: Actor) extends ActorRegistryEvent
+
 /**
  * Registry holding all Actor instances in the whole system.
  * Mapped by:
@@ -17,6 +21,7 @@ import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
  * <li>the Actor's UUID</li>
  * <li>the Actor's id field (which can be set by user-code)</li>
  * <li>the Actor's class</li>
+ * <li>all Actors that are subtypes of a specific type</li>
  * <ul>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -105,7 +110,7 @@ object ActorRegistry extends Logging {
     } else actorsByClassName.put(className, actor :: Nil)
 
     // notify listeners
-    foreachListener(_.!(ActorRegistered(actor))(None))
+    foreachListener(_ send ActorRegistered(actor))
   }
 
   /**
@@ -116,7 +121,7 @@ object ActorRegistry extends Logging {
     actorsById remove actor.getId
     actorsByClassName remove actor.getClass.getName
     // notify listeners
-    foreachListener(_.!(ActorUnregistered(actor))(None))
+    foreachListener(_ send ActorUnregistered(actor))
   }
 
   /**
@@ -150,6 +155,3 @@ object ActorRegistry extends Logging {
     while (iterator.hasNext) f(iterator.next)
   }
 }
-
-case class ActorRegistered(actor: Actor)
-case class ActorUnregistered(actor: Actor)
