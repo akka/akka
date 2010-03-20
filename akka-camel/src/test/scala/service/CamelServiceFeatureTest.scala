@@ -9,7 +9,7 @@ import se.scalablesolutions.akka.camel.{CamelContextManager, Message, Consumer}
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
   var service: CamelService = CamelService.newInstance
 
-  override protected def beforeAll() = {
+  override protected def beforeAll = {
     ActorRegistry.shutdownAll
     // register test consumer before starting the CamelService
     new TestConsumer("direct:publish-test-1").start
@@ -24,7 +24,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     service.consumerPublisher.awaitPublish
   }
 
-  override protected def afterAll() = {
+  override protected def afterAll = {
     service.unload
     ActorRegistry.shutdownAll
   }
@@ -79,7 +79,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
   class TestRoute extends RouteBuilder {
     def configure {
-      from("direct:custom-route-test-1") .to("actor:custom-actor-id")
+      from("direct:custom-route-test-1").to("actor:custom-actor-id")
     }
   }
 }

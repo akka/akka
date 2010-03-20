@@ -8,7 +8,6 @@ import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.Consumer
 
 class PublishTest extends JUnitSuite {
-
   @Test def shouldCreatePublishRequestList = {
     val publish = Publish.forConsumers(List(new ConsumeAnnotatedActor))
     assert(publish === List(Publish("mock:test1", "test", false)))

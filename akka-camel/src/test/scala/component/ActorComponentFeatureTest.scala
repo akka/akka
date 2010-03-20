@@ -8,15 +8,15 @@ import se.scalablesolutions.akka.camel.support.{Respond, Countdown, Tester, Reta
 import se.scalablesolutions.akka.camel.{Message, CamelContextManager}
 
 class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
-  override protected def beforeAll() = {
+  override protected def beforeAll = {
     ActorRegistry.shutdownAll
     CamelContextManager.init
     CamelContextManager.start 
   }
 
-  override protected def afterAll() = CamelContextManager.stop
+  override protected def afterAll = CamelContextManager.stop
 
-  override protected def afterEach() = ActorRegistry.shutdownAll
+  override protected def afterEach = ActorRegistry.shutdownAll
   
   feature("Communicate with an actor from a Camel application using actor endpoint URIs") {
     import CamelContextManager.template
