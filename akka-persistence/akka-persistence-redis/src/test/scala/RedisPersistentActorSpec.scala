@@ -87,7 +87,7 @@ class AccountActor extends Transactor {
 }
 
 @serializable class PersistentFailerActor extends Transactor {
-  //timeout = 5000
+  // timeout = 5000
   def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")
