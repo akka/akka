@@ -36,15 +36,15 @@ class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
 
   private def createTestElement : Element = {
     val xml = <akka:active-object id="active-object1"
-    					target="foo.bar.MyPojo"
-    					timeout="1000"
+                                        target="foo.bar.MyPojo"
+                                        timeout="1000"
                         transactional="true"/>
     dom(xml).getDocumentElement
   }
 
   private def createTestElement2 : Element = {
     val xml = <akka:active-object id="active-object1"
-    					timeout="1000"
+                                        timeout="1000"
                         transactional="true"/>
     dom(xml).getDocumentElement
   }
