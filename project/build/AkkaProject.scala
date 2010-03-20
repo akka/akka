@@ -35,6 +35,7 @@
 -------------------------------------------------------------------------------*/
 
 import sbt._
+import java.io.File
 import java.util.jar.Attributes
 
 class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
@@ -60,7 +61,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   
   // ------------------------------------------------------------
   // repositories
-  val embeddedrepo = "embedded repo" at "file://" + akkaHome + "/embedded-repo"
+  val embeddedrepo = "embedded repo" at new File(akkaHome, "embedded-repo").toURI.toString
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   val configgy = "Configgy" at "http://www.lag.net/repo"
@@ -240,7 +241,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends DefaultProject(info) {
-    val redis = "com.redis" % "redisclient" % "1.1" % "compile"
+    val redis = "com.redis" % "redisclient" % "1.2-SNAPSHOT" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
@@ -312,7 +313,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val lift_util = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
     // testing
-    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.11" % "test"
+    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.22" % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
@@ -327,12 +328,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends DefaultProject(info) {
-    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.11" % "compile"
-    val jetty_client = "org.mortbay.jetty" % "jetty-client" % "6.1.11" % "compile"
-    val camel_http = "org.apache.camel" % "camel-http" % "2.2.0" % "compile"
-    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile" intransitive()
+    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile"
     val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
-    val camel_cometd = "org.apache.camel" % "camel-cometd" % "2.2.0" % "compile"
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.0" % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }

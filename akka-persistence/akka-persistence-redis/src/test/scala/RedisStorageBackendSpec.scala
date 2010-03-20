@@ -191,10 +191,10 @@ class RedisStorageBackendSpec extends
       
       zcard("hackers") should equal(6)
       
-      zscore("hackers", "alan turing".getBytes) should equal("1912")
-      zscore("hackers", "richard stallman".getBytes) should equal("1953")
-      zscore("hackers", "claude shannon".getBytes) should equal("1916")
-      zscore("hackers", "linus torvalds".getBytes) should equal("1969")
+      zscore("hackers", "alan turing".getBytes).get should equal(1912.0f)
+      zscore("hackers", "richard stallman".getBytes).get should equal(1953.0f)
+      zscore("hackers", "claude shannon".getBytes).get should equal(1916.0f)
+      zscore("hackers", "linus torvalds".getBytes).get should equal(1969.0f)
 
       val s: List[Array[Byte]] = zrange("hackers", 0, 2)
       s.size should equal(3)
@@ -206,6 +206,10 @@ class RedisStorageBackendSpec extends
       val t: List[Array[Byte]] = zrange("hackers", 0, -1)
       t.size should equal(6)
       t.map(new String(_)) should equal(sorted)
+
+      val u: List[(Array[Byte], Float)] = zrangeWithScore("hackers", 0, -1)
+      u.size should equal(6)
+      u.map{ case (e, s) => new String(e) } should equal(sorted)
     }
   }
 }

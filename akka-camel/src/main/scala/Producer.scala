@@ -190,3 +190,22 @@ class ProducerResponseSender(
     }
   }
 }
+
+/**
+ * A one-way producer.
+ *
+ * @author Martin Krasser
+ */
+trait Oneway extends Producer { self: Actor =>
+  override def oneway = true
+}
+
+/**
+ * A synchronous producer.
+ *
+ * @author Martin Krasser
+ */
+trait Sync extends Producer { self: Actor =>
+  override def async = false
+}
+
