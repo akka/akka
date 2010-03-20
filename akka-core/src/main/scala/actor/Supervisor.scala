@@ -90,8 +90,8 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   def getInstance[T](clazz: Class[T]): List[T] = actors.get(clazz.getName).asInstanceOf[List[T]]
 
   def getComponentInterfaces: List[Class[_]] = List.flatten(
-    actors.values.toArray.toList.asInstanceOf[List[List[Class[_]]]]).map(_.getClass)
-
+    actors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]]).map(_.getClass)
+  
   def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
 
   override def start: Actor = synchronized {
