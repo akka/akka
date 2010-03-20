@@ -6,7 +6,7 @@
   <name>Akka Spring Tests in Java</name>
   <artifactId>akka-spring-test-java</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
-  <version>0.7-SNAPSHOT</version>
+  <version>0.7</version>
   <packaging>jar</packaging>
 
   <properties>
@@ -131,68 +131,65 @@
   </repositories>
 
   <dependencies>
-<!-- akka -->    
-<dependency>
-      <artifactId>akka-core</artifactId>
+    <!-- akka -->
+    <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.7-SNAPSHOT</version>
+      <artifactId>akka-core_2.7.7</artifactId>
+      <version>0.7</version>
     </dependency>
     <dependency>
-      <artifactId>akka-util</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.7-SNAPSHOT</version>
+      <artifactId>akka-util_2.7.7</artifactId>
+      <version>0.7</version>
     </dependency>
     <dependency>
-      <artifactId>akka-util-java</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.7-SNAPSHOT</version>
+      <artifactId>akka-util-java_2.7.7</artifactId>
+      <version>0.7</version>
     </dependency>
     <dependency>
-      <artifactId>akka-spring</artifactId>
       <groupId>se.scalablesolutions.akka</groupId>
-      <version>0.7-SNAPSHOT</version>
+      <artifactId>akka-spring_2.7.7</artifactId>
+      <version>0.7</version>
       <exclusions>
         <exclusion>
-          <artifactId>spring</artifactId>
           <groupId>org.springframework</groupId>
+          <artifactId>spring</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
-    
-  
-<!-- spring -->        
-    <dependency>
-       <groupId>org.springframework</groupId>
-       <artifactId>spring-beans</artifactId>
-       <version>3.0.1.RELEASE</version>
-    </dependency>
-    <dependency>
-       <groupId>org.springframework</groupId>
-       <artifactId>spring-context</artifactId>
-       <version>3.0.1.RELEASE</version>
-    </dependency>
 
+    <!-- spring -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>3.0.1.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>3.0.1.RELEASE</version>
+    </dependency>
     <dependency>  
-       <groupId>net.lag</groupId>
-       <artifactId>configgy</artifactId>
-       <version>1.4.7</version>
+      <groupId>net.lag</groupId>
+      <artifactId>configgy</artifactId>
+      <version>1.4.7</version>
     </dependency>
     <dependency>
-           <groupId>org.codehaus.aspectwerkz</groupId>
-           <artifactId>aspectwerkz-nodeps-jdk5</artifactId>
-           <version>2.1</version>
-        </dependency>
+      <groupId>org.codehaus.aspectwerkz</groupId>
+      <artifactId>aspectwerkz-nodeps-jdk5</artifactId>
+      <version>2.1</version>
+    </dependency>
     <dependency>
-           <groupId>org.codehaus.aspectwerkz</groupId>
-           <artifactId>aspectwerkz-jdk5</artifactId>
-           <version>2.1</version>
-        </dependency>
-
+     <groupId>org.codehaus.aspectwerkz</groupId>
+     <artifactId>aspectwerkz-jdk5</artifactId>
+     <version>2.1</version>
+    </dependency>
     <dependency>
-           <groupId>org.guiceyfruit</groupId>
-           <artifactId>guice-core</artifactId>
-           <version>2.0-beta-4</version>
-        </dependency>
+      <groupId>org.guiceyfruit</groupId>
+      <artifactId>guice-core</artifactId>
+      <version>2.0-beta-4</version>
+    </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
@@ -259,19 +256,18 @@
       <artifactId>javautils</artifactId>
       <version>2.7.4-0.1</version>
     </dependency>
-       <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>2.7.7</version>
-        </dependency>
-
     <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>2.7.7</version>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.7.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.7.7</version>
     </dependency>
         
-<!-- test -->
+   <!-- test -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -327,7 +323,4 @@
       </resource>
     </resources>
   </build>
-  <reporting>
-    <plugins></plugins>
-  </reporting>
 </project>
