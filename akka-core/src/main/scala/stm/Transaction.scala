@@ -97,66 +97,43 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Transaction extends TransactionManagement {
+object Transaction extends TransactionManagement with Logging {
   val idFactory = new AtomicLong(-1L)
-/*
-  import AlphaStm._
-  private val defaultTxBuilder = new AlphaTransactionFactoryBuilder
-  defaultTxBuilder.setReadonly(false)
-  defaultTxBuilder.setInterruptible(INTERRUPTIBLE)
-  defaultTxBuilder.setMaxRetryCount(MAX_NR_OF_RETRIES)
-  defaultTxBuilder.setPreventWriteSkew(PREVENT_WRITE_SKEW)
-  defaultTxBuilder.setAutomaticReadTracking(AUTOMATIC_READ_TRACKING)
-  defaultTxBuilder.setSmartTxLengthSelector(SMART_TX_LENGTH_SELECTOR)
-  defaultTxBuilder.setBackoffPolicy(new ExponentialBackoffPolicy)
-  private val readOnlyTxBuilder = new AlphaStm.AlphaTransactionFactoryBuilder
-  readOnlyTxBuilder.setReadonly(true)
-  readOnlyTxBuilder.setInterruptible(INTERRUPTIBLE)
-  readOnlyTxBuilder.setMaxRetryCount(MAX_NR_OF_RETRIES)
-  readOnlyTxBuilder.setPreventWriteSkew(PREVENT_WRITE_SKEW)
-  readOnlyTxBuilder.setAutomaticReadTracking(AUTOMATIC_READ_TRACKING)
-  readOnlyTxBuilder.setSmartTxLengthSelector(SMART_TX_LENGTH_SELECTOR)
-  readOnlyTxBuilder.setBackoffPolicy(new ExponentialBackoffPolicy)
-  */
+
   /**
-   * See ScalaDoc on class.
+   * See ScalaDoc on Transaction class.
    */
   def map[T](f: => T)(implicit transactionFamilyName: String): T =
     atomic {f}
 
   /**
-   * See ScalaDoc on class.
+   * See ScalaDoc on Transaction class.
    */
   def flatMap[T](f: => T)(implicit transactionFamilyName: String): T =
     atomic {f}
 
   /**
-   * See ScalaDoc on class.
+   * See ScalaDoc on Transaction class.
    */
   def foreach(f: => Unit)(implicit transactionFamilyName: String): Unit =
     atomic {f}
 
   /**
-   * Creates a "pure" STM atomic transaction and by-passes all transactions hooks
-   * such as persistence etc.
-   * Only for internal usage.
-   */
-  private[akka] def pureAtomic[T](body: => T): T = new TransactionTemplate[T]() {
-    def execute(mtx: MultiverseTransaction): T = body
-  }.execute()
-
-  /**
-   * See ScalaDoc on class.
+   * See ScalaDoc on Transaction class.
    */
   def atomic[T](body: => T)(implicit transactionFamilyName: String): T = {
+    // FIXME use Transaction Builder and set the transactionFamilyName
     //    defaultTxBuilder.setFamilyName(transactionFamilyName)
     //    new TransactionTemplate[T](defaultTxBuilder.build) {
-    new TransactionTemplate[T]() { // FIXME take factory
+    var isTopLevelTransaction = true
+    new TransactionTemplate[T]() {
       def execute(mtx: MultiverseTransaction): T = {
         val result = body
 
-        log.trace("Committing transaction [%s] \nwith family name [%s] \nby joining transaction set")
-        getTransactionSetInScope.joinCommit(mtx)
+        val txSet = getTransactionSetInScope
+        log.trace("Committing transaction [%s]\n\twith family name [%s]\n\tby joining transaction set [%s]", 
+                  mtx, transactionFamilyName, txSet)
+        txSet.joinCommit(mtx)
 
         // FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS) 
         //getTransactionSetInScope.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
@@ -166,8 +143,11 @@ object Transaction extends TransactionManagement {
       }
 
       override def onStart(mtx: MultiverseTransaction) = {
-        val txSet = if (!isTransactionSetInScope) createNewTransactionSet
-                    else getTransactionSetInScope
+        val txSet = 
+          if (!isTransactionSetInScope) {
+            isTopLevelTransaction = true
+            createNewTransactionSet
+          } else getTransactionSetInScope
         val tx = new Transaction
         tx.transaction = Some(mtx)
         setTransaction(Some(tx))
@@ -197,6 +177,16 @@ object Transaction extends TransactionManagement {
       def orelserun(t: MultiverseTransaction) = secondBody
     }.execute()
   }
+
+  /**
+   * Creates a STM atomic transaction and by-passes all transactions hooks
+   * such as persistence etc.
+   * 
+   * Only for internal usage.
+   */
+  private[akka] def atomic0[T](body: => T): T = new TransactionTemplate[T]() {
+    def execute(mtx: MultiverseTransaction): T = body
+  }.execute()
 }
 
 /**
@@ -205,18 +195,19 @@ object Transaction extends TransactionManagement {
 @serializable class Transaction extends Logging {
   import Transaction._
 
-  log.trace("Creating %s", toString)
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: Option[MultiverseTransaction] = None
   private[this] val persistentStateMap = new HashMap[String, Committable]
   private[akka] val depth = new AtomicInteger(0)
 
+  log.trace("Creating %s", toString)
+
   // --- public methods ---------
 
   def commit = synchronized {
     log.trace("Committing transaction %s", toString)    
-    pureAtomic {
+    atomic0 {
       persistentStateMap.values.foreach(_.commit)
     }
     status = TransactionStatus.Completed
@@ -261,21 +252,21 @@ object Transaction extends TransactionManagement {
         "Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
   // For reinitialize transaction after sending it over the wire 
-  private[akka] def reinit = synchronized {
+/*  private[akka] def reinit = synchronized {
     import net.lag.logging.{Logger, Level}
     if (log eq null) {
       log = Logger.get(this.getClass.getName)
       log.setLevel(Level.ALL) // TODO: preserve logging level
     }
   }
-
+*/
   override def equals(that: Any): Boolean = synchronized {
     that != null &&
-        that.isInstanceOf[Transaction] &&
-        that.asInstanceOf[Transaction].id == this.id
+    that.isInstanceOf[Transaction] &&
+    that.asInstanceOf[Transaction].id == this.id
   }
 
-  override def hashCode(): Int = synchronized { id.toInt }
+  override def hashCode: Int = synchronized { id.toInt }
 
   override def toString = synchronized { "Transaction[" + id + ", " + status + "]" }
 }
