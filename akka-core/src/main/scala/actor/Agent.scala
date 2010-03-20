@@ -36,6 +36,9 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 * 
 * The code that is submitted to an agent doesn't need to pay attention to 
 * threading or synchronization, the agent will provide such guarantees by itself.
+*
+* If an Agent is used within an enclosing transaction, then it will participate
+* in that transaction. 
 * 
 * Example of usage:
 * <pre>
@@ -49,14 +52,18 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 *
 * agent.close
 * </pre>
-*
-* @author Vaclav Pech
-* Date: Oct 18, 2009
-*
-* Inital AKKA port by
-* @author Viktor Klang
-* Date: Jan 24 2010
 * 
+* NOTE: You can't call 'agent.get' or 'agent()' within an enclosing transaction since 
+* that will block the transaction indefinitely. But 'agent.update' or 'Agent(value)' 
+* is fine.
+* 
+* Original author:
+* @author Vaclav Pech
+*
+* Inital AKKA port by:
+* @author Viktor Klang
+* 
+* Modifications by: 
 * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
 */
 sealed class Agent[T] private (initialValue: T) extends Transactor {
