@@ -102,6 +102,23 @@ object Actor extends Logging {
   }
 
   /**
+   * Use to create an anonymous transactional event-driven actor.
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = transactor  {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
+  def transactor(body: PartialFunction[Any, Unit]): Actor = new Transactor() {
+    start
+    def receive: PartialFunction[Any, Unit] = body
+  }
+
+  /**
    * Use to create an anonymous event-driven actor with both an init block and a message loop block.
    * The actor is started when created.
    * Example:
@@ -202,7 +219,7 @@ object Actor extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait Actor extends TransactionManagement {
+trait Actor extends TransactionManagement with Logging {
   implicit protected val self: Option[Actor] = Some(this)
   implicit protected val transactionFamilyName: String = this.getClass.getName
 
@@ -341,7 +358,7 @@ trait Actor extends TransactionManagement {
    * Set to true if messages should have REQUIRES_NEW semantics, e.g. a new transaction should
    * start if there is no one running, else it joins the existing transaction.
    */
-  @volatile protected var isTransactionRequiresNew = false
+  @volatile protected var isTransactor = false
 
   /**
    * User overridable callback/setting.
@@ -649,7 +666,7 @@ trait Actor extends TransactionManagement {
   def makeTransactionRequired = synchronized {
     if (_isRunning) throw new IllegalArgumentException(
       "Can not make actor transaction required after it has been started")
-    else isTransactionRequiresNew = true
+    else isTransactor = true
   }
 
   /**
@@ -788,18 +805,13 @@ trait Actor extends TransactionManagement {
 
   private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
     val actor = actorClass.newInstance.asInstanceOf[T]
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
-      actor.dispatcher = dispatcher
-    }
+    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actor.dispatcher = dispatcher
     actor
   }
 
   protected[akka] def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = {
-    if (isTransactionSetInScope) {
-      log.trace("Adding transaction for %s with message [%s] to transaction set", toString, message)
-      getTransactionSetInScope.incParties
-    }
-
+    joinTransaction(message)
+    
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -815,14 +827,14 @@ trait Actor extends TransactionManagement {
 
       // set the source fields used to reply back to the original sender
       // (i.e. not the remote proxy actor)
-      if(sender.isDefined) {
+      if (sender.isDefined) {
         val s = sender.get
         requestBuilder.setSourceTarget(s.getClass.getName)
         requestBuilder.setSourceUuid(s.uuid)
 
-        val (host,port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME,Actor.PORT))
+        val (host, port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME,Actor.PORT))
         
-        log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
+        Actor.log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
 
         requestBuilder.setSourceHostname(host)
         requestBuilder.setSourcePort(port)
@@ -835,20 +847,15 @@ trait Actor extends TransactionManagement {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
       } 
-      else
-        invocation.send
+      else invocation.send
     }
-    clearTransactionSet
   }
-
+  
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any, 
       timeout: Long,
       senderFuture: Option[CompletableFuture]): CompletableFuture = {
-    if (isTransactionSetInScope) {
-      log.trace("Adding transaction for %s with message [%s] to transaction set", toString, message)    
-      getTransactionSetInScope.incParties
-    }
+    joinTransaction(message)
     
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
@@ -863,7 +870,6 @@ trait Actor extends TransactionManagement {
       val id = registerSupervisorAsRemoteActor
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
       val future = RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, senderFuture)
-      clearTransactionSet
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
@@ -874,9 +880,15 @@ trait Actor extends TransactionManagement {
         _mailbox.add(invocation)
         invocation.send
       } else invocation.send
-      clearTransactionSet
       future
     }
+  }
+
+  private def joinTransaction(message: Any) = if (isTransactionSetInScope) {
+    // FIXME test to run bench without this trace call
+    Actor.log.trace("Joining transaction set [%s];\n\tactor %s\n\twith message [%s]", 
+                    getTransactionSetInScope, toString, message)
+    getTransactionSetInScope.incParties
   }
 
   /**
@@ -921,8 +933,9 @@ trait Actor extends TransactionManagement {
       if (messageHandle.transactionSet.isDefined) messageHandle.transactionSet
       else {
         topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
-        if (isTransactionRequiresNew) {
-          log.trace("Creating a new transaction set (top-level transaction) \nfor actor %s \nwith message %s", toString, messageHandle)
+        if (isTransactor) {
+          Actor.log.trace("Creating a new transaction set (top-level transaction)\n\tfor actor %s\n\twith message %s", 
+                          toString, messageHandle)
           Some(createNewTransactionSet)
         } else None
       }
@@ -931,11 +944,6 @@ trait Actor extends TransactionManagement {
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     senderFuture = messageHandle.future
     sender = messageHandle.sender
-
-    def clearTx = {
-      clearTransactionSet
-      clearTransaction
-    }
 
     def proceed = {
       if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
@@ -946,7 +954,7 @@ trait Actor extends TransactionManagement {
     }
 
     try {
-      if (isTransactionRequiresNew) {
+      if (isTransactor) {
         atomic {
           proceed
         }
@@ -955,16 +963,21 @@ trait Actor extends TransactionManagement {
       case e: IllegalStateException => {}
       case e =>
         // abort transaction set
-        if (isTransactionSetInScope) try { getTransactionSetInScope.abort } catch { case e: IllegalStateException => {} }
+        if (isTransactionSetInScope) try { 
+          getTransactionSetInScope.abort 
+        } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
-        clearTx  // need to clear currentTransaction before call to supervisor
+        
+        clearTransaction
+        if (topLevelTransaction) clearTransactionSet
 
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
     } finally {
-      clearTx
+      clearTransaction
+      if (topLevelTransaction) clearTransactionSet
     }
   }
 

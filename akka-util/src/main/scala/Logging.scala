@@ -17,7 +17,7 @@ import java.net.UnknownHostException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Logging {
-  @transient @volatile var log = Logger.get(this.getClass.getName)
+  @transient @volatile lazy val log = Logger.get(this.getClass.getName)
 }
 
 /**

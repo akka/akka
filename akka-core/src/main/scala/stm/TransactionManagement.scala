@@ -6,8 +6,6 @@ package se.scalablesolutions.akka.stm
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import se.scalablesolutions.akka.util.Logging
-
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
@@ -40,8 +38,8 @@ object TransactionManagement extends TransactionManagement {
 
   private[akka] def getTransactionSet: CountDownCommitBarrier = {
     val option = transactionSet.get
-    if ((option eq null) || option.isEmpty) throw new IllegalStateException("No TransactionSet in scope")
-    option.get
+    if ((option eq null) || option.isEmpty) throw new IllegalStateException("No Transaction set in scope")
+    else option.get
   }
 
   private[akka] def getTransaction: Transaction = {
@@ -51,7 +49,7 @@ object TransactionManagement extends TransactionManagement {
   }
 }
 
-trait TransactionManagement extends Logging {
+trait TransactionManagement {
 
   private[akka] def createNewTransactionSet: CountDownCommitBarrier = {
     val txSet = new CountDownCommitBarrier(1, TransactionManagement.FAIR_TRANSACTIONS)
