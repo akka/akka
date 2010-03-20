@@ -67,27 +67,27 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
 
   private def createActiveObjectElement : Element = {
     val xml = <akka:active-object id="active-object1"
-    					target="foo.bar.MyPojo"
-    					timeout="1000"
+                                        target="foo.bar.MyPojo"
+                                        timeout="1000"
                         transactional="true"/>
     dom(xml).getDocumentElement
   }
 
   private def createSupervisorElement : Element = {
     val xml = <akka:supervision id="supervision1">
-		<akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
-		  <akka:trap-exits>
-		      <akka:trap-exit>java.io.IOException</akka:trap-exit>
-		      <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
-		  </akka:trap-exits>
-		</akka:restart-strategy>
-		<akka:active-objects>
-			  <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-			  <akka:active-object interface="foo.bar.IBar" target="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
-			  <akka:active-object target="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
-				  <akka:restart-callbacks pre="preRestart" post="postRestart"/>
-			  </akka:active-object>
-		  </akka:active-objects>
+                <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
+                  <akka:trap-exits>
+                      <akka:trap-exit>java.io.IOException</akka:trap-exit>
+                      <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
+                  </akka:trap-exits>
+                </akka:restart-strategy>
+                <akka:active-objects>
+                          <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                          <akka:active-object interface="foo.bar.IBar" target="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
+                          <akka:active-object target="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
+                                  <akka:restart-callbacks pre="preRestart" post="postRestart"/>
+                          </akka:active-object>
+                  </akka:active-objects>
     </akka:supervision>
     dom(xml).getDocumentElement
   }
@@ -95,26 +95,26 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
 
   private def createSupervisorMissingAttribute : Element = {
     val xml = <akka:supervision id="supervision1">
-		<akka:restart-strategy failover="AllForOne" retries="3">
-		  <akka:trap-exits>
-		      <akka:trap-exit>java.io.IOException</akka:trap-exit>
-		  </akka:trap-exits>
-		</akka:restart-strategy>
-		<akka:active-objects>
-			  <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-		  </akka:active-objects>
+                <akka:restart-strategy failover="AllForOne" retries="3">
+                  <akka:trap-exits>
+                      <akka:trap-exit>java.io.IOException</akka:trap-exit>
+                  </akka:trap-exits>
+                </akka:restart-strategy>
+                <akka:active-objects>
+                          <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                  </akka:active-objects>
     </akka:supervision>
     dom(xml).getDocumentElement
   }
 
   private def createSupervisorMissingElement : Element = {
     val xml = <akka:supervision id="supervision1">
-		<akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
-		</akka:restart-strategy>
-		<akka:active-objects>
-			  <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-			  <akka:active-object interface="foo.bar.IBar" target="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
-		  </akka:active-objects>
+                <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
+                </akka:restart-strategy>
+                <akka:active-objects>
+                          <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                          <akka:active-object interface="foo.bar.IBar" target="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
+                  </akka:active-objects>
     </akka:supervision>
     dom(xml).getDocumentElement
   }

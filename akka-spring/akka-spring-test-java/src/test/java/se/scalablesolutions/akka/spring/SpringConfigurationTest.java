@@ -38,47 +38,47 @@ public class SpringConfigurationTest {
     * can be used as a top level element.
     */
     @Test
-	public void testParse() throws Exception {
+        public void testParse() throws Exception {
         final Resource CONTEXT = new ClassPathResource("se/scalablesolutions/akka/spring/foo/test-config.xml");
-		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
-		reader.loadBeanDefinitions(CONTEXT);
-		assertTrue(beanFactory.containsBeanDefinition("simple-active-object"));
-		assertTrue(beanFactory.containsBeanDefinition("remote-active-object"));
-		assertTrue(beanFactory.containsBeanDefinition("supervision1"));
-	}
-	
-	@Test
-	public void testSimpleActiveObject() {
-		MyPojo myPojo = (MyPojo) context.getBean("simple-active-object");
+                DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+                XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+                reader.loadBeanDefinitions(CONTEXT);
+                assertTrue(beanFactory.containsBeanDefinition("simple-active-object"));
+                assertTrue(beanFactory.containsBeanDefinition("remote-active-object"));
+                assertTrue(beanFactory.containsBeanDefinition("supervision1"));
+        }
+        
+        @Test
+        public void testSimpleActiveObject() {
+                MyPojo myPojo = (MyPojo) context.getBean("simple-active-object");
         String msg = myPojo.getFoo();
         msg += myPojo.getBar();
         assertEquals("wrong invocation order", "foobar", msg);
-	}
+        }
 
     @Test(expected=FutureTimeoutException.class)
-	public void testSimpleActiveObject_Timeout() {
-		MyPojo myPojo = (MyPojo) context.getBean("simple-active-object");
+        public void testSimpleActiveObject_Timeout() {
+                MyPojo myPojo = (MyPojo) context.getBean("simple-active-object");
         myPojo.longRunning();
-	}
+        }
 
    @Test
-	public void testSimpleActiveObject_NoTimeout() {
-		MyPojo myPojo = (MyPojo) context.getBean("simple-active-object-long-timeout");
+        public void testSimpleActiveObject_NoTimeout() {
+                MyPojo myPojo = (MyPojo) context.getBean("simple-active-object-long-timeout");
         String msg = myPojo.longRunning();
         assertEquals("this took long", msg);
-	}
+        }
   
-	@Test
-	public void testTransactionalActiveObject() {
-		MyPojo myPojo = (MyPojo) context.getBean("transactional-active-object");
+        @Test
+        public void testTransactionalActiveObject() {
+                MyPojo myPojo = (MyPojo) context.getBean("transactional-active-object");
         String msg = myPojo.getFoo();
         msg += myPojo.getBar();
         assertEquals("wrong invocation order", "foobar", msg);
-	}
-	
-	@Test
-	public void testRemoteActiveObject() {
+        }
+        
+        @Test
+        public void testRemoteActiveObject() {
       new Thread(new Runnable() {
          public void run() {
          RemoteNode.start();
@@ -87,22 +87,22 @@ public class SpringConfigurationTest {
       try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
       Config.config();
 
-	  MyPojo myPojo = (MyPojo) context.getBean("remote-active-object");
+          MyPojo myPojo = (MyPojo) context.getBean("remote-active-object");
       assertEquals("foo", myPojo.getFoo());
-	}
-	
-	@Test
-	public void testSupervision() {
-		// get ActiveObjectConfigurator bean from spring context
-		ActiveObjectConfigurator myConfigurator = (ActiveObjectConfigurator) context.getBean("supervision1");
+        }
+        
+        @Test
+        public void testSupervision() {
+                // get ActiveObjectConfigurator bean from spring context
+                ActiveObjectConfigurator myConfigurator = (ActiveObjectConfigurator) context.getBean("supervision1");
         // get ActiveObjects
-		Foo foo = myConfigurator.getInstance(Foo.class);
-		assertNotNull(foo);
+                Foo foo = myConfigurator.getInstance(Foo.class);
+                assertNotNull(foo);
         IBar bar = myConfigurator.getInstance(IBar.class);
         assertNotNull(bar);
         MyPojo pojo = myConfigurator.getInstance(MyPojo.class);
         assertNotNull(pojo);
-	}
+        }
 
     @Test
     public void testTransactionalState() {
@@ -116,5 +116,5 @@ public class SpringConfigurationTest {
         assertEquals("some vector state", stateful.getVectorState());
         assertEquals("some ref state", stateful.getRefState());
     }
-	
+        
 }
