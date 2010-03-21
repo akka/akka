@@ -393,8 +393,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     descendents(info.projectPath / "deploy", "*.jar") +++
     descendents(path("lib") ##, "*.jar") +++
     descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
-    .filter(jar =>
-      !jar.toString.endsWith("scala-library-2.7.5.jar") && // remove redundant scala libs
+    .filter(jar => // remove redundant libs
+      !jar.toString.endsWith("commons-codec-1.2.jar") &&
+      !jar.toString.endsWith("commons-io-1.2.jar") &&
+      !jar.toString.endsWith("commons-logging-1.0.4.jar") &&
+      !jar.toString.endsWith("jackson-core-asl-1.1.1.jar") &&
+      !jar.toString.endsWith("jsr311-api-1.1.jar") &&
+      !jar.toString.endsWith("stax-api-1.0.1.jar") &&
+      !jar.toString.endsWith("scala-library-2.7.5.jar") &&
       !jar.toString.endsWith("scala-library-2.7.6.jar")) 
   }
 
