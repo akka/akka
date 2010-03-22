@@ -18,13 +18,10 @@ object RemoteProtocolBuilder {
   private var SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
 
 
-  def setClassLoader(classLoader: ClassLoader) = {
-    SERIALIZER_JAVA = new Serializer.Java
-    SERIALIZER_JAVA_JSON = new Serializer.JavaJSON
-    SERIALIZER_SCALA_JSON = new Serializer.ScalaJSON
-    SERIALIZER_JAVA.setClassLoader(classLoader)
-    SERIALIZER_JAVA_JSON.setClassLoader(classLoader)
-    SERIALIZER_SCALA_JSON.setClassLoader(classLoader)
+  def setClassLoader(cl: ClassLoader) = {
+    SERIALIZER_JAVA.classLoader = Some(cl)
+    SERIALIZER_JAVA_JSON.classLoader = Some(cl)
+    SERIALIZER_SCALA_JSON.classLoader = Some(cl)
   }
   
   def getMessage(request: RemoteRequest): Any = {

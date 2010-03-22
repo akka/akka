@@ -17,7 +17,7 @@ import java.util.concurrent._
 
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
-import se.scalablesolutions.akka.util.{Logging}
+import se.scalablesolutions.akka.util.Logging
 
 case object UnSchedule
 case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)

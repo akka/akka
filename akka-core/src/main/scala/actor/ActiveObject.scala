@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
-import se.scalablesolutions.akka.dispatch.{MessageDispatcher, FutureResult}
+import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
@@ -19,7 +19,7 @@ import java.net.InetSocketAddress
 import java.lang.reflect.{InvocationTargetException, Method}
 
 object Annotations {
-  import se.scalablesolutions.akka.annotation._
+  import se.scalablesolutions.akka.actor.annotation._
   val oneway =                 classOf[oneway]
   val transactionrequired =    classOf[transactionrequired]
   val prerestart =             classOf[prerestart]
@@ -209,22 +209,24 @@ object ActiveObject {
 }
 
 private[akka] object AspectInitRegistry {
-  private val inits = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
+  private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
 
   def initFor(target: AnyRef) = {
-    val init = inits.get(target)
-    inits.remove(target)
+    val init = initializations.get(target)
+    initializations.remove(target)
     init
   }  
 
-  def register(target: AnyRef, init: AspectInit) = inits.put(target, init)
+  def register(target: AnyRef, init: AspectInit) = initializations.put(target, init)
 }
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],
   val actor: Dispatcher,          
   val remoteAddress: Option[InetSocketAddress],
-  val timeout: Long)
+  val timeout: Long) {
+  def this(target: Class[_],actor: Dispatcher, timeout: Long) = this(target, actor, None, timeout)
+}
       
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
@@ -300,7 +302,7 @@ private[akka] sealed class ActiveObjectAspect {
     }
   }
 
-  private def getResultOrThrowException[T](future: FutureResult): Option[T] =
+  private def getResultOrThrowException[T](future: Future): Option[T] =
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
       throw cause
@@ -351,19 +353,25 @@ private[akka] sealed class ActiveObjectAspect {
   }
 }
 
+object Dispatcher {
+  val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
+  val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()  
+}
+
 /**
  * Generic Actor managing Invocation dispatch, transaction and error management.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Option[RestartCallbacks]) extends Actor {
-  private val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
-  private val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
+  import Dispatcher._
 
   private[actor] var target: Option[AnyRef] = None
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
   private var initTxState: Option[Method] = None
+
+  def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
     if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactionRequired

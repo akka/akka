@@ -2,16 +2,18 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.persistence.mongo
 
-import org.codehaus.aspectwerkz.proxy.Uuid
+import se.scalablesolutions.akka.stm._
+import se.scalablesolutions.akka.persistence.common._
+import se.scalablesolutions.akka.util.UUID
 
 object MongoStorage extends Storage {
   type ElementType = AnyRef
 
-  def newMap: PersistentMap[ElementType, ElementType] = newMap(Uuid.newUuid.toString)
-  def newVector: PersistentVector[ElementType] = newVector(Uuid.newUuid.toString)
-  def newRef: PersistentRef[ElementType] = newRef(Uuid.newUuid.toString)
+  def newMap: PersistentMap[ElementType, ElementType] = newMap(UUID.newUuid.toString)
+  def newVector: PersistentVector[ElementType] = newVector(UUID.newUuid.toString)
+  def newRef: PersistentRef[ElementType] = newRef(UUID.newUuid.toString)
 
   def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
   def getVector(id: String): PersistentVector[ElementType] = newVector(id)

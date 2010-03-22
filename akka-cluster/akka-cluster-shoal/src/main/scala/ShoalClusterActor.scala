@@ -1,29 +1,16 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.remote
+package se.scalablesolutions.akka.cluster.shoal
 
-import se.scalablesolutions.akka.Config.config
 import java.util.Properties
 
-import com.sun.enterprise.ee.cms.core.{CallBack,
-                                       GMSConstants,
-                                       GMSFactory,
-                                       GroupManagementService,
-                                       MessageSignal,
-                                       Signal,
-                                       GMSException,
-                                       SignalAcquireException,
-                                       SignalReleaseException,
-                                       JoinNotificationSignal,
-                                       FailureSuspectedSignal,
-                                       FailureNotificationSignal }
-import com.sun.enterprise.ee.cms.impl.client.{FailureNotificationActionFactoryImpl,
-                                       FailureSuspectedActionFactoryImpl,
-                                       JoinNotificationActionFactoryImpl,
-                                       MessageActionFactoryImpl,
-                                       PlannedShutdownActionFactoryImpl
-}
+import se.scalablesolutions.akka.config.Config.config
+import se.scalablesolutions.akka.remote.{ClusterActor, BasicClusterActor, RemoteServer}
+
+import com.sun.enterprise.ee.cms.core._
+import com.sun.enterprise.ee.cms.impl.client._
+
 /**
  * Clustering support via Shoal.
  */
@@ -67,9 +54,9 @@ class ShoalClusterActor extends BasicClusterActor {
    * Adds callbacks and boots up the cluster
    */
   protected def createGMS : GroupManagementService = {
-
-    val g = GMSFactory.startGMSModule(serverName,name, GroupManagementService.MemberType.CORE, properties()).asInstanceOf[GroupManagementService]
-
+    val g = GMSFactory
+      .startGMSModule(serverName,name, GroupManagementService.MemberType.CORE, properties())
+      .asInstanceOf[GroupManagementService]
     val callback = createCallback
     g.addActionFactory(new JoinNotificationActionFactoryImpl(callback))
     g.addActionFactory(new FailureSuspectedActionFactoryImpl(callback))
@@ -85,6 +72,8 @@ class ShoalClusterActor extends BasicClusterActor {
    */
   protected def createCallback : CallBack = {
     import scala.collection.JavaConversions._
+    import ClusterActor._
+
     val me = this
     new CallBack {
       def processNotification(signal : Signal) {
@@ -92,17 +81,17 @@ class ShoalClusterActor extends BasicClusterActor {
           signal.acquire()
           if(isActive) {
             signal match {
-              case  ms : MessageSignal => me send Message(ms.getMemberToken,ms.getMessage)
-              case jns : JoinNotificationSignal => me send View(Set[ADDR_T]() ++ jns.getCurrentCoreMembers - serverName)
-              case fss : FailureSuspectedSignal => me send Zombie(fss.getMemberToken)
-              case fns : FailureNotificationSignal => me send Zombie(fns.getMemberToken)
+              case  ms : MessageSignal => me send Message[ADDR_T](ms.getMemberToken,ms.getMessage)
+              case jns : JoinNotificationSignal => me send View[ADDR_T](Set[ADDR_T]() ++ jns.getCurrentCoreMembers.asScala - serverName)
+              case fss : FailureSuspectedSignal => me send Zombie[ADDR_T](fss.getMemberToken)
+              case fns : FailureNotificationSignal => me send Zombie[ADDR_T](fns.getMemberToken)
               case _ => log.debug("Unhandled signal: [%s]",signal)
             }
           }
           signal.release()
         } catch {
-            case e : SignalAcquireException => log.warning(e,"SignalAcquireException")
-            case e : SignalReleaseException => log.warning(e,"SignalReleaseException")
+          case e : SignalAcquireException => log.warning(e,"SignalAcquireException")
+          case e : SignalReleaseException => log.warning(e,"SignalReleaseException")
         }
       }
     }

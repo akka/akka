@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.state
+package se.scalablesolutions.akka.stm
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
 import se.scalablesolutions.akka.actor.Actor
-import se.scalablesolutions.akka.dispatch.CompletableFutureResult
+import se.scalablesolutions.akka.dispatch.CompletableFuture
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.
@@ -18,6 +18,12 @@ import se.scalablesolutions.akka.dispatch.CompletableFutureResult
 object DataFlow {
   case object Start
   case object Exit
+
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
+
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.dispatch.CompletableFuture
 
   def thread(body: => Unit) = {
     val thread = new IsolatedEventBasedThread(body).start
@@ -74,7 +80,7 @@ object DataFlow {
     private class Out[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
       timeout = TIME_OUT
       start
-      private var readerFuture: Option[CompletableFutureResult] = None
+      private var readerFuture: Option[CompletableFuture] = None
       def receive = {
         case Get =>
           val ref = dataFlow.value.get
