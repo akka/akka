@@ -1,6 +1,11 @@
-package se.scalablesolutions.akka.remote
+package se.scalablesolutions.akka.cluster.jgroups
 
 import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, ExtendedMembershipListener, Receiver}
+
+import se.scalablesolutions.akka.remote.ClusterActor._
+import se.scalablesolutions.akka.remote.BasicClusterActor
+
+import org.scala_tools.javautils.Imports._
 
 /**
  * Clustering support via JGroups.
@@ -44,7 +49,8 @@ class JGroupsClusterActor extends BasicClusterActor {
           log debug "UNSUPPORTED: JGroupsClusterActor::unblock" //TODO HotSwap back and flush the buffer
       })
     })
-    channel.map(_.connect(name))
+
+    channel.foreach(_.connect(name))
   }
 
   protected def toOneNode(dest : Address, msg: Array[Byte]): Unit =

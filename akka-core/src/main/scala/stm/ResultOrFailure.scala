@@ -2,9 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.util
-
-import se.scalablesolutions.akka.stm.Transaction
+package se.scalablesolutions.akka.stm
 
 /**
  * Reference that can hold either a typed value or an exception.
