@@ -191,11 +191,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaAMQPProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val rabbit = "com.rabbitmq" % "amqp-client" % "1.7.2"
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
 
   class AkkaRestProject(info: ProjectInfo) extends DefaultProject(info) {
+    val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
+    val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
     val jersey = "com.sun.jersey" % "jersey-core" % JERSEY_VERSION % "compile"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
@@ -227,6 +230,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSecurityProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val annotation = "javax.annotation" % "jsr250-api" % "1.0"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
@@ -313,6 +317,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // examples
   class AkkaFunTestProject(info: ProjectInfo) extends DefaultProject(info) {
+    val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
+    val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0"
     val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
@@ -328,6 +334,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val lift = "net.liftweb" % "lift-webkit" % "1.1-M6" % "compile"
     val lift_util = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
@@ -342,11 +349,12 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleRestScalaProject(info: ProjectInfo) extends DefaultProject(info) {
-    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
     val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE"
     val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile"
     val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
@@ -355,7 +363,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends DefaultProject(info) {
-    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
@@ -394,11 +402,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     descendents(path("lib") ##, "*.jar") +++
     descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
     .filter(jar => // remove redundant libs
-      !jar.toString.endsWith("commons-codec-1.2.jar") &&
-      !jar.toString.endsWith("commons-io-1.2.jar") &&
-      !jar.toString.endsWith("commons-logging-1.0.4.jar") &&
-      !jar.toString.endsWith("jackson-core-asl-1.1.1.jar") &&
-      !jar.toString.endsWith("jsr311-api-1.1.jar") &&
       !jar.toString.endsWith("stax-api-1.0.1.jar") &&
       !jar.toString.endsWith("scala-library-2.7.5.jar") &&
       !jar.toString.endsWith("scala-library-2.7.6.jar")) 
