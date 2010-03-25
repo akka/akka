@@ -256,7 +256,7 @@ private [akka] object RedisStorageBackend extends
     db.incr(new String(encode(name.getBytes))) match {
       case Some(i) => Some(i)
       case None => 
-        throw new Predef.IllegalArgumentException(name + " exception in incr")
+        throw new IllegalArgumentException(name + " exception in incr")
     }
   }
 
@@ -264,7 +264,7 @@ private [akka] object RedisStorageBackend extends
     db.incrBy(new String(encode(name.getBytes)), by) match {
       case Some(i) => Some(i)
       case None => 
-        throw new Predef.IllegalArgumentException(name + " exception in incrby")
+        throw new IllegalArgumentException(name + " exception in incrby")
     }
   }
 
@@ -272,7 +272,7 @@ private [akka] object RedisStorageBackend extends
     db.decr(new String(encode(name.getBytes))) match {
       case Some(i) => Some(i)
       case None => 
-        throw new Predef.IllegalArgumentException(name + " exception in decr")
+        throw new IllegalArgumentException(name + " exception in decr")
     }
   }
 
@@ -280,7 +280,7 @@ private [akka] object RedisStorageBackend extends
     db.decrBy(new String(encode(name.getBytes)), by) match {
       case Some(i) => Some(i)
       case None => 
-        throw new Predef.IllegalArgumentException(name + " exception in decrby")
+        throw new IllegalArgumentException(name + " exception in decrby")
     }
   }
 
@@ -384,7 +384,7 @@ private [akka] object RedisStorageBackend extends
     db.zrangeWithScore(
       new String(encode(name.getBytes)), start.toString, end.toString, RedisClient.ASC) match {
         case None => 
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
         case Some(l) =>
           l.map{ case (elem, score) => (elem.get.getBytes, score.get.toFloat) }
     }

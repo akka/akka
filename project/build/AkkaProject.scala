@@ -254,7 +254,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends DefaultProject(info) {
-    val redis = "com.redis" % "redisclient" % "1.2-SNAPSHOT" % "compile"
+    val redis = "com.redis" % "redisclient" % "1.1" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
@@ -281,8 +281,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common", 
       new AkkaPersistenceCommonProject(_), akka_core)
-    //lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
-    //  new AkkaRedisProject(_), akka_persistence_common)
+    /*lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
+      new AkkaRedisProject(_), akka_persistence_common)*/
     lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo", 
       new AkkaMongoProject(_), akka_persistence_common)
     lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra", 
