@@ -510,13 +510,18 @@ trait PersistentSortedSet[A]
     inStorage(elem) match {
       case Some(f) => f
       case None =>
-        throw new Predef.NoSuchElementException(elem + " not present")
+        throw new NoSuchElementException(elem + " not present")
     }
   }
 
   implicit def order(x: (A, Float)) = new Ordered[(A, Float)] {
     def compare(that: (A, Float)) = x._2 compare that._2
   }
+  
+  implicit def ordering = new scala.math.Ordering[(A,Float)] {
+    def compare(x: (A, Float),y : (A,Float)) = x._2 compare y._2   
+  }
+
 
   def zrange(start: Int, end: Int): List[(A, Float)] = {
     // need to operate on the whole range

@@ -7,8 +7,6 @@ package se.scalablesolutions.akka.camel
 import org.apache.camel.{Exchange, Message => CamelMessage}
 import org.apache.camel.util.ExchangeHelper
 
-import scala.collection.jcl.{Map => MapWrapper}
-
 /**
  * An immutable representation of a Camel message. Actor classes that mix in
  * se.scalablesolutions.akka.camel.Producer or
@@ -224,8 +222,10 @@ class CamelMessageAdapter(val cm: CamelMessage) {
    */
   def toMessage(headers: Map[String, Any]): Message = Message(cm.getBody, cmHeaders(headers, cm))
 
+  import scala.collection.JavaConversions._
+
   private def cmHeaders(headers: Map[String, Any], cm: CamelMessage) =
-    headers ++ MapWrapper[String, AnyRef](cm.getHeaders).elements
+    headers ++ cm.getHeaders
 }
 
 /**

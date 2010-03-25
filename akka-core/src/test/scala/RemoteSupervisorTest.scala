@@ -79,7 +79,7 @@ object BinaryString{
 class RemoteSupervisorTest extends JUnitSuite {
   import Actor.Sender.Self
 
-  akka.config.Config.config
+  se.scalablesolutions.akka.config.Config.config
 
   new Thread(new Runnable() {
     def run = {

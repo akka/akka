@@ -60,7 +60,7 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
   import ServerInitiatedRemoteActorTest._
 
   import Actor.Sender.Self
-  akka.config.Config.config
+  se.scalablesolutions.akka.config.Config.config
 
   private val unit = TimeUnit.MILLISECONDS
 
