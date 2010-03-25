@@ -23,11 +23,6 @@ trait CommonsCodecBase64 {
   def decode(bytes: Array[Byte]): Array[Byte] = decodeBase64(bytes)
 }
 
-trait NoOpEncoder {
-  def encode(bytes: Array[Byte]): Array[Byte] = bytes
-  def decode(bytes: Array[Byte]): Array[Byte] = bytes
-}
-
 object Base64Encoder extends Encoder with CommonsCodecBase64
 import Base64Encoder._
 
@@ -114,7 +109,7 @@ private [akka] object RedisStorageBackend extends
   def removeMapStorageFor(name: String): Unit = withErrorHandling {
     db.keys("%s:*".format(encode(name.getBytes))) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(keys) =>
         keys.foreach(db.delete(_))
     }
@@ -127,7 +122,7 @@ private [akka] object RedisStorageBackend extends
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = withErrorHandling {
     db.get(makeRedisKey(name, key)) match {
       case None =>
-        throw new java.util.NoSuchElementException(new String(key) + " not present")
+        throw new NoSuchElementException(new String(key) + " not present")
       case Some(s) => Some(s.getBytes)
     }
   }
@@ -143,7 +138,7 @@ private [akka] object RedisStorageBackend extends
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = withErrorHandling {
     db.keys("%s:*".format(new String(encode(name.getBytes)))) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(keys) =>
         keys.map(key => (makeKeyFromRedisKey(key)._2, db.get(key).get.getBytes)).toList
     }
@@ -211,7 +206,7 @@ private [akka] object RedisStorageBackend extends
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = withErrorHandling {
     db.lindex(new String(encode(name.getBytes)), index) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " does not have element at " + index)
+        throw new NoSuchElementException(name + " does not have element at " + index)
       case Some(e) => e.getBytes
     }
   }
@@ -231,7 +226,7 @@ private [akka] object RedisStorageBackend extends
       else count
     db.lrange(new String(encode(name.getBytes)), s, s + cnt - 1) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " does not have elements in the range specified")
+        throw new NoSuchElementException(name + " does not have elements in the range specified")
       case Some(l) =>
         l map (_.get.getBytes)
     }
@@ -240,7 +235,7 @@ private [akka] object RedisStorageBackend extends
   def getVectorStorageSizeFor(name: String): Int = {
     db.llen(new String(encode(name.getBytes))) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(l) => l
     }
   }
@@ -252,7 +247,7 @@ private [akka] object RedisStorageBackend extends
   def getRefStorageFor(name: String): Option[Array[Byte]] = withErrorHandling {
     db.get(new String(encode(name.getBytes))) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(s) => Some(s.getBytes)
     }
   }
@@ -299,7 +294,7 @@ private [akka] object RedisStorageBackend extends
   def dequeue(name: String): Option[Array[Byte]] = withErrorHandling {
     db.lpop(new String(encode(name.getBytes))) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(s) =>
         Some(s.getBytes)
     }
@@ -309,7 +304,7 @@ private [akka] object RedisStorageBackend extends
   def size(name: String): Int = withErrorHandling {
     db.llen(new String(encode(name.getBytes))) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(l) => l
     }
   }
@@ -321,14 +316,14 @@ private [akka] object RedisStorageBackend extends
       case 1 =>
         db.lindex(new String(encode(name.getBytes)), start) match {
           case None =>
-            throw new Predef.NoSuchElementException("No element at " + start)
+            throw new NoSuchElementException("No element at " + start)
           case Some(s) =>
             List(s.getBytes)
         }
       case n =>
         db.lrange(new String(encode(name.getBytes)), start, start + count - 1) match {
           case None =>
-            throw new Predef.NoSuchElementException(
+            throw new NoSuchElementException(
               "No element found between " + start + " and " + (start + count - 1))
           case Some(es) =>
             es.map(_.get.getBytes)
@@ -364,7 +359,7 @@ private [akka] object RedisStorageBackend extends
   def zcard(name: String): Int = withErrorHandling {
     db.zcard(new String(encode(name.getBytes))) match {
       case None =>
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(l) => l
     }
   }
@@ -379,7 +374,7 @@ private [akka] object RedisStorageBackend extends
   def zrange(name: String, start: Int, end: Int): List[Array[Byte]] = withErrorHandling {
     db.zrange(new String(encode(name.getBytes)), start.toString, end.toString, RedisClient.ASC, false) match {
       case None => 
-        throw new java.util.NoSuchElementException(name + " not present")
+        throw new NoSuchElementException(name + " not present")
       case Some(s) =>
         s.map(_.get.getBytes)
     }
