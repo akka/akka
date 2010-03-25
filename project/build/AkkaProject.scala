@@ -170,7 +170,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.Beta1" % "0.6.6" % "compile"
     val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.8.0.Beta1" % "0.6.6" % "compile"
     val sjson = "sjson.json" % "sjson" % "0.5-SNAPSHOT-2.8.Beta1" % "compile"
-//    val sbinary = "sbinary" % "sbinary" % "0.3" % "compile"
+    val sbinary = "sbinary" % "sbinary" % "2.8.0.Beta1-2.8.0.Beta1-0.3.1-SNAPSHOT" % "compile"
     val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
     val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val voldemort = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
@@ -254,7 +254,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends DefaultProject(info) {
-    val redis = "com.redis" % "redisclient" % "1.2-SNAPSHOT" % "compile"
+    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.2-SNAPSHOT" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
@@ -281,8 +281,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common", 
       new AkkaPersistenceCommonProject(_), akka_core)
-    /*lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
-      new AkkaRedisProject(_), akka_persistence_common)*/
+    lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
+      new AkkaRedisProject(_), akka_persistence_common)
     lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo", 
       new AkkaMongoProject(_), akka_persistence_common)
     lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra", 
@@ -374,7 +374,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
- /*   lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat", 
+    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat", 
       new AkkaSampleChatProject(_), akka_kernel)
     lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift", 
       new AkkaSampleLiftProject(_), akka_kernel)
@@ -385,7 +385,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel", 
       new AkkaSampleCamelProject(_), akka_kernel)
     lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", 
-      new AkkaSampleSecurityProject(_), akka_kernel) */
+      new AkkaSampleSecurityProject(_), akka_kernel) 
   }
 
   // ------------------------------------------------------------
