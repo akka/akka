@@ -1,19 +1,17 @@
 package se.scalablesolutions.akka.cluster.jgroups
 
 import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, ExtendedMembershipListener, Receiver}
+import org.jgroups.util.Util
 
-import se.scalablesolutions.akka.remote.ClusterActor._
 import se.scalablesolutions.akka.remote.BasicClusterActor
-
-import org.scala_tools.javautils.Imports._
 
 /**
  * Clustering support via JGroups.
  * @Author Viktor Klang
  */
 class JGroupsClusterActor extends BasicClusterActor {
-  import ClusterActor._
   import scala.collection.JavaConversions._
+  import se.scalablesolutions.akka.remote.ClusterActor._
 
   type ADDR_T = Address
 
@@ -63,7 +61,7 @@ class JGroupsClusterActor extends BasicClusterActor {
     super.shutdown
     log debug ("Shutting down %s", toString)
     isActive = false
-    channel.foreach(_.shutdown)
+    channel.foreach(Util shutdown _)
     channel = None
   }
 }

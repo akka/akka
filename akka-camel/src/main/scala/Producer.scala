@@ -66,7 +66,7 @@ trait Producer { self: Actor =>
    * @param msg: the message to produce. The message is converted to its canonical
    *             representation via Message.canonicalize.
    */
-  protected def produceOneway(msg: Any): Unit =
+  protected def produceOnewaySync(msg: Any): Unit =
     template.send(endpointUri, createInOnlyExchange.fromRequestMessage(Message.canonicalize(msg)))
 
   /**
@@ -90,7 +90,7 @@ trait Producer { self: Actor =>
    *             representation via Message.canonicalize.
    * @return either a response Message or a Failure object.
    */
-  protected def produce(msg: Any): Any = {
+  protected def produceSync(msg: Any): Any = {
     val cmsg = Message.canonicalize(msg)
     val requestProcessor = new Processor() {
       def process(exchange: Exchange) = exchange.fromRequestMessage(cmsg)
@@ -126,9 +126,9 @@ trait Producer { self: Actor =>
    */
   protected def produce: PartialFunction[Any, Unit] = {
     case msg => {
-      if      ( oneway && !async)    produceOneway(msg)
+      if      ( oneway && !async)    produceOnewaySync(msg)
       else if ( oneway &&  async)    produceOnewayAsync(msg)
-      else if (!oneway && !async)    reply(produce(msg))
+      else if (!oneway && !async)    reply(produceSync(msg))
       else  /*(!oneway &&  async)*/  produceAsync(msg)
     }
   }

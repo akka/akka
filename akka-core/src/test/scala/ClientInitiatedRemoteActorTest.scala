@@ -49,7 +49,7 @@ class RemoteActorSpecActorAsyncSender extends Actor {
 class ClientInitiatedRemoteActorTest extends JUnitSuite {
   import Actor.Sender.Self
 
-  akka.config.Config.config
+    se.scalablesolutions.akka.config.Config.config
 
   val HOSTNAME = "localhost"
   val PORT1 = 9990

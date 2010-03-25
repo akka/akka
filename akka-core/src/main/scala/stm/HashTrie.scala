@@ -180,9 +180,9 @@ private[stm] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V)]) ext
     }
   }
   
-  def iterator = bucket.elements
+  def iterator = bucket.iterator
   
-  def elements = bucket.elements
+  def elements = bucket.iterator
   
   override def toString = "CollisionNode(" + bucket.toString + ")"
 }

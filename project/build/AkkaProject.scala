@@ -60,20 +60,21 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
 
-  def distName = "%s_%s-%s.zip".format(name, defScalaVersion.value, version)
+  def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
   
   // ------------------------------------------------------------
   // repositories
   val embeddedrepo = "embedded repo" at new File(akkaHome, "embedded-repo").toURI.toString
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
-  val configgy = "Configgy" at "http://www.lag.net/repo"
+ // val configgy = "Configgy" at "http://www.lag.net/repo"
   val codehaus = "Codehaus" at "http://repository.codehaus.org"
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val jboss = "jBoss" at "http://repository.jboss.org/maven2"
   val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val google = "google" at "http://google-maven-repository.googlecode.com/svn/repository"
   val m2 = "m2" at "http://download.java.net/maven/2"
+  val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
 
   // ------------------------------------------------------------
   // project defintions
@@ -98,6 +99,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // examples
   lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
+  
+  override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
   // ------------------------------------------------------------
   // create executable jar
@@ -110,25 +113,25 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // create a manifest with all akka jars and dependency jars on classpath
   override def manifestClassPath = Some(allArtifacts.getFiles
     .filter(_.getName.endsWith(".jar"))
-    .map("lib_managed/scala_%s/compile/".format(defScalaVersion.value) + _.getName)
+    .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") + 
-    " dist/akka-util_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-util-java_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-core_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-cluster-shoal_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-cluster-jgroups_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-rest_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-comet_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-camel_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-security_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-amqp_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-patterns_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-persistence-common_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-persistence-redis_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-persistence-mongo_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-persistence-cassandra_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-kernel_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-spring_%s-%s.jar".format(defScalaVersion.value, version)
+    " dist/akka-util_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-util-java_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-cluster-shoal_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-cluster-jgroups_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-rest_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-comet_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-security_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-patterns_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-common_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version)
     ) 
 
   // ------------------------------------------------------------
@@ -164,9 +167,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaCoreProject(info: ProjectInfo) extends DefaultProject(info) {
     val netty = "org.jboss.netty" % "netty" % "3.2.0.BETA1" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
-    val dispatch_json = "net.databinder" % "dispatch-json_2.7.7" % "0.6.4" % "compile"
-    val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.7.7" % "0.6.4" % "compile"
-    val sjson = "sjson.json" % "sjson" % "0.4" % "compile"
+    val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.Beta1" % "0.6.6" % "compile"
+    val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.8.0.Beta1" % "0.6.6" % "compile"
+    val sjson = "sjson.json" % "sjson" % "0.5-SNAPSHOT-2.8.Beta1" % "compile"
 //    val sbinary = "sbinary" % "sbinary" % "0.3" % "compile"
     val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
     val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
@@ -235,6 +238,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val annotation = "javax.annotation" % "jsr250-api" % "1.0"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
     val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
@@ -277,8 +281,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common", 
       new AkkaPersistenceCommonProject(_), akka_core)
-    lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
-      new AkkaRedisProject(_), akka_persistence_common)
+    //lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
+    //  new AkkaRedisProject(_), akka_persistence_common)
     lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo", 
       new AkkaMongoProject(_), akka_persistence_common)
     lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra", 
@@ -370,7 +374,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat", 
+ /*   lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat", 
       new AkkaSampleChatProject(_), akka_kernel)
     lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift", 
       new AkkaSampleLiftProject(_), akka_kernel)
@@ -381,7 +385,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel", 
       new AkkaSampleCamelProject(_), akka_kernel)
     lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", 
-      new AkkaSampleSecurityProject(_), akka_kernel)
+      new AkkaSampleSecurityProject(_), akka_kernel) */
   }
 
   // ------------------------------------------------------------
@@ -413,8 +417,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val moduleName = projectPath.substring(
       projectPath.lastIndexOf(System.getProperty("file.separator")) + 1, projectPath.length)
     // FIXME need to find out a way to grab these paths from the sbt system 
-    val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(defScalaVersion.value, version)
-    val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(defScalaVersion.value) + JAR_FILE_NAME
+    val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(buildScalaVersion, version)
+    val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + JAR_FILE_NAME
 
     val from = Path.fromFile(new java.io.File(JAR_FILE_PATH))
     val to = Path.fromFile(new java.io.File(toDir + "/" + JAR_FILE_NAME))

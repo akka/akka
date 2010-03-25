@@ -19,7 +19,7 @@ import se.scalablesolutions.akka.util.{Bootable, Logging}
 trait BootableCometActorService extends Bootable with Logging {
   self : BootableActorLoaderService =>
   
-  import config.Config._
+  import se.scalablesolutions.akka.config.Config._
   
   val REST_HOSTNAME = config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
