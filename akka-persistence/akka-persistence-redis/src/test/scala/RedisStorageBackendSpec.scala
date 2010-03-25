@@ -222,10 +222,9 @@ class RedisStorageBackendSpec extends
 }
 
 case class Name(id: Int, name: String, address: String) 
-
-/**
-case class Name(id: Int, name: String, address: String) 
   extends Serializable.SBinary[Name] {
+  import sbinary._
+  import sbinary.Operations._
   import sbinary.DefaultProtocol._
 
   def this() = this(0, null, null)
@@ -246,4 +245,3 @@ case class Name(id: Int, name: String, address: String)
 
   def toBytes: Array[Byte] = toByteArray(this)
 }
-**/
