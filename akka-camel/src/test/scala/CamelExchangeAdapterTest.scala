@@ -26,9 +26,9 @@ class CamelExchangeAdapterTest extends JUnitSuite {
   }
 
   @Test def shouldSetExceptionFromFailureMessage = {
-    val e1 = sampleInOnly.fromFailureMessage(Failure(new Exception("test1"), Map.empty))
+    val e1 = sampleInOnly.fromFailureMessage(Failure(new Exception("test1")))
     assert(e1.getException.getMessage === "test1")
-    val e2 = sampleInOut.fromFailureMessage(Failure(new Exception("test2"), Map.empty))
+    val e2 = sampleInOut.fromFailureMessage(Failure(new Exception("test2")))
     assert(e2.getException.getMessage === "test2")
   }
 

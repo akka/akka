@@ -135,7 +135,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
   private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
     case Nil          => None
     case actor :: Nil => Some(actor)
-    case actors       => Some(actors.first)
+    case actors       => Some(actors.head)
   }
 
   private def targetByUuid(uuid: String) = ActorRegistry.actorFor(uuid)
