@@ -14,12 +14,7 @@ import org.apache.camel.util.ExchangeHelper
  *
  * @author Martin Krasser
  */
-case class Message(val body: Any, val headers: Map[String, Any]) {
-  /**
-   * Creates a message with a body and an empty header map.
-   */
-  def this(body: Any) = this(body, Map.empty)
-
+case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
   /**
    * Returns the body of the message converted to the type given by the <code>clazz</code>
    * argument. Conversion is done using Camel's type converter. The type converter is obtained
@@ -56,23 +51,23 @@ case class Message(val body: Any, val headers: Map[String, Any]) {
   /**
    * Creates a new Message with new <code>headers</code>.
    */
-  def setHeaders(headers: Map[String, Any]) = new Message(this.body, headers)
+  def setHeaders(headers: Map[String, Any]) = copy(this.body, headers)
 
   /**
    * Creates a new Message with the <code>headers</code> argument added to the existing headers.
    */
-  def addHeaders(headers: Map[String, Any]) = new Message(this.body, this.headers ++ headers)
+  def addHeaders(headers: Map[String, Any]) = copy(this.body, this.headers ++ headers)
 
   /**
    * Creates a new Message with the <code>header</code> argument added to the existing headers.
    */
-  def addHeader(header: (String, Any)) = new Message(this.body, this.headers + header)
+  def addHeader(header: (String, Any)) = copy(this.body, this.headers + header)
 
   /**
    * Creates a new Message where the header with name <code>headerName</code> is removed from
    * the existing headers.
    */
-  def removeHeader(headerName: String) = new Message(this.body, this.headers - headerName)
+  def removeHeader(headerName: String) = copy(this.body, this.headers - headerName)
 }
 
 /**
@@ -113,7 +108,7 @@ object Message {
  *
  * @author Martin Krasser
  */
-case class Failure(val cause: Exception, val headers: Map[String, Any])
+case class Failure(val cause: Exception, val headers: Map[String, Any] = Map.empty)
 
 /**
  * Adapter for converting an org.apache.camel.Exchange to and from Message and Failure objects.
