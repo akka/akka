@@ -4,9 +4,7 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CopyOnWriteArrayList
-import scala.collection.jcl._
 import se.scalablesolutions.akka.actor.Actor
 
 /**
@@ -37,8 +35,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   private val pooledActors = new CopyOnWriteArrayList[Actor]
 
-  // TODO: volatile? think about multiple threads modifying this (and creating the indexed iterator) at the same time
-  private var lastIndex = 0
+  /** The index in the pooled actors list which was last used to steal work */
+  @volatile private var lastIndex = 0
 
   // TODO: is there a naming convention for this name?
   val name: String = "event-driven-work-stealing:executor:dispatcher:" + _name
@@ -103,16 +101,32 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     if (lastIndexCopy > pooledActors.size)
       lastIndexCopy = 0
 
-    for (i <- 0 to pooledActorsCopy.length) {
-      val actor = pooledActorsCopy((i + lastIndexCopy) % pooledActorsCopy.length)
+    doFindThief(receiver, pooledActorsCopy, lastIndexCopy) match {
+      case (thief: Option[Actor], index: Int) => {
+        lastIndex = index
+        return thief
+      }
+    }
+  }
+
+  /**
+   * Find a thief to process the receivers messages from the given list of actors.
+   *
+   * @param receiver original receiver of the message
+   * @param actors list of actors to find a thief in
+   * @param startIndex first index to start looking in the list (i.e. for round robin)
+   * @return the thief (or None) and the new index to start searching next time
+   */
+  private def doFindThief(receiver: Actor, actors: Array[Actor], startIndex: Int): (Option[Actor], Int) = {
+    for (i <- 0 to actors.length) {
+      val actor = actors((i + startIndex) % actors.length)
       if (actor != receiver) { // skip ourselves
         if (actor._mailbox.isEmpty) { // only pick actors that will most likely be able to process the messages
-          lastIndex = i
-          return Some(actor)
+          return (Some(actor), i)
         }
       }
     }
-    return None
+    return (None, 0)
   }
 
   /**
