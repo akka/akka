@@ -108,7 +108,7 @@ object Actor extends Logging {
    * <pre>
    * import Actor._
    *
-   * val a = transactor  {
+   * val a = transactor {
    *   case msg => ... // handle message
    * }
    * </pre>
@@ -123,7 +123,7 @@ object Actor extends Logging {
    * The actor is started when created.
    * Example:
    * <pre>
-   * val a = Actor.init  {
+   * val a = Actor.init {
    *   ... // init stuff
    * } receive  {
    *   case msg => ... // handle message
@@ -143,22 +143,21 @@ object Actor extends Logging {
   }
 
   /**
-   * Use to create an anonymous event-driven actor with a body but no message loop block.
+   * Use to spawn out a block of code in an event-driven actor. Will shut actor down when 
+   * the block has been executed.
    * <p/>
-   * This actor can <b>not</b> respond to any messages but can be used as a simple way to
-   * spawn a lightweight thread to process some task.
-   * <p/>
-   * The actor is started when created.
+   * NOTE: If used from within an Actor then has to be qualified with 'Actor.spawn' since 
+   * there is a method 'spawn[ActorType]' in the Actor trait already.
    * Example:
    * <pre>
    * import Actor._
    *
-   * spawn  {
+   * spawn {
    *   ... // do stuff
    * }
    * </pre>
    */
-  def spawn(body: => Unit): Actor = {
+  def spawn(body: => Unit): Unit = {
     case object Spawn
     new Actor() {
       start
@@ -194,7 +193,7 @@ object Actor extends Logging {
    * <pre>
    * import Actor._
    *
-   * val a = actor("localhost", 9999)  {
+   * val a = actor("localhost", 9999) {
    *   case msg => ... // handle message
    * }
    * </pre>
@@ -368,7 +367,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * Example code:
    * <pre>
-   *   def receive =  {
+   *   def receive = {
    *     case Ping =>
    *       println("got a ping")
    *       reply("pong")
@@ -599,7 +598,8 @@ trait Actor extends TransactionManagement with Logging {
               "\n\t\t2. Send a message from an instance that is *not* an actor" +
               "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
               "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-              "\n\tthat will be bound by the argument passed to 'reply'. Alternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
+              "\n\tthat will be bound by the argument passed to 'reply'."
+              "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
           case Some(future) =>
             future.completeWithResult(message)
         }
