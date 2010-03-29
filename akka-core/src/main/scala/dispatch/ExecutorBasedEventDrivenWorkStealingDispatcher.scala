@@ -97,10 +97,17 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   private def findThief(receiver: Actor): Option[Actor] = {
-    for ((actor, idx) <- new IndexedIterator[Actor](List.fromArray(pooledActors.toArray(new Array[Actor](pooledActors.size))), lastIndex).zipWithIndex) {
+    // copy to prevent concurrent modifications having any impact (TODO: what if we steal an actor which isn't registered any longer)
+    val pooledActorsCopy = pooledActors.toArray(new Array[Actor](pooledActors.size))
+    var lastIndexCopy = lastIndex
+    if (lastIndexCopy > pooledActors.size)
+      lastIndexCopy = 0
+
+    for (i <- 0 to pooledActorsCopy.length) {
+      val actor = pooledActorsCopy((i + lastIndexCopy) % pooledActorsCopy.length)
       if (actor != receiver) { // skip ourselves
         if (actor._mailbox.isEmpty) { // only pick actors that will most likely be able to process the messages
-          lastIndex = idx
+          lastIndex = i
           return Some(actor)
         }
       }
@@ -191,18 +198,4 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
       }
     }
   }
-}
-
-/**
- * An iterator which runs through a list from the given position until the end, and then from the start until the given
- * position.
- */
-class IndexedIterator[T](items: List[T], start: Int) extends Iterator[T] {
-  private[this] val reorderedListIterator: Iterator[T] = {
-    (items.slice(start, items.size) ::: items.slice(0, start)).elements
-  }
-
-  def hasNext = reorderedListIterator.hasNext
-
-  def next = reorderedListIterator.next
 }
