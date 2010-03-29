@@ -98,7 +98,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     // copy to prevent concurrent modifications having any impact (TODO: what if we steal an actor which isn't registered any longer)
     val pooledActorsCopy = pooledActors.toArray(new Array[Actor](pooledActors.size))
     var lastIndexCopy = lastIndex
-    if (lastIndexCopy > pooledActors.size)
+    if (lastIndexCopy > pooledActorsCopy.size)
       lastIndexCopy = 0
 
     doFindThief(receiver, pooledActorsCopy, lastIndexCopy) match {
