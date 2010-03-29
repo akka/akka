@@ -95,12 +95,14 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   private def findThief(receiver: Actor): Option[Actor] = {
-    // copy to prevent concurrent modifications having any impact (TODO: what if we steal an actor which isn't registered any longer)
+    // copy to prevent concurrent modifications having any impact
     val pooledActorsCopy = pooledActors.toArray(new Array[Actor](pooledActors.size))
     var lastIndexCopy = lastIndex
     if (lastIndexCopy > pooledActorsCopy.size)
       lastIndexCopy = 0
 
+    // we risk to pick a thief which is unregistered from the dispatcher in the meantime, but that typically means
+    // the dispatcher is being shut down...
     doFindThief(receiver, pooledActorsCopy, lastIndexCopy) match {
       case (thief: Option[Actor], index: Int) => {
         lastIndex = index
