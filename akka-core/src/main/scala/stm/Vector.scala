@@ -44,7 +44,7 @@ import Vector._
  */
 @serializable
 class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail: Array[AnyRef]) 
-  extends RandomAccessSeq[T] with PersistentDataStructure { outer =>
+  extends IndexedSeq[T] with PersistentDataStructure { outer =>
   private val tailOff = length - tail.length
   
   /*

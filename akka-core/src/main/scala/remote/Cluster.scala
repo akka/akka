@@ -166,7 +166,7 @@ abstract class BasicClusterActor extends ClusterActor {
 
     case DeregisterLocalNode(s) => {
       log debug ("DeregisterLocalNode: %s", s)
-      local = Node(local.endpoints - s)
+      local = Node(local.endpoints.filterNot(_ == s))
       broadcast(Papers(local.endpoints))
     }
   }
@@ -201,12 +201,12 @@ abstract class BasicClusterActor extends ClusterActor {
    * Applies the given PartialFunction to all known RemoteAddresses
    */
   def lookup[T](handleRemoteAddress: PartialFunction[RemoteAddress, T]): Option[T] =
-    remotes.values.toList.flatMap(_.endpoints).find(handleRemoteAddress isDefinedAt _).map(handleRemoteAddress)
+    remotes.valuesIterator.toList.flatMap(_.endpoints).find(handleRemoteAddress isDefinedAt _).map(handleRemoteAddress)
 
   /**
    * Applies the given function to all remote addresses known
    */
-  def foreach(f: (RemoteAddress) => Unit): Unit = remotes.values.toList.flatMap(_.endpoints).foreach(f)
+  def foreach(f: (RemoteAddress) => Unit): Unit = remotes.valuesIterator.toList.flatMap(_.endpoints).foreach(f)
 
   /**
    * Registers a local endpoint

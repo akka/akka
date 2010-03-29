@@ -244,7 +244,7 @@ class RemoteServerPipelineFactory(
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@ChannelPipelineCoverage(value = "all")
+@ChannelHandler.Sharable
 class RemoteServerHandler(
     val name: String,
     val openChannels: ChannelGroup,

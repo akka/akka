@@ -208,7 +208,7 @@ object Transaction extends TransactionManagement with Logging {
   def commit = synchronized {
     log.trace("Committing transaction %s", toString)    
     atomic0 {
-      persistentStateMap.values.foreach(_.commit)
+      persistentStateMap.valuesIterator.foreach(_.commit)
     }
     status = TransactionStatus.Completed
   }

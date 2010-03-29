@@ -127,7 +127,7 @@ object RemoteClient extends Logging {
     if (remoteClients.contains(hash)) {
       val client = remoteClients(hash)
       client.shutdown
-      remoteClients - hash
+      remoteClients -= hash
     }
   }
 
@@ -140,13 +140,13 @@ object RemoteClient extends Logging {
   }
 
   private[akka] def register(hostname: String, port: Int, uuid: String) = synchronized {
-    actorsFor(RemoteServer.Address(hostname, port)) + uuid
+    actorsFor(RemoteServer.Address(hostname, port)) += uuid
   }
 
   // TODO: add RemoteClient.unregister for ActiveObject, but first need a @shutdown callback 
   private[akka] def unregister(hostname: String, port: Int, uuid: String) = synchronized {
     val set = actorsFor(RemoteServer.Address(hostname, port))
-    set - uuid
+    set -= uuid
     if (set.isEmpty) shutdownClientFor(new InetSocketAddress(hostname, port))
   }
 
@@ -267,7 +267,7 @@ class RemoteClientPipelineFactory(name: String,
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@ChannelPipelineCoverage(value = "all")
+@ChannelHandler.Sharable
 class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFuture],
                           val supervisors: ConcurrentMap[String, Actor],
