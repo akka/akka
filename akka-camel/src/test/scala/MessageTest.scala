@@ -4,24 +4,20 @@ import java.io.InputStream
 
 import org.apache.camel.NoTypeConversionAvailableException
 import org.junit.Assert._
-import org.scalatest.junit.JUnitSuite
-
 import org.junit.Test
 
-class MessageTest extends JUnitSuite {
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.junit.JUnitSuite
 
-  //
-  // TODO: extend/rewrite unit tests
-  // These tests currently only ensure proper functioning of basic features.
-  //
+
+class MessageTest extends JUnitSuite with BeforeAndAfterAll {
+  override protected def beforeAll = CamelContextManager.init
 
   @Test def shouldConvertDoubleBodyToString = {
-    CamelContextManager.init
     assertEquals("1.4", Message(1.4, null).bodyAs(classOf[String]))
   }
 
   @Test def shouldThrowExceptionWhenConvertingDoubleBodyToInputStream {
-    CamelContextManager.init
     intercept[NoTypeConversionAvailableException] {
       Message(1.4, null).bodyAs(classOf[InputStream])
     }
@@ -39,7 +35,6 @@ class MessageTest extends JUnitSuite {
   }
 
   @Test def shouldConvertBodyAndPreserveHeaders = {
-    CamelContextManager.init
     assertEquals(
       Message("1.4", Map("A" -> "1")),
       Message(1.4  , Map("A" -> "1")).setBodyAs(classOf[String]))
@@ -75,5 +70,4 @@ class MessageTest extends JUnitSuite {
       Message("test1" , Map("A" -> "1")),
       Message("test1" , Map("A" -> "1", "B" -> "2")).removeHeader("B"))
   }
-
 }

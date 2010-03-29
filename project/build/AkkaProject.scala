@@ -7,11 +7,9 @@
 
    Akka implements a unique hybrid of:
     * Actors , which gives you:
-    * Simple and high-level abstractions for concurrency and parallelism.
-    * Asynchronous, non-blocking and highly performant event-driven programming 
-      model.
-    * Very lightweight event-driven processes (create ~6.5 million actors on 
-      4 G RAM).
+        * Simple and high-level abstractions for concurrency and parallelism.
+        * Asynchronous, non-blocking and highly performant event-driven programming model.
+        * Very lightweight event-driven processes (create ~6.5 million actors on 4 G RAM).
     * Supervision hierarchies with let-it-crash semantics. For writing highly 
       fault-tolerant systems that never stop, systems that self-heal.
     * Software Transactional Memory (STM). (Distributed transactions coming soon).
@@ -22,14 +20,16 @@
     * Cluster membership management.
 
   Akka also has a set of add-on modules:
-    * Persistence: A set of pluggable back-end storage modules that works in sync 
-      with the STM.
-    * Cassandra distributed and highly scalable database.
-    * MongoDB document database.
-    * Redis data structures database (upcoming)
+    * Persistence: A set of pluggable back-end storage modules that works in sync with the STM.
+        * Cassandra distributed and highly scalable database.
+        * MongoDB document database.
+        * Redis data structures database (upcoming)
+    * Camel: Expose Actors as Camel endpoints.
     * REST (JAX-RS): Expose actors as REST services.
     * Comet: Expose actors as Comet services.
     * Security: Digest and Kerberos based security.
+    * Spring: Spring integration
+    * Guice: Guice integration
     * Microkernel: Run Akka as a stand-alone kernel.
     
 -------------------------------------------------------------------------------*/
@@ -49,7 +49,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   lazy val akkaHome = {
     val home = System.getenv("AKKA_HOME")
-    if (home == null) throw new Error("You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
+    if (home == null) throw new Error(
+      "You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
     home
   }
   lazy val deployPath = Path.fromFile(new java.io.File(akkaHome + "/deploy"))
@@ -85,8 +86,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_security = project("akka-security", "akka-security", new AkkaSecurityProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
+  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
-    akka_core, akka_rest, akka_persistence, akka_cluster, akka_amqp, akka_security, akka_comet, akka_camel, akka_patterns)
+    akka_core, akka_rest, akka_spring, akka_camel, akka_persistence, 
+    akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns)
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -122,7 +125,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-persistence-redis_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-persistence-mongo_%s-%s.jar".format(defScalaVersion.value, version) +
     " dist/akka-persistence-cassandra_%s-%s.jar".format(defScalaVersion.value, version) +
-    " dist/akka-kernel_%s-%s.jar".format(defScalaVersion.value, version)
+    " dist/akka-kernel_%s-%s.jar".format(defScalaVersion.value, version) +
+    " dist/akka-spring_%s-%s.jar".format(defScalaVersion.value, version)
     ) 
 
   // ------------------------------------------------------------
@@ -182,16 +186,19 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaJavaUtilProject(info: ProjectInfo) extends DefaultProject(info) {
     val guicey = "org.guiceyfruit" % "guice-core" % "2.0-beta-4" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
-    val multiverse = "org.multiverse" % "multiverse-alpha" % "0.4-SNAPSHOT" % "compile"
+    val multiverse = "org.multiverse" % "multiverse-alpha" % "0.4" % "compile"
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
 
   class AkkaAMQPProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val rabbit = "com.rabbitmq" % "amqp-client" % "1.7.2"
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
 
   class AkkaRestProject(info: ProjectInfo) extends DefaultProject(info) {
+    val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
+    val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
     val jersey = "com.sun.jersey" % "jersey-core" % JERSEY_VERSION % "compile"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
@@ -223,6 +230,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSecurityProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val annotation = "javax.annotation" % "jsr250-api" % "1.0"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
@@ -266,10 +274,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common", new AkkaPersistenceCommonProject(_), akka_core)
-    lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", new AkkaRedisProject(_), akka_persistence_common)
-    lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo", new AkkaMongoProject(_), akka_persistence_common)
-    lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra", new AkkaCassandraProject(_), akka_persistence_common)
+    lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common", 
+      new AkkaPersistenceCommonProject(_), akka_core)
+    lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
+      new AkkaRedisProject(_), akka_persistence_common)
+    lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo", 
+      new AkkaMongoProject(_), akka_persistence_common)
+    lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra", 
+      new AkkaCassandraProject(_), akka_persistence_common)
   }
 
   class AkkaJgroupsProject(info: ProjectInfo) extends DefaultProject(info) {
@@ -284,16 +296,29 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaClusterParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_cluster_jgroups = project("akka-cluster-jgroups", "akka-cluster-jgroups", new AkkaJgroupsProject(_), akka_core)
-    lazy val akka_cluster_shoal = project("akka-cluster-shoal", "akka-cluster-shoal", new AkkaShoalProject(_), akka_core)
+    lazy val akka_cluster_jgroups = project("akka-cluster-jgroups", "akka-cluster-jgroups", 
+      new AkkaJgroupsProject(_), akka_core)
+    lazy val akka_cluster_shoal = project("akka-cluster-shoal", "akka-cluster-shoal", 
+      new AkkaShoalProject(_), akka_core)
   }
 
   class AkkaKernelProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
 
+  class AkkaSpringProject(info: ProjectInfo) extends DefaultProject(info) {
+    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE"
+    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE"
+    // testing
+    val scalatest = "org.scalatest" % "scalatest" % "1.0" % "test"
+    val junit = "junit" % "junit" % "4.5" % "test"
+    lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
+  }
+
   // examples
   class AkkaFunTestProject(info: ProjectInfo) extends DefaultProject(info) {
+    val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
+    val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0"
     val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
@@ -309,6 +334,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val lift = "net.liftweb" % "lift-webkit" % "1.1-M6" % "compile"
     val lift_util = "net.liftweb" % "lift-util" % "1.1-M6" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
@@ -323,11 +349,13 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleRestScalaProject(info: ProjectInfo) extends DefaultProject(info) {
-    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends DefaultProject(info) {
+    val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
+    val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE"
     val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile"
     val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.0" % "compile"
@@ -335,18 +363,24 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends DefaultProject(info) {
-    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`) describedAs("Deploying")
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat", new AkkaSampleChatProject(_), akka_kernel)
-    lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift", new AkkaSampleLiftProject(_), akka_kernel)
-    lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java", new AkkaSampleRestJavaProject(_), akka_kernel)
-    lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala", new AkkaSampleRestScalaProject(_), akka_kernel)
-    lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel", new AkkaSampleCamelProject(_), akka_kernel)
-    lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", new AkkaSampleSecurityProject(_), akka_kernel)
+    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat", 
+      new AkkaSampleChatProject(_), akka_kernel)
+    lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift", 
+      new AkkaSampleLiftProject(_), akka_kernel)
+    lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java", 
+      new AkkaSampleRestJavaProject(_), akka_kernel)
+    lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala", 
+      new AkkaSampleRestScalaProject(_), akka_kernel)
+    lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel", 
+      new AkkaSampleCamelProject(_), akka_kernel)
+    lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", 
+      new AkkaSampleSecurityProject(_), akka_kernel)
   }
 
   // ------------------------------------------------------------
@@ -367,14 +401,16 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     descendents(info.projectPath / "deploy", "*.jar") +++
     descendents(path("lib") ##, "*.jar") +++
     descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
-    .filter(jar =>
-      !jar.toString.endsWith("scala-library-2.7.5.jar") && // remove redundant scala libs
+    .filter(jar => // remove redundant libs
+      !jar.toString.endsWith("stax-api-1.0.1.jar") &&
+      !jar.toString.endsWith("scala-library-2.7.5.jar") &&
       !jar.toString.endsWith("scala-library-2.7.6.jar")) 
   }
 
   def deployTask(info: ProjectInfo, toDir: Path) = task {
     val projectPath = info.projectPath.toString
-    val moduleName = projectPath.substring(projectPath.lastIndexOf(System.getProperty("file.separator")) + 1, projectPath.length)
+    val moduleName = projectPath.substring(
+      projectPath.lastIndexOf(System.getProperty("file.separator")) + 1, projectPath.length)
     // FIXME need to find out a way to grab these paths from the sbt system 
     val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(defScalaVersion.value, version)
     val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(defScalaVersion.value) + JAR_FILE_NAME
