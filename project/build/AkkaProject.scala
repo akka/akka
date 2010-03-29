@@ -249,7 +249,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends DefaultProject(info) {
     val thrift = "com.facebook" % "thrift" % "1.0" % "compile"
-    val commons_pool = "commons-pool" % "commons-pool" % "1.5.1" % "compile"
+    val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile"
     lazy val dist = deployTask(info, distPath) dependsOn(`package`) describedAs("Deploying")
   }
 
