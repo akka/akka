@@ -152,7 +152,7 @@ class TransactionalRef[T] extends Transactional {
 
   def elements: Iterator[T] = {
     ensureIsInTransaction
-    if (isEmpty) Iterator.empty else Iterator.fromValues(ref.get)
+    if (isEmpty) Iterator.empty else Iterator(ref.get)
   }
 
   def toList: List[T] = {
@@ -227,7 +227,7 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
   
   def iterator = ref.get.get.iterator
 
-  override def elements: Iterator[(K, V)] = ref.get.get.elements
+  override def elements: Iterator[(K, V)] = ref.get.get.iterator
 
   override def contains(key: K): Boolean = ref.get.get.contains(key)
 
@@ -253,7 +253,7 @@ object TransactionalVector {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
+class TransactionalVector[T] extends Transactional with IndexedSeq[T] {
   val uuid = UUID.newUuid.toString
 
   private[this] val ref = TransactionalRef[Vector[T]]

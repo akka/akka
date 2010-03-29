@@ -89,8 +89,8 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   // Cheating, should really go through the dispatcher rather than direct access to a CHM
   def getInstance[T](clazz: Class[T]): List[T] = actors.get(clazz.getName).asInstanceOf[List[T]]
 
-  def getComponentInterfaces: List[Class[_]] = List.flatten(
-    actors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]]).map(_.getClass)
+  def getComponentInterfaces: List[Class[_]] = 
+    actors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
   
   def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
 
