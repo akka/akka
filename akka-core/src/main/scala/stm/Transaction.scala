@@ -122,9 +122,6 @@ object Transaction extends TransactionManagement with Logging {
    * See ScalaDoc on Transaction class.
    */
   def atomic[T](body: => T)(implicit transactionFamilyName: String): T = {
-    // FIXME use Transaction Builder and set the transactionFamilyName
-    //    defaultTxBuilder.setFamilyName(transactionFamilyName)
-    //    new TransactionTemplate[T](defaultTxBuilder.build) {
     var isTopLevelTransaction = true
     new TransactionTemplate[T]() {
       def execute(mtx: MultiverseTransaction): T = {
