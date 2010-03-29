@@ -598,7 +598,7 @@ trait Actor extends TransactionManagement with Logging {
               "\n\t\t2. Send a message from an instance that is *not* an actor" +
               "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
               "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-              "\n\tthat will be bound by the argument passed to 'reply'."
+              "\n\tthat will be bound by the argument passed to 'reply'." +
               "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
           case Some(future) =>
             future.completeWithResult(message)
