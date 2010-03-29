@@ -829,7 +829,7 @@ trait Actor extends TransactionManagement with Logging {
         requestBuilder.setSourceTarget(s.getClass.getName)
         requestBuilder.setSourceUuid(s.uuid)
 
-        val (host, port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME,Actor.PORT))
+        val (host, port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
         
         Actor.log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
 
