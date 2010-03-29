@@ -164,7 +164,7 @@ private[akka] object MongoStorageBackend extends
       else count
 
     val n =
-      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
+      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sortWith((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
     val vals =
       for(s <- n)
         yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))

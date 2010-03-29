@@ -174,7 +174,7 @@ private [akka] object RedisStorageBackend extends
                    .toList
       case ((Some(s), None, c)) if c > 0 =>
         wholeSorted.from(s)
-                   .elements
+                   .iterator
                    .take(count)
                    .map(e => (e._1.getBytes, e._2))
                    .toList

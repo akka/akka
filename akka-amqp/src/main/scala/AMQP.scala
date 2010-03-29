@@ -138,7 +138,7 @@ object AMQP {
     }
 
     override def shutdown = {
-      asMap(connections).values.foreach(_ ! Stop)
+      asMap(connections).valuesIterator.foreach(_ ! Stop)
       exit
     }
 
@@ -400,7 +400,7 @@ object AMQP {
         throw cause
 
       case Stop =>
-        listeners.elements.toList.map(_._2).foreach(unregisterListener(_))
+        listeners.iterator.toList.map(_._2).foreach(unregisterListener(_))
         disconnect
         exit
 
@@ -417,7 +417,7 @@ object AMQP {
       connection = connectionFactory.newConnection(hostname, port)
       channel = connection.createChannel
       channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, jConfigMap)
-      listeners.elements.toList.map(_._2).foreach(registerListener)
+      listeners.iterator.toList.map(_._2).foreach(registerListener)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
 
@@ -465,7 +465,7 @@ object AMQP {
               "MessageConsumerListener [" + listener + "] does not have a tag")
             listener.tag.get == listenerTag
           }
-          listeners.elements.toList.map(_._2).find(hasTag(_, listenerTag)) match {
+          listeners.iterator.toList.map(_._2).find(hasTag(_, listenerTag)) match {
             case None => log.error(
               "Could not find message listener for tag [%s]; can't shut listener down", listenerTag)
             case Some(listener) =>
@@ -485,7 +485,7 @@ object AMQP {
           "Can't unregister message consumer listener [%s]; no such listener",
           listener.toString(exchangeName))
         case Some(listener) =>
-          listeners - listener
+          listeners -= listener
           listener.tag match {
             case None => log.warning(
               "Can't unregister message consumer listener [%s]; no listener tag",
