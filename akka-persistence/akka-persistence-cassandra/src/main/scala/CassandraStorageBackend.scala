@@ -156,7 +156,7 @@ private[akka] object CassandraStorageBackend extends
     for (entry <- entries) {
       val columnOrSuperColumn = new ColumnOrSuperColumn
       columnOrSuperColumn.setColumn(new Column(entry._1, entry._2, System.currentTimeMillis))
-      batch + (MAP_COLUMN_PARENT.getColumn_family -> List(columnOrSuperColumn))
+      batch += (MAP_COLUMN_PARENT.getColumn_family -> List(columnOrSuperColumn))
     }
     sessions.withSession {
       _ ++| (name, batch, CONSISTENCY_LEVEL)

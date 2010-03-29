@@ -92,8 +92,8 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
             case Some(r) if r.isInstanceOf[Response] =>
               throw new WebApplicationException(r.asInstanceOf[Response])
             case None => throw new WebApplicationException(408)
-            case x => {
-              log.error("Authenticator replied with unexpected result [%s]", x);
+            case unknown => {
+              log.warning("Authenticator replied with unexpected result [%s]", unknown);
               throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR)
             }
           }
@@ -256,9 +256,9 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
   protected val invalidateNonces: PartialFunction[Any, Unit] = {
     case InvalidateNonces =>
       val ts = System.currentTimeMillis
-      nonceMap.retain((k, v) => (ts - v) < nonceValidityPeriod)
-    case e =>
-      log.info("Don't know what to do with: " + e)
+      nonceMap.filter(tuple => (ts - tuple._2) < nonceValidityPeriod)
+    case unknown =>
+      log.error("Don't know what to do with: ", unknown)
   }
 
   //Schedule the invalidation of nonces

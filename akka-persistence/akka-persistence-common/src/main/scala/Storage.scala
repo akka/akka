@@ -189,7 +189,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Committable {
+trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable {
   protected val newElems = TransactionalState.newVector[T]
   protected val updatedElems = TransactionalState.newMap[Int, T]
   protected val removedElems = TransactionalState.newVector[T]
@@ -218,9 +218,9 @@ trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Com
     else storage.getVectorStorageEntryFor(uuid, index)
   }
 
-  override def slice(start: Int, count: Int): RandomAccessSeq[T] = slice(Some(start), None, count)
+  override def slice(start: Int, count: Int): IndexedSeq[T] = slice(Some(start), None, count)
   
-  def slice(start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[T] = {
+  def slice(start: Option[Int], finish: Option[Int], count: Int): IndexedSeq[T] = {
     val buffer = new scala.collection.mutable.ArrayBuffer[T]
     storage.getVectorStorageRangeFor(uuid, start, finish, count).foreach(buffer.append(_))
     buffer
@@ -411,7 +411,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     enqueue(elems.toList: _*)
     this
   }
-  def ++=(elems: Iterable[A]): Unit = this ++= elems.elements
+  def ++=(elems: Iterable[A]): Unit = this ++= elems.iterator
 
   override def dequeueFirst(p: A => Boolean): Option[A] =
     throw new UnsupportedOperationException("dequeueFirst not supported")
@@ -537,7 +537,7 @@ trait PersistentSortedSet[A]
       else if (end >= l) (l - 1)
       else end
     // slice is open at the end, we need a closed end range
-    ts.elements.slice(s, e + 1).toList
+    ts.iterator.slice(s, e + 1).toList
   }
 
   private def register = {
