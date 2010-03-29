@@ -4,6 +4,8 @@
 
 package se.scalablesolutions.akka.dispatch
 
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.CopyOnWriteArrayList
 import scala.collection.jcl._
 import se.scalablesolutions.akka.actor.Actor
 
@@ -32,6 +34,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   /** Type of the actors registered in this dispatcher. */
   private var actorType:Option[Class[_]] = None
+
+  private val pooledActors = new CopyOnWriteArrayList[Actor]
+
+  // TODO: volatile? think about multiple threads modifying this (and creating the indexed iterator) at the same time
+  private var lastIndex = 0
 
   // TODO: is there a naming convention for this name?
   val name: String = "event-driven-work-stealing:executor:dispatcher:" + _name
@@ -90,10 +97,10 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   private def findThief(receiver: Actor): Option[Actor] = {
-    // TODO: round robin, don't always start with first actor in the list
-    for (actor <- new MutableIterator.Wrapper(references.values.iterator)) {
+    for ((actor, idx) <- new IndexedIterator[Actor](List.fromArray(pooledActors.toArray(new Array[Actor](pooledActors.size))), lastIndex).zipWithIndex) {
       if (actor != receiver) { // skip ourselves
-        if (actor._mailbox.isEmpty) { // only pick actors which will most likely be able to process the messages
+        if (actor._mailbox.isEmpty) { // only pick actors that will most likely be able to process the messages
+          lastIndex = idx
           return Some(actor)
         }
       }
@@ -162,7 +169,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   override def register(actor: Actor) = {
     verifyActorsAreOfSameType(actor)
+    pooledActors.add(actor)
     super.register(actor)
+  }
+
+  override def unregister(actor: Actor) = {
+    pooledActors.remove(actor)
+    super.unregister(actor)
   }
 
   private def verifyActorsAreOfSameType(newActor: Actor) = {
@@ -177,6 +190,19 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
               newActor, aType))
       }
     }
-
   }
+}
+
+/**
+ * An iterator which runs through a list from the given position until the end, and then from the start until the given
+ * position.
+ */
+class IndexedIterator[T](items: List[T], start: Int) extends Iterator[T] {
+  private[this] val reorderedListIterator: Iterator[T] = {
+    (items.slice(start, items.size) ::: items.slice(0, start)).elements
+  }
+
+  def hasNext = reorderedListIterator.hasNext
+
+  def next = reorderedListIterator.next
 }

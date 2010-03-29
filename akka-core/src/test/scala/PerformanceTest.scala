@@ -16,6 +16,9 @@ import net.lag.logging.Logger
 class PerformanceTest extends JUnitSuite {
 
   @Test
+  def dummyTest = assert(true)
+
+//  @Test
   def benchAkkaActorsVsScalaActors = {
 
     def stressTestAkkaActors(nrOfMessages: Int, nrOfActors: Int, sleepTime: Int): Long = {
