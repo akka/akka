@@ -154,7 +154,7 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
     val moduleName = projectPath.substring(
       projectPath.lastIndexOf(System.getProperty("file.separator")) + 1, projectPath.length)
 
-    // FIXME need to find out a way to grab these paths from the sbt system 
+    // FIXME need to find out a way to grab these paths from the sbt system
 
     // binary 
     val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(buildScalaVersion, version)
@@ -328,7 +328,8 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaults(info) {
-    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.2-SNAPSHOT" % "compile"
+//    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.2-SNAPSHOT" % "compile"
+    val redis = "com.redis" % "redisclient" % "1.2" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }

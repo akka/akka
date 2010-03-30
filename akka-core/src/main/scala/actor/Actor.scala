@@ -42,7 +42,7 @@ trait Transactor extends Actor {
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class RemoteActor(hostname: String, port: Int) extends Actor {
+bstract class RemoteActor(hostname: String, port: Int) extends Actor {
   makeRemote(hostname, port)
 }
 
