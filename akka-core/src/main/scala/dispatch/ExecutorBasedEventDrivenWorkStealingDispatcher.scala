@@ -105,7 +105,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     // the dispatcher is being shut down...
     doFindThief(receiver, pooledActorsCopy, lastIndexCopy) match {
       case (thief: Option[Actor], index: Int) => {
-        lastIndex = index
+        lastIndex = (index + 1) % pooledActorsCopy.size
         return thief
       }
     }
@@ -121,14 +121,15 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    */
   private def doFindThief(receiver: Actor, actors: Array[Actor], startIndex: Int): (Option[Actor], Int) = {
     for (i <- 0 to actors.length) {
-      val actor = actors((i + startIndex) % actors.length)
+      val index = (i + startIndex) % actors.length
+      val actor = actors(index)
       if (actor != receiver) { // skip ourselves
         if (actor._mailbox.isEmpty) { // only pick actors that will most likely be able to process the messages
-          return (Some(actor), i)
+          return (Some(actor), index)
         }
       }
     }
-    return (None, 0)
+    return (None, startIndex) // nothing found, reuse same start index next time
   }
 
   /**
