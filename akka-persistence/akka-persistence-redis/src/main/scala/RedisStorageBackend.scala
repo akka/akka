@@ -261,7 +261,7 @@ private [akka] object RedisStorageBackend extends
   }
 
   override def incrementByAtomically(name: String, by: Int): Option[Int] = withErrorHandling {
-    db.incrBy(new String(encode(name.getBytes)), by) match {
+    db.incrby(new String(encode(name.getBytes)), by) match {
       case Some(i) => Some(i)
       case None => 
         throw new Predef.IllegalArgumentException(name + " exception in incrby")
@@ -277,7 +277,7 @@ private [akka] object RedisStorageBackend extends
   }
 
   override def decrementByAtomically(name: String, by: Int): Option[Int] = withErrorHandling {
-    db.decrBy(new String(encode(name.getBytes)), by) match {
+    db.decrby(new String(encode(name.getBytes)), by) match {
       case Some(i) => Some(i)
       case None => 
         throw new Predef.IllegalArgumentException(name + " exception in decrby")
@@ -390,7 +390,7 @@ private [akka] object RedisStorageBackend extends
     }
   }
   
-  def flushDB = withErrorHandling(db.flushDb)
+  def flushDB = withErrorHandling(db.flushdb)
 
   private def withErrorHandling[T](body: => T): T = {
     try {
