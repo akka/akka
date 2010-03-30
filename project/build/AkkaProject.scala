@@ -328,7 +328,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaults(info) {
-    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.2-SNAPSHOT" % "compile"
+    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.2" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
