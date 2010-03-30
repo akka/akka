@@ -444,6 +444,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0"
+    val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
