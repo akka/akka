@@ -32,13 +32,13 @@ class JGroupsClusterActor extends BasicClusterActor {
         def setState(state: Array[Byte]): Unit = ()
 
         def receive(m: JG_MSG): Unit =
-          if (isActive && m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) me send Message(m.getSrc,m.getRawBuffer)
+          if (isActive && m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) me ! Message(m.getSrc,m.getRawBuffer)
 
         def viewAccepted(view: JG_VIEW): Unit =
-          if (isActive) me send View(Set[ADDR_T]() ++ view.getMembers - channel.get.getAddress)
+          if (isActive) me ! View(Set[ADDR_T]() ++ view.getMembers - channel.get.getAddress)
 
         def suspect(a: Address): Unit =
-          if (isActive) me send Zombie(a)
+          if (isActive) me ! Zombie(a)
 
         def block: Unit =
           log debug "UNSUPPORTED: JGroupsClusterActor::block" //TODO HotSwap to a buffering body
