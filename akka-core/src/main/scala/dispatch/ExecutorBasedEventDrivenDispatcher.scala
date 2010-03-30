@@ -89,7 +89,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
   }
 
   def shutdown = if (active) {
-    log.debug("Shutting down ThreadBasedDispatcher [%s]", name)
+    log.debug("Shutting down ExecutorBasedEventDrivenDispatcher [%s]", name)
     executor.shutdownNow
     active = false
     references.clear

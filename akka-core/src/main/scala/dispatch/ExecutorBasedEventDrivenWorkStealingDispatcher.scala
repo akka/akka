@@ -178,7 +178,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   def shutdown = if (active) {
-    log.debug("Shutting down ThreadBasedDispatcher [%s]", name)
+    log.debug("Shutting down ExecutorBasedEventDrivenWorkStealingDispatcher [%s]", name)
     executor.shutdownNow
     active = false
     references.clear
