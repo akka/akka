@@ -42,7 +42,7 @@ trait Transactor extends Actor {
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-bstract class RemoteActor(hostname: String, port: Int) extends Actor {
+abstract class RemoteActor(hostname: String, port: Int) extends Actor {
   makeRemote(hostname, port)
 }
 
@@ -161,7 +161,7 @@ object Actor extends Logging {
     case object Spawn
     new Actor() {
       start
-      send(Spawn)
+      this ! Spawn
       def receive = {
         case Spawn => body; stop
       }
@@ -466,7 +466,7 @@ trait Actor extends TransactionManagement with Logging {
       _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
     }
   }
-
+$
   def isRunning = _isRunning
 
   /**
@@ -476,38 +476,18 @@ trait Actor extends TransactionManagement with Logging {
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
    * <p/>
    *
-   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable.
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable, 
+   * if invoked from within an Actor. If not then no sender is available.
    * <pre>
    *   actor ! message
    * </pre>
    * <p/>
-   *
-   * If invoked from within a *non* Actor instance then either add this import to resolve the implicit argument:
-   * <pre>
-   *   import Actor.Sender.Self
-   *   actor ! message
-   * </pre>
-   *
-   * Or pass in the implicit argument explicitly:
-   * <pre>
-   *   actor.!(message)(Some(this))
-   * </pre>
-   *
-   * Or use the 'send(..)' method;
-   * <pre>
-   *   actor.send(message)
-   * </pre>
    */
   def !(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) postMessageToMailbox(message, sender)
     else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
-
-  /**
-   * Same as the '!' method but does not take an implicit sender as second parameter.
-   */
-  def send(message: Any) = this.!(message)(None)
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
