@@ -201,17 +201,16 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   // ------------------------------------------------------------
   // repositories
   val embeddedrepo = "embedded repo" at new File(akkaHome, "embedded-repo").toURI.toString
-  val m2 = "m2" at "http://download.java.net/maven/2"
-  val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
-  val scala_tools = "scala-tools" at "http://scala-tools.org/repo-releases"
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
+ // val configgy = "Configgy" at "http://www.lag.net/repo"
   val codehaus = "Codehaus" at "http://repository.codehaus.org"
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val jboss = "jBoss" at "http://repository.jboss.org/maven2"
   val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val google = "google" at "http://google-maven-repository.googlecode.com/svn/repository"
- // val configgy = "Configgy" at "http://www.lag.net/repo"
+  val m2 = "m2" at "http://download.java.net/maven/2"
+  val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
 
   // ------------------------------------------------------------
   // project defintions
@@ -235,7 +234,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
 
   // examples
-  lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_), akka_kernel)
+  lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
   
   // ------------------------------------------------------------
   // subprojects
@@ -425,7 +424,6 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   }
 
   class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaults(info) {
-    val scala_library = "org.scala-lang" % "scala-library" % buildScalaVersion % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
