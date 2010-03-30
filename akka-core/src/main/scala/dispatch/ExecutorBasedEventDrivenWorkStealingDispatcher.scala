@@ -168,9 +168,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def donateMessage(receiver: Actor, thief: Actor): Option[MessageInvocation] = {
     val donated = receiver._mailbox.pollLast
     if (donated != null) {
-      //TODO: forward seems to fail from time to time ?!
-      //thief.forward(donated.message)(Some(donated.receiver))
-      thief.send(donated.message)
+      thief.forward(donated.message)(Some(donated.receiver))
       return Some(donated)
     } else return None
   }
