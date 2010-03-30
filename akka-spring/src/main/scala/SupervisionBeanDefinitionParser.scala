@@ -18,7 +18,7 @@ import org.springframework.util.xml.DomUtils
  * Parser for custom namespace for Akka declarative supervisor configuration.
  * @author michaelkober
  */
-class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectBeanDefinitionParser {
+class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectParser {
   /* (non-Javadoc)
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
