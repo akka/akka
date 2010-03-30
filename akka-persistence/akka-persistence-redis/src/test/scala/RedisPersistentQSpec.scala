@@ -58,7 +58,7 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    val t: Integer = (qa !! SZ).get
+    val t: Int = (qa !! SZ).get
     assertTrue(3 == t)
   }
 
@@ -69,12 +69,12 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    val s: Integer = (qa !! SZ).get
+    val s: Int = (qa !! SZ).get
     assertTrue(3 == s)
     assertEquals("a-123", (qa !! DQ).get)
     assertEquals("a-124", (qa !! DQ).get)
     assertEquals("a-125", (qa !! DQ).get)
-    val t: Integer = (qa !! SZ).get
+    val t: Int = (qa !! SZ).get
     assertTrue(0 == t)
   }
 
@@ -88,13 +88,13 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    val t: Integer = (qa !! SZ).get
+    val t: Int = (qa !! SZ).get
     assertTrue(3 == t)
     assertEquals("a-123", (qa !! DQ).get)
-    val s: Integer = (qa !! SZ).get
+    val s: Int = (qa !! SZ).get
     assertTrue(2 == s)
     qa !! MNDQ(List("a-126", "a-127"), 2, failer)
-    val u: Integer = (qa !! SZ).get
+    val u: Int = (qa !! SZ).get
     assertTrue(2 == u)
   }
 
@@ -110,25 +110,25 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-124")
     qa !! NQ("a-125")
 
-    val t: Integer = (qa !! SZ).get
+    val t: Int = (qa !! SZ).get
     assertTrue(3 == t)
 
     // dequeue 1
     assertEquals("a-123", (qa !! DQ).get)
 
     // size == 2
-    val s: Integer = (qa !! SZ).get
+    val s: Int = (qa !! SZ).get
     assertTrue(2 == s)
 
     // enqueue 2, dequeue 2 => size == 2
     qa !! MNDQ(List("a-126", "a-127"), 2, failer)
-    val u: Integer = (qa !! SZ).get
+    val u: Int = (qa !! SZ).get
     assertTrue(2 == u)
 
     // enqueue 2 => size == 4
     qa !! NQ("a-128")
     qa !! NQ("a-129")
-    val v: Integer = (qa !! SZ).get
+    val v: Int = (qa !! SZ).get
     assertTrue(4 == v)
 
     // enqueue 1 => size 5
@@ -138,7 +138,7 @@ class RedisPersistentQSpec extends TestCase {
       qa !! MNDQ(List("a-130"), 6, failer)
     } catch { case e: Exception => {} }
 
-    val w: Integer = (qa !! SZ).get
+    val w: Int = (qa !! SZ).get
     assertTrue(4 == w)
   }
 }
