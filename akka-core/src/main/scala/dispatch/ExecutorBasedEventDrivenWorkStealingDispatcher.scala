@@ -36,7 +36,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private val pooledActors = new CopyOnWriteArrayList[Actor]
 
   /** The index in the pooled actors list which was last used to steal work */
-  @volatile private var lastIndex = 0
+  @volatile private var lastThiefIndex = 0
 
   // TODO: is there a naming convention for this name?
   val name: String = "event-driven-work-stealing:executor:dispatcher:" + _name
@@ -96,16 +96,16 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   private def findThief(receiver: Actor): Option[Actor] = {
     // copy to prevent concurrent modifications having any impact
-    val pooledActorsCopy = pooledActors.toArray(new Array[Actor](pooledActors.size))
-    var lastIndexCopy = lastIndex
-    if (lastIndexCopy > pooledActorsCopy.size)
-      lastIndexCopy = 0
+    val actors = pooledActors.toArray(new Array[Actor](pooledActors.size))
+    var i = lastThiefIndex
+    if (i > actors.size)
+      i = 0
 
     // we risk to pick a thief which is unregistered from the dispatcher in the meantime, but that typically means
     // the dispatcher is being shut down...
-    doFindThief(receiver, pooledActorsCopy, lastIndexCopy) match {
+    doFindThief(receiver, actors, i) match {
       case (thief: Option[Actor], index: Int) => {
-        lastIndex = (index + 1) % pooledActorsCopy.size
+        lastThiefIndex = (index + 1) % actors.size
         return thief
       }
     }
