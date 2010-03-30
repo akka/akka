@@ -310,7 +310,7 @@ class RemoteServerHandler(
         actor.!(message)(Some(remoteActor))
       } else {
         // couldn't find a way to reply, send the message without a source/sender
-        actor.send(message)
+        actor ! message
       }
     } else {
       try {

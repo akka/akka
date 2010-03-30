@@ -81,10 +81,10 @@ class ShoalClusterActor extends BasicClusterActor {
           signal.acquire()
           if(isActive) {
             signal match {
-              case  ms : MessageSignal => me send Message[ADDR_T](ms.getMemberToken,ms.getMessage)
-              case jns : JoinNotificationSignal => me send View[ADDR_T](Set[ADDR_T]() ++ jns.getCurrentCoreMembers - serverName)
-              case fss : FailureSuspectedSignal => me send Zombie[ADDR_T](fss.getMemberToken)
-              case fns : FailureNotificationSignal => me send Zombie[ADDR_T](fns.getMemberToken)
+              case  ms : MessageSignal => me ! Message[ADDR_T](ms.getMemberToken,ms.getMessage)
+              case jns : JoinNotificationSignal => me ! View[ADDR_T](Set[ADDR_T]() ++ jns.getCurrentCoreMembers - serverName)
+              case fss : FailureSuspectedSignal => me ! Zombie[ADDR_T](fss.getMemberToken)
+              case fns : FailureNotificationSignal => me ! Zombie[ADDR_T](fns.getMemberToken)
               case _ => log.debug("Unhandled signal: [%s]",signal)
             }
           }

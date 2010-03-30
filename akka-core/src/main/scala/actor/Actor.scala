@@ -466,7 +466,7 @@ trait Actor extends TransactionManagement with Logging {
       _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
     }
   }
-$
+
   def isRunning = _isRunning
 
   /**
