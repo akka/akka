@@ -96,8 +96,8 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
       (Attributes.Name.CLASS_PATH, cp), 
       (IMPLEMENTATION_TITLE, "Akka"), 
       (IMPLEMENTATION_URL, "http://akkasource.org"), 
-      (IMPLEMENTATION_VENDOR, "The Akka Project"), 
-      (SEALED, "true"))).toList :::
+      (IMPLEMENTATION_VENDOR, "The Akka Project")
+    )).toList :::
     getMainClass(false).map(MainClass(_)).toList
 
   // create a manifest with all akka jars and dependency jars on classpath
@@ -144,8 +144,9 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
     descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
     .filter(jar => // remove redundant libs
       !jar.toString.endsWith("stax-api-1.0.1.jar") &&
-      !jar.toString.endsWith("scala-library-2.7.5.jar") &&
-      !jar.toString.endsWith("scala-library-2.7.6.jar")) 
+      !jar.toString.endsWith("scala-library-2.7.7.jar") &&
+      !jar.toString.endsWith("scala-library-2.7.6.jar") &&
+      !jar.toString.endsWith("scala-library-2.7.5.jar")) 
   }
 
   def deployTask(info: ProjectInfo, toDir: Path) = task {
