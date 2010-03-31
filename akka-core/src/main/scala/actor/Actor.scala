@@ -19,9 +19,9 @@ import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
-import java.util.{Queue, HashSet}
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.{Deque, HashSet}
 import java.net.InetSocketAddress
+import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.locks.{Lock, ReentrantLock}
 
 /**
@@ -240,7 +240,7 @@ trait Actor extends TransactionManagement with Logging {
   private[akka] var _linkedActors: Option[HashSet[Actor]] = None
   private[akka] var _supervisor: Option[Actor] = None
   private[akka] var _replyToAddress: Option[InetSocketAddress] = None
-  private[akka] val _mailbox: Queue[MessageInvocation] = new ConcurrentLinkedQueue[MessageInvocation]
+  private[akka] val _mailbox: Deque[MessageInvocation] = new LinkedBlockingDeque[MessageInvocation]
 
   /**
    * This lock ensures thread safety in the dispatching: only one message can 
@@ -433,14 +433,14 @@ trait Actor extends TransactionManagement with Logging {
   def start: Actor = synchronized {
     if (_isShutDown) throw new IllegalStateException("Can't restart an actor that has been shut down with 'exit'")
     if (!_isRunning) {
-      if (messageDispatcher.isShutdown && 
+      if (messageDispatcher.isShutdown &&
           messageDispatcher.isInstanceOf[Dispatchers.globalExecutorBasedEventDrivenDispatcher.type]) {
         messageDispatcher.asInstanceOf[ExecutorBasedEventDrivenDispatcher].init
       }
       messageDispatcher.register(this)
       messageDispatcher.start
       _isRunning = true
-      init 
+      init
     }
     Actor.log.debug("[%s] has started", toString)
     ActorRegistry.register(this)
@@ -570,7 +570,7 @@ trait Actor extends TransactionManagement with Logging {
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
-  
+
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
@@ -821,7 +821,7 @@ trait Actor extends TransactionManagement with Logging {
           .setIsActor(true)
           .setIsOneWay(true)
           .setIsEscaped(false)
-      
+
       val id = registerSupervisorAsRemoteActor
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
 
@@ -846,13 +846,13 @@ trait Actor extends TransactionManagement with Logging {
       if (_isEventBased) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
-      } 
+      }
       else invocation.send
     }
   }
   
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
-      message: Any, 
+      message: Any,
       timeout: Long,
       senderFuture: Option[CompletableFuture]): CompletableFuture = {
     joinTransaction(message)
