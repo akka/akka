@@ -22,23 +22,37 @@ import java.util.concurrent.CountDownLatch
 class AgentException private[akka](message: String) extends RuntimeException(message)
  
 /**
-* The Agent class was strongly inspired by the agent principle in Clojure. 
-* Essentially, an agent wraps a shared mutable state and hides it behind 
-* a message-passing interface. Agents accept messages and process them on 
-* behalf of the wrapped state.
-* 
-* Typically agents accept functions / commands as messages and ensure the 
-* submitted commands are executed against the internal agent's state in a 
-* thread-safe manner (sequentially).
-* 
-* The submitted functions / commands take the internal state as a parameter 
-* and their output becomes the new internal state value.
-* 
-* The code that is submitted to an agent doesn't need to pay attention to 
-* threading or synchronization, the agent will provide such guarantees by itself.
+* The Agent class was strongly inspired by the agent principle in Clojure.
+* <p/> 
 *
-* If an Agent is used within an enclosing transaction, then it will participate
-* in that transaction. 
+* Agents provide independent, asynchronous change of individual locations. 
+* Agents are bound to a single storage location for their lifetime, and 
+* only allow mutation of that location (to a new state) to occur as a 
+* result of an action. Actions are functions (with, optionally, additional 
+* arguments) that are asynchronously applied to an Agent's state and whose 
+* return value becomes the Agent's new state. Because the set of functions 
+* is open, the set of actions supported by an Agent is also open, a sharp 
+* contrast to pattern matching message handling loops provided by Actors.
+* <p/> 
+* 
+* Agents are reactive, not autonomous - there is no imperative message loop 
+* and no blocking receive. The state of an Agent should be itself immutable 
+* (preferably an instance of one of Akka's persistent collections), and the 
+* state of an Agent is always immediately available for reading by any 
+* thread (using the '()' function) without any messages, i.e. observation 
+* does not require cooperation or coordination.
+* <p/> 
+*
+* The actions of all Agents get interleaved amongst threads in a thread pool. 
+* At any point in time, at most one action for each Agent is being executed. 
+* Actions dispatched to an agent from another single agent or thread will 
+* occur in the order they were sent, potentially interleaved with actions 
+* dispatched to the same agent from other sources.
+* <p/> 
+*
+* If an Agent is used within an enclosing transaction, then it will 
+* participate in that transaction. 
+* <p/> 
 * 
 * Example of usage:
 * <pre>
@@ -52,25 +66,44 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 *
 * agent.close
 * </pre>
+* <p/> 
+* 
+* Agent is also monadic, which means that you can compose operations using 
+* for-comprehensions. In monadic usage the original agents are not touched
+* but new agents are created. So the old values (agents) are still available
+* as-is. They are so-called 'persistent'.
+* <p/> 
 * 
 * Example of monadic usage:
 * <pre>
 * val agent1 = Agent(3)
 * val agent2 = Agent(5)
 *
-* for {
-*   first <- agent1
-*   second <- agent2
-*   if first == second
-* } process(first, second)
+* for (value <- agent1) {
+*   result = value + 1 
+* }
+* 
+* val agent3 = 
+*   for (value <- agent1) yield value + 1 
+* 
+* val agent4 = for {
+*   value1 <- agent1
+*   value2 <- agent2
+* } yield value1 + value2 
 *
 * agent1.close
 * agent2.close
+* agent3.close
+* agent4.close
 * </pre>
+* <p/> 
 * 
-* NOTE: You can't call 'agent.get' or 'agent()' within an enclosing transaction since 
-* that will block the transaction indefinitely. But 'agent.send' or 'Agent(value)' 
-* is fine.
+* IMPORTANT: 
+* You can *not* call 'agent.get', 'agent()' or use the monadic 'foreach', 
+* 'map and 'flatMap' within an enclosing transaction since that would block 
+* the transaction indefinitely. But all other operations are fine. The system 
+* will raise an error (e.g. *not* deadlock) if you try to do so, so as long as 
+* you test your application thoroughly you should be fine.
 * 
 * @author Viktor Klang
 * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -117,7 +150,7 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
       "Can't call Agent.get within an enclosing transaction.\n\tWould block indefinitely.\n\tPlease refactor your code.")
     val ref = new AtomicReference[T]
     val latch = new CountDownLatch(1)
-    sendProc((x: T) => {ref.set(x); latch.countDown})
+    sendProc((v: T) => {ref.set(v); latch.countDown})
     latch.await
     ref.get
   }
