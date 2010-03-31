@@ -3,28 +3,26 @@
  */
 package se.scalablesolutions.akka.spring
 
-import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser
-import org.springframework.beans.factory.xml.ParserContext
 import org.w3c.dom.Element
-import se.scalablesolutions.akka.util.Logging
+import org.springframework.beans.factory.support.BeanDefinitionBuilder
+import org.springframework.beans.factory.xml.{ParserContext, AbstractSingleBeanDefinitionParser}
 
 
 /**
  * Parser for custom namespace configuration.
  * @author michaelkober
  */
-class AkkaObjectBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectBeanDefinitionParser {
-  /* 
+class DispatcherBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectParser with DispatcherParser {
+  /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
   override def doParse(element: Element, parserContext: ParserContext, builder: BeanDefinitionBuilder) {
-    val activeObjectConf = parseActiveObject(element)
-    activeObjectConf.setAsProperties(builder)
+    val dispatcherProperties = parseDispatcher(element)
+    dispatcherProperties.setAsProperties(builder)
   }
 
   /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#getBeanClass(org.w3c.dom.Element)
    */
-  override def getBeanClass(element: Element) = classOf[ActiveObjectFactoryBean]
+  override def getBeanClass(element: Element) = classOf[DispatcherFactoryBean]
 }

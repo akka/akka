@@ -21,6 +21,8 @@ class ActiveObjectProperties {
   var host: String = ""
   var port: Int = _
   var lifecyclye: String = ""
+  var dispatcher: DispatcherProperties = _
+  
 
   /**
    * Sets the properties to the given builder.
@@ -36,6 +38,7 @@ class ActiveObjectProperties {
     builder.addPropertyValue(INTERFACE, interface)
     builder.addPropertyValue(TRANSACTIONAL, transactional)
     builder.addPropertyValue(LIFECYCLE, lifecyclye)
+    builder.addPropertyValue(DISPATCHER_TAG, dispatcher)
   }
 
 }
