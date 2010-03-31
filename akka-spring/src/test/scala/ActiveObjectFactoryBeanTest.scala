@@ -29,13 +29,21 @@ class ActiveObjectFactoryBeanTest extends Spec with ShouldMatchers {
       assert(bean.isRemote)
     }
 
+    it("should create object that implements the given interface") {
+      bean.setInterface("com.biz.IPojo");
+      assert(bean.hasInterface)
+    }
+
+    it("should create an active object with dispatcher if dispatcher is set") {
+      val props = new DispatcherProperties()
+      props.dispatcherType = "executor-based-event-driven"
+      bean.setDispatcher(props);
+      assert(bean.hasDispatcher)
+    }
+
     it("should return the object type") {
       bean.setTarget("java.lang.String")
       assert(bean.getObjectType == classOf[String])
-    }
-
-    it("should create an active object") {
-      // TODO:
     }
   }
 }
