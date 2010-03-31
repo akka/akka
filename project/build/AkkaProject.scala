@@ -50,7 +50,6 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
       "You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
     home
   }
-
   val encodingUtf8 = List("-encoding", "UTF-8")
 
   lazy val deployPath = Path.fromFile(new java.io.File(akkaHome + "/deploy"))
@@ -105,6 +104,7 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
     .filter(_.getName.endsWith(".jar"))
     .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") + 
+    " scala-library.jar" +
     " dist/akka-util_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-util-java_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
@@ -133,6 +133,7 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
   }
 
   def allArtifacts = {
+    Path.fromFile(buildScalaInstance.libraryJar) +++
     (removeDupEntries(runClasspath filter ClasspathUtilities.isArchive) +++
     ((outputPath ##) / defaultJarName) +++
     mainResources +++
@@ -143,10 +144,7 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
     descendents(path("lib") ##, "*.jar") +++
     descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
     .filter(jar => // remove redundant libs
-      !jar.toString.endsWith("stax-api-1.0.1.jar") &&
-      !jar.toString.endsWith("scala-library-2.7.7.jar") &&
-      !jar.toString.endsWith("scala-library-2.7.6.jar") &&
-      !jar.toString.endsWith("scala-library-2.7.5.jar")) 
+      !jar.toString.endsWith("stax-api-1.0.1.jar")) 
   }
 
   def deployTask(info: ProjectInfo, toDir: Path) = task {
@@ -270,7 +268,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
 
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
-    val rabbit = "com.rabbitmq" % "amqp-client" % "1.7.2"
+    val rabbit = "com.rabbitmq" % "amqp-client" % "1.7.2" % "compile"
     lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
@@ -309,7 +307,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
 
   class AkkaSecurityProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
-    val annotation = "javax.annotation" % "jsr250-api" % "1.0"
+    val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
     val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
@@ -386,8 +384,9 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   }
 
   class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaults(info) {
-    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE"
-    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE"
+    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE" % "compile"
+    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile"
+
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
@@ -398,7 +397,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   class AkkaFunTestProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
-    val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0"
+    val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
     val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
     val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
     val jersey_json = "com.sun.jersey" % "jersey-json" % JERSEY_VERSION % "compile"
@@ -434,7 +433,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
-    val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE"
+    val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE" % "compile"
     val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile"
     val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.0" % "compile"
@@ -443,7 +442,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
-    val jsr250 = "javax.annotation" % "jsr250-api" % "1.0"
+    val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
     val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
     lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
