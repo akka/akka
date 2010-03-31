@@ -147,7 +147,7 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
       !jar.toString.endsWith("stax-api-1.0.1.jar")) 
   }
 
-  def deployTask(info: ProjectInfo, toDir: Path) = task {
+  def deployTask(info: ProjectInfo, toDir: Path, genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
     val projectPath = info.projectPath.toString
     val moduleName = projectPath.substring(
       projectPath.lastIndexOf(System.getProperty("file.separator")) + 1, projectPath.length)
@@ -155,28 +155,35 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
     // FIXME need to find out a way to grab these paths from the sbt system
 
     // binary 
-    val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(buildScalaVersion, version)
-    val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + JAR_FILE_NAME
-    val fromJar = Path.fromFile(new java.io.File(JAR_FILE_PATH))
-    val toJar = Path.fromFile(new java.io.File(toDir + "/" + JAR_FILE_NAME))
-    log.info("Deploying bits " + toJar)
-    FileUtilities.copyFile(fromJar, toJar, log)
+    if (genJar) {
+      val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(buildScalaVersion, version)
+      val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + JAR_FILE_NAME
+      val fromJar = Path.fromFile(new java.io.File(JAR_FILE_PATH))
+      val toJar = Path.fromFile(new java.io.File(toDir + "/" + JAR_FILE_NAME))
+      log.info("Deploying bits " + toJar)
+      FileUtilities.copyFile(fromJar, toJar, log)
+    }
 
     // docs
-    val DOC_FILE_NAME = moduleName + "_%s-%s-%s.jar".format(buildScalaVersion, version, "doc")
-    val DOC_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + DOC_FILE_NAME
-    val fromDoc = Path.fromFile(new java.io.File(DOC_FILE_PATH))
-    val toDoc = Path.fromFile(new java.io.File(toDir + "/" + DOC_FILE_NAME))
-    log.info("Deploying docs " + toDoc)
-    FileUtilities.copyFile(fromDoc, toDoc, log)
+    if (genDocs) {
+      val DOC_FILE_NAME = moduleName + "_%s-%s-%s.jar".format(buildScalaVersion, version, "doc")
+      val DOC_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + DOC_FILE_NAME
+      val fromDoc = Path.fromFile(new java.io.File(DOC_FILE_PATH))
+      val toDoc = Path.fromFile(new java.io.File(toDir + "/" + DOC_FILE_NAME))
+      log.info("Deploying docs " + toDoc)
+      FileUtilities.copyFile(fromDoc, toDoc, log)
+    }
     
     // sources
-    val SRC_FILE_NAME = moduleName + "_%s-%s-%s.jar".format(buildScalaVersion, version, "src")
-    val SRC_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + SRC_FILE_NAME
-    val fromSrc = Path.fromFile(new java.io.File(SRC_FILE_PATH))
-    val toSrc = Path.fromFile(new java.io.File(toDir + "/" + SRC_FILE_NAME))
-    log.info("Deploying sources " + toSrc)
-    FileUtilities.copyFile(fromSrc, toSrc, log)
+    if (genSource) {
+      val SRC_FILE_NAME = moduleName + "_%s-%s-%s.jar".format(buildScalaVersion, version, "src")
+      val SRC_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + SRC_FILE_NAME
+      val fromSrc = Path.fromFile(new java.io.File(SRC_FILE_PATH))
+      val toSrc = Path.fromFile(new java.io.File(toDir + "/" + SRC_FILE_NAME))
+      log.info("Deploying sources " + toSrc)
+      FileUtilities.copyFile(fromSrc, toSrc, log)
+    }
+    None
   }
 }     
 
@@ -249,27 +256,27 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaUtilProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val werkz = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % "2.1" % "compile"
     val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5" % "2.1" % "compile"
     val configgy = "net.lag" % "configgy" % "2.8.0.Beta1-1.5-SNAPSHOT" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaJavaUtilProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val guicey = "org.guiceyfruit" % "guice-core" % "2.0-beta-4" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
     val multiverse = "org.multiverse" % "multiverse-alpha" % "0.4" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val rabbit = "com.rabbitmq" % "amqp-client" % "1.7.2" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaRestProject(info: ProjectInfo) extends AkkaDefaults(info) {
@@ -281,7 +288,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     val jersey_json = "com.sun.jersey" % "jersey-json" % JERSEY_VERSION % "compile"
     val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala" % JERSEY_VERSION % "compile"
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaCometProject(info: ProjectInfo) extends AkkaDefaults(info) {
@@ -290,19 +297,19 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     val atmo = "org.atmosphere" % "atmosphere-annotations" % ATMO_VERSION % "compile"
     val atmo_jersey = "org.atmosphere" % "atmosphere-jersey" % ATMO_VERSION % "compile"
     val atmo_runtime = "org.atmosphere" % "atmosphere-runtime" % ATMO_VERSION % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val camel_core = "org.apache.camel" % "camel-core" % "2.2.0" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaPatternsProject(info: ProjectInfo) extends AkkaDefaults(info) {
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSecurityProject(info: ProjectInfo) extends AkkaDefaults(info) {
@@ -316,25 +323,25 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
     val mockito = "org.mockito" % "mockito-all" % "1.8.1" % "test"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val thrift = "com.facebook" % "thrift" % "1.0" % "compile"
     val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.2" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaMongoProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val mongo = "org.mongodb" % "mongo-java-driver" % "1.1" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaults(info) {
@@ -347,7 +354,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "test"
     val log4j = "log4j" % "log4j" % "1.2.15" % "test"    
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
@@ -363,13 +370,13 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
 
   class AkkaJgroupsProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val jgroups = "jgroups" % "jgroups" % "2.8.0.CR7" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaShoalProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val shoal = "shoal-jxta" % "shoal" % "1.1-20090818" % "compile"
     val shoal_extra = "shoal-jxta" % "jxta" % "1.1-20090818" % "compile"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaClusterParentProject(info: ProjectInfo) extends ParentProject(info) {
@@ -380,7 +387,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   }
 
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaults(info) {
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaults(info) {
@@ -390,7 +397,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
-    lazy val dist = deployTask(info, distPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   // examples
@@ -408,7 +415,7 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
   }
 
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaults(info) {
-    lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, deployPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends AkkaDefaults(info) {
@@ -419,16 +426,16 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     // testing
     val jetty = "org.mortbay.jetty" % "jetty" % "6.1.22" % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
-    lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, deployPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaults(info) {
-    lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, deployPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSampleRestScalaProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
-    lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, deployPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaults(info) {
@@ -437,14 +444,14 @@ class AkkaParent(info: ProjectInfo) extends AkkaDefaults(info) {
     val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile"
     val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.0" % "compile"
-    lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, deployPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaults(info) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
     val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
-    lazy val dist = deployTask(info, deployPath) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
+    lazy val dist = deployTask(info, deployPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
