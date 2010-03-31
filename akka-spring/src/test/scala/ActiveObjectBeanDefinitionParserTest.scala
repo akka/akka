@@ -12,17 +12,22 @@ import ScalaDom._
 import org.w3c.dom.Element
 
 /**
- * Test for ActiveObjectBeanDefinitionParser
+ * Test for ActiveObjectParser
  * @author michaelkober
  */
 @RunWith(classOf[JUnitRunner])
 class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
-  private class Parser extends ActiveObjectBeanDefinitionParser
+  private class Parser extends ActiveObjectParser
   
-  describe("An ActiveObjectBeanDefinitionParser") {
+  describe("An ActiveObjectParser") {
     val parser = new Parser()
     it("should parse the active object configuration") {
-      val props = parser.parseActiveObject(createTestElement);
+      val xml = <akka:active-object id="active-object1"
+                                    target="foo.bar.MyPojo"
+                                    timeout="1000"
+                                    transactional="true"/>
+
+      val props = parser.parseActiveObject(dom(xml).getDocumentElement);
       assert(props != null)
       assert(props.timeout == 1000)
       assert(props.target == "foo.bar.MyPojo")
@@ -30,22 +35,32 @@ class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
 
     it("should throw IllegalArgumentException on missing mandatory attributes") {
-      evaluating { parser.parseActiveObject(createTestElement2) } should produce [IllegalArgumentException]
+      val xml = <akka:active-object id="active-object1"
+                                    timeout="1000"
+                                    transactional="true"/>
+
+      evaluating { parser.parseActiveObject(dom(xml).getDocumentElement) } should produce [IllegalArgumentException]
     }
-  }
 
-  private def createTestElement : Element = {
-    val xml = <akka:active-object id="active-object1"
-                                        target="foo.bar.MyPojo"
-                                        timeout="1000"
-                        transactional="true"/>
-    dom(xml).getDocumentElement
-  }
+    it("should parse ActiveObjects configuration with dispatcher") {
+      val xml = <akka:active-object id="active-object-with-dispatcher" target="se.scalablesolutions.akka.spring.foo.MyPojo"
+                  timeout="1000">
+                  <akka:dispatcher type="thread-based" name="my-thread-based-dispatcher"/>
+                </akka:active-object>
+      val props = parser.parseActiveObject(dom(xml).getDocumentElement);
+      assert(props != null)
+      assert(props.dispatcher.dispatcherType == "thread-based")
+    }
 
-  private def createTestElement2 : Element = {
-    val xml = <akka:active-object id="active-object1"
-                                        timeout="1000"
-                        transactional="true"/>
-    dom(xml).getDocumentElement
+    it("should parse remote ActiveObjects configuration") {
+      val xml = <akka:active-object id="remote active-object" target="se.scalablesolutions.akka.spring.foo.MyPojo"
+                  timeout="1000">
+                  <akka:remote host="com.some.host" port="9999"/>
+                </akka:active-object>
+      val props = parser.parseActiveObject(dom(xml).getDocumentElement);
+      assert(props != null)
+      assert(props.host == "com.some.host")
+      assert(props.port == 9999)
+    }
   }
 }
