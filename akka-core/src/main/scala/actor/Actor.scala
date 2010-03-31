@@ -19,9 +19,10 @@ import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
-import java.util.{Deque, HashSet}
+import jsr166x.{Deque, ConcurrentLinkedDeque}
+
+import java.util.HashSet
 import java.net.InetSocketAddress
-import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.locks.{Lock, ReentrantLock}
 
 /**
@@ -240,7 +241,7 @@ trait Actor extends TransactionManagement with Logging {
   private[akka] var _linkedActors: Option[HashSet[Actor]] = None
   private[akka] var _supervisor: Option[Actor] = None
   private[akka] var _replyToAddress: Option[InetSocketAddress] = None
-  private[akka] val _mailbox: Deque[MessageInvocation] = new LinkedBlockingDeque[MessageInvocation]
+  private[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
 
   /**
    * This lock ensures thread safety in the dispatching: only one message can 
