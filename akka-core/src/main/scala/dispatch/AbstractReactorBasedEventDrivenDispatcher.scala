@@ -25,7 +25,7 @@ abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) exten
 
   override def unregister(actor: Actor) = synchronized {
     messageInvokers.remove(actor)
-    super.register(actor)
+    super.unregister(actor)
   }
 
   def shutdown = if (active) {
