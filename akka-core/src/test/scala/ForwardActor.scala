@@ -1,5 +1,6 @@
 package se.scalablesolutions.akka.actor
 
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
@@ -8,12 +9,15 @@ class ForwardActorTest extends JUnitSuite {
 
   object ForwardState {
     var sender: Actor = null
-    var result: String = "nada"
+    val finished = new CountDownLatch(1)
   }
 
   class ReceiverActor extends Actor {
     def receive = {
-      case "SendBang" => ForwardState.sender = sender.get
+      case "SendBang" => {
+        ForwardState.sender = sender.get
+        ForwardState.finished.countDown
+      }
       case "SendBangBang" => reply("SendBangBang")
     }
   }
@@ -40,7 +44,10 @@ class ForwardActorTest extends JUnitSuite {
   class BangBangSenderActor extends Actor {
     val forwardActor = new ForwardActor
     forwardActor.start
-    ForwardState.result = (forwardActor !! "SendBangBang").getOrElse("nada")
+    (forwardActor !! "SendBangBang") match {
+      case Some(_) => {ForwardState.finished.countDown}
+      case None => {}
+    }
     def receive = {
       case _ => {}
     }
@@ -50,7 +57,8 @@ class ForwardActorTest extends JUnitSuite {
   def shouldForwardActorReferenceWhenInvokingForwardOnBang = {
     val senderActor = new BangSenderActor
     senderActor.start
-    Thread.sleep(1000)
+    ForwardState.finished.await(1, TimeUnit.SECONDS)
+    assert(0 === ForwardState.finished.getCount)
     assert(ForwardState.sender ne null)
     assert(senderActor === ForwardState.sender)
   }
@@ -59,7 +67,7 @@ class ForwardActorTest extends JUnitSuite {
   def shouldForwardActorReferenceWhenInvokingForwardOnBangBang = {
     val senderActor = new BangBangSenderActor
     senderActor.start
-    Thread.sleep(1000)
-    assert(ForwardState.result === "SendBangBang")
+    ForwardState.finished.await(1, TimeUnit.SECONDS)
+    assert(0 === ForwardState.finished.getCount)
   }
 }
