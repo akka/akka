@@ -144,7 +144,9 @@ abstract class AkkaDefaults(info: ProjectInfo) extends DefaultProject(info) with
     descendents(path("lib") ##, "*.jar") +++
     descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
     .filter(jar => // remove redundant libs
-      !jar.toString.endsWith("stax-api-1.0.1.jar")) 
+      !jar.toString.endsWith("stax-api-1.0.1.jar") || 
+      !jar.toString.endsWith("scala-library-2.7.7.jar")
+    ) 
   }
 
   def deployTask(info: ProjectInfo, toDir: Path, genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
