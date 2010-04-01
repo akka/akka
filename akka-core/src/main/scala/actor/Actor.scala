@@ -220,9 +220,6 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends TransactionManagement with Logging {
-  implicit protected val self: Option[Actor] = Some(this)
-  implicit protected val transactionFamilyName: String = this.getClass.getName
-
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
 
@@ -1049,8 +1046,6 @@ trait Actor extends TransactionManagement with Logging {
         !message.isInstanceOf[List[_]] &&
         !message.isInstanceOf[scala.collection.immutable.Map[_, _]] &&
         !message.isInstanceOf[scala.collection.immutable.Set[_]] &&
-        //Removed in Scala 2.8
-        //!message.isInstanceOf[scala.collection.immutable.Tree[_, _]] &&
         !message.getClass.isAnnotationPresent(Annotations.immutable)) {
       Serializer.Java.deepClone(message)
     } else message

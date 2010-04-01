@@ -44,6 +44,14 @@ import java.io.File
 class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
+  // project versions
+  val JERSEY_VERSION = "1.1.5"
+  val ATMO_VERSION = "0.5.4"
+  val CASSANDRA_VERSION = "0.5.0"
+  val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
+  val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
+  
+   // ------------------------------------------------------------
   lazy val akkaHome = {
     val home = System.getenv("AKKA_HOME")
     if (home == null) throw new Error(
@@ -59,38 +67,45 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
 
-  // These lines need to be here instead of in DefaultProject to be able to resolve project.name in build.properties
-  val sourceArtifact = Artifact(artifactID, "src", "jar", Some("src"), Nil, None)
-  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("doc"), Nil, None)
-
   lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
 
   // ------------------------------------------------------------
-  // publishing
-  override def managedStyle = ManagedStyle.Maven
-  def publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
+  // repositories
+  val embeddedrepo = "embedded repo" at new File(akkaHome, "embedded-repo").toURI.toString
+  val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
+  val databinder = "DataBinder" at "http://databinder.net/repo"
+  // val configgy = "Configgy" at "http://www.lag.net/repo"
+  val codehaus = "Codehaus" at "http://repository.codehaus.org"
+  val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
+  val jboss = "jBoss" at "http://repository.jboss.org/maven2"
+  val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
+  val google = "google" at "http://google-maven-repository.googlecode.com/svn/repository"
+  val m2 = "m2" at "http://download.java.net/maven/2"
+  val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
 
-  // Credentials(Path.userHome / ".akka_publish_credentials", log)
+  // ------------------------------------------------------------
+  // project defintions
+  lazy val akka_java_util = project("akka-util-java", "akka-util-java", new AkkaJavaUtilProject(_))
+  lazy val akka_util = project("akka-util", "akka-util", new AkkaUtilProject(_))
+  lazy val akka_core = project("akka-core", "akka-core", new AkkaCoreProject(_), akka_util, akka_java_util)
+  lazy val akka_amqp = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
+  lazy val akka_rest = project("akka-rest", "akka-rest", new AkkaRestProject(_), akka_core)
+  lazy val akka_comet = project("akka-comet", "akka-comet", new AkkaCometProject(_), akka_rest)
+  lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
+  lazy val akka_patterns = project("akka-patterns", "akka-patterns", new AkkaPatternsProject(_), akka_core)
+  lazy val akka_security = project("akka-security", "akka-security", new AkkaSecurityProject(_), akka_core)
+  lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
+  lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
+  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
+  lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
+    akka_core, akka_rest, akka_spring, akka_camel, akka_persistence, 
+    akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns)
 
-  override def documentOptions = encodingUtf8.map(SimpleDocOption(_))  
-  override def packageDocsJar = defaultJarPath("-doc.jar")
-  override def packageSrcJar= defaultJarPath("-src.jar")
-  override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
+  // functional tests in java
+  lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
 
-  override def pomExtra =
-    <inceptionYear>2009</inceptionYear>
-    <url>http://akkasource.org</url>
-    <organization>
-      <name>Scalable Solutions AB</name>
-      <url>http://scalablesolutions.se</url>
-    </organization>
-    <licenses>
-      <license>
-        <name>Apache 2</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>
+  // examples
+  lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
   // ------------------------------------------------------------
   // create executable jar
@@ -131,51 +146,36 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     ) 
 
   // ------------------------------------------------------------
-  // project versions
-  val JERSEY_VERSION = "1.1.5"
-  val ATMO_VERSION = "0.5.4"
-  val CASSANDRA_VERSION = "0.5.0"
-  val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
-  val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
-  
-  // ------------------------------------------------------------
-  // repositories
-  val embeddedrepo = "embedded repo" at new File(akkaHome, "embedded-repo").toURI.toString
-  val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
-  val databinder = "DataBinder" at "http://databinder.net/repo"
- // val configgy = "Configgy" at "http://www.lag.net/repo"
-  val codehaus = "Codehaus" at "http://repository.codehaus.org"
-  val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val jboss = "jBoss" at "http://repository.jboss.org/maven2"
-  val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
-  val google = "google" at "http://google-maven-repository.googlecode.com/svn/repository"
-  val m2 = "m2" at "http://download.java.net/maven/2"
-  val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
+  // publishing
+  override def managedStyle = ManagedStyle.Maven
+  //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
+  val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
-  // ------------------------------------------------------------
-  // project defintions
-  lazy val akka_java_util = project("akka-util-java", "akka-util-java", new AkkaJavaUtilProject(_))
-  lazy val akka_util = project("akka-util", "akka-util", new AkkaUtilProject(_))
-  lazy val akka_core = project("akka-core", "akka-core", new AkkaCoreProject(_), akka_util, akka_java_util)
-  lazy val akka_amqp = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
-  lazy val akka_rest = project("akka-rest", "akka-rest", new AkkaRestProject(_), akka_core)
-  lazy val akka_comet = project("akka-comet", "akka-comet", new AkkaCometProject(_), akka_rest)
-  lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
-  lazy val akka_patterns = project("akka-patterns", "akka-patterns", new AkkaPatternsProject(_), akka_core)
-  lazy val akka_security = project("akka-security", "akka-security", new AkkaSecurityProject(_), akka_core)
-  lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
-  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
-  lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
-    akka_core, akka_rest, akka_spring, akka_camel, akka_persistence, 
-    akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns)
+  val sourceArtifact = Artifact(artifactID, "src", "jar", Some("src"), Nil, None)
+  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("doc"), Nil, None)
 
-  // functional tests in java
-  lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
+  // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
-  // examples
-  lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
-  
+  //override def documentOptions = encodingUtf8.map(SimpleDocOption(_))  
+  override def packageDocsJar = defaultJarPath("-doc.jar")
+  override def packageSrcJar= defaultJarPath("-src.jar")
+  override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
+
+  override def pomExtra =
+    <inceptionYear>2009</inceptionYear>
+    <url>http://akkasource.org</url>
+    <organization>
+      <name>Scalable Solutions AB</name>
+      <url>http://scalablesolutions.se</url>
+    </organization>
+    <licenses>
+      <license>
+        <name>Apache 2</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+
   // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends DefaultProject(info) {
