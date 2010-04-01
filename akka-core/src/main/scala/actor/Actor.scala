@@ -220,6 +220,7 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends TransactionManagement with Logging {
+  implicit protected val self: Option[Actor] = Some(this)
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
 
@@ -430,10 +431,6 @@ trait Actor extends TransactionManagement with Logging {
   def start: Actor = synchronized {
     if (_isShutDown) throw new IllegalStateException("Can't restart an actor that has been shut down with 'exit'")
     if (!_isRunning) {
-      if (messageDispatcher.isShutdown &&
-          messageDispatcher.isInstanceOf[Dispatchers.globalExecutorBasedEventDrivenDispatcher.type]) {
-        messageDispatcher.asInstanceOf[ExecutorBasedEventDrivenDispatcher].init
-      }
       messageDispatcher.register(this)
       messageDispatcher.start
       _isRunning = true
@@ -456,7 +453,6 @@ trait Actor extends TransactionManagement with Logging {
   def stop = synchronized {
     if (_isRunning) {
       messageDispatcher.unregister(this)
-      if (messageDispatcher.canBeShutDown) messageDispatcher.shutdown // shut down in the dispatcher's references is zero
       _isRunning = false
       _isShutDown = true
       shutdown

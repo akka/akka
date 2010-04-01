@@ -22,7 +22,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with
         Thread.sleep(delay)
         invocationCount += 1
         finishedCounter.countDown
-//        println(id + " processed " + x)
       }
     }
   }
