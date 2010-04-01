@@ -1,6 +1,6 @@
 package se.scalablesolutions.akka.actor
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import junit.framework.TestCase
 
 import org.scalatest.junit.JUnitSuite
@@ -10,15 +10,15 @@ import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
 object Global {
-  var oneWay = "nada"
-  var remoteReply = "nada"
+  val oneWay = new CountDownLatch(1)
+  val remoteReply = new CountDownLatch(1)
 }
 class RemoteActorSpecActorUnidirectional extends Actor {
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
   def receive = {
     case "OneWay" =>
-      Global.oneWay = "received"
+      Global.oneWay.countDown
   }
 }
 
@@ -38,7 +38,7 @@ class RemoteActorSpecActorAsyncSender extends Actor {
     case Send(actor: Actor) =>
       actor ! "Hello"
     case "World" =>
-      Global.remoteReply = "replied"
+      Global.remoteReply.countDown
   }
 
   def send(actor: Actor) {
@@ -85,8 +85,8 @@ class ClientInitiatedRemoteActorTest extends JUnitSuite {
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
     val result = actor ! "OneWay"
-    Thread.sleep(1000)
-    assert("received" === Global.oneWay)
+    Global.oneWay.await(1, TimeUnit.SECONDS)
+    assert(0 === Global.oneWay.getCount)
     actor.stop
   }
 
@@ -111,8 +111,8 @@ class ClientInitiatedRemoteActorTest extends JUnitSuite {
     sender.setReplyToAddress(HOSTNAME, PORT1)
     sender.start
     sender.send(actor)
-    Thread.sleep(1000)
-    assert("replied" === Global.remoteReply)
+    Global.remoteReply.await(1, TimeUnit.SECONDS)
+    assert(0 === Global.remoteReply.getCount)
     actor.stop
   }
 

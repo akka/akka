@@ -1,7 +1,6 @@
 package se.scalablesolutions.akka.actor
 
-import java.util.concurrent.TimeUnit
-
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Dispatchers
@@ -22,17 +21,17 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorTest extends JUnitSuite {
   }
 
   @Test def shouldSendOneWay = {
-    var oneWay = "nada"
+    val oneWay = new CountDownLatch(1)
     val actor = new Actor {
       dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
       def receive = {
-        case "OneWay" => oneWay = "received"
+        case "OneWay" => oneWay.countDown
       }
     }
     actor.start
     val result = actor ! "OneWay"
-    Thread.sleep(1000)
-    assert("received" === oneWay)
+    oneWay.await(1, TimeUnit.SECONDS)
+    assert(0 === oneWay.getCount)
     actor.stop
   }
 

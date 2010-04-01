@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
+import _root_.java.util.concurrent.{TimeUnit, BlockingQueue, LinkedBlockingQueue}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.dispatch.Dispatchers
 import se.scalablesolutions.akka.{OneWay, Die, Ping}
@@ -17,15 +18,15 @@ import org.junit.Test
 class SupervisorTest extends JUnitSuite {
   import Actor.Sender.Self
 
-  var messageLog: String = ""
-  var oneWayLog: String = ""
-  
+  var messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
+  var oneWayLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
+
   var pingpong1: PingPong1Actor = _
   var pingpong2: PingPong2Actor = _
   var pingpong3: PingPong3Actor = _
 
   @Test def shouldStartServer = {
-    messageLog = ""
+    messageLog.clear
     val sup = getSingleActorAllForOneSupervisor
     sup.start
 
@@ -35,414 +36,265 @@ class SupervisorTest extends JUnitSuite {
   }
 
   @Test def shouldKillSingleActorOneForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getSingleActorOneForOneSupervisor
     sup.start
-    Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! Die
     }
-    Thread.sleep(500)
+
     expect("DIE") {
-      messageLog
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldCallKillCallSingleActorOneForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getSingleActorOneForOneSupervisor
     sup.start
-    Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("ping") {
-      messageLog
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
       pingpong1 !! Die
     }
-    Thread.sleep(500)
-    expect("pingDIE") {
-      messageLog
+
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
-    expect("pingDIEping") {
-      messageLog
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldKillSingleActorAllForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getSingleActorAllForOneSupervisor
     sup.start
-    Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong1 !! Die
     }
-    Thread.sleep(500)
+
     expect("DIE") {
-      messageLog
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldCallKillCallSingleActorAllForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getSingleActorAllForOneSupervisor
     sup.start
-    Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("ping") {
-      messageLog
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
       pingpong1 !! Die
     }
-    Thread.sleep(500)
-    expect("pingDIE") {
-      messageLog
+
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
-    expect("pingDIEping") {
-      messageLog
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldKillMultipleActorsOneForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getMultipleActorsOneForOneConf
     sup.start
-    Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong3 !! Die
     }
-    Thread.sleep(500)
+
     expect("DIE") {
-      messageLog
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   def tesCallKillCallMultipleActorsOneForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getMultipleActorsOneForOneConf
     sup.start
-    Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong2 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong3 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
-    expect("pingpingping") {
-      messageLog
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
       pingpong2 !! Die
     }
-    Thread.sleep(500)
-    expect("pingpingpingDIE") {
-      messageLog
+
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong2 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong3 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
-    expect("pingpingpingDIEpingpingping") {
-      messageLog
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldKillMultipleActorsAllForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getMultipleActorsAllForOneConf
     sup.start
-    Thread.sleep(500)
     intercept[RuntimeException] {
       pingpong2 !! Die
     }
-    Thread.sleep(500)
-    expect("DIEDIEDIE") {
-      messageLog
+
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   def tesCallKillCallMultipleActorsAllForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getMultipleActorsAllForOneConf
     sup.start
-    Thread.sleep(500)
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong2 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong3 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
-    expect("pingpingping") {
-      messageLog
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
       pingpong2 !! Die
     }
-    Thread.sleep(500)
-    expect("pingpingpingDIEDIEDIE") {
-      messageLog
+
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     expect("pong") {
       (pingpong1 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong2 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
+
     expect("pong") {
       (pingpong3 !! Ping).getOrElse("nil")
     }
-    Thread.sleep(500)
-    expect("pingpingpingDIEDIEDIEpingpingping") {
-      messageLog
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldOneWayKillSingleActorOneForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getSingleActorOneForOneSupervisor
     sup.start
-    Thread.sleep(500)
     pingpong1 ! Die
-    Thread.sleep(500)
+
     expect("DIE") {
-      messageLog
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldOneWayCallKillCallSingleActorOneForOne = {
-    messageLog = ""
+    messageLog.clear
     val sup = getSingleActorOneForOneSupervisor
     sup.start
-    Thread.sleep(500)
     pingpong1 ! OneWay
-    Thread.sleep(500)
+
     expect("oneway") {
-      oneWayLog
+      oneWayLog.poll(1, TimeUnit.SECONDS)
     }
     pingpong1 ! Die
-    Thread.sleep(500)
+
     expect("DIE") {
-      messageLog
+      messageLog.poll(1, TimeUnit.SECONDS)
     }
     pingpong1 ! OneWay
-    Thread.sleep(500)
-    expect("onewayoneway") {
-      oneWayLog
+
+    expect("oneway") {
+      oneWayLog.poll(1, TimeUnit.SECONDS)
     }
   }
 
-  /*
-  @Test def shouldOneWayKillSingleActorAllForOne = {
-    messageLog = ""
-    val sup = getSingleActorAllForOneSupervisor
-    sup.start
-    Thread.sleep(500)
-    intercept[RuntimeException] {
-      pingpong1 ! Die
-    }
-    Thread.sleep(500)
-    expect("DIE") {
-      messageLog
-    }
-  }
-
-  @Test def shouldOneWayCallKillCallSingleActorAllForOne = {
-    messageLog = ""
-    val sup = getSingleActorAllForOneSupervisor
-    sup.start
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("ping") {
-      messageLog
-    }
-    intercept[RuntimeException] {
-      pingpong1 ! Die
-    }
-    Thread.sleep(500)
-    expect("pingDIE") {
-      messageLog
-    }
-    expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingDIEping") {
-      messageLog
-    }
-  }
-
-  @Test def shouldOneWayKillMultipleActorsOneForOne = {
-    messageLog = ""
-    val sup = getMultipleActorsOneForOneConf
-    sup.start
-    Thread.sleep(500)
-    intercept[RuntimeException] {
-      pingpong3 ! Die
-    }
-    Thread.sleep(500)
-    expect("DIE") {
-      messageLog
-    }
-  }
-
-  def tesOneWayCallKillCallMultipleActorsOneForOne = {
-    messageLog = ""
-    val sup = getMultipleActorsOneForOneConf
-    sup.start
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingping") {
-      messageLog
-    }
-    intercept[RuntimeException] {
-      pingpong2 ! Die
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIE") {
-      messageLog
-    }
-    expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIEpingpingping") {
-      messageLog
-    }
-  }
-
-  @Test def shouldOneWayKillMultipleActorsAllForOne = {
-    messageLog = ""
-    val sup = getMultipleActorsAllForOneConf
-    sup.start
-    Thread.sleep(500)
-    intercept[RuntimeException] {
-      pingpong2 ! Die
-    }
-    Thread.sleep(500)
-    expect("DIEDIEDIE") {
-      messageLog
-    }
-  }
-
-  def tesOneWayCallKillCallMultipleActorsAllForOne = {
-    messageLog = ""
-    val sup = getMultipleActorsAllForOneConf
-    sup.start
-    Thread.sleep(500)
-    expect("pong") {
-      pingpong1 ! Ping
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingping") {
-      messageLog
-    }
-    intercept[RuntimeException] {
-      pingpong2 ! Die
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIEDIEDIE") {
-      messageLog
-    }
-    expect("pong") {
-      (pingpong1 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong2 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pong") {
-      (pingpong3 ! Ping).getOrElse("nil")
-    }
-    Thread.sleep(500)
-    expect("pingpingpingDIEDIEDIEpingpingping") {
-      messageLog
-    }
-  }
-   */
-
-  /*
-   @Test def shouldNestedSupervisorsTerminateFirstLevelActorAllForOne = {
-    messageLog = ""
-     val sup = getNestedSupervisorsAllForOneConf
-     sup.start
-     intercept[RuntimeException] {
-       pingpong1 !! Die
-     }
-     Thread.sleep(500)
-     expect("DIEDIEDIE") {
-       messageLog
-     }
-   }
-*/
-  
   // =============================================
   // Creat some supervisors with different configurations
 
@@ -547,44 +399,44 @@ class SupervisorTest extends JUnitSuite {
   class PingPong1Actor extends Actor {
     def receive = {
       case Ping =>
-        messageLog += "ping"
+        messageLog.put("ping")
         reply("pong")
 
       case OneWay =>
-        oneWayLog += "oneway"
+        oneWayLog.put("oneway")
       
       case Die =>
         throw new RuntimeException("DIE")
     }
     override protected def postRestart(reason: Throwable) {
-      messageLog += reason.getMessage
+      messageLog.put(reason.getMessage)
     }
   }
 
   class PingPong2Actor extends Actor {
     def receive = {
       case Ping =>
-        messageLog += "ping"
+        messageLog.put("ping")
         reply("pong")
       case Die =>
         throw new RuntimeException("DIE")
     }
     override protected def postRestart(reason: Throwable) {
-      messageLog += reason.getMessage
+      messageLog.put(reason.getMessage)
     }
   }
 
   class PingPong3Actor extends Actor {
     def receive = {
       case Ping =>
-        messageLog += "ping"
+        messageLog.put("ping")
         reply("pong")
       case Die =>
         throw new RuntimeException("DIE")
     }
 
     override protected def postRestart(reason: Throwable) {
-      messageLog += reason.getMessage
+      messageLog.put(reason.getMessage)
     }
   }
 }
