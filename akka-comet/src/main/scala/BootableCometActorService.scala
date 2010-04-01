@@ -19,7 +19,7 @@ import se.scalablesolutions.akka.util.{Bootable, Logging}
 trait BootableCometActorService extends Bootable with Logging {
   self : BootableActorLoaderService =>
   
-  import config.Config._
+  import se.scalablesolutions.akka.config.Config._
   
   val REST_HOSTNAME = config.getString("akka.rest.hostname", "localhost")
   val REST_URL = "http://" + REST_HOSTNAME
@@ -44,8 +44,8 @@ trait BootableCometActorService extends Bootable with Logging {
       adapter.setServletInstance(new AkkaServlet)
       adapter.setContextPath(uri.getPath)
       adapter.addInitParameter("cometSupport", "org.atmosphere.container.GrizzlyCometSupport")
-      if (HOME.isDefined) adapter.setRootFolder(HOME.get + "/deploy/root")
-      log.info("REST service root path [%s] and context path [%s]", adapter.getRootFolder, adapter.getContextPath)
+      if (HOME.isDefined) adapter.addRootFolder(HOME.get + "/deploy/root")
+      log.info("REST service root path [%s] and context path [%s]", adapter.getRootFolders, adapter.getContextPath)
 
       val ah = new com.sun.grizzly.arp.DefaultAsyncHandler
       ah.addAsyncFilter(new com.sun.grizzly.comet.CometAsyncFilter)
@@ -55,19 +55,18 @@ trait BootableCometActorService extends Bootable with Logging {
           t.setAdapter(adapter)
           t.setEnableAsyncExecution(true)
           t.setAsyncHandler(ah)
-              t.listen
-              t }
-
+          t.listen
+          t 
+      }
       log.info("REST service started successfully. Listening to port [%s]", REST_PORT)
     }
   }
   
   abstract override def onUnload = {
-        super.onUnload
-        
-        if (jerseySelectorThread.isDefined) {
-        log.info("Shutting down REST service (Jersey)")
-        jerseySelectorThread.get.stopEndpoint
-      }
+    super.onUnload    
+    if (jerseySelectorThread.isDefined) {
+      log.info("Shutting down REST service (Jersey)")
+      jerseySelectorThread.get.stopEndpoint
+    }
   }
 }

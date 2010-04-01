@@ -244,7 +244,7 @@ class RemoteServerPipelineFactory(
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@ChannelPipelineCoverage {val value = "all"}
+@ChannelHandler.Sharable
 class RemoteServerHandler(
     val name: String,
     val openChannels: ChannelGroup,
@@ -310,7 +310,7 @@ class RemoteServerHandler(
         actor.!(message)(Some(remoteActor))
       } else {
         // couldn't find a way to reply, send the message without a source/sender
-        actor.send(message)
+        actor ! message
       }
     } else {
       try {

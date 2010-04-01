@@ -5,6 +5,9 @@
 package se.scalablesolutions.akka
 
 import se.scalablesolutions.akka.serialization.Serializable
+import sbinary._
+import sbinary.Operations._
+import sbinary.DefaultProtocol._
 
 sealed abstract class TestMessage
 case object Ping extends TestMessage

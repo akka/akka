@@ -58,7 +58,8 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    assertEquals(3, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(3 == t)
   }
 
   @Test
@@ -68,11 +69,13 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    assertEquals(3, (qa !! SZ).get)
+    val s: Int = (qa !! SZ).get
+    assertTrue(3 == s)
     assertEquals("a-123", (qa !! DQ).get)
     assertEquals("a-124", (qa !! DQ).get)
     assertEquals("a-125", (qa !! DQ).get)
-    assertEquals(0, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(0 == t)
   }
 
   @Test
@@ -85,11 +88,14 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    assertEquals(3, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(3 == t)
     assertEquals("a-123", (qa !! DQ).get)
-    assertEquals(2, (qa !! SZ).get)
+    val s: Int = (qa !! SZ).get
+    assertTrue(2 == s)
     qa !! MNDQ(List("a-126", "a-127"), 2, failer)
-    assertEquals(2, (qa !! SZ).get)
+    val u: Int = (qa !! SZ).get
+    assertTrue(2 == u)
   }
 
   @Test
@@ -104,22 +110,26 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-124")
     qa !! NQ("a-125")
 
-    assertEquals(3, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(3 == t)
 
     // dequeue 1
     assertEquals("a-123", (qa !! DQ).get)
 
     // size == 2
-    assertEquals(2, (qa !! SZ).get)
+    val s: Int = (qa !! SZ).get
+    assertTrue(2 == s)
 
     // enqueue 2, dequeue 2 => size == 2
     qa !! MNDQ(List("a-126", "a-127"), 2, failer)
-    assertEquals(2, (qa !! SZ).get)
+    val u: Int = (qa !! SZ).get
+    assertTrue(2 == u)
 
     // enqueue 2 => size == 4
     qa !! NQ("a-128")
     qa !! NQ("a-129")
-    assertEquals(4, (qa !! SZ).get)
+    val v: Int = (qa !! SZ).get
+    assertTrue(4 == v)
 
     // enqueue 1 => size 5
     // dequeue 6 => fail transaction
@@ -128,6 +138,7 @@ class RedisPersistentQSpec extends TestCase {
       qa !! MNDQ(List("a-130"), 6, failer)
     } catch { case e: Exception => {} }
 
-    assertEquals(4, (qa !! SZ).get)
+    val w: Int = (qa !! SZ).get
+    assertTrue(4 == w)
   }
 }

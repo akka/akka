@@ -111,7 +111,8 @@ class RedisPersistentActorSpec extends TestCase {
     bactor !! Debit("a-123", 8000, failer)
     assertEquals(BigInt(1000), (bactor !! Balance("a-123")).get)
 
-    assertEquals(7, (bactor !! LogSize).get)
+    val c: Int = (bactor !! LogSize).get
+    assertTrue(7 == c)
   }
 
   @Test
@@ -131,7 +132,8 @@ class RedisPersistentActorSpec extends TestCase {
     assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
 
     // should not count the failed one
-    assertEquals(3, (bactor !! LogSize).get)
+    val c: Int = (bactor !! LogSize).get
+    assertTrue(3 == c)
   }
 
   @Test
@@ -152,6 +154,7 @@ class RedisPersistentActorSpec extends TestCase {
     assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
     // should not count the failed one
-    assertEquals(3, (bactor !! LogSize).get)
+    val c: Int = (bactor !! LogSize).get
+    assertTrue(3 == c)
   }
 }

@@ -81,8 +81,8 @@ object Actor extends Logging {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
-  object Sender {
-    implicit val Self: Option[Actor] = None
+  object Sender{
+    object Self
   }
 
   /**
@@ -109,7 +109,7 @@ object Actor extends Logging {
    * <pre>
    * import Actor._
    *
-   * val a = transactor  {
+   * val a = transactor {
    *   case msg => ... // handle message
    * }
    * </pre>
@@ -124,7 +124,7 @@ object Actor extends Logging {
    * The actor is started when created.
    * Example:
    * <pre>
-   * val a = Actor.init  {
+   * val a = Actor.init {
    *   ... // init stuff
    * } receive  {
    *   case msg => ... // handle message
@@ -144,26 +144,25 @@ object Actor extends Logging {
   }
 
   /**
-   * Use to create an anonymous event-driven actor with a body but no message loop block.
+   * Use to spawn out a block of code in an event-driven actor. Will shut actor down when 
+   * the block has been executed.
    * <p/>
-   * This actor can <b>not</b> respond to any messages but can be used as a simple way to
-   * spawn a lightweight thread to process some task.
-   * <p/>
-   * The actor is started when created.
+   * NOTE: If used from within an Actor then has to be qualified with 'Actor.spawn' since 
+   * there is a method 'spawn[ActorType]' in the Actor trait already.
    * Example:
    * <pre>
    * import Actor._
    *
-   * spawn  {
+   * spawn {
    *   ... // do stuff
    * }
    * </pre>
    */
-  def spawn(body: => Unit): Actor = {
+  def spawn(body: => Unit): Unit = {
     case object Spawn
     new Actor() {
       start
-      send(Spawn)
+      this ! Spawn
       def receive = {
         case Spawn => body; stop
       }
@@ -195,7 +194,7 @@ object Actor extends Logging {
    * <pre>
    * import Actor._
    *
-   * val a = actor("localhost", 9999)  {
+   * val a = actor("localhost", 9999) {
    *   case msg => ... // handle message
    * }
    * </pre>
@@ -369,7 +368,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * Example code:
    * <pre>
-   *   def receive =  {
+   *   def receive = {
    *     case Ping =>
    *       println("got a ping")
    *       reply("pong")
@@ -478,41 +477,16 @@ trait Actor extends TransactionManagement with Logging {
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
    * <p/>
    *
-   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable.
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable, 
+   * if invoked from within an Actor. If not then no sender is available.
    * <pre>
    *   actor ! message
    * </pre>
    * <p/>
-   *
-   * If invoked from within a *non* Actor instance then either add this import to resolve the implicit argument:
-   * <pre>
-   *   import Actor.Sender.Self
-   *   actor ! message
-   * </pre>
-   *
-   * Or pass in the implicit argument explicitly:
-   * <pre>
-   *   actor.!(message)(Some(this))
-   * </pre>
-   *
-   * Or use the 'send(..)' method;
-   * <pre>
-   *   actor.send(message)
-   * </pre>
    */
-  def !(message: Any)(implicit sender: Option[Actor]) = {
-    //FIXME 2.8   def !(message: Any)(implicit sender: Option[Actor] = None) = {
+  def !(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) postMessageToMailbox(message, sender)
-    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-  }
-
-  /**
-   * Same as the '!' method but does not take an implicit sender as second parameter.
-   */
-  def send(message: Any) = {
-    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (_isRunning) postMessageToMailbox(message, None)
     else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -577,7 +551,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * Works with both '!' and '!!'. 
    */
-  def forward(message: Any)(implicit sender: Option[Actor]) = {
+  def forward(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
       val forwarder = sender.getOrElse(throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor"))
@@ -605,7 +579,8 @@ trait Actor extends TransactionManagement with Logging {
               "\n\t\t2. Send a message from an instance that is *not* an actor" +
               "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
               "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-              "\n\tthat will be bound by the argument passed to 'reply'. Alternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
+              "\n\tthat will be bound by the argument passed to 'reply'." +
+              "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
           case Some(future) =>
             future.completeWithResult(message)
         }
@@ -733,8 +708,8 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawn[T <: Actor](actorClass: Class[T]): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawn[T <: Actor : Manifest] : T = {
+    val actor = spawnButDoNotStart[T]
     actor.start
     actor
   }
@@ -744,8 +719,8 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawnRemote[T <: Actor : Manifest](hostname: String, port: Int): T = {
+    val actor = spawnButDoNotStart[T]
     actor.makeRemote(hostname, port)
     actor.start
     actor
@@ -756,8 +731,8 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLink[T <: Actor](actorClass: Class[T]): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawnLink[T <: Actor : Manifest] : T = {
+    val actor = spawnButDoNotStart[T]
     try {
       actor.start
     } finally {
@@ -771,8 +746,8 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLinkRemote[T <: Actor](actorClass: Class[T], hostname: String, port: Int): T = {
-    val actor = spawnButDoNotStart(actorClass)
+  protected[this] def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): T = {
+    val actor = spawnButDoNotStart[T]
     try {
       actor.makeRemote(hostname, port)
       actor.start
@@ -804,9 +779,11 @@ trait Actor extends TransactionManagement with Logging {
 
   private[akka] def getSenderFuture = senderFuture
 
-  private def spawnButDoNotStart[T <: Actor](actorClass: Class[T]): T = {
-    val actor = actorClass.newInstance.asInstanceOf[T]
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actor.dispatcher = dispatcher
+  private def spawnButDoNotStart[T <: Actor : Manifest] : T = {
+    val actor = manifest[T].erasure.asInstanceOf[Class[T]].newInstance
+    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
+      actor.dispatcher = dispatcher
+    }
     actor
   }
 
@@ -833,7 +810,7 @@ trait Actor extends TransactionManagement with Logging {
         requestBuilder.setSourceTarget(s.getClass.getName)
         requestBuilder.setSourceUuid(s.uuid)
 
-        val (host, port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME,Actor.PORT))
+        val (host, port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
         
         Actor.log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
 
@@ -1072,17 +1049,14 @@ trait Actor extends TransactionManagement with Logging {
         !message.isInstanceOf[List[_]] &&
         !message.isInstanceOf[scala.collection.immutable.Map[_, _]] &&
         !message.isInstanceOf[scala.collection.immutable.Set[_]] &&
-        !message.isInstanceOf[scala.collection.immutable.Tree[_, _]] &&
+        //Removed in Scala 2.8
+        //!message.isInstanceOf[scala.collection.immutable.Tree[_, _]] &&
         !message.getClass.isAnnotationPresent(Annotations.immutable)) {
       Serializer.Java.deepClone(message)
     } else message
   } else message
 
-  override def hashCode(): Int = {
-    var result = HashCode.SEED
-    result = HashCode.hash(result, _uuid)
-    result
-  }
+  override def hashCode(): Int = HashCode.hash(HashCode.SEED, _uuid)
 
   override def equals(that: Any): Boolean = {
     that != null &&

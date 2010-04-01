@@ -24,8 +24,7 @@ import org.apache.thrift.protocol._
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait CassandraSession extends Closeable with Flushable {
-  import scala.collection.jcl.Conversions._
-  import org.scala_tools.javautils.Imports._
+  import scala.collection.JavaConversions._
   import java.util.{Map => JMap, List => JList}
 
   protected val client: Cassandra.Client
@@ -92,7 +91,7 @@ trait CassandraSession extends Closeable with Flushable {
 
   def ++|(key: String, batch: Map[String, List[ColumnOrSuperColumn]], consistencyLevel: Int): Unit = {
     val jmap = new java.util.HashMap[String, JList[ColumnOrSuperColumn]]
-    for (entry <- batch; (key, value) = entry) jmap.put(key, value.asJava)
+    for (entry <- batch; (key, value) = entry) jmap.put(key, new java.util.ArrayList(value))
     client.batch_insert(keyspace, key, jmap, consistencyLevel)
   }
 
@@ -131,7 +130,6 @@ trait CassandraSession extends Closeable with Flushable {
   def insert(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long): Unit = ++|(key, colPath, value, timestamp)
 
   def insert(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long, consistencyLevel: Int) = ++|(key, colPath, value, timestamp, consistencyLevel)
-
 
   def insert(key: String, batch: Map[String, List[ColumnOrSuperColumn]]): Unit = ++|(key, batch)
 

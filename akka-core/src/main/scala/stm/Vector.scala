@@ -44,7 +44,7 @@ import Vector._
  */
 @serializable
 class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail: Array[AnyRef]) 
-  extends RandomAccessSeq[T] with PersistentDataStructure { outer =>
+  extends IndexedSeq[T] with PersistentDataStructure { outer =>
   private val tailOff = length - tail.length
   
   /*
@@ -104,7 +104,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     ret
   }
   
-  override def ++[A >: T](other: Iterable[A]) = other.foldLeft(this:Vector[A]) { _ + _ }
+  def ++[A >: T](other: Iterable[A]) = other.foldLeft(this:Vector[A]) { _ + _ }
   
   def +[A >: T](obj: A): Vector[A] = {
     if (tail.length < 32) {
@@ -224,7 +224,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     back
   }
   
-  override def flatMap[A](f: (T)=>Iterable[A]):  Vector[A] = {
+  def flatMap[A](f: (T)=>Iterable[A]):  Vector[A] = {
     var back = new Vector[A]
     var i = 0
     
@@ -236,7 +236,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     back
   }
   
-  override def map[A](f: (T)=>A): Vector[A] = {
+  def map[A](f: (T)=>A): Vector[A] = {
     var back = new Vector[A]
     var i = 0
     
@@ -254,7 +254,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     override def apply(i: Int) = outer.apply(length - i - 1)
   }
   
-  override def subseq(from: Int, end: Int) = subVector(from, end)
+  def subseq(from: Int, end: Int) = subVector(from, end)
   
   def subVector(from: Int, end: Int): Vector[T] = {
     if (from < 0) {

@@ -5,6 +5,7 @@ import _root_.net.liftweb.http._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
 import _root_.net.liftweb.http.auth._
+import _root_.net.liftweb.common._
 import Helpers._
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
@@ -17,18 +18,18 @@ import sample.lift.{PersistentSimpleService, SimpleService}
  * A class that's instantiated early and run.  It allows the application
  * to modify lift's environment
  */
-class Boot {
+class Boot extends Logging {
   def boot {
     // where to search snippet
     LiftRules.addToPackages("sample.lift")
     
     LiftRules.httpAuthProtectedResource.prepend {
-      case (ParsePath("liftcount" :: Nil, _, _, _)) => Full(AuthRole("admin"))
+      case (Req("liftcount" :: Nil, _, _)) => Full(AuthRole("admin"))
     }
 
     LiftRules.authentication = HttpBasicAuthentication("lift") {
       case ("someuser", "1234", req) => {
-        Log.info("You are now authenticated !")
+        log.info("You are now authenticated !")
         userRoles(AuthRole("admin"))
         true
       }

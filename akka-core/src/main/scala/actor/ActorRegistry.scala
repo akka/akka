@@ -110,7 +110,7 @@ object ActorRegistry extends Logging {
     } else actorsByClassName.put(className, actor :: Nil)
 
     // notify listeners
-    foreachListener(_ send ActorRegistered(actor))
+    foreachListener(_ ! ActorRegistered(actor))
   }
 
   /**
@@ -121,7 +121,7 @@ object ActorRegistry extends Logging {
     actorsById remove actor.getId
     actorsByClassName remove actor.getClass.getName
     // notify listeners
-    foreachListener(_ send ActorUnregistered(actor))
+    foreachListener(_ ! ActorUnregistered(actor))
   }
 
   /**

@@ -144,7 +144,7 @@ class RedisPersistentSortedSetSpec extends
         qa !! REMOVE(h7)
       }
       catch {
-        case e: Predef.NoSuchElementException =>
+        case e: NoSuchElementException =>
           e.getMessage should endWith("not present")
       }
     }

@@ -16,15 +16,12 @@ class AgentTest extends junit.framework.TestCase
 with Suite with MustMatchers 
 with ActorTestUtil with Logging {
 
-  implicit val txFamilyName = "test"
-
   @Test def testSendFun = verify(new TestActor {
     def test = {
       val agent = Agent(5)
       handle(agent) {
-        agent update (_ + 1)
-        agent update (_ * 2)
-
+        agent send (_ + 1)
+        agent send (_ * 2)
         val result = agent()
         result must be(12)
       }
@@ -35,21 +32,34 @@ with ActorTestUtil with Logging {
     def test = {
       val agent = Agent(5)
       handle(agent) {
-        agent update 6
+        agent send 6
         val result = agent()
         result must be(6)
       }
     }
   })
 
-  @Test def testOneAgentUpdateWithinEnlosingTransactionSuccess = {
+  @Test def testSendProc = verify(new TestActor {
+    def test = {
+      val agent = Agent(5)
+      var result = 0
+      handle(agent) {
+        agent sendProc (result += _)
+        agent sendProc (result += _)
+        Thread.sleep(1000)
+        result must be(10)
+      }
+    }
+  })
+
+  @Test def testOneAgentsendWithinEnlosingTransactionSuccess = {
     case object Go
     val agent = Agent(5)
     val tx = transactor {
-      case Go => agent update (_ + 1)
+      case Go => agent send (_ + 1)
     }
-    tx send Go
-    Thread.sleep(5000)
+    tx ! Go
+    Thread.sleep(1000)
     val result = agent()
     result must be(6)
     agent.close
@@ -63,16 +73,53 @@ with ActorTestUtil with Logging {
     val agent = Agent(5)
     val tx = transactor {
       case Go => 
-        agent update (_ * 2)
+        agent send (_ * 2)
         try { agent() }
         catch { 
           case _ => latch.countDown 
         }
     }      
-    tx send Go
+    tx ! Go
     latch.await // FIXME should await with timeout and fail if timeout
     agent.close
     tx.stop
     assert(true)
   }
+
+  @Test def testAgentForeach = verify(new TestActor {
+    def test = {
+      val agent1 = Agent(3)
+      var result = 0
+      for (first <- agent1) {
+        result = first + 1 
+      }
+      result must be(4)
+      agent1.close
+    }
+  })
+
+  @Test def testAgentMap = verify(new TestActor {
+    def test = {
+      val agent1 = Agent(3)
+      val result = for (first <- agent1) yield first + 1 
+      result() must be(4)
+      result.close
+      agent1.close
+    }
+  })
+
+  @Test def testAgentFlatMap = verify(new TestActor {
+    def test = {
+      val agent1 = Agent(3)
+      val agent2 = Agent(5)
+      val result = for {
+        first <- agent1
+        second <- agent2
+      } yield second + first 
+      result() must be(8)
+      result.close
+      agent1.close
+      agent2.close
+    }
+  })
 }

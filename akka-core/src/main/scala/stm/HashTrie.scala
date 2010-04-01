@@ -46,7 +46,7 @@ trait PersistentDataStructure
  */
 @serializable
 final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] with PersistentDataStructure {
-  lazy val size = root.size
+  override lazy val size = root.size
   
   def this() = this(new EmptyNode[K])
   
@@ -56,11 +56,11 @@ final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] with Pe
     case (k, v) => update(k, v)
   }
   
-  def update[A >: V](key: K, value: A) = new HashTrie(root(0, key, key.hashCode) = value)
+  override def update[A >: V](key: K, value: A) = new HashTrie(root(0, key, key.hashCode) = value)
   
   def -(key: K) = new HashTrie(root.remove(key, key.hashCode))
   
-  def elements = root.elements
+  def iterator = root.elements
   
   def empty[A]: HashTrie[K, A] = new HashTrie(new EmptyNode[K])
   
@@ -68,7 +68,7 @@ final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] with Pe
 }
 
 object HashTrie {
-  def apply[K, V](pairs: (K, V)*) = pairs.foldLeft(new HashTrie[K, V]) { _ + _ }
+  def apply[K, V](pairs: (K, V)*) = pairs.foldLeft((new HashTrie[K, V]).asInstanceOf[Map[K,V]]) { _ + _ }
   
   def unapplySeq[K, V](map: HashTrie[K, V]) = map.toSeq
 }
@@ -152,7 +152,7 @@ private[stm] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V)]) ext
     } yield v
   }
   
-  def update[A >: V](shift: Int, key: K, hash: Int, value: A): Node[K, A] = {
+  override def update[A >: V](shift: Int, key: K, hash: Int, value: A): Node[K, A] = {
     if (this.hash == hash) {
       var found = false
       
@@ -169,7 +169,7 @@ private[stm] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V)]) ext
     }
   }
   
-  def remove(key: K, hash: Int) = {
+  override def remove(key: K, hash: Int) = {
     val newBucket = bucket filter { case (k, _) => k != key }
     
     if (newBucket.length == bucket.length) this else {
@@ -180,7 +180,9 @@ private[stm] class CollisionNode[K, +V](val hash: Int, bucket: List[(K, V)]) ext
     }
   }
   
-  def elements = bucket.elements
+  def iterator = bucket.iterator
+  
+  def elements = bucket.iterator
   
   override def toString = "CollisionNode(" + bucket.toString + ")"
 }
@@ -202,7 +204,7 @@ private[stm] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, V]], bi
     if ((bits & mask) == mask) table(i)(key, hash) else None
   }
   
-  def update[A >: V](levelShift: Int, key: K, hash: Int, value: A): Node[K, A] = {
+  override def update[A >: V](levelShift: Int, key: K, hash: Int, value: A): Node[K, A] = {
     val i = (hash >>> shift) & 0x01f
     val mask = 1 << i
     

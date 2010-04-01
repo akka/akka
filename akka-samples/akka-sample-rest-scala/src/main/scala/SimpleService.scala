@@ -87,7 +87,7 @@ class PubSub extends Actor {
   @Broadcast
   @Path("/topic/{topic}/{message}/")
   @Produces(Array("text/plain;charset=ISO-8859-1"))
-  @Cluster(Array(classOf[AkkaClusterBroadcastFilter])) { val name = "foo" }
+  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "foo")
   def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
 
   def receive = { case _ => }
@@ -148,7 +148,7 @@ class Chat extends Actor {
 
   @POST
   @Broadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
-  @Cluster(Array(classOf[AkkaClusterBroadcastFilter])) { val name = "bar" }
+  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "bar")
   @Consumes(Array("application/x-www-form-urlencoded"))
   @Produces(Array("text/html"))
   def publishMessage(form: MultivaluedMap[String, String]) =
@@ -158,7 +158,7 @@ class Chat extends Actor {
 }
 
 
-class JsonpFilter extends BroadcastFilter[String] with Logging {
+class JsonpFilter extends BroadcastFilter with Logging {
   def filter(an: AnyRef) = {
     val m = an.toString
     var name = m

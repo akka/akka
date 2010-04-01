@@ -164,7 +164,9 @@ object Serializer {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object SBinary extends SBinary
-  trait SBinary {
+  class SBinary {
+    import sbinary._
+    import sbinary.Operations._
     import sbinary.DefaultProtocol._
     
     def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = in[T](out[T](obj), None)

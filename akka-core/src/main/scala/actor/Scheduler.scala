@@ -19,8 +19,6 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.util.Logging
 
-import org.scala_tools.javautils.Imports._
-
 case object UnSchedule
 case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
@@ -66,7 +64,8 @@ object Scheduler extends Actor {
   }
 
   override def shutdown = {
-    schedulers.values.asScala.foreach(_ ! UnSchedule)
+    import scala.collection.JavaConversions._
+    schedulers.values.foreach(_ ! UnSchedule)
     service.shutdown
   }
 

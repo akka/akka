@@ -6,6 +6,7 @@ import org.junit.{Test, Before}
 import org.junit.Assert._
 import _root_.dispatch.json._
 import _root_.dispatch.json.Js._
+import java.util.NoSuchElementException
 
 @scala.reflect.BeanInfo case class Foo(no: Int, name: String)
 class MongoStorageSpec extends TestCase {
@@ -111,12 +112,12 @@ class MongoStorageSpec extends TestCase {
     try {
       MongoStorageBackend.getVectorStorageEntryFor("U-A1", 1)
       fail("should throw an exception")
-    } catch {case e: Predef.NoSuchElementException => {}}
+    } catch {case e: NoSuchElementException => {}}
 
     try {
       MongoStorageBackend.getVectorStorageRangeFor("U-A1", Some(2), None, 12)
       fail("should throw an exception")
-    } catch {case e: Predef.NoSuchElementException => {}}
+    } catch {case e: NoSuchElementException => {}}
   }
 
   @Test
@@ -198,7 +199,7 @@ class MongoStorageSpec extends TestCase {
     try {
       MongoStorageBackend.getMapStorageFor("U-M2")
       fail("should throw an exception")
-    } catch {case e: Predef.NoSuchElementException => {}}
+    } catch {case e: NoSuchElementException => {}}
 
     changeSetM.clear
   }

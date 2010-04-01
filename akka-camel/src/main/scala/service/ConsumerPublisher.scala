@@ -55,7 +55,7 @@ class ConsumerPublisher extends Actor with Logging {
  * @param endpointUri endpoint URI of the consumer actor
  * @param id actor identifier
  * @param uuid <code>true</code> if <code>id</code> refers to Actor.uuid, <code>false</code> if
- *             <code>id</code> refers to Acotr.getId.
+ *             <code>id</code> refers to Actor.getId.
  *
  * @author Martin Krasser
  */

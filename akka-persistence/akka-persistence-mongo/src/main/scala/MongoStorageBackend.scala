@@ -11,6 +11,8 @@ import se.scalablesolutions.akka.config.Config.config
 
 import sjson.json.Serializer._
 
+import java.util.NoSuchElementException
+
 import com.mongodb._
 
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
@@ -125,7 +127,7 @@ private[akka] object MongoStorageBackend extends
     val m =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
       }
@@ -143,7 +145,7 @@ private[akka] object MongoStorageBackend extends
     val m =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
       }
@@ -162,7 +164,7 @@ private[akka] object MongoStorageBackend extends
       else count
 
     val n =
-      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
+      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sortWith((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
     val vals =
       for(s <- n)
         yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
@@ -181,7 +183,7 @@ private[akka] object MongoStorageBackend extends
       }
     } catch {
       case e =>
-        throw new Predef.NoSuchElementException(e.getMessage)
+        throw new NoSuchElementException(e.getMessage)
     }
   }
 
@@ -221,7 +223,7 @@ private[akka] object MongoStorageBackend extends
       val o =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
 
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
@@ -230,7 +232,7 @@ private[akka] object MongoStorageBackend extends
         o.get(index).asInstanceOf[Array[Byte]])
     } catch {
       case e =>
-        throw new Predef.NoSuchElementException(e.getMessage)
+        throw new NoSuchElementException(e.getMessage)
     }
   }
 
@@ -240,7 +242,7 @@ private[akka] object MongoStorageBackend extends
       val o =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
 
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
@@ -254,7 +256,7 @@ private[akka] object MongoStorageBackend extends
         yield serializer.in[AnyRef](e.asInstanceOf[Array[Byte]])
     } catch {
       case e =>
-        throw new Predef.NoSuchElementException(e.getMessage)
+        throw new NoSuchElementException(e.getMessage)
     }
   }
 

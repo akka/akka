@@ -6,11 +6,10 @@ package se.scalablesolutions.akka.config
 
 import JavaConfig._
 
+import java.util.{List => JList}
+import java.util.{ArrayList}
+
 import com.google.inject._
-
-import org.scala_tools.javautils.Imports._
-
-import java.util.{List=>JList, ArrayList}
 
 /**
  * Configurator for the Active Objects. Used to do declarative configuration of supervision.
@@ -23,6 +22,7 @@ import java.util.{List=>JList, ArrayList}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectConfigurator {
+  import scala.collection.JavaConversions._
   // TODO: make pluggable once we have f.e a SpringConfigurator
   private val INSTANCE = new ActiveObjectGuiceConfigurator
 
@@ -32,7 +32,7 @@ class ActiveObjectConfigurator {
    * @param clazz the class for the active object
    * @return a list with all the active objects for the class
    */
-  def getInstances[T](clazz: Class[T]): JList[T] = INSTANCE.getInstance(clazz).asJava
+  def getInstances[T](clazz: Class[T]): JList[T] = INSTANCE.getInstance(clazz).foldLeft(new ArrayList[T]){ (l, i) => l add i ; l }
 
   /**
    * Returns the first item in a list of all active objects that has been put under supervision for the class specified.

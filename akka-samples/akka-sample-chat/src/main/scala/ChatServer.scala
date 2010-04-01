@@ -166,7 +166,7 @@ trait ChatManagement { this: Actor =>
  * Creates and links a RedisChatStorage.
  */
 trait RedisChatStorageFactory { this: Actor =>
-  val storage: ChatStorage = spawnLink(classOf[RedisChatStorage]) // starts and links ChatStorage
+  val storage: ChatStorage = spawnLink[RedisChatStorage] // starts and links ChatStorage
 }
 
 /**

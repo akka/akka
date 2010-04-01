@@ -103,36 +103,29 @@ object Transaction extends TransactionManagement with Logging {
   /**
    * See ScalaDoc on Transaction class.
    */
-  def map[T](f: => T)(implicit transactionFamilyName: String): T =
-    atomic {f}
+  def map[T](f: => T): T = atomic {f}
 
   /**
    * See ScalaDoc on Transaction class.
    */
-  def flatMap[T](f: => T)(implicit transactionFamilyName: String): T =
-    atomic {f}
+  def flatMap[T](f: => T): T = atomic {f}
 
   /**
    * See ScalaDoc on Transaction class.
    */
-  def foreach(f: => Unit)(implicit transactionFamilyName: String): Unit =
-    atomic {f}
+  def foreach(f: => Unit): Unit = atomic {f}
 
   /**
    * See ScalaDoc on Transaction class.
    */
-  def atomic[T](body: => T)(implicit transactionFamilyName: String): T = {
-    // FIXME use Transaction Builder and set the transactionFamilyName
-    //    defaultTxBuilder.setFamilyName(transactionFamilyName)
-    //    new TransactionTemplate[T](defaultTxBuilder.build) {
+  def atomic[T](body: => T): T = {
     var isTopLevelTransaction = true
     new TransactionTemplate[T]() {
       def execute(mtx: MultiverseTransaction): T = {
         val result = body
 
         val txSet = getTransactionSetInScope
-        log.trace("Committing transaction [%s]\n\twith family name [%s]\n\tby joining transaction set [%s]", 
-                  mtx, transactionFamilyName, txSet)
+        log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
         txSet.joinCommit(mtx)
 
         // FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS) 
@@ -208,7 +201,7 @@ object Transaction extends TransactionManagement with Logging {
   def commit = synchronized {
     log.trace("Committing transaction %s", toString)    
     atomic0 {
-      persistentStateMap.values.foreach(_.commit)
+      persistentStateMap.valuesIterator.foreach(_.commit)
     }
     status = TransactionStatus.Completed
   }

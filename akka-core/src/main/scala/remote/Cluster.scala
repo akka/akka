@@ -152,7 +152,7 @@ abstract class BasicClusterActor extends ClusterActor {
 
         case Papers(x) => remotes = remotes + (src -> Node(x))
 
-        case RelayedMessage(c, m) => ActorRegistry.actorsFor(c).foreach(_ send m)
+        case RelayedMessage(c, m) => ActorRegistry.actorsFor(c).foreach(_ ! m)
 
         case unknown => log debug ("Unknown message: %s", unknown.toString)
       }
@@ -166,7 +166,7 @@ abstract class BasicClusterActor extends ClusterActor {
 
     case DeregisterLocalNode(s) => {
       log debug ("DeregisterLocalNode: %s", s)
-      local = Node(local.endpoints - s)
+      local = Node(local.endpoints.filterNot(_ == s))
       broadcast(Papers(local.endpoints))
     }
   }
@@ -201,30 +201,30 @@ abstract class BasicClusterActor extends ClusterActor {
    * Applies the given PartialFunction to all known RemoteAddresses
    */
   def lookup[T](handleRemoteAddress: PartialFunction[RemoteAddress, T]): Option[T] =
-    remotes.values.toList.flatMap(_.endpoints).find(handleRemoteAddress isDefinedAt _).map(handleRemoteAddress)
+    remotes.valuesIterator.toList.flatMap(_.endpoints).find(handleRemoteAddress isDefinedAt _).map(handleRemoteAddress)
 
   /**
    * Applies the given function to all remote addresses known
    */
-  def foreach(f: (RemoteAddress) => Unit): Unit = remotes.values.toList.flatMap(_.endpoints).foreach(f)
+  def foreach(f: (RemoteAddress) => Unit): Unit = remotes.valuesIterator.toList.flatMap(_.endpoints).foreach(f)
 
   /**
    * Registers a local endpoint
    */
   def registerLocalNode(hostname: String, port: Int): Unit =
-    send(RegisterLocalNode(RemoteAddress(hostname, port)))
+    this ! RegisterLocalNode(RemoteAddress(hostname, port))
 
   /**
    * Deregisters a local endpoint
    */
   def deregisterLocalNode(hostname: String, port: Int): Unit =
-    send(DeregisterLocalNode(RemoteAddress(hostname, port)))
+    this ! DeregisterLocalNode(RemoteAddress(hostname, port))
 
   /**
    * Broadcasts the specified message to all Actors of type Class on all known Nodes
    */
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit =
-    send(RelayedMessage(to.getName, msg))
+    this ! RelayedMessage(to.getName, msg)
 }
 
 /**
