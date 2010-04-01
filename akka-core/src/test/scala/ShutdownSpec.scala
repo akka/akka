@@ -13,7 +13,7 @@ object ActorShutdownRunner {
 
     val myActor = new MyActor
     myActor.start
-    myActor.send("test")
+    myActor ! "test"
     myActor.stop
   }
 }

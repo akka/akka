@@ -27,7 +27,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
 
   def thread(body: => Unit) = {
     val thread = new IsolatedEventBasedThread(body).start
-    thread send Start
+    thread ! Start
     thread
   }
 
@@ -93,9 +93,9 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
 
     private[this] val in = new In(this)
 
-    def <<(ref: DataFlowVariable[T]) = in send Set(ref())
+    def <<(ref: DataFlowVariable[T]) = in ! Set(ref())
 
-    def <<(value: T) = in send Set(value)
+    def <<(value: T) = in ! Set(value)
 
     def apply(): T = {
       val ref = value.get
@@ -104,13 +104,13 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
         val out = new Out(this)
         blockedReaders.offer(out)
         val result = out !! Get
-        out send Exit
+        out ! Exit
         result.getOrElse(throw new DataFlowVariableException(
           "Timed out (after " + TIME_OUT + " milliseconds) while waiting for result"))
       }
     }
 
-    def shutdown = in send Exit
+    def shutdown = in ! Exit
   }
 
   /**
@@ -144,7 +144,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
         "Access by index other than '0' is not supported by DataFlowStream")
     }
 
-    override def elements: Iterator[T] = new Iterator[T] {
+    def iterator: Iterator[T] = new Iterator[T] {
       private val iter = queue.iterator
       def hasNext: Boolean = iter.hasNext
       def next: T = { val ref = iter.next; ref() }

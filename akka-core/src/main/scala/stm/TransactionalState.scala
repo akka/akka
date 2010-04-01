@@ -152,7 +152,7 @@ class TransactionalRef[T] extends Transactional {
 
   def elements: Iterator[T] = {
     ensureIsInTransaction
-    if (isEmpty) Iterator.empty else Iterator.fromValues(ref.get)
+    if (isEmpty) Iterator.empty else Iterator(ref.get)
   }
 
   def toList: List[T] = {
@@ -191,11 +191,24 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
 
   ref.swap(new HashTrie[K, V])
  
-  def -=(key: K) = remove(key)
+  def -=(key: K) = { 
+    remove(key)
+    this
+  }
 
   def +=(key: K, value: V) = put(key, value)
+  
+  def +=(kv: (K, V)) = {
+    put(kv._1,kv._2)
+    this
+  }
 
-  def remove(key: K) = ref.swap(ref.get.get - key)
+  override def remove(key: K) = {
+    val map = ref.get.get
+    val oldValue = map.get(key)
+    ref.swap(ref.get.get - key)
+    oldValue
+  }
 
   def get(key: K): Option[V] = ref.get.get.get(key)
  
@@ -206,19 +219,21 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
     oldValue
   }
 
-  def update(key: K, value: V) = {
+  override def update(key: K, value: V) = {
     val map = ref.get.get
     val oldValue = map.get(key)
     ref.swap(map.update(key, value))
   }
+  
+  def iterator = ref.get.get.iterator
 
-  def elements: Iterator[(K, V)] = ref.get.get.elements
+  override def elements: Iterator[(K, V)] = ref.get.get.iterator
 
   override def contains(key: K): Boolean = ref.get.get.contains(key)
 
   override def clear = ref.swap(new HashTrie[K, V])
 
-  def size: Int = ref.get.get.size
+  override def size: Int = ref.get.get.size
  
   override def hashCode: Int = System.identityHashCode(this);
 
@@ -238,7 +253,7 @@ object TransactionalVector {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
+class TransactionalVector[T] extends Transactional with IndexedSeq[T] {
   val uuid = UUID.newUuid.toString
 
   private[this] val ref = TransactionalRef[Vector[T]]

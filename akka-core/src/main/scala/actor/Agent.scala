@@ -1,17 +1,7 @@
-// Copyright © 2008-10 The original author or authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
- 
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package se.scalablesolutions.akka.actor
  
 import se.scalablesolutions.akka.stm.Ref
@@ -22,48 +12,90 @@ import java.util.concurrent.CountDownLatch
 class AgentException private[akka](message: String) extends RuntimeException(message)
  
 /**
-* The Agent class was strongly inspired by the agent principle in Clojure. 
-* Essentially, an agent wraps a shared mutable state and hides it behind 
-* a message-passing interface. Agents accept messages and process them on 
-* behalf of the wrapped state.
-* 
-* Typically agents accept functions / commands as messages and ensure the 
-* submitted commands are executed against the internal agent's state in a 
-* thread-safe manner (sequentially).
-* 
-* The submitted functions / commands take the internal state as a parameter 
-* and their output becomes the new internal state value.
-* 
-* The code that is submitted to an agent doesn't need to pay attention to 
-* threading or synchronization, the agent will provide such guarantees by itself.
+* The Agent class was strongly inspired by the agent principle in Clojure.
+* <p/> 
 *
-* If an Agent is used within an enclosing transaction, then it will participate
-* in that transaction. 
+* Agents provide independent, asynchronous change of individual locations. 
+* Agents are bound to a single storage location for their lifetime, and 
+* only allow mutation of that location (to a new state) to occur as a 
+* result of an action. Actions are functions (with, optionally, additional 
+* arguments) that are asynchronously applied to an Agent's state and whose 
+* return value becomes the Agent's new state. Because the set of functions 
+* is open, the set of actions supported by an Agent is also open, a sharp 
+* contrast to pattern matching message handling loops provided by Actors.
+* <p/> 
+* 
+* Agents are reactive, not autonomous - there is no imperative message loop 
+* and no blocking receive. The state of an Agent should be itself immutable 
+* (preferably an instance of one of Akka's persistent collections), and the 
+* state of an Agent is always immediately available for reading by any 
+* thread (using the '()' function) without any messages, i.e. observation 
+* does not require cooperation or coordination.
+* <p/> 
+*
+* The actions of all Agents get interleaved amongst threads in a thread pool. 
+* At any point in time, at most one action for each Agent is being executed. 
+* Actions dispatched to an agent from another single agent or thread will 
+* occur in the order they were sent, potentially interleaved with actions 
+* dispatched to the same agent from other sources.
+* <p/> 
+*
+* If an Agent is used within an enclosing transaction, then it will 
+* participate in that transaction. 
+* <p/> 
 * 
 * Example of usage:
 * <pre>
 * val agent = Agent(5)
 *
-* agent update (_ + 1)
-* agent update (_ * 2)
+* agent send (_ + 1)
+* agent send (_ * 2)
 *
 * val result = agent()
 * ... // use result
 *
 * agent.close
 * </pre>
+* <p/> 
 * 
-* NOTE: You can't call 'agent.get' or 'agent()' within an enclosing transaction since 
-* that will block the transaction indefinitely. But 'agent.update' or 'Agent(value)' 
-* is fine.
+* Agent is also monadic, which means that you can compose operations using 
+* for-comprehensions. In monadic usage the original agents are not touched
+* but new agents are created. So the old values (agents) are still available
+* as-is. They are so-called 'persistent'.
+* <p/> 
 * 
-* Original author:
-* @author Vaclav Pech
+* Example of monadic usage:
+* <pre>
+* val agent1 = Agent(3)
+* val agent2 = Agent(5)
 *
-* Inital AKKA port by:
-* @author Viktor Klang
+* for (value <- agent1) {
+*   result = value + 1 
+* }
 * 
-* Modifications by: 
+* val agent3 = 
+*   for (value <- agent1) yield value + 1 
+* 
+* val agent4 = for {
+*   value1 <- agent1
+*   value2 <- agent2
+* } yield value1 + value2 
+*
+* agent1.close
+* agent2.close
+* agent3.close
+* agent4.close
+* </pre>
+* <p/> 
+* 
+* IMPORTANT: 
+* You can *not* call 'agent.get', 'agent()' or use the monadic 'foreach', 
+* 'map and 'flatMap' within an enclosing transaction since that would block 
+* the transaction indefinitely. But all other operations are fine. The system 
+* will raise an error (e.g. *not* deadlock) if you try to do so, so as long as 
+* you test your application thoroughly you should be fine.
+* 
+* @author Viktor Klang
 * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
 */
 sealed class Agent[T] private (initialValue: T) extends Transactor {
@@ -71,15 +103,18 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
   private lazy val value = Ref[T]()
   
   start
-  this ! ValueHolder(initialValue)
+  this !! Value(initialValue)
  
   /**
-  * Periodically handles incoming messages.
-  */
+   * Periodically handles incoming messages.
+   */
   def receive = {
-    case ValueHolder(x: T) =>                 updateData(x)
-    case FunctionHolder(fun: (T => T)) =>     updateData(fun(value.getOrWait))
-    case ProcedureHolder(fun: (T => Unit)) => fun(copyStrategy(value.getOrWait))
+    case Value(v: T) =>                  
+      swap(v)
+    case Function(fun: (T => T)) =>      
+      swap(fun(value.getOrWait))
+    case Procedure(proc: (T => Unit)) => 
+      proc(copyStrategy(value.getOrElse(throw new AgentException("Could not read Agent's value; value is null"))))
   }
  
   /**
@@ -87,11 +122,11 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
    */
   protected def copyStrategy(t: T): T = t
  
- 
   /**
-  * Updates the internal state with the value provided as a by-name parameter.
-  */
-  private final def updateData(newData: => T): Unit = value.swap(newData)
+   * Performs a CAS operation, atomically swapping the internal state with the value 
+   * provided as a by-name parameter.
+   */
+  private final def swap(newData: => T): Unit = value.swap(newData)
  
   /**
   * Submits a request to read the internal state.
@@ -105,46 +140,64 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
       "Can't call Agent.get within an enclosing transaction.\n\tWould block indefinitely.\n\tPlease refactor your code.")
     val ref = new AtomicReference[T]
     val latch = new CountDownLatch(1)
-    get((x: T) => {ref.set(x); latch.countDown})
+    sendProc((v: T) => {ref.set(v); latch.countDown})
     latch.await
     ref.get
   }
  
   /**
-  * Asynchronously submits a request to read the internal state. The supplied function 
-  * will be executed on the returned internal state value. A copy of the internal state 
-  * will be used, depending on the underlying effective copyStrategy.
-  */
-  final def get(message: (T => Unit)): Unit = this ! ProcedureHolder(message)
- 
-  /**
-  * Submits a request to read the internal state. A copy of the internal state will be 
-  * returned, depending on the underlying effective copyStrategy. Internally leverages 
-  * the asynchronous getValue() method and then waits for its result on a CountDownLatch.
-  */
+   * Submits a request to read the internal state. A copy of the internal state will be 
+   * returned, depending on the underlying effective copyStrategy. Internally leverages 
+   * the asynchronous getValue() method and then waits for its result on a CountDownLatch.
+   */
   final def apply(): T = get
+
+  /**
+   * Submits the provided function for execution against the internal agent's state.
+   */
+  final def apply(message: (T => T)): Unit = this ! Function(message)
+ 
+  /**
+   * Submits a new value to be set as the new agent's internal state.
+   */
+  final def apply(message: T): Unit = this ! Value(message)
+ 
+  /**
+   * Submits the provided function of type 'T => T' for execution against the internal agent's state.
+   */
+  final def send(message: (T) => T): Unit = this ! Function(message)
+ 
+  /**
+   * Submits a new value to be set as the new agent's internal state.
+   */
+  final def send(message: T): Unit = this ! Value(message)
   
   /**
-  * Submits the provided function for execution against the internal agent's state.
-  */
-  final def apply(message: (T => T)): Unit = this ! FunctionHolder(message)
- 
+   * Asynchronously submits a procedure of type 'T => Unit' to read the internal state. 
+   * The supplied procedure will be executed on the returned internal state value. A copy 
+   * of the internal state will be used, depending on the underlying effective copyStrategy.
+   * Does not change the value of the agent (this).
+   */
+  final def sendProc(f: (T) => Unit): Unit = this ! Procedure(f)
+
   /**
-  * Submits a new value to be set as the new agent's internal state.
-  */
-  final def apply(message: T): Unit = this ! ValueHolder(message)
- 
+   * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
+   * Does not change the value of the agent (this).
+   */
+  final def map[B](f: (T) => B): Agent[B] = Agent(f(get))
+
   /**
-  * Submits the provided function for execution against the internal agent's state.
-  */
-  final def update(message: (T => T)): Unit = this ! FunctionHolder(message)
- 
+   * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
+   * Does not change the value of the agent (this).
+   */
+  final def flatMap[B](f: (T) => Agent[B]): Agent[B] = Agent(f(get)())
+
   /**
-  * Submits a new value to be set as the new agent's internal state.
-  */
-  // FIXME Change to 'send' when we have Scala 2.8 and we can remove the Actor.send method
-  final def update(message: T): Unit = this ! ValueHolder(message)
-  
+   * Applies function with type 'T => B' to the agent's internal state.
+   * Does not change the value of the agent (this).
+   */
+  final def foreach(f: (T) => Unit): Unit = f(get) 
+
   /**
    * Closes the agents and makes it eligable for garbage collection.
    * 
@@ -154,16 +207,19 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
 }
  
 /**
-* Provides factory methods to create Agents.
-*/
-object Agent {
+ * Provides factory methods to create Agents.
+ *
+ * @author Viktor Klang
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object Agent { 
 
   /*
    * The internal messages for passing around requests.
    */
-  private case class ProcedureHolder[T](fun: ((T) => Unit))
-  private case class FunctionHolder[T](fun: ((T) => T))
-  private case class ValueHolder[T](value: T)
+  private case class Value[T](value: T)
+  private case class Function[T](fun: ((T) => T))
+  private case class Procedure[T](fun: ((T) => Unit))
  
   /**
    * Creates a new Agent of type T with the initial value of value.

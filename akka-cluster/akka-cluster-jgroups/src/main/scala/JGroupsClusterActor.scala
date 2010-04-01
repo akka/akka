@@ -1,17 +1,18 @@
 package se.scalablesolutions.akka.cluster.jgroups
 
 import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, ExtendedMembershipListener, Receiver}
+import org.jgroups.util.Util
 
-import se.scalablesolutions.akka.remote.ClusterActor._
 import se.scalablesolutions.akka.remote.BasicClusterActor
-
-import org.scala_tools.javautils.Imports._
 
 /**
  * Clustering support via JGroups.
  * @Author Viktor Klang
  */
 class JGroupsClusterActor extends BasicClusterActor {
+  import scala.collection.JavaConversions._
+  import se.scalablesolutions.akka.remote.ClusterActor._
+
   type ADDR_T = Address
 
   @volatile private var isActive = false
@@ -31,13 +32,13 @@ class JGroupsClusterActor extends BasicClusterActor {
         def setState(state: Array[Byte]): Unit = ()
 
         def receive(m: JG_MSG): Unit =
-          if (isActive && m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) me send Message(m.getSrc,m.getRawBuffer)
+          if (isActive && m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) me ! Message(m.getSrc,m.getRawBuffer)
 
         def viewAccepted(view: JG_VIEW): Unit =
-          if (isActive) me send View(Set[ADDR_T]() ++ view.getMembers.asScala - channel.get.getAddress)
+          if (isActive) me ! View(Set[ADDR_T]() ++ view.getMembers - channel.get.getAddress)
 
         def suspect(a: Address): Unit =
-          if (isActive) me send Zombie(a)
+          if (isActive) me ! Zombie(a)
 
         def block: Unit =
           log debug "UNSUPPORTED: JGroupsClusterActor::block" //TODO HotSwap to a buffering body
@@ -60,7 +61,7 @@ class JGroupsClusterActor extends BasicClusterActor {
     super.shutdown
     log debug ("Shutting down %s", toString)
     isActive = false
-    channel.foreach(_.shutdown)
+    channel.foreach(Util shutdown _)
     channel = None
   }
 }

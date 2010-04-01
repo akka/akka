@@ -14,8 +14,6 @@ import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 import scala.collection.mutable.HashMap
 
-import org.scala_tools.javautils.Imports._
-
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Timer, TimerTask}
 import java.io.IOException
@@ -79,6 +77,8 @@ object AMQP {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   class AMQPSupervisor extends Actor {
+    import scala.collection.JavaConversions._
+  
     private val connections = new ConcurrentHashMap[FaultTolerantConnectionActor, FaultTolerantConnectionActor]
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
@@ -138,7 +138,7 @@ object AMQP {
     }
 
     override def shutdown = {
-      connections.values.asScala.foreach(_ ! Stop)
+      asMap(connections).valuesIterator.foreach(_ ! Stop)
       exit
     }
 
@@ -361,8 +361,13 @@ object AMQP {
       extends FaultTolerantConnectionActor {
     consumer: Consumer =>
 
+    import scala.collection.JavaConversions._
+
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
+    
+    //FIXME use better strategy to convert scala.immutable.Map to java.util.Map
+    private val jConfigMap = configurationArguments.foldLeft(new java.util.HashMap[String,Object]){ (m,kv) => { m.put(kv._1,kv._2); m } }
 
     private val listeners = new HashMap[MessageConsumerListener, MessageConsumerListener]
 
@@ -395,7 +400,7 @@ object AMQP {
         throw cause
 
       case Stop =>
-        listeners.elements.toList.map(_._2).foreach(unregisterListener(_))
+        listeners.iterator.toList.map(_._2).foreach(unregisterListener(_))
         disconnect
         exit
 
@@ -411,8 +416,8 @@ object AMQP {
     protected def setupChannel = {
       connection = connectionFactory.newConnection(hostname, port)
       channel = connection.createChannel
-      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, configurationArguments.asJava)
-      listeners.elements.toList.map(_._2).foreach(registerListener)
+      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, jConfigMap)
+      listeners.iterator.toList.map(_._2).foreach(registerListener)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
 
@@ -426,7 +431,7 @@ object AMQP {
           listener.queueName, 
           passive, durable, 
           listener.exclusive, listener.autoDelete, 
-          configurationArguments.asJava)
+          jConfigMap)
       }
 
       log.debug("Binding new queue for MessageConsumerListener [%s]", listener.queueName)
@@ -460,7 +465,7 @@ object AMQP {
               "MessageConsumerListener [" + listener + "] does not have a tag")
             listener.tag.get == listenerTag
           }
-          listeners.elements.toList.map(_._2).find(hasTag(_, listenerTag)) match {
+          listeners.iterator.toList.map(_._2).find(hasTag(_, listenerTag)) match {
             case None => log.error(
               "Could not find message listener for tag [%s]; can't shut listener down", listenerTag)
             case Some(listener) =>
@@ -480,7 +485,7 @@ object AMQP {
           "Can't unregister message consumer listener [%s]; no such listener",
           listener.toString(exchangeName))
         case Some(listener) =>
-          listeners - listener
+          listeners -= listener
           listener.tag match {
             case None => log.warning(
               "Can't unregister message consumer listener [%s]; no listener tag",

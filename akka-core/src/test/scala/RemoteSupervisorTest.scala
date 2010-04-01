@@ -18,7 +18,6 @@ object Log {
   var oneWayLog: String = ""
 }
 
-
 @serializable class RemotePingPong1Actor extends Actor {
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
   def receive = {
@@ -74,7 +73,8 @@ object Log {
 class RemoteSupervisorTest extends JUnitSuite {
   import Actor.Sender.Self
 
-  akka.config.Config.config
+  se.scalablesolutions.akka.config.Config.config
+
   new Thread(new Runnable() {
     def run = {
       RemoteNode.start

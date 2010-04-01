@@ -13,7 +13,7 @@ object ConfiguratorRepository extends Logging {
   private val configuration = new HashSet[Configurator]
 
   def registerConfigurator(conf: Configurator) = synchronized {
-    configuration + conf
+    configuration += conf
   }
 
   def getConfigurators: List[Configurator] = synchronized {

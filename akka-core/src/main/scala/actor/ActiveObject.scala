@@ -262,9 +262,10 @@ private[akka] sealed class ActiveObjectAspect {
   }
 
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
-    import Actor.Sender.Self
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    if (isOneWay(rtti)) actor ! Invocation(joinPoint, true, true)
+    if (isOneWay(rtti)) {
+      (actor ! Invocation(joinPoint, true, true) ).asInstanceOf[AnyRef]
+    }
     else {
       val result = actor !! Invocation(joinPoint, false, isVoid(rtti))
       if (result.isDefined) result.get
@@ -274,7 +275,7 @@ private[akka] sealed class ActiveObjectAspect {
 
   private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val oneWay_? = isOneWay(rtti)
+    val oneWay_? = isOneWay(rtti) || isVoid(rtti)
     val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
     val requestBuilder = RemoteRequest.newBuilder
       .setId(RemoteRequestIdFactory.nextId)
@@ -354,7 +355,7 @@ private[akka] sealed class ActiveObjectAspect {
 
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
-  val ZERO_ITEM_OBJECT_ARRAY = Array[Object[_]]()  
+  val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()  
 }
 
 /**
@@ -364,7 +365,7 @@ object Dispatcher {
  */
 private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Option[RestartCallbacks]) extends Actor {
   import Dispatcher._
-  
+
   private[actor] var target: Option[AnyRef] = None
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
@@ -470,58 +471,3 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
     }    
   }
 }
-
-/*
-ublic class CamelInvocationHandler implements InvocationHandler {
-     private final Endpoint endpoint;
-    private final Producer producer;
-    private final MethodInfoCache methodInfoCache;
-
-    public CamelInvocationHandler(Endpoint endpoint, Producer producer, MethodInfoCache methodInfoCache) {
-        this.endpoint = endpoint;
-        this.producer = producer;
-        this.methodInfoCache = methodInfoCache;
-    }
-
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        BeanInvocation invocation = new BeanInvocation(method, args);
-        ExchangePattern pattern = ExchangePattern.InOut;
-        MethodInfo methodInfo = methodInfoCache.getMethodInfo(method);
-        if (methodInfo ne null) {
-            pattern = methodInfo.getPattern();
-        }
-        Exchange exchange = new DefaultExchange(endpoint, pattern);
-        exchange.getIn().setBody(invocation);
-
-        producer.process(exchange);
-        Throwable fault = exchange.getException();
-        if (fault ne null) {
-            throw new InvocationTargetException(fault);
-        }
-        if (pattern.isOutCapable()) {
-            return exchange.getOut().getBody();
-        } else {
-            return null;
-        }
-    }
-}
-
-      if (joinpoint.target.isInstanceOf[MessageDriven] &&
-          joinpoint.method.getName == "onMessage") {
-        val m = joinpoint.method
-
-      val endpointName = m.getDeclaringClass.getName + "." + m.getName
-        val activeObjectName = m.getDeclaringClass.getName
-        val endpoint = conf.getRoutingEndpoint(conf.lookupUriFor(m))
-        val producer = endpoint.createProducer
-        val exchange = endpoint.createExchange
-        exchange.getIn().setBody(joinpoint)
-        producer.process(exchange)
-        val fault = exchange.getException();
-        if (fault ne null) throw new InvocationTargetException(fault)
-
-        // FIXME: need some timeout and future here...
-        exchange.getOut.getBody
-
-      } else
-*/

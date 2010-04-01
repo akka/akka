@@ -30,7 +30,7 @@ class PerformanceTest extends JUnitSuite {
       case object BLUE extends Colour
       case object FADED extends Colour
 
-      val colours = Array(BLUE, RED, YELLOW)
+      val colours = Array[Colour](BLUE, RED, YELLOW)
 
       case class Meet(from: Actor, colour: Colour)
       case class Change(colour: Colour)
@@ -159,7 +159,7 @@ class PerformanceTest extends JUnitSuite {
       case object BLUE extends Colour
       case object FADED extends Colour
 
-      val colours = Array(BLUE, RED, YELLOW)
+      val colours = Array[Colour](BLUE, RED, YELLOW)
 
       case class Meet(colour: Colour)
       case class Change(colour: Colour)

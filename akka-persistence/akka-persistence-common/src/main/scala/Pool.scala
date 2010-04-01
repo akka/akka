@@ -71,10 +71,6 @@ object SoftRefPool {
   def apply[T](factory: PoolItemFactory[T]) = new PoolBridge[T,SoftReferenceObjectPool] {
     val impl = new SoftReferenceObjectPool(toPoolableObjectFactory(factory))
   }
-
-  def apply[T](factory: PoolItemFactory[T], initSize: Int) = new PoolBridge[T,SoftReferenceObjectPool] {
-    val impl = new SoftReferenceObjectPool(toPoolableObjectFactory(factory),initSize)
-  }
 }
 
 trait TransportFactory[T <: TTransport] extends PoolItemFactory[T] {

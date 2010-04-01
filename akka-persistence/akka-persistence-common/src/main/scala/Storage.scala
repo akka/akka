@@ -98,10 +98,21 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     removedEntries.clear
   }
 
-  def -=(key: K) = remove(key)
+  def -=(key: K) = {
+    remove(key)
+    this
+  }
 
-  def +=(key: K, value: V) = put(key, value)
+  override def +=(kv : (K,V)) = {
+    put(kv._1,kv._2)
+    this
+  }
 
+  def +=(key: K, value: V) = {
+    put(key, value)
+    this
+  }
+  
   override def put(key: K, value: V): Option[V] = {
     register
     newAndUpdatedEntries.put(key, value)
@@ -112,9 +123,10 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     newAndUpdatedEntries.update(key, value)
   }
   
-  def remove(key: K) = {
+  override def remove(key: K) = {
     register
     removedEntries.add(key)
+    newAndUpdatedEntries.get(key)
   }
   
   def slice(start: Option[K], count: Int): List[Tuple2[K, V]] =
@@ -147,6 +159,8 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     } catch { case e: Exception => None }
   }
   
+  def iterator = elements
+  
   override def elements: Iterator[Tuple2[K, V]]  = {
     new Iterator[Tuple2[K, V]] {
       private val originalList: List[Tuple2[K, V]] = try {
@@ -175,7 +189,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Committable {
+trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable {
   protected val newElems = TransactionalState.newVector[T]
   protected val updatedElems = TransactionalState.newMap[Int, T]
   protected val removedElems = TransactionalState.newVector[T]
@@ -204,9 +218,9 @@ trait PersistentVector[T] extends RandomAccessSeq[T] with Transactional with Com
     else storage.getVectorStorageEntryFor(uuid, index)
   }
 
-  override def slice(start: Int, count: Int): RandomAccessSeq[T] = slice(Some(start), None, count)
+  override def slice(start: Int, count: Int): IndexedSeq[T] = slice(Some(start), None, count)
   
-  def slice(start: Option[Int], finish: Option[Int], count: Int): RandomAccessSeq[T] = {
+  def slice(start: Option[Int], finish: Option[Int], count: Int): IndexedSeq[T] = {
     val buffer = new scala.collection.mutable.ArrayBuffer[T]
     storage.getVectorStorageRangeFor(uuid, start, finish, count).foreach(buffer.append(_))
     buffer
@@ -389,14 +403,20 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   override def isEmpty: Boolean =
     size == 0
 
-  override def +=(elem: A): Unit = enqueue(elem)
-  override def ++=(elems: Iterator[A]): Unit = enqueue(elems.toList: _*)
-  override def ++=(elems: Iterable[A]): Unit = this ++= elems.elements
+  override def +=(elem: A) = { 
+    enqueue(elem)
+    this
+  }
+  override def ++=(elems: Iterator[A]) = { 
+    enqueue(elems.toList: _*)
+    this
+  }
+  def ++=(elems: Iterable[A]): Unit = this ++= elems.iterator
 
   override def dequeueFirst(p: A => Boolean): Option[A] =
     throw new UnsupportedOperationException("dequeueFirst not supported")
 
-  override def dequeueAll(p: A => Boolean): Seq[A] =
+  override def dequeueAll(p: A => Boolean): scala.collection.mutable.Seq[A] =
     throw new UnsupportedOperationException("dequeueAll not supported")
 
   private def register = {
@@ -490,13 +510,18 @@ trait PersistentSortedSet[A]
     inStorage(elem) match {
       case Some(f) => f
       case None =>
-        throw new Predef.NoSuchElementException(elem + " not present")
+        throw new NoSuchElementException(elem + " not present")
     }
   }
 
   implicit def order(x: (A, Float)) = new Ordered[(A, Float)] {
     def compare(that: (A, Float)) = x._2 compare that._2
   }
+  
+  implicit def ordering = new scala.math.Ordering[(A,Float)] {
+    def compare(x: (A, Float),y : (A,Float)) = x._2 compare y._2   
+  }
+
 
   def zrange(start: Int, end: Int): List[(A, Float)] = {
     // need to operate on the whole range
@@ -512,7 +537,7 @@ trait PersistentSortedSet[A]
       else if (end >= l) (l - 1)
       else end
     // slice is open at the end, we need a closed end range
-    ts.elements.slice(s, e + 1).toList
+    ts.iterator.slice(s, e + 1).toList
   }
 
   private def register = {
