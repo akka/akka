@@ -30,8 +30,7 @@ class ExecutorBasedEventDrivenDispatcherActorTest extends JUnitSuite {
     }
     actor.start
     val result = actor ! "OneWay"
-    oneWay.await(1, TimeUnit.SECONDS)
-    assert(0 === oneWay.getCount)
+    assert(oneWay.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
