@@ -48,8 +48,7 @@ class ActorFireForgetRequestReplyTest extends JUnitSuite {
     val senderActor = new SenderActor(replyActor)
     senderActor.start
     senderActor ! "Init"
-    state.finished.await(1, TimeUnit.SECONDS)
-    assert(0 === state.finished.getCount)
+    assert(state.finished.await(1, TimeUnit.SECONDS))
     assert("Reply" === state.s)
   }
 
@@ -62,8 +61,7 @@ class ActorFireForgetRequestReplyTest extends JUnitSuite {
     val senderActor = new SenderActor(replyActor)
     senderActor.start
     senderActor ! "InitImplicit"
-    state.finished.await(1, TimeUnit.SECONDS)
-    assert(0 === state.finished.getCount)
+    assert(state.finished.await(1, TimeUnit.SECONDS))
     assert("ReplyImplicit" === state.s)
   }
 }

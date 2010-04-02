@@ -57,8 +57,7 @@ class ForwardActorTest extends JUnitSuite {
   def shouldForwardActorReferenceWhenInvokingForwardOnBang = {
     val senderActor = new BangSenderActor
     senderActor.start
-    ForwardState.finished.await(1, TimeUnit.SECONDS)
-    assert(0 === ForwardState.finished.getCount)
+    assert(ForwardState.finished.await(1, TimeUnit.SECONDS))
     assert(ForwardState.sender ne null)
     assert(senderActor === ForwardState.sender)
   }
@@ -67,7 +66,6 @@ class ForwardActorTest extends JUnitSuite {
   def shouldForwardActorReferenceWhenInvokingForwardOnBangBang = {
     val senderActor = new BangBangSenderActor
     senderActor.start
-    ForwardState.finished.await(1, TimeUnit.SECONDS)
-    assert(0 === ForwardState.finished.getCount)
+    assert(ForwardState.finished.await(1, TimeUnit.SECONDS))
   }
 }

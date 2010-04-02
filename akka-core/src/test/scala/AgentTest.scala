@@ -1,5 +1,6 @@
 package se.scalablesolutions.akka.actor
 
+import _root_.java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.actor.Actor.transactor
 import se.scalablesolutions.akka.stm.Transaction.atomic
 import se.scalablesolutions.akka.util.Logging
@@ -80,7 +81,7 @@ with ActorTestUtil with Logging {
         }
     }      
     tx ! Go
-    latch.await // FIXME should await with timeout and fail if timeout
+    assert(latch.await(1, TimeUnit.SECONDS))
     agent.close
     tx.stop
     assert(true)

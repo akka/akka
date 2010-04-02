@@ -91,8 +91,7 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
       5000L,
       HOSTNAME, PORT)
     val result = actor ! "OneWay"
-    Global.oneWay.await(1, TimeUnit.SECONDS)
-    assert(0 === Global.oneWay.getCount)
+    assert(Global.oneWay.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
@@ -119,8 +118,7 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
     sender.setReplyToAddress(HOSTNAME, PORT)
     sender.start
     sender.send(actor)
-    Global.remoteReply.await(1, TimeUnit.SECONDS)
-    assert(0 === Global.remoteReply.getCount)
+    assert(Global.remoteReply.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
