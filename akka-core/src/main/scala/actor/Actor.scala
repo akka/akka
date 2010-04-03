@@ -81,29 +81,39 @@ object Actor extends Logging {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
-  object Sender{
+  object Sender {
+    @deprecated("import Actor.Sender.Self is not needed anymore, just use 'actor ! msg'") 
     object Self
   }
 
   /**
    * Use to create an anonymous event-driven actor.
+   * <p/>
+   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * if the actor is supervised and dies it will be restarted.
+   * <p/>
    * The actor is started when created.
    * Example:
    * <pre>
    * import Actor._
    *
-   * val a = actor  {
+   * val a = actor {
    *   case msg => ... // handle message
    * }
    * </pre>
    */
   def actor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
+    lifeCycle = Some(LifeCycle(Permanent))
     start
     def receive: PartialFunction[Any, Unit] = body
   }
 
   /**
    * Use to create an anonymous transactional event-driven actor.
+   * <p/>
+   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * if the actor is supervised and dies it will be restarted.
+   * <p/>
    * The actor is started when created.
    * Example:
    * <pre>
@@ -115,12 +125,60 @@ object Actor extends Logging {
    * </pre>
    */
   def transactor(body: PartialFunction[Any, Unit]): Actor = new Transactor() {
+    lifeCycle = Some(LifeCycle(Permanent))
     start
     def receive: PartialFunction[Any, Unit] = body
   }
 
   /**
+   * Use to create an anonymous event-driven actor with a 'temporary' life-cycle configuration, 
+   * which means that if the actor is supervised and dies it will *not* be restarted.
+   * <p/>
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = temporaryActor {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
+  def temporaryActor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
+    lifeCycle = Some(LifeCycle(Temporary))
+    start
+    def receive = body
+  }
+
+  /**
+   * Use to create an anonymous event-driven remote actor.
+   * <p/>
+   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * if the actor is supervised and dies it will be restarted.
+   * <p/>
+   * The actor is started when created.
+   * Example:
+   * <pre>
+   * import Actor._
+   *
+   * val a = remoteActor("localhost", 9999) {
+   *   case msg => ... // handle message
+   * }
+   * </pre>
+   */
+  def remoteActor(hostname: String, port: Int)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
+    lifeCycle = Some(LifeCycle(Permanent))
+    makeRemote(hostname, port)
+    start
+    def receive = body
+  }
+
+  /**
    * Use to create an anonymous event-driven actor with both an init block and a message loop block.
+   * <p/>
+   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * if the actor is supervised and dies it will be restarted.
+   * <p/>
    * The actor is started when created.
    * Example:
    * <pre>
@@ -135,6 +193,7 @@ object Actor extends Logging {
   def init[A](body: => Unit) = {
     def handler[A](body: => Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
+        lifeCycle = Some(LifeCycle(Permanent))
         start
         body
         def receive = handler
@@ -167,42 +226,6 @@ object Actor extends Logging {
         case Spawn => body; stop
       }
     }
-  }
-
-  /**
-   * Use to create an anonymous event-driven actor with a life-cycle configuration.
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = actor(LifeCycle(Temporary))  {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def actor(lifeCycleConfig: LifeCycle)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
-    lifeCycle = Some(lifeCycleConfig)
-    start
-    def receive = body
-  }
-
-  /**
-   * Use to create an anonymous event-driven remote actor.
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = actor("localhost", 9999) {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def actor(hostname: String, port: Int)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
-    makeRemote(hostname, port)
-    start
-    def receive = body
   }
 }
 
