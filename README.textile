@@ -4,11 +4,11 @@ We believe that writing correct concurrent, fault-tolerant and scalable applicat
 
 Akka is here to change that. 
 
-Using the Actor Model together with Software Transactional Memory we raise the abstraction level and provides a better platform to build correct concurrent and scalable applications. 
+Using the Actor Model together with Software Transactional Memory we raise the abstraction level and provide a better platform to build correct concurrent and scalable applications. 
 
-For fault-tolerance we adopt the "Let it crash" / "Embrace failure" model which have been used with great success in the telecom industry to build applications that self-heals, systems that never stop. 
+For fault-tolerance we adopt the "Let it crash" / "Embrace failure" model which have been used with great success in the telecom industry to build applications that self-heal, systems that never stop. 
 
-Actors also provides the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications. 
+Actors also provide the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications. 
 
 Akka is Open Source and available under the Apache 2 License.
 

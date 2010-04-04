@@ -8,8 +8,8 @@
 # default=true
 org.multiverse.MuliverseConstants.sanityChecks=<type:boolean>
 
-# a flag that enables to dump of bytecode of the instrumented classes to the tmp directory
-# This is very interesting feature for debugging of the instrumentation
+# a flag that enables to dump the bytecode of the instrumented classes to the tmp directory
+# This is a very interesting feature for debugging of the instrumentation
 # default=false
 org.multiverse.stms.alpha.instrumentation.MultiverseJavaAgent.dumpBytecode=<type:boolean>
 
