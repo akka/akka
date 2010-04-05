@@ -97,11 +97,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
   lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
-  lazy val akka_jxee = project("akka-jxee", "akka-jxee", new AkkaJxeeProject(_), 
+  lazy val akka_servlet = project("akka-servlet", "akka-servlet", new AkkaServletProject(_), 
     akka_core, akka_rest, akka_camel)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
     akka_core, akka_rest, akka_spring, akka_camel, akka_persistence, 
-    akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns, akka_jxee)
+    akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns, akka_servlet)
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -143,7 +143,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-jxee_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-servlet_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version)
     ) 
@@ -325,7 +325,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaShoalProject(_), akka_core)
   }
 
-  class AkkaJxeeProject(info: ProjectInfo) extends DefaultProject(info) {
+  class AkkaServletProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 

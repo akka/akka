@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.jxee
+package se.scalablesolutions.akka.servlet
 
 import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.util.{Logging, Bootable}

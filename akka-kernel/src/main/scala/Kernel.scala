@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.kernel
 
-import se.scalablesolutions.akka.jxee.AkkaLoader
+import se.scalablesolutions.akka.servlet.AkkaLoader
 import se.scalablesolutions.akka.remote.BootableRemoteActorService
 import se.scalablesolutions.akka.comet.BootableCometActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
