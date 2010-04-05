@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package sample.scala
+package sample.rest.scala
 
 import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
 import se.scalablesolutions.akka.stm.TransactionalState

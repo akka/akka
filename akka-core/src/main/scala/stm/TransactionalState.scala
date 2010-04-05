@@ -4,7 +4,6 @@
 
 package se.scalablesolutions.akka.stm
 
-import se.scalablesolutions.akka.stm.Transaction.atomic
 import se.scalablesolutions.akka.util.UUID
 
 import org.multiverse.stms.alpha.AlphaRef
