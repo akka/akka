@@ -22,81 +22,6 @@ import org.multiverse.stms.alpha.AlphaStm
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
 
-/**
- * Example of atomic transaction management using the atomic block.
- * These blocks takes an implicit argument String defining the transaction family name.
- * If these blocks are used from within an Actor then the name is automatically resolved, if not either:
- * 1. define an implicit String with the name in the same scope
- * 2. pass in the name explicitly
- *
- * Here are some examples (assuming implicit transaction family name in scope): 
- * <pre>
- * import se.scalablesolutions.akka.stm.Transaction._
- *
- * atomic  {
- *   .. // do something within a transaction
- * }
- * </pre>
- *
- * Example of atomic transaction management using atomic block with retry count:
- * <pre>
- * import se.scalablesolutions.akka.stm.Transaction._
- *
- * atomic(maxNrOfRetries)  {
- *   .. // do something within a transaction
- * }
- * </pre>
- *
- * Example of atomically-orElse transaction management. 
- * Which is a good way to reduce contention and transaction collisions.
- * <pre>
- * import se.scalablesolutions.akka.stm.Transaction._
- *
- * atomically  {
- *   .. // try to do something
- * } orElse  {
- *   .. // if transaction clashes try do do something else to minimize contention
- * }
- * </pre>
- *
- * Example of atomic transaction management using for comprehensions (monadic):
- *
- * <pre>
- * import se.scalablesolutions.akka.stm.Transaction._
- * for (tx <- Transaction)  {
- *   ... // do transactional stuff
- * }
- *
- * val result = for (tx <- Transaction) yield  {
- *   ... // do transactional stuff yielding a result
- * }
- * </pre>
- *
- * Example of using Transaction and TransactionalRef in for comprehensions (monadic):
- *
- * <pre>
- * // For example, if you have a List with TransactionalRef
- * val refs: List[TransactionalRef] = ...
- *
- * // You can use them together with Transaction in a for comprehension since
- * // TransactionalRef is also monadic
- * for  {
- *   tx <- Transaction
- *   ref <- refs
- * } {
- *   ... // use the ref inside a transaction
- * }
- *
- * val result = for  {
- *   tx <- Transaction
- *   ref <- refs
- * } yield  {
- *   ... // use the ref inside a transaction, yield a result
- * }
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object Transaction {
   val idFactory = new AtomicLong(-1L)
 
@@ -110,6 +35,71 @@ object Transaction {
     def execute(mtx: MultiverseTransaction): T = body
   }.execute()
 
+  /**
+   * Module for "local" transaction management, local in the context of threads.
+   * You should only use these if you do <b>not</b> need to have one transaction span 
+   * multiple threads (or Actors).
+   * <p/>
+   * Example of atomic transaction management using the atomic block.
+   * <p/>
+   * <pre>
+   * import se.scalablesolutions.akka.stm.Transaction.Local._
+   *
+   * atomic  {
+   *   .. // do something within a transaction
+   * }
+   * </pre>
+   *
+   * Example of atomically-orElse transaction management. 
+   * Which is a good way to reduce contention and transaction collisions.
+   * <pre>
+   * import se.scalablesolutions.akka.stm.Transaction.Local._
+   *
+   * atomically  {
+   *   .. // try to do something
+   * } orElse  {
+   *   .. // if transaction clashes try do do something else to minimize contention
+   * }
+   * </pre>
+   *
+   * Example of atomic transaction management using for comprehensions (monadic):
+   *
+   * <pre>
+   * import se.scalablesolutions.akka.stm.Transaction.Local._
+   * for (tx <- Transaction)  {
+   *   ... // do transactional stuff
+   * }
+   *
+   * val result = for (tx <- Transaction) yield  {
+   *   ... // do transactional stuff yielding a result
+   * }
+   * </pre>
+   *
+   * Example of using Transaction and TransactionalRef in for comprehensions (monadic):
+   *
+   * <pre>
+   * // For example, if you have a List with TransactionalRef
+   * val refs: List[TransactionalRef] = ...
+   *
+   * // You can use them together with Transaction in a for comprehension since
+   * // TransactionalRef is also monadic
+   * for  {
+   *   tx <- Transaction
+   *   ref <- refs
+   * } {
+   *   ... // use the ref inside a transaction
+   * }
+   *
+   * val result = for  {
+   *   tx <- Transaction
+   *   ref <- refs
+   * } yield  {
+   *   ... // use the ref inside a transaction, yield a result
+   * }
+   * </pre>
+   *
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
   object Local extends TransactionManagement with Logging {
 
   /**
@@ -166,6 +156,59 @@ object Transaction {
   }
   }
 
+  /**
+   * Module for "global" transaction management, global in the context of multiple threads.
+   * You have to use these if you do need to have one transaction span multiple threads (or Actors).
+   * <p/>
+   * Example of atomic transaction management using the atomic block.
+   * <p/>
+   * Here are some examples (assuming implicit transaction family name in scope): 
+   * <pre>
+   * import se.scalablesolutions.akka.stm.Transaction.Global._
+   *
+   * atomic  {
+   *   .. // do something within a transaction
+   * }
+   * </pre>
+   *
+   * Example of atomic transaction management using for comprehensions (monadic):
+   *
+   * <pre>
+   * import se.scalablesolutions.akka.stm.Transaction.Global_
+   * for (tx <- Transaction)  {
+   *   ... // do transactional stuff
+   * }
+   *
+   * val result = for (tx <- Transaction) yield  {
+   *   ... // do transactional stuff yielding a result
+   * }
+   * </pre>
+   *
+   * Example of using Transaction and TransactionalRef in for comprehensions (monadic):
+   *
+   * <pre>
+   * // For example, if you have a List with TransactionalRef
+   * val refs: List[TransactionalRef] = ...
+   *
+   * // You can use them together with Transaction in a for comprehension since
+   * // TransactionalRef is also monadic
+   * for  {
+   *   tx <- Transaction
+   *   ref <- refs
+   * } {
+   *   ... // use the ref inside a transaction
+   * }
+   *
+   * val result = for  {
+   *   tx <- Transaction
+   *   ref <- refs
+   * } yield  {
+   *   ... // use the ref inside a transaction, yield a result
+   * }
+   * </pre>
+   *
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
   object Global extends TransactionManagement with Logging {
   /**
    * See ScalaDoc on Transaction class.
