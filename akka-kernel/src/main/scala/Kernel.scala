@@ -79,14 +79,14 @@ object Kernel extends Logging {
     log.info(
 """
 ==============================
-          __    __
+         __    __
  _____  |  | _|  | _______
  \__  \ |  |/ /  |/ /\__  \
   / __ \|    <|    <  / __ \_
  (____  /__|_ \__|_ \(____  /
       \/     \/    \/     \/
 """)
-    log.info(" Running version %s", Config.VERSION)
+    log.info("     Running version %s", Config.VERSION)
     log.info("==============================")
   }
 }
