@@ -20,10 +20,10 @@
     * Cluster membership management.
 
   Akka also has a set of add-on modules:
-    * Persistence: A set of pluggable back-end storage modules that works in sync with the STM.
+    * Persistence: A set of pluggable back-end storage modules that work in sync with the STM.
         * Cassandra distributed and highly scalable database.
         * MongoDB document database.
-        * Redis data structures database (upcoming)
+        * Redis data structures database
     * Camel: Expose Actors as Camel endpoints.
     * REST (JAX-RS): Expose actors as REST services.
     * Comet: Expose actors as Comet services.
