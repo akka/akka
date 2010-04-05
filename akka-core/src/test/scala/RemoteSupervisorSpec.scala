@@ -71,8 +71,7 @@ object Log {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteSupervisorTest extends JUnitSuite {
-  import Actor.Sender.Self
+class RemoteSupervisorSpec extends JUnitSuite {
 
   se.scalablesolutions.akka.config.Config.config
 

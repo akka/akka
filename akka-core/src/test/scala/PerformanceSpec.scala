@@ -13,7 +13,7 @@ import net.lag.logging.Logger
  * <p/>
  * Inspired by the version contributed by Yura Taras and modified by Isaac Gouy.
  */
-class PerformanceTest extends JUnitSuite {
+class PerformanceSpec extends JUnitSuite {
 
   @Test
   def dummyTest = assert(true)

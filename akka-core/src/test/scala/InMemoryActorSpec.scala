@@ -102,9 +102,7 @@ class InMemFailerActor extends Actor {
   }
 }
 
-class InMemoryActorTest extends JUnitSuite {
-  import Actor.Sender.Self
-
+class InMemoryActorSpec extends JUnitSuite {
   @Test
   def shouldOneWayMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = new InMemStatefulActor(2)

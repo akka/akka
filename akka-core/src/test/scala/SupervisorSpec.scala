@@ -15,8 +15,7 @@ import org.junit.Test
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class SupervisorTest extends JUnitSuite {
-  import Actor.Sender.Self
+class SupervisorSpec extends JUnitSuite {
 
   var messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
   var oneWayLog: BlockingQueue[String] = new LinkedBlockingQueue[String]

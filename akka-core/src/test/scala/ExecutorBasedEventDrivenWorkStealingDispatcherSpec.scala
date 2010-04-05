@@ -9,7 +9,7 @@ import se.scalablesolutions.akka.dispatch.Dispatchers
 /**
  * @author Jan Van Besien
  */
-class ExecutorBasedEventDrivenWorkStealingDispatcherTest extends JUnitSuite with MustMatchers with ActorTestUtil {
+class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers with ActorTestUtil {
   val poolDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {

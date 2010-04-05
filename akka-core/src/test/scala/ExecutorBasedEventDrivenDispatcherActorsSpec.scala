@@ -11,7 +11,7 @@ import java.util.concurrent.CountDownLatch
  *
  * @author Jan Van Besien
  */
-class ExecutorBasedEventDrivenDispatcherActorsTest extends JUnitSuite with MustMatchers with ActorTestUtil {
+class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustMatchers with ActorTestUtil {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
     messageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
     id = "SlowActor"

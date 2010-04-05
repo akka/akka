@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-class MemoryFootprintTest extends JUnitSuite   {
+class MemoryFootprintSpec extends JUnitSuite   {
   class Mem extends Actor {
     def receive = {
       case _ => {}

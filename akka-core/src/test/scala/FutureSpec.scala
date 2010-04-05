@@ -4,7 +4,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Futures
 
-class FutureTest extends JUnitSuite {
+class FutureSpec extends JUnitSuite {
   class TestActor extends Actor {
     def receive = {
       case "Hello" =>

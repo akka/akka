@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 import org.junit.{Test}
 
 @RunWith(classOf[JUnitRunner])
-class AgentTest extends junit.framework.TestCase 
+class AgentSpec extends junit.framework.TestCase 
 with Suite with MustMatchers 
 with ActorTestUtil with Logging {
 

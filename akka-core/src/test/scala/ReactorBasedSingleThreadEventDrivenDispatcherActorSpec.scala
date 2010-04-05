@@ -6,7 +6,7 @@ import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-class ReactorBasedSingleThreadEventDrivenDispatcherActorTest extends JUnitSuite {
+class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite {
   import Actor.Sender.Self
 
   private val unit = TimeUnit.MILLISECONDS

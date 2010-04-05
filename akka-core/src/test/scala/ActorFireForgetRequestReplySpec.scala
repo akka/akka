@@ -6,7 +6,7 @@ import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-class ActorFireForgetRequestReplyTest extends JUnitSuite {
+class ActorFireForgetRequestReplySpec extends JUnitSuite {
 
   object state {
     var s = "NIL"
