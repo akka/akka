@@ -7,7 +7,7 @@ import org.junit.{Test, Before, After}
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-object ServerInitiatedRemoteActorTest {
+object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
   val PORT = 9990
   var server: RemoteServer = null
@@ -55,8 +55,8 @@ object ServerInitiatedRemoteActorTest {
   }
 }
 
-class ServerInitiatedRemoteActorTest extends JUnitSuite {
-  import ServerInitiatedRemoteActorTest._
+class ServerInitiatedRemoteActorSpec extends JUnitSuite {
+  import ServerInitiatedRemoteActorSpec._
 
   import Actor.Sender.Self
   se.scalablesolutions.akka.config.Config.config
@@ -87,7 +87,7 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
   @Test
   def shouldSendOneWay = {
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorTest$RemoteActorSpecActorUnidirectional",
+      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional",
       5000L,
       HOSTNAME, PORT)
     val result = actor ! "OneWay"
@@ -98,7 +98,7 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
   @Test
   def shouldSendReplyAsync = {
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorTest$RemoteActorSpecActorBidirectional",
+      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       5000L,
       HOSTNAME, PORT)
     val result = actor !! "Hello"
@@ -110,7 +110,7 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
   def shouldSendRemoteReply = {
     implicit val timeout = 500000000L
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorTest$RemoteActorSpecActorBidirectional",
+      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
 
@@ -126,7 +126,7 @@ class ServerInitiatedRemoteActorTest extends JUnitSuite {
   def shouldSendReceiveException = {
     implicit val timeout = 500000000L
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorTest$RemoteActorSpecActorBidirectional",
+      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
     try {

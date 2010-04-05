@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-class ActorRegistryTest extends JUnitSuite {
+class ActorRegistrySpec extends JUnitSuite {
   var record = ""
   class TestActor extends Actor {
     id = "MyID"

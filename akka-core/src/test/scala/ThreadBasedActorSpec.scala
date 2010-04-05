@@ -3,15 +3,16 @@ package se.scalablesolutions.akka.actor
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-class ExecutorBasedEventDrivenDispatcherActorTest extends JUnitSuite {
-  import Actor.Sender.Self
+class ThreadBasedActorSpec extends JUnitSuite {
 
   private val unit = TimeUnit.MILLISECONDS
 
   class TestActor extends Actor {
-    dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(uuid)
+    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+    
     def receive = {
       case "Hello" =>
         reply("World")
@@ -19,11 +20,11 @@ class ExecutorBasedEventDrivenDispatcherActorTest extends JUnitSuite {
         throw new RuntimeException("expected")
     }
   }
-
+  
   @Test def shouldSendOneWay = {
-    val oneWay = new CountDownLatch(1)
+    var oneWay = new CountDownLatch(1)
     val actor = new Actor {
-      dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(uuid)
+      dispatcher = Dispatchers.newThreadBasedDispatcher(this)
       def receive = {
         case "OneWay" => oneWay.countDown
       }

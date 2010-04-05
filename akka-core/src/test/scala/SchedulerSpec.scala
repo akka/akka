@@ -6,7 +6,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 
-class SchedulerTest extends JUnitSuite {
+class SchedulerSpec extends JUnitSuite {
 
   @Test def schedulerShouldSchedule = {
 /*
