@@ -4,6 +4,8 @@
 
 package se.scalablesolutions.akka.stm
 
+import se.scalablesolutions.akka.util.Logging
+
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.multiverse.api.ThreadLocalTransaction._
@@ -49,9 +51,10 @@ object TransactionManagement extends TransactionManagement {
   }
 }
 
-trait TransactionManagement {
+trait TransactionManagement extends Logging {
 
   private[akka] def createNewTransactionSet: CountDownCommitBarrier = {
+    log.trace("Creating new transaction set")
     val txSet = new CountDownCommitBarrier(1, TransactionManagement.FAIR_TRANSACTIONS)
     TransactionManagement.transactionSet.set(Some(txSet))
     txSet
@@ -63,9 +66,13 @@ trait TransactionManagement {
   private[akka] def setTransaction(tx: Option[Transaction]) =
     if (tx.isDefined) TransactionManagement.transaction.set(tx)
 
-  private[akka] def clearTransactionSet = TransactionManagement.transactionSet.set(None)
+  private[akka] def clearTransactionSet = {
+    log.trace("Clearing transaction set")
+    TransactionManagement.transactionSet.set(None)
+  }
 
   private[akka] def clearTransaction = {
+    log.trace("Clearing transaction")
     TransactionManagement.transaction.set(None)
     setThreadLocalTransaction(null)
   }

@@ -12,7 +12,7 @@ import scala.collection.mutable.HashMap
 
 import se.scalablesolutions.akka.util.Logging
 
-import org.multiverse.api.{Transaction => MultiverseTransaction}
+import org.multiverse.api.{Transaction => MultiverseTransaction, TransactionLifecycleListener, TransactionLifecycleEvent}
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.templates.{TransactionTemplate, OrElseTemplate}
@@ -97,8 +97,20 @@ class TransactionRetryException(message: String) extends RuntimeException(messag
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Transaction extends TransactionManagement with Logging {
+object Transaction {
   val idFactory = new AtomicLong(-1L)
+
+  /**
+   * Creates a STM atomic transaction and by-passes all transactions hooks
+   * such as persistence etc.
+   * 
+   * Only for internal usage.
+   */
+  private[akka] def atomic0[T](body: => T): T = new TransactionTemplate[T]() {
+    def execute(mtx: MultiverseTransaction): T = body
+  }.execute()
+
+  object Local extends TransactionManagement with Logging {
 
   /**
    * See ScalaDoc on Transaction class.
@@ -116,40 +128,22 @@ object Transaction extends TransactionManagement with Logging {
   def foreach(f: => Unit): Unit = atomic {f}
 
   /**
-   * See ScalaDoc on Transaction class.
+   * See ScalaDoc on class.
    */
   def atomic[T](body: => T): T = {
-    var isTopLevelTransaction = true
     new TransactionTemplate[T]() {
-      def execute(mtx: MultiverseTransaction): T = {
-        val result = body
-
-        val txSet = getTransactionSetInScope
-        log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
-        txSet.joinCommit(mtx)
-
-        // FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS) 
-        //getTransactionSetInScope.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
-
-        clearTransaction
-        result
-      }
+      def execute(mtx: MultiverseTransaction): T = body
 
       override def onStart(mtx: MultiverseTransaction) = {
-        val txSet = 
-          if (!isTransactionSetInScope) {
-            isTopLevelTransaction = true
-            createNewTransactionSet
-          } else getTransactionSetInScope
         val tx = new Transaction
         tx.transaction = Some(mtx)
         setTransaction(Some(tx))
-
-        txSet.registerOnCommitTask(new Runnable() {
-          def run = tx.commit
-        })
-        txSet.registerOnAbortTask(new Runnable() {
-          def run = tx.abort
+        mtx.registerLifecycleListener(new TransactionLifecycleListener() {
+          def notify(tx: MultiverseTransaction, event: TransactionLifecycleEvent) = event.name match {
+            case "postCommit" => tx.commit
+            case "postAbort" => tx.abort
+            case _ => {}
+          }
         })
       }
     }.execute()
@@ -170,24 +164,70 @@ object Transaction extends TransactionManagement with Logging {
       def orelserun(t: MultiverseTransaction) = secondBody
     }.execute()
   }
+  }
+
+  object Global extends TransactionManagement with Logging {
+  /**
+   * See ScalaDoc on Transaction class.
+   */
+  def map[T](f: => T): T = atomic {f}
 
   /**
-   * Creates a STM atomic transaction and by-passes all transactions hooks
-   * such as persistence etc.
-   * 
-   * Only for internal usage.
+   * See ScalaDoc on Transaction class.
    */
-  private[akka] def atomic0[T](body: => T): T = new TransactionTemplate[T]() {
-    def execute(mtx: MultiverseTransaction): T = body
-  }.execute()
+  def flatMap[T](f: => T): T = atomic {f}
+
+  /**
+   * See ScalaDoc on Transaction class.
+   */
+  def foreach(f: => Unit): Unit = atomic {f}
+
+  /**
+   * See ScalaDoc on Transaction class.
+   */
+   def atomic[T](body: => T): T = {
+     var isTopLevelTransaction = false
+     new TransactionTemplate[T]() {
+       def execute(mtx: MultiverseTransaction): T = {
+         val result = body
+
+         val txSet = getTransactionSetInScope
+         log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
+         txSet.joinCommit(mtx)
+
+         // FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS) 
+         //getTransactionSetInScope.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
+
+         clearTransaction
+         result
+       }
+
+       override def onStart(mtx: MultiverseTransaction) = {
+         val txSet = 
+           if (!isTransactionSetInScope) {
+             isTopLevelTransaction = true
+             createNewTransactionSet
+           } else getTransactionSetInScope
+         val tx = new Transaction
+         tx.transaction = Some(mtx)
+         setTransaction(Some(tx))
+
+         txSet.registerOnCommitTask(new Runnable() {
+           def run = tx.commit
+         })
+         txSet.registerOnAbortTask(new Runnable() {
+           def run = tx.abort
+         })
+       }
+     }.execute()
+   }
+  }
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable class Transaction extends Logging {
-  import Transaction._
-
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: Option[MultiverseTransaction] = None
@@ -200,7 +240,7 @@ object Transaction extends TransactionManagement with Logging {
 
   def commit = synchronized {
     log.trace("Committing transaction %s", toString)    
-    atomic0 {
+    Transaction.atomic0 {
       persistentStateMap.valuesIterator.foreach(_.commit)
     }
     status = TransactionStatus.Completed
