@@ -456,7 +456,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
     // docs
     if (genDocs) {
-      val DOC_FILE_NAME = moduleName + "_%s-%s-%s.jar".format(buildScalaVersion, version, "doc")
+      val DOC_FILE_NAME = moduleName + "_%s-%s-%s.jar".format(buildScalaVersion, version, "docs")
       val DOC_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + DOC_FILE_NAME
       val fromDoc = Path.fromFile(new java.io.File(DOC_FILE_PATH))
       val toDoc = Path.fromFile(new java.io.File(toDir + "/" + DOC_FILE_NAME))

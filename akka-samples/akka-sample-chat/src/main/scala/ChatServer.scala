@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>.
  */
 
-package se.scalablesolutions.akka.sample.chat
+package sample.chat
 
 import scala.collection.mutable.HashMap
 
@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.persistence.redis.RedisStorage
-import se.scalablesolutions.akka.stm.Transaction._
+import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.util.Logging
