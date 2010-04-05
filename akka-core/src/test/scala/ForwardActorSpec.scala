@@ -5,7 +5,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 
-class ForwardActorTest extends JUnitSuite {
+class ForwardActorSpec extends JUnitSuite {
 
   object ForwardState {
     var sender: Actor = null
@@ -57,7 +57,7 @@ class ForwardActorTest extends JUnitSuite {
   def shouldForwardActorReferenceWhenInvokingForwardOnBang = {
     val senderActor = new BangSenderActor
     senderActor.start
-    assert(ForwardState.finished.await(1, TimeUnit.SECONDS))
+    assert(ForwardState.finished.await(2, TimeUnit.SECONDS))
     assert(ForwardState.sender ne null)
     assert(senderActor === ForwardState.sender)
   }
@@ -66,6 +66,6 @@ class ForwardActorTest extends JUnitSuite {
   def shouldForwardActorReferenceWhenInvokingForwardOnBangBang = {
     val senderActor = new BangBangSenderActor
     senderActor.start
-    assert(ForwardState.finished.await(1, TimeUnit.SECONDS))
+    assert(ForwardState.finished.await(2, TimeUnit.SECONDS))
   }
 }
