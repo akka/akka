@@ -242,7 +242,7 @@ object Actor extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait Actor extends TransactionManagement {
+trait Actor extends TransactionManagement with Logging {
   implicit protected val self: Option[Actor] = Some(this)
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
