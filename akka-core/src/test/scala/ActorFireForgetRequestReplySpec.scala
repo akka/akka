@@ -18,7 +18,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
 
     def receive = {
       case "Send" => reply("Reply")
-      case "SendImplicit" => sender.get ! "ReplyImplicit"
+      case "SendImplicit" => replyTo.get.left.get ! "ReplyImplicit"
     }
   }
 
