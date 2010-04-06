@@ -53,7 +53,7 @@ object AMQP {
       initReconnectDelay: Long) =
     supervisor.newProducer(
       config, hostname, port, exchangeName, returnListener, shutdownListener, initReconnectDelay)
-  
+
   def newConsumer(
       config: ConnectionParameters,
       hostname: String,
@@ -76,9 +76,9 @@ object AMQP {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  class AMQPSupervisor extends Actor {
+  class AMQPSupervisor extends Actor with Logging {
     import scala.collection.JavaConversions._
-  
+
     private val connections = new ConcurrentHashMap[FaultTolerantConnectionActor, FaultTolerantConnectionActor]
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
@@ -114,7 +114,7 @@ object AMQP {
         initReconnectDelay: Long,
         passive: Boolean,
         durable: Boolean,
-        autoDelete: Boolean,        
+        autoDelete: Boolean,
         configurationArguments: Map[String, AnyRef]): Consumer = {
       val consumer = new Consumer(
         new ConnectionFactory(config),
@@ -185,10 +185,10 @@ object AMQP {
    */
   class MessageConsumerListener(val queueName: String,
                                 val routingKey: String,
-                                val exclusive: Boolean, 
-                                val autoDelete: Boolean, 
+                                val exclusive: Boolean,
+                                val autoDelete: Boolean,
                                 val isUsingExistingQueue: Boolean,
-                                val actor: Actor) extends AMQPMessage { 
+                                val actor: Actor) extends AMQPMessage {
     /**
      * Creates a non-exclusive, non-autodelete message listener.
      */
@@ -238,8 +238,8 @@ object AMQP {
   object MessageConsumerListener {
     def apply(queueName: String,
               routingKey: String,
-              exclusive: Boolean, 
-              autoDelete: Boolean, 
+              exclusive: Boolean,
+              autoDelete: Boolean,
               isUsingExistingQueue: Boolean,
               actor: Actor) =
       new MessageConsumerListener(queueName, routingKey, exclusive, autoDelete, isUsingExistingQueue, actor)
@@ -356,7 +356,7 @@ object AMQP {
       val initReconnectDelay: Long,
       val passive: Boolean,
       val durable: Boolean,
-      val autoDelete: Boolean,        
+      val autoDelete: Boolean,
       val configurationArguments: Map[java.lang.String, Object])
       extends FaultTolerantConnectionActor {
     consumer: Consumer =>
@@ -365,7 +365,7 @@ object AMQP {
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
-    
+
     //FIXME use better strategy to convert scala.immutable.Map to java.util.Map
     private val jConfigMap = configurationArguments.foldLeft(new java.util.HashMap[String,Object]){ (m,kv) => { m.put(kv._1,kv._2); m } }
 
@@ -424,13 +424,13 @@ object AMQP {
     private def registerListener(listener: MessageConsumerListener) = {
       log.debug("Register MessageConsumerListener %s", listener.toString(exchangeName))
       listeners.put(listener, listener)
-      
+
       if (!listener.isUsingExistingQueue) {
         log.debug("Declaring new queue for MessageConsumerListener [%s]", listener.queueName)
         channel.queueDeclare(
-          listener.queueName, 
-          passive, durable, 
-          listener.exclusive, listener.autoDelete, 
+          listener.queueName,
+          passive, durable,
+          listener.exclusive, listener.autoDelete,
           jConfigMap)
       }
 
@@ -516,7 +516,7 @@ object AMQP {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait FaultTolerantConnectionActor extends Actor {
+  trait FaultTolerantConnectionActor extends Actor with Logging {
     val reconnectionTimer = new Timer
 
     var connection: Connection = _
@@ -548,7 +548,7 @@ object AMQP {
     def bindQueue(name: String) {
       channel.queueBind(name, exchangeName, name)
     }
-  
+
     def createBindQueue: String = {
       val name = createQueue
       channel.queueBind(name, exchangeName, name)

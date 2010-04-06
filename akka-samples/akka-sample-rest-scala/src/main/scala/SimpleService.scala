@@ -50,7 +50,7 @@ class Boot {
  */
 @Path("/scalacount")
 class SimpleService extends Transactor {
-  
+
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
@@ -127,7 +127,7 @@ class PersistentSimpleService extends Transactor {
 }
 
 @Path("/chat")
-class Chat extends Actor {
+class Chat extends Actor with Logging {
   case class Chat(val who: String, val what: String, val msg: String)
 
   @Suspend

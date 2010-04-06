@@ -63,9 +63,9 @@ trait Cluster {
  */
 trait ClusterActor extends Actor with Cluster {
   val name = config.getString("akka.remote.cluster.name") getOrElse "default"
-  
+
   @volatile protected var serializer : Serializer = _
-  
+
   private[remote] def setSerializer(s : Serializer) : Unit = serializer = s
 }
 
@@ -95,7 +95,7 @@ private[akka] object ClusterActor {
  * Provides most of the behavior out of the box
  * only needs to be gives hooks into the underlaying cluster impl.
  */
-abstract class BasicClusterActor extends ClusterActor {
+abstract class BasicClusterActor extends ClusterActor with Logging {
   import ClusterActor._
   type ADDR_T
 
@@ -235,13 +235,13 @@ abstract class BasicClusterActor extends ClusterActor {
 object Cluster extends Cluster with Logging {
   lazy val DEFAULT_SERIALIZER_CLASS_NAME = Serializer.Java.getClass.getName
 
-  @volatile private[remote] var clusterActor: Option[ClusterActor] = None 
+  @volatile private[remote] var clusterActor: Option[ClusterActor] = None
 
   private[remote] def createClusterActor(loader : ClassLoader): Option[ClusterActor] = {
     val name = config.getString("akka.remote.cluster.actor")
     if (name.isEmpty) throw new IllegalArgumentException(
       "Can't start cluster since the 'akka.remote.cluster.actor' configuration option is not defined")
-      
+
     val serializer = Class.forName(config.getString("akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME)).newInstance.asInstanceOf[Serializer]
     serializer.classLoader = Some(loader)
     try {

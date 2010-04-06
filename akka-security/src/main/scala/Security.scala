@@ -87,7 +87,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
     override def filter(request: ContainerRequest): ContainerRequest =
       rolesAllowed match {
         case Some(roles) => {
-          val result : Option[AnyRef] = authenticator !! Authenticate(request, roles) 
+          val result : Option[AnyRef] = authenticator !! Authenticate(request, roles)
           result match {
             case Some(OK) => request
             case Some(r) if r.isInstanceOf[Response] =>
@@ -245,7 +245,7 @@ trait BasicAuthenticationActor extends AuthenticationActor[BasicCredentials] {
  * class to create an authenticator. Don't forget to set the authenticator FQN in the
  * rest-part of the akka config
  */
-trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] {
+trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] with Logging {
   import Enc._
 
   private object InvalidateNonces
@@ -346,7 +346,7 @@ import org.ietf.jgss.GSSContext
 import org.ietf.jgss.GSSCredential
 import org.ietf.jgss.GSSManager
 
-trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] {
+trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] with Logging {
   override def unauthorized =
     Response.status(401).header("WWW-Authenticate", "Negotiate").build
 

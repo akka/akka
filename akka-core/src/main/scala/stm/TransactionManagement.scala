@@ -51,10 +51,9 @@ object TransactionManagement extends TransactionManagement {
   }
 }
 
-trait TransactionManagement extends Logging {
+trait TransactionManagement {
 
   private[akka] def createNewTransactionSet: CountDownCommitBarrier = {
-    log.trace("Creating new transaction set")
     val txSet = new CountDownCommitBarrier(1, TransactionManagement.FAIR_TRANSACTIONS)
     TransactionManagement.transactionSet.set(Some(txSet))
     txSet
@@ -67,12 +66,10 @@ trait TransactionManagement extends Logging {
     if (tx.isDefined) TransactionManagement.transaction.set(tx)
 
   private[akka] def clearTransactionSet = {
-    log.trace("Clearing transaction set")
     TransactionManagement.transactionSet.set(None)
   }
 
   private[akka] def clearTransaction = {
-    log.trace("Clearing transaction")
     TransactionManagement.transaction.set(None)
     setThreadLocalTransaction(null)
   }
