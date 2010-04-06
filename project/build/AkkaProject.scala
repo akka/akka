@@ -10,12 +10,12 @@
         * Simple and high-level abstractions for concurrency and parallelism.
         * Asynchronous, non-blocking and highly performant event-driven programming model.
         * Very lightweight event-driven processes (create ~6.5 million actors on 4 G RAM).
-    * Supervision hierarchies with let-it-crash semantics. For writing highly 
+    * Supervision hierarchies with let-it-crash semantics. For writing highly
       fault-tolerant systems that never stop, systems that self-heal.
     * Software Transactional Memory (STM). (Distributed transactions coming soon).
-    * Transactors: combine actors and STM into transactional actors. Allows you to 
+    * Transactors: combine actors and STM into transactional actors. Allows you to
       compose atomic message flows with automatic rollback and retry.
-    * Remoting: highly performant distributed actors with remote supervision and 
+    * Remoting: highly performant distributed actors with remote supervision and
       error management.
     * Cluster membership management.
 
@@ -31,7 +31,7 @@
     * Spring: Spring integration
     * Guice: Guice integration
     * Microkernel: Run Akka as a stand-alone kernel.
-    
+
 -------------------------------------------------------------------------------*/
 
 import sbt._
@@ -50,7 +50,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val CASSANDRA_VERSION = "0.5.0"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
-  
+
    // ------------------------------------------------------------
   lazy val akkaHome = {
     val home = System.getenv("AKKA_HOME")
@@ -97,10 +97,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
   lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
-  lazy val akka_servlet = project("akka-servlet", "akka-servlet", new AkkaServletProject(_), 
+  lazy val akka_servlet = project("akka-servlet", "akka-servlet", new AkkaServletProject(_),
     akka_core, akka_rest, akka_camel)
-  lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_), 
-    akka_core, akka_rest, akka_spring, akka_camel, akka_persistence, 
+  lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
+    akka_core, akka_rest, akka_spring, akka_camel, akka_persistence,
     akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns, akka_servlet)
 
   // functional tests in java
@@ -113,11 +113,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // create executable jar
   override def mainClass = Some("se.scalablesolutions.akka.kernel.Main")
 
-  override def packageOptions = 
+  override def packageOptions =
     manifestClassPath.map(cp => ManifestAttributes(
-      (Attributes.Name.CLASS_PATH, cp), 
-      (IMPLEMENTATION_TITLE, "Akka"), 
-      (IMPLEMENTATION_URL, "http://akkasource.org"), 
+      (Attributes.Name.CLASS_PATH, cp),
+      (IMPLEMENTATION_TITLE, "Akka"),
+      (IMPLEMENTATION_URL, "http://akkasource.org"),
       (IMPLEMENTATION_VENDOR, "The Akka Project")
     )).toList :::
     getMainClass(false).map(MainClass(_)).toList
@@ -126,7 +126,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   override def manifestClassPath = Some(allArtifacts.getFiles
     .filter(_.getName.endsWith(".jar"))
     .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
-    .mkString(" ") + 
+    .mkString(" ") +
     " scala-library.jar" +
     " dist/akka-util_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-util-java_%s-%s.jar".format(buildScalaVersion, version) +
@@ -146,7 +146,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-servlet_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version)
-    ) 
+    )
 
   // ------------------------------------------------------------
   // publishing
@@ -159,7 +159,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
-  //override def documentOptions = encodingUtf8.map(SimpleDocOption(_))  
+  //override def documentOptions = encodingUtf8.map(SimpleDocOption(_))
   override def packageDocsJar = defaultJarPath("-doc.jar")
   override def packageSrcJar= defaultJarPath("-src.jar")
   override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
@@ -291,19 +291,19 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val google_coll = "com.google.collections" % "google-collections" % "1.0" % "test"
     val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "test"
     val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "test"
-    val log4j = "log4j" % "log4j" % "1.2.15" % "test"    
+    val log4j = "log4j" % "log4j" % "1.2.15" % "test"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
     lazy val dist = deployTask(info, distPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
   }
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common", 
+    lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common",
       new AkkaPersistenceCommonProject(_), akka_core)
-    lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis", 
+    lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis",
       new AkkaRedisProject(_), akka_persistence_common)
-    lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo", 
+    lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo",
       new AkkaMongoProject(_), akka_persistence_common)
-    lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra", 
+    lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra",
       new AkkaCassandraProject(_), akka_persistence_common)
   }
 
@@ -319,9 +319,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaClusterParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_cluster_jgroups = project("akka-cluster-jgroups", "akka-cluster-jgroups", 
+    lazy val akka_cluster_jgroups = project("akka-cluster-jgroups", "akka-cluster-jgroups",
       new AkkaJgroupsProject(_), akka_core)
-    lazy val akka_cluster_shoal = project("akka-cluster-shoal", "akka-cluster-shoal", 
+    lazy val akka_cluster_shoal = project("akka-cluster-shoal", "akka-cluster-shoal",
       new AkkaShoalProject(_), akka_core)
   }
 
@@ -398,18 +398,18 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat", 
+    lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
       new AkkaSampleChatProject(_), akka_kernel)
-    lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift", 
+    lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift",
       new AkkaSampleLiftProject(_), akka_kernel)
-    lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java", 
+    lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java",
       new AkkaSampleRestJavaProject(_), akka_kernel)
-    lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala", 
+    lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala",
       new AkkaSampleRestScalaProject(_), akka_kernel)
-    lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel", 
+    lazy val akka_sample_camel = project("akka-sample-camel", "akka-sample-camel",
       new AkkaSampleCamelProject(_), akka_kernel)
-    lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security", 
-      new AkkaSampleSecurityProject(_), akka_kernel) 
+    lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security",
+      new AkkaSampleSecurityProject(_), akka_kernel)
   }
 
   // ------------------------------------------------------------
@@ -432,9 +432,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     descendents(path("lib") ##, "*.jar") +++
     descendents(configurationPath(Configurations.Compile) ##, "*.jar"))
     .filter(jar => // remove redundant libs
-      !jar.toString.endsWith("stax-api-1.0.1.jar") || 
+      !jar.toString.endsWith("stax-api-1.0.1.jar") ||
       !jar.toString.endsWith("scala-library-2.7.7.jar")
-    ) 
+    )
   }
 
   def deployTask(info: ProjectInfo, toDir: Path, genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
@@ -444,7 +444,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
     // FIXME need to find out a way to grab these paths from the sbt system
 
-    // binary 
+    // binary
     if (genJar) {
       val JAR_FILE_NAME = moduleName + "_%s-%s.jar".format(buildScalaVersion, version)
       val JAR_FILE_PATH = projectPath + "/target/scala_%s/".format(buildScalaVersion) + JAR_FILE_NAME
@@ -463,7 +463,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       log.info("Deploying docs " + toDoc)
       FileUtilities.copyFile(fromDoc, toDoc, log)
     }
-    
+
     // sources
     if (genSource) {
       val SRC_FILE_NAME = moduleName + "_%s-%s-%s.jar".format(buildScalaVersion, version, "src")

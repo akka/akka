@@ -65,7 +65,7 @@ class Transformer(producer: Actor) extends Actor {
   }
 }
 
-class Subscriber(name:String, uri: String) extends Actor with Consumer {
+class Subscriber(name:String, uri: String) extends Actor with Consumer with Logging {
   def endpointUri = uri
 
   protected def receive = {

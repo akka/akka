@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
-import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteProtocolBuilder, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
  * Implements the Transactor abstraction. E.g. a transactional actor.
  * <p/>
  * Equivalent to invoking the <code>makeTransactionRequired</code> method in the body of the <code>Actor</code
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Transactor extends Actor {
@@ -40,7 +40,7 @@ trait Transactor extends Actor {
  * Extend this abstract class to create a remote actor.
  * <p/>
  * Equivalent to invoking the <code>makeRemote(..)</code> method in the body of the <code>Actor</code
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class RemoteActor(hostname: String, port: Int) extends Actor {
@@ -72,7 +72,7 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
 
 /**
  * Utility class with factory methods for creating Actors.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
@@ -82,14 +82,14 @@ object Actor extends Logging {
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
   object Sender {
-    @deprecated("import Actor.Sender.Self is not needed anymore, just use 'actor ! msg'") 
+    @deprecated("import Actor.Sender.Self is not needed anymore, just use 'actor ! msg'")
     object Self
   }
 
   /**
    * Use to create an anonymous event-driven actor.
    * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * The actor is created with a 'permanent' life-cycle configuration, which means that
    * if the actor is supervised and dies it will be restarted.
    * <p/>
    * The actor is started when created.
@@ -111,7 +111,7 @@ object Actor extends Logging {
   /**
    * Use to create an anonymous transactional event-driven actor.
    * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * The actor is created with a 'permanent' life-cycle configuration, which means that
    * if the actor is supervised and dies it will be restarted.
    * <p/>
    * The actor is started when created.
@@ -131,7 +131,7 @@ object Actor extends Logging {
   }
 
   /**
-   * Use to create an anonymous event-driven actor with a 'temporary' life-cycle configuration, 
+   * Use to create an anonymous event-driven actor with a 'temporary' life-cycle configuration,
    * which means that if the actor is supervised and dies it will *not* be restarted.
    * <p/>
    * The actor is started when created.
@@ -153,7 +153,7 @@ object Actor extends Logging {
   /**
    * Use to create an anonymous event-driven remote actor.
    * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * The actor is created with a 'permanent' life-cycle configuration, which means that
    * if the actor is supervised and dies it will be restarted.
    * <p/>
    * The actor is started when created.
@@ -176,7 +176,7 @@ object Actor extends Logging {
   /**
    * Use to create an anonymous event-driven actor with both an init block and a message loop block.
    * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that 
+   * The actor is created with a 'permanent' life-cycle configuration, which means that
    * if the actor is supervised and dies it will be restarted.
    * <p/>
    * The actor is started when created.
@@ -203,10 +203,10 @@ object Actor extends Logging {
   }
 
   /**
-   * Use to spawn out a block of code in an event-driven actor. Will shut actor down when 
+   * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
    * the block has been executed.
    * <p/>
-   * NOTE: If used from within an Actor then has to be qualified with 'Actor.spawn' since 
+   * NOTE: If used from within an Actor then has to be qualified with 'Actor.spawn' since
    * there is a method 'spawn[ActorType]' in the Actor trait already.
    * Example:
    * <pre>
@@ -242,7 +242,7 @@ object Actor extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait Actor extends TransactionManagement with Logging {
+trait Actor extends TransactionManagement {
   implicit protected val self: Option[Actor] = Some(this)
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
@@ -264,7 +264,7 @@ trait Actor extends TransactionManagement with Logging {
   private[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
 
   /**
-   * This lock ensures thread safety in the dispatching: only one message can 
+   * This lock ensures thread safety in the dispatching: only one message can
    * be dispatched at once on the actor.
    */
   private[akka] val _dispatcherLock: Lock = new ReentrantLock
@@ -495,7 +495,7 @@ trait Actor extends TransactionManagement with Logging {
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
    * <p/>
    *
-   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable, 
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable,
    * if invoked from within an Actor. If not then no sender is available.
    * <pre>
    *   actor ! message
@@ -567,7 +567,7 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
-   * Works with both '!' and '!!'. 
+   * Works with both '!' and '!!'.
    */
   def forward(message: Any)(implicit sender: Option[Actor] = None) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
@@ -807,7 +807,7 @@ trait Actor extends TransactionManagement with Logging {
 
   protected[akka] def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = {
     joinTransaction(message)
-    
+
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -829,11 +829,17 @@ trait Actor extends TransactionManagement with Logging {
         requestBuilder.setSourceUuid(s.uuid)
 
         val (host, port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
-        
+
         Actor.log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
 
         requestBuilder.setSourceHostname(host)
         requestBuilder.setSourcePort(port)
+
+        if (RemoteServer.serverFor(host, port).isEmpty) {
+          val server = new RemoteServer
+          server.start(host, port)
+        }
+        RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.getId, sender.get)
       }
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
@@ -846,13 +852,13 @@ trait Actor extends TransactionManagement with Logging {
       else invocation.send
     }
   }
-  
+
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
       message: Any,
       timeout: Long,
       senderFuture: Option[CompletableFuture]): CompletableFuture = {
     joinTransaction(message)
-    
+
     if (_remoteAddress.isDefined) {
       val requestBuilder = RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
@@ -882,7 +888,7 @@ trait Actor extends TransactionManagement with Logging {
 
   private def joinTransaction(message: Any) = if (isTransactionSetInScope) {
     // FIXME test to run bench without this trace call
-    Actor.log.trace("Joining transaction set [%s];\n\tactor %s\n\twith message [%s]", 
+    Actor.log.trace("Joining transaction set [%s];\n\tactor %s\n\twith message [%s]",
                     getTransactionSetInScope, toString, message)
     getTransactionSetInScope.incParties
   }
@@ -930,7 +936,7 @@ trait Actor extends TransactionManagement with Logging {
       else {
         topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
         if (isTransactor) {
-          Actor.log.trace("Creating a new transaction set (top-level transaction)\n\tfor actor %s\n\twith message %s", 
+          Actor.log.trace("Creating a new transaction set (top-level transaction)\n\tfor actor %s\n\twith message %s",
                           toString, messageHandle)
           Some(createNewTransactionSet)
         } else None
@@ -959,13 +965,13 @@ trait Actor extends TransactionManagement with Logging {
       case e: IllegalStateException => {}
       case e =>
         // abort transaction set
-        if (isTransactionSetInScope) try { 
-          getTransactionSetInScope.abort 
+        if (isTransactionSetInScope) try {
+          getTransactionSetInScope.abort
         } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
         if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
-        
+
         clearTransaction
         if (topLevelTransaction) clearTransactionSet
 
