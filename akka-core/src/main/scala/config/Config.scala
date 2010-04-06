@@ -12,7 +12,7 @@ import net.lag.configgy.{Configgy, ParseException}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config extends Logging {
-  val VERSION = "0.8"
+  val VERSION = "0.8.1"
 
   // Set Multiverse options for max speed
   System.setProperty("org.multiverse.MuliverseConstants.sanityChecks", "false")
@@ -53,7 +53,7 @@ object Config extends Logging {
         log.info("Config loaded from the application classpath.")
       } catch {
         case e: ParseException => throw new IllegalStateException(
-          "\nCan't find 'akka.conf' configuration file." + 
+          "\nCan't find 'akka.conf' configuration file." +
           "\nOne of the three ways of locating the 'akka.conf' file needs to be defined:" +
           "\n\t1. Define 'AKKA_HOME' environment variable to the root of the Akka distribution." +
           "\n\t2. Define the '-Dakka.config=...' system property option." +
