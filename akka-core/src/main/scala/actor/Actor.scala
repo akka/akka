@@ -298,11 +298,11 @@ trait Actor extends TransactionManagement with Logging {
   // ====================================
 
   /**
-   *  User overridable callback/setting.
-   *
+   * User overridable callback/setting.
+   * <p/>
    * Identifier for actor, does not have to be a unique one.
    * Default is the class name.
-   *
+   * <p/>
    * This field is used for logging, AspectRegistry.actorsFor, identifier for remote actor in RemoteServer etc.
    * But also as the identifier for persistence, which means that you can
    * use a custom name to be able to retrieve the "correct" persisted state
@@ -312,7 +312,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Defines the default timeout for '!!' invocations,
    * e.g. the timeout for the future returned by the call to '!!'.
    */
@@ -339,12 +339,15 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Set trapExit to the list of exception classes that the actor should be able to trap
    * from the actor it is supervising. When the supervising actor throws these exceptions
    * then they will trigger a restart.
    * <p/>
    * <pre>
+   * // trap no exceptions
+   * trapExit = Nil
+   *
    * // trap all exceptions
    * trapExit = List(classOf[Throwable])
    *
@@ -356,7 +359,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * If 'trapExit' is set for the actor to act as supervisor, then a faultHandler must be defined.
    * Can be one of:
    * <pre/>
@@ -369,14 +372,14 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Defines the life-cycle for a supervised actor.
    */
   @volatile var lifeCycle: Option[LifeCycle] = None
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Set to true if messages should have REQUIRES_NEW semantics, e.g. a new transaction should
    * start if there is no one running, else it joins the existing transaction.
    */
@@ -384,21 +387,21 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Partial function implementing the actor logic.
    * To be implemented by subclassing actor.
    * <p/>
    * Example code:
    * <pre>
    *   def receive = {
-   *     case Ping =>
+   *     case Ping =&gt;
    *       println("got a ping")
    *       reply("pong")
    *
-   *     case OneWay =>
+   *     case OneWay =&gt;
    *       println("got a oneway")
    *
-   *     case _ =>
+   *     case _ =&gt;
    *       println("unknown message, ignoring")
    * }
    * </pre>
@@ -407,7 +410,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Optional callback method that is called during initialization.
    * To be implemented by subclassing actor.
    */
@@ -415,7 +418,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
@@ -423,7 +426,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
@@ -431,7 +434,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Optional callback method that is called during termination.
    * To be implemented by subclassing actor.
    */
@@ -439,7 +442,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * User overridable callback/setting.
-   *
+   * <p/>
    * Optional callback method that is called during termination.
    * To be implemented by subclassing actor.
    */
@@ -453,7 +456,7 @@ trait Actor extends TransactionManagement with Logging {
    * Starts up the actor and its message queue.
    */
   def start: Actor = synchronized {
-    if (_isShutDown) throw new IllegalStateException("Can't restart an actor that has been shut down with 'exit'")
+    if (_isShutDown) throw new IllegalStateException("Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!_isRunning) {
       messageDispatcher.register(this)
       messageDispatcher.start
@@ -468,7 +471,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * Shuts down the actor its dispatcher and message queue.
-   * Delegates to 'stop'
+   * Alias for 'stop'.
    */
   protected def exit = stop
 
@@ -486,8 +489,14 @@ trait Actor extends TransactionManagement with Logging {
     }
   }
 
+  /**
+   * Is the actor running?
+   */
   def isRunning: Boolean = _isRunning
 
+  /**
+   * Returns the mailbox size.
+   */
   def mailboxSize: Int = _mailbox.size
 
 
