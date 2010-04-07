@@ -84,8 +84,14 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       def receive = {
         case Get =>
           val ref = dataFlow.value.get
-          if (ref.isDefined) reply(ref.get)
-          else readerFuture = senderFuture
+          if (ref.isDefined)
+            reply(ref.get)
+          else {
+            readerFuture = replyTo match { 
+              case Some(Right(future)) => Some(future)
+              case _ => None
+            }
+          }
         case Set(v) => if (readerFuture.isDefined) readerFuture.get.completeWithResult(v)
         case Exit =>  exit
       }
