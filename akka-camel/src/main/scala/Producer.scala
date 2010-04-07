@@ -114,7 +114,7 @@ trait Producer { self: Actor =>
   protected def produceAsync(msg: Any): Unit = {
     val cmsg = Message.canonicalize(msg)
     val sync = new ProducerResponseSender(
-      cmsg.headers(headersToCopy), this.sender, this.senderFuture, this)
+      cmsg.headers(headersToCopy), this.replyTo, this)
     template.asyncCallback(endpointUri, createInOutExchange.fromRequestMessage(cmsg), sync)
   }
 
@@ -162,8 +162,7 @@ trait Producer { self: Actor =>
  */
 class ProducerResponseSender(
     headers: Map[String, Any],
-    sender: Option[Actor],
-    senderFuture: Option[CompletableFuture],
+    replyTo : Option[Either[Actor,CompletableFuture]],
     producer: Actor) extends Synchronization with Logging {
 
   implicit val producerActor = Some(producer) // the response sender
@@ -180,14 +179,10 @@ class ProducerResponseSender(
    */
   def onComplete(exchange: Exchange) = reply(exchange.toResponseMessage(headers))
 
-  private def reply(message: Any) = {
-    sender match {
-      case Some(actor) => actor ! message
-      case None => senderFuture match {
-        case Some(future) => future.completeWithResult(message)
-        case None => log.warning("No destination for sending response")
-      }
-    }
+  private def reply(message: Any) = replyTo match {
+    case Some(Left(actor)) => actor ! message
+    case Some(Right(future)) => future.completeWithResult(message)
+    case _ => log.warning("No destination for sending response")
   }
 }
 
