@@ -275,23 +275,9 @@ trait Actor extends TransactionManagement with Logging {
   // ====================================
 
   /**
-   * The 'sender' field holds the sender of the message currently being processed.
-   * <p/>
-   * If the sender was an actor then it is defined as 'Some(senderActor)' and
-   * if the sender was of some other instance then it is defined as 'None'.
-   * <p/>
-   * This sender reference can be used together with the '!' method for request/reply
-   * message exchanges and which is in many ways better than using the '!!' method
-   * which will make the sender wait for a reply using a *blocking* future.
+   * TODO: Document replyTo
    */
-  protected var sender: Option[Actor] = None
-
-  /**
-   * The 'senderFuture' field should normally not be touched by user code, which should instead use the 'reply' method.
-   * But it can be used for advanced use-cases when one might want to store away the future and
-   * resolve it later and/or somewhere else.
-   */
-  protected var senderFuture: Option[CompletableFuture] = None
+  protected var replyTo: Option[Either[Actor,CompletableFuture]] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -590,9 +576,11 @@ trait Actor extends TransactionManagement with Logging {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
       val forwarder = sender.getOrElse(throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor"))
-      if (forwarder.getSenderFuture.isDefined) postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, forwarder.getSenderFuture)
-      else if (forwarder.getSender.isDefined) postMessageToMailbox(message, forwarder.getSender)
-      else throw new IllegalStateException("Can't forward message when initial sender is not an actor")
+      forwarder.replyTo match {
+        case Some(Left(actor))   => postMessageToMailbox(message, Some(actor))
+        case Some(Right(future)) => postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, Some(future))
+        case _                   => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
+      }
     } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -600,14 +588,10 @@ trait Actor extends TransactionManagement with Logging {
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
    */
-  protected[this] def reply(message: Any) = {
-    sender match {
-      case Some(senderActor) =>
-        senderActor ! message
-      case None =>
-        senderFuture match {
-          case None =>
-            throw new IllegalStateException(
+  protected[this] def reply(message: Any) = replyTo match {
+    case Some(Left(actor))   => actor ! message
+    case Some(Right(future)) => future.completeWithResult(message)
+    case _ => throw new IllegalStateException(
               "\n\tNo sender in scope, can't reply. " +
               "\n\tYou have probably used the '!' method to either; " +
               "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
@@ -616,12 +600,8 @@ trait Actor extends TransactionManagement with Logging {
               "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
               "\n\tthat will be bound by the argument passed to 'reply'." +
               "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
-          case Some(future) =>
-            future.completeWithResult(message)
-        }
-    }
   }
-
+  
   /**
    * Get the dispatcher for this actor.
    */
@@ -810,10 +790,6 @@ trait Actor extends TransactionManagement with Logging {
 
   private[akka] def _resume = _isSuspended = false
 
-  private[akka] def getSender = sender
-
-  private[akka] def getSenderFuture = senderFuture
-
   private def spawnButDoNotStart[T <: Actor : Manifest] : T = {
     val actor = manifest[T].erasure.asInstanceOf[Class[T]].newInstance
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
@@ -861,7 +837,7 @@ trait Actor extends TransactionManagement with Logging {
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
     } else {
-      val invocation = new MessageInvocation(this, message, None, sender, transactionSet.get)
+      val invocation = new MessageInvocation(this, message, sender.map(Left(_)), transactionSet.get)
       if (_isEventBased) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
@@ -894,7 +870,7 @@ trait Actor extends TransactionManagement with Logging {
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFuture(timeout)
-      val invocation = new MessageInvocation(this, message, Some(future), None, transactionSet.get)
+      val invocation = new MessageInvocation(this, message, Some(Right(future)), transactionSet.get)
       if (_isEventBased) {
         _mailbox.add(invocation)
         invocation.send
@@ -928,8 +904,7 @@ trait Actor extends TransactionManagement with Logging {
     setTransactionSet(messageHandle.transactionSet)
 
     val message = messageHandle.message //serializeMessage(messageHandle.message)
-    senderFuture = messageHandle.future
-    sender = messageHandle.sender
+    replyTo = messageHandle.replyTo
 
     try {
       if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
@@ -940,7 +915,10 @@ trait Actor extends TransactionManagement with Logging {
         Actor.log.error(e, "Could not invoke actor [%s]", this)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
-        if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
+        replyTo match { 
+          case Some(Right(future)) => future.completeWithException(this, e)
+          case _ =>
+        }
     } finally {
       clearTransaction
     }
@@ -961,8 +939,7 @@ trait Actor extends TransactionManagement with Logging {
     setTransactionSet(txSet)
 
     val message = messageHandle.message //serializeMessage(messageHandle.message)
-    senderFuture = messageHandle.future
-    sender = messageHandle.sender
+    replyTo = messageHandle.replyTo
 
     def proceed = {
       if (base.isDefinedAt(message)) base(message) // invoke user actor's receive partial function
@@ -987,7 +964,10 @@ trait Actor extends TransactionManagement with Logging {
         } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
-        if (senderFuture.isDefined) senderFuture.get.completeWithException(this, e)
+        replyTo match { 
+          case Some(Right(future)) => future.completeWithException(this, e)
+          case _ =>
+        }
 
         clearTransaction
         if (topLevelTransaction) clearTransactionSet

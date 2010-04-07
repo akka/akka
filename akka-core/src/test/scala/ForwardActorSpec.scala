@@ -15,7 +15,7 @@ class ForwardActorSpec extends JUnitSuite {
   class ReceiverActor extends Actor {
     def receive = {
       case "SendBang" => {
-        ForwardState.sender = sender.get
+        ForwardState.sender = replyTo.get.left.get
         ForwardState.finished.countDown
       }
       case "SendBangBang" => reply("SendBangBang")

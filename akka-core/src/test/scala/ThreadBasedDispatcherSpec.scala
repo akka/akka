@@ -57,7 +57,7 @@ class ThreadBasedDispatcherSpec extends JUnitSuite {
     val dispatcher = new ThreadBasedDispatcher("name", new TestMessageHandle(handleLatch))
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.dispatch(new MessageInvocation(key1, new Object, None, None, None))
+      dispatcher.dispatch(new MessageInvocation(key1, new Object, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)
@@ -78,7 +78,7 @@ class ThreadBasedDispatcherSpec extends JUnitSuite {
     })
     dispatcher.start
     for (i <- 0 until 100) {
-      dispatcher.dispatch(new MessageInvocation(key1, i, None, None, None))
+      dispatcher.dispatch(new MessageInvocation(key1, i, None, None))
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)
