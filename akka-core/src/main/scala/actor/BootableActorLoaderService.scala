@@ -1,11 +1,12 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
- 
+
 package se.scalablesolutions.akka.actor
 
 import java.io.File
-import java.net.URLClassLoader
+import java.net.{URL, URLClassLoader}
+import java.util.jar.JarFile
 
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 import se.scalablesolutions.akka.config.Config._
@@ -17,7 +18,7 @@ trait BootableActorLoaderService extends Bootable with Logging {
 
   val BOOT_CLASSES = config.getList("akka.boot")
   lazy val applicationLoader: Option[ClassLoader] = createApplicationClassLoader
-  
+
   protected def createApplicationClassLoader : Option[ClassLoader] = {
     Some(
     if (HOME.isDefined) {
@@ -28,9 +29,21 @@ trait BootableActorLoaderService extends Bootable with Logging {
         log.error("Could not find a deploy directory at [%s]", DEPLOY)
         System.exit(-1)
       }
-      val toDeploy = for (f <- DEPLOY_DIR.listFiles().toArray.toList.asInstanceOf[List[File]]) yield f.toURI.toURL
-      log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy.toArray.toList)
-      new URLClassLoader(toDeploy.toArray, getClass.getClassLoader)
+      val filesToDeploy = DEPLOY_DIR.listFiles.toArray.toList.asInstanceOf[List[File]].filter(_.getName.endsWith(".jar"))
+      var dependencyJars: List[URL] = Nil
+      filesToDeploy.map { file =>
+        val jarFile = new JarFile(file)
+        val en = jarFile.entries
+        while (en.hasMoreElements) {
+          val name = en.nextElement.getName
+          if (name.endsWith(".jar")) dependencyJars ::= new File(String.format("jar:file:%s!/%s", jarFile.getName, name)).toURI.toURL
+        }
+      }
+      val toDeploy = filesToDeploy.map(_.toURI.toURL)
+      log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy)
+      log.debug("Loading dependencies [%s]", dependencyJars)
+      val allJars = toDeploy ::: dependencyJars
+      new URLClassLoader(allJars.toArray.asInstanceOf[Array[URL]] , getClass.getClassLoader)
     } else getClass.getClassLoader)
   }
 
@@ -41,6 +54,6 @@ trait BootableActorLoaderService extends Bootable with Logging {
     }
     super.onLoad
   }
-  
+
   abstract override def onUnload = ActorRegistry.shutdownAll
 }
