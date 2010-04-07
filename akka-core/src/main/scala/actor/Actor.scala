@@ -458,6 +458,7 @@ trait Actor extends TransactionManagement with Logging {
       messageDispatcher.start
       _isRunning = true
       init
+      initTransactionalState
     }
     Actor.log.debug("[%s] has started", toString)
     ActorRegistry.register(this)
