@@ -51,6 +51,7 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMessage
 case class Restart(reason: Throwable) extends LifeCycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
+case class Unlink(child: Actor) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
@@ -485,9 +486,15 @@ trait Actor extends TransactionManagement with Logging {
     }
   }
 
-  def isRunning = _isRunning
+  def isRunning: Boolean = _isRunning
 
-  def mailboxSize = _mailbox.size
+  def mailboxSize: Int = _mailbox.size
+
+
+  /**
+   * Returns the supervisor, if there is one.
+   */
+  def supervisor: Option[Actor] = _supervisor
 
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
@@ -994,6 +1001,7 @@ trait Actor extends TransactionManagement with Logging {
     case HotSwap(code) =>      _hotswap = code
     case Restart(reason) =>    restart(reason)
     case Exit(dead, reason) => handleTrapExit(dead, reason)
+    case Unlink(child) =>      unlink(child); child.stop
     case Kill =>               throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
 
@@ -1008,9 +1016,7 @@ trait Actor extends TransactionManagement with Logging {
       } else throw new IllegalStateException(
         "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
         "\n\tto non-empty list of exception classes - can't proceed " + toString)
-    } else {
-      if (_supervisor.isDefined) _supervisor.get ! Exit(dead, reason) // if 'trapExit' is not defined then pass the Exit on
-    }
+    } else _supervisor.foreach(_ ! Exit(dead, reason)) // if 'trapExit' is not defined then pass the Exit on
   }
 
   private[this] def restartLinkedActors(reason: Throwable) = {
@@ -1024,8 +1030,13 @@ trait Actor extends TransactionManagement with Logging {
                 actor.restart(reason)
               case Temporary =>
                 Actor.log.info("Actor [%s] configured as TEMPORARY and will not be restarted.", actor.id)
-                getLinkedActors.remove(actor) // remove the temporary actor
                 actor.stop
+                getLinkedActors.remove(actor) // remove the temporary actor
+                // if last temporary actor is gone, then unlink me from supervisor
+                if (getLinkedActors.isEmpty) {
+                  Actor.log.info("All linked actors have died permanently (they were all configured as TEMPORARY)\n\tshutting down and unlinking supervisor actor as well [%s].", actor.id)
+                  _supervisor.foreach(_ ! Unlink(this))
+                }
             }
           }
         }
@@ -1033,7 +1044,6 @@ trait Actor extends TransactionManagement with Logging {
   }
 
   private[Actor] def restart(reason: Throwable): Unit = synchronized {
-    getLinkedActors.toArray.foreach(s => println("---------- " + s))
     restartLinkedActors(reason)
     preRestart(reason)
     Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
