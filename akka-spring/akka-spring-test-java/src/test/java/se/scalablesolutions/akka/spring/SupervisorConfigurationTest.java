@@ -5,12 +5,14 @@ package se.scalablesolutions.akka.spring;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import se.scalablesolutions.akka.actor.ActiveObject;
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import se.scalablesolutions.akka.spring.foo.Foo;
 import se.scalablesolutions.akka.spring.foo.IBar;
@@ -49,7 +51,6 @@ public class SupervisorConfigurationTest {
           public void testTransactionalState() {
             ActiveObjectConfigurator conf = (ActiveObjectConfigurator) context.getBean("supervision2");
             StatefulPojo stateful = conf.getInstance(StatefulPojo.class);
-            stateful.init();
             stateful.setMapState("testTransactionalState", "some map state");
             stateful.setVectorState("some vector state");
             stateful.setRefState("some ref state");
@@ -57,6 +58,12 @@ public class SupervisorConfigurationTest {
             assertEquals("some vector state", stateful.getVectorState());
             assertEquals("some ref state", stateful.getRefState());
           }
+          
+        @Test
+      	public void testInitTransactionalState() {
+      		StatefulPojo stateful = ActiveObject.newInstance(StatefulPojo.class, 1000, true);
+            assertTrue("should be inititalized", stateful.isInitialized());
+      	}
 
       @Test
           public void testSupervisionWithDispatcher() {

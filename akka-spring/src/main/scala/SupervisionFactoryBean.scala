@@ -43,20 +43,18 @@ class SupervisionFactoryBean extends AbstractFactoryBean[ActiveObjectConfigurato
     val lifeCycle = if (!props.lifecyclye.isEmpty && props.lifecyclye.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) new LifeCycle(new Temporary()) else new LifeCycle(new Permanent())
     val isRemote = (props.host != null) && (!props.host.isEmpty)
     val withInterface = (props.interface != null) && (!props.interface.isEmpty)
-    // FIXME: timeout int vs long
-    val timeout = props.timeout.asInstanceOf[Int]
     if (isRemote) {
       val remote = new RemoteAddress(props.host, props.port)
       if (withInterface) {
-        new Component(props.interface.toClass, props.target.toClass, lifeCycle, timeout, props.transactional, remote)
+        new Component(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
       } else {
-        new Component(props.target.toClass, lifeCycle, timeout, props.transactional, remote)
+        new Component(props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
       }
     } else {
       if (withInterface) {
-        new Component(props.interface.toClass, props.target.toClass, lifeCycle, timeout, props.transactional)
+        new Component(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional)
       } else {
-        new Component(props.target.toClass, lifeCycle, timeout, props.transactional)
+        new Component(props.target.toClass, lifeCycle, props.timeout, props.transactional)
       }
     }
   }
