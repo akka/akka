@@ -1,6 +1,5 @@
 package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.stm.Transaction.Local._
 import se.scalablesolutions.akka.stm._
 
 import org.scalatest.Spec
@@ -11,13 +10,14 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 @RunWith(classOf[JUnitRunner])
-class StmSpec extends 
-  Spec with 
-  ShouldMatchers with 
+class StmSpec extends
+  Spec with
+  ShouldMatchers with
   BeforeAndAfterAll {
-  
-  describe("STM outside actors") {
+
+  describe("Transaction.Local") {
     it("should be able to do multiple consecutive atomic {..} statements") {
+      import Transaction.Local._
 
       lazy val ref = TransactionalState.newRef[Int]
 
@@ -36,6 +36,7 @@ class StmSpec extends
     }
 
     it("should be able to do nested atomic {..} statements") {
+      import Transaction.Local._
 
       lazy val ref = TransactionalState.newRef[Int]
 
@@ -45,10 +46,10 @@ class StmSpec extends
       def total: Int = atomic {
         ref.get.getOrElse(0)
       }
-      
+
       atomic {
         increment
-        increment        
+        increment
       }
       atomic {
         increment
@@ -57,6 +58,7 @@ class StmSpec extends
     }
 
     it("should roll back failing nested atomic {..} statements") {
+      import Transaction.Local._
 
       lazy val ref = TransactionalState.newRef[Int]
 
@@ -71,7 +73,7 @@ class StmSpec extends
           increment
           increment
           throw new Exception
-        }        
+        }
       } catch {
         case e => {}
       }
