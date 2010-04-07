@@ -34,6 +34,16 @@ class SupervisorSpec extends JUnitSuite {
     }
   }
 
+  @Test def shouldStartServerForNestedSupervisorHierarchy = {
+    messageLog.clear
+    val sup = getNestedSupervisorsAllForOneConf
+    sup.start
+
+    expect("pong") {
+      (pingpong1 !! Ping).getOrElse("nil")
+    }
+  }
+
   @Test def shouldKillSingleActorOneForOne = {
     messageLog.clear
     val sup = getSingleActorOneForOneSupervisor
@@ -294,12 +304,74 @@ class SupervisorSpec extends JUnitSuite {
     }
   }
 
+  @Test def shouldRestartKilledActorsForNestedSupervisorHierarchy = {
+    messageLog.clear
+    val sup = getNestedSupervisorsAllForOneConf
+    sup.start
+
+    expect("pong") {
+      (pingpong1 !! Ping).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong2 !! Ping).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong3 !! Ping).getOrElse("nil")
+    }
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    intercept[RuntimeException] {
+      pingpong2 !! Die
+    }
+
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("pong") {
+      (pingpong1 !! Ping).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong2 !! Ping).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong3 !! Ping).getOrElse("nil")
+    }
+
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+  }
+
   // =============================================
   // Creat some supervisors with different configurations
 
   def getSingleActorAllForOneSupervisor: Supervisor = {
     pingpong1 = new PingPong1Actor
-    
+
     val factory = SupervisorFactory(
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
@@ -382,7 +454,7 @@ class SupervisorSpec extends JUnitSuite {
             LifeCycle(Permanent))
           ::
           SupervisorConfig(
-            RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+            RestartStrategy(AllForOne, 3, 100, Nil),
             Supervise(
               pingpong2,
               LifeCycle(Permanent))
@@ -403,7 +475,7 @@ class SupervisorSpec extends JUnitSuite {
 
       case OneWay =>
         oneWayLog.put("oneway")
-      
+
       case Die =>
         throw new RuntimeException("DIE")
     }

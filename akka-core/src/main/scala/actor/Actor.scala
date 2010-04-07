@@ -1031,7 +1031,9 @@ trait Actor extends TransactionManagement with Logging {
     }
   }
 
-  private[Actor] def restart(reason: Throwable) = synchronized {
+  private[Actor] def restart(reason: Throwable): Unit = synchronized {
+    getLinkedActors.toArray.foreach(s => println("---------- " + s))
+    restartLinkedActors(reason)
     preRestart(reason)
     Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
     postRestart(reason)

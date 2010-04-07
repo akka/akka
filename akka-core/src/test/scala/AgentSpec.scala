@@ -12,9 +12,11 @@ import org.scalatest.matchers.MustMatchers
 import org.junit.runner.RunWith
 import org.junit.{Test}
 
+import java.util.concurrent.CountDownLatch
+
 @RunWith(classOf[JUnitRunner])
-class AgentSpec extends junit.framework.TestCase 
-with Suite with MustMatchers 
+class AgentSpec extends junit.framework.TestCase
+with Suite with MustMatchers
 with ActorTestUtil with Logging {
 
   @Test def testSendFun = verify(new TestActor {
@@ -44,10 +46,11 @@ with ActorTestUtil with Logging {
     def test = {
       val agent = Agent(5)
       var result = 0
+      val latch = new CountDownLatch(2)
       handle(agent) {
-        agent sendProc (result += _)
-        agent sendProc (result += _)
-        Thread.sleep(1000)
+        agent sendProc { e => result += e; latch.countDown }
+        agent sendProc { e => result += e; latch.countDown }
+        assert(latch.await(1, TimeUnit.SECONDS))
         result must be(10)
       }
     }
@@ -56,11 +59,12 @@ with ActorTestUtil with Logging {
   @Test def testOneAgentsendWithinEnlosingTransactionSuccess = {
     case object Go
     val agent = Agent(5)
+    val latch = new CountDownLatch(1)
     val tx = transactor {
-      case Go => agent send (_ + 1)
+      case Go => agent send { e => latch.countDown; e + 1 }
     }
     tx ! Go
-    Thread.sleep(1000)
+    assert(latch.await(1, TimeUnit.SECONDS))
     val result = agent()
     result must be(6)
     agent.close
@@ -68,18 +72,17 @@ with ActorTestUtil with Logging {
   }
 
   @Test def testDoingAgentGetInEnlosingTransactionShouldYieldException = {
-    import java.util.concurrent.CountDownLatch
     case object Go
     val latch = new CountDownLatch(1)
     val agent = Agent(5)
     val tx = transactor {
-      case Go => 
+      case Go =>
         agent send (_ * 2)
         try { agent() }
-        catch { 
-          case _ => latch.countDown 
+        catch {
+          case _ => latch.countDown
         }
-    }      
+    }
     tx ! Go
     assert(latch.await(1, TimeUnit.SECONDS))
     agent.close
@@ -92,7 +95,7 @@ with ActorTestUtil with Logging {
       val agent1 = Agent(3)
       var result = 0
       for (first <- agent1) {
-        result = first + 1 
+        result = first + 1
       }
       result must be(4)
       agent1.close
@@ -102,7 +105,7 @@ with ActorTestUtil with Logging {
   @Test def testAgentMap = verify(new TestActor {
     def test = {
       val agent1 = Agent(3)
-      val result = for (first <- agent1) yield first + 1 
+      val result = for (first <- agent1) yield first + 1
       result() must be(4)
       result.close
       agent1.close
@@ -116,7 +119,7 @@ with ActorTestUtil with Logging {
       val result = for {
         first <- agent1
         second <- agent2
-      } yield second + first 
+      } yield second + first
       result() must be(8)
       result.close
       agent1.close
