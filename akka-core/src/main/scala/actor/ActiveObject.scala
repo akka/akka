@@ -185,8 +185,8 @@ object ActiveObject {
     val proxy = Proxy.newInstance(target, false, true)
     actor.initialize(target, proxy)
     actor.timeout = timeout
-    actor.start
     AspectInitRegistry.register(proxy, AspectInit(target, actor, remoteAddress, timeout))
+    actor.start
     proxy.asInstanceOf[T]
   }
 
@@ -194,8 +194,8 @@ object ActiveObject {
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
     actor.initialize(target.getClass, target)
     actor.timeout = timeout
-    actor.start
     AspectInitRegistry.register(proxy, AspectInit(intf, actor, remoteAddress, timeout))
+    actor.start
     proxy.asInstanceOf[T]
   }
 
@@ -408,9 +408,9 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
     if (postRestart.isDefined) postRestart.get.setAccessible(true)
     
     // see if we have a method annotated with @inittransactionalstate, if so invoke it
-    //initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
-    //if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0) throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
-    //if (initTxState.isDefined) initTxState.get.setAccessible(true)
+    initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
+    if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0) throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
+    if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
   def receive = {
@@ -434,11 +434,11 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
-  //override protected def initTransactionalState = {
-  //  try {
-  //    if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
-  //  } catch { case e: InvocationTargetException => throw e.getCause }
-  //}
+  override protected def initTransactionalState = {
+    try {
+      if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
+    } catch { case e: InvocationTargetException => throw e.getCause }
+  }
 
   private def serializeArguments(joinPoint: JoinPoint) = {
     val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
