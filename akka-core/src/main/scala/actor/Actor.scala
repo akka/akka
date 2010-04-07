@@ -898,7 +898,10 @@ trait Actor extends TransactionManagement with Logging {
         Actor.log.error(e, "Could not invoke actor [%s]", this)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
-        if (replyTo.isDefined && replyTo.get.isRight) replyTo.get.right.get.completeWithException(this, e)
+        replyTo match { 
+          case Some(Right(future)) => future.completeWithException(this, e)
+          case _ =>
+        }
     } finally {
       clearTransaction
     }
@@ -944,7 +947,10 @@ trait Actor extends TransactionManagement with Logging {
         } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
-        if (replyTo.isDefined && replyTo.get.isRight) replyTo.get.right.get.completeWithException(this, e)
+        replyTo match { 
+          case Some(Right(future)) => future.completeWithException(this, e)
+          case _ =>
+        }
 
         clearTransaction
         if (topLevelTransaction) clearTransactionSet
