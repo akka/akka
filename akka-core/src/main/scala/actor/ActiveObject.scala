@@ -199,6 +199,18 @@ object ActiveObject {
     proxy.asInstanceOf[T]
   }
 
+// Jan Kronquist: started work on issue 121
+//  def actorFor(obj: AnyRef): Option[Actor] = {
+//    ActorRegistry.actorsFor(classOf[Dispatcher]).find(a=>a.target == Some(obj))
+//  }
+//
+//  def link(supervisor: AnyRef, activeObject: AnyRef) = {
+//    actorFor(supervisor).get !! Link(actorFor(activeObject).get)
+//  }
+//
+//  def unlink(supervisor: AnyRef, activeObject: AnyRef) = {
+//    actorFor(supervisor).get !! Unlink(actorFor(activeObject).get)
+//  }
 
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
     val factory = SupervisorFactory(SupervisorConfig(restartStrategy, components))
@@ -353,6 +365,9 @@ private[akka] sealed class ActiveObjectAspect {
   }
 }
 
+// Jan Kronquist: started work on issue 121
+// private[akka] case class Link(val actor: Actor)
+
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
   val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()  
@@ -418,6 +433,9 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed
       else reply(joinPoint.proceed)
+// Jan Kronquist: started work on issue 121
+//    case Link(target) =>
+//      link(target)
     case unexpected =>
       throw new IllegalStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
