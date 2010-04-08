@@ -32,8 +32,13 @@ import org.multiverse.stms.alpha.AlphaRef
  */
 object TransactionalState {
   def newMap[K, V] = TransactionalMap[K, V]()
+  def newMap[K, V](pairs: (K, V)*) = TransactionalMap(pairs: _*)
+
   def newVector[T] = TransactionalVector[T]()
+  def newVector[T](elems: T*) = TransactionalVector(elems :_*)
+
   def newRef[T] = TransactionalRef[T]()
+  def newRef[T](initialValue: T) = TransactionalRef(initialValue)
 }
 
 /**
@@ -58,6 +63,8 @@ trait Committable {
  */
 object Ref {
   def apply[T]() = new Ref[T]
+
+  def apply[T](initialValue: T) = new Ref[T](Some(initialValue))
 }
 
 /**
@@ -73,6 +80,8 @@ object TransactionalRef {
   implicit def ref2Iterable[T](ref: TransactionalRef[T]): Iterable[T] = ref.toList
 
   def apply[T]() = new TransactionalRef[T]
+
+  def apply[T](initialValue: T) = new TransactionalRef[T](Some(initialValue))
 }
 
 /**
@@ -81,7 +90,7 @@ object TransactionalRef {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Ref[T] extends TransactionalRef[T]
+class Ref[T](initialOpt: Option[T] = None) extends TransactionalRef[T](initialOpt)
 
 /**
  * Implements a transactional managed reference.
@@ -89,13 +98,17 @@ class Ref[T] extends TransactionalRef[T]
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalRef[T] extends Transactional {
+class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
   import org.multiverse.api.ThreadLocalTransaction._
 
   implicit val txInitName = "TransactionalRef:Init"
   val uuid = UUID.newUuid.toString
 
-  private[this] lazy val ref: AlphaRef[T] = new AlphaRef
+  private[this] lazy val ref = {
+    val r = new AlphaRef[T]
+    initialOpt.foreach(r.set(_))
+    r
+  }
 
   def swap(elem: T) = {
     ensureIsInTransaction
@@ -185,6 +198,8 @@ class TransactionalRef[T] extends Transactional {
 
 object TransactionalMap {
   def apply[K, V]() = new TransactionalMap[K, V]
+
+  def apply[K, V](pairs: (K, V)*) = new TransactionalMap(Some(HashTrie(pairs: _*)))
 }
 
 /**
@@ -194,11 +209,10 @@ object TransactionalMap {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
-  protected[this] val ref = TransactionalRef[HashTrie[K, V]]
+class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends Transactional with scala.collection.mutable.Map[K, V] {
   val uuid = UUID.newUuid.toString
 
-  ref.swap(new HashTrie[K, V])
+  protected[this] lazy val ref = new TransactionalRef(initialOpt.orElse(Some(new HashTrie[K, V])))
  
   def -=(key: K) = { 
     remove(key)
@@ -249,10 +263,17 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
   override def equals(other: Any): Boolean =
     other.isInstanceOf[TransactionalMap[_, _]] && 
     other.hashCode == hashCode
+
+  override def toString = if (outsideTransaction) "<TransactionalMap>" else super.toString
+  
+  def outsideTransaction =
+    org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
 }
 
 object TransactionalVector {
   def apply[T]() = new TransactionalVector[T]
+
+  def apply[T](elems: T*) = new TransactionalVector(Some(Vector(elems: _*)))
 }
 
 /**
@@ -262,12 +283,10 @@ object TransactionalVector {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalVector[T] extends Transactional with IndexedSeq[T] {
+class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Transactional with IndexedSeq[T] {
   val uuid = UUID.newUuid.toString
 
-  private[this] val ref = TransactionalRef[Vector[T]]
-
-  ref.swap(EmptyVector)
+  private[this] lazy val ref = new TransactionalRef(initialOpt.orElse(Some(EmptyVector)))
  
   def clear = ref.swap(EmptyVector)
   
@@ -293,5 +312,10 @@ class TransactionalVector[T] extends Transactional with IndexedSeq[T] {
   override def equals(other: Any): Boolean = 
     other.isInstanceOf[TransactionalVector[_]] && 
     other.hashCode == hashCode
+
+  override def toString = if (outsideTransaction) "<TransactionalVector>" else super.toString
+  
+  def outsideTransaction =
+    org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
 }
 
