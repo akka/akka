@@ -102,6 +102,13 @@ class TransactionalRef[T] extends Transactional {
     ref.set(elem)
   }
 
+  def alter(f: T => T): T = {
+    ensureIsInTransaction
+    ensureNotNull
+    ref.set(f(ref.get))
+    ref.get
+  }
+
   def get: Option[T] = {
     ensureIsInTransaction
     if (ref.isNull) None
@@ -171,6 +178,9 @@ class TransactionalRef[T] extends Transactional {
 
   private def ensureIsInTransaction =
     if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
+
+  private def ensureNotNull =
+    if (ref.isNull) throw new RuntimeException("Cannot alter Ref's value when it is null")
 }
 
 object TransactionalMap {
