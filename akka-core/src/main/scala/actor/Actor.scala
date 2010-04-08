@@ -520,6 +520,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
+   * Uses the time-out defined in the Actor. 
    * <p/>
    * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
    * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
