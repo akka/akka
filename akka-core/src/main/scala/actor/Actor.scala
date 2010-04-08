@@ -152,29 +152,6 @@ object Actor extends Logging {
   }
 
   /**
-   * Use to create an anonymous event-driven remote actor.
-   * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that
-   * if the actor is supervised and dies it will be restarted.
-   * <p/>
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = remoteActor("localhost", 9999) {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def remoteActor(hostname: String, port: Int)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
-    lifeCycle = Some(LifeCycle(Permanent))
-    makeRemote(hostname, port)
-    start
-    def receive = body
-  }
-
-  /**
    * Use to create an anonymous event-driven actor with both an init block and a message loop block.
    * <p/>
    * The actor is created with a 'permanent' life-cycle configuration, which means that
@@ -543,6 +520,7 @@ trait Actor extends TransactionManagement with Logging {
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
+   * Uses the time-out defined in the Actor. 
    * <p/>
    * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
    * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
