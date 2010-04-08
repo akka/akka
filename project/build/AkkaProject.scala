@@ -80,9 +80,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val jboss = "jBoss" at "http://repository.jboss.org/maven2"
   val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
-  val google = "google" at "http://google-maven-repository.googlecode.com/svn/repository"
-  val m2 = "m2" at "http://download.java.net/maven/2"
+  val google = "Google" at "http://google-maven-repository.googlecode.com/svn/repository"
+  val java_net = "java.net" at "http://download.java.net/maven/2"
   val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
+  val scala_tools_releases = "scala-tools releases" at "http://scala-tools.org/repo-releases"
 
   // ------------------------------------------------------------
   // project defintions
@@ -98,6 +99,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
   lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
+  lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_servlet = project("akka-servlet", "akka-servlet", new AkkaServletProject(_),
     akka_core, akka_rest, akka_camel)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
@@ -146,7 +148,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-servlet_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version)
+    " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
     )
 
   // ------------------------------------------------------------
@@ -322,6 +325,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
+  }
+
+  class AkkaJTAProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val atomikos_transactions = "com.atomikos" % "transactions" % "3.2.3" % "compile"
+    val atomikos_transactions_jta = "com.atomikos" % "transactions-jta" % "3.2.3" % "compile"
+    val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile"
+    //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
+    val jta_spec = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
   }
 
   // examples
