@@ -152,29 +152,6 @@ object Actor extends Logging {
   }
 
   /**
-   * Use to create an anonymous event-driven remote actor.
-   * <p/>
-   * The actor is created with a 'permanent' life-cycle configuration, which means that
-   * if the actor is supervised and dies it will be restarted.
-   * <p/>
-   * The actor is started when created.
-   * Example:
-   * <pre>
-   * import Actor._
-   *
-   * val a = remoteActor("localhost", 9999) {
-   *   case msg => ... // handle message
-   * }
-   * </pre>
-   */
-  def remoteActor(hostname: String, port: Int)(body: PartialFunction[Any, Unit]): Actor = new Actor() {
-    lifeCycle = Some(LifeCycle(Permanent))
-    makeRemote(hostname, port)
-    start
-    def receive = body
-  }
-
-  /**
    * Use to create an anonymous event-driven actor with both an init block and a message loop block.
    * <p/>
    * The actor is created with a 'permanent' life-cycle configuration, which means that
