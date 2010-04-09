@@ -9,16 +9,17 @@ import org.junit.{Test, Before, After}
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-object Global {
-  val oneWay = new CountDownLatch(1)
-  val remoteReply = new CountDownLatch(1)
+case class Send(actor: Actor)
+
+object RemoteActorSpecActorUnidirectional {
+  val latch = new CountDownLatch(1)  
 }
 class RemoteActorSpecActorUnidirectional extends Actor {
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
   def receive = {
     case "OneWay" =>
-      Global.oneWay.countDown
+      RemoteActorSpecActorUnidirectional.latch.countDown
   }
 }
 
@@ -31,21 +32,6 @@ class RemoteActorSpecActorBidirectional extends Actor {
   }
 }
 
-case class Send(actor: Actor)
-
-class RemoteActorSpecActorAsyncSender extends Actor {
-  def receive = {
-    case Send(actor: Actor) =>
-      actor ! "Hello"
-    case "World" =>
-      Global.remoteReply.countDown
-  }
-
-  def send(actor: Actor) {
-    this ! Send(actor)
-  }
-}
-
 class SendOneWayAndReplyReceiverActor extends Actor {
   def receive = {
     case "Hello" =>
@@ -53,6 +39,9 @@ class SendOneWayAndReplyReceiverActor extends Actor {
   }
 }
 
+object SendOneWayAndReplySenderActor {
+  val latch = new CountDownLatch(1)
+}
 class SendOneWayAndReplySenderActor extends Actor {
   var state: Option[AnyRef] = None
   var sendTo: Actor = _
@@ -63,7 +52,7 @@ class SendOneWayAndReplySenderActor extends Actor {
   def receive = {
     case msg: AnyRef =>
       state = Some(msg)
-      latch.countDown
+      SendOneWayAndReplySenderActor.latch.countDown
   }
 }
 
@@ -104,7 +93,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
     actor ! "OneWay"
-    assert(Global.oneWay.await(1, TimeUnit.SECONDS))
+    assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
@@ -113,14 +102,12 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     val actor = new SendOneWayAndReplyReceiverActor
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
-    val latch = new CountDownLatch(1)
     val sender = new SendOneWayAndReplySenderActor
     sender.setReplyToAddress(HOSTNAME, PORT2)
     sender.sendTo = actor
-    sender.latch = latch
     sender.start
     sender.sendOff
-    assert(latch.await(1, TimeUnit.SECONDS))
+    assert(SendOneWayAndReplySenderActor.latch.await(1, TimeUnit.SECONDS))
     assert(sender.state.isDefined === true)
     assert("World" === sender.state.get.asInstanceOf[String])
     actor.stop
@@ -128,7 +115,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   }
 
   @Test
-  def shouldSendReplyAsync = {
+  def shouldSendBangBangMessageAndReceiveReply = {
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
@@ -138,23 +125,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   }
 
   @Test
-  def shouldSendRemoteReply = {
-    implicit val timeout = 500000000L
-    val actor = new RemoteActorSpecActorBidirectional
-    actor.setReplyToAddress(HOSTNAME, PORT2)
-    actor.makeRemote(HOSTNAME, PORT2)
-    actor.start
-
-    val sender = new RemoteActorSpecActorAsyncSender
-    sender.setReplyToAddress(HOSTNAME, PORT1)
-    sender.start
-    sender.send(actor)
-    assert(Global.remoteReply.await(1, TimeUnit.SECONDS))
-    actor.stop
-  }
-
-  @Test
-  def shouldSendReceiveException = {
+  def shouldSendAndReceiveRemoteException = {
     implicit val timeout = 500000000L
     val actor = new RemoteActorSpecActorBidirectional
     actor.makeRemote(HOSTNAME, PORT1)
