@@ -11,20 +11,18 @@ object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
   val PORT = 9990
   var server: RemoteServer = null
+ 
+  case class Send(actor: Actor)
 
-  object Global {
-    val oneWay = new CountDownLatch(1)
-    var remoteReply = new CountDownLatch(1)
+  object RemoteActorSpecActorUnidirectional {
+    val latch = new CountDownLatch(1)
   }
-
   class RemoteActorSpecActorUnidirectional extends Actor {
-    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
     start
 
     def receive = {
       case "OneWay" =>
-        println("================== ONEWAY")
-        Global.oneWay.countDown
+        RemoteActorSpecActorUnidirectional.latch.countDown
     }
   }
 
@@ -38,15 +36,16 @@ object ServerInitiatedRemoteActorSpec {
     }
   }
 
-  case class Send(actor: Actor)
-
+  object RemoteActorSpecActorAsyncSender {
+    val latch = new CountDownLatch(1)
+  }
   class RemoteActorSpecActorAsyncSender extends Actor {
     start
     def receive = {
       case Send(actor: Actor) =>
         actor ! "Hello"
       case "World" =>
-        Global.remoteReply.countDown
+        RemoteActorSpecActorAsyncSender.latch.countDown
     }
 
     def send(actor: Actor) {
@@ -91,7 +90,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
       5000L,
       HOSTNAME, PORT)
     val result = actor ! "OneWay"
-    assert(Global.oneWay.await(1, TimeUnit.SECONDS))
+    assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
@@ -113,12 +112,11 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
       "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
-
     val sender = new RemoteActorSpecActorAsyncSender
     sender.setReplyToAddress(HOSTNAME, PORT)
     sender.start
     sender.send(actor)
-    assert(Global.remoteReply.await(1, TimeUnit.SECONDS))
+    assert(RemoteActorSpecActorAsyncSender.latch.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 

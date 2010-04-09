@@ -1,42 +1,12 @@
-/*-------------------------------------------------------------------------------
-   Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
-
-   ----------------------------------------------------
-   -------- sbt buildfile for the Akka project --------
-   ----------------------------------------------------
-
-   Akka implements a unique hybrid of:
-    * Actors , which gives you:
-        * Simple and high-level abstractions for concurrency and parallelism.
-        * Asynchronous, non-blocking and highly performant event-driven programming model.
-        * Very lightweight event-driven processes (create ~6.5 million actors on 4 G RAM).
-    * Supervision hierarchies with let-it-crash semantics. For writing highly
-      fault-tolerant systems that never stop, systems that self-heal.
-    * Software Transactional Memory (STM). (Distributed transactions coming soon).
-    * Transactors: combine actors and STM into transactional actors. Allows you to
-      compose atomic message flows with automatic rollback and retry.
-    * Remoting: highly performant distributed actors with remote supervision and
-      error management.
-    * Cluster membership management.
-
-  Akka also has a set of add-on modules:
-    * Persistence: A set of pluggable back-end storage modules that work in sync with the STM.
-        * Cassandra distributed and highly scalable database.
-        * MongoDB document database.
-        * Redis data structures database
-    * Camel: Expose Actors as Camel endpoints.
-    * REST (JAX-RS): Expose actors as REST services.
-    * Comet: Expose actors as Comet services.
-    * Security: Digest and Kerberos based security.
-    * Spring: Spring integration
-    * Guice: Guice integration
-    * Microkernel: Run Akka as a stand-alone kernel.
-
--------------------------------------------------------------------------------*/
+ /*---------------------------------------------------------------------------\
+| Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se> |
+\---------------------------------------------------------------------------*/
 
 import sbt._
 import sbt.CompileOrder._
+
 import scala.Array
+
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
@@ -51,18 +21,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
 
-   // ------------------------------------------------------------
-  lazy val akkaHome = {
-    val home = System.getenv("AKKA_HOME")
-    if (home == null) throw new Error(
-      "You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
-    Path.fromFile(home)
-  }
+  // ------------------------------------------------------------
   val encodingUtf8 = List("-encoding", "UTF-8")
-  override def parallelExecution = false
 
-  lazy val deployPath = akkaHome / "deploy"
-  lazy val distPath = akkaHome / "dist"
+  lazy val deployPath = info.projectPath / "deploy"
+  lazy val distPath = info.projectPath / "dist"
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
@@ -72,7 +35,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // repositories
-  val embeddedrepo = "embedded repo" at (akkaHome / "embedded-repo").asURL.toString
+  val embeddedrepo = "embedded repo" at (info.projectPath / "embedded-repo").asURL.toString
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   // val configgy = "Configgy" at "http://www.lag.net/repo"
