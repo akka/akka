@@ -59,7 +59,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     Path.fromFile(home)
   }
   val encodingUtf8 = List("-encoding", "UTF-8")
-  override def parallelExecution = true
+  override def parallelExecution = false
 
   lazy val deployPath = akkaHome / "deploy"
   lazy val distPath = akkaHome / "dist"

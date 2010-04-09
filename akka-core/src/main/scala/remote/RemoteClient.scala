@@ -200,7 +200,7 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
       val channel = connection.awaitUninterruptibly.getChannel
       openChannels.add(channel)
       if (!connection.isSuccess) {
-        listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientError(connection.getCause))
+        listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientError(connection.getCause))
         log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
       }
       isRunning = true
@@ -232,7 +232,7 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
     }
   } else {
     val exception = new IllegalStateException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.")
-    listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientError(exception))
+    listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientError(exception))
     throw exception
   }
 
@@ -325,12 +325,12 @@ class RemoteClientHandler(val name: String,
         futures.remove(reply.getId)
       } else {
         val exception = new IllegalArgumentException("Unknown message received in remote client handler: " + result)
-        client.listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientError(exception))
+        client.listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientError(exception))
         throw exception
       }
     } catch {
       case e: Exception =>
-        client.listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientError(e))
+       client.listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientError(e))
         log.error("Unexpected exception in remote client handler: %s", e)
         throw e
     }
@@ -345,7 +345,7 @@ class RemoteClientHandler(val name: String,
         // Wait until the connection attempt succeeds or fails.
         client.connection.awaitUninterruptibly
         if (!client.connection.isSuccess) {
-          client.listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientError(client.connection.getCause))
+          client.listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientError(client.connection.getCause))
           log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)
         }
       }
@@ -353,17 +353,17 @@ class RemoteClientHandler(val name: String,
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientConnected(client.hostname, client.port))
+   client.listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientConnected(client.hostname, client.port))
     log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientDisconnected(client.hostname, client.port))
+    client.listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientDisconnected(client.hostname, client.port))
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    client.listeners.toArray.asInstanceOf[Array[Actor]].foreach(_ ! RemoteClientError(event.getCause))
+    client.listeners.toArray.foreach(l => l.asInstanceOf[Actor] ! RemoteClientError(event.getCause))
     log.error(event.getCause, "Unexpected exception from downstream in remote client")
     event.getChannel.close
   }
