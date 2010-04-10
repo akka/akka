@@ -221,7 +221,7 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends TransactionManagement with Logging {
-  implicit protected val self: Option[Actor] = Some(this)
+  implicit protected val self: Some[Actor] = Some(this)
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
 
@@ -548,11 +548,10 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * Works with both '!' and '!!'.
    */
-  def forward(message: Any)(implicit sender: Option[Actor] = None) = {
+  def forward(message: Any)(implicit sender: Some[Actor]) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val forwarder = sender.getOrElse(throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor"))
-      forwarder.replyTo match {
+      sender.get.replyTo match {
         case Some(Left(actor))   => postMessageToMailbox(message, Some(actor))
         case Some(Right(future)) => postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, Some(future))
         case _                   => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
