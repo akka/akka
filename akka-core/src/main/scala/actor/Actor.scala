@@ -251,7 +251,10 @@ trait Actor extends TransactionManagement with Logging {
   // ====================================
 
   /**
-   * TODO: Document replyTo
+   * Holds the reference to the sender of the currently processed message.
+   * Is None if no sender was specified
+   * Is Some(Left(Actor)) if sender is an actor
+   * Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
    */
   protected var replyTo: Option[Either[Actor,CompletableFuture]] = None
 
