@@ -232,7 +232,6 @@ trait Actor extends TransactionManagement with Logging {
   @volatile private[this] var _isRunning = false
   @volatile private[this] var _isSuspended = true
   @volatile private[this] var _isShutDown = false
-  @volatile private[this] var _isEventBased: Boolean = false
   @volatile private[akka] var _isKilled = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
@@ -294,11 +293,7 @@ trait Actor extends TransactionManagement with Logging {
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  protected[akka] var messageDispatcher: MessageDispatcher = {
-    val dispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
-    _isEventBased = dispatcher.isInstanceOf[ExecutorBasedEventDrivenDispatcher]
-    dispatcher
-  }
+  protected[akka] var messageDispatcher: MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
 
   /**
    * User overridable callback/setting.
@@ -513,8 +508,11 @@ trait Actor extends TransactionManagement with Logging {
           if (isActiveObject) throw e
           else None
       }
-      getResultOrThrowException(future)
-    } else throw new IllegalStateException(
+      
+      if (future.exception.isDefined) throw future.exception.get._2
+      else future.result.asInstanceOf[Option[T]]
+    }
+    else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -593,7 +591,6 @@ trait Actor extends TransactionManagement with Logging {
       messageDispatcher.unregister(this)
       messageDispatcher = md
       messageDispatcher.register(this)
-      _isEventBased = messageDispatcher.isInstanceOf[ExecutorBasedEventDrivenDispatcher]
     } else throw new IllegalArgumentException(
       "Can not swap dispatcher for " + toString + " after it has been started")
   }
@@ -816,7 +813,7 @@ trait Actor extends TransactionManagement with Logging {
       RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
     } else {
       val invocation = new MessageInvocation(this, message, sender.map(Left(_)), transactionSet.get)
-      if (_isEventBased) {
+      if (messageDispatcher.usesActorMailbox) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
       }
@@ -849,10 +846,11 @@ trait Actor extends TransactionManagement with Logging {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFuture(timeout)
       val invocation = new MessageInvocation(this, message, Some(Right(future)), transactionSet.get)
-      if (_isEventBased) {
+      
+      if (messageDispatcher.usesActorMailbox)
         _mailbox.add(invocation)
-        invocation.send
-      } else invocation.send
+
+      invocation.send
       future
     }
   }
@@ -957,10 +955,6 @@ trait Actor extends TransactionManagement with Logging {
       if (topLevelTransaction) clearTransactionSet
     }
   }
-
-  private def getResultOrThrowException[T](future: Future): Option[T] =
-    if (future.exception.isDefined) throw future.exception.get._2
-    else future.result.asInstanceOf[Option[T]]
 
   private def base: PartialFunction[Any, Unit] = lifeCycles orElse (_hotswap getOrElse receive)
 
