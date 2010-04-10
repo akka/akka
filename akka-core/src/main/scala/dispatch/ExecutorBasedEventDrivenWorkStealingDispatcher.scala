@@ -199,6 +199,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     pooledActors.remove(actor)
     super.unregister(actor)
   }
+  
+  def usesActorMailbox = true
 
   private def verifyActorsAreOfSameType(newActor: Actor) = {
     actorType match {

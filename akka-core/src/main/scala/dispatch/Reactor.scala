@@ -68,6 +68,7 @@ trait MessageDispatcher extends Logging {
   }
   def canBeShutDown: Boolean = references.isEmpty
   def isShutdown: Boolean
+  def usesActorMailbox : Boolean
 }
 
 trait MessageDemultiplexer {
