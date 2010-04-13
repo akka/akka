@@ -5,8 +5,6 @@
 import sbt._
 import sbt.CompileOrder._
 
-import scala.Array
-
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
@@ -22,10 +20,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
 
   // ------------------------------------------------------------
-  val encodingUtf8 = List("-encoding", "UTF-8")
-
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
+
+  override def compileOptions = super.compileOptions ++ 
+    Seq("-deprecation", "-Xmigration", "-Xcheckinit", "-Xstrict-warnings", "-Xwarninit", "-encoding", "utf8").map(x => CompileOption(x))
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
