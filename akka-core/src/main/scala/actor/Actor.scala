@@ -52,6 +52,7 @@ case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMe
 case class Restart(reason: Throwable) extends LifeCycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
 case class Unlink(child: Actor) extends LifeCycleMessage
+case class UnlinkAndStop(child: Actor) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
@@ -316,7 +317,7 @@ trait Actor extends TransactionManagement with Logging {
    * trapExit = List(classOf[MyApplicationException], classOf[MyApplicationError])
    * </pre>
    */
-  protected var trapExit: List[Class[_ <: Throwable]] = Nil
+  protected[akka] var trapExit: List[Class[_ <: Throwable]] = Nil
 
   /**
    * User overridable callback/setting.
@@ -329,7 +330,7 @@ trait Actor extends TransactionManagement with Logging {
    *  faultHandler = Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange))
    * </pre>
    */
-  protected var faultHandler: Option[FaultHandlingStrategy] = None
+  protected[akka] var faultHandler: Option[FaultHandlingStrategy] = None
 
   /**
    * User overridable callback/setting.
@@ -961,11 +962,12 @@ trait Actor extends TransactionManagement with Logging {
   private def base: PartialFunction[Any, Unit] = lifeCycles orElse (_hotswap getOrElse receive)
 
   private val lifeCycles: PartialFunction[Any, Unit] = {
-    case HotSwap(code) =>      _hotswap = code
-    case Restart(reason) =>    restart(reason)
-    case Exit(dead, reason) => handleTrapExit(dead, reason)
-    case Unlink(child) =>      unlink(child); child.stop
-    case Kill =>               throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
+    case HotSwap(code) =>        _hotswap = code
+    case Restart(reason) =>      restart(reason)
+    case Exit(dead, reason) =>   handleTrapExit(dead, reason)
+    case Unlink(child) =>        unlink(child)
+    case UnlinkAndStop(child) => unlink(child); child.stop
+    case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
@@ -998,7 +1000,7 @@ trait Actor extends TransactionManagement with Logging {
                 // if last temporary actor is gone, then unlink me from supervisor
                 if (getLinkedActors.isEmpty) {
                   Actor.log.info("All linked actors have died permanently (they were all configured as TEMPORARY)\n\tshutting down and unlinking supervisor actor as well [%s].", actor.id)
-                  _supervisor.foreach(_ ! Unlink(this))
+                  _supervisor.foreach(_ ! UnlinkAndStop(this))
                 }
             }
           }
