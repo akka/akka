@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
+import _root_.se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future}
@@ -199,18 +200,71 @@ object ActiveObject {
     proxy.asInstanceOf[T]
   }
 
-// Jan Kronquist: started work on issue 121
-//  def actorFor(obj: AnyRef): Option[Actor] = {
-//    ActorRegistry.actorsFor(classOf[Dispatcher]).find(a=>a.target == Some(obj))
-//  }
-//
-//  def link(supervisor: AnyRef, activeObject: AnyRef) = {
-//    actorFor(supervisor).get !! Link(actorFor(activeObject).get)
-//  }
-//
-//  def unlink(supervisor: AnyRef, activeObject: AnyRef) = {
-//    actorFor(supervisor).get !! Unlink(actorFor(activeObject).get)
-//  }
+  /**
+   * Get the underlying dispatcher actor for the given active object.
+   */
+  def actorFor(obj: AnyRef): Option[Actor] = {
+    ActorRegistry.actorsFor(classOf[Dispatcher]).find(a=>a.target == Some(obj))
+  }
+
+  /**
+   * Links an other active object to this active object.
+   * @param supervisor the supervisor active object
+   * @param supervised the active object to link
+   */
+  def link(supervisor: AnyRef, supervised: AnyRef) = {
+    val supervisorActor = actorFor(supervisor).getOrElse(throw new IllegalStateException("Can't link when the supervisor is not an active object"))
+    val supervisedActor = actorFor(supervised).getOrElse(throw new IllegalStateException("Can't link when the supervised is not an active object"))
+    supervisorActor !! Link(supervisedActor)
+  }
+
+  /**
+   * Links an other active object to this active object and sets the fault handling for the supervisor.
+   * @param supervisor the supervisor active object
+   * @param supervised the active object to link
+   * @param handler fault handling strategy
+   * @param trapExceptions array of exceptions that should be handled by the supervisor
+   */
+  def link(supervisor: AnyRef, supervised: AnyRef, handler: FaultHandlingStrategy, trapExceptions: Array[Class[_ <: Throwable]]) = {
+    val supervisorActor = actorFor(supervisor).getOrElse(throw new IllegalStateException("Can't link when the supervisor is not an active object"))
+    val supervisedActor = actorFor(supervised).getOrElse(throw new IllegalStateException("Can't link when the supervised is not an active object"))
+    supervisorActor.trapExit = trapExceptions.toList
+    supervisorActor.faultHandler = Some(handler)
+    supervisorActor !! Link(supervisedActor)
+  }
+
+  /**
+   * Unlink the supervised active object from the supervisor.
+   * @param supervisor the supervisor active object
+   * @param supervised the active object to unlink
+   */
+  def unlink(supervisor: AnyRef, supervised: AnyRef) = {
+    val supervisorActor = actorFor(supervisor).getOrElse(throw new IllegalStateException("Can't unlink when the supervisor is not an active object"))
+    val supervisedActor = actorFor(supervised).getOrElse(throw new IllegalStateException("Can't unlink when the supervised is not an active object"))
+    supervisorActor !! Unlink(supervisedActor)
+  }
+
+  /**
+   * Sets the trap exit for the given supervisor active object.
+   * @param supervisor the supervisor active object
+   * @param trapExceptions array of exceptions that should be handled by the supervisor
+   */
+  def trapExit(supervisor: AnyRef, trapExceptions: Array[Class[_ <: Throwable]]) = {
+    val supervisorActor = actorFor(supervisor).getOrElse(throw new IllegalStateException("Can't set trap exceptions when the supervisor is not an active object"))
+    supervisorActor.trapExit = trapExceptions.toList
+    this
+  }
+
+  /**
+   * Sets the fault handling strategy for the given supervisor active object.
+   * @param supervisor the supervisor active object
+   * @param handler fault handling strategy
+   */
+  def faultHandler(supervisor: AnyRef, handler: FaultHandlingStrategy) = {
+    val supervisorActor = actorFor(supervisor).getOrElse(throw new IllegalStateException("Can't set fault handler when the supervisor is not an active object"))
+    supervisorActor.faultHandler = Some(handler)
+    this
+  }
 
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor = {
     val factory = SupervisorFactory(SupervisorConfig(restartStrategy, components))
@@ -366,7 +420,7 @@ private[akka] sealed class ActiveObjectAspect {
 }
 
 // Jan Kronquist: started work on issue 121
-// private[akka] case class Link(val actor: Actor)
+private[akka] case class Link(val actor: Actor)
 
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
@@ -434,8 +488,8 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
       if (isOneWay) joinPoint.proceed
       else reply(joinPoint.proceed)
 // Jan Kronquist: started work on issue 121
-//    case Link(target) =>
-//      link(target)
+    case Link(target) => link(target)
+    case Unlink(target) => unlink(target)
     case unexpected =>
       throw new IllegalStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
