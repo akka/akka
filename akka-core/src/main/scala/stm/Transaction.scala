@@ -22,6 +22,25 @@ import org.multiverse.stms.alpha.AlphaStm
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
 
+/**
+ * FIXDOC: document AtomicTemplate
+ * AtomicTemplate can be used to create atomic blocks from Java code.
+ * <pre>
+ * User newUser = new AtomicTemplate[User]() {
+ *   User atomic() {
+ *     ... // create user atomically
+ *     return user;
+ *   }
+ * }.execute();
+ * </pre>
+ */
+trait AtomicTemplate[T] {
+  def atomic: T
+  def execute: T = Transaction.Local.atomic {
+    atomic
+  }
+}
+
 object Transaction {
   val idFactory = new AtomicLong(-1L)
 
