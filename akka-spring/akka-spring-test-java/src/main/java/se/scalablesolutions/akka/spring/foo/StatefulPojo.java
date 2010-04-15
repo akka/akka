@@ -15,7 +15,7 @@ public class StatefulPojo {
   @inittransactionalstate
   public void init() {
       if (!isInitialized) {
-    	mapState = TransactionalState.newMap();
+        mapState = TransactionalState.newMap();
         vectorState = TransactionalState.newVector();
         refState = TransactionalState.newRef();
         isInitialized = true;
