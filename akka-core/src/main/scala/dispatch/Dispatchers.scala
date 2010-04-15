@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.actor.Actor
  * <p/>
  * Example usage:
  * <pre/>
- *   val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
+ *   val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name")
  *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
@@ -25,7 +25,7 @@ import se.scalablesolutions.akka.actor.Actor
  * <p/>
  * Example usage:
  * <pre/>
- *   MessageDispatcher dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name");
+ *   MessageDispatcher dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name");
  *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
@@ -40,9 +40,8 @@ import se.scalablesolutions.akka.actor.Actor
  */
 object Dispatchers {
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global") {
-    override def register(actor : Actor) = {
-      if (isShutdown)
-        init
+    override def register(actor: Actor) = {
+      if (isShutdown) init
       super.register(actor)
     }
   }
