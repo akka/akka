@@ -52,6 +52,7 @@ case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMe
 case class Restart(reason: Throwable) extends LifeCycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
 case class Unlink(child: Actor) extends LifeCycleMessage
+case class UnlinkAndStop(child: Actor) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
@@ -221,7 +222,7 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends TransactionManagement with Logging {
-  implicit protected val self: Option[Actor] = Some(this)
+  implicit protected val self: Some[Actor] = Some(this)
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
 
@@ -232,7 +233,6 @@ trait Actor extends TransactionManagement with Logging {
   @volatile private[this] var _isRunning = false
   @volatile private[this] var _isSuspended = true
   @volatile private[this] var _isShutDown = false
-  @volatile private[this] var _isEventBased: Boolean = false
   @volatile private[akka] var _isKilled = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
@@ -252,7 +252,10 @@ trait Actor extends TransactionManagement with Logging {
   // ====================================
 
   /**
-   * TODO: Document replyTo
+   * Holds the reference to the sender of the currently processed message.
+   * Is None if no sender was specified
+   * Is Some(Left(Actor)) if sender is an actor
+   * Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
    */
   protected var replyTo: Option[Either[Actor,CompletableFuture]] = None
 
@@ -294,11 +297,7 @@ trait Actor extends TransactionManagement with Logging {
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  protected[akka] var messageDispatcher: MessageDispatcher = {
-    val dispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
-    _isEventBased = dispatcher.isInstanceOf[ExecutorBasedEventDrivenDispatcher]
-    dispatcher
-  }
+  protected[akka] var messageDispatcher: MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
 
   /**
    * User overridable callback/setting.
@@ -318,7 +317,7 @@ trait Actor extends TransactionManagement with Logging {
    * trapExit = List(classOf[MyApplicationException], classOf[MyApplicationError])
    * </pre>
    */
-  protected var trapExit: List[Class[_ <: Throwable]] = Nil
+  protected[akka] var trapExit: List[Class[_ <: Throwable]] = Nil
 
   /**
    * User overridable callback/setting.
@@ -331,7 +330,7 @@ trait Actor extends TransactionManagement with Logging {
    *  faultHandler = Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange))
    * </pre>
    */
-  protected var faultHandler: Option[FaultHandlingStrategy] = None
+  protected[akka] var faultHandler: Option[FaultHandlingStrategy] = None
 
   /**
    * User overridable callback/setting.
@@ -513,8 +512,11 @@ trait Actor extends TransactionManagement with Logging {
           if (isActiveObject) throw e
           else None
       }
-      getResultOrThrowException(future)
-    } else throw new IllegalStateException(
+      
+      if (future.exception.isDefined) throw future.exception.get._2
+      else future.result.asInstanceOf[Option[T]]
+    }
+    else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -550,11 +552,10 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * Works with both '!' and '!!'.
    */
-  def forward(message: Any)(implicit sender: Option[Actor] = None) = {
+  def forward(message: Any)(implicit sender: Some[Actor]) = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val forwarder = sender.getOrElse(throw new IllegalStateException("Can't forward message when the forwarder/mediator is not an actor"))
-      forwarder.replyTo match {
+      sender.get.replyTo match {
         case Some(Left(actor))   => postMessageToMailbox(message, Some(actor))
         case Some(Right(future)) => postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, Some(future))
         case _                   => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
@@ -593,7 +594,6 @@ trait Actor extends TransactionManagement with Logging {
       messageDispatcher.unregister(this)
       messageDispatcher = md
       messageDispatcher.register(this)
-      _isEventBased = messageDispatcher.isInstanceOf[ExecutorBasedEventDrivenDispatcher]
     } else throw new IllegalArgumentException(
       "Can not swap dispatcher for " + toString + " after it has been started")
   }
@@ -816,7 +816,7 @@ trait Actor extends TransactionManagement with Logging {
       RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
     } else {
       val invocation = new MessageInvocation(this, message, sender.map(Left(_)), transactionSet.get)
-      if (_isEventBased) {
+      if (messageDispatcher.usesActorMailbox) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
       }
@@ -849,10 +849,11 @@ trait Actor extends TransactionManagement with Logging {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFuture(timeout)
       val invocation = new MessageInvocation(this, message, Some(Right(future)), transactionSet.get)
-      if (_isEventBased) {
+      
+      if (messageDispatcher.usesActorMailbox)
         _mailbox.add(invocation)
-        invocation.send
-      } else invocation.send
+
+      invocation.send
       future
     }
   }
@@ -958,18 +959,15 @@ trait Actor extends TransactionManagement with Logging {
     }
   }
 
-  private def getResultOrThrowException[T](future: Future): Option[T] =
-    if (future.exception.isDefined) throw future.exception.get._2
-    else future.result.asInstanceOf[Option[T]]
-
   private def base: PartialFunction[Any, Unit] = lifeCycles orElse (_hotswap getOrElse receive)
 
   private val lifeCycles: PartialFunction[Any, Unit] = {
-    case HotSwap(code) =>      _hotswap = code
-    case Restart(reason) =>    restart(reason)
-    case Exit(dead, reason) => handleTrapExit(dead, reason)
-    case Unlink(child) =>      unlink(child); child.stop
-    case Kill =>               throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
+    case HotSwap(code) =>        _hotswap = code
+    case Restart(reason) =>      restart(reason)
+    case Exit(dead, reason) =>   handleTrapExit(dead, reason)
+    case Unlink(child) =>        unlink(child)
+    case UnlinkAndStop(child) => unlink(child); child.stop
+    case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
@@ -1002,7 +1000,7 @@ trait Actor extends TransactionManagement with Logging {
                 // if last temporary actor is gone, then unlink me from supervisor
                 if (getLinkedActors.isEmpty) {
                   Actor.log.info("All linked actors have died permanently (they were all configured as TEMPORARY)\n\tshutting down and unlinking supervisor actor as well [%s].", actor.id)
-                  _supervisor.foreach(_ ! Unlink(this))
+                  _supervisor.foreach(_ ! UnlinkAndStop(this))
                 }
             }
           }

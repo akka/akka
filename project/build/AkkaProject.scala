@@ -301,6 +301,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
@@ -335,6 +336,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
       new AkkaSampleChatProject(_), akka_kernel)
+    lazy val akka_sample_pubsub = project("akka-sample-pubsub", "akka-sample-pubsub",
+      new AkkaSamplePubSubProject(_), akka_kernel)
     lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift",
       new AkkaSampleLiftProject(_), akka_kernel)
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java",

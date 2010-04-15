@@ -41,6 +41,8 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
                        
   def isShutdown = !active
 
+  def usesActorMailbox = false
+
   def shutdown = if (active) {
     log.debug("Shutting down ThreadBasedDispatcher [%s]", name)
     active = false
