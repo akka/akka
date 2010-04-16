@@ -23,7 +23,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
 
-  override def compileOptions = super.compileOptions ++ 
+  override def compileOptions = super.compileOptions ++
     Seq("-deprecation", "-Xmigration", "-Xcheckinit", "-Xstrict-warnings", "-Xwarninit", "-encoding", "utf8").map(x => CompileOption(x))
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
@@ -236,13 +236,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile"
+    val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "compile"
+    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "compile"
+    val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
+    // testing
     val high_scale = "org.apache.cassandra" % "high-scale-lib" % CASSANDRA_VERSION % "test"
     val cassandra_clhm = "org.apache.cassandra" % "clhm-production" % CASSANDRA_VERSION % "test"
     val commons_coll = "commons-collections" % "commons-collections" % "3.2.1" % "test"
     val google_coll = "com.google.collections" % "google-collections" % "1.0" % "test"
-    val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "test"
-    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "test"
-    val log4j = "log4j" % "log4j" % "1.2.15" % "test"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
