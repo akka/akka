@@ -90,7 +90,7 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 * 
 * IMPORTANT: 
 * You can *not* call 'agent.get', 'agent()' or use the monadic 'foreach', 
-* 'map and 'flatMap' within an enclosing transaction since that would block 
+* 'map' and 'flatMap' within an enclosing transaction since that would block 
 * the transaction indefinitely. But all other operations are fine. The system 
 * will raise an error (e.g. *not* deadlock) if you try to do so, so as long as 
 * you test your application thoroughly you should be fine.
@@ -99,11 +99,13 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
 */
 sealed class Agent[T] private (initialValue: T) extends Transactor {
+  start
   import Agent._
+  log.debug("Starting up Agent [%s]", _uuid)
+  
   private lazy val value = Ref[T]()
   
-  start
-  this !! Value(initialValue)
+  this ! Value(initialValue)
  
   /**
    * Periodically handles incoming messages.

@@ -1,10 +1,13 @@
 package se.scalablesolutions.akka.actor
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import java.util.concurrent.CountDownLatch
 import org.scalatest.matchers.MustMatchers
+import org.scalatest.junit.JUnitSuite
+
+import org.junit.Test
+
 import se.scalablesolutions.akka.dispatch.Dispatchers
+
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 /**
  * @author Jan Van Besien
@@ -51,7 +54,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
             slow ! i
         }
 
-        finishedCounter.await
+        finishedCounter.await(5, TimeUnit.SECONDS)
         fast.invocationCount must be > (slow.invocationCount)
       }
     }

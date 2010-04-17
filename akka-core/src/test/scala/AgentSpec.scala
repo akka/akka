@@ -1,6 +1,5 @@
 package se.scalablesolutions.akka.actor
 
-import _root_.java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.actor.Actor.transactor
 import se.scalablesolutions.akka.stm.Transaction.Global.atomic
 import se.scalablesolutions.akka.util.Logging
@@ -10,51 +9,40 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 
 import org.junit.runner.RunWith
-import org.junit.{Test}
+import org.junit.Test
 
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 @RunWith(classOf[JUnitRunner])
-class AgentSpec extends junit.framework.TestCase
-with Suite with MustMatchers
-with ActorTestUtil with Logging {
+class AgentSpec extends junit.framework.TestCase with Suite with MustMatchers {
 
-  @Test def testSendFun = verify(new TestActor {
-    def test = {
-      val agent = Agent(5)
-      handle(agent) {
-        agent send (_ + 1)
-        agent send (_ * 2)
-        val result = agent()
-        result must be(12)
-      }
-    }
-  })
+  @Test def testSendFun = {
+    val agent = Agent(5)
+    agent send (_ + 1)
+    agent send (_ * 2)
+    val result = agent()
+    result must be(12)
+    agent.stop
+  }
 
-  @Test def testSendValue = verify(new TestActor {
-    def test = {
-      val agent = Agent(5)
-      handle(agent) {
-        agent send 6
-        val result = agent()
-        result must be(6)
-      }
-    }
-  })
+  @Test def testSendValue = {
+    val agent = Agent(5)
+    agent send 6
+    val result = agent()
+    result must be(6)
+    agent.stop
+  }
 
-  @Test def testSendProc = verify(new TestActor {
-    def test = {
-      val agent = Agent(5)
-      var result = 0
-      val latch = new CountDownLatch(2)
-      handle(agent) {
-        agent sendProc { e => result += e; latch.countDown }
-        agent sendProc { e => result += e; latch.countDown }
-        assert(latch.await(1, TimeUnit.SECONDS))
-        result must be(10)
-      }
-    }
-  })
+  @Test def testSendProc = {
+    val agent = Agent(5)
+    var result = 0
+    val latch = new CountDownLatch(2)
+    agent sendProc { e => result += e; latch.countDown }
+    agent sendProc { e => result += e; latch.countDown }
+    assert(latch.await(5, TimeUnit.SECONDS))
+    result must be(10)
+    agent.stop
+  }
 
   @Test def testOneAgentsendWithinEnlosingTransactionSuccess = {
     case object Go
@@ -64,7 +52,7 @@ with ActorTestUtil with Logging {
       case Go => agent send { e => latch.countDown; e + 1 }
     }
     tx ! Go
-    assert(latch.await(1, TimeUnit.SECONDS))
+    assert(latch.await(5, TimeUnit.SECONDS))
     val result = agent()
     result must be(6)
     agent.close
@@ -84,46 +72,40 @@ with ActorTestUtil with Logging {
         }
     }
     tx ! Go
-    assert(latch.await(1, TimeUnit.SECONDS))
+    assert(latch.await(5, TimeUnit.SECONDS))
     agent.close
     tx.stop
     assert(true)
   }
 
-  @Test def testAgentForeach = verify(new TestActor {
-    def test = {
-      val agent1 = Agent(3)
-      var result = 0
-      for (first <- agent1) {
-        result = first + 1
-      }
-      result must be(4)
-      agent1.close
+  @Test def testAgentForeach = {
+    val agent1 = Agent(3)
+    var result = 0
+    for (first <- agent1) {
+      result = first + 1
     }
-  })
+    result must be(4)
+    agent1.close
+  }
+  
+  @Test def testAgentMap = {
+    val agent1 = Agent(3)
+    val result = for (first <- agent1) yield first + 1
+    result() must be(4)
+    result.close
+    agent1.close
+  }
 
-  @Test def testAgentMap = verify(new TestActor {
-    def test = {
-      val agent1 = Agent(3)
-      val result = for (first <- agent1) yield first + 1
-      result() must be(4)
-      result.close
-      agent1.close
-    }
-  })
-
-  @Test def testAgentFlatMap = verify(new TestActor {
-    def test = {
-      val agent1 = Agent(3)
-      val agent2 = Agent(5)
-      val result = for {
-        first <- agent1
-        second <- agent2
-      } yield second + first
-      result() must be(8)
-      result.close
-      agent1.close
-      agent2.close
-    }
-  })
+  @Test def testAgentFlatMap = {
+    val agent1 = Agent(3)
+    val agent2 = Agent(5)
+    val result = for {
+      first <- agent1
+      second <- agent2
+    } yield second + first
+    result() must be(8)
+    result.close
+    agent1.close
+    agent2.close
+  }
 }

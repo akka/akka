@@ -1,42 +1,10 @@
-/*-------------------------------------------------------------------------------
-   Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
-
-   ----------------------------------------------------
-   -------- sbt buildfile for the Akka project --------
-   ----------------------------------------------------
-
-   Akka implements a unique hybrid of:
-    * Actors , which gives you:
-        * Simple and high-level abstractions for concurrency and parallelism.
-        * Asynchronous, non-blocking and highly performant event-driven programming model.
-        * Very lightweight event-driven processes (create ~6.5 million actors on 4 G RAM).
-    * Supervision hierarchies with let-it-crash semantics. For writing highly
-      fault-tolerant systems that never stop, systems that self-heal.
-    * Software Transactional Memory (STM). (Distributed transactions coming soon).
-    * Transactors: combine actors and STM into transactional actors. Allows you to
-      compose atomic message flows with automatic rollback and retry.
-    * Remoting: highly performant distributed actors with remote supervision and
-      error management.
-    * Cluster membership management.
-
-  Akka also has a set of add-on modules:
-    * Persistence: A set of pluggable back-end storage modules that work in sync with the STM.
-        * Cassandra distributed and highly scalable database.
-        * MongoDB document database.
-        * Redis data structures database
-    * Camel: Expose Actors as Camel endpoints.
-    * REST (JAX-RS): Expose actors as REST services.
-    * Comet: Expose actors as Comet services.
-    * Security: Digest and Kerberos based security.
-    * Spring: Spring integration
-    * Guice: Guice integration
-    * Microkernel: Run Akka as a stand-alone kernel.
-
--------------------------------------------------------------------------------*/
+ /*---------------------------------------------------------------------------\
+| Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se> |
+\---------------------------------------------------------------------------*/
 
 import sbt._
 import sbt.CompileOrder._
-import scala.Array
+
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
@@ -51,18 +19,12 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
 
-   // ------------------------------------------------------------
-  lazy val akkaHome = {
-    val home = System.getenv("AKKA_HOME")
-    if (home == null) throw new Error(
-      "You need to set the $AKKA_HOME environment variable to the root of the Akka distribution")
-    Path.fromFile(home)
-  }
-  val encodingUtf8 = List("-encoding", "UTF-8")
-  override def parallelExecution = true
+  // ------------------------------------------------------------
+  lazy val deployPath = info.projectPath / "deploy"
+  lazy val distPath = info.projectPath / "dist"
 
-  lazy val deployPath = akkaHome / "deploy"
-  lazy val distPath = akkaHome / "dist"
+  override def compileOptions = super.compileOptions ++
+    Seq("-deprecation", "-Xmigration", "-Xcheckinit", "-Xstrict-warnings", "-Xwarninit", "-encoding", "utf8").map(x => CompileOption(x))
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
@@ -72,7 +34,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // repositories
-  val embeddedrepo = "embedded repo" at (akkaHome / "embedded-repo").asURL.toString
+  val embeddedrepo = "embedded repo" at (info.projectPath / "embedded-repo").asURL.toString
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   // val configgy = "Configgy" at "http://www.lag.net/repo"
@@ -277,13 +239,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile"
+    val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "compile"
+    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "compile"
+    val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
+    // testing
     val high_scale = "org.apache.cassandra" % "high-scale-lib" % CASSANDRA_VERSION % "test"
     val cassandra_clhm = "org.apache.cassandra" % "clhm-production" % CASSANDRA_VERSION % "test"
     val commons_coll = "commons-collections" % "commons-collections" % "3.2.1" % "test"
     val google_coll = "com.google.collections" % "google-collections" % "1.0" % "test"
-    val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "test"
-    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "test"
-    val log4j = "log4j" % "log4j" % "1.2.15" % "test"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
@@ -350,6 +313,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
@@ -384,6 +348,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
       new AkkaSampleChatProject(_), akka_kernel)
+    lazy val akka_sample_pubsub = project("akka-sample-pubsub", "akka-sample-pubsub",
+      new AkkaSamplePubSubProject(_), akka_kernel)
     lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift",
       new AkkaSampleLiftProject(_), akka_kernel)
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java",
