@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.jta
 import javax.transaction.{Transaction, Status, TransactionManager}
 
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.config.Config._
 
 /**
  * JTA Transaction service.
@@ -65,12 +66,24 @@ trait TransactionMonad {
 }
 
 /**
+ * The TransactionContext object manages the transactions. 
+ * Can be used as higher-order functional 'atomic blocks' or monadic.
+ *
  * Manages a thread-local stack of TransactionContexts.
  * <p/>
- * Choose TransactionService implementation by implicit definition of the implementation of choice,
- * e.g. <code>implicit val txService = TransactionServices.AtomikosTransactionService</code>.
- * <p/>
  * Example usage 1:
+ * <pre>
+ * import TransactionContext._
+ * 
+ * withTxRequired {
+ *   ... // transactional stuff
+ * }
+ * // or
+ * withTxRequiresNew {
+ *   ... // transactional stuff
+ * }
+ * </pre>
+ * Example usage 2:
  * <pre>
  * for {
  *   ctx <- TransactionContext.Required
@@ -81,7 +94,7 @@ trait TransactionMonad {
  *   ...
  * }
  * </pre>
- * Example usage 2:
+ * Example usage 3:
  * <pre>
  * val users = for {
  *   ctx <- TransactionContext.Required
@@ -95,9 +108,12 @@ trait TransactionMonad {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionContext extends TransactionProtocol with Logging {
-  // FIXME: make configurable
-  private implicit val defaultTransactionService = AtomikosTransactionService
+  val TRANSACTION_PROVIDER = config.getString("akka.jta.transaction-provider", "atomikos")
 
+  private implicit val defaultTransactionService = TRANSACTION_PROVIDER match {
+    case "atomikos" => AtomikosTransactionService
+    case _ => throw new IllegalArgumentException("Transaction provider [" + TRANSACTION_PROVIDER + "] is not supported")
+  }
   private[TransactionContext] val stack = new scala.util.DynamicVariable(new TransactionContext)
 
   object Required extends TransactionMonad {
