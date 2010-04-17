@@ -8,11 +8,12 @@ import javax.transaction.{TransactionManager, UserTransaction, SystemException}
 import javax.naming.{InitialContext, Context, NamingException}
 
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.util.Logging
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object JtaTransactionManagerDetector {
+object JtaTransactionManagerDetector extends Logging {
   val DEFAULT_USER_TRANSACTION_NAME = "java:comp/UserTransaction"
   val FALLBACK_TRANSACTION_MANAGER_NAMES = List("java:comp/TransactionManager", 
                                                 "java:appserver/TransactionManager",
@@ -24,7 +25,10 @@ object JtaTransactionManagerDetector {
   def findUserTransaction: Option[UserTransaction] = {
     val located = createInitialContext.lookup(DEFAULT_USER_TRANSACTION_NAME)
     if (located eq null) None
-    else Some(located.asInstanceOf[UserTransaction])
+    else {
+      log.info("JTA UserTransaction detected [%s]", located)
+      Some(located.asInstanceOf[UserTransaction])
+    }
   }
 
   def findTransactionManager: Option[TransactionManager] = {
@@ -36,7 +40,9 @@ object JtaTransactionManagerDetector {
     } yield tm
     tms match {
       case Nil => None
-      case tm :: _ => Some(tm.asInstanceOf[TransactionManager])
+      case tm :: _ =>
+        log.info("JTA TransactionManager detected [%s]", tm)
+        Some(tm.asInstanceOf[TransactionManager])
     }
   }
 
