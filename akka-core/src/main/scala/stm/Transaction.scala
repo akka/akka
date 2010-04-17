@@ -297,10 +297,11 @@ object Transaction {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable class Transaction extends Logging {
+  import JtaTransactionManagerDetector._
   val JTA_AWARE = config.getBool("akka.stm.jta-aware", false)
   val jta: Either[Option[UserTransaction], Option[TransactionManager]] = if (JTA_AWARE) {
-    JtaTransactionManagerDetector.findUserTransaction match {
-      case None => Right(JtaTransactionManagerDetector.findTransactionManager)
+    findUserTransaction match {
+      case None => Right(findTransactionManager)
       case tm =>   Left(tm)
     }
   } else Left(None)
