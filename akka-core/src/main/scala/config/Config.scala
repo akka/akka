@@ -12,7 +12,7 @@ import net.lag.configgy.{Configgy, ParseException}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config extends Logging {
-  val VERSION = "0.8.1"
+  val VERSION = "0.9"
 
   // Set Multiverse options for max speed
   System.setProperty("org.multiverse.MuliverseConstants.sanityChecks", "false")

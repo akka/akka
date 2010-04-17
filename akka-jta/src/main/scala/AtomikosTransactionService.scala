@@ -9,6 +9,8 @@ import javax.transaction.{TransactionManager, SystemException}
 import com.atomikos.icatch.jta.{J2eeTransactionManager, J2eeUserTransaction}
 import com.atomikos.icatch.config.{TSInitInfo, UserTransactionService, UserTransactionServiceImp}
 
+import se.scalablesolutions.akka.config.Config._
+
 /**
  * Atomikos implementation of the transaction service trait.
  *
@@ -16,8 +18,7 @@ import com.atomikos.icatch.config.{TSInitInfo, UserTransactionService, UserTrans
  */
 object AtomikosTransactionService extends TransactionService with TransactionProtocol {
 
-  // FIXME: make configurable
-  val JTA_TRANSACTION_TIMEOUT = 60
+  val JTA_TRANSACTION_TIMEOUT = config.getInt("akka.jta.timeout", 60)
   private val txService: UserTransactionService = new UserTransactionServiceImp
   private val info: TSInitInfo = txService.createTSInitInfo
 
