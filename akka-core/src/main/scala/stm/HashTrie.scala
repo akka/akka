@@ -30,7 +30,7 @@
  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  POSSIBILITY OF SUCH DAMAGE.
- **/
+ */
 
 package se.scalablesolutions.akka.stm
 
@@ -52,9 +52,7 @@ final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] with Pe
   
   def get(key: K) = root(key, key.hashCode)
   
-  override def +[A >: V](pair: (K, A)) = pair match {
-    case (k, v) => update(k, v)
-  }
+  override def +[A >: V](pair: (K, A)) = update(pair._1, pair._2)
   
   override def update[A >: V](key: K, value: A) = new HashTrie(root(0, key, key.hashCode) = value)
   
@@ -68,7 +66,7 @@ final class HashTrie[K, +V] private (root: Node[K, V]) extends Map[K, V] with Pe
 }
 
 object HashTrie {
-  def apply[K, V](pairs: (K, V)*) = pairs.foldLeft((new HashTrie[K, V]).asInstanceOf[Map[K,V]]) { _ + _ }
+  def apply[K, V](pairs: (K, V)*) = pairs.foldLeft(new HashTrie[K, V]) { _ + _ }
   
   def unapplySeq[K, V](map: HashTrie[K, V]) = map.toSeq
 }

@@ -57,9 +57,9 @@ class PerformanceSpec extends JUnitSuite {
         }
         
         protected def sender : Option[Actor] = replyTo match {
-    		case Some(Left(actor)) => Some(actor)
-    		case _ => None
-  		}
+                case Some(Left(actor)) => Some(actor)
+                case _ => None
+                }
 
         def receive = {
           case MeetingCount(i) => {
@@ -104,9 +104,9 @@ class PerformanceSpec extends JUnitSuite {
         }
         
         protected def sender : Option[Actor] = replyTo match {
-    		case Some(Left(actor)) => Some(actor)
-    		case _ => None
-  		}
+                case Some(Left(actor)) => Some(actor)
+                case _ => None
+                }
 
         override def receive: PartialFunction[Any, Unit] = {
           case Meet(from, otherColour) =>

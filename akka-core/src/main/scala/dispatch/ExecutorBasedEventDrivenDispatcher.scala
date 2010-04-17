@@ -94,6 +94,8 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
     active = false
     references.clear
   }
+  
+  def usesActorMailbox = true
 
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
