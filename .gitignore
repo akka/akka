@@ -1,5 +1,6 @@
 *~
 *#
+project/plugins/project/
 project/boot/*
 */project/build/target
 */project/boot
