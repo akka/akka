@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.jta
+package se.scalablesolutions.akka.stm
 
 import javax.transaction.{TransactionManager, UserTransaction, SystemException}
 import javax.naming.{InitialContext, Context, NamingException}
@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.config.Config._
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object TransactionManagerDetector {
+object JtaTransactionManagerDetector {
   val DEFAULT_USER_TRANSACTION_NAME = "java:comp/UserTransaction"
   val FALLBACK_TRANSACTION_MANAGER_NAMES = List("java:comp/TransactionManager", 
                                                 "java:appserver/TransactionManager",
