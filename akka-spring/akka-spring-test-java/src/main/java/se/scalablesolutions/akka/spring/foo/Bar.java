@@ -10,7 +10,7 @@ public class Bar implements IBar {
         }
         
         public void throwsIOException() throws IOException {
-      	  throw new IOException("some IO went wrong");
+          throw new IOException("some IO went wrong");
         }
 
 }
