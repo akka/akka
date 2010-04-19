@@ -36,7 +36,7 @@ object Annotations {
  */
 object ActiveObject {
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
-  private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern  
+  private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   def newInstance[T](target: Class[T], timeout: Long): T =
     newInstance(target, new Dispatcher(false, None), None, timeout)
@@ -281,19 +281,19 @@ private[akka] object AspectInitRegistry {
     val init = initializations.get(target)
     initializations.remove(target)
     init
-  }  
+  }
 
   def register(target: AnyRef, init: AspectInit) = initializations.put(target, init)
 }
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],
-  val actor: Dispatcher,          
+  val actor: Dispatcher,
   val remoteAddress: Option[InetSocketAddress],
   val timeout: Long) {
   def this(target: Class[_],actor: Dispatcher, timeout: Long) = this(target, actor, None, timeout)
 }
-      
+
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
  * Is deployed on a 'per-instance' basis.
@@ -314,7 +314,7 @@ private[akka] sealed class ActiveObjectAspect {
     if (!isInitialized) {
       val init = AspectInitRegistry.initFor(joinPoint.getThis)
       target = init.target
-      actor = init.actor            
+      actor = init.actor
       remoteAddress = init.remoteAddress
       timeout = init.timeout
       isInitialized = true
@@ -333,7 +333,7 @@ private[akka] sealed class ActiveObjectAspect {
       (actor ! Invocation(joinPoint, true, true) ).asInstanceOf[AnyRef]
     }
     else {
-      val result = actor !! Invocation(joinPoint, false, isVoid(rtti))
+      val result = actor !! (Invocation(joinPoint, false, isVoid(rtti)), timeout)
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }
@@ -373,7 +373,7 @@ private[akka] sealed class ActiveObjectAspect {
       val (_, cause) = future.exception.get
       throw cause
     } else future.result.asInstanceOf[Option[T]]
-  
+
   private def isOneWay(rtti: MethodRtti) = rtti.getMethod.isAnnotationPresent(Annotations.oneway)
 
   private def isVoid(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
@@ -424,7 +424,7 @@ private[akka] case class Link(val actor: Actor)
 
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
-  val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()  
+  val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
 }
 
 /**
@@ -462,7 +462,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
           "Could not find post restart method [" + post + "] \nin [" + targetClass.getName + "]. \nIt must have a zero argument definition.") })
     }
 
-    // See if we have any annotation defined restart callbacks 
+    // See if we have any annotation defined restart callbacks
     if (!preRestart.isDefined) preRestart = methods.find(m => m.isAnnotationPresent(Annotations.prerestart))
     if (!postRestart.isDefined) postRestart = methods.find(m => m.isAnnotationPresent(Annotations.postrestart))
 
@@ -475,7 +475,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
 
     if (preRestart.isDefined) preRestart.get.setAccessible(true)
     if (postRestart.isDefined) postRestart.get.setAccessible(true)
-    
+
     // see if we have a method annotated with @inittransactionalstate, if so invoke it
     initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
     if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0) throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
@@ -540,6 +540,6 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
     if (!unserializable && hasMutableArgument) {
       val copyOfArgs = Serializer.Java.deepClone(args)
       joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
-    }    
+    }
   }
 }

@@ -712,7 +712,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnRemote[T <: Actor : Manifest](hostname: String, port: Int): T = {
+  protected[this] def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): T = {
     val actor = spawnButDoNotStart[T]
     actor.makeRemote(hostname, port)
     actor.start
@@ -724,7 +724,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLink[T <: Actor : Manifest] : T = {
+  protected[this] def spawnLink[T <: Actor: Manifest]: T = {
     val actor = spawnButDoNotStart[T]
     try {
       actor.start
