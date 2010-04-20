@@ -297,31 +297,24 @@ object Transaction {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable class Transaction extends Logging {
-  import JtaTransactionManagerDetector._
   val JTA_AWARE = config.getBool("akka.stm.jta-aware", false)
-  val jta: Either[Option[UserTransaction], Option[TransactionManager]] = if (JTA_AWARE) {
-    findUserTransaction match {
-      case None => Right(findTransactionManager)
-      case tm =>   Left(tm)
-    }
-  } else Left(None)
-  
+
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: Option[MultiverseTransaction] = None
   private[this] val persistentStateMap = new HashMap[String, Committable]
   private[akka] val depth = new AtomicInteger(0)
-
+  
+  val tc: Option[TransactionContainer] =
+    if (JTA_AWARE) Some(TransactionContainer())
+    else None
+  
   log.trace("Creating %s", toString)
 
   // --- public methods ---------
 
   def begin = synchronized {
-    jta match {
-      case Left(Some(userTx)) => if (!isJtaTxActive(userTx.getStatus)) userTx.begin
-      case Right(Some(txMan)) => if (!isJtaTxActive(txMan.getStatus)) txMan.begin
-      case _ => {} // do nothing
-    }
+    tc.foreach(_.begin)
   }
   
   def commit = synchronized {
@@ -330,20 +323,12 @@ object Transaction {
       persistentStateMap.valuesIterator.foreach(_.commit)
     }
     status = TransactionStatus.Completed
-    jta match {
-      case Left(Some(userTx)) => if (isJtaTxActive(userTx.getStatus)) userTx.commit
-      case Right(Some(txMan)) => if (isJtaTxActive(txMan.getStatus)) txMan.commit
-      case _ => {} // do nothing
-    }
+    tc.foreach(_.commit)
   }
 
   def abort = synchronized {
     log.trace("Aborting transaction %s", toString)
-    jta match {
-      case Left(Some(userTx)) => if (isJtaTxActive(userTx.getStatus)) userTx.rollback
-      case Right(Some(txMan)) => if (isJtaTxActive(txMan.getStatus)) txMan.rollback
-      case _ => {} // do nothing
-    }
+    tc.foreach(_.rollback)
   }
 
   def isNew = synchronized { status == TransactionStatus.New }
