@@ -21,7 +21,7 @@ object AtomikosTransactionService extends AtomikosTransactionService
  */
 class AtomikosTransactionService extends TransactionService with TransactionProtocol {
 
-  val JTA_TRANSACTION_TIMEOUT: Int = config.getInt("akka.stm.jta.timeout", 60000) / 1000
+  val JTA_TRANSACTION_TIMEOUT: Int = config.getInt("akka.jta.timeout", 60000) / 1000
   private val txService: UserTransactionService = new UserTransactionServiceImp
   private val info: TSInitInfo = txService.createTSInitInfo
 

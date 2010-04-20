@@ -115,7 +115,7 @@ trait TransactionProtocol extends Logging {
    *     // Do not roll back in case of NoResultException or NonUniqueResultException
    *     if (!e.isInstanceOf[NoResultException] &&
    *         !e.isInstanceOf[NonUniqueResultException]) {
-   *       log.debug("Setting TX to ROLLBACK_ONLY, due to: " + e)
+   *       log.debug("Setting TX to ROLLBACK_ONLY, due to: %s", e)
    *       tm.setRollbackOnly
    *     }
    *   }

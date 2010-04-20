@@ -60,13 +60,7 @@ class TransactionContainer private (val tm: Either[Option[UserTransaction], Opti
     case Right(Some(txMan)) => txMan.setRollbackOnly
     case _ => throw new IllegalStateException("Does not have a UserTransaction or TransactionManager in scope")
   }
-  /*
-  def getTransaction: JtaTransaction = tm match {
-    case Left(Some(userTx)) => userTx
-    case Right(Some(txMan)) => txMan.getTransaction
-    case _ => throw new IllegalStateException("Does not have a UserTransaction or TransactionManager in scope")
-  }
- */
+
   def suspend = tm match {
     case Right(Some(txMan)) => txMan.suspend
     case _ => throw new IllegalStateException("Does not have a TransactionManager in scope")
@@ -92,7 +86,7 @@ object TransactionContainer extends Logging {
                                                           "java:/TransactionManager" :: Nil
   val DEFAULT_TRANSACTION_SYNCHRONIZATION_REGISTRY_NAME = "java:comp/TransactionSynchronizationRegistry"
   val TRANSACTION_SYNCHRONIZATION_REGISTRY_CLASS_NAME =   "javax.transaction.TransactionSynchronizationRegistry"
-  val JTA_PROVIDER = config.getString("akka.stm.jta.provider", "from-jndi")
+  val JTA_PROVIDER = config.getString("akka.jta.provider", "from-jndi")
 
   def apply(tm: Either[Option[UserTransaction], Option[TransactionManager]]) = new TransactionContainer(tm)
   
