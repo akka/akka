@@ -11,48 +11,6 @@ import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
 
 /**
- * Base monad for the transaction monad implementations.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait TransactionMonad {
-
-  // -----------------------------
-  // Monadic definitions
-  // -----------------------------
-
-  def map[T](f: TransactionMonad => T): T
-  def flatMap[T](f: TransactionMonad => T): T
-  def foreach(f: TransactionMonad => Unit): Unit
-  def filter(f: TransactionMonad => Boolean): TransactionMonad =
-    if (f(this)) this else TransactionContext.NoOpTransactionMonad
-
-  // -----------------------------
-  // JTA Transaction definitions
-  // -----------------------------
-
-  /**
-   * Marks the current transaction as doomed.
-   */
-  def setRollbackOnly = TransactionContext.setRollbackOnly
-
-  /**
-   * Marks the current transaction as doomed.
-   */
-  def doom = TransactionContext.setRollbackOnly
-
-  /**
-   * Checks if the current transaction is doomed.
-   */
-  def isRollbackOnly = TransactionContext.isRollbackOnly
-
-  /**
-   * Checks that the current transaction is NOT doomed.
-   */
-  def isNotDoomed = !TransactionContext.isRollbackOnly
-}
-
-/**
  * The TransactionContext object manages the transactions. 
  * Can be used as higher-order functional 'atomic blocks' or monadic.
  *
@@ -162,6 +120,48 @@ object TransactionContext extends TransactionProtocol with Logging {
     }
     result
   }
+}
+
+/**
+ * Base monad for the transaction monad implementations.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait TransactionMonad {
+
+  // -----------------------------
+  // Monadic definitions
+  // -----------------------------
+
+  def map[T](f: TransactionMonad => T): T
+  def flatMap[T](f: TransactionMonad => T): T
+  def foreach(f: TransactionMonad => Unit): Unit
+  def filter(f: TransactionMonad => Boolean): TransactionMonad =
+    if (f(this)) this else TransactionContext.NoOpTransactionMonad
+
+  // -----------------------------
+  // JTA Transaction definitions
+  // -----------------------------
+
+  /**
+   * Marks the current transaction as doomed.
+   */
+  def setRollbackOnly = TransactionContext.setRollbackOnly
+
+  /**
+   * Marks the current transaction as doomed.
+   */
+  def doom = TransactionContext.setRollbackOnly
+
+  /**
+   * Checks if the current transaction is doomed.
+   */
+  def isRollbackOnly = TransactionContext.isRollbackOnly
+
+  /**
+   * Checks that the current transaction is NOT doomed.
+   */
+  def isNotDoomed = !TransactionContext.isRollbackOnly
 }
 
 /**
