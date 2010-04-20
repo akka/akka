@@ -326,7 +326,7 @@ object Vector {
   @inline
   private[stm] def array(elems: AnyRef*) = {
     val back = new Array[AnyRef](elems.length)
-    Array.copy(elems, 0, back, 0, back.length)
+    Array.copy(elems.toArray, 0, back, 0, back.length)
 
     back
   }

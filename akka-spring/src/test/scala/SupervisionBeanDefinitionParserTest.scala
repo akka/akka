@@ -50,7 +50,7 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[ActiveObjectProperties]]
       assert(supervised != null)
       expect(3) { supervised.length }
-      val iterator = supervised.elements
+      val iterator = supervised.iterator
       expect("foo.bar.Foo") { iterator.next.target }
       expect("foo.bar.Bar") { iterator.next.target }
       expect("foo.bar.MyPojo") { iterator.next.target }
