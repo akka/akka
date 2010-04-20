@@ -192,7 +192,7 @@ class MongoStorageSpec extends TestCase {
     assertTrue(l.map(_._1).contains("3"))
     assertTrue(l.map(_._1).contains("4"))
 
-    val JsString(str) = l.filter(_._1 == "2").first._2
+    val JsString(str) = l.filter(_._1 == "2").head._2
     assertEquals(str, "peter")
 
     // trying to fetch for a non-existent transaction will throw
