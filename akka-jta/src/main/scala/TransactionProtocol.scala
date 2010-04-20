@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.jta
 
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.stm.TransactionContainer
 
 import javax.naming.{NamingException, Context, InitialContext}
 import javax.transaction.{
@@ -71,7 +72,7 @@ trait TransactionProtocol extends Logging {
    * <pre>
    * override def joinTransaction = {
    *   val em = TransactionContext.getEntityManager
-   *   val tm = TransactionContext.getTransactionManager
+   *   val tm = TransactionContext.getTransactionContainer
    *   val closeAtTxCompletion: Boolean) 
    *   tm.getTransaction.registerSynchronization(new javax.transaction.Synchronization() {
    *     def beforeCompletion = {
@@ -109,7 +110,7 @@ trait TransactionProtocol extends Logging {
    * Here is an example on how to handle JPA exceptions.
    * 
    * <pre>
-   * def handleException(tm: TransactionManager, e: Exception) = {
+   * def handleException(tm: TransactionContainer, e: Exception) = {
    *   if (isInExistingTransaction(tm)) {
    *     // Do not roll back in case of NoResultException or NonUniqueResultException
    *     if (!e.isInstanceOf[NoResultException] &&
@@ -122,7 +123,7 @@ trait TransactionProtocol extends Logging {
    * }
    * </pre>
    */
-  def handleException(tm: TransactionManager, e: Exception) = {
+  def handleException(tm: TransactionContainer, e: Exception) = {
     tm.setRollbackOnly
     throw e
   }
@@ -133,7 +134,7 @@ trait TransactionProtocol extends Logging {
    * Creates a new transaction if no transaction is active in scope, else joins the outer transaction. 
    */
   def withTxRequired[T](body: => T): T = {
-    val tm = TransactionContext.getTransactionManager
+    val tm = TransactionContext.getTransactionContainer
     if (!isInExistingTransaction(tm)) {
       tm.begin
       try {
@@ -154,7 +155,7 @@ trait TransactionProtocol extends Logging {
    * commits or rollbacks new transaction, finally resumes previous transaction.
    */
   def withTxRequiresNew[T](body: => T): T = TransactionContext.withNewContext {
-    val tm = TransactionContext.getTransactionManager
+    val tm = TransactionContext.getTransactionContainer
     tm.begin
     try {
       joinTransaction
@@ -191,7 +192,7 @@ trait TransactionProtocol extends Logging {
    * Throws a TransactionRequiredException if there is no transaction active in scope.
    */
   def withTxMandatory[T](body: => T): T = {
-    if (!isInExistingTransaction(TransactionContext.getTransactionManager)) 
+    if (!isInExistingTransaction(TransactionContext.getTransactionContainer)) 
       throw new TransactionRequiredException("No active TX at method with TX type set to MANDATORY")
     body
   }
@@ -202,12 +203,12 @@ trait TransactionProtocol extends Logging {
    * Throws a SystemException in case of an existing transaction in scope.
    */
   def withTxNever[T](body: => T): T = {
-    if (isInExistingTransaction(TransactionContext.getTransactionManager)) 
+    if (isInExistingTransaction(TransactionContext.getTransactionContainer)) 
       throw new SystemException("Detected active TX at method with TX type set to NEVER")
     body
   }
 
-  protected def commitOrRollBack(tm: TransactionManager) = {
+  protected def commitOrRollBack(tm: TransactionContainer) = {
     if (isInExistingTransaction(tm)) {
       if (isRollbackOnly(tm)) {
         log.debug("Rolling back TX marked as ROLLBACK_ONLY")
@@ -229,7 +230,7 @@ trait TransactionProtocol extends Logging {
    * @param tm the transaction manager
    * @return boolean
    */
-  protected def isInExistingTransaction(tm: TransactionManager): Boolean = 
+  protected def isInExistingTransaction(tm: TransactionContainer): Boolean = 
     tm.getStatus != Status.STATUS_NO_TRANSACTION
 
   /**
@@ -238,7 +239,7 @@ trait TransactionProtocol extends Logging {
    * @param tm the transaction manager
    * @return boolean
    */
-  protected def isRollbackOnly(tm: TransactionManager): Boolean = 
+  protected def isRollbackOnly(tm: TransactionContainer): Boolean = 
     tm.getStatus == Status.STATUS_MARKED_ROLLBACK
 
   /**

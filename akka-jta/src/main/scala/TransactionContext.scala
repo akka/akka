@@ -6,17 +6,9 @@ package se.scalablesolutions.akka.jta
 
 import javax.transaction.{Transaction, Status, TransactionManager}
 
+import se.scalablesolutions.akka.stm.{TransactionService, TransactionContainer}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
-
-/**
- * JTA Transaction service.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait TransactionService {
-  def transactionManager: TransactionManager  
-}
 
 /**
  * Base monad for the transaction monad implementations.
@@ -38,11 +30,6 @@ trait TransactionMonad {
   // -----------------------------
   // JTA Transaction definitions
   // -----------------------------
-
-  /**
-   * Returns the current Transaction.
-   */
-  def getTransaction: Transaction = TransactionContext.getTransactionManager.getTransaction
 
   /**
    * Marks the current transaction as doomed.
@@ -108,13 +95,8 @@ trait TransactionMonad {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionContext extends TransactionProtocol with Logging {
-  val TRANSACTION_PROVIDER = config.getString("akka.jta.transaction-provider", "atomikos")
-
-  private implicit val defaultTransactionService = TRANSACTION_PROVIDER match {
-    case "atomikos" => AtomikosTransactionService
-    case _ => throw new IllegalArgumentException("Transaction provider [" + TRANSACTION_PROVIDER + "] is not supported")
-  }
-  private[TransactionContext] val stack = new scala.util.DynamicVariable(new TransactionContext)
+  implicit val tc = TransactionContainer()                    
+  private[TransactionContext] val stack = new scala.util.DynamicVariable(new TransactionContext(tc))
 
   object Required extends TransactionMonad {
     def map[T](f: TransactionMonad => T): T =        withTxRequired { f(this) }
@@ -157,9 +139,7 @@ object TransactionContext extends TransactionProtocol with Logging {
 
   private[jta] def isRollbackOnly = current.isRollbackOnly
 
-  private[jta] def getTransactionManager: TransactionManager = current.getTransactionManager
-
-  private[jta] def getTransaction: Transaction = current.getTransactionManager.getTransaction
+  private[jta] def getTransactionContainer: TransactionContainer = current.getTransactionContainer
 
   private[this] def current = stack.value
 
@@ -171,14 +151,14 @@ object TransactionContext extends TransactionProtocol with Logging {
    */
   private[jta] def withNewContext[T](body: => T): T = {
     val suspendedTx: Option[Transaction] =
-      if (isInExistingTransaction(getTransactionManager)) {
+      if (getTransactionContainer.isInExistingTransaction) {
         log.debug("Suspending TX")
-        Some(getTransactionManager.suspend)
+        Some(getTransactionContainer.suspend)
       } else None
-    val result = stack.withValue(new TransactionContext) { body }
+    val result = stack.withValue(new TransactionContext(tc)) { body }
     if (suspendedTx.isDefined) {
       log.debug("Resuming TX")
-      getTransactionManager.resume(suspendedTx.get)
+      getTransactionContainer.resume(suspendedTx.get)
     }
     result
   }
@@ -189,9 +169,8 @@ object TransactionContext extends TransactionProtocol with Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionContext(private implicit val transactionService: TransactionService) {
-  val tm: TransactionManager = transactionService.transactionManager
-  private def setRollbackOnly = tm.setRollbackOnly
-  private def isRollbackOnly: Boolean = tm.getStatus == Status.STATUS_MARKED_ROLLBACK
-  private def getTransactionManager: TransactionManager = tm
+class TransactionContext(val tc: TransactionContainer) {
+  private def setRollbackOnly = tc.setRollbackOnly
+  private def isRollbackOnly: Boolean = tc.getStatus == Status.STATUS_MARKED_ROLLBACK
+  private def getTransactionContainer: TransactionContainer = tc
 }
