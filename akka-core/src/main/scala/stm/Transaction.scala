@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeUnit
 
-import javax.transaction.{TransactionManager, UserTransaction, Status}
+import javax.transaction.{TransactionManager, UserTransaction, Status, TransactionSynchronizationRegistry}
 
 import scala.collection.mutable.HashMap
 
@@ -305,7 +305,7 @@ object Transaction {
   private[this] val persistentStateMap = new HashMap[String, Committable]
   private[akka] val depth = new AtomicInteger(0)
   
-  val tc: Option[TransactionContainer] =
+  val jta: Option[TransactionContainer] =
     if (JTA_AWARE) Some(TransactionContainer())
     else None
   
@@ -314,7 +314,16 @@ object Transaction {
   // --- public methods ---------
 
   def begin = synchronized {
-    tc.foreach(_.begin)
+    jta.foreach { txContainer => 
+      txContainer.begin
+      TransactionContainer.findSynchronizationRegistry match {
+        case Some(registry) => 
+          registry.asInstanceOf[TransactionSynchronizationRegistry].registerInterposedSynchronization(
+            new StmSynchronization(txContainer, this))
+        case None =>           
+          log.warning("Cannot find TransactionSynchronizationRegistry in JNDI, can't register STM synchronization")
+      }
+    }
   }
   
   def commit = synchronized {
@@ -323,12 +332,12 @@ object Transaction {
       persistentStateMap.valuesIterator.foreach(_.commit)
     }
     status = TransactionStatus.Completed
-    tc.foreach(_.commit)
+    jta.foreach(_.commit)
   }
 
   def abort = synchronized {
     log.trace("Aborting transaction %s", toString)
-    tc.foreach(_.rollback)
+    jta.foreach(_.rollback)
   }
 
   def isNew = synchronized { status == TransactionStatus.New }
