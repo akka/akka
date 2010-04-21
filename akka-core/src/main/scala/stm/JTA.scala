@@ -104,6 +104,21 @@ object TransactionContainer extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionContainer private (val tm: Either[Option[UserTransaction], Option[TransactionManager]]) {
+
+  def registerSynchronization(sync: Synchronization) = {
+    TransactionContainer.findSynchronizationRegistry match { // try to use SynchronizationRegistry in JNDI
+      case Some(registry) => 
+        registry.asInstanceOf[TransactionSynchronizationRegistry].registerInterposedSynchronization(sync)
+      case None =>
+        tm match {
+          case Right(Some(txMan)) => // try to use TransactionManager
+            txMan.getTransaction.registerSynchronization(sync)
+          case _ =>
+            log.warning("Cannot find TransactionSynchronizationRegistry in JNDI, can't register STM synchronization")          
+        }
+    }
+  }
+  
   def begin = tm match {
     case Left(Some(userTx)) => userTx.begin
     case Right(Some(txMan)) => txMan.begin
