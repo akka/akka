@@ -30,7 +30,8 @@ object Annotations {
 }
 
 /**
- * TODO: document
+ * Configuration factory for Active Objects. 
+ * 
  * FIXDOC: document ActiveObjectConfiguration
  */
 final class ActiveObjectConfiguration {
