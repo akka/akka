@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.jta
 
-import javax.transaction.{Transaction, Status, TransactionManager}
+import javax.transaction.{Transaction, Status, TransactionManager, Synchronization}
 
 import se.scalablesolutions.akka.stm.{TransactionService, TransactionContainer}
 import se.scalablesolutions.akka.util.Logging
@@ -56,6 +56,41 @@ object TransactionContext extends TransactionProtocol with Logging {
   implicit val tc = TransactionContainer()                    
   private[TransactionContext] val stack = new scala.util.DynamicVariable(new TransactionContext(tc))
 
+  /**
+   * This method can be used to register a Synchronization instance for participating with the JTA transaction.
+   * Here is an example of how to add a JPA EntityManager integration.
+   * <pre>
+   *   TransactionContext.registerSynchronization(new javax.transaction.Synchronization() {
+   *     def beforeCompletion = {
+   *       try {
+   *         val status = tm.getStatus
+   *         if (status != Status.STATUS_ROLLEDBACK &&
+   *             status != Status.STATUS_ROLLING_BACK &&
+   *             status != Status.STATUS_MARKED_ROLLBACK) {
+   *           log.debug("Flushing EntityManager...") 
+   *           em.flush // flush EntityManager on success
+   *         }
+   *       } catch {
+   *         case e: javax.transaction.SystemException => throw new RuntimeException(e)
+   *       }
+   *     }
+   *
+   *     def afterCompletion(status: Int) = {
+   *       val status = tm.getStatus
+   *       if (closeAtTxCompletion) em.close
+   *       if (status == Status.STATUS_ROLLEDBACK ||
+   *           status == Status.STATUS_ROLLING_BACK ||
+   *           status == Status.STATUS_MARKED_ROLLBACK) {
+   *         em.close
+   *       }
+   *     }
+   *   })
+   * </pre>
+   * You should also override the 'joinTransaction' and 'handleException' methods. 
+   * See ScalaDoc for these methods in the 'TransactionProtocol' for details. 
+   */
+  def registerSynchronization(sync: Synchronization) = synchronization.add(sync)
+  
   object Required extends TransactionMonad {
     def map[T](f: TransactionMonad => T): T =        withTxRequired { f(this) }
     def flatMap[T](f: TransactionMonad => T): T =    withTxRequired { f(this) }
@@ -170,7 +205,8 @@ trait TransactionMonad {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionContext(val tc: TransactionContainer) {
-  private def setRollbackOnly = tc.setRollbackOnly
-  private def isRollbackOnly: Boolean = tc.getStatus == Status.STATUS_MARKED_ROLLBACK
-  private def getTransactionContainer: TransactionContainer = tc
+  def registerSynchronization(sync: Synchronization) = TransactionContext.registerSynchronization(sync)
+  def setRollbackOnly = tc.setRollbackOnly
+  def isRollbackOnly: Boolean = tc.getStatus == Status.STATUS_MARKED_ROLLBACK
+  def getTransactionContainer: TransactionContainer = tc
 }

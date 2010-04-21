@@ -316,13 +316,7 @@ object Transaction {
   def begin = synchronized {
     jta.foreach { txContainer => 
       txContainer.begin
-      TransactionContainer.findSynchronizationRegistry match {
-        case Some(registry) => 
-          registry.asInstanceOf[TransactionSynchronizationRegistry].registerInterposedSynchronization(
-            new StmSynchronization(txContainer, this))
-        case None =>           
-          log.warning("Cannot find TransactionSynchronizationRegistry in JNDI, can't register STM synchronization")
-      }
+      txContainer.registerSynchronization(new StmSynchronization(txContainer, this))
     }
   }
   

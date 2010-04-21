@@ -7,6 +7,9 @@ package se.scalablesolutions.akka.jta
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.stm.TransactionContainer
 
+import java.util.{List => JList}
+import java.util.concurrent.CopyOnWriteArrayList
+
 import javax.naming.{NamingException, Context, InitialContext}
 import javax.transaction.{
   Transaction,
@@ -15,6 +18,7 @@ import javax.transaction.{
   Status,
   RollbackException,
   SystemException,
+  Synchronization,
   TransactionRequiredException
 }
 
@@ -62,6 +66,8 @@ import javax.transaction.{
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait TransactionProtocol extends Logging {
+  
+  protected val synchronization: JList[Synchronization] = new CopyOnWriteArrayList[Synchronization]
 
   /**
    * Join JTA transaction. Can be overriden by concrete transaction service implementation
@@ -71,36 +77,10 @@ trait TransactionProtocol extends Logging {
    * 
    * <pre>
    * override def joinTransaction = {
-   *   val em = TransactionContext.getEntityManager
-   *   val tm = TransactionContext.getTransactionContainer
-   *   val closeAtTxCompletion: Boolean) 
-   *   tm.getTransaction.registerSynchronization(new javax.transaction.Synchronization() {
-   *     def beforeCompletion = {
-   *       try {
-   *         val status = tm.getStatus
-   *         if (status != Status.STATUS_ROLLEDBACK &&
-   *             status != Status.STATUS_ROLLING_BACK &&
-   *             status != Status.STATUS_MARKED_ROLLBACK) {
-   *           log.debug("Flushing EntityManager...") 
-   *           em.flush // flush EntityManager on success
-   *         }
-   *       } catch {
-   *         case e: javax.transaction.SystemException => throw new RuntimeException(e)
-   *       }
-   *     }
-   *
-   *     def afterCompletion(status: Int) = {
-   *       val status = tm.getStatus
-   *       if (closeAtTxCompletion) em.close
-   *       if (status == Status.STATUS_ROLLEDBACK ||
-   *           status == Status.STATUS_ROLLING_BACK ||
-   *           status == Status.STATUS_MARKED_ROLLBACK) {
-   *         em.close
-   *       }
-   *     }
-   *   })
+   *   val em: EntityManager = ... // get the EntityManager
    *   em.joinTransaction // join JTA transaction
    * }
+   * </pre>
    */
   def joinTransaction: Unit = {}
 
@@ -137,6 +117,7 @@ trait TransactionProtocol extends Logging {
     val tm = TransactionContext.getTransactionContainer
     if (!isInExistingTransaction(tm)) {
       tm.begin
+      registerSynchronization
       try {
         joinTransaction
         body
@@ -157,6 +138,7 @@ trait TransactionProtocol extends Logging {
   def withTxRequiresNew[T](body: => T): T = TransactionContext.withNewContext {
     val tm = TransactionContext.getTransactionContainer
     tm.begin
+    registerSynchronization
     try {
       joinTransaction
       body
@@ -224,6 +206,10 @@ trait TransactionProtocol extends Logging {
   // Helper methods
   // ---------------------------
 
+  protected def registerSynchronization = {
+    val it = synchronization.iterator
+    while (it.hasNext) TransactionContext.getTransactionContainer.registerSynchronization(it.next)
+  }
   /**
    * Checks if a transaction is an existing transaction.
    *
