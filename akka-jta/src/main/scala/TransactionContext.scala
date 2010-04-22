@@ -54,6 +54,7 @@ import se.scalablesolutions.akka.config.Config._
  */
 object TransactionContext extends TransactionProtocol with Logging {
   implicit val tc = TransactionContainer()                    
+
   private[TransactionContext] val stack = new scala.util.DynamicVariable(new TransactionContext(tc))
 
   /**
@@ -91,6 +92,32 @@ object TransactionContext extends TransactionProtocol with Logging {
    */
   def registerSynchronization(sync: Synchronization) = synchronization.add(sync)
   
+  /**
+   * Registeres a join transaction function.
+   * <p/>
+   * Here is an example on how to integrate with JPA EntityManager.
+   * 
+   * <pre>
+   * TransactionContext.registerJoinTransactionFun(() => {
+   *   val em: EntityManager = ... // get the EntityManager
+   *   em.joinTransaction // join JTA transaction
+   * })
+   * </pre>
+   */
+  def registerJoinTransactionFun(fn: () => Unit) = joinTransactionFuns.add(fn)
+  
+  /**
+   * Handle exception. Can be overriden by concrete transaction service implementation.
+   * <p/>
+   * Here is an example on how to handle JPA exceptions.
+   * 
+   * <pre>
+   * TransactionContext.registerExceptionNotToRollbackOn(classOf[NoResultException])
+   * TransactionContext.registerExceptionNotToRollbackOn(classOf[NonUniqueResultException])
+   * </pre>
+   */
+  def registerExceptionNotToRollbackOn(e: Class[_ <: Exception]) = exceptionsNotToRollbackOn.add(e)
+
   object Required extends TransactionMonad {
     def map[T](f: TransactionMonad => T): T =        withTxRequired { f(this) }
     def flatMap[T](f: TransactionMonad => T): T =    withTxRequired { f(this) }
