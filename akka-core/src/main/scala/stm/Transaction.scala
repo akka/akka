@@ -24,6 +24,7 @@ import org.multiverse.stms.alpha.AlphaStm
 
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
+class StmConfigurationException(message: String) extends RuntimeException(message)
 
 /**
  * FIXDOC: document AtomicTemplate
@@ -357,17 +358,17 @@ object Transaction {
   private[akka] def register(uuid: String, storage: Committable) = persistentStateMap.put(uuid, storage)
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
-    throw new IllegalStateException(
+    throw new StmConfigurationException(
       "Expected ACTIVE transaction - current status [" + status + "]: " + toString)
 
   private def ensureIsActiveOrAborted =
     if (!(status == TransactionStatus.Active || status == TransactionStatus.Aborted))
-      throw new IllegalStateException(
+      throw new StmConfigurationException(
         "Expected ACTIVE or ABORTED transaction - current status [" + status + "]: " + toString)
 
   private def ensureIsActiveOrNew =
     if (!(status == TransactionStatus.Active || status == TransactionStatus.New))
-      throw new IllegalStateException(
+      throw new StmConfigurationException(
         "Expected ACTIVE or NEW transaction - current status [" + status + "]: " + toString)
 
   // For reinitialize transaction after sending it over the wire

@@ -68,43 +68,26 @@ import javax.transaction.{
 trait TransactionProtocol extends Logging {
   
   protected val synchronization: JList[Synchronization] = new CopyOnWriteArrayList[Synchronization]
+  protected val joinTransactionFuns: JList[() => Unit] = new CopyOnWriteArrayList[() => Unit]
+  protected val exceptionsNotToRollbackOn: JList[Class[_ <: Exception]] = new CopyOnWriteArrayList[Class[_ <: Exception]]
 
-  /**
-   * Join JTA transaction. Can be overriden by concrete transaction service implementation
-   * to hook into other transaction services.
-   * <p/>
-   * Here is an example on how to integrate with JPA EntityManager.
-   * 
-   * <pre>
-   * override def joinTransaction = {
-   *   val em: EntityManager = ... // get the EntityManager
-   *   em.joinTransaction // join JTA transaction
-   * }
-   * </pre>
-   */
-  def joinTransaction: Unit = {}
+  def joinTransaction: Unit = { 
+    val it = joinTransactionFuns.iterator
+    while (it.hasNext) {
+      val fn = it.next
+      fn()
+    }
+  }
 
-  /**
-   * Handle exception. Can be overriden by concrete transaction service implementation.
-   * <p/>
-   * Here is an example on how to handle JPA exceptions.
-   * 
-   * <pre>
-   * def handleException(tm: TransactionContainer, e: Exception) = {
-   *   if (isInExistingTransaction(tm)) {
-   *     // Do not roll back in case of NoResultException or NonUniqueResultException
-   *     if (!e.isInstanceOf[NoResultException] &&
-   *         !e.isInstanceOf[NonUniqueResultException]) {
-   *       log.debug("Setting TX to ROLLBACK_ONLY, due to: %s", e)
-   *       tm.setRollbackOnly
-   *     }
-   *   }
-   *   throw e
-   * }
-   * </pre>
-   */
   def handleException(tm: TransactionContainer, e: Exception) = {
-    tm.setRollbackOnly
+    var rollback = true
+    val it = joinTransactionFuns.iterator
+    while (it.hasNext) {
+      val exception = it.next
+      if (e.getClass.isAssignableFrom(exception.getClass))
+      rollback = false
+    }
+    if (rollback) tm.setRollbackOnly
     throw e
   }
 
