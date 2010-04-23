@@ -306,7 +306,7 @@ class RemoteClientHandler(val name: String,
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
         log.debug("Remote client received RemoteReply[\n%s]", reply.toString)
-        val future : CompletableFuture[Any] = futures.get(reply.getId).asInstanceOf[CompletableFuture[Any]]
+        val future = futures.get(reply.getId).asInstanceOf[CompletableFuture[Any]]
         if (reply.getIsSuccessful) {
           val message = RemoteProtocolBuilder.getMessage(reply)
           future.completeWithResult(message)
