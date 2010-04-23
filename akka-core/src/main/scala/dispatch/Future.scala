@@ -20,8 +20,8 @@ object Futures {
    * }
    * </pre>
    */
-  def future(timeout: Long)(body: => Any): Future = {
-    val promise = new DefaultCompletableFuture(timeout)
+  def future[T](timeout: Long)(body: => T): Future[T] = {
+    val promise = new DefaultCompletableFuture[T](timeout)
     try {
       promise completeWithResult body
     } catch {
@@ -30,10 +30,10 @@ object Futures {
     promise
   }
 
-  def awaitAll(futures: List[Future]): Unit = futures.foreach(_.await)
+  def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
 
-  def awaitOne(futures: List[Future]): Future = {
-    var future: Option[Future] = None
+  def awaitOne(futures: List[Future[_]]): Future[_] = {
+    var future: Option[Future[_]] = None
     do {
       future = futures.find(_.isCompleted)
     } while (future.isEmpty)
@@ -41,12 +41,12 @@ object Futures {
   }
 
   /*
-  def awaitEither(f1: Future, f2: Future): Option[Any] = {
+  def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = {
     import Actor.Sender.Self
     import Actor.{spawn, actor}
       
-    case class Result(res: Option[Any])
-    val handOff = new SynchronousQueue[Option[Any]]
+    case class Result(res: Option[T])
+    val handOff = new SynchronousQueue[Option[T]]
     spawn {
       try {
         println("f1 await")
@@ -70,23 +70,23 @@ object Futures {
 */
 }
 
-sealed trait Future {
+sealed trait Future[T] {
   def await
   def awaitBlocking
   def isCompleted: Boolean
   def isExpired: Boolean
   def timeoutInNanos: Long
-  def result: Option[Any]
+  def result: Option[T]
   def exception: Option[Tuple2[AnyRef, Throwable]]
 }
 
-trait CompletableFuture extends Future {
-  def completeWithResult(result: Any)
+trait CompletableFuture[T] extends Future[T] {
+  def completeWithResult(result: T)
   def completeWithException(toBlame: AnyRef, exception: Throwable)
 }
 
 // Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
-class DefaultCompletableFuture(timeout: Long) extends CompletableFuture {
+class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
   private val TIME_UNIT = TimeUnit.MILLISECONDS
   def this() = this(0)
 
@@ -95,7 +95,7 @@ class DefaultCompletableFuture(timeout: Long) extends CompletableFuture {
   private val _lock = new ReentrantLock
   private val _signal = _lock.newCondition
   private var _completed: Boolean = _
-  private var _result: Option[Any] = None
+  private var _result: Option[T] = None
   private var _exception: Option[Tuple2[AnyRef, Throwable]] = None
 
   def await = try {
@@ -138,7 +138,7 @@ class DefaultCompletableFuture(timeout: Long) extends CompletableFuture {
     _lock.unlock
   }
 
-  def result: Option[Any] = try {
+  def result: Option[T] = try {
     _lock.lock
     _result
   } finally {
@@ -152,7 +152,7 @@ class DefaultCompletableFuture(timeout: Long) extends CompletableFuture {
     _lock.unlock
   }
 
-  def completeWithResult(result: Any) = try {
+  def completeWithResult(result: T) = try {
     _lock.lock
     if (!_completed) {
       _completed = true

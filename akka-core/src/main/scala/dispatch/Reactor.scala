@@ -15,7 +15,7 @@ import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 final class MessageInvocation(val receiver: Actor,
                               val message: Any,
-                              val replyTo : Option[Either[Actor,CompletableFuture]],
+                              val replyTo : Option[Either[Actor,CompletableFuture[Any]]],
                               val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 

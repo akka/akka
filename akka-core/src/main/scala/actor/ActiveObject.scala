@@ -462,11 +462,11 @@ private[akka] sealed class ActiveObjectAspect {
     }
   }
 
-  private def getResultOrThrowException[T](future: Future): Option[T] =
+  private def getResultOrThrowException[T](future: Future[T]): Option[T] =
     if (future.exception.isDefined) {
       val (_, cause) = future.exception.get
       throw cause
-    } else future.result.asInstanceOf[Option[T]]
+    } else future.result
 
   private def isOneWay(rtti: MethodRtti) = rtti.getMethod.isAnnotationPresent(Annotations.oneway)
 
