@@ -257,7 +257,7 @@ trait Actor extends TransactionManagement with Logging {
    * Is Some(Left(Actor)) if sender is an actor
    * Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
    */
-  protected var replyTo: Option[Either[Actor,CompletableFuture]] = None
+  protected var replyTo: Option[Either[Actor,CompletableFuture[Any]]] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -502,9 +502,9 @@ trait Actor extends TransactionManagement with Logging {
   def !![T](message: Any, timeout: Long): Option[T] = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
       val isActiveObject = message.isInstanceOf[Invocation]
-      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.completeWithResult(None)
+      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       try {
         future.await
       } catch {
@@ -514,7 +514,7 @@ trait Actor extends TransactionManagement with Logging {
       }
       
       if (future.exception.isDefined) throw future.exception.get._2
-      else future.result.asInstanceOf[Option[T]]
+      else future.result
     }
     else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -539,10 +539,10 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * FIXME document !!!
    */
-  def !!!(message: Any): Future = {
+  def !!![T](message: Any): Future[T] = {
     if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (_isRunning) {
-      postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, None)
+      postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
@@ -569,7 +569,7 @@ trait Actor extends TransactionManagement with Logging {
    */
   protected[this] def reply(message: Any) = replyTo match {
     case Some(Left(actor))   => actor ! message
-    case Some(Right(future)) => future.completeWithResult(message)
+    case Some(Right(future : Future[Any])) => future.completeWithResult(message)
     case _ => throw new IllegalStateException(
               "\n\tNo sender in scope, can't reply. " +
               "\n\tYou have probably used the '!' method to either; " +
@@ -813,7 +813,7 @@ trait Actor extends TransactionManagement with Logging {
         RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.getId, sender.get)
       }
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
-      RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
+      RemoteClient.clientFor(_remoteAddress.get).send[Any](requestBuilder.build, None)
     } else {
       val invocation = new MessageInvocation(this, message, sender.map(Left(_)), transactionSet.get)
       if (messageDispatcher.usesActorMailbox) {
@@ -824,10 +824,10 @@ trait Actor extends TransactionManagement with Logging {
     }
   }
 
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
       message: Any,
       timeout: Long,
-      senderFuture: Option[CompletableFuture]): CompletableFuture = {
+      senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     joinTransaction(message)
 
     if (_remoteAddress.isDefined) {
@@ -847,8 +847,8 @@ trait Actor extends TransactionManagement with Logging {
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
-                   else new DefaultCompletableFuture(timeout)
-      val invocation = new MessageInvocation(this, message, Some(Right(future)), transactionSet.get)
+                   else new DefaultCompletableFuture[T](timeout)
+      val invocation = new MessageInvocation(this, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
       
       if (messageDispatcher.usesActorMailbox)
         _mailbox.add(invocation)

@@ -80,7 +80,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
     private class Out[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
       timeout = TIME_OUT
       start
-      private var readerFuture: Option[CompletableFuture] = None
+      private var readerFuture: Option[CompletableFuture[T]] = None
       def receive = {
         case Get =>
           val ref = dataFlow.value.get
@@ -88,11 +88,11 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
             reply(ref.get)
           else {
             readerFuture = replyTo match { 
-              case Some(Right(future)) => Some(future)
+              case Some(Right(future)) => Some(future.asInstanceOf[CompletableFuture[T]])
               case _ => None
             }
           }
-        case Set(v) => if (readerFuture.isDefined) readerFuture.get.completeWithResult(v)
+        case Set(v:T) => if (readerFuture.isDefined) readerFuture.get.completeWithResult(v)
         case Exit =>  exit
       }
     }
