@@ -162,7 +162,7 @@ trait Producer { self: Actor =>
  */
 class ProducerResponseSender(
     headers: Map[String, Any],
-    replyTo : Option[Either[Actor,CompletableFuture]],
+    replyTo : Option[Either[Actor,CompletableFuture[Any]]],
     producer: Actor) extends Synchronization with Logging {
 
   implicit val producerActor = Some(producer) // the response sender
