@@ -566,11 +566,9 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
+   * Throws an IllegalStateException if unable to determine what to reply to
    */
-  protected[this] def reply(message: Any) = replyTo match {
-    case Some(Left(actor))   => actor ! message
-    case Some(Right(future)) => future.completeWithResult(message)
-    case _ => throw new IllegalStateException(
+  protected[this] def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
               "\n\tNo sender in scope, can't reply. " +
               "\n\tYou have probably used the '!' method to either; " +
               "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
@@ -579,6 +577,23 @@ trait Actor extends TransactionManagement with Logging {
               "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
               "\n\tthat will be bound by the argument passed to 'reply'." +
               "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
+  
+  /**
+   * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * Returns true if reply was sent, and false if unable to determine what to reply to.
+   */
+  protected[this] def reply_?(message: Any) : Boolean = replyTo match {
+    case Some(Left(actor))   => 
+      actor ! message
+      true
+      
+    case Some(Right(future)) => 
+      future.completeWithResult(message)
+      true
+      
+    case _ => 
+      false
   }
   
   /**
