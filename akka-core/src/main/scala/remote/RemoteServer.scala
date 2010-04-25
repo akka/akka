@@ -367,7 +367,14 @@ class RemoteServerHandler(
     val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
  
     // Begin handshake.
-    sslHandler.handshake()
+    sslHandler.handshake().addListener( new ChannelFutureListener {
+      def operationComplete(future : ChannelFuture) : Unit = {
+        if(future.isSuccess) 
+          openChannels.add(future.getChannel)
+        else
+          future.getChannel.close
+      }
+    })
   }
 
 
