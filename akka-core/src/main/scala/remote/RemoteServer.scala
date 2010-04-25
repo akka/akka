@@ -22,6 +22,8 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
+import org.jboss.netty.handler.ssl.SslHandler
+
 
 import scala.collection.mutable.Map
 
@@ -279,6 +281,32 @@ class RemoteServer extends Logging {
 
 case class Codec(encoder: ChannelHandler, decoder: ChannelHandler)
 
+object RemoteServerSslContext {
+  import java.security.{KeyStore,Security}
+  import javax.net.ssl.{KeyManager,KeyManagerFactory,SSLContext,TrustManagerFactory}
+
+  val (client,server) = {
+    val protocol  = "TLS"
+    val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
+    val store = KeyStore.getInstance("JKS")
+    store.load(getClass.getResourceAsStream("keystore"),"keystorepassword".toCharArray)
+ 
+    val keyMan = KeyManagerFactory.getInstance(algorithm)
+    keyMan.init(store, "certificatepassword".toCharArray)
+    
+    val trustMan = TrustManagerFactory.getInstance("SunX509");
+    trustMan.init(store) //TODO safe to use same keystore? Or should use it's own keystore?
+    
+    val s = SSLContext.getInstance(protocol)
+    s.init(keyMan.getKeyManagers, null, null)
+    
+    val c = SSLContext.getInstance(protocol)
+    c.init(null, trustMan.getTrustManagers, null)
+    
+    (c,s)
+  }
+}
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -291,6 +319,10 @@ class RemoteServerPipelineFactory(
   import RemoteServer._
 
   def getPipeline: ChannelPipeline = {
+    val engine = RemoteServerSslContext.server.createSSLEngine()
+    engine.setUseClientMode(false)
+
+	val ssl          = new SslHandler(engine)
     val lenDec       = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep      = new LengthFieldPrepender(4)
     val protobufDec  = new ProtobufDecoder(RemoteRequestProtocol.getDefaultInstance)
@@ -303,8 +335,8 @@ class RemoteServerPipelineFactory(
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, activeObjects)
 
     val stages: Array[ChannelHandler] =
-      zipCodec.map(codec => Array(codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteServer))
-              .getOrElse(Array(lenDec, protobufDec, lenPrep, protobufEnc, remoteServer))
+      zipCodec.map(codec => Array(ssl,codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteServer))
+              .getOrElse(Array(ssl,lenDec, protobufDec, lenPrep, protobufEnc, remoteServer))
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -330,6 +362,14 @@ class RemoteServerHandler(
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
     openChannels.add(ctx.getChannel)
   }
+  
+  override def channelConnected(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
+    val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
+ 
+    // Begin handshake.
+    sslHandler.handshake()
+  }
+
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (event.isInstanceOf[ChannelStateEvent] &&

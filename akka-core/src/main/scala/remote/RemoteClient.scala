@@ -19,6 +19,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibEncoder}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler
 import org.jboss.netty.util.{TimerTask, Timeout, HashedWheelTimer}
+import org.jboss.netty.handler.ssl.SslHandler
 
 import java.net.{SocketAddress, InetSocketAddress}
 import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashMap, ConcurrentSkipListSet}
@@ -249,6 +250,10 @@ class RemoteClientPipelineFactory(name: String,
                                   timer: HashedWheelTimer,
                                   client: RemoteClient) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
+    val engine = RemoteServerSslContext.client.createSSLEngine()
+    engine.setUseClientMode(true)
+  
+    val ssl = new SslHandler(engine)
     val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT)
     val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
@@ -262,8 +267,8 @@ class RemoteClientPipelineFactory(name: String,
     val remoteClient = new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
 
     val stages: Array[ChannelHandler] =
-    zipCodec.map(codec => Array(timeout, codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteClient))
-        .getOrElse(Array(timeout, lenDec, protobufDec, lenPrep, protobufEnc, remoteClient))
+    zipCodec.map(codec => Array(ssl, timeout, codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteClient))
+        .getOrElse(Array(ssl, timeout, lenDec, protobufDec, lenPrep, protobufEnc, remoteClient))
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -342,9 +347,20 @@ class RemoteClientHandler(val name: String,
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.foreach(l =>
-      l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
-    log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
+
+//    client.listeners.toArray.foreach(l =>
+//      l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
+//    log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
+
+   val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
+   sslHandler.handshake().addListener( new ChannelFutureListener {
+      def operationComplete(future : ChannelFuture) : Unit = {
+        if(future.isSuccess) {
+          client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
+          log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
+        }
+      }
+    })
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
