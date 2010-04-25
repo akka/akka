@@ -251,6 +251,7 @@ class RemoteClientPipelineFactory(name: String,
                                   client: RemoteClient) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val engine = RemoteServerSslContext.client.createSSLEngine()
+    engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
     engine.setUseClientMode(true)
   
     val ssl = new SslHandler(engine)

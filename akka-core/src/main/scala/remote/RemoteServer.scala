@@ -289,19 +289,19 @@ object RemoteServerSslContext {
     val protocol  = "TLS"
     val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
     val store = KeyStore.getInstance("JKS")
-    store.load(getClass.getResourceAsStream("keystore"),"keystorepassword".toCharArray)
+    store.load(DummyKeyStore.asInputStream,DummyKeyStore.getKeyStorePassword) //TODO replace with getResourceAsStream + config-pass
  
     val keyMan = KeyManagerFactory.getInstance(algorithm)
-    keyMan.init(store, "certificatepassword".toCharArray)
+    keyMan.init(store, DummyKeyStore.getCertificatePassword) //TODO replace with config-pass
     
-    val trustMan = TrustManagerFactory.getInstance("SunX509");
-    trustMan.init(store) //TODO safe to use same keystore? Or should use it's own keystore?
+    //val trustMan = TrustManagerFactory.getInstance("SunX509");
+    //trustMan.init(store) //TODO safe to use same keystore? Or should use it's own keystore?
     
     val s = SSLContext.getInstance(protocol)
     s.init(keyMan.getKeyManagers, null, null)
     
     val c = SSLContext.getInstance(protocol)
-    c.init(null, trustMan.getTrustManagers, null)
+    c.init(null, DummyTrustManagerFactory.getTrustManagers, null) //TODO replace with TrustManagerFactory
     
     (c,s)
   }
@@ -320,6 +320,7 @@ class RemoteServerPipelineFactory(
 
   def getPipeline: ChannelPipeline = {
     val engine = RemoteServerSslContext.server.createSSLEngine()
+    engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
     engine.setUseClientMode(false)
 
 	val ssl          = new SslHandler(engine)
