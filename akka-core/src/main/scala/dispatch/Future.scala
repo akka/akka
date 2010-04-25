@@ -71,8 +71,8 @@ object Futures {
 }
 
 sealed trait Future[T] {
-  def await
-  def awaitBlocking
+  def await : Future[T]
+  def awaitBlocking : Future[T]
   def isCompleted: Boolean
   def isExpired: Boolean
   def timeoutInNanos: Long
@@ -111,6 +111,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
           wait = wait - (currentTimeInNanos - start)
       }
     }
+    this
   } finally {
     _lock.unlock
   }
@@ -120,6 +121,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     while (!_completed) {
       _signal.await
     }
+    this
   } finally {
     _lock.unlock
   }
