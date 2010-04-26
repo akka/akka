@@ -271,7 +271,7 @@ object ActiveObject {
   }
 
   private[akka] def newInstance[T](target: Class[T], actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    val proxy = Proxy.newInstance(target, false, true)
+    val proxy = Proxy.newInstance(target, false, false)
     actor.initialize(target, proxy)
     actor.timeout = timeout
     if (remoteAddress.isDefined) {
@@ -283,7 +283,7 @@ object ActiveObject {
   }
 
   private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actor: Dispatcher, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    val proxy = Proxy.newInstance(Array(intf), Array(target), false, true)
+    val proxy = Proxy.newInstance(Array(intf), Array(target), false, false)
     actor.initialize(target.getClass, target)
     actor.timeout = timeout
     if (remoteAddress.isDefined) {
