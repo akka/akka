@@ -17,10 +17,10 @@ Then to run the sample:
   - Set 'export AKKA_HOME=<root of distribution>.
   - Run 'sbt console' to start up a REPL (interpreter).
 4. In the first REPL you get execute: 
-  - scala> import se.scalablesolutions.akka.sample.chat._
+  - scala> import sample.chat._
   - scala> ChatService.start
-5. In the first REPL you get execute: 
-    - scala> import se.scalablesolutions.akka.sample.chat._
+5. In the second REPL you get execute: 
+    - scala> import sample.chat._
     - scala> Runner.run
 6. See the chat simulation run.
 7. Run it again to see full speed after first initialization.

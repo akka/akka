@@ -62,6 +62,8 @@ trait Committable {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Ref {
+  type Ref[T] = TransactionalRef[T]
+
   def apply[T]() = new Ref[T]
 
   def apply[T](initialValue: T) = new Ref[T](Some(initialValue))
@@ -75,7 +77,7 @@ object Ref {
 object TransactionalRef {
 
   /**
-   * An implicit conversion that converts an Option to an Iterable value.
+   * An implicit conversion that converts a TransactionalRef to an Iterable value.
    */
   implicit def ref2Iterable[T](ref: TransactionalRef[T]): Iterable[T] = ref.toList
 
@@ -85,20 +87,14 @@ object TransactionalRef {
 }
 
 /**
- * Implements a transactional managed reference. 
- * Alias to TransactionalRef.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class Ref[T](initialOpt: Option[T] = None) extends TransactionalRef[T](initialOpt)
-
-/**
  * Implements a transactional managed reference.
  * Alias to Ref.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
+  self =>
+
   import org.multiverse.api.ThreadLocalTransaction._
 
   implicit val txInitName = "TransactionalRef:Init"
@@ -149,24 +145,36 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
     ref.isNull
   }
 
-  def map[B](f: T => B): Option[B] = {
+  def map[B](f: T => B): TransactionalRef[B] = {
     ensureIsInTransaction
-    if (isEmpty) None else Some(f(ref.get))
+    if (isEmpty) TransactionalRef[B] else TransactionalRef(f(ref.get))
   }
 
-  def flatMap[B](f: T => Option[B]): Option[B] = {
+  def flatMap[B](f: T => TransactionalRef[B]): TransactionalRef[B] = {
     ensureIsInTransaction
-    if (isEmpty) None else f(ref.get)
+    if (isEmpty) TransactionalRef[B] else f(ref.get)
   }
 
-  def filter(p: T => Boolean): Option[T] = {
+  def filter(p: T => Boolean): TransactionalRef[T] = {
     ensureIsInTransaction
-    if (isEmpty || p(ref.get)) Some(ref.get) else None
+    if (isDefined && p(ref.get)) TransactionalRef(ref.get) else TransactionalRef[T]
   }
 
-  def foreach(f: T => Unit) {
+  /**
+   * Necessary to keep from being implicitly converted to Iterable in for comprehensions.
+   */
+  def withFilter(p: T => Boolean): WithFilter = new WithFilter(p)
+	
+  class WithFilter(p: T => Boolean) {
+    def map[B](f: T => B): TransactionalRef[B] = self filter p map f
+    def flatMap[B](f: T => TransactionalRef[B]): TransactionalRef[B] = self filter p flatMap f
+    def foreach[U](f: T => U): Unit = self filter p foreach f
+    def withFilter(q: T => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
+  }
+
+  def foreach[U](f: T => U): Unit = {
     ensureIsInTransaction
-    if (!isEmpty) f(ref.get)
+    if (isDefined) f(ref.get)
   }
 
   def elements: Iterator[T] = {

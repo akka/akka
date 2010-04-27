@@ -1,5 +1,6 @@
 *~
 *#
+project/plugins/project/
 project/boot/*
 */project/build/target
 */project/boot
@@ -32,4 +33,4 @@ tm.out
 .classpath
 .idea
 .scala_dependencies
-
+multiverse.log

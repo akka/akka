@@ -52,6 +52,7 @@ case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMe
 case class Restart(reason: Throwable) extends LifeCycleMessage
 case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
 case class Unlink(child: Actor) extends LifeCycleMessage
+case class UnlinkAndStop(child: Actor) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
@@ -187,6 +188,43 @@ final class ActorRef private (val actor: Actor) {
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
+=======
+}
+
+/**
+ * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
+ * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
+ * <p/>
+ * An actor has a well-defined (non-cyclic) life-cycle.
+ * <pre>
+ * => NEW (newly created actor) - can't receive messages (yet)
+ *     => STARTED (when 'start' is invoked) - can receive messages
+ *         => SHUT DOWN (when 'exit' is invoked) - can't do anything
+ * </pre>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait Actor extends TransactionManagement with Logging {
+  implicit protected val self: Some[Actor] = Some(this)
+  // Only mutable for RemoteServer in order to maintain identity across nodes
+  private[akka] var _uuid = UUID.newUuid.toString
+
+  // ====================================
+  // private fields
+  // ====================================
+
+  @volatile private[this] var _isRunning = false
+  @volatile private[this] var _isSuspended = true
+  @volatile private[this] var _isShutDown = false
+  @volatile private[akka] var _isKilled = false
+  private var _hotswap: Option[PartialFunction[Any, Unit]] = None
+  private[akka] var _remoteAddress: Option[InetSocketAddress] = None
+  private[akka] var _linkedActors: Option[HashSet[Actor]] = None
+  private[akka] var _supervisor: Option[Actor] = None
+  private[akka] var _replyToAddress: Option[InetSocketAddress] = None
+  private[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
@@ -205,6 +243,7 @@ final class ActorRef private (val actor: Actor) {
   def !![T](message: Any): Option[T] = !![T](message, timeout)
 
   /**
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
    * FIXME document !!!
    */
   def !!!(message: Any): Future = {
@@ -214,6 +253,18 @@ final class ActorRef private (val actor: Actor) {
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
+=======
+   * Holds the reference to the sender of the currently processed message.
+   * Is None if no sender was specified
+   * Is Some(Left(Actor)) if sender is an actor
+   * Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
+   */
+  protected var replyTo: Option[Either[Actor,CompletableFuture[Any]]] = None
+
+  // ====================================
+  // ==== USER CALLBACKS TO OVERRIDE ====
+  // ====================================
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -253,11 +304,16 @@ final class ActorRef private (val actor: Actor) {
   /**
    * Get the dispatcher for this actor.
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   def dispatcher: MessageDispatcher = messageDispatcher
+=======
+  protected[akka] var messageDispatcher: MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   def dispatcher_=(md: MessageDispatcher): Unit = synchronized {
     if (!_isRunning) {
       messageDispatcher.unregister(this)
@@ -267,13 +323,20 @@ final class ActorRef private (val actor: Actor) {
     } else throw new IllegalArgumentException(
       "Can not swap dispatcher for " + toString + " after it has been started")
   }
+=======
+  protected[akka] var trapExit: List[Class[_ <: Throwable]] = Nil
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   def makeRemote(hostname: String, port: Int): Unit =
     if (_isRunning) throw new IllegalStateException("Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
     else makeRemote(new InetSocketAddress(hostname, port))
+=======
+  protected[akka] var faultHandler: Option[FaultHandlingStrategy] = None
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
@@ -481,10 +544,32 @@ object Actor extends Logging {
    * }
    * </pre>
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   def transactor(body: PartialFunction[Any, Unit]): Actor = new Transactor() {
     lifeCycle = Some(LifeCycle(Permanent))
     start
     def receive: PartialFunction[Any, Unit] = body
+=======
+  def !![T](message: Any, timeout: Long): Option[T] = {
+    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
+    if (_isRunning) {
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
+      val isActiveObject = message.isInstanceOf[Invocation]
+      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
+      try {
+        future.await
+      } catch {
+        case e: FutureTimeoutException =>
+          if (isActiveObject) throw e
+          else None
+      }
+      
+      if (future.exception.isDefined) throw future.exception.get._2
+      else future.result
+    }
+    else throw new IllegalStateException(
+      "Actor has not been started, you need to invoke 'actor.start' before using it")
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
   }
 
   /**
@@ -551,6 +636,7 @@ object Actor extends Logging {
    * }
    * </pre>
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   def spawn(body: => Unit): Unit = {
     case object Spawn
     new Actor() {
@@ -560,6 +646,14 @@ object Actor extends Logging {
         case Spawn => body; stop
       }
     }
+=======
+  def !!![T](message: Any): Future[T] = {
+    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
+    if (_isRunning) {
+      postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
+    } else throw new IllegalStateException(
+      "Actor has not been started, you need to invoke 'actor.start' before using it")
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
   }
 }
 
@@ -581,6 +675,7 @@ trait Actor extends TransactionManagement with Logging {
   implicit protected val self: Option[Actor] = Some(this)
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   private[akka] var ref: Option[ActorRef] = None
 
   /**
@@ -593,6 +688,57 @@ trait Actor extends TransactionManagement with Logging {
   // protected fields
   // ====================================
 
+=======
+  /**
+   * Forwards the message and passes the original sender actor as the sender.
+   * <p/>
+   * Works with both '!' and '!!'.
+   */
+  def forward(message: Any)(implicit sender: Some[Actor]) = {
+    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
+    if (_isRunning) {
+      sender.get.replyTo match {
+        case Some(Left(actor))   => postMessageToMailbox(message, Some(actor))
+        case Some(Right(future)) => postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, Some(future))
+        case _                   => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
+      }
+    } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+
+  /**
+   * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * Throws an IllegalStateException if unable to determine what to reply to
+   */
+  protected[this] def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
+              "\n\tNo sender in scope, can't reply. " +
+              "\n\tYou have probably used the '!' method to either; " +
+              "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
+              "\n\t\t2. Send a message from an instance that is *not* an actor" +
+              "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
+              "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
+              "\n\tthat will be bound by the argument passed to 'reply'." +
+              "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
+  
+  /**
+   * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * Returns true if reply was sent, and false if unable to determine what to reply to.
+   */
+  protected[this] def reply_?(message: Any) : Boolean = replyTo match {
+    case Some(Left(actor))   => 
+      actor ! message
+      true
+      
+    case Some(Right(future : Future[Any])) => 
+      future completeWithResult message
+      true
+      
+    case _ => 
+      false
+  }
+  
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
   /**
    * TODO: Document replyTo
    */
@@ -613,7 +759,18 @@ trait Actor extends TransactionManagement with Logging {
    * use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   protected var id: String = this.getClass.getName
+=======
+  def dispatcher_=(md: MessageDispatcher): Unit = synchronized {
+    if (!_isRunning) {
+      messageDispatcher.unregister(this)
+      messageDispatcher = md
+      messageDispatcher.register(this)
+    } else throw new IllegalArgumentException(
+      "Can not swap dispatcher for " + toString + " after it has been started")
+  }
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * User overridable callback/setting.
@@ -735,7 +892,16 @@ trait Actor extends TransactionManagement with Logging {
    * Mandatory callback method that is called during restart and reinitialization after a server crash.
    * To be implemented by subclassing actor.
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   protected def postRestart(reason: Throwable) {}
+=======
+  protected[this] def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): T = {
+    val actor = spawnButDoNotStart[T]
+    actor.makeRemote(hostname, port)
+    actor.start
+    actor
+  }
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * User overridable callback/setting.
@@ -743,7 +909,19 @@ trait Actor extends TransactionManagement with Logging {
    * Optional callback method that is called during termination.
    * To be implemented by subclassing actor.
    */
+<<<<<<< HEAD:akka-core/src/main/scala/actor/Actor.scala
   protected def initTransactionalState {}
+=======
+  protected[this] def spawnLink[T <: Actor: Manifest]: T = {
+    val actor = spawnButDoNotStart[T]
+    try {
+      actor.start
+    } finally {
+      link(actor)
+    }
+    actor
+  }
+>>>>>>> master:akka-core/src/main/scala/actor/Actor.scala
 
   /**
    * User overridable callback/setting.
@@ -816,10 +994,10 @@ trait Actor extends TransactionManagement with Logging {
         RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.getId, sender.get)
       }
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
-      RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, None)
+      RemoteClient.clientFor(_remoteAddress.get).send[Any](requestBuilder.build, None)
     } else {
       val invocation = new MessageInvocation(this, message, sender.map(Left(_)), transactionSet.get)
-      if (_isEventBased) {
+      if (messageDispatcher.usesActorMailbox) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
       }
@@ -827,10 +1005,10 @@ trait Actor extends TransactionManagement with Logging {
     }
   }
 
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
       message: Any,
       timeout: Long,
-      senderFuture: Option[CompletableFuture]): CompletableFuture = {
+      senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     joinTransaction(message)
 
     if (_remoteAddress.isDefined) {
@@ -850,12 +1028,13 @@ trait Actor extends TransactionManagement with Logging {
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
-                   else new DefaultCompletableFuture(timeout)
-      val invocation = new MessageInvocation(this, message, Some(Right(future)), transactionSet.get)
-      if (_isEventBased) {
+                   else new DefaultCompletableFuture[T](timeout)
+      val invocation = new MessageInvocation(this, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
+      
+      if (messageDispatcher.usesActorMailbox)
         _mailbox.add(invocation)
-        invocation.send
-      } else invocation.send
+
+      invocation.send
       future
     }
   }
@@ -961,18 +1140,15 @@ trait Actor extends TransactionManagement with Logging {
     }
   }
 
-  private def getResultOrThrowException[T](future: Future): Option[T] =
-    if (future.exception.isDefined) throw future.exception.get._2
-    else future.result.asInstanceOf[Option[T]]
-
   private def base: PartialFunction[Any, Unit] = lifeCycles orElse (_hotswap getOrElse receive)
 
   private val lifeCycles: PartialFunction[Any, Unit] = {
-    case HotSwap(code) =>      _hotswap = code
-    case Restart(reason) =>    restart(reason)
-    case Exit(dead, reason) => handleTrapExit(dead, reason)
-    case Unlink(child) =>      unlink(child); child.stop
-    case Kill =>               throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
+    case HotSwap(code) =>        _hotswap = code
+    case Restart(reason) =>      restart(reason)
+    case Exit(dead, reason) =>   handleTrapExit(dead, reason)
+    case Unlink(child) =>        unlink(child)
+    case UnlinkAndStop(child) => unlink(child); child.stop
+    case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
 
   private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
@@ -1005,7 +1181,7 @@ trait Actor extends TransactionManagement with Logging {
                 // if last temporary actor is gone, then unlink me from supervisor
                 if (getLinkedActors.isEmpty) {
                   Actor.log.info("All linked actors have died permanently (they were all configured as TEMPORARY)\n\tshutting down and unlinking supervisor actor as well [%s].", actor.id)
-                  _supervisor.foreach(_ ! Unlink(this))
+                  _supervisor.foreach(_ ! UnlinkAndStop(this))
                 }
             }
           }
