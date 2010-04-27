@@ -40,13 +40,13 @@ object TransactionManagement extends TransactionManagement {
 
   private[akka] def getTransactionSet: CountDownCommitBarrier = {
     val option = transactionSet.get
-    if ((option eq null) || option.isEmpty) throw new IllegalStateException("No Transaction set in scope")
+    if ((option eq null) || option.isEmpty) throw new StmConfigurationException("No Transaction set in scope")
     else option.get
   }
 
   private[akka] def getTransaction: Transaction = {
     val option = transaction.get
-    if ((option eq null) || option.isEmpty) throw new IllegalStateException("No Transaction in scope")
+    if ((option eq null) || option.isEmpty) throw new StmConfigurationException("No Transaction in scope")
     option.get
   }
 }

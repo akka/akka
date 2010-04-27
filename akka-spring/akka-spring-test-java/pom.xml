@@ -6,7 +6,7 @@
   <name>Akka Spring Tests in Java</name>
   <artifactId>akka-spring-test-java</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
-  <version>0.8</version>
+  <version>0.9</version>
   <packaging>jar</packaging>
 
   <properties>
@@ -147,22 +147,22 @@
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-core_2.8.0.Beta1</artifactId>
-      <version>0.8.1</version>
+      <version>0.9</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-util_2.8.0.Beta1</artifactId>
-      <version>0.8.1</version>
+      <version>0.9</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-util-java_2.8.0.Beta1</artifactId>
-      <version>0.8.1</version>
+      <version>0.9</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-spring_2.8.0.Beta1</artifactId>
-      <version>0.8.1</version>
+      <version>0.9</version>
       <exclusions>
         <exclusion>
           <groupId>org.springframework</groupId>
@@ -263,7 +263,17 @@
       <artifactId>h2-lzf</artifactId>
       <version>1.0</version>
     </dependency>
-    
+
+    <dependency>
+      <groupId>jsr166x</groupId>
+      <artifactId>jsr166x</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-jta_1.1_spec</artifactId>
+          <version>1.1.1</version>
+    </dependency>
 
    <!-- test -->
     <dependency>

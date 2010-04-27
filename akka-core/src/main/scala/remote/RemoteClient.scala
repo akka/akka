@@ -85,13 +85,13 @@ object RemoteClient extends Logging {
           requestBuilder.setSourcePort(port)
         }
         RemoteProtocolBuilder.setMessage(message, requestBuilder)
-        remoteClient.send(requestBuilder.build, None)
+        remoteClient.send[Any](requestBuilder.build, None)
       }
 
-      override def postMessageToMailboxAndCreateFutureResultWithTimeout(
+      override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
           message: Any,
           timeout: Long,
-          senderFuture: Option[CompletableFuture]): CompletableFuture = {
+          senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
         val requestBuilder = RemoteRequest.newBuilder
             .setId(RemoteRequestIdFactory.nextId)
             .setTarget(className)
@@ -173,7 +173,7 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
   val name = "RemoteClient@" + hostname + "::" + port
 
   @volatile private[remote] var isRunning = false
-  private val futures = new ConcurrentHashMap[Long, CompletableFuture]
+  private val futures = new ConcurrentHashMap[Long, CompletableFuture[_]]
   private val supervisors = new ConcurrentHashMap[String, Actor]
   private[remote] val listeners = new ConcurrentSkipListSet[Actor]
 
@@ -217,14 +217,14 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
     }
   }
 
-  def send(request: RemoteRequest, senderFuture: Option[CompletableFuture]): Option[CompletableFuture] = if (isRunning) {
+  def send[T](request: RemoteRequest, senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = if (isRunning) {
     if (request.getIsOneWay) {
       connection.getChannel.write(request)
       None
     } else {
       futures.synchronized {
         val futureResult = if (senderFuture.isDefined) senderFuture.get
-        else new DefaultCompletableFuture(request.getTimeout)
+        else new DefaultCompletableFuture[T](request.getTimeout)
         futures.put(request.getId, futureResult)
         connection.getChannel.write(request)
         Some(futureResult)
@@ -253,7 +253,7 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteClientPipelineFactory(name: String,
-                                  futures: ConcurrentMap[Long, CompletableFuture],
+                                  futures: ConcurrentMap[Long, CompletableFuture[_]],
                                   supervisors: ConcurrentMap[String, Actor],
                                   bootstrap: ClientBootstrap,
                                   remoteAddress: SocketAddress,
@@ -284,7 +284,7 @@ class RemoteClientPipelineFactory(name: String,
  */
 @ChannelHandler.Sharable
 class RemoteClientHandler(val name: String,
-                          val futures: ConcurrentMap[Long, CompletableFuture],
+                          val futures: ConcurrentMap[Long, CompletableFuture[_]],
                           val supervisors: ConcurrentMap[String, Actor],
                           val bootstrap: ClientBootstrap,
                           val remoteAddress: SocketAddress,
@@ -306,7 +306,7 @@ class RemoteClientHandler(val name: String,
       if (result.isInstanceOf[RemoteReply]) {
         val reply = result.asInstanceOf[RemoteReply]
         log.debug("Remote client received RemoteReply[\n%s]", reply.toString)
-        val future = futures.get(reply.getId)
+        val future = futures.get(reply.getId).asInstanceOf[CompletableFuture[Any]]
         if (reply.getIsSuccessful) {
           val message = RemoteProtocolBuilder.getMessage(reply)
           future.completeWithResult(message)

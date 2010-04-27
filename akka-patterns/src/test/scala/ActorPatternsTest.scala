@@ -90,6 +90,44 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
       }
     }
   })
+  
+  @Test def testListener = verify(new TestActor {
+    import java.util.concurrent.{ CountDownLatch, TimeUnit }
+  
+    def test = {
+      val latch = new CountDownLatch(2)
+      val num = new AtomicInteger(0)
+      val i = new Actor with Listeners {
+        def receive = listenerManagement orElse {
+          case "foo" =>  gossip("bar")
+        }
+      }
+      i.start
+      
+      def newListener = actor { 
+        case "bar" => 
+        num.incrementAndGet
+        latch.countDown
+      }
+      
+      val a1 = newListener
+      val a2 = newListener
+      val a3 = newListener
+      
+      handle(i,a1,a2,a3) {
+      i ! Listen(a1)
+      i ! Listen(a2)
+      i ! Listen(a3)
+      i ! Deafen(a3)
+
+	  i ! "foo"
+	  
+	  val done = latch.await(5,TimeUnit.SECONDS)
+	  done must be (true)
+	  num.get must be (2)
+	  }
+    }
+  });
 
 }
 
