@@ -59,7 +59,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_patterns = project("akka-patterns", "akka-patterns", new AkkaPatternsProject(_), akka_core)
   lazy val akka_security = project("akka-security", "akka-security", new AkkaSecurityProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
+  lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterProject(_), akka_core)
   lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
   lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_servlet = project("akka-servlet", "akka-servlet", new AkkaServletProject(_),
@@ -96,8 +96,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-util_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-util-java_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-cluster-shoal_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-cluster-jgroups_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-cluster%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-rest_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-comet_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
@@ -262,20 +261,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCassandraProject(_), akka_persistence_common)
   }
 
-  class AkkaJgroupsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaClusterProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val jgroups = "jgroups" % "jgroups" % "2.8.0.CR7" % "compile"
-  }
-
-  class AkkaShoalProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val shoal = "shoal-jxta" % "shoal" % "1.1-20090818" % "compile"
-    val shoal_extra = "shoal-jxta" % "jxta" % "1.1-20090818" % "compile"
-  }
-
-  class AkkaClusterParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_cluster_jgroups = project("akka-cluster-jgroups", "akka-cluster-jgroups",
-      new AkkaJgroupsProject(_), akka_core)
-    lazy val akka_cluster_shoal = project("akka-cluster-shoal", "akka-cluster-shoal",
-      new AkkaShoalProject(_), akka_core)
   }
 
   class AkkaServletProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
