@@ -55,14 +55,13 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_amqp = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
   lazy val akka_http = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
   lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
-  lazy val akka_patterns = project("akka-patterns", "akka-patterns", new AkkaPatternsProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
   lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterProject(_), akka_core)
   lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
   lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
     akka_core, akka_http, akka_spring, akka_camel, akka_persistence,
-    akka_cluster, akka_amqp, akka_patterns)
+    akka_cluster, akka_amqp)
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -96,7 +95,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-patterns_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-common_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
@@ -199,12 +197,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val camel_core = "org.apache.camel" % "camel-core" % "2.2.0" % "compile"
-  }
-
-  class AkkaPatternsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    // testing
-    val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
-    val junit = "junit" % "junit" % "4.5" % "test"
   }
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
