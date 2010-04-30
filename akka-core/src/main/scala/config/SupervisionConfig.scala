@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.config
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorID} 
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
 sealed abstract class FaultHandlingStrategy
@@ -25,13 +25,13 @@ object ScalaConfig {
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
   
-  class Supervise(val actor: Actor, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
+  class Supervise(val actorId: ActorID, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
   object Supervise {
-    def apply(actor: Actor, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actor, lifeCycle, remoteAddress)
-    def apply(actor: Actor, lifeCycle: LifeCycle) = new Supervise(actor, lifeCycle, null)
-    def unapply(supervise: Supervise) = Some((supervise.actor, supervise.lifeCycle, supervise.remoteAddress))
+    def apply(actorId: ActorID, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorId, lifeCycle, remoteAddress)
+    def apply(actorId: ActorID, lifeCycle: LifeCycle) = new Supervise(actorId, lifeCycle, null)
+    def unapply(supervise: Supervise) = Some((supervise.actorId, supervise.lifeCycle, supervise.remoteAddress))
   }
 
   case class RestartStrategy(
@@ -227,8 +227,8 @@ object JavaConfig {
         intf, target, lifeCycle.transform, timeout, transactionRequired, dispatcher,
         if (remoteAddress ne null) se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
 
-    def newSupervised(actor: Actor) =
-      se.scalablesolutions.akka.config.ScalaConfig.Supervise(actor, lifeCycle.transform)
+    def newSupervised(actorId: ActorID) =
+      se.scalablesolutions.akka.config.ScalaConfig.Supervise(actorId, lifeCycle.transform)
   }
   
 }

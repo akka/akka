@@ -7,25 +7,25 @@ package se.scalablesolutions.akka.dispatch
 import java.util.List
 
 import se.scalablesolutions.akka.util.{HashCode, Logging}
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorID}
 
 import java.util.concurrent.ConcurrentHashMap
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
-final class MessageInvocation(val receiver: Actor,
+final class MessageInvocation(val receiver: ActorID,
                               val message: Any,
-                              val replyTo : Option[Either[Actor,CompletableFuture[Any]]],
+                              val replyTo : Option[Either[ActorID, CompletableFuture[Any]]],
                               val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 
-  def invoke = receiver.invoke(this)
+  def invoke = receiver.actor.invoke(this)
 
   def send = receiver.dispatcher.dispatch(this)
 
   override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
-    result = HashCode.hash(result, receiver)
+    result = HashCode.hash(result, receiver.actor)
     result = HashCode.hash(result, message.asInstanceOf[AnyRef])
     result
   }
@@ -33,7 +33,7 @@ final class MessageInvocation(val receiver: Actor,
   override def equals(that: Any): Boolean = synchronized {
     that != null &&
     that.isInstanceOf[MessageInvocation] &&
-    that.asInstanceOf[MessageInvocation].receiver == receiver &&
+    that.asInstanceOf[MessageInvocation].receiver.actor == receiver.actor &&
     that.asInstanceOf[MessageInvocation].message == message
   }
 
@@ -56,14 +56,14 @@ trait MessageInvoker {
 }
 
 trait MessageDispatcher extends Logging {
-  protected val references = new ConcurrentHashMap[String, Actor]  
+  protected val references = new ConcurrentHashMap[String, ActorID]
   def dispatch(invocation: MessageInvocation)
   def start
   def shutdown
-  def register(actor: Actor) = references.put(actor.uuid, actor)
-  def unregister(actor: Actor) = {
-    references.remove(actor.uuid)
-    if (canBeShutDown) 
+  def register(actorId: ActorID) = references.put(actorId.uuid, actorId)
+  def unregister(actorId: ActorID) = {
+    references.remove(actorId.uuid)
+    if (canBeShutDown)
       shutdown // shut down in the dispatcher's references is zero
   }
   def canBeShutDown: Boolean = references.isEmpty

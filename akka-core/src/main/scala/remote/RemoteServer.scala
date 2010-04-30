@@ -89,7 +89,7 @@ object RemoteServer {
   }
 
   class RemoteActorSet {
-    val actors =        new ConcurrentHashMap[String, Actor]
+    val actors =        new ConcurrentHashMap[String, ActorID]
     val activeObjects = new ConcurrentHashMap[String, AnyRef]
   }
 
