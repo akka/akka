@@ -212,19 +212,19 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
    * Registers a local endpoint
    */
   def registerLocalNode(hostname: String, port: Int): Unit =
-    this ! RegisterLocalNode(RemoteAddress(hostname, port))
+    selfId ! RegisterLocalNode(RemoteAddress(hostname, port))
 
   /**
    * Deregisters a local endpoint
    */
   def deregisterLocalNode(hostname: String, port: Int): Unit =
-    this ! DeregisterLocalNode(RemoteAddress(hostname, port))
+    selfId ! DeregisterLocalNode(RemoteAddress(hostname, port))
 
   /**
    * Broadcasts the specified message to all Actors of type Class on all known Nodes
    */
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit =
-    this ! RelayedMessage(to.getName, msg)
+    selfId ! RelayedMessage(to.getName, msg)
 }
 
 /**
@@ -261,7 +261,7 @@ object Cluster extends Cluster with Logging {
     val sup = SupervisorFactory(
       SupervisorConfig(
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
-        Supervise(actor, LifeCycle(Permanent)) :: Nil)
+        Supervise(actor.selfId, LifeCycle(Permanent)) :: Nil)
       ).newInstance
     Some(sup)
   }

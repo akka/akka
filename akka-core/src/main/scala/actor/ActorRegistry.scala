@@ -11,8 +11,8 @@ import scala.reflect.Manifest
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 
 sealed trait ActorRegistryEvent
-case class ActorRegistered(actor: Actor) extends ActorRegistryEvent
-case class ActorUnregistered(actor: Actor) extends ActorRegistryEvent
+case class ActorRegistered(actor: ActorID) extends ActorRegistryEvent
+case class ActorUnregistered(actor: ActorID) extends ActorRegistryEvent
 
 /**
  * Registry holding all Actor instances in the whole system.
@@ -27,16 +27,16 @@ case class ActorUnregistered(actor: Actor) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends Logging {
-  private val actorsByUUID =          new ConcurrentHashMap[String, Actor]
-  private val actorsById =            new ConcurrentHashMap[String, List[Actor]]
-  private val actorsByClassName =     new ConcurrentHashMap[String, List[Actor]]
-  private val registrationListeners = new CopyOnWriteArrayList[Actor]
+  private val actorsByUUID =          new ConcurrentHashMap[String, ActorID]
+  private val actorsById =            new ConcurrentHashMap[String, List[ActorID]]
+  private val actorsByClassName =     new ConcurrentHashMap[String, List[ActorID]]
+  private val registrationListeners = new CopyOnWriteArrayList[ActorID]
 
   /**
    * Returns all actors in the system.
    */
-  def actors: List[Actor] = {
-    val all = new ListBuffer[Actor]
+  def actors: List[ActorID] = {
+    val all = new ListBuffer[ActorID]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) all += elements.nextElement
     all.toList
@@ -45,7 +45,7 @@ object ActorRegistry extends Logging {
   /**
    * Invokes a function for all actors.
    */
-  def foreach(f: (Actor) => Unit) = {
+  def foreach(f: (ActorID) => Unit) = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) f(elements.nextElement)
   }
@@ -57,9 +57,9 @@ object ActorRegistry extends Logging {
     val all = new ListBuffer[T]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
-      val actor = elements.nextElement
-      if (manifest.erasure.isAssignableFrom(actor.getClass)) {
-        all += actor.asInstanceOf[T]
+      val actorId = elements.nextElement
+      if (manifest.erasure.isAssignableFrom(actorId.actor.getClass)) {
+        all += actorId.actor.asInstanceOf[T]
       }
     }
     all.toList
@@ -77,15 +77,15 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors that has a specific id.
    */
-  def actorsFor(id: String): List[Actor] = {
-    if (actorsById.containsKey(id)) actorsById.get(id).asInstanceOf[List[Actor]]
+  def actorsFor(id: String): List[ActorID] = {
+    if (actorsById.containsKey(id)) actorsById.get(id).asInstanceOf[List[ActorID]]
     else Nil
   }
 
    /**
    * Finds the actor that has a specific UUID.
    */
-  def actorFor(uuid: String): Option[Actor] = {
+  def actorFor(uuid: String): Option[ActorID] = {
     if (actorsByUUID.containsKey(uuid)) Some(actorsByUUID.get(uuid))
     else None
   }
@@ -93,7 +93,7 @@ object ActorRegistry extends Logging {
   /**
    * Registers an actor in the ActorRegistry.
    */
-  def register(actor: Actor) = {
+  def register(actor: ActorID) = {
     // UUID
     actorsByUUID.put(actor.uuid, actor)
 
@@ -116,7 +116,7 @@ object ActorRegistry extends Logging {
   /**
    * Unregisters an actor in the ActorRegistry.
    */
-  def unregister(actor: Actor) = {
+  def unregister(actor: ActorID) = {
     actorsByUUID remove actor.uuid
     actorsById remove actor.getId
     actorsByClassName remove actor.getClass.getName
@@ -139,18 +139,18 @@ object ActorRegistry extends Logging {
   /**
    * Adds the registration <code>listener</code> this this registry's listener list.
    */
-  def addRegistrationListener(listener: Actor) = {
+  def addRegistrationListener(listener: ActorID) = {
     registrationListeners.add(listener)
   }
 
   /**
    * Removes the registration <code>listener</code> this this registry's listener list.
    */
-  def removeRegistrationListener(listener: Actor) = {
+  def removeRegistrationListener(listener: ActorID) = {
     registrationListeners.remove(listener)
   }
 
-  private def foreachListener(f: (Actor) => Unit) {
+  private def foreachListener(f: (ActorID) => Unit) {
     val iterator = registrationListeners.iterator
     while (iterator.hasNext) f(iterator.next)
   }
