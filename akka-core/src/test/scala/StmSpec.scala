@@ -2,6 +2,8 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.stm._
 
+import Actor._
+
 import org.scalatest.Spec
 import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers

@@ -5,15 +5,12 @@
 package se.scalablesolutions.akka.comet
 
 import org.atmosphere.cpr.{AtmosphereResourceEvent, AtmosphereResource}
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.Actor._
 
 class AkkaBroadcaster extends org.atmosphere.jersey.JerseyBroadcaster {
   name = classOf[AkkaBroadcaster].getName
   
-  val caster = new Actor {  
-    def receive = { case f : Function0[_] => f() }
-    start
-  }
+  val caster = actor { case f : Function0[_] => f() }
 
   override def destroy {
     super.destroy

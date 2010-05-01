@@ -6,13 +6,14 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import Actor._
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 /**
  * @author Jan Van Besien
  */
-class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers with ActorTestUtil {
+class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers {
   val poolDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
@@ -29,40 +30,38 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     }
   }
 
-  @Test def fastActorShouldStealWorkFromSlowActor = verify(new TestActor {
-    def test = {
-      val finishedCounter = new CountDownLatch(110)
+  @Test def fastActorShouldStealWorkFromSlowActor = {
+    val finishedCounter = new CountDownLatch(110)
 
-      val slow = new DelayableActor("slow", 50, finishedCounter)
-      val fast = new DelayableActor("fast", 10, finishedCounter)
+    val slow = newActor(() => new DelayableActor("slow", 50, finishedCounter)).start
+    val fast = newActor(() => new DelayableActor("fast", 10, finishedCounter)).start
 
-      handle(slow, fast) {
-        for (i <- 1 to 100) {
-          // send most work to slow actor
-          if (i % 20 == 0)
-            fast ! i
-          else
-            slow ! i
-        }
-
-        // now send some messages to actors to keep the dispatcher dispatching messages
-        for (i <- 1 to 10) {
-          Thread.sleep(150)
-          if (i % 2 == 0)
-            fast ! i
-          else
-            slow ! i
-        }
-
-        finishedCounter.await(5, TimeUnit.SECONDS)
-        fast.invocationCount must be > (slow.invocationCount)
-      }
+    for (i <- 1 to 100) {
+      // send most work to slow actor
+      if (i % 20 == 0)
+        fast ! i
+      else
+        slow ! i
     }
-  })
 
-  @Test def canNotUseActorsOfDifferentTypesInSameDispatcher:Unit = {
-    val first = new FirstActor
-    val second = new SecondActor
+    // now send some messages to actors to keep the dispatcher dispatching messages
+    for (i <- 1 to 10) {
+      Thread.sleep(150)
+      if (i % 2 == 0)
+        fast ! i
+      else
+        slow ! i
+    }
+
+    finishedCounter.await(5, TimeUnit.SECONDS)
+    fast.actor.asInstanceOf[DelayableActor].invocationCount must be > (slow.actor.asInstanceOf[DelayableActor].invocationCount)
+    slow.stop
+    fast.stop
+  }
+  
+  @Test def canNotUseActorsOfDifferentTypesInSameDispatcher = {
+    val first = newActor[FirstActor]
+    val second = newActor[SecondActor]
 
     first.start
     intercept[IllegalStateException] {

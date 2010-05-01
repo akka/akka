@@ -4,12 +4,13 @@
 
 package se.scalablesolutions.akka.actor
 
-import _root_.java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import se.scalablesolutions.akka.serialization.BinaryString
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer}
 import se.scalablesolutions.akka.OneWay
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import Actor._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -82,9 +83,9 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }).start
   Thread.sleep(1000)
 
-  var pingpong1: RemotePingPong1Actor = _
-  var pingpong2: RemotePingPong2Actor = _
-  var pingpong3: RemotePingPong3Actor = _
+  var pingpong1: ActorID = _
+  var pingpong2: ActorID = _
+  var pingpong3: ActorID = _
 
   @Test def shouldStartServer = {
     Log.messageLog.clear
@@ -334,7 +335,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     // Then create a concrete container in which we mix in support for the specific
     // implementation of the Actors we want to use.
 
-    pingpong1 = new RemotePingPong1Actor
+    pingpong1 = newActor[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -349,7 +350,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = new RemotePingPong1Actor
+    pingpong1 = newActor[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -363,11 +364,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = new RemotePingPong1Actor
+    pingpong1 = newActor[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong2 = new RemotePingPong2Actor
+    pingpong2 = newActor[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong3 = new RemotePingPong3Actor
+    pingpong3 = newActor[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -389,11 +390,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = new RemotePingPong1Actor
+    pingpong1 = newActor[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong2 = new RemotePingPong2Actor
+    pingpong2 = newActor[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong3 = new RemotePingPong3Actor
+    pingpong3 = newActor[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -415,11 +416,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = new RemotePingPong1Actor
+    pingpong1 = newActor[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong2 = new RemotePingPong2Actor
+    pingpong2 = newActor[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong3 = new RemotePingPong3Actor
+    pingpong3 = newActor[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(

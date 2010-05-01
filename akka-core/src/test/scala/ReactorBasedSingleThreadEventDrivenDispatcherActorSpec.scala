@@ -3,11 +3,11 @@ package se.scalablesolutions.akka.actor
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import Actor._
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
 class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite {
-  import Actor.Sender.Self
 
   private val unit = TimeUnit.MILLISECONDS
 
@@ -22,22 +22,26 @@ class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite 
     }
   }
 
-  @Test def shouldSendOneWay = {
-    val oneWay = new CountDownLatch(1)
-    val actor = new Actor {
-      dispatcher = Dispatchers.newReactorBasedSingleThreadEventDrivenDispatcher(uuid)
-      def receive = {
-        case "OneWay" => oneWay.countDown
-      }
+  object OneWayTestActor { 
+    val oneWay = new CountDownLatch(1)  
+  }
+  class OneWayTestActor extends Actor {
+    dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(uuid)
+    def receive = {
+      case "OneWay" => OneWayTestActor.oneWay.countDown
     }
+  }
+
+  @Test def shouldSendOneWay = {
+    val actor = newActor[OneWayTestActor]
     actor.start
     val result = actor ! "OneWay"
-    assert(oneWay.await(1, TimeUnit.SECONDS))
+    assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
   @Test def shouldSendReplySync = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
@@ -45,7 +49,7 @@ class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite 
   }
 
   @Test def shouldSendReplyAsync = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
@@ -53,7 +57,7 @@ class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite 
   }
 
   @Test def shouldSendReceiveException = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     try {
       actor !! "Failure"

@@ -2,6 +2,7 @@ package se.scalablesolutions.akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import Actor._
 
 class MemoryFootprintSpec extends JUnitSuite   {
   class Mem extends Actor {
