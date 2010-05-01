@@ -1,7 +1,5 @@
 package se.scalablesolutions.akka.persistence.redis
 
-import junit.framework.TestCase
-
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
@@ -50,7 +48,8 @@ class QueueActor extends Transactor {
   }
 }
 
-class RedisPersistentQSpec extends TestCase {
+import org.scalatest.junit.JUnitSuite
+class RedisPersistentQSpec extends JUnitSuite {
   @Test
   def testSuccessfulNQ = {
     val qa = new QueueActor
