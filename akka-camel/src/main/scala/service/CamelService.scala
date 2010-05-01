@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.camel.service
 
 import se.scalablesolutions.akka.actor.ActorRegistry
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 
@@ -17,11 +18,10 @@ import se.scalablesolutions.akka.util.{Bootable, Logging}
  */
 trait CamelService extends Bootable with Logging {
 
-  import se.scalablesolutions.akka.actor.Actor.Sender.Self
   import CamelContextManager._
 
-  private[camel] val consumerPublisher = new ConsumerPublisher
-  private[camel] val publishRequestor = new PublishRequestor(consumerPublisher)
+  private[camel] val consumerPublisher = newActor[ConsumerPublisher]
+  private[camel] val publishRequestor =  newActor(() => new PublishRequestor(consumerPublisher))
 
   /**
    * Starts the CamelService. Any started actor that is a consumer actor will be (asynchronously)

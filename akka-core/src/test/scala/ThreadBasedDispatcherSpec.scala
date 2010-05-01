@@ -10,12 +10,13 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before}
 
 import se.scalablesolutions.akka.actor.Actor
+import Actor._
 
 class ThreadBasedDispatcherSpec extends JUnitSuite {
   private var threadingIssueDetected: AtomicBoolean = null
-  val key1 = new Actor { def receive = { case _ => {}} }
-  val key2 = new Actor { def receive = { case _ => {}} }
-  val key3 = new Actor { def receive = { case _ => {}} }
+  val key1 = newActor(() => new Actor { def receive = { case _ => {}} })
+  val key2 = newActor(() => new Actor { def receive = { case _ => {}} })
+  val key3 = newActor(() => new Actor { def receive = { case _ => {}} })
   
   class TestMessageHandle(handleLatch: CountDownLatch) extends MessageInvoker {
     val guardLock: Lock = new ReentrantLock

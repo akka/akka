@@ -4,11 +4,12 @@ import java.util.concurrent.{TimeUnit, CountDownLatch}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
+import Actor._
 
 class ForwardActorSpec extends JUnitSuite {
 
   object ForwardState {
-    var sender: Actor = null
+    var sender: ActorID = null
     val finished = new CountDownLatch(1)
   }
 
@@ -24,7 +25,7 @@ class ForwardActorSpec extends JUnitSuite {
 
 
   class ForwardActor extends Actor {
-    val receiverActor = new ReceiverActor
+    val receiverActor = newActor[ReceiverActor]
     receiverActor.start
     def receive = {
       case "SendBang" => receiverActor.forward("SendBang")
@@ -33,7 +34,7 @@ class ForwardActorSpec extends JUnitSuite {
   }
 
   class BangSenderActor extends Actor {
-    val forwardActor = new ForwardActor
+    val forwardActor = newActor[ForwardActor]
     forwardActor.start
     forwardActor ! "SendBang"
     def receive = {
@@ -42,7 +43,7 @@ class ForwardActorSpec extends JUnitSuite {
   }
 
   class BangBangSenderActor extends Actor {
-    val forwardActor = new ForwardActor
+    val forwardActor = newActor[ForwardActor]
     forwardActor.start
     (forwardActor !! "SendBangBang") match {
       case Some(_) => {ForwardState.finished.countDown}
@@ -55,7 +56,7 @@ class ForwardActorSpec extends JUnitSuite {
 
   @Test
   def shouldForwardActorReferenceWhenInvokingForwardOnBang = {
-    val senderActor = new BangSenderActor
+    val senderActor = newActor[BangSenderActor]
     senderActor.start
     assert(ForwardState.finished.await(2, TimeUnit.SECONDS))
     assert(ForwardState.sender ne null)
@@ -64,7 +65,7 @@ class ForwardActorSpec extends JUnitSuite {
 
   @Test
   def shouldForwardActorReferenceWhenInvokingForwardOnBangBang = {
-    val senderActor = new BangBangSenderActor
+    val senderActor = newActor[BangBangSenderActor]
     senderActor.start
     assert(ForwardState.finished.await(2, TimeUnit.SECONDS))
   }

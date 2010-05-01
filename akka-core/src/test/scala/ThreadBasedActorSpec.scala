@@ -5,6 +5,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import Actor._
 
 class ThreadBasedActorSpec extends JUnitSuite {
 
@@ -23,12 +24,12 @@ class ThreadBasedActorSpec extends JUnitSuite {
   
   @Test def shouldSendOneWay = {
     var oneWay = new CountDownLatch(1)
-    val actor = new Actor {
+    val actor = newActor(() => new Actor {
       dispatcher = Dispatchers.newThreadBasedDispatcher(this)
       def receive = {
         case "OneWay" => oneWay.countDown
       }
-    }
+    })
     actor.start
     val result = actor ! "OneWay"
     assert(oneWay.await(1, TimeUnit.SECONDS))
@@ -36,7 +37,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReplySync = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
@@ -44,7 +45,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReplyAsync = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
@@ -52,7 +53,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReceiveException = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     try {
       actor !! "Failure"

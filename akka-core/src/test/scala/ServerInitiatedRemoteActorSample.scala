@@ -4,6 +4,8 @@ import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.remote.{RemoteClient, RemoteNode}
 import se.scalablesolutions.akka.util.Logging
 
+import Actor._
+
 class HelloWorldActor extends Actor {
   start
   def receive = {
@@ -15,7 +17,7 @@ object ServerInitiatedRemoteActorServer {
 
   def run = {
     RemoteNode.start("localhost", 9999)
-    RemoteNode.register("hello-service", new HelloWorldActor)
+    RemoteNode.register("hello-service", newActor[HelloWorldActor])
   }
 
   def main(args: Array[String]) = run

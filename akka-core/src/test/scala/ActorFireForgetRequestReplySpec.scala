@@ -5,6 +5,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import Actor._
 
 class ActorFireForgetRequestReplySpec extends JUnitSuite {
 
@@ -22,7 +23,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     }
   }
 
-  class SenderActor(replyActor: Actor) extends Actor {
+  class SenderActor(replyActor: ActorID) extends Actor {
     dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
     def receive = {
@@ -41,11 +42,9 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
 
   @Test
   def shouldReplyToBangMessageUsingReply = {
-    import Actor.Sender.Self  
-
-    val replyActor = new ReplyActor
+    val replyActor = newActor[ReplyActor]
     replyActor.start
-    val senderActor = new SenderActor(replyActor)
+    val senderActor = newActor(() => new SenderActor(replyActor))
     senderActor.start
     senderActor ! "Init"
     assert(state.finished.await(1, TimeUnit.SECONDS))
@@ -54,11 +53,9 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
 
   @Test
   def shouldReplyToBangMessageUsingImplicitSender = {
-    import Actor.Sender.Self
-
-    val replyActor = new ReplyActor
+    val replyActor = newActor[ReplyActor]
     replyActor.start
-    val senderActor = new SenderActor(replyActor)
+    val senderActor = newActor(() => new SenderActor(replyActor))
     senderActor.start
     senderActor ! "InitImplicit"
     assert(state.finished.await(1, TimeUnit.SECONDS))

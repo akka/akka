@@ -4,29 +4,30 @@ import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.Consumer
 
 class PublishTest extends JUnitSuite {
   @Test def shouldCreatePublishRequestList = {
-    val publish = Publish.forConsumers(List(new ConsumeAnnotatedActor))
+    val publish = Publish.forConsumers(List(newActor[ConsumeAnnotatedActor]))
     assert(publish === List(Publish("mock:test1", "test", false)))
   }
 
   @Test def shouldCreateSomePublishRequestWithActorId = {
-    val publish = Publish.forConsumer(new ConsumeAnnotatedActor)
+    val publish = Publish.forConsumers(List(newActor[ConsumeAnnotatedActor]))
     assert(publish === Some(Publish("mock:test1", "test", false)))
   }
 
   @Test def shouldCreateSomePublishRequestWithActorUuid = {
-    val actor = new ConsumerActor
-    val publish = Publish.forConsumer(actor)
-    assert(publish === Some(Publish("mock:test2", actor.uuid, true)))
-    assert(publish === Some(Publish("mock:test2", actor.uuid, true)))
+    val ca = newActor[ConsumerActor]
+    val publish = Publish.forConsumers(List(ca))
+    assert(publish === Some(Publish("mock:test2", ca.uuid, true)))
+    assert(publish === Some(Publish("mock:test2", ca.uuid, true)))
   }
 
   @Test def shouldCreateNone = {
-    val publish = Publish.forConsumer(new PlainActor)
+    val publish = Publish.forConsumer(newActor[PlainActor])
     assert(publish === None)
   }
 

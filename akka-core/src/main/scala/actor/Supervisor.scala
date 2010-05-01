@@ -82,6 +82,8 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   
   trapExit = trapExceptions
   faultHandler = Some(handler)
+  
+  // FIXME should Supervisor really havea newThreadBasedDispatcher??
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
   private val actors = new ConcurrentHashMap[String, List[ActorID]]
@@ -144,8 +146,8 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
                if (list eq null) List[ActorID]()
                else list
              }
-             actors.put(className, supervisor.selfId :: currentSupervisors)
-             link(supervisor.selfId)
+             actors.put(className, supervisor.self :: currentSupervisors)
+             link(supervisor.self)
         })
   }
 }

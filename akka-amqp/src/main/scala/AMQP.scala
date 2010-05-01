@@ -7,7 +7,8 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client.{AMQP => RabbitMQ, _}
 import com.rabbitmq.client.ConnectionFactory
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.{HashCode, Logging}
@@ -50,7 +51,7 @@ object AMQP {
       exchangeName: String,
       returnListener: Option[ReturnListener],
       shutdownListener: Option[ShutdownListener],
-      initReconnectDelay: Long) =
+      initReconnectDelay: Long): ActorID =
     supervisor.newProducer(
       config, hostname, port, exchangeName, returnListener, shutdownListener, initReconnectDelay)
 
@@ -65,7 +66,7 @@ object AMQP {
       passive: Boolean,
       durable: Boolean,
       autoDelete: Boolean,
-      configurationArguments: Map[String, AnyRef]) =
+      configurationArguments: Map[String, AnyRef]): ActorID =
     supervisor.newConsumer(
       config, hostname, port, exchangeName, exchangeType,
       shutdownListener, initReconnectDelay,
@@ -92,14 +93,14 @@ object AMQP {
         exchangeName: String,
         returnListener: Option[ReturnListener],
         shutdownListener: Option[ShutdownListener],
-        initReconnectDelay: Long): Producer = {
-      val producer = new Producer(
+        initReconnectDelay: Long): ActorID = {
+      val producer = newActor(() => new Producer(
         new ConnectionFactory(config),
         hostname, port,
         exchangeName,
         returnListener,
         shutdownListener,
-        initReconnectDelay)
+        initReconnectDelay))
       startLink(producer)
       producer
     }
@@ -115,8 +116,8 @@ object AMQP {
         passive: Boolean,
         durable: Boolean,
         autoDelete: Boolean,
-        configurationArguments: Map[String, AnyRef]): Consumer = {
-      val consumer = new Consumer(
+        configurationArguments: Map[String, AnyRef]): ActorID = {
+      val consumer = newActor(() => new Consumer(
         new ConnectionFactory(config),
         hostname, port,
         exchangeName,
@@ -126,7 +127,7 @@ object AMQP {
         passive,
         durable,
         autoDelete,
-        configurationArguments)
+        configurationArguments))
       startLink(consumer)
       consumer
     }
@@ -188,11 +189,11 @@ object AMQP {
                                 val exclusive: Boolean,
                                 val autoDelete: Boolean,
                                 val isUsingExistingQueue: Boolean,
-                                val actor: Actor) extends AMQPMessage {
+                                val actor: ActorID) extends AMQPMessage {
     /**
      * Creates a non-exclusive, non-autodelete message listener.
      */
-    def this(queueName: String, routingKey: String, actor: Actor) = this (queueName, routingKey, false, false, false, actor)
+    def this(queueName: String, routingKey: String, actor: ActorID) = this (queueName, routingKey, false, false, false, actor)
 
     private[akka] var tag: Option[String] = None
 
@@ -241,12 +242,12 @@ object AMQP {
               exclusive: Boolean,
               autoDelete: Boolean,
               isUsingExistingQueue: Boolean,
-              actor: Actor) =
+              actor: ActorID) =
       new MessageConsumerListener(queueName, routingKey, exclusive, autoDelete, isUsingExistingQueue, actor)
 
     def apply(queueName: String,
               routingKey: String,
-              actor: Actor) =
+              actor: ActorID) =
       new MessageConsumerListener(queueName, routingKey, false, false, false, actor)
   }
 

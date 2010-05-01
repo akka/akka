@@ -5,6 +5,7 @@ import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import se.scalablesolutions.akka.camel.{CamelContextManager, Message, Consumer}
+import Actor._
 
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
   var service: CamelService = CamelService.newInstance
@@ -17,11 +18,11 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     CamelContextManager.init
     CamelContextManager.context.addRoutes(new TestRoute)
     // set expectations for testing purposes
-    service.consumerPublisher.expectPublishCount(1)
+    service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
     // start the CamelService
     service.load
     // await publication of first test consumer 
-    service.consumerPublisher.awaitPublish
+    service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
   }
 
   override protected def afterAll = {
@@ -34,11 +35,11 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access registered consumer actors via Camel direct-endpoints") {
 
       given("two consumer actors registered before and after CamelService startup")
-      service.consumerPublisher.expectPublishCount(1)
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
       new TestConsumer("direct:publish-test-2").start
 
       when("requests are sent to these actors")
-      service.consumerPublisher.awaitPublish
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
       val response1 = CamelContextManager.template.requestBody("direct:publish-test-1", "msg1")
       val response2 = CamelContextManager.template.requestBody("direct:publish-test-2", "msg2")
 
@@ -53,7 +54,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access an actor from the custom Camel route") {
 
       given("a registered actor and a custom route to that actor")
-      val actor = new TestActor().start
+      val actor = newActor[TestActor].start
 
       when("sending a a message to that route")
       val response = CamelContextManager.template.requestBody("direct:custom-route-test-1", "msg3")

@@ -4,10 +4,12 @@
 
 package se.scalablesolutions.akka.actor
 
-import _root_.java.util.concurrent.{TimeUnit, BlockingQueue, LinkedBlockingQueue}
+import java.util.concurrent.{TimeUnit, BlockingQueue, LinkedBlockingQueue}
+
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.dispatch.Dispatchers
 import se.scalablesolutions.akka.{OneWay, Die, Ping}
+import Actor._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -20,9 +22,9 @@ class SupervisorSpec extends JUnitSuite {
   var messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
   var oneWayLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
 
-  var pingpong1: PingPong1Actor = _
-  var pingpong2: PingPong2Actor = _
-  var pingpong3: PingPong3Actor = _
+  var pingpong1: ActorID = _
+  var pingpong2: ActorID = _
+  var pingpong3: ActorID = _
 
   @Test def shouldStartServer = {
     messageLog.clear
@@ -370,7 +372,7 @@ class SupervisorSpec extends JUnitSuite {
   // Creat some supervisors with different configurations
 
   def getSingleActorAllForOneSupervisor: Supervisor = {
-    pingpong1 = new PingPong1Actor
+    pingpong1 = newActor[PingPong1Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -383,7 +385,7 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = new PingPong1Actor
+    pingpong1 = newActor[PingPong1Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -396,9 +398,9 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = new PingPong1Actor
-    pingpong2 = new PingPong2Actor
-    pingpong3 = new PingPong3Actor
+    pingpong1 = newActor[PingPong1Actor]
+    pingpong2 = newActor[PingPong2Actor]
+    pingpong3 = newActor[PingPong3Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -419,9 +421,9 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = new PingPong1Actor
-    pingpong2 = new PingPong2Actor
-    pingpong3 = new PingPong3Actor
+    pingpong1 = newActor[PingPong1Actor]
+    pingpong2 = newActor[PingPong2Actor]
+    pingpong3 = newActor[PingPong3Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -442,9 +444,9 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = new PingPong1Actor
-    pingpong2 = new PingPong2Actor
-    pingpong3 = new PingPong3Actor
+    pingpong1 = newActor[PingPong1Actor]
+    pingpong2 = newActor[PingPong2Actor]
+    pingpong3 = newActor[PingPong3Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(

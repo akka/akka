@@ -5,6 +5,8 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
+import se.scalablesolutions.akka.actor.Actor._
+
 @RunWith(classOf[JUnitRunner])
 class TransactionalRefSpec extends Spec with ShouldMatchers {
 
@@ -37,7 +39,7 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       val ref = Ref(0)
 
       def increment = atomic {
-	ref alter (_ + 1)
+        ref alter (_ + 1)
       }
 
       increment
@@ -53,7 +55,7 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       val ref = Ref[Int]
 
       def increment = atomic {
-	ref alter (_ + 1)
+        ref alter (_ + 1)
       }
 
       evaluating { increment } should produce [RuntimeException]
@@ -63,7 +65,7 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       val ref1 = Ref(1)
 
       val ref2 = atomic {
-	ref1 map (_ + 1)
+        ref1 map (_ + 1)
       }
 
       val value1 = atomic { ref1.get.get }
@@ -91,7 +93,7 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       val ref1 = Ref(1)
 
       val ref2 = atomic {
-	for (value <- ref1) yield value + 2
+        for (value <- ref1) yield value + 2
       }
 
       val value2 = atomic { ref2.get.get }
@@ -104,10 +106,10 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       val ref2 = Ref(2)
 
       val ref3 = atomic {
-	for {
-	  value1 <- ref1
-	  value2 <- ref2
-	} yield value1 + value2
+        for {
+          value1 <- ref1
+          value2 <- ref2
+        } yield value1 + value2
       }
 
       val value3 = atomic { ref3.get.get }
@@ -119,13 +121,13 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       val ref1 = Ref(1)
 
       val refLess2 = atomic {
-	for (value <- ref1 if value < 2) yield value
+        for (value <- ref1 if value < 2) yield value
       }
 
       val optLess2 = atomic { refLess2.get }
       
       val refGreater2 = atomic {
-	for (value <- ref1 if value > 2) yield value
+        for (value <- ref1 if value > 2) yield value
       }
 
       val optGreater2 = atomic { refGreater2.get }
