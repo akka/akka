@@ -105,17 +105,17 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
   
   private lazy val value = Ref[T]()
   
-  this ! Value(initialValue)
+  self ! Value(initialValue)
  
   /**
    * Periodically handles incoming messages.
    */
   def receive = {
-    case Value(v: T) =>                  
+    case Value(v: T) =>
       swap(v)
-    case Function(fun: (T => T)) =>      
+    case Function(fun: (T => T)) =>
       swap(fun(value.getOrWait))
-    case Procedure(proc: (T => Unit)) => 
+    case Procedure(proc: (T => Unit)) =>
       proc(copyStrategy(value.getOrElse(throw new AgentException("Could not read Agent's value; value is null"))))
   }
  
@@ -157,22 +157,22 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
   /**
    * Submits the provided function for execution against the internal agent's state.
    */
-  final def apply(message: (T => T)): Unit = this ! Function(message)
+  final def apply(message: (T => T)): Unit = self ! Function(message)
  
   /**
    * Submits a new value to be set as the new agent's internal state.
    */
-  final def apply(message: T): Unit = this ! Value(message)
+  final def apply(message: T): Unit = self ! Value(message)
  
   /**
    * Submits the provided function of type 'T => T' for execution against the internal agent's state.
    */
-  final def send(message: (T) => T): Unit = this ! Function(message)
+  final def send(message: (T) => T): Unit = self ! Function(message)
  
   /**
    * Submits a new value to be set as the new agent's internal state.
    */
-  final def send(message: T): Unit = this ! Value(message)
+  final def send(message: T): Unit = self ! Value(message)
   
   /**
    * Asynchronously submits a procedure of type 'T => Unit' to read the internal state. 
@@ -180,7 +180,7 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
    * of the internal state will be used, depending on the underlying effective copyStrategy.
    * Does not change the value of the agent (this).
    */
-  final def sendProc(f: (T) => Unit): Unit = this ! Procedure(f)
+  final def sendProc(f: (T) => Unit): Unit = self ! Procedure(f)
 
   /**
    * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.

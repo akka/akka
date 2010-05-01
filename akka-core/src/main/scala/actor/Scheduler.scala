@@ -26,12 +26,12 @@ case class SchedulerException(msg: String, e: Throwable) extends RuntimeExceptio
  * Rework of David Pollak's ActorPing class in the Lift Project
  * which is licensed under the Apache 2 License.
  */
-class ScheduleActor(val receiver: Actor, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
+class ScheduleActor(val receiver: ActorID, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
   lifeCycle = Some(LifeCycle(Permanent))
 
   def receive = {
     case UnSchedule =>
-      Scheduler.stopSupervising(this)
+      Scheduler.stopSupervising(self)
       future.cancel(true)
       exit
   }
@@ -39,18 +39,18 @@ class ScheduleActor(val receiver: Actor, val future: ScheduledFuture[AnyRef]) ex
 
 object Scheduler extends Actor {
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
-  private val schedulers = new ConcurrentHashMap[Actor, Actor]
+  private val schedulers = new ConcurrentHashMap[ActorID, ActorID]
   faultHandler = Some(OneForOneStrategy(5, 5000))
   trapExit = List(classOf[Throwable])
   start
 
-  def schedule(receiver: Actor, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
+  def schedule(receiver: ActorID, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
     try {
-      startLink(new ScheduleActor(
+      startLink(new ActorID(new ScheduleActor(
         receiver,
         service.scheduleAtFixedRate(new java.lang.Runnable {
           def run = receiver ! message;
-        }, initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]))
+        }, initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]])))
     } catch {
       case e => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
@@ -58,9 +58,9 @@ object Scheduler extends Actor {
 
   def restart = service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
-  def stopSupervising(actor: Actor) = {
-    unlink(actor)
-    schedulers.remove(actor)
+  def stopSupervising(actorId: ActorID) = {
+    unlink(actorId)
+    schedulers.remove(actorId)
   }
 
   override def shutdown = {
