@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.config
 import com.google.inject._
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher}
+import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher, ActorID}
 import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 
@@ -94,7 +94,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
         .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
         .activeObjects.put(targetClass.getName, proxy)
     }
-    supervised ::= Supervise(actor, component.lifeCycle)
+    supervised ::= Supervise(new ActorID(actor), component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
   }
@@ -116,7 +116,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
         .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
         .activeObjects.put(targetClass.getName, proxy)
     }
-    supervised ::= Supervise(actor, component.lifeCycle)
+    supervised ::= Supervise(new ActorID(actor), component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }

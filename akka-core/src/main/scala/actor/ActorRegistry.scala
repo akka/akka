@@ -53,13 +53,13 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument.
    */
-  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[T] = {
-    val all = new ListBuffer[T]
+  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorID] = {
+    val all = new ListBuffer[ActorID]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val actorId = elements.nextElement
       if (manifest.erasure.isAssignableFrom(actorId.actor.getClass)) {
-        all += actorId.actor.asInstanceOf[T]
+        all += actorId
       }
     }
     all.toList
@@ -68,17 +68,16 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors of the exact type specified by the class passed in as the Class argument.
    */
-  def actorsFor[T <: Actor](clazz: Class[T]): List[T] = {
-    if (actorsByClassName.containsKey(clazz.getName)) {
-      actorsByClassName.get(clazz.getName).asInstanceOf[List[T]]
-    } else Nil
+  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorID] = {
+    if (actorsByClassName.containsKey(clazz.getName)) actorsByClassName.get(clazz.getName)
+    else Nil
   }
 
   /**
    * Finds all actors that has a specific id.
    */
   def actorsFor(id: String): List[ActorID] = {
-    if (actorsById.containsKey(id)) actorsById.get(id).asInstanceOf[List[ActorID]]
+    if (actorsById.containsKey(id)) actorsById.get(id)
     else Nil
   }
 
