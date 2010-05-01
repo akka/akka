@@ -218,9 +218,9 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
     else storage.getVectorStorageEntryFor(uuid, index)
   }
 
-  override def slice(start: Int, count: Int): IndexedSeq[T] = slice(Some(start), None, count)
+  override def slice(start: Int, finish: Int): IndexedSeq[T] = slice(Some(start), Some(finish))
   
-  def slice(start: Option[Int], finish: Option[Int], count: Int): IndexedSeq[T] = {
+  def slice(start: Option[Int], finish: Option[Int], count: Int = 0): IndexedSeq[T] = {
     val buffer = new scala.collection.mutable.ArrayBuffer[T]
     storage.getVectorStorageRangeFor(uuid, start, finish, count).foreach(buffer.append(_))
     buffer

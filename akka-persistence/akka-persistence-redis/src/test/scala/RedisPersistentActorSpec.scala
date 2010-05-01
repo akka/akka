@@ -1,7 +1,5 @@
 package se.scalablesolutions.akka.persistence.redis
 
-import junit.framework.TestCase
-
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
@@ -24,6 +22,7 @@ case class Balance(accountNo: String)
 case class Debit(accountNo: String, amount: BigInt, failer: Actor)
 case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: Actor)
 case class Credit(accountNo: String, amount: BigInt)
+case class Log(start: Int, finish: Int)
 case object LogSize
 
 class AccountActor extends Transactor {
@@ -83,6 +82,9 @@ class AccountActor extends Transactor {
 
     case LogSize =>
       reply(txnLog.length.asInstanceOf[AnyRef])
+
+    case Log(start, finish) =>
+      reply(txnLog.slice(start, finish))
   }
 }
 
@@ -94,7 +96,8 @@ class AccountActor extends Transactor {
   }
 }
 
-class RedisPersistentActorSpec extends TestCase {
+import org.scalatest.junit.JUnitSuite
+class RedisPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
     val bactor = new AccountActor
@@ -113,6 +116,12 @@ class RedisPersistentActorSpec extends TestCase {
 
     val c: Int = (bactor !! LogSize).get
     assertTrue(7 == c)
+    import scala.collection.mutable.ArrayBuffer
+    assert((bactor !! Log(0, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 7)
+    assert((bactor !! Log(0, 0)).get.asInstanceOf[ArrayBuffer[String]].size == 0)
+    assert((bactor !! Log(1, 2)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
+    assert((bactor !! Log(6, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
+    assert((bactor !! Log(0, 1)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
   }
 
   @Test
