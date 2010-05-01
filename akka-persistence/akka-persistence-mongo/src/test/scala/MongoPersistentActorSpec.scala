@@ -1,9 +1,8 @@
 package se.scalablesolutions.akka.persistence.mongo
 
-import junit.framework.TestCase
-
 import org.junit.{Test, Before}
 import org.junit.Assert._
+import org.scalatest.junit.JUnitSuite
 
 import _root_.dispatch.json.{JsNumber, JsValue}
 import _root_.dispatch.json.Js._
@@ -27,6 +26,7 @@ case class Balance(accountNo: String)
 case class Debit(accountNo: String, amount: BigInt, failer: Actor)
 case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: Actor)
 case class Credit(accountNo: String, amount: BigInt)
+case class Log(start: Int, finish: Int)
 case object LogSize
 
 class BankAccountActor extends Transactor {
@@ -88,6 +88,9 @@ class BankAccountActor extends Transactor {
 
     case LogSize =>
       reply(txnLog.length.asInstanceOf[AnyRef])
+
+    case Log(start, finish) =>
+      reply(txnLog.slice(start, finish))
   }
 }
 
@@ -98,7 +101,7 @@ class BankAccountActor extends Transactor {
   }
 }
 
-class MongoPersistentActorSpec extends TestCase {
+class MongoPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
     val bactor = new BankAccountActor
@@ -121,7 +124,14 @@ class MongoPersistentActorSpec extends TestCase {
     val JsNumber(b2) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
     assertEquals(BigInt(1000), BigInt(b2.intValue))
 
-    assertEquals(7, (bactor !! LogSize).get)
+    assert(7 == (bactor !! LogSize).get.asInstanceOf[Int])
+
+    import scala.collection.mutable.ArrayBuffer
+    assert((bactor !! Log(0, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 7)
+    assert((bactor !! Log(0, 0)).get.asInstanceOf[ArrayBuffer[String]].size == 0)
+    assert((bactor !! Log(1, 2)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
+    assert((bactor !! Log(6, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
+    assert((bactor !! Log(0, 1)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
   }
 
   @Test
@@ -144,7 +154,7 @@ class MongoPersistentActorSpec extends TestCase {
     assertEquals(BigInt(5000), BigInt(b1.intValue))
 
     // should not count the failed one
-    assertEquals(3, (bactor !! LogSize).get)
+    assert(3 == (bactor !! LogSize).get.asInstanceOf[Int])
   }
 
   @Test
@@ -167,6 +177,6 @@ class MongoPersistentActorSpec extends TestCase {
     assertEquals(BigInt(5000), BigInt(b1.intValue))
 
     // should not count the failed one
-    assertEquals(3, (bactor !! LogSize).get)
+    assert(3 == (bactor !! LogSize).get.asInstanceOf[Int])
   }
 }
