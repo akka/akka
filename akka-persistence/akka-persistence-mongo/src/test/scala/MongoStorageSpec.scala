@@ -1,20 +1,19 @@
 package se.scalablesolutions.akka.persistence.mongo
 
-import junit.framework.TestCase
-
 import org.junit.{Test, Before}
 import org.junit.Assert._
+import org.scalatest.junit.JUnitSuite
 import _root_.dispatch.json._
 import _root_.dispatch.json.Js._
 import java.util.NoSuchElementException
 
 @scala.reflect.BeanInfo case class Foo(no: Int, name: String)
-class MongoStorageSpec extends TestCase {
+class MongoStorageSpec extends JUnitSuite {
 
   val changeSetV = new scala.collection.mutable.ArrayBuffer[AnyRef]
   val changeSetM = new scala.collection.mutable.HashMap[AnyRef, AnyRef]
 
-  override def setUp = {
+  @Before def initialize() = {
     MongoStorageBackend.coll.drop
   }
 

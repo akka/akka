@@ -248,9 +248,17 @@ private[akka] object MongoStorageBackend extends
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
       }
 
+      val s = if (start.isDefined) start.get else 0
+      val cnt =
+        if (finish.isDefined) {
+          val f = finish.get
+          if (f >= s) (f - s) else count
+        }
+        else count
+
       // pick the subrange and make a Scala list
       val l =
-        List(o.subList(start.get, start.get + count).toArray: _*)
+        List(o.subList(s, s + cnt).toArray: _*)
 
       for(e <- l)
         yield serializer.in[AnyRef](e.asInstanceOf[Array[Byte]])
