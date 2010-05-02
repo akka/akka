@@ -97,7 +97,11 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       }
     }
 
+<<<<<<< HEAD:akka-core/src/main/scala/stm/DataFlowVariable.scala
     private[this] val in = new ActorID(() => new In(this))
+=======
+    private[this] val in = new ActorID(new In(this))
+>>>>>>> bac0db9650a62204e6dabf4d195a9875047067f5:akka-core/src/main/scala/stm/DataFlowVariable.scala
 
     def <<(ref: DataFlowVariable[T]) = in ! Set(ref())
 
