@@ -173,7 +173,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaJavaUtilProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val guicey = "org.guiceyfruit" % "guice-core" % "2.0-beta-4" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
-    val multiverse = "org.multiverse" % "multiverse-alpha" % "0.4" % "compile"
+    val multiverse = "org.multiverse" % "multiverse-alpha" % "0.5-SNAPSHOT" % "compile"
   }
 
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {

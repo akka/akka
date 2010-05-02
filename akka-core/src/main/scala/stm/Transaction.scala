@@ -15,11 +15,12 @@ import scala.collection.mutable.HashMap
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
 
-import org.multiverse.api.{Transaction => MultiverseTransaction, TransactionLifecycleListener, TransactionLifecycleEvent}
+import org.multiverse.api.{Transaction => MultiverseTransaction}
+import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.templates.{TransactionTemplate, OrElseTemplate}
-import org.multiverse.utils.backoff.ExponentialBackoffPolicy
+import org.multiverse.api.backoff.ExponentialBackoffPolicy
 import org.multiverse.stms.alpha.AlphaStm
 
 class NoTransactionInScopeException extends RuntimeException
