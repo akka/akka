@@ -23,6 +23,23 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       value should be(3)
     }
 
+    it("should keep the initial value, even if the first transaction is rolled back") {
+      val ref = Ref(3)
+
+      try {
+        atomic {
+          ref.swap(5)
+          throw new Exception
+        }
+      } catch {
+        case e => {}
+      }
+
+      val value = atomic { ref.get.get }
+
+      value should be(3)
+    }
+
     it("should be settable using swap") {
       val ref = Ref[Int]
 
