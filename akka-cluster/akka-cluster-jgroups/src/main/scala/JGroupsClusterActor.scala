@@ -21,7 +21,6 @@ class JGroupsClusterActor extends BasicClusterActor {
   override def init = {
     super.init
     log debug "Initiating JGroups-based cluster actor"
-    val me = this
     isActive = true
 
     // Set up the JGroups local endpoint
@@ -32,13 +31,13 @@ class JGroupsClusterActor extends BasicClusterActor {
         def setState(state: Array[Byte]): Unit = ()
 
         def receive(m: JG_MSG): Unit =
-          if (isActive && m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) me ! Message(m.getSrc,m.getRawBuffer)
+          if (isActive && m.getSrc != channel.map(_.getAddress).getOrElse(m.getSrc)) self ! Message(m.getSrc,m.getRawBuffer)
 
         def viewAccepted(view: JG_VIEW): Unit =
-          if (isActive) me ! View(Set[ADDR_T]() ++ view.getMembers - channel.get.getAddress)
+          if (isActive) self ! View(Set[ADDR_T]() ++ view.getMembers - channel.get.getAddress)
 
         def suspect(a: Address): Unit =
-          if (isActive) me ! Zombie(a)
+          if (isActive) self ! Zombie(a)
 
         def block: Unit =
           log debug "UNSUPPORTED: JGroupsClusterActor::block" //TODO HotSwap to a buffering body

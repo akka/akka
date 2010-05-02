@@ -263,7 +263,7 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] w
   }
 
   //Schedule the invalidation of nonces
-  Scheduler.schedule(this, InvalidateNonces, noncePurgeInterval, noncePurgeInterval, TimeUnit.MILLISECONDS)
+  Scheduler.schedule(self, InvalidateNonces, noncePurgeInterval, noncePurgeInterval, TimeUnit.MILLISECONDS)
 
   //authenticate or invalidate nonces
   override def receive = authenticate orElse invalidateNonces
