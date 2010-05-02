@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
 import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 
 /**
@@ -26,7 +27,7 @@ import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 
   def thread(body: => Unit) = {
-    val thread = new ActorID(() => new IsolatedEventBasedThread(body)).start
+    val thread = newActor(() => new IsolatedEventBasedThread(body)).start
     thread ! Start
     thread
   }
@@ -97,7 +98,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       }
     }
 
-    private[this] val in = new ActorID(() => new In(this))
+    private[this] val in = newActor(() => new In(this))
 
     def <<(ref: DataFlowVariable[T]) = in ! Set(ref())
 
@@ -107,7 +108,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       val ref = value.get
       if (ref.isDefined) ref.get
       else {
-        val out = new ActorID(() => new Out(this))
+        val out = newActor(() => new Out(this))
         blockedReaders.offer(out)
         val result = out !! Get
         out ! Exit
