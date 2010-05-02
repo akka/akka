@@ -72,7 +72,7 @@ object AMQP {
       shutdownListener, initReconnectDelay,
       passive, durable, autoDelete, configurationArguments)
 
-  def stopConnection(connection: FaultTolerantConnectionActor) = supervisor.stopConnection(connection)
+  def stopConnection(connection: ActorID) = supervisor.stopConnection(connection)
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -80,7 +80,7 @@ object AMQP {
   class AMQPSupervisor extends Actor with Logging {
     import scala.collection.JavaConversions._
 
-    private val connections = new ConcurrentHashMap[FaultTolerantConnectionActor, FaultTolerantConnectionActor]
+    private val connections = new ConcurrentHashMap[ActorID, ActorID]
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
@@ -132,7 +132,7 @@ object AMQP {
       consumer
     }
 
-    def stopConnection(connection: FaultTolerantConnectionActor) = {
+    def stopConnection(connection: ActorID) = {
       connection ! Stop
       unlink(connection)
       connections.remove(connection)
@@ -360,7 +360,6 @@ object AMQP {
       val autoDelete: Boolean,
       val configurationArguments: Map[java.lang.String, Object])
       extends FaultTolerantConnectionActor {
-    consumer: Consumer =>
 
     import scala.collection.JavaConversions._
 
@@ -456,7 +455,7 @@ object AMQP {
               log.error(
                 cause, "Delivery of message to MessageConsumerListener [%s] failed",
                 listener.toString(exchangeName))
-              consumer ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and reconnect
+              self ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and reconnect
           }
         }
 
@@ -473,7 +472,7 @@ object AMQP {
               log.warning(
                 "MessageConsumerListener [%s] is being shutdown by [%s] due to [%s]",
                 listener.toString(exchangeName), signal.getReference, signal.getReason)
-              consumer ! UnregisterMessageConsumerListener(listener)
+              self ! UnregisterMessageConsumerListener(listener)
           }
         }
       })
@@ -592,10 +591,10 @@ object AMQP {
       } catch {
         case e: Exception =>
           val waitInMillis = delay * 2
-          val self = this
+          val outerActorID = self
           log.debug("Trying to reconnect to AMQP server in %n milliseconds [%s]", waitInMillis, this)
           reconnectionTimer.schedule(new TimerTask() {
-            override def run = self ! Reconnect(waitInMillis)
+            override def run = outerActorID ! Reconnect(waitInMillis)
           }, delay)
       }
     }

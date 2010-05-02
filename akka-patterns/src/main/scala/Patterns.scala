@@ -1,6 +1,7 @@
 package se.scalablesolutions.akka.patterns
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.Actor._
 
 object Patterns {
   type PF[A, B] = PartialFunction[A, B]
@@ -22,21 +23,20 @@ object Patterns {
     filter({case a if a.isInstanceOf[A] => interceptor(a)}, interceptee)
 
   //FIXME 2.8, use default params with CyclicIterator
-  def loadBalancerActor(actors: => InfiniteIterator[Actor]): Actor = new Actor with LoadBalancer {
+  def loadBalancerActor(actors: => InfiniteIterator[ActorID]): ActorID = newActor(() => new Actor with LoadBalancer {
     val seq = actors
-  }
+  })
 
-  def dispatcherActor(routing: PF[Any, Actor], msgTransformer: (Any) => Any): Actor = 
-    new Actor with Dispatcher {
+  def dispatcherActor(routing: PF[Any, ActorID], msgTransformer: (Any) => Any): ActorID = newActor(() => new Actor with Dispatcher {
     override def transform(msg: Any) = msgTransformer(msg)
     def routes = routing
-  }
+  })
 
-  def dispatcherActor(routing: PF[Any, Actor]): Actor = new Actor with Dispatcher {
+  def dispatcherActor(routing: PF[Any, ActorID]): ActorID = newActor(() => new Actor with Dispatcher {
     def routes = routing
-  }
+  })
 
-  def loggerActor(actorToLog: Actor, logger: (Any) => Unit): Actor = 
+  def loggerActor(actorToLog: ActorID, logger: (Any) => Unit): ActorID = 
     dispatcherActor({case _ => actorToLog}, logger)
 }
 
@@ -44,7 +44,7 @@ trait Dispatcher { self: Actor =>
 
   protected def transform(msg: Any): Any = msg
 
-  protected def routes: PartialFunction[Any, Actor]
+  protected def routes: PartialFunction[Any, ActorID]
 
   protected def dispatch: PartialFunction[Any, Unit] = {
     case a if routes.isDefinedAt(a) =>
@@ -56,7 +56,7 @@ trait Dispatcher { self: Actor =>
 }
 
 trait LoadBalancer extends Dispatcher { self: Actor =>
-  protected def seq: InfiniteIterator[Actor]
+  protected def seq: InfiniteIterator[ActorID]
 
   protected def routes = { case x if seq.hasNext => seq.next }
 }
@@ -75,11 +75,11 @@ class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
   }
 }
 
-class SmallestMailboxFirstIterator(items : List[Actor]) extends InfiniteIterator[Actor] {
+class SmallestMailboxFirstIterator(items : List[ActorID]) extends InfiniteIterator[ActorID] {
   def hasNext = items != Nil
 
   def next = {
-    def actorWithSmallestMailbox(a1: Actor, a2: Actor) = {
+    def actorWithSmallestMailbox(a1: ActorID, a2: ActorID) = {
       if (a1.mailboxSize < a2.mailboxSize) a1 else a2
     }
     items.reduceLeft((actor1, actor2) => actorWithSmallestMailbox(actor1,actor2))
@@ -87,13 +87,13 @@ class SmallestMailboxFirstIterator(items : List[Actor]) extends InfiniteIterator
 } 
 
 sealed trait ListenerMessage
-case class Listen(listener : Actor) extends ListenerMessage
-case class Deafen(listener : Actor) extends ListenerMessage 
-case class WithListeners(f : Set[Actor] => Unit) extends ListenerMessage
+case class Listen(listener : ActorID) extends ListenerMessage
+case class Deafen(listener : ActorID) extends ListenerMessage 
+case class WithListeners(f : Set[ActorID] => Unit) extends ListenerMessage
 
 trait Listeners { self : Actor =>
   import se.scalablesolutions.akka.actor.Agent
-  private lazy val listeners = Agent(Set[Actor]())
+  private lazy val listeners = Agent(Set[ActorID]())
 
   protected def listenerManagement : PartialFunction[Any,Unit] = {
     case Listen(l) => listeners( _ + l)
