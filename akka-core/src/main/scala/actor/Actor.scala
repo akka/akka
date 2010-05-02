@@ -206,6 +206,19 @@ object Actor extends Logging {
       }
     }
   }
+  
+  /** Starts the specified actor and returns it, useful for:
+   *  <pre>val actor = new FooActor
+   *  actor.start
+   *  //Gets replaced by
+   *  val actor = start(new FooActor)
+   *  </pre>
+   */
+  def start[T <: Actor](actor : T) : T = {
+    actor.start
+    actor
+  }
+  
 }
 
 /**
