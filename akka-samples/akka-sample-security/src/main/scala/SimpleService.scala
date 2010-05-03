@@ -5,6 +5,7 @@
 package sample.security
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
@@ -17,20 +18,19 @@ class Boot {
       // Dummy implementations of all authentication actors
       // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
       Supervise(
-        new BasicAuthenticationService,
+        newActor[BasicAuthenticationService],
         LifeCycle(Permanent)) ::
      /**
       Supervise(
-        new DigestAuthenticationService,
+        newActor[DigestAuthenticationService],
         LifeCycle(Permanent)) ::
       Supervise(
-        new SpnegoAuthenticationService,
+        newActor[SpnegoAuthenticationService],
         LifeCycle(Permanent)) ::
       **/
       Supervise(
-        new SecureTickActor,
+        newActor[SecureTickActor],
         LifeCycle(Permanent)):: Nil))
-
 
   val supervisor = factory.newInstance
   supervisor.start
@@ -124,7 +124,7 @@ class SecureTickActor extends Actor with Logging {
   @DenyAll
   def paranoiaTick = tick
 
-  def tick = (this !! Tick) match {
+  def tick = (self !! Tick) match {
     case (Some(counter)) => (<success>Tick:
       {counter}
     </success>)

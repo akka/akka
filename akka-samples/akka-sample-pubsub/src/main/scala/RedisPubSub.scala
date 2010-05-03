@@ -6,18 +6,21 @@ package sample.pubsub
 
 import com.redis.{RedisClient, PubSubMessage, S, U, M}
 import se.scalablesolutions.akka.persistence.redis._
+import se.scalablesolutions.akka.actor.Actor._
 
 /**
  * Sample Akka application for Redis PubSub
  * 
  * Prerequisite: Need Redis Server running (the version that supports pubsub)
- *
+ * <pre>
  * 1. Download redis from http://github.com/antirez/redis
  * 2. build using "make"
  * 3. Run server as ./redis-server
+ * </pre>
  *
  * For running this sample application :-
  *
+ * <pre>
  * 1. Open a shell and set AKKA_HOME to the distribution root
  * 2. cd $AKKA_HOME
  * 3. sbt console
@@ -43,12 +46,13 @@ import se.scalablesolutions.akka.persistence.redis._
  *     scala> Pub.publish("b", "+d")  // will subscribe the first window to channel "d"
  *     scala> Pub.publish("b", "-c")  // will unsubscribe the first window from channel "c"
  *     scala> Pub.publish("b", "exit")  // will unsubscribe the first window from all channels
+ * </pre>
  */
 
 object Pub {
   println("starting publishing service ..")
   val r = new RedisClient("localhost", 6379)
-  val p = new Publisher(r)
+  val p = newActor(() => new Publisher(r))
   p.start
 
   def publish(channel: String, message: String) = {
@@ -59,7 +63,7 @@ object Pub {
 object Sub {
   println("starting subscription service ..")
   val r = new RedisClient("localhost", 6379)
-  val s = new Subscriber(r)
+  val s = newActor(() => new Subscriber(r))
   s.start
   s ! Register(callback) 
 

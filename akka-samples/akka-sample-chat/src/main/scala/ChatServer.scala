@@ -14,6 +14,7 @@ import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.util.Logging
+import Actor._
 
 /******************************************************************************
 Akka Chat Client/Server Sample Application
@@ -207,7 +208,7 @@ class ChatService extends
   override def start {
     super.start
     RemoteNode.start("localhost", 9999)
-    RemoteNode.register("chat:service", this)
+    RemoteNode.register("chat:service", self)
   }
 }
 

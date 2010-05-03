@@ -1,7 +1,7 @@
 package sample.camel
 
-import se.scalablesolutions.akka.actor.{Actor, RemoteActor}
 import se.scalablesolutions.akka.actor.annotation.consume
+import se.scalablesolutions.akka.actor.{Actor, ActorID, RemoteActor}
 import se.scalablesolutions.akka.camel.{Producer, Message, Consumer}
 import se.scalablesolutions.akka.util.Logging
 
@@ -51,7 +51,7 @@ class Consumer2 extends Actor {
   }
 }
 
-class Consumer3(transformer: Actor) extends Actor with Consumer {
+class Consumer3(transformer: ActorID) extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/welcome"
 
   def receive = {
@@ -59,7 +59,7 @@ class Consumer3(transformer: Actor) extends Actor with Consumer {
   }
 }
 
-class Transformer(producer: Actor) extends Actor {
+class Transformer(producer: ActorID) extends Actor {
   protected def receive = {
     case msg: Message => producer.forward(msg.transformBody[String]("- %s -" format _))
   }
@@ -80,7 +80,7 @@ class Publisher(name: String, uri: String) extends Actor with Producer {
   protected def receive = produce
 }
 
-class PublisherBridge(uri: String, publisher: Actor) extends Actor with Consumer {
+class PublisherBridge(uri: String, publisher: ActorID) extends Actor with Consumer {
   def endpointUri = uri
 
   protected def receive = {
