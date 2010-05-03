@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.security
 
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.actor.Actor._
 
 import org.scalatest.Suite
 import org.scalatest.junit.JUnitSuite
@@ -20,7 +21,7 @@ import com.sun.jersey.core.util.Base64
 
 class BasicAuthenticatorSpec extends junit.framework.TestCase
     with Suite with MockitoSugar with MustMatchers {
-  val authenticator = new BasicAuthenticator
+  val authenticator = newActor[BasicAuthenticator]
   authenticator.start
 
   @Test def testChallenge = {

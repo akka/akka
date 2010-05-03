@@ -5,7 +5,8 @@ import junit.framework.TestCase
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.{Actor, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorID, Transactor}
+import Actor._
 
 /**
  * A persistent actor based on Redis queue storage.
@@ -16,7 +17,7 @@ import se.scalablesolutions.akka.actor.{Actor, Transactor}
 
 case class NQ(accountNo: String)
 case object DQ
-case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: Actor)
+case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: ActorID)
 case object SZ
 
 class QueueActor extends Transactor {
@@ -53,7 +54,7 @@ class QueueActor extends Transactor {
 class RedisPersistentQSpec extends TestCase {
   @Test
   def testSuccessfulNQ = {
-    val qa = new QueueActor
+    val qa = newActor[QueueActor]
     qa.start
     qa !! NQ("a-123")
     qa !! NQ("a-124")
@@ -64,7 +65,7 @@ class RedisPersistentQSpec extends TestCase {
 
   @Test
   def testSuccessfulDQ = {
-    val qa = new QueueActor
+    val qa = newActor[QueueActor]
     qa.start
     qa !! NQ("a-123")
     qa !! NQ("a-124")
@@ -80,9 +81,9 @@ class RedisPersistentQSpec extends TestCase {
 
   @Test
   def testSuccessfulMNDQ = {
-    val qa = new QueueActor
+    val qa = newActor[QueueActor]
     qa.start
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
 
     qa !! NQ("a-123")
@@ -100,9 +101,9 @@ class RedisPersistentQSpec extends TestCase {
 
   @Test
   def testMixedMNDQ = {
-    val qa = new QueueActor
+    val qa = newActor[QueueActor]
     qa.start
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
 
     // 3 enqueues
