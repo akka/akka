@@ -100,10 +100,9 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
   implicit val txInitName = "TransactionalRef:Init"
   val uuid = UUID.newUuid.toString
 
-  private[this] lazy val ref = {
-    val r = new AlphaRef[T]
-    initialOpt.foreach(r.set(_))
-    r
+  private[this] val ref = {
+    if (initialOpt.isDefined) new AlphaRef(initialOpt.get)
+    else new AlphaRef[T]
   }
 
   def swap(elem: T) = {
@@ -220,7 +219,7 @@ object TransactionalMap {
 class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends Transactional with scala.collection.mutable.Map[K, V] {
   val uuid = UUID.newUuid.toString
 
-  protected[this] lazy val ref = new TransactionalRef(initialOpt.orElse(Some(new HashTrie[K, V])))
+  protected[this] val ref = new TransactionalRef(initialOpt.orElse(Some(new HashTrie[K, V])))
  
   def -=(key: K) = { 
     remove(key)
@@ -294,7 +293,7 @@ object TransactionalVector {
 class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Transactional with IndexedSeq[T] {
   val uuid = UUID.newUuid.toString
 
-  private[this] lazy val ref = new TransactionalRef(initialOpt.orElse(Some(EmptyVector)))
+  private[this] val ref = new TransactionalRef(initialOpt.orElse(Some(EmptyVector)))
  
   def clear = ref.swap(EmptyVector)
   

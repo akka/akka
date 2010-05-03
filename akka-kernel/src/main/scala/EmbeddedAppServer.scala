@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
  
-package se.scalablesolutions.akka.comet
+package se.scalablesolutions.akka.kernel
 
 import com.sun.grizzly.http.SelectorThread
 import com.sun.grizzly.http.servlet.ServletAdapter
@@ -12,11 +12,12 @@ import javax.ws.rs.core.UriBuilder
 
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.util.{Bootable, Logging}
+import se.scalablesolutions.akka.comet.AkkaServlet
 
 /**
  * Handles the Akka Comet Support (load/unload)
  */
-trait BootableCometActorService extends Bootable with Logging {
+trait EmbeddedAppServer extends Bootable with Logging {
   self : BootableActorLoaderService =>
   
   import se.scalablesolutions.akka.config.Config._

@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.kernel
 
 import se.scalablesolutions.akka.servlet.AkkaLoader
 import se.scalablesolutions.akka.remote.BootableRemoteActorService
-import se.scalablesolutions.akka.comet.BootableCometActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.camel.service.CamelService
 import se.scalablesolutions.akka.config.Config
@@ -25,9 +24,8 @@ object Kernel extends AkkaLoader {
    * Boots up the Kernel with default bootables
    */
   def boot: Unit = boot(true, 
-    new BootableActorLoaderService 
+    new EmbeddedAppServer with BootableActorLoaderService 
     with BootableRemoteActorService 
-    with BootableCometActorService
     with CamelService)
 
   //For testing purposes only

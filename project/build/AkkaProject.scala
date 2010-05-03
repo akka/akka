@@ -53,20 +53,15 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_util = project("akka-util", "akka-util", new AkkaUtilProject(_))
   lazy val akka_core = project("akka-core", "akka-core", new AkkaCoreProject(_), akka_util, akka_java_util)
   lazy val akka_amqp = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
-  lazy val akka_rest = project("akka-rest", "akka-rest", new AkkaRestProject(_), akka_core)
-  lazy val akka_comet = project("akka-comet", "akka-comet", new AkkaCometProject(_), akka_rest)
+  lazy val akka_http = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
   lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
-  lazy val akka_patterns = project("akka-patterns", "akka-patterns", new AkkaPatternsProject(_), akka_core)
-  lazy val akka_security = project("akka-security", "akka-security", new AkkaSecurityProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterParentProject(_))
+  lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterProject(_), akka_core)
   lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
   lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
-  lazy val akka_servlet = project("akka-servlet", "akka-servlet", new AkkaServletProject(_),
-    akka_core, akka_rest, akka_camel)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
-    akka_core, akka_rest, akka_spring, akka_camel, akka_persistence,
-    akka_cluster, akka_amqp, akka_security, akka_comet, akka_patterns, akka_servlet)
+    akka_core, akka_http, akka_spring, akka_camel, akka_persistence,
+    akka_cluster, akka_amqp)
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -96,19 +91,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-util_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-util-java_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-cluster-shoal_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-cluster-jgroups_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-rest_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-comet_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-cluster%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-security_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-patterns_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-common_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-servlet_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
@@ -181,7 +171,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val rabbit = "com.rabbitmq" % "amqp-client" % "1.7.2" % "compile"
   }
 
-  class AkkaRestProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
@@ -190,37 +180,23 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val jersey_json = "com.sun.jersey" % "jersey-json" % JERSEY_VERSION % "compile"
     val jersey_contrib = "com.sun.jersey.contribs" % "jersey-scala" % JERSEY_VERSION % "compile"
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
-  }
-
-  class AkkaCometProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
-    val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
     val atmo = "org.atmosphere" % "atmosphere-annotations" % ATMO_VERSION % "compile"
     val atmo_jersey = "org.atmosphere" % "atmosphere-jersey" % ATMO_VERSION % "compile"
     val atmo_runtime = "org.atmosphere" % "atmosphere-runtime" % ATMO_VERSION % "compile"
-  }
-
-  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val camel_core = "org.apache.camel" % "camel-core" % "2.2.0" % "compile"
-  }
-
-  class AkkaPatternsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    // testing
-    val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
-    val junit = "junit" % "junit" % "4.5" % "test"
-  }
-
-  class AkkaSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
-    val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
-    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
     val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
     val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
+    
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
     val mockito = "org.mockito" % "mockito-all" % "1.8.1" % "test"
+  }
+
+  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val camel_core = "org.apache.camel" % "camel-core" % "2.2.0" % "compile"
   }
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
@@ -262,23 +238,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCassandraProject(_), akka_persistence_common)
   }
 
-  class AkkaJgroupsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaClusterProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val jgroups = "jgroups" % "jgroups" % "2.8.0.CR7" % "compile"
   }
-
-  class AkkaShoalProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val shoal = "shoal-jxta" % "shoal" % "1.1-20090818" % "compile"
-    val shoal_extra = "shoal-jxta" % "jxta" % "1.1-20090818" % "compile"
-  }
-
-  class AkkaClusterParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_cluster_jgroups = project("akka-cluster-jgroups", "akka-cluster-jgroups",
-      new AkkaJgroupsProject(_), akka_core)
-    lazy val akka_cluster_shoal = project("akka-cluster-shoal", "akka-cluster-shoal",
-      new AkkaShoalProject(_), akka_core)
-  }
-
-  class AkkaServletProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
