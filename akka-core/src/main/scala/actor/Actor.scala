@@ -267,9 +267,19 @@ final class ActorID private[akka] () {
   
   lazy val actor: Actor = {
     val actor = newActorFactory match {
-      case Left(Some(clazz)) =>    clazz.newInstance
-      case Right(Some(factory)) => factory()
-      case _ => throw new ActorInitializationException("Can't create Actor, no Actor class or factory function in scope")
+      case Left(Some(clazz)) => 
+        try { 
+          clazz.newInstance 
+        } catch { 
+          case e: InstantiationException => throw new ActorInitializationException(
+            "Could not instantiate Actor due to:\n" + e + 
+            "\nMake sure Actor is defined inside a class/trait," + 
+            "\nif so put it outside the class/trait, f.e. in a companion object.") 
+        }
+      case Right(Some(factory)) => 
+        factory()
+      case _ => 
+        throw new ActorInitializationException("Can't create Actor, no Actor class or factory function in scope")
     }
     if (actor eq null) throw new ActorInitializationException("Actor instance passed to ActorID can not be 'null'")
     actor

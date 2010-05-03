@@ -8,7 +8,26 @@ import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.Consumer
 
+object PublishTest {
+  @consume("mock:test1")
+  class ConsumeAnnotatedActor extends Actor {
+    id = "test"
+    protected def receive = null
+  }
+
+  class ConsumerActor extends Actor with Consumer {
+    def endpointUri = "mock:test2"
+    protected def receive = null
+  }
+
+  class PlainActor extends Actor {
+    protected def receive = null
+  }
+}
+/*
 class PublishTest extends JUnitSuite {
+  import PublishTest._
+  
   @Test def shouldCreatePublishRequestList = {
     val publish = Publish.forConsumers(List(newActor[ConsumeAnnotatedActor]))
     assert(publish === List(Publish("mock:test1", "test", false)))
@@ -30,19 +49,5 @@ class PublishTest extends JUnitSuite {
     val publish = Publish.forConsumer(newActor[PlainActor])
     assert(publish === None)
   }
-
-  @consume("mock:test1")
-  class ConsumeAnnotatedActor extends Actor {
-    id = "test"
-    protected def receive = null
-  }
-
-  class ConsumerActor extends Actor with Consumer {
-    def endpointUri = "mock:test2"
-    protected def receive = null
-  }
-
-  class PlainActor extends Actor {
-    protected def receive = null
-  }
 }
+*/

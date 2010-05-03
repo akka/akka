@@ -10,14 +10,13 @@ import Actor._
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 
-/**
- * @author Jan Van Besien
- */
-class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers {
-  val poolDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+object ExecutorBasedEventDrivenWorkStealingDispatcherSpec { 
+  val delayableActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+  val sharedActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
+  val parentActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
-    messageDispatcher = poolDispatcher
+    messageDispatcher = delayableActorDispatcher
     var invocationCount = 0
     id = name
 
@@ -29,7 +28,32 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
       }
     }
   }
+  
+  class FirstActor extends Actor {
+    messageDispatcher = sharedActorDispatcher
+    def receive = {case _ => {}}
+  }
 
+  class SecondActor extends Actor {
+    messageDispatcher = sharedActorDispatcher
+    def receive = {case _ => {}}
+  }
+
+  class ParentActor extends Actor {
+    messageDispatcher = parentActorDispatcher
+    def receive = {case _ => {}}
+  }
+
+  class ChildActor extends ParentActor {
+  }
+}
+
+/**
+ * @author Jan Van Besien
+ */
+class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers {
+  import ExecutorBasedEventDrivenWorkStealingDispatcherSpec._
+  
   @Test def fastActorShouldStealWorkFromSlowActor = {
     val finishedCounter = new CountDownLatch(110)
 
@@ -59,7 +83,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     fast.stop
   }
   
-  @Test def canNotUseActorsOfDifferentTypesInSameDispatcher = {
+  @Test def canNotUseActorsOfDifferentTypesInSameDispatcher: Unit = {
     val first = newActor[FirstActor]
     val second = newActor[SecondActor]
 
@@ -69,17 +93,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     }
   }
 
-  class FirstActor extends Actor {
-    messageDispatcher = poolDispatcher
-    def receive = {case _ => {}}
-  }
-
-  class SecondActor extends Actor {
-    messageDispatcher = poolDispatcher
-    def receive = {case _ => {}}
-  }
-
-  @Test def canNotUseActorsOfDifferentSubTypesInSameDispatcher:Unit = {
+  @Test def canNotUseActorsOfDifferentSubTypesInSameDispatcher: Unit = {
     val parent = new ParentActor
     val child = new ChildActor
 
@@ -88,13 +102,4 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
       child.start
     }
   }
-
-  class ParentActor extends Actor {
-    messageDispatcher = poolDispatcher
-    def receive = {case _ => {}}
-  }
-
-  class ChildActor extends ParentActor {
-  }
-
 }

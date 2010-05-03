@@ -7,10 +7,7 @@ import Actor._
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
-class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite {
-
-  private val unit = TimeUnit.MILLISECONDS
-
+object ReactorBasedSingleThreadEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
     dispatcher = Dispatchers.newReactorBasedSingleThreadEventDrivenDispatcher(uuid)
 
@@ -30,7 +27,13 @@ class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite 
     def receive = {
       case "OneWay" => OneWayTestActor.oneWay.countDown
     }
-  }
+  }  
+}
+
+class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite {
+  import ReactorBasedSingleThreadEventDrivenDispatcherActorSpec._
+  
+  private val unit = TimeUnit.MILLISECONDS
 
   @Test def shouldSendOneWay = {
     val actor = newActor[OneWayTestActor]
