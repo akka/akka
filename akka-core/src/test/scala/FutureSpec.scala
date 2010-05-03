@@ -5,7 +5,7 @@ import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Futures
 import Actor._
 
-class FutureSpec extends JUnitSuite {
+object FutureSpec {
   class TestActor extends Actor {
     def receive = {
       case "Hello" =>
@@ -14,8 +14,12 @@ class FutureSpec extends JUnitSuite {
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }
+  }  
+}
 
+class FutureSpec extends JUnitSuite {
+  import FutureSpec._
+  
   @Test def shouldActorReplyResultThroughExplicitFuture = {
     val actor = newActor[TestActor]
     actor.start

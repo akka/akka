@@ -7,11 +7,7 @@ import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Dispatchers
 import Actor._
 
-class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
-  import Actor.Sender.Self
-
-  private val unit = TimeUnit.MILLISECONDS
-
+object ReactorBasedThreadPoolEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
     dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
     def receive = {
@@ -20,7 +16,13 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }
+  }  
+}
+
+class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
+  import ReactorBasedThreadPoolEventDrivenDispatcherActorSpec._
+
+  private val unit = TimeUnit.MILLISECONDS
 
   @Test def shouldSendOneWay = {
     val oneWay = new CountDownLatch(1)

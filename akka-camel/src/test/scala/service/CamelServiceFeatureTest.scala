@@ -7,13 +7,39 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import se.scalablesolutions.akka.camel.{CamelContextManager, Message, Consumer}
 import Actor._
 
+object CamelServiceFeatureTest {
+  
+  class TestConsumer(uri: String) extends Actor with Consumer {
+    def endpointUri = uri
+    protected def receive = {
+      case msg: Message => reply("received %s" format msg.body)
+    }
+  }
+
+  class TestActor extends Actor {
+    id = "custom-actor-id"
+    protected def receive = {
+      case msg: Message => reply("received %s" format msg.body)
+    }
+  }
+
+  class TestRoute extends RouteBuilder {
+    def configure {
+      from("direct:custom-route-test-1").to("actor:custom-actor-id")
+    }
+  }
+}
+
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
+  import CamelServiceFeatureTest._
+  
   var service: CamelService = CamelService.newInstance
 
+  /*
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     // register test consumer before starting the CamelService
-    new TestConsumer("direct:publish-test-1").start
+    newActor(() => new TestConsumer("direct:publish-test-1")).start
     // Consigure a custom camel route
     CamelContextManager.init
     CamelContextManager.context.addRoutes(new TestRoute)
@@ -36,7 +62,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("two consumer actors registered before and after CamelService startup")
       service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
-      new TestConsumer("direct:publish-test-2").start
+      newActor(() => new TestConsumer("direct:publish-test-2")).start
 
       when("requests are sent to these actors")
       service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
@@ -63,24 +89,5 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       assert(response === "received msg3")
     }
   }
-
-  class TestConsumer(uri: String) extends Actor with Consumer {
-    def endpointUri = uri
-    protected def receive = {
-      case msg: Message => reply("received %s" format msg.body)
-    }
-  }
-
-  class TestActor extends Actor {
-    id = "custom-actor-id"
-    protected def receive = {
-      case msg: Message => reply("received %s" format msg.body)
-    }
-  }
-
-  class TestRoute extends RouteBuilder {
-    def configure {
-      from("direct:custom-route-test-1").to("actor:custom-actor-id")
-    }
-  }
+  */
 }

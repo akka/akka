@@ -14,14 +14,61 @@ import Actor._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
+object SupervisorSpec {
+  var messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
+  var oneWayLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
+
+  class PingPong1Actor extends Actor {
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
+
+      case OneWay =>
+        oneWayLog.put("oneway")
+
+      case Die =>
+        throw new RuntimeException("DIE")
+    }
+    override protected def postRestart(reason: Throwable) {
+      messageLog.put(reason.getMessage)
+    }
+  }
+
+  class PingPong2Actor extends Actor {
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
+      case Die =>
+        throw new RuntimeException("DIE")
+    }
+    override protected def postRestart(reason: Throwable) {
+      messageLog.put(reason.getMessage)
+    }
+  }
+
+  class PingPong3Actor extends Actor {
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
+      case Die =>
+        throw new RuntimeException("DIE")
+    }
+
+    override protected def postRestart(reason: Throwable) {
+      messageLog.put(reason.getMessage)
+    }
+  }
+}
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class SupervisorSpec extends JUnitSuite {
-
-  var messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
-  var oneWayLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
-
+  import SupervisorSpec._
+  
   var pingpong1: ActorID = _
   var pingpong2: ActorID = _
   var pingpong3: ActorID = _
@@ -468,48 +515,4 @@ class SupervisorSpec extends JUnitSuite {
           :: Nil))
      factory.newInstance
    }
-
-  class PingPong1Actor extends Actor {
-    def receive = {
-      case Ping =>
-        messageLog.put("ping")
-        reply("pong")
-
-      case OneWay =>
-        oneWayLog.put("oneway")
-
-      case Die =>
-        throw new RuntimeException("DIE")
-    }
-    override protected def postRestart(reason: Throwable) {
-      messageLog.put(reason.getMessage)
-    }
-  }
-
-  class PingPong2Actor extends Actor {
-    def receive = {
-      case Ping =>
-        messageLog.put("ping")
-        reply("pong")
-      case Die =>
-        throw new RuntimeException("DIE")
-    }
-    override protected def postRestart(reason: Throwable) {
-      messageLog.put(reason.getMessage)
-    }
-  }
-
-  class PingPong3Actor extends Actor {
-    def receive = {
-      case Ping =>
-        messageLog.put("ping")
-        reply("pong")
-      case Die =>
-        throw new RuntimeException("DIE")
-    }
-
-    override protected def postRestart(reason: Throwable) {
-      messageLog.put(reason.getMessage)
-    }
-  }
 }

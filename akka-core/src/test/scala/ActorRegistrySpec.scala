@@ -4,7 +4,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Actor._
 
-class ActorRegistrySpec extends JUnitSuite {
+object ActorRegistrySpec {
   var record = ""
   class TestActor extends Actor {
     id = "MyID"
@@ -13,8 +13,12 @@ class ActorRegistrySpec extends JUnitSuite {
         record = "pong" + record
         reply("got ping")
     }
-  }
+  }  
+}
 
+class ActorRegistrySpec extends JUnitSuite {
+  import ActorRegistrySpec._
+  
   @Test def shouldGetActorByIdFromActorRegistry = {
     ActorRegistry.shutdownAll
     val actor = newActor[TestActor]
@@ -43,7 +47,7 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.start
     val actors = ActorRegistry.actorsFor(classOf[TestActor])
     assert(actors.size === 1)
-    assert(actors.head.isInstanceOf[TestActor])
+    assert(actors.head.actor.isInstanceOf[TestActor])
     assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
     actor.stop
   }

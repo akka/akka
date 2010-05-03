@@ -7,10 +7,7 @@ import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Dispatchers
 import Actor._
 
-class ThreadBasedActorSpec extends JUnitSuite {
-
-  private val unit = TimeUnit.MILLISECONDS
-
+object ThreadBasedActorSpec {
   class TestActor extends Actor {
     dispatcher = Dispatchers.newThreadBasedDispatcher(this)
     
@@ -20,8 +17,14 @@ class ThreadBasedActorSpec extends JUnitSuite {
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }
+  }  
+}
+
+class ThreadBasedActorSpec extends JUnitSuite {
+  import ThreadBasedActorSpec._
   
+  private val unit = TimeUnit.MILLISECONDS
+
   @Test def shouldSendOneWay = {
     var oneWay = new CountDownLatch(1)
     val actor = newActor(() => new Actor {

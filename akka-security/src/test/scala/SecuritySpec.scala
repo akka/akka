@@ -19,8 +19,20 @@ import javax.ws.rs.core.{SecurityContext, Context, Response}
 import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
 import com.sun.jersey.core.util.Base64
 
+object BasicAuthenticatorSpec {
+  class BasicAuthenticator extends BasicAuthenticationActor {
+    def verify(odc: Option[BasicCredentials]): Option[UserInfo] = odc match {
+      case Some(dc) => Some(UserInfo("foo", "bar", "ninja" :: "chef" :: Nil))
+      case _ => None
+    }
+    override def realm = "test"
+  }
+}
+
 class BasicAuthenticatorSpec extends junit.framework.TestCase
     with Suite with MockitoSugar with MustMatchers {
+  import BasicAuthenticatorSpec._
+  
   val authenticator = newActor[BasicAuthenticator]
   authenticator.start
 
@@ -62,14 +74,6 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
 
     // the authenticator must have set a security context
     verify(req).setSecurityContext(any[SecurityContext])
-  }
-
-  class BasicAuthenticator extends BasicAuthenticationActor {
-    def verify(odc: Option[BasicCredentials]): Option[UserInfo] = odc match {
-      case Some(dc) => Some(UserInfo("foo", "bar", "ninja" :: "chef" :: Nil))
-      case _ => None
-    }
-    override def realm = "test"
   }
 }
 

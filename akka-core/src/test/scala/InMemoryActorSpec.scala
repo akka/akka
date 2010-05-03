@@ -25,7 +25,6 @@ case class SuccessOneWay(key: String, value: String)
 case class FailureOneWay(key: String, value: String, failer: ActorID)
 
 case object GetNotifier
-case class Notifier(latch: CountDownLatch)
 
 class InMemStatefulActor(expectedInvocationCount: Int) extends Actor {
   def this() = this(0)
@@ -40,7 +39,7 @@ class InMemStatefulActor(expectedInvocationCount: Int) extends Actor {
 
   def receive = {
     case GetNotifier =>
-      reply(Notifier(notifier))
+      reply(notifier)
     case GetMapState(key) =>
       reply(mapState.get(key).get)
       notifier.countDown

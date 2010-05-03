@@ -103,9 +103,9 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   
   override def stop = synchronized {
     super[Actor].stop
-    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach { actor =>
-      actor.stop
-      log.info("Shutting actor down: %s", actor)
+    getLinkedActors.toArray.toList.asInstanceOf[List[ActorID]].foreach { actorId =>
+      actorId.stop
+      log.info("Shutting actor down: %s", actorId)
     }
     log.info("Stopping supervisor: %s", this)
   }

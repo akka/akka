@@ -24,15 +24,18 @@ object Patterns {
 
   //FIXME 2.8, use default params with CyclicIterator
   def loadBalancerActor(actors: => InfiniteIterator[ActorID]): ActorID = newActor(() => new Actor with LoadBalancer {
+    start
     val seq = actors
   })
 
   def dispatcherActor(routing: PF[Any, ActorID], msgTransformer: (Any) => Any): ActorID = newActor(() => new Actor with Dispatcher {
+    start
     override def transform(msg: Any) = msgTransformer(msg)
     def routes = routing
   })
 
   def dispatcherActor(routing: PF[Any, ActorID]): ActorID = newActor(() => new Actor with Dispatcher {
+    start
     def routes = routing
   })
 
