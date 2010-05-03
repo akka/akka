@@ -85,8 +85,8 @@ class PublishRequestor(consumerPublisher: ActorID) extends Actor {
   protected def receive = {
     case ActorUnregistered(actor) => { /* ignore */ }
     case ActorRegistered(actor)   => Publish.forConsumer(actor) match {
-      case Some(publish) => consumerPublisher ! publish
-      case None          => { /* ignore */ }
+      case Some(publish)          => consumerPublisher ! publish
+      case None                   => { /* ignore */ }
     }
   }
 }
@@ -121,15 +121,15 @@ object Publish {
   def forConsumer(actor: ActorID): Option[Publish] =
     forConsumeAnnotated(actor) orElse forConsumerType(actor)
 
-  private def forConsumeAnnotated(actor: ActorID): Option[Publish] = {
-    val annotation = actor.getClass.getAnnotation(classOf[consume])
+  private def forConsumeAnnotated(actorId: ActorID): Option[Publish] = {
+    val annotation = actorId.actorInstanceClass.getAnnotation(classOf[consume])
     if (annotation eq null) None
-    else if (actor.remoteAddress.isDefined) None // do not publish proxies
-    else Some(Publish(annotation.value, actor.getId, false))
+    else if (actorId.remoteAddress.isDefined) None // do not publish proxies
+    else Some(Publish(annotation.value, actorId.id, false))
   }
 
-  private def forConsumerType(actor: ActorID): Option[Publish] =
-    if (!actor.isInstanceOf[Consumer]) None
-    else if (actor.remoteAddress.isDefined) None
-    else Some(Publish(actor.asInstanceOf[Consumer].endpointUri, actor.uuid, true))
+  private def forConsumerType(actorId: ActorID): Option[Publish] =
+    if (!actorId.actor.isInstanceOf[Consumer]) None
+    else if (actorId.remoteAddress.isDefined) None
+    else Some(Publish(actorId.actor.asInstanceOf[Consumer].endpointUri, actorId.uuid, true))
 }

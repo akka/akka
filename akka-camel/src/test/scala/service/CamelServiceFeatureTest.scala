@@ -35,7 +35,6 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
   
   var service: CamelService = CamelService.newInstance
 
-  /*
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     // register test consumer before starting the CamelService
@@ -89,5 +88,4 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       assert(response === "received msg3")
     }
   }
-  */
 }

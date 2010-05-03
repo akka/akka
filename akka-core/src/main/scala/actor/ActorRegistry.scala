@@ -97,7 +97,7 @@ object ActorRegistry extends Logging {
     actorsByUUID.put(actorId.uuid, actorId)
 
     // ID
-    val id = actorId.getId
+    val id = actorId.id
     if (id eq null) throw new IllegalStateException("Actor.id is null " + actorId)
     if (actorsById.containsKey(id)) actorsById.put(id, actorId :: actorsById.get(id))
     else actorsById.put(id, actorId :: Nil)
@@ -117,7 +117,7 @@ object ActorRegistry extends Logging {
    */
   def unregister(actor: ActorID) = {
     actorsByUUID remove actor.uuid
-    actorsById remove actor.getId
+    actorsById remove actor.id
     actorsByClassName remove actor.getClass.getName
     // notify listeners
     foreachListener(_ ! ActorUnregistered(actor))
@@ -139,6 +139,7 @@ object ActorRegistry extends Logging {
    * Adds the registration <code>listener</code> this this registry's listener list.
    */
   def addRegistrationListener(listener: ActorID) = {
+    listener.start
     registrationListeners.add(listener)
   }
 
@@ -146,11 +147,16 @@ object ActorRegistry extends Logging {
    * Removes the registration <code>listener</code> this this registry's listener list.
    */
   def removeRegistrationListener(listener: ActorID) = {
+    listener.stop
     registrationListeners.remove(listener)
   }
 
   private def foreachListener(f: (ActorID) => Unit) {
     val iterator = registrationListeners.iterator
-    while (iterator.hasNext) f(iterator.next)
+    while (iterator.hasNext) {
+      val listener = iterator.next
+      if (listener.isRunning) f(listener)
+      else log.warning("Can't send ActorRegistryEvent to [%s] since it is not running.", listener)
+    }
   }
 }
