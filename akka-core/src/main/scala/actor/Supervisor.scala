@@ -131,7 +131,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
             startLink(actorId)
             remoteAddress.foreach(address => RemoteServer.actorsFor(
               RemoteServer.Address(address.hostname, address.port))
-              .actors.put(actorId.getId, actorId))
+              .actors.put(actorId.id, actorId))
 
            case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
              val supervisor = { 

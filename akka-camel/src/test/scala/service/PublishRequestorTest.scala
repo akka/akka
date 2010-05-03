@@ -17,7 +17,7 @@ object PublishRequestorTest {
     def onMessage(msg: Publish) = received = msg
   }
 }
-/*
+
 class PublishRequestorTest extends JUnitSuite {
   import PublishRequestorTest._
   
@@ -27,7 +27,7 @@ class PublishRequestorTest extends JUnitSuite {
     val consumer = newActor(() => new Actor with Consumer {
       def endpointUri = "mock:test"
       protected def receive = null
-    })
+    }).start
     val publisher = newActor(() => new PublisherMock with Countdown[Publish])
     val requestor = newActor(() => new PublishRequestor(publisher))
     publisher.start
@@ -39,4 +39,3 @@ class PublishRequestorTest extends JUnitSuite {
     requestor.stop
   }
 }
-*/

@@ -24,7 +24,7 @@ object PublishTest {
     protected def receive = null
   }
 }
-/*
+
 class PublishTest extends JUnitSuite {
   import PublishTest._
   
@@ -34,14 +34,13 @@ class PublishTest extends JUnitSuite {
   }
 
   @Test def shouldCreateSomePublishRequestWithActorId = {
-    val publish = Publish.forConsumers(List(newActor[ConsumeAnnotatedActor]))
+    val publish = Publish.forConsumer(newActor[ConsumeAnnotatedActor])
     assert(publish === Some(Publish("mock:test1", "test", false)))
   }
 
   @Test def shouldCreateSomePublishRequestWithActorUuid = {
     val ca = newActor[ConsumerActor]
-    val publish = Publish.forConsumers(List(ca))
-    assert(publish === Some(Publish("mock:test2", ca.uuid, true)))
+    val publish = Publish.forConsumer(ca)
     assert(publish === Some(Publish("mock:test2", ca.uuid, true)))
   }
 
@@ -50,4 +49,3 @@ class PublishTest extends JUnitSuite {
     assert(publish === None)
   }
 }
-*/

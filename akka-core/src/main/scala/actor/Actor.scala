@@ -260,12 +260,13 @@ final class ActorID private[akka] () {
     this()
     newActorFactory = Left(Some(clazz))
   }
+  
   private[akka] def this(factory: () => Actor) = {
     this()
     newActorFactory = Right(Some(factory))
   }
   
-  lazy val actor: Actor = {
+  private[akka] lazy val actor: Actor = {
     val actor = newActorFactory match {
       case Left(Some(clazz)) => 
         try { 
@@ -284,6 +285,12 @@ final class ActorID private[akka] () {
     if (actor eq null) throw new ActorInitializationException("Actor instance passed to ActorID can not be 'null'")
     actor
   }
+  
+  /**
+   * Returns the class for the Actor instance that is managed by the ActorID.
+   */
+  def actorInstanceClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
+  
   /**
    * Starts up the actor and its message queue.
    */
@@ -296,12 +303,12 @@ final class ActorID private[akka] () {
    * Shuts down the actor its dispatcher and message queue.
    * Alias for 'stop'.
    */
-  protected def exit = actor.stop
+  protected def exit: Unit = actor.stop
 
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop = actor.stop
+  def stop: Unit = actor.stop
 
   /**
    * Is the actor running?
@@ -456,7 +463,7 @@ final class ActorID private[akka] () {
   /**
    * Returns the id for the actor.
    */
-  def getId = actor.getId
+  def id = actor.getId
 
   /**
    * Returns the uuid for the actor.
@@ -1026,7 +1033,7 @@ trait Actor extends TransactionManagement with Logging {
           val server = new RemoteServer
           server.start(host, port)
         }
-        RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.getId, sender.get)
+        RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.id, sender.get)
       }
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(_remoteAddress.get).send[Any](requestBuilder.build, None)

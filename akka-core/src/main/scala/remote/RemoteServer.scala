@@ -200,8 +200,8 @@ class RemoteServer extends Logging {
    */
   def register(actor: ActorID) = synchronized {
     if (_isRunning) {
-      log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, actor.getId)
-      RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actor.getId, actor)
+      log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, actor.id)
+      RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actor.id, actor)
     }
   }
 

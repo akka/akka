@@ -180,9 +180,9 @@ class ProducerResponseSender(
   def onComplete(exchange: Exchange) = reply(exchange.toResponseMessage(headers))
 
   private def reply(message: Any) = replyTo match {
-    case Some(Left(actor)) => actor ! message
+    case Some(Left(actor))   => actor ! message
     case Some(Right(future)) => future.completeWithResult(message)
-    case _ => log.warning("No destination for sending response")
+    case _                   => log.warning("No destination for sending response")
   }
 }
 

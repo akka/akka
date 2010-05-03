@@ -31,7 +31,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     mockEndpoint.reset
     ActorRegistry.shutdownAll
   }
-/*
+
   feature("Produce a message to a Camel endpoint") {
 
     scenario("produce message sync and receive response") {
@@ -121,7 +121,6 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     }
   }
 
-*/
   private def mockEndpoint = CamelContextManager.context.getEndpoint("mock:mock", classOf[MockEndpoint])
   
   class TestRoute extends RouteBuilder {
