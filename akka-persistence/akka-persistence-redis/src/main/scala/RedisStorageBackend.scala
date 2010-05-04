@@ -226,18 +226,17 @@ private [akka] object RedisStorageBackend extends
     }
   }
 
+  /**
+   * if <tt>start</tt> and <tt>finish</tt> both are defined, ignore <tt>count</tt> and
+   * report the range [start, finish)
+   * if <tt>start</tt> is not defined, assume <tt>start</tt> = 0
+   * if <tt>start</tt> == 0 and <tt>finish</tt> == 0, return an empty collection
+   */
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = withErrorHandling {
-    /**
-     * if <tt>start</tt> and <tt>finish</tt> both are defined, ignore <tt>count</tt> and
-     * report the range [start, finish)
-     * if <tt>start</tt> is not defined, assume <tt>start</tt> = 0
-     * if <tt>start</tt> == 0 and <tt>finish</tt> == 0, return an empty collection
-     */
     val s = if (start.isDefined) start.get else 0
     val cnt =
       if (finish.isDefined) {
         val f = finish.get
-        // if (f >= s) Math.min(count, (f - s)) else count
         if (f >= s) (f - s) else count
       }
       else count
