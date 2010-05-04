@@ -5,6 +5,7 @@
 package sample.remote
 
 import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.remote.{RemoteClient, RemoteNode}
 import se.scalablesolutions.akka.util.Logging
 
@@ -22,7 +23,7 @@ object ServerManagedRemoteActorServer extends Logging {
   def run = {
     RemoteNode.start("localhost", 9999)
     log.info("Remote node started")
-    RemoteNode.register("hello-service", new HelloWorldActor)
+    RemoteNode.register("hello-service", newActor[HelloWorldActor])
     log.info("Remote actor registered and started")
   }
 
