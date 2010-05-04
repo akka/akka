@@ -4,6 +4,7 @@
 
 package sample.remote
 
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.RemoteActor
 import se.scalablesolutions.akka.remote.RemoteNode
 import se.scalablesolutions.akka.util.Logging
@@ -30,7 +31,7 @@ object ClientManagedRemoteActorServer extends Logging {
 object ClientManagedRemoteActorClient extends Logging {
   
   def run = {
-    val actor = new RemoteHelloWorldActor
+    val actor = newActor[RemoteHelloWorldActor]
     log.info("Remote actor created, moved to the server")
     log.info("Sending 'Hello' to remote actor")
     val result = actor !! "Hello"
