@@ -290,6 +290,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
+  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
   class AkkaSampleRestScalaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
   }
@@ -323,6 +325,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleCamelProject(_), akka_kernel)
     lazy val akka_sample_security = project("akka-sample-security", "akka-sample-security",
       new AkkaSampleSecurityProject(_), akka_kernel)
+    lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
+      new AkkaSampleRemoteProject(_), akka_kernel)
   }
 
   // ------------------------------------------------------------
