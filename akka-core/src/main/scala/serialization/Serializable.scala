@@ -16,12 +16,12 @@ import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
 import sjson.json.{Serializer=>SJSONSerializer}
 
 object SerializationProtocol {
+  val JAVA = 0
   val SBINARY = 1
   val SCALA_JSON = 2
   val JAVA_JSON = 3
   val PROTOBUF = 4
-  val JAVA = 5
-  val AVRO = 6  
+  val PROTOBUF_RAW = 5
 }
 
 /**
