@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable.{HashSet, HashMap}
 
 /**
+ * Atomic remote request/reply message id generator.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteRequestIdFactory {
@@ -40,6 +42,69 @@ sealed trait RemoteClientLifeCycleEvent
 case class RemoteClientError(cause: Throwable) extends RemoteClientLifeCycleEvent
 case class RemoteClientDisconnected(host: String, port: Int) extends RemoteClientLifeCycleEvent
 case class RemoteClientConnected(host: String, port: Int) extends RemoteClientLifeCycleEvent
+
+/**
+ * Remote Actor proxy factory.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[akka] object RemoteActorProxy {
+  def apply(uuid: String, className: String, hostname: String, port: Int, timeout: Long): ActorID =
+    new ActorID(() => new RemoteActorProxy(uuid, className, hostname, port, timeout))
+}
+
+/**
+ * Remote Actor proxy.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[akka] class RemoteActorProxy private (
+  uuid: String, className: String, hostname: String, port: Int, timeOut: Long) extends Actor {
+  start
+  val remoteClient = RemoteClient.clientFor(hostname, port)
+
+  override def postMessageToMailbox(message: Any, senderOption: Option[ActorID]): Unit = {
+    val requestBuilder = RemoteRequest.newBuilder
+        .setId(RemoteRequestIdFactory.nextId)
+        .setTarget(className)
+        .setTimeout(timeOut)
+        .setUuid(uuid)
+        .setIsActor(true)
+        .setIsOneWay(true)
+        .setIsEscaped(false)
+    if (senderOption.isDefined) {
+      val sender = senderOption.get.actor
+      requestBuilder.setSourceTarget(sender.getClass.getName)
+      requestBuilder.setSourceUuid(sender.uuid)
+      val (host, port) = sender._replyToAddress.map(address => 
+        (address.getHostName, address.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
+      requestBuilder.setSourceHostname(host)
+      requestBuilder.setSourcePort(port)
+    }
+    RemoteProtocolBuilder.setMessage(message, requestBuilder)
+    remoteClient.send[Any](requestBuilder.build, None)
+  }
+
+  override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
+      message: Any,
+      timeout: Long,
+      senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
+    val requestBuilder = RemoteRequest.newBuilder
+        .setId(RemoteRequestIdFactory.nextId)
+        .setTarget(className)
+        .setTimeout(timeout)
+        .setUuid(uuid)
+        .setIsActor(true)
+        .setIsOneWay(false)
+        .setIsEscaped(false)
+    RemoteProtocolBuilder.setMessage(message, requestBuilder)
+    val future = remoteClient.send(requestBuilder.build, senderFuture)
+    if (future.isDefined) future.get
+    else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
+  }
+
+  def receive = {case _ => {}}
+}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -62,53 +127,8 @@ object RemoteClient extends Logging {
   def actorFor(className: String, timeout: Long, hostname: String, port: Int): ActorID =
     actorFor(className, className, timeout, hostname, port)
 
-  def actorFor(actorId: String, className: String, timeout: Long, hostname: String, port: Int): ActorID = new ActorID(() => 
-    new Actor {
-      start
-      val remoteClient = RemoteClient.clientFor(hostname, port)
-
-      override def postMessageToMailbox(message: Any, sender: Option[ActorID]): Unit = {
-        val requestBuilder = RemoteRequest.newBuilder
-            .setId(RemoteRequestIdFactory.nextId)
-            .setTarget(className)
-            .setTimeout(timeout)
-            .setUuid(actorId)
-            .setIsActor(true)
-            .setIsOneWay(true)
-            .setIsEscaped(false)
-        if (sender.isDefined) {
-          val sndr = sender.get.actor
-          requestBuilder.setSourceTarget(sndr.getClass.getName)
-          requestBuilder.setSourceUuid(sndr.uuid)
-          val (host, port) = sndr._replyToAddress.map(a => (a.getHostName, a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
-          requestBuilder.setSourceHostname(host)
-          requestBuilder.setSourcePort(port)
-        }
-        RemoteProtocolBuilder.setMessage(message, requestBuilder)
-        remoteClient.send[Any](requestBuilder.build, None)
-      }
-
-      override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
-          message: Any,
-          timeout: Long,
-          senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-        val requestBuilder = RemoteRequest.newBuilder
-            .setId(RemoteRequestIdFactory.nextId)
-            .setTarget(className)
-            .setTimeout(timeout)
-            .setUuid(actorId)
-            .setIsActor(true)
-            .setIsOneWay(false)
-            .setIsEscaped(false)
-        RemoteProtocolBuilder.setMessage(message, requestBuilder)
-        val future = remoteClient.send(requestBuilder.build, senderFuture)
-        if (future.isDefined) future.get
-        else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
-      }
-
-      def receive = {case _ => {}}
-    }
-  )
+  def actorFor(actorId: String, className: String, timeout: Long, hostname: String, port: Int): ActorID = 
+    RemoteActorProxy(actorId, className, hostname, port, timeout)
 
   def clientFor(hostname: String, port: Int): RemoteClient = clientFor(new InetSocketAddress(hostname, port))
 

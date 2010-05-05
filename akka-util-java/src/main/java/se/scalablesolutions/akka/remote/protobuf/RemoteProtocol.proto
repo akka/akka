@@ -10,6 +10,14 @@ package se.scalablesolutions.akka.remote.protobuf;
   protoc se/scalablesolutions/akka/remote/protobuf/RemoteProtocol.proto --java_out .
 */
 
+message ActorRef {
+  required string uuid = 1;
+  required string actorClassName = 2;
+  required string sourceHostname  = 3;
+  required uint32 sourcePort = 4;
+  required uint64 timeout = 5;
+}
+
 message RemoteRequest {
   required uint64 id = 1;
   required uint32 protocol = 2;
