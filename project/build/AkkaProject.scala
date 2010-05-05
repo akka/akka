@@ -24,7 +24,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val distPath = info.projectPath / "dist"
 
   override def compileOptions = super.compileOptions ++
-    Seq("-deprecation", "-Xmigration", "-Xcheckinit", "-Xstrict-warnings", "-Xwarninit", "-encoding", "utf8").map(x => CompileOption(x))
+    Seq("-deprecation", "-Xmigration", "-Xcheckinit", 
+        "-Xstrict-warnings", "-Xwarninit", "-encoding", "utf8")
+        .map(x => CompileOption(x))
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
@@ -110,14 +112,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
   val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
-  val sourceArtifact = Artifact(artifactID, "src", "jar", Some("src"), Nil, None)
-  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("doc"), Nil, None)
+  val sourceArtifact = Artifact(artifactID, "source", "jar", Some("source"), Nil, None)
+  val docsArtifact = Artifact(artifactID, "docs", "jar", Some("docs"), Nil, None)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
   //override def documentOptions = encodingUtf8.map(SimpleDocOption(_))
-  override def packageDocsJar = defaultJarPath("-doc.jar")
-  override def packageSrcJar= defaultJarPath("-src.jar")
+  override def packageDocsJar = defaultJarPath("-docs.jar")
+  override def packageSrcJar= defaultJarPath("-source.jar")
   override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
 
   override def pomExtra =
@@ -361,8 +363,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     def deployPath: Path
 
     lazy val dist = distAction
-    def distAction = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(`package`, packageDocs, packageSrc) describedAs("Deploying")
-    def deployTask(jar: Path, docs: Path, src: Path, toDir: Path, genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
+    def distAction = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
+      `package`, packageDocs, packageSrc) describedAs("Deploying")
+    def deployTask(jar: Path, docs: Path, src: Path, toDir: Path, 
+                   genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
       gen(jar, toDir, genJar, "Deploying bits") orElse
       gen(docs, toDir, genDocs, "Deploying docs") orElse
       gen(src, toDir, genSource, "Deploying sources")
