@@ -163,7 +163,7 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
    * Necessary to keep from being implicitly converted to Iterable in for comprehensions.
    */
   def withFilter(p: T => Boolean): WithFilter = new WithFilter(p)
-	
+        
   class WithFilter(p: T => Boolean) {
     def map[B](f: T => B): TransactionalRef[B] = self filter p map f
     def flatMap[B](f: T => TransactionalRef[B]): TransactionalRef[B] = self filter p flatMap f
