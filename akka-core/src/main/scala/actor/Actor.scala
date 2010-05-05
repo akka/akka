@@ -243,15 +243,6 @@ object Actor extends Logging {
 }
 
 /**
- * FIXME document
- * 
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class ActorMessageInvoker(val actorId: ActorID) extends MessageInvoker {
-  def invoke(handle: MessageInvocation) = actorId.actor.invoke(handle)
-}
-
-/**
  * ActorID is an immutable and serializable handle to an Actor.
  * Create an ActorID for an Actor by using the factory method on the Actor object.
  * Here is an example: 
@@ -302,7 +293,7 @@ final class ActorID private[akka] () {
   /**
    * Returns the class for the Actor instance that is managed by the ActorID.
    */
-  def actorInstanceClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
+  def actorClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
   
   /**
    * Starts up the actor and its message queue.
@@ -375,7 +366,8 @@ final class ActorID private[akka] () {
     if (actor.isRunning) {
       val future = actor.postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
       val isActiveObject = message.isInstanceOf[Invocation]
-      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
+      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) 
+        future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       try {
         future.await
       } catch {
@@ -408,7 +400,13 @@ final class ActorID private[akka] () {
   def !![T](message: Any): Option[T] = !![T](message, actor.timeout)
 
   /**
-   * FIXME document !!!
+   * Sends a message asynchronously returns a future holding the eventual reply message.
+   * <p/>
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
+   * implement request/response message exchanges.
+   * If you are sending messages using <code>!!!</code> then you <b>have to</b> use <code>reply(..)</code>
+   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def !!![T](message: Any): Future[T] = {
     if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
@@ -421,7 +419,7 @@ final class ActorID private[akka] () {
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
-   * Works with both '!' and '!!'.
+   * Works with '!', '!!' and '!!!'.
    */
   def forward(message: Any)(implicit sender: Some[ActorID]) = {
     if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
@@ -537,7 +535,8 @@ trait Actor extends TransactionManagement with Logging {
    */
    implicit val self = new ActorID(() => this)
 
-   protected implicit val selfOption = Some(self)
+   /** For internal use only */
+   implicit val _selfOption = Some(self)
 
   // ====================================
   // private fields
@@ -560,15 +559,11 @@ trait Actor extends TransactionManagement with Logging {
    */
   private[akka] val _dispatcherLock: Lock = new ReentrantLock
 
-  // ====================================
-  // protected fields
-  // ====================================
-
   /**
    * Holds the reference to the sender of the currently processed message.
-   * Is None if no sender was specified
-   * Is Some(Left(Actor)) if sender is an actor
-   * Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
+   * - Is None if no sender was specified
+   * - Is Some(Left(Actor)) if sender is an actor
+   * - Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
    */
   private[akka] var replyTo: Option[Either[ActorID, CompletableFuture[Any]]] = None
 
@@ -592,8 +587,8 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * User overridable callback/setting.
    * <p/>
-   * Defines the default timeout for '!!' invocations,
-   * e.g. the timeout for the future returned by the call to '!!'.
+   * Defines the default timeout for '!!' and '!!!' invocations,
+   * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
    */
   @volatile var timeout: Long = Actor.TIMEOUT
 
@@ -787,6 +782,7 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
+   * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to
    */
   protected[this] def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
@@ -802,17 +798,16 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
+   * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
   protected[this] def reply_?(message: Any): Boolean = replyTo match {
-    case Some(Left(actor))   =>
+    case Some(Left(actor)) =>
       actor ! message
       true
-
-    case Some(Right(future : Future[Any])) =>
+    case Some(Right(future: Future[Any])) =>
       future completeWithResult message
       true
-
     case _ =>
       false
   }
@@ -1313,3 +1308,13 @@ object DispatcherType {
   case object EventBasedThreadPoolDispatcher extends DispatcherType
   case object ThreadBasedDispatcher extends DispatcherType
 }
+
+/**
+ * For internal use only.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class ActorMessageInvoker private[akka] (val actorId: ActorID) extends MessageInvoker {
+  def invoke(handle: MessageInvocation) = actorId.actor.invoke(handle)
+}
+
