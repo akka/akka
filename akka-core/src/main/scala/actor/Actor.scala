@@ -11,8 +11,10 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteProtocolBuilder, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, 
+                                        RemoteActorProxy, RemoteProtocolBuilder, 
+                                        RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
 
@@ -243,9 +245,33 @@ object Actor extends Logging {
 }
 
 /**
+ * The ActorID object can be used to create ActorID instances out of its binary
+ * protobuf based representation.
+ * <pre>
+ *   val actorRef = ActorID.fromBinary(bytes)
+ *   actorRef ! message // send message to remote actor through its reference
+ * </pre>
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object ActorID {
+  def fromBinary(bytes: Array[Byte]): ActorID = {
+    val actorRefProto = RemoteProtocol.ActorRef.newBuilder.mergeFrom(bytes).build
+    RemoteActorProxy(
+      actorRefProto.getUuid,
+      actorRefProto.getActorClassName,
+      actorRefProto.getSourceHostname,
+      actorRefProto.getSourcePort,
+      actorRefProto.getTimeout)
+  }
+}
+
+/**
  * ActorID is an immutable and serializable handle to an Actor.
+ * <p/>
  * Create an ActorID for an Actor by using the factory method on the Actor object.
- * Here is an example: 
+ * <p/>
+ * Here is an example on how to create an actor with a default constructor.
  * <pre>
  *   import Actor._
  * 
@@ -254,24 +280,23 @@ object Actor extends Logging {
  *   actor ! message
  *   actor.stop
  * </pre>
+ * Here is an example on how to create an actor with a non-default constructor.
+ * <pre>
+ *   import Actor._
+ * 
+ *   val actor = newActor(() => new MyActor(...))
+ *   actor.start
+ *   actor ! message
+ *   actor.stop
+ * </pre>
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class ActorID private[akka] () {
-  private[akka] var newActorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None)
+  private[akka] var actorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None)
 
-  private[akka] def this(clazz: Class[_ <: Actor]) = { 
-    this()
-    newActorFactory = Left(Some(clazz))
-  }
-  
-  private[akka] def this(factory: () => Actor) = {
-    this()
-    newActorFactory = Right(Some(factory))
-  }
-  
   private[akka] lazy val actor: Actor = {
-    val actor = newActorFactory match {
+    val actor = actorFactory match {
       case Left(Some(clazz)) => 
         try { 
           clazz.newInstance 
@@ -288,6 +313,30 @@ final class ActorID private[akka] () {
     }
     if (actor eq null) throw new ActorInitializationException("Actor instance passed to ActorID can not be 'null'")
     actor
+  }
+  
+  private[akka] def this(clazz: Class[_ <: Actor]) = { 
+    this()
+    actorFactory = Left(Some(clazz))
+  }
+  
+  private[akka] def this(factory: () => Actor) = {
+    this()
+    actorFactory = Right(Some(factory))
+  }
+  
+  def toBinary: Array[Byte] = {
+    if (!actor._registeredInRemoteNodeDuringSerialization) { 
+      RemoteNode.register(uuid, this)
+      actor._registeredInRemoteNodeDuringSerialization = true
+    }
+    RemoteProtocol.ActorRef.newBuilder
+      .setUuid(uuid)
+      .setActorClassName(actorClass.getName)
+      .setSourceHostname(RemoteServer.HOSTNAME)
+      .setSourcePort(RemoteServer.PORT)
+      .setTimeout(timeout)
+      .build.toByteArray
   }
   
   /**
@@ -546,6 +595,7 @@ trait Actor extends TransactionManagement with Logging {
   @volatile private[this] var _isSuspended = true
   @volatile private[this] var _isShutDown = false
   @volatile private[akka] var _isKilled = false
+  @volatile private[akka] var _registeredInRemoteNodeDuringSerialization = true
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] var _linkedActors: Option[HashSet[ActorID]] = None
@@ -755,6 +805,7 @@ trait Actor extends TransactionManagement with Logging {
       shutdown
       ActorRegistry.unregister(self)
       _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
+      RemoteNode.unregister(self)
     }
   }
 
@@ -1011,7 +1062,7 @@ trait Actor extends TransactionManagement with Logging {
     joinTransaction(message)
 
     if (_remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequest.newBuilder
+      val requestBuilder = RemoteProtocol.RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
           .setTarget(this.getClass.getName)
           .setTimeout(this.timeout)
@@ -1062,7 +1113,7 @@ trait Actor extends TransactionManagement with Logging {
     joinTransaction(message)
 
     if (_remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequest.newBuilder
+      val requestBuilder = RemoteProtocol.RemoteRequest.newBuilder
           .setId(RemoteRequestIdFactory.nextId)
           .setTarget(this.getClass.getName)
           .setTimeout(this.timeout)
@@ -1079,7 +1130,8 @@ trait Actor extends TransactionManagement with Logging {
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFuture[T](timeout)
-      val invocation = new MessageInvocation(self, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
+      val invocation = new MessageInvocation(
+        self, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
 
       if (messageDispatcher.usesActorMailbox)
         _mailbox.add(invocation)

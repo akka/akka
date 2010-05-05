@@ -168,7 +168,8 @@ class RemoteServer extends Logging {
         log.info("Starting remote server at [%s:%s]", hostname, port)
         RemoteServer.register(hostname, port, this)
         val remoteActorSet = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
-        val pipelineFactory = new RemoteServerPipelineFactory(name, openChannels, loader, remoteActorSet.actors, remoteActorSet.activeObjects)
+        val pipelineFactory = new RemoteServerPipelineFactory(
+          name, openChannels, loader, remoteActorSet.actors, remoteActorSet.activeObjects)
         bootstrap.setPipelineFactory(pipelineFactory)
         bootstrap.setOption("child.tcpNoDelay", true)
         bootstrap.setOption("child.keepAlive", true)
@@ -200,7 +201,7 @@ class RemoteServer extends Logging {
    */
   def register(actor: ActorID) = synchronized {
     if (_isRunning) {
-      log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, actor.id)
+      log.info("Registering server side remote actor [%s] with id [%s]", actor.actorClass.getName, actor.id)
       RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actor.id, actor)
     }
   }
@@ -210,8 +211,20 @@ class RemoteServer extends Logging {
    */
   def register(id: String, actor: ActorID) = synchronized {
     if (_isRunning) {
-      log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, id)
+      log.info("Registering server side remote actor [%s] with id [%s]", actor.actorClass.getName, id)
       RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(id, actor)
+    }
+  }
+
+  /**
+   * Unregister Remote Actor.
+   */
+  def unregister(actor: ActorID) = synchronized {
+    if (_isRunning) {
+      log.info("Unregistering server side remote actor [%s] with id [%s]", actor.actorClass.getName, actor.id)
+      val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
+      server.actors.put(actor.id, actor)
+      if (actor.actor._registeredInRemoteNodeDuringSerialization) server.actors.remove(actor.uuid)
     }
   }
 }
