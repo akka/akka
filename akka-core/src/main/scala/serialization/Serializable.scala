@@ -21,7 +21,6 @@ object SerializationProtocol {
   val SCALA_JSON = 2
   val JAVA_JSON = 3
   val PROTOBUF = 4
-  val PROTOBUF_RAW = 5
 }
 
 /**
@@ -105,14 +104,5 @@ object Serializable {
   trait ScalaJSON extends JSON {
     def toJSON: String = new String(toBytes, "UTF-8")
     def toBytes: Array[Byte] = SJSONSerializer.SJSON.out(this)
-  }
-  
-  /**
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  trait Protobuf[T] extends Serializable {
-    def fromBytes(bytes: Array[Byte]): T = getMessage.toBuilder.mergeFrom(bytes).asInstanceOf[T]
-    def toBytes: Array[Byte] = getMessage.toByteArray
-    def getMessage: Message
   }
 }
