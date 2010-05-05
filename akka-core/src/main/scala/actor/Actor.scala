@@ -230,18 +230,23 @@ object Actor extends Logging {
     }
   }
   
-  /** Starts the specified actor and returns it, useful for:
-   *  <pre>val actor = new FooActor
+  /** 
+   * Starts the specified actor and returns it, useful for simplifying code such as:
+   * <pre>
+   *  val actor = new FooActor
    *  actor.start
-   *  //Gets replaced by
+   * </pre>
+   * can be replaced with:
+   * <pre>
+   *  import Actor._
+   *
    *  val actor = start(new FooActor)
-   *  </pre>
+   * </pre>
    */
   def start[T <: Actor](actor : T) : T = {
     actor.start
     actor
   }
-  
 }
 
 /**

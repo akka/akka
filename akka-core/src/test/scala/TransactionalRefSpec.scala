@@ -98,9 +98,9 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       var result = 0      
 
       atomic {
-	for (value <- ref) {
-	  result += value
-	}
+        for (value <- ref) {
+          result += value
+        }
       }
 
       result should be(3)
