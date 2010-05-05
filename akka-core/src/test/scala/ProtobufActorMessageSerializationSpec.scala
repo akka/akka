@@ -6,7 +6,6 @@ import org.junit.{Test, Before, After}
 
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
-import se.scalablesolutions.akka.serialization.Serializable.Protobuf
 
 import ProtobufProtocol.ProtobufPOJO
 
