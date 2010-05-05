@@ -122,7 +122,7 @@ object Publish {
     forConsumeAnnotated(actor) orElse forConsumerType(actor)
 
   private def forConsumeAnnotated(actorId: ActorID): Option[Publish] = {
-    val annotation = actorId.actorInstanceClass.getAnnotation(classOf[consume])
+    val annotation = actorId.actorClass.getAnnotation(classOf[consume])
     if (annotation eq null) None
     else if (actorId.remoteAddress.isDefined) None // do not publish proxies
     else Some(Publish(annotation.value, actorId.id, false))
