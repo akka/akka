@@ -4,16 +4,16 @@
 
 package se.scalablesolutions.akka.patterns
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 sealed trait ListenerMessage
-case class Listen(listener: ActorID) extends ListenerMessage
-case class Deafen(listener: ActorID) extends ListenerMessage 
-case class WithListeners(f: Set[ActorID] => Unit) extends ListenerMessage
+case class Listen(listener: ActorRef) extends ListenerMessage
+case class Deafen(listener: ActorRef) extends ListenerMessage 
+case class WithListeners(f: Set[ActorRef] => Unit) extends ListenerMessage
 
 trait Listeners { self : Actor =>
   import se.scalablesolutions.akka.actor.Agent
-  private lazy val listeners = Agent(Set[ActorID]())
+  private lazy val listeners = Agent(Set[ActorRef]())
 
   protected def listenerManagement : PartialFunction[Any,Unit] = {
     case Listen(l) => listeners( _ + l)

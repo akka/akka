@@ -284,7 +284,7 @@ object ActiveObject {
     actor.initialize(target, proxy)
     actor.timeout = timeout
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
-    val actorId = new ActorID(() => actor)
+    val actorId = new ActorRef(() => actor)
     AspectInitRegistry.register(proxy, AspectInit(target, actorId, remoteAddress, timeout))
     actorId.start
     proxy.asInstanceOf[T]
@@ -295,7 +295,7 @@ object ActiveObject {
     actor.initialize(target.getClass, target)
     actor.timeout = timeout
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
-    val actorId = new ActorID(() => actor)
+    val actorId = new ActorRef(() => actor)
     AspectInitRegistry.register(proxy, AspectInit(intf, actorId, remoteAddress, timeout))
     actorId.start
     proxy.asInstanceOf[T]
@@ -304,7 +304,7 @@ object ActiveObject {
   /**
    * Get the underlying dispatcher actor for the given active object.
    */
-  def actorFor(obj: AnyRef): Option[ActorID] =
+  def actorFor(obj: AnyRef): Option[ActorRef] =
     ActorRegistry.actorsFor(classOf[Dispatcher]).find(a => a.actor.asInstanceOf[Dispatcher].target == Some(obj))
 
   /**
@@ -388,10 +388,10 @@ private[akka] object AspectInitRegistry {
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],
-  val actorId: ActorID,
+  val actorId: ActorRef,
   val remoteAddress: Option[InetSocketAddress],
   val timeout: Long) {
-  def this(target: Class[_], actorId: ActorID, timeout: Long) = this(target, actorId, None, timeout)
+  def this(target: Class[_], actorId: ActorRef, timeout: Long) = this(target, actorId, None, timeout)
 }
 
 /**
@@ -405,7 +405,7 @@ private[akka] sealed case class AspectInit(
 private[akka] sealed class ActiveObjectAspect {
   @volatile private var isInitialized = false
   private var target: Class[_] = _
-  private var actorId: ActorID = _
+  private var actorId: ActorRef = _
   private var remoteAddress: Option[InetSocketAddress] = _
   private var timeout: Long = _
 
@@ -520,7 +520,7 @@ private[akka] sealed class ActiveObjectAspect {
 }
 
 // FIXME Jan Kronquist: started work on issue 121
-private[akka] case class Link(val actor: ActorID)
+private[akka] case class Link(val actor: ActorRef)
 
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()

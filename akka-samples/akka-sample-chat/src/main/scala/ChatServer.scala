@@ -6,7 +6,7 @@ package sample.chat
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, ActorID, RemoteActor}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, ActorRef, RemoteActor}
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.persistence.redis.RedisStorage
@@ -72,7 +72,7 @@ class ChatClient(val name: String) {
 /**
  * Internal chat client session.
  */
-class Session(user: String, storage: ActorID) extends Actor {
+class Session(user: String, storage: ActorRef) extends Actor {
   private val loginTime = System.currentTimeMillis
   private var userLog: List[String] = Nil
   
@@ -124,8 +124,8 @@ class RedisChatStorage extends ChatStorage {
  */
 trait SessionManagement { this: Actor => 
   
-  val storage: ActorID // needs someone to provide the ChatStorage
-  val sessions = new HashMap[String, ActorID]
+  val storage: ActorRef // needs someone to provide the ChatStorage
+  val sessions = new HashMap[String, ActorRef]
   
   protected def sessionManagement: PartialFunction[Any, Unit] = {
     case Login(username) => 
@@ -151,7 +151,7 @@ trait SessionManagement { this: Actor =>
  * Uses self-type annotation (this: Actor =>) to declare that it needs to be mixed in with an Actor.
  */
 trait ChatManagement { this: Actor =>
-  val sessions: HashMap[String, ActorID] // needs someone to provide the Session map
+  val sessions: HashMap[String, ActorRef] // needs someone to provide the Session map
   
   protected def chatManagement: PartialFunction[Any, Unit] = {
     case msg @ ChatMessage(from, _) => sessions(from) ! msg
@@ -173,7 +173,7 @@ trait ChatServer extends Actor {
   faultHandler = Some(OneForOneStrategy(5, 5000))
   trapExit = List(classOf[Exception])
   
-  val storage: ActorID
+  val storage: ActorRef
 
   log.info("Chat service is starting up...")
 

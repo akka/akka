@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.patterns
 
-import se.scalablesolutions.akka.actor.ActorID
+import se.scalablesolutions.akka.actor.ActorRef
 
 trait InfiniteIterator[T] extends Iterator[T]
 
@@ -20,7 +20,7 @@ class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
   }
 }
 
-class SmallestMailboxFirstIterator(items : List[ActorID]) extends InfiniteIterator[ActorID] {
+class SmallestMailboxFirstIterator(items : List[ActorRef]) extends InfiniteIterator[ActorRef] {
   def hasNext = items != Nil
 
   def next = items.reduceLeft((a1, a2) => if (a1.mailboxSize < a2.mailboxSize) a1 else a2)

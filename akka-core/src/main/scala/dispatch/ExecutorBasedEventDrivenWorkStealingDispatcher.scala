@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -31,12 +31,12 @@ import se.scalablesolutions.akka.actor.{Actor, ActorID}
 class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
 
-  implicit def actorId2actor(actorId: ActorID): Actor = actorId.actor
+  implicit def actorId2actor(actorId: ActorRef): Actor = actorId.actor
   
   /** Type of the actors registered in this dispatcher. */
   private var actorType:Option[Class[_]] = None
 
-  private val pooledActors = new CopyOnWriteArrayList[ActorID]
+  private val pooledActors = new CopyOnWriteArrayList[ActorRef]
 
   /** The index in the pooled actors list which was last used to steal work */
   @volatile private var lastThiefIndex = 0
@@ -68,7 +68,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    *
    * @return true if the mailbox was processed, false otherwise
    */
-  private def tryProcessMailbox(receiver: ActorID): Boolean = {
+  private def tryProcessMailbox(receiver: ActorRef): Boolean = {
     var lockAcquiredOnce = false
     val lock = receiver.actor._dispatcherLock
     // this do-wile loop is required to prevent missing new messages between the end of processing
@@ -90,7 +90,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   /**
    * Process the messages in the mailbox of the given actor.
    */
-  private def processMailbox(receiver: ActorID) = {
+  private def processMailbox(receiver: ActorRef) = {
     var messageInvocation = receiver._mailbox.poll
     while (messageInvocation != null) {
       messageInvocation.invoke
@@ -98,9 +98,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     }
   }
 
-  private def findThief(receiver: ActorID): Option[ActorID] = {
+  private def findThief(receiver: ActorRef): Option[ActorRef] = {
     // copy to prevent concurrent modifications having any impact
-    val actors = pooledActors.toArray(new Array[ActorID](pooledActors.size))
+    val actors = pooledActors.toArray(new Array[ActorRef](pooledActors.size))
     var i = lastThiefIndex
     if (i > actors.size)
       i = 0
@@ -108,7 +108,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     // we risk to pick a thief which is unregistered from the dispatcher in the meantime, but that typically means
     // the dispatcher is being shut down...
     doFindThief(receiver, actors, i) match {
-      case (thief: Option[ActorID], index: Int) => {
+      case (thief: Option[ActorRef], index: Int) => {
         lastThiefIndex = (index + 1) % actors.size
         return thief
       }
@@ -123,7 +123,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * @param startIndex first index to start looking in the list (i.e. for round robin)
    * @return the thief (or None) and the new index to start searching next time
    */
-  private def doFindThief(receiver: ActorID, actors: Array[ActorID], startIndex: Int): (Option[ActorID], Int) = {
+  private def doFindThief(receiver: ActorRef, actors: Array[ActorRef], startIndex: Int): (Option[ActorRef], Int) = {
     for (i <- 0 to actors.length) {
       val index = (i + startIndex) % actors.length
       val actor = actors(index)
@@ -140,7 +140,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * Try donating messages to the thief and processing the thiefs mailbox. Doesn't do anything if we can not acquire
    * the thiefs dispatching lock, because in that case another thread is already processing the thiefs mailbox.
    */
-  private def tryDonateAndProcessMessages(receiver: ActorID, thief: ActorID) = {
+  private def tryDonateAndProcessMessages(receiver: ActorRef, thief: ActorRef) = {
     if (thief._dispatcherLock.tryLock) {
       try {
         donateAndProcessMessages(receiver, thief)
@@ -153,7 +153,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   /**
    * Donate messages to the thief and process them on the thief as long as the receiver has more messages.
    */
-  private def donateAndProcessMessages(receiver: ActorID, thief: ActorID): Unit = {
+  private def donateAndProcessMessages(receiver: ActorRef, thief: ActorRef): Unit = {
     donateMessage(receiver, thief) match {
       case None => {
         // no more messages to donate
@@ -169,7 +169,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   /**
    * Steal a message from the receiver and give it to the thief.
    */
-  private def donateMessage(receiver: ActorID, thief: ActorID): Option[MessageInvocation] = {
+  private def donateMessage(receiver: ActorRef, thief: ActorRef): Option[MessageInvocation] = {
     val donated = receiver._mailbox.pollLast
     if (donated != null) {
       thief.self ! donated.message
@@ -193,20 +193,20 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
-  override def register(actorId: ActorID) = {
+  override def register(actorId: ActorRef) = {
     verifyActorsAreOfSameType(actorId)
     pooledActors.add(actorId)
     super.register(actorId)
   }
 
-  override def unregister(actorId: ActorID) = {
+  override def unregister(actorId: ActorRef) = {
     pooledActors.remove(actorId)
     super.unregister(actorId)
   }
 
   def usesActorMailbox = true
 
-  private def verifyActorsAreOfSameType(newActorId: ActorID) = {
+  private def verifyActorsAreOfSameType(newActorId: ActorRef) = {
     actorType match {
       case None => {
         actorType = Some(newActorId.actor.getClass)
