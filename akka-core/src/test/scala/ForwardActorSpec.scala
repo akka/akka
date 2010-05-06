@@ -8,7 +8,7 @@ import Actor._
 
 object ForwardActorSpec {
   object ForwardState {
-    var sender: Option[ActorID] = None
+    var sender: Option[ActorRef] = None
   }
 
   class ReceiverActor extends Actor {

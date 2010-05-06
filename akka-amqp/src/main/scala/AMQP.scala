@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client.{AMQP => RabbitMQ, _}
 import com.rabbitmq.client.ConnectionFactory
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.config.ScalaConfig._
@@ -51,7 +51,7 @@ object AMQP {
       exchangeName: String,
       returnListener: Option[ReturnListener],
       shutdownListener: Option[ShutdownListener],
-      initReconnectDelay: Long): ActorID =
+      initReconnectDelay: Long): ActorRef =
     supervisor.newProducer(
       config, hostname, port, exchangeName, returnListener, shutdownListener, initReconnectDelay)
 
@@ -66,13 +66,13 @@ object AMQP {
       passive: Boolean,
       durable: Boolean,
       autoDelete: Boolean,
-      configurationArguments: Map[String, AnyRef]): ActorID =
+      configurationArguments: Map[String, AnyRef]): ActorRef =
     supervisor.newConsumer(
       config, hostname, port, exchangeName, exchangeType,
       shutdownListener, initReconnectDelay,
       passive, durable, autoDelete, configurationArguments)
 
-  def stopConnection(connection: ActorID) = supervisor.stopConnection(connection)
+  def stopConnection(connection: ActorRef) = supervisor.stopConnection(connection)
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -80,7 +80,7 @@ object AMQP {
   class AMQPSupervisor extends Actor with Logging {
     import scala.collection.JavaConversions._
 
-    private val connections = new ConcurrentHashMap[ActorID, ActorID]
+    private val connections = new ConcurrentHashMap[ActorRef, ActorRef]
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
@@ -93,7 +93,7 @@ object AMQP {
         exchangeName: String,
         returnListener: Option[ReturnListener],
         shutdownListener: Option[ShutdownListener],
-        initReconnectDelay: Long): ActorID = {
+        initReconnectDelay: Long): ActorRef = {
       val producer = newActor(() => new Producer(
         new ConnectionFactory(config),
         hostname, port,
@@ -116,7 +116,7 @@ object AMQP {
         passive: Boolean,
         durable: Boolean,
         autoDelete: Boolean,
-        configurationArguments: Map[String, AnyRef]): ActorID = {
+        configurationArguments: Map[String, AnyRef]): ActorRef = {
       val consumer = newActor(() => new Consumer(
         new ConnectionFactory(config),
         hostname, port,
@@ -132,7 +132,7 @@ object AMQP {
       consumer
     }
 
-    def stopConnection(connection: ActorID) = {
+    def stopConnection(connection: ActorRef) = {
       connection ! Stop
       unlink(connection)
       connections.remove(connection)
@@ -189,11 +189,11 @@ object AMQP {
                                 val exclusive: Boolean,
                                 val autoDelete: Boolean,
                                 val isUsingExistingQueue: Boolean,
-                                val actor: ActorID) extends AMQPMessage {
+                                val actor: ActorRef) extends AMQPMessage {
     /**
      * Creates a non-exclusive, non-autodelete message listener.
      */
-    def this(queueName: String, routingKey: String, actor: ActorID) = this (queueName, routingKey, false, false, false, actor)
+    def this(queueName: String, routingKey: String, actor: ActorRef) = this (queueName, routingKey, false, false, false, actor)
 
     private[akka] var tag: Option[String] = None
 
@@ -242,12 +242,12 @@ object AMQP {
               exclusive: Boolean,
               autoDelete: Boolean,
               isUsingExistingQueue: Boolean,
-              actor: ActorID) =
+              actor: ActorRef) =
       new MessageConsumerListener(queueName, routingKey, exclusive, autoDelete, isUsingExistingQueue, actor)
 
     def apply(queueName: String,
               routingKey: String,
-              actor: ActorID) =
+              actor: ActorRef) =
       new MessageConsumerListener(queueName, routingKey, false, false, false, actor)
   }
 
@@ -591,10 +591,10 @@ object AMQP {
       } catch {
         case e: Exception =>
           val waitInMillis = delay * 2
-          val outerActorID = self
+          val outerActorRef = self
           log.debug("Trying to reconnect to AMQP server in %n milliseconds [%s]", waitInMillis, this)
           reconnectionTimer.schedule(new TimerTask() {
-            override def run = outerActorID ! Reconnect(waitInMillis)
+            override def run = outerActorRef ! Reconnect(waitInMillis)
           }, delay)
       }
     }

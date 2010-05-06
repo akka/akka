@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch
 
 import org.apache.camel.builder.RouteBuilder
 
-import se.scalablesolutions.akka.actor.{ActorUnregistered, ActorRegistered, Actor, ActorID}
+import se.scalablesolutions.akka.actor.{ActorUnregistered, ActorRegistered, Actor, ActorRef}
 import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.{Consumer, CamelContextManager}
 import se.scalablesolutions.akka.util.Logging
@@ -81,7 +81,7 @@ class ConsumerRoute(val endpointUri: String, id: String, uuid: Boolean) extends 
  *
  * @author Martin Krasser
  */
-class PublishRequestor(consumerPublisher: ActorID) extends Actor {
+class PublishRequestor(consumerPublisher: ActorRef) extends Actor {
   protected def receive = {
     case ActorUnregistered(actor) => { /* ignore */ }
     case ActorRegistered(actor)   => Publish.forConsumer(actor) match {
@@ -112,23 +112,23 @@ object Publish {
    * Creates a list of Publish request messages for all consumer actors in the <code>actors</code>
    * list.
    */
-  def forConsumers(actors: List[ActorID]): List[Publish] =
+  def forConsumers(actors: List[ActorRef]): List[Publish] =
     for (actor <- actors; pub = forConsumer(actor); if pub.isDefined) yield pub.get
 
   /**
    * Creates a Publish request message if <code>actor</code> is a consumer actor.
    */
-  def forConsumer(actor: ActorID): Option[Publish] =
+  def forConsumer(actor: ActorRef): Option[Publish] =
     forConsumeAnnotated(actor) orElse forConsumerType(actor)
 
-  private def forConsumeAnnotated(actorId: ActorID): Option[Publish] = {
+  private def forConsumeAnnotated(actorId: ActorRef): Option[Publish] = {
     val annotation = actorId.actorClass.getAnnotation(classOf[consume])
     if (annotation eq null) None
     else if (actorId.remoteAddress.isDefined) None // do not publish proxies
     else Some(Publish(annotation.value, actorId.id, false))
   }
 
-  private def forConsumerType(actorId: ActorID): Option[Publish] =
+  private def forConsumerType(actorId: ActorRef): Option[Publish] =
     if (!actorId.actor.isInstanceOf[Consumer]) None
     else if (actorId.remoteAddress.isDefined) None
     else Some(Publish(actorId.actor.asInstanceOf[Consumer].endpointUri, actorId.uuid, true))

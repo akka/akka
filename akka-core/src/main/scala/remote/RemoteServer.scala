@@ -89,7 +89,7 @@ object RemoteServer {
   }
 
   class RemoteActorSet {
-    val actors =        new ConcurrentHashMap[String, ActorID]
+    val actors =        new ConcurrentHashMap[String, ActorRef]
     val activeObjects = new ConcurrentHashMap[String, AnyRef]
   }
 
@@ -168,7 +168,8 @@ class RemoteServer extends Logging {
         log.info("Starting remote server at [%s:%s]", hostname, port)
         RemoteServer.register(hostname, port, this)
         val remoteActorSet = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
-        val pipelineFactory = new RemoteServerPipelineFactory(name, openChannels, loader, remoteActorSet.actors, remoteActorSet.activeObjects)
+        val pipelineFactory = new RemoteServerPipelineFactory(
+          name, openChannels, loader, remoteActorSet.actors, remoteActorSet.activeObjects)
         bootstrap.setPipelineFactory(pipelineFactory)
         bootstrap.setOption("child.tcpNoDelay", true)
         bootstrap.setOption("child.keepAlive", true)
@@ -198,9 +199,9 @@ class RemoteServer extends Logging {
   /**
    * Register Remote Actor by the Actor's 'id' field.
    */
-  def register(actor: ActorID) = synchronized {
+  def register(actor: ActorRef) = synchronized {
     if (_isRunning) {
-      log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, actor.id)
+      log.info("Registering server side remote actor [%s] with id [%s]", actor.actorClass.getName, actor.id)
       RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actor.id, actor)
     }
   }
@@ -208,9 +209,9 @@ class RemoteServer extends Logging {
   /**
    * Register Remote Actor by a specific 'id' passed as argument.
    */
-  def register(id: String, actor: ActorID) = synchronized {
+  def register(id: String, actor: ActorRef) = synchronized {
     if (_isRunning) {
-      log.info("Registering server side remote actor [%s] with id [%s]", actor.getClass.getName, id)
+      log.info("Registering server side remote actor [%s] with id [%s]", actor.actorClass.getName, id)
       RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(id, actor)
     }
   }
@@ -225,7 +226,7 @@ class RemoteServerPipelineFactory(
     val name: String,
     val openChannels: ChannelGroup,
     val loader: Option[ClassLoader],
-    val actors: JMap[String, ActorID],
+    val actors: JMap[String, ActorRef],
     val activeObjects: JMap[String, AnyRef]) extends ChannelPipelineFactory {
   import RemoteServer._
 
@@ -256,7 +257,7 @@ class RemoteServerHandler(
     val name: String,
     val openChannels: ChannelGroup,
     val applicationLoader: Option[ClassLoader],
-    val actors: JMap[String, ActorID],
+    val actors: JMap[String, ActorRef],
     val activeObjects: JMap[String, AnyRef]) extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
@@ -440,7 +441,7 @@ class RemoteServerHandler(
    * If actor already created then just return it from the registry.
    * Does not start the actor.
    */
-  private def createActor(name: String, uuid: String, timeout: Long): ActorID = {
+  private def createActor(name: String, uuid: String, timeout: Long): ActorRef = {
     val actorIdOrNull = actors.get(uuid)
     if (actorIdOrNull eq null) {
       try {
@@ -451,7 +452,7 @@ class RemoteServerHandler(
         newInstance._uuid = uuid
         newInstance.timeout = timeout
         newInstance._remoteAddress = None
-        val actorId = new ActorID(() => newInstance)
+        val actorId = new ActorRef(() => newInstance)
         actors.put(uuid, actorId)
         actorId
       } catch {
