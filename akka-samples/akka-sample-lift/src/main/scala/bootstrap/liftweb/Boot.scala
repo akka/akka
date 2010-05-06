@@ -9,6 +9,7 @@ import _root_.net.liftweb.common._
 import Helpers._
 
 import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
@@ -41,10 +42,10 @@ class Boot extends Logging {
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(
-          new SimpleService,
+          newActor[SimpleService],
           LifeCycle(Permanent)) ::
         Supervise(
-          new PersistentSimpleService,
+          newActor[PersistentSimpleService],
           LifeCycle(Permanent)) ::
         Nil))
     factory.newInstance.start

@@ -6,7 +6,7 @@ package sample.chat
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, ActorID, RemoteActor}
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.persistence.redis.RedisStorage
@@ -14,6 +14,7 @@ import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.util.Logging
+import Actor._
 
 /******************************************************************************
 Akka Chat Client/Server Sample Application
@@ -34,7 +35,8 @@ Then to run the sample:
   - Run 'sbt console' to start up a REPL (interpreter).
 2. In the first REPL you get execute: 
   - scala> import sample.chat._
-  - scala> ChatService.start
+  - scala> import se.scalablesolutions.akka.actor.Actor._
+  - scala> val chatService = newActor[ChatService].start
 3. In the second REPL you get execute: 
     - scala> import sample.chat._
     - scala> Runner.run
@@ -59,7 +61,6 @@ case class ChatMessage(from: String, message: String) extends Event
  * Chat client.
  */
 class ChatClient(val name: String) { 
-  import Actor.Sender.Self
   val chat = RemoteClient.actorFor("chat:service", "localhost", 9999)
 
   def login =                 chat ! Login(name) 
@@ -71,7 +72,7 @@ class ChatClient(val name: String) {
 /**
  * Internal chat client session.
  */
-class Session(user: String, storage: Actor) extends Actor {
+class Session(user: String, storage: ActorID) extends Actor {
   private val loginTime = System.currentTimeMillis
   private var userLog: List[String] = Nil
   
@@ -106,14 +107,10 @@ class RedisChatStorage extends ChatStorage {
   def receive = {
     case msg @ ChatMessage(from, message) => 
       log.debug("New chat message [%s]", message)
-      atomic { 
-        chatLog + message.getBytes("UTF-8")
-      }
+      atomic { chatLog + message.getBytes("UTF-8") }
 
     case GetChatLog(_) => 
-      val messageList = atomic {
-        chatLog.map(bytes => new String(bytes, "UTF-8")).toList
-      }
+      val messageList = atomic { chatLog.map(bytes => new String(bytes, "UTF-8")).toList }
       reply(ChatLog(messageList))
   }
   
@@ -127,13 +124,13 @@ class RedisChatStorage extends ChatStorage {
  */
 trait SessionManagement { this: Actor => 
   
-  val storage: ChatStorage // needs someone to provide the ChatStorage
-  val sessions = new HashMap[String, Actor]
+  val storage: ActorID // needs someone to provide the ChatStorage
+  val sessions = new HashMap[String, ActorID]
   
   protected def sessionManagement: PartialFunction[Any, Unit] = {
     case Login(username) => 
       log.info("User [%s] has logged in", username)
-      val session = new Session(username, storage)
+      val session = newActor(() => new Session(username, storage))
       session.start
       sessions += (username -> session)
       
@@ -154,7 +151,7 @@ trait SessionManagement { this: Actor =>
  * Uses self-type annotation (this: Actor =>) to declare that it needs to be mixed in with an Actor.
  */
 trait ChatManagement { this: Actor =>
-  val sessions: HashMap[String, Actor] // needs someone to provide the Session map
+  val sessions: HashMap[String, ActorID] // needs someone to provide the Session map
   
   protected def chatManagement: PartialFunction[Any, Unit] = {
     case msg @ ChatMessage(from, _) => sessions(from) ! msg
@@ -166,7 +163,7 @@ trait ChatManagement { this: Actor =>
  * Creates and links a RedisChatStorage.
  */
 trait RedisChatStorageFactory { this: Actor =>
-  val storage: ChatStorage = spawnLink[RedisChatStorage] // starts and links ChatStorage
+  val storage = spawnLink[RedisChatStorage] // starts and links ChatStorage
 }
 
 /**
@@ -176,7 +173,7 @@ trait ChatServer extends Actor {
   faultHandler = Some(OneForOneStrategy(5, 5000))
   trapExit = List(classOf[Exception])
   
-  val storage: ChatStorage
+  val storage: ActorID
 
   log.info("Chat service is starting up...")
 
@@ -197,18 +194,21 @@ trait ChatServer extends Actor {
 }
 
 /**
- * Object encapsulating the full Chat Service.
+ * Class encapsulating the full Chat Service.
+ * Start service by invoking:
+ * <pre>
+ * val chatService = Actor.newActor[ChatService].start
+ * </pre>
  */
-object ChatService extends 
+class ChatService extends 
   ChatServer with 
   SessionManagement with 
   ChatManagement with 
   RedisChatStorageFactory {
-  override def start: Actor = {
+  override def start {
     super.start
     RemoteNode.start("localhost", 9999)
-    RemoteNode.register("chat:service", this)
-    this
+    RemoteNode.register("chat:service", self)
   }
 }
 

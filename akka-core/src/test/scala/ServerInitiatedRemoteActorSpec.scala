@@ -4,6 +4,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
+import Actor._
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
 
@@ -12,7 +13,7 @@ object ServerInitiatedRemoteActorSpec {
   val PORT = 9990
   var server: RemoteServer = null
  
-  case class Send(actor: Actor)
+  case class Send(actor: ActorID)
 
   object RemoteActorSpecActorUnidirectional {
     val latch = new CountDownLatch(1)
@@ -42,23 +43,21 @@ object ServerInitiatedRemoteActorSpec {
   class RemoteActorSpecActorAsyncSender extends Actor {
     start
     def receive = {
-      case Send(actor: Actor) =>
+      case Send(actor: ActorID) =>
         actor ! "Hello"
       case "World" =>
         RemoteActorSpecActorAsyncSender.latch.countDown
     }
 
-    def send(actor: Actor) {
-      this ! Send(actor)
+    def send(actor: ActorID) {
+      self ! Send(actor)
     }
   }
 }
 
 class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   import ServerInitiatedRemoteActorSpec._
-
-  import Actor.Sender.Self
-  se.scalablesolutions.akka.config.Config.config
+  import se.scalablesolutions.akka.config.Config.config
 
   private val unit = TimeUnit.MILLISECONDS
 
@@ -68,9 +67,9 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
 
     server.start(HOSTNAME, PORT)
 
-    server.register(new RemoteActorSpecActorUnidirectional)
-    server.register(new RemoteActorSpecActorBidirectional)
-    server.register(new RemoteActorSpecActorAsyncSender)
+    server.register(newActor[RemoteActorSpecActorUnidirectional])
+    server.register(newActor[RemoteActorSpecActorBidirectional])
+    server.register(newActor[RemoteActorSpecActorAsyncSender])
 
     Thread.sleep(1000)
   }

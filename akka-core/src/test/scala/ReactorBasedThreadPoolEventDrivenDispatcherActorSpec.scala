@@ -3,13 +3,11 @@ package se.scalablesolutions.akka.actor
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import Actor._
 
-class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
-  import Actor.Sender.Self
-
-  private val unit = TimeUnit.MILLISECONDS
-
+object ReactorBasedThreadPoolEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
     dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
     def receive = {
@@ -18,16 +16,22 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }
+  }  
+}
+
+class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
+  import ReactorBasedThreadPoolEventDrivenDispatcherActorSpec._
+
+  private val unit = TimeUnit.MILLISECONDS
 
   @Test def shouldSendOneWay = {
     val oneWay = new CountDownLatch(1)
-    val actor = new Actor {
+    val actor = newActor(() => new Actor {
       dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
       def receive = {
         case "OneWay" => oneWay.countDown
       }
-    }
+    })
     actor.start
     val result = actor ! "OneWay"
     assert(oneWay.await(1, TimeUnit.SECONDS))
@@ -35,7 +39,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReplySync = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
@@ -43,7 +47,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReplyAsync = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
@@ -51,7 +55,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReceiveException = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     try {
       actor !! "Failure"

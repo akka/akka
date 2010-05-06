@@ -10,6 +10,7 @@ import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 
 import se.scalablesolutions.akka.actor.ActorRegistry
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.camel.support.{Countdown, Retain, Tester, Respond}
 import se.scalablesolutions.akka.camel.{Failure, Message}
 
@@ -17,22 +18,22 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   @After def tearDown = ActorRegistry.shutdownAll
 
   @Test def shouldSendMessageToActor = {
-    val actor = new Tester with Retain with Countdown[Message]
+    val actor = newActor(() => new Tester with Retain with Countdown[Message])
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
     actor.start
     exchange.getIn.setBody("Martin")
     exchange.getIn.setHeader("k1", "v1")
     endpoint.createProducer.process(exchange)
-    actor.waitFor
-    assert(actor.body === "Martin")
-    assert(actor.headers === Map(Message.MessageExchangeId -> exchange.getExchangeId, "k1" -> "v1"))
+    actor.actor.asInstanceOf[Countdown[Message]].waitFor
+    assert(actor.actor.asInstanceOf[Retain].body === "Martin")
+    assert(actor.actor.asInstanceOf[Retain].headers === Map(Message.MessageExchangeId -> exchange.getExchangeId, "k1" -> "v1"))
   }
 
   @Test def shouldSendMessageToActorAndReceiveResponse = {
-    val actor = new Tester with Respond {
+    val actor = newActor(() => new Tester with Respond {
       override def response(msg: Message) = Message(super.response(msg), Map("k2" -> "v2"))
-    }
+    })
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
     actor.start
@@ -44,9 +45,9 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   }
 
   @Test def shouldSendMessageToActorAndReceiveFailure = {
-    val actor = new Tester with Respond {
+    val actor = newActor(() => new Tester with Respond {
       override def response(msg: Message) = Failure(new Exception("testmsg"), Map("k3" -> "v3"))
-    }
+    })
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
     actor.start
@@ -59,9 +60,9 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   }
 
   @Test def shouldSendMessageToActorAndTimeout: Unit = {
-    val actor = new Tester {
+    val actor = newActor(() => new Tester {
       timeout = 1
-    }
+    })
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
     actor.start

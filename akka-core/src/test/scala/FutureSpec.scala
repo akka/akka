@@ -3,8 +3,9 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Futures
+import Actor._
 
-class FutureSpec extends JUnitSuite {
+object FutureSpec {
   class TestActor extends Actor {
     def receive = {
       case "Hello" =>
@@ -13,10 +14,14 @@ class FutureSpec extends JUnitSuite {
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }
+  }  
+}
 
+class FutureSpec extends JUnitSuite {
+  import FutureSpec._
+  
   @Test def shouldActorReplyResultThroughExplicitFuture = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val future = actor !!! "Hello"
     future.await
@@ -26,7 +31,7 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test def shouldActorReplyExceptionThroughExplicitFuture = {
-    val actor = new TestActor
+    val actor = newActor[TestActor]
     actor.start
     val future = actor !!! "Failure"
     future.await
@@ -37,9 +42,9 @@ class FutureSpec extends JUnitSuite {
 
   /*
   @Test def shouldFutureAwaitEitherLeft = {
-    val actor1 = new TestActor
+    val actor1 = newActor[TestActor]
     actor1.start
-    val actor2 = new TestActor
+    val actor2 = newActor[TestActor]
     actor2.start
     val future1 = actor1 !!! "Hello"
     val future2 = actor2 !!! "NoReply"
@@ -51,9 +56,9 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test def shouldFutureAwaitEitherRight = {
-    val actor1 = new TestActor
+    val actor1 = newActor[TestActor]
     actor1.start
-    val actor2 = new TestActor
+    val actor2 = newActor[TestActor]
     actor2.start
     val future1 = actor1 !!! "NoReply"
     val future2 = actor2 !!! "Hello"
@@ -65,9 +70,9 @@ class FutureSpec extends JUnitSuite {
   }
   */
   @Test def shouldFutureAwaitOneLeft = {
-    val actor1 = new TestActor
+    val actor1 = newActor[TestActor]
     actor1.start
-    val actor2 = new TestActor
+    val actor2 = newActor[TestActor]
     actor2.start
     val future1 = actor1 !!! "NoReply"
     val future2 = actor2 !!! "Hello"
@@ -79,9 +84,9 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test def shouldFutureAwaitOneRight = {
-    val actor1 = new TestActor
+    val actor1 = newActor[TestActor]
     actor1.start
-    val actor2 = new TestActor
+    val actor2 = newActor[TestActor]
     actor2.start
     val future1 = actor1 !!! "Hello"
     val future2 = actor2 !!! "NoReply"
@@ -93,9 +98,9 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test def shouldFutureAwaitAll = {
-    val actor1 = new TestActor
+    val actor1 = newActor[TestActor]
     actor1.start
-    val actor2 = new TestActor
+    val actor2 = newActor[TestActor]
     actor2.start
     val future1 = actor1 !!! "Hello"
     val future2 = actor2 !!! "Hello"
@@ -107,5 +112,4 @@ class FutureSpec extends JUnitSuite {
     actor1.stop
     actor2.stop
   }
-
 }

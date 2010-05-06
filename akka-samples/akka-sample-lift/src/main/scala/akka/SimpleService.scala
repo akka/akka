@@ -4,6 +4,7 @@ import se.scalablesolutions.akka.actor.{Transactor, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.TransactionalState
 import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
+import Actor._
 
 import java.lang.Integer
 import javax.ws.rs.{GET, Path, Produces}
@@ -25,7 +26,7 @@ class SimpleService extends Transactor {
 
   @GET
   @Produces(Array("text/html"))
-  def count = (this !! Tick).getOrElse(<h1>Error in counter</h1>)
+  def count = (self !! Tick).getOrElse(<h1>Error in counter</h1>)
 
   def receive = {
     case Tick => if (hasStartedTicking) {
@@ -57,7 +58,7 @@ class PersistentSimpleService extends Transactor {
 
   @GET
   @Produces(Array("text/html"))
-  def count = (this !! Tick).getOrElse(<h1>Error in counter</h1>)
+  def count = (self !! Tick).getOrElse(<h1>Error in counter</h1>)
 
   def receive = {
     case Tick => if (hasStartedTicking) {

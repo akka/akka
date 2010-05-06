@@ -4,19 +4,19 @@ import java.util.concurrent.{TimeUnit, CountDownLatch}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
+import Actor._
 
-class ForwardActorSpec extends JUnitSuite {
-
+object ForwardActorSpec {
   object ForwardState {
-    var sender: Actor = null
-    val finished = new CountDownLatch(1)
+    var sender: Option[ActorID] = None
   }
 
   class ReceiverActor extends Actor {
+    val latch = new CountDownLatch(1)
     def receive = {
       case "SendBang" => {
-        ForwardState.sender = replyTo.get.left.get
-        ForwardState.finished.countDown
+        ForwardState.sender = Some(replyTo.get.left.get)
+        latch.countDown
       }
       case "SendBangBang" => reply("SendBangBang")
     }
@@ -24,7 +24,7 @@ class ForwardActorSpec extends JUnitSuite {
 
 
   class ForwardActor extends Actor {
-    val receiverActor = new ReceiverActor
+    val receiverActor = newActor[ReceiverActor]
     receiverActor.start
     def receive = {
       case "SendBang" => receiverActor.forward("SendBang")
@@ -33,7 +33,7 @@ class ForwardActorSpec extends JUnitSuite {
   }
 
   class BangSenderActor extends Actor {
-    val forwardActor = new ForwardActor
+    val forwardActor = newActor[ForwardActor]
     forwardActor.start
     forwardActor ! "SendBang"
     def receive = {
@@ -42,30 +42,40 @@ class ForwardActorSpec extends JUnitSuite {
   }
 
   class BangBangSenderActor extends Actor {
-    val forwardActor = new ForwardActor
+    val latch = new CountDownLatch(1)
+    val forwardActor = newActor[ForwardActor]
     forwardActor.start
     (forwardActor !! "SendBangBang") match {
-      case Some(_) => {ForwardState.finished.countDown}
+      case Some(_) => latch.countDown
       case None => {}
     }
     def receive = {
       case _ => {}
     }
-  }
+  }  
+}
 
+class ForwardActorSpec extends JUnitSuite {
+  import ForwardActorSpec._
+  
   @Test
-  def shouldForwardActorReferenceWhenInvokingForwardOnBang = {
-    val senderActor = new BangSenderActor
+  def shouldForwardActorReferenceWhenInvokingForwardOnBang {
+    val senderActor = newActor[BangSenderActor]
+    val latch = senderActor.actor.asInstanceOf[BangSenderActor]
+      .forwardActor.actor.asInstanceOf[ForwardActor]
+      .receiverActor.actor.asInstanceOf[ReceiverActor]
+      .latch
     senderActor.start
-    assert(ForwardState.finished.await(2, TimeUnit.SECONDS))
+    assert(latch.await(1L, TimeUnit.SECONDS))
     assert(ForwardState.sender ne null)
-    assert(senderActor === ForwardState.sender)
+    assert(senderActor.toString === ForwardState.sender.get.toString)
   }
 
   @Test
-  def shouldForwardActorReferenceWhenInvokingForwardOnBangBang = {
-    val senderActor = new BangBangSenderActor
+  def shouldForwardActorReferenceWhenInvokingForwardOnBangBang {
+    val senderActor = newActor[BangBangSenderActor]
     senderActor.start
-    assert(ForwardState.finished.await(2, TimeUnit.SECONDS))
+    val latch = senderActor.actor.asInstanceOf[BangBangSenderActor].latch
+    assert(latch.await(1L, TimeUnit.SECONDS)) 
   }
 }

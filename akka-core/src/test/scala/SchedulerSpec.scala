@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
+import Actor._
 
 class SchedulerSpec extends JUnitSuite {
 

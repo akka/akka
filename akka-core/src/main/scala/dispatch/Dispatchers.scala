@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorID}
 
 /**
  * Scala API. Dispatcher factory.
@@ -40,7 +40,7 @@ import se.scalablesolutions.akka.actor.Actor
  */
 object Dispatchers {
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global") {
-    override def register(actor: Actor) = {
+    override def register(actor: ActorID) = {
       if (isShutdown) init
       super.register(actor)
     }
