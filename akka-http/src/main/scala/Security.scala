@@ -22,7 +22,7 @@
 
 package se.scalablesolutions.akka.security
 
-import se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorID, ActorRegistry}
+import se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config
 
@@ -73,7 +73,7 @@ case class SpnegoCredentials(token: Array[Byte]) extends Credentials
  * Jersey Filter for invocation intercept and authorization/authentication
  */
 class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
-  class Filter(actor: ActorID, rolesAllowed: Option[List[String]])
+  class Filter(actor: ActorRef, rolesAllowed: Option[List[String]])
       extends ResourceFilter with ContainerRequestFilter with Logging {
 
     override def getRequestFilter: ContainerRequestFilter = this
@@ -111,7 +111,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
    * Currently we always take the first, since there usually should be at most one authentication actor, but a round-robin
    * strategy could be implemented in the future
    */
-  def authenticator: ActorID = ActorRegistry.actorsFor(authenticatorFQN).head
+  def authenticator: ActorRef = ActorRegistry.actorsFor(authenticatorFQN).head
 
   def mkFilter(roles: Option[List[String]]): java.util.List[ResourceFilter] =
     java.util.Collections.singletonList(new Filter(authenticator, roles))
