@@ -86,7 +86,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   // FIXME should Supervisor really havea newThreadBasedDispatcher??
   dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
-  private val actors = new ConcurrentHashMap[String, List[ActorID]]
+  private val actors = new ConcurrentHashMap[String, List[ActorRef]]
   
   // Cheating, should really go through the dispatcher rather than direct access to a CHM
   def getInstance[T](clazz: Class[T]): List[T] = actors.get(clazz.getName).asInstanceOf[List[T]]
@@ -103,7 +103,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   
   override def stop = synchronized {
     super[Actor].stop
-    getLinkedActors.toArray.toList.asInstanceOf[List[ActorID]].foreach { actorId =>
+    getLinkedActors.toArray.toList.asInstanceOf[List[ActorRef]].foreach { actorId =>
       actorId.stop
       log.info("Shutting actor down: %s", actorId)
     }
@@ -123,7 +123,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
             val className = actorId.actor.getClass.getName
             val currentActors = { 
               val list = actors.get(className)
-              if (list eq null) List[ActorID]()
+              if (list eq null) List[ActorRef]()
               else list
             }
             actors.put(className, actorId :: currentActors)
@@ -143,7 +143,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
              val className = supervisor.getClass.getName
              val currentSupervisors = { 
                val list = actors.get(className)
-               if (list eq null) List[ActorID]()
+               if (list eq null) List[ActorRef]()
                else list
              }
              actors.put(className, supervisor.self :: currentSupervisors)

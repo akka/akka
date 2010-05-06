@@ -13,7 +13,7 @@ object ServerInitiatedRemoteActorSpec {
   val PORT = 9990
   var server: RemoteServer = null
  
-  case class Send(actor: ActorID)
+  case class Send(actor: ActorRef)
 
   object RemoteActorSpecActorUnidirectional {
     val latch = new CountDownLatch(1)
@@ -43,13 +43,13 @@ object ServerInitiatedRemoteActorSpec {
   class RemoteActorSpecActorAsyncSender extends Actor {
     start
     def receive = {
-      case Send(actor: ActorID) =>
+      case Send(actor: ActorRef) =>
         actor ! "Hello"
       case "World" =>
         RemoteActorSpecActorAsyncSender.latch.countDown
     }
 
-    def send(actor: ActorID) {
+    def send(actor: ActorRef) {
       self ! Send(actor)
     }
   }

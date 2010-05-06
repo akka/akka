@@ -1,6 +1,6 @@
 package se.scalablesolutions.akka.persistence.cassandra
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
 import Actor._
 
 import org.junit.Test
@@ -17,13 +17,13 @@ case class SetMapState(key: String, value: String)
 case class SetVectorState(key: String)
 case class SetRefState(key: String)
 case class Success(key: String, value: String)
-case class Failure(key: String, value: String, failer: ActorID)
+case class Failure(key: String, value: String, failer: ActorRef)
 
 case class SetMapStateOneWay(key: String, value: String)
 case class SetVectorStateOneWay(key: String)
 case class SetRefStateOneWay(key: String)
 case class SuccessOneWay(key: String, value: String)
-case class FailureOneWay(key: String, value: String, failer: ActorID)
+case class FailureOneWay(key: String, value: String, failer: ActorRef)
 
 class CassandraPersistentActor extends Transactor {
   timeout = 100000

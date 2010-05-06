@@ -7,7 +7,7 @@ import org.scalatest.junit.JUnitSuite
 import _root_.dispatch.json.{JsNumber, JsValue}
 import _root_.dispatch.json.Js._
 
-import se.scalablesolutions.akka.actor.{Transactor, Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Transactor, Actor, ActorRef}
 import Actor._
 
 /**
@@ -24,8 +24,8 @@ import Actor._
  */
 
 case class Balance(accountNo: String)
-case class Debit(accountNo: String, amount: BigInt, failer: ActorID)
-case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: ActorID)
+case class Debit(accountNo: String, amount: BigInt, failer: ActorRef)
+case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: ActorRef)
 case class Credit(accountNo: String, amount: BigInt)
 case class Log(start: Int, finish: Int)
 case object LogSize

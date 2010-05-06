@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.persistence.redis
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
 import Actor._
 
 /**
@@ -20,8 +20,8 @@ import Actor._
  */
 
 case class Balance(accountNo: String)
-case class Debit(accountNo: String, amount: BigInt, failer: ActorID)
-case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: ActorID)
+case class Debit(accountNo: String, amount: BigInt, failer: ActorRef)
+case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: ActorRef)
 case class Credit(accountNo: String, amount: BigInt)
 case class Log(start: Int, finish: Int)
 case object LogSize

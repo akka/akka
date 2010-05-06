@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.persistence.redis
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
 import Actor._
 
 /**
@@ -15,7 +15,7 @@ import Actor._
 
 case class NQ(accountNo: String)
 case object DQ
-case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: ActorID)
+case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: ActorRef)
 case object SZ
 
 class QueueActor extends Transactor {

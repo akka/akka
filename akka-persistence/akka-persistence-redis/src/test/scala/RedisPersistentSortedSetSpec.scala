@@ -7,7 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
 import Actor._
 
 /**
@@ -43,7 +43,7 @@ case class SCORE(h: Hacker)
 case class RANGE(start: Int, end: Int)
 
 // add and remove subject to the condition that there will be at least 3 hackers
-case class MULTI(add: List[Hacker], rem: List[Hacker], failer: ActorID)
+case class MULTI(add: List[Hacker], rem: List[Hacker], failer: ActorRef)
 
 class SortedSetActor extends Transactor {
   timeout = 100000

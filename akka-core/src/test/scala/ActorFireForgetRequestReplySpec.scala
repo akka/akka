@@ -17,7 +17,7 @@ object ActorFireForgetRequestReplySpec {
     }
   }
 
-  class SenderActor(replyActor: ActorID) extends Actor {
+  class SenderActor(replyActor: ActorRef) extends Actor {
     dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
     def receive = {

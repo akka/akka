@@ -10,7 +10,7 @@ import org.apache.camel.{Processor, ExchangePattern, Exchange, ProducerTemplate}
 import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.spi.Synchronization
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 import se.scalablesolutions.akka.util.Logging
 
@@ -162,7 +162,7 @@ trait Producer { self: Actor =>
  */
 class ProducerResponseSender(
     headers: Map[String, Any],
-    replyTo : Option[Either[ActorID, CompletableFuture[Any]]],
+    replyTo : Option[Either[ActorRef, CompletableFuture[Any]]],
     producer: Actor) extends Synchronization with Logging {
 
   implicit val producerActor = Some(producer) // the response sender

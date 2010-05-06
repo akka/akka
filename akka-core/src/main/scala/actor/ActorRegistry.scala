@@ -11,8 +11,8 @@ import scala.reflect.Manifest
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 
 sealed trait ActorRegistryEvent
-case class ActorRegistered(actor: ActorID) extends ActorRegistryEvent
-case class ActorUnregistered(actor: ActorID) extends ActorRegistryEvent
+case class ActorRegistered(actor: ActorRef) extends ActorRegistryEvent
+case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
 
 /**
  * Registry holding all Actor instances in the whole system.
@@ -27,16 +27,16 @@ case class ActorUnregistered(actor: ActorID) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends Logging {
-  private val actorsByUUID =          new ConcurrentHashMap[String, ActorID]
-  private val actorsById =            new ConcurrentHashMap[String, List[ActorID]]
-  private val actorsByClassName =     new ConcurrentHashMap[String, List[ActorID]]
-  private val registrationListeners = new CopyOnWriteArrayList[ActorID]
+  private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
+  private val actorsById =            new ConcurrentHashMap[String, List[ActorRef]]
+  private val actorsByClassName =     new ConcurrentHashMap[String, List[ActorRef]]
+  private val registrationListeners = new CopyOnWriteArrayList[ActorRef]
 
   /**
    * Returns all actors in the system.
    */
-  def actors: List[ActorID] = {
-    val all = new ListBuffer[ActorID]
+  def actors: List[ActorRef] = {
+    val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) all += elements.nextElement
     all.toList
@@ -45,7 +45,7 @@ object ActorRegistry extends Logging {
   /**
    * Invokes a function for all actors.
    */
-  def foreach(f: (ActorID) => Unit) = {
+  def foreach(f: (ActorRef) => Unit) = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) f(elements.nextElement)
   }
@@ -53,8 +53,8 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument.
    */
-  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorID] = {
-    val all = new ListBuffer[ActorID]
+  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] = {
+    val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val actorId = elements.nextElement
@@ -68,7 +68,7 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors of the exact type specified by the class passed in as the Class argument.
    */
-  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorID] = {
+  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] = {
     if (actorsByClassName.containsKey(clazz.getName)) actorsByClassName.get(clazz.getName)
     else Nil
   }
@@ -76,7 +76,7 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors that has a specific id.
    */
-  def actorsFor(id: String): List[ActorID] = {
+  def actorsFor(id: String): List[ActorRef] = {
     if (actorsById.containsKey(id)) actorsById.get(id)
     else Nil
   }
@@ -84,7 +84,7 @@ object ActorRegistry extends Logging {
    /**
    * Finds the actor that has a specific UUID.
    */
-  def actorFor(uuid: String): Option[ActorID] = {
+  def actorFor(uuid: String): Option[ActorRef] = {
     if (actorsByUUID.containsKey(uuid)) Some(actorsByUUID.get(uuid))
     else None
   }
@@ -92,7 +92,7 @@ object ActorRegistry extends Logging {
   /**
    * Registers an actor in the ActorRegistry.
    */
-  def register(actorId: ActorID) = {
+  def register(actorId: ActorRef) = {
     // UUID
     actorsByUUID.put(actorId.uuid, actorId)
 
@@ -115,7 +115,7 @@ object ActorRegistry extends Logging {
   /**
    * Unregisters an actor in the ActorRegistry.
    */
-  def unregister(actor: ActorID) = {
+  def unregister(actor: ActorRef) = {
     actorsByUUID remove actor.uuid
     actorsById remove actor.id
     actorsByClassName remove actor.getClass.getName
@@ -138,7 +138,7 @@ object ActorRegistry extends Logging {
   /**
    * Adds the registration <code>listener</code> this this registry's listener list.
    */
-  def addRegistrationListener(listener: ActorID) = {
+  def addRegistrationListener(listener: ActorRef) = {
     listener.start
     registrationListeners.add(listener)
   }
@@ -146,12 +146,12 @@ object ActorRegistry extends Logging {
   /**
    * Removes the registration <code>listener</code> this this registry's listener list.
    */
-  def removeRegistrationListener(listener: ActorID) = {
+  def removeRegistrationListener(listener: ActorRef) = {
     listener.stop
     registrationListeners.remove(listener)
   }
 
-  private def foreachListener(f: (ActorID) => Unit) {
+  private def foreachListener(f: (ActorRef) => Unit) {
     val iterator = registrationListeners.iterator
     while (iterator.hasNext) {
       val listener = iterator.next

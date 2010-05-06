@@ -83,9 +83,9 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }).start
   Thread.sleep(1000)
 
-  var pingpong1: ActorID = _
-  var pingpong2: ActorID = _
-  var pingpong3: ActorID = _
+  var pingpong1: ActorRef = _
+  var pingpong2: ActorRef = _
+  var pingpong3: ActorRef = _
 
   @Test def shouldStartServer = {
     Log.messageLog.clear

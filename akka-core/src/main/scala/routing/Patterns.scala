@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.patterns
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 
 object Patterns {
@@ -27,24 +27,24 @@ object Patterns {
     filter({case a if a.isInstanceOf[A] => interceptor(a)}, interceptee)
 
   //FIXME 2.8, use default params with CyclicIterator
-  def loadBalancerActor(actors: => InfiniteIterator[ActorID]): ActorID = 
+  def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef = 
     newActor(() => new Actor with LoadBalancer {
       start
       val seq = actors
     })
 
-  def dispatcherActor(routing: PF[Any, ActorID], msgTransformer: (Any) => Any): ActorID = 
+  def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef = 
     newActor(() => new Actor with Dispatcher {
       start
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
     })
 
-  def dispatcherActor(routing: PF[Any, ActorID]): ActorID = newActor(() => new Actor with Dispatcher {
+  def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = newActor(() => new Actor with Dispatcher {
     start
     def routes = routing
   })
 
-  def loggerActor(actorToLog: ActorID, logger: (Any) => Unit): ActorID = 
+  def loggerActor(actorToLog: ActorRef, logger: (Any) => Unit): ActorRef = 
     dispatcherActor({case _ => actorToLog}, logger)
 }
