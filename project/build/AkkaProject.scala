@@ -51,9 +51,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // project defintions
-  lazy val akka_java_util = project("akka-util-java", "akka-util-java", new AkkaJavaUtilProject(_))
-  lazy val akka_util = project("akka-util", "akka-util", new AkkaUtilProject(_))
-  lazy val akka_core = project("akka-core", "akka-core", new AkkaCoreProject(_), akka_util, akka_java_util)
+  lazy val akka_core = project("akka-core", "akka-core", new AkkaCoreProject(_))
   lazy val akka_amqp = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
   lazy val akka_http = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
   lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
@@ -90,8 +88,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") +
     " scala-library.jar" +
-    " dist/akka-util_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-util-java_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-cluster%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
@@ -151,21 +147,16 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
     val jsr166x = "jsr166x" % "jsr166x" % "1.0" % "compile"
     val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
-    // testing
-    val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
-    val junit = "junit" % "junit" % "4.5" % "test"
-  }
-
-  class AkkaUtilProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val werkz = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % "2.1" % "compile"
     val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5" % "2.1" % "compile"
     val configgy = "net.lag" % "configgy" % "2.8.0.Beta1-1.5-SNAPSHOT" % "compile"
-  }
-
-  class AkkaJavaUtilProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val guicey = "org.guiceyfruit" % "guice-core" % "2.0-beta-4" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
     val multiverse = "org.multiverse" % "multiverse-alpha" % "0.5" % "compile"
+    
+    // testing
+    val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
+    val junit = "junit" % "junit" % "4.5" % "test"
   }
 
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
