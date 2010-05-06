@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
-import se.scalablesolutions.akka.actor.{Exit, Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.util.{UUID, Logging}
 import se.scalablesolutions.akka.config.Config.config
@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable.{HashSet, HashMap}
 
 /**
+ * Atomic remote request/reply message id generator.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteRequestIdFactory {
@@ -42,6 +44,69 @@ case class RemoteClientDisconnected(host: String, port: Int) extends RemoteClien
 case class RemoteClientConnected(host: String, port: Int) extends RemoteClientLifeCycleEvent
 
 /**
+ * Remote Actor proxy factory.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[akka] object RemoteActorProxy {
+  def apply(uuid: String, className: String, hostname: String, port: Int, timeout: Long): ActorRef =
+    new ActorRef(() => new RemoteActorProxy(uuid, className, hostname, port, timeout))
+}
+
+/**
+ * Remote Actor proxy.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[akka] class RemoteActorProxy private (
+  uuid: String, className: String, hostname: String, port: Int, timeOut: Long) extends Actor {
+  start
+  val remoteClient = RemoteClient.clientFor(hostname, port)
+
+  override def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
+    val requestBuilder = RemoteRequest.newBuilder
+        .setId(RemoteRequestIdFactory.nextId)
+        .setTarget(className)
+        .setTimeout(timeOut)
+        .setUuid(uuid)
+        .setIsActor(true)
+        .setIsOneWay(true)
+        .setIsEscaped(false)
+    if (senderOption.isDefined) {
+      val sender = senderOption.get.actor
+      requestBuilder.setSourceTarget(sender.getClass.getName)
+      requestBuilder.setSourceUuid(sender.uuid)
+      val (host, port) = sender._replyToAddress.map(address => 
+        (address.getHostName, address.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
+      requestBuilder.setSourceHostname(host)
+      requestBuilder.setSourcePort(port)
+    }
+    RemoteProtocolBuilder.setMessage(message, requestBuilder)
+    remoteClient.send[Any](requestBuilder.build, None)
+  }
+
+  override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
+      message: Any,
+      timeout: Long,
+      senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
+    val requestBuilder = RemoteRequest.newBuilder
+        .setId(RemoteRequestIdFactory.nextId)
+        .setTarget(className)
+        .setTimeout(timeout)
+        .setUuid(uuid)
+        .setIsActor(true)
+        .setIsOneWay(false)
+        .setIsEscaped(false)
+    RemoteProtocolBuilder.setMessage(message, requestBuilder)
+    val future = remoteClient.send(requestBuilder.build, senderFuture)
+    if (future.isDefined) future.get
+    else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
+  }
+
+  def receive = {case _ => {}}
+}
+
+/**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
@@ -53,62 +118,17 @@ object RemoteClient extends Logging {
 
   // FIXME: simplify overloaded methods when we have Scala 2.8
 
-  def actorFor(className: String, hostname: String, port: Int): ActorID =
+  def actorFor(className: String, hostname: String, port: Int): ActorRef =
     actorFor(className, className, 5000L, hostname, port)
 
-  def actorFor(actorId: String, className: String, hostname: String, port: Int): ActorID =
+  def actorFor(actorId: String, className: String, hostname: String, port: Int): ActorRef =
     actorFor(actorId, className, 5000L, hostname, port)
 
-  def actorFor(className: String, timeout: Long, hostname: String, port: Int): ActorID =
+  def actorFor(className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     actorFor(className, className, timeout, hostname, port)
 
-  def actorFor(actorId: String, className: String, timeout: Long, hostname: String, port: Int): ActorID = new ActorID(() => 
-    new Actor {
-      start
-      val remoteClient = RemoteClient.clientFor(hostname, port)
-
-      override def postMessageToMailbox(message: Any, sender: Option[ActorID]): Unit = {
-        val requestBuilder = RemoteRequest.newBuilder
-            .setId(RemoteRequestIdFactory.nextId)
-            .setTarget(className)
-            .setTimeout(timeout)
-            .setUuid(actorId)
-            .setIsActor(true)
-            .setIsOneWay(true)
-            .setIsEscaped(false)
-        if (sender.isDefined) {
-          val sndr = sender.get.actor
-          requestBuilder.setSourceTarget(sndr.getClass.getName)
-          requestBuilder.setSourceUuid(sndr.uuid)
-          val (host, port) = sndr._replyToAddress.map(a => (a.getHostName, a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
-          requestBuilder.setSourceHostname(host)
-          requestBuilder.setSourcePort(port)
-        }
-        RemoteProtocolBuilder.setMessage(message, requestBuilder)
-        remoteClient.send[Any](requestBuilder.build, None)
-      }
-
-      override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
-          message: Any,
-          timeout: Long,
-          senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-        val requestBuilder = RemoteRequest.newBuilder
-            .setId(RemoteRequestIdFactory.nextId)
-            .setTarget(className)
-            .setTimeout(timeout)
-            .setUuid(actorId)
-            .setIsActor(true)
-            .setIsOneWay(false)
-            .setIsEscaped(false)
-        RemoteProtocolBuilder.setMessage(message, requestBuilder)
-        val future = remoteClient.send(requestBuilder.build, senderFuture)
-        if (future.isDefined) future.get
-        else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
-      }
-
-      def receive = {case _ => {}}
-    }
-  )
+  def actorFor(actorId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef = 
+    RemoteActorProxy(actorId, className, hostname, port, timeout)
 
   def clientFor(hostname: String, port: Int): RemoteClient = clientFor(new InetSocketAddress(hostname, port))
 
@@ -174,8 +194,8 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
 
   @volatile private[remote] var isRunning = false
   private val futures = new ConcurrentHashMap[Long, CompletableFuture[_]]
-  private val supervisors = new ConcurrentHashMap[String, ActorID]
-  private[remote] val listeners = new ConcurrentSkipListSet[ActorID]
+  private val supervisors = new ConcurrentHashMap[String, ActorRef]
+  private[remote] val listeners = new ConcurrentSkipListSet[ActorRef]
 
   private val channelFactory = new NioClientSocketChannelFactory(
     Executors.newCachedThreadPool,
@@ -200,7 +220,7 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
       val channel = connection.awaitUninterruptibly.getChannel
       openChannels.add(channel)
       if (!connection.isSuccess) {
-        listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientError(connection.getCause))
+        listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(connection.getCause))
         log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
       }
       isRunning = true
@@ -232,21 +252,21 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
     }
   } else {
     val exception = new IllegalStateException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.")
-    listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientError(exception))
+    listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(exception))
     throw exception
   }
 
-  def registerSupervisorForActor(actorId: ActorID) =
+  def registerSupervisorForActor(actorId: ActorRef) =
     if (!actorId.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actorId + " since it is not under supervision")
     else supervisors.putIfAbsent(actorId.supervisor.get.uuid, actorId)
 
-  def deregisterSupervisorForActor(actorId: ActorID) =
+  def deregisterSupervisorForActor(actorId: ActorRef) =
     if (!actorId.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actorId + " since it is not under supervision")
     else supervisors.remove(actorId.supervisor.get.uuid)
 
-  def registerListener(actorId: ActorID) = listeners.add(actorId)
+  def registerListener(actorId: ActorRef) = listeners.add(actorId)
 
-  def deregisterListener(actorId: ActorID) = listeners.remove(actorId)
+  def deregisterListener(actorId: ActorRef) = listeners.remove(actorId)
 }
 
 /**
@@ -254,7 +274,7 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
  */
 class RemoteClientPipelineFactory(name: String,
                                   futures: ConcurrentMap[Long, CompletableFuture[_]],
-                                  supervisors: ConcurrentMap[String, ActorID],
+                                  supervisors: ConcurrentMap[String, ActorRef],
                                   bootstrap: ClientBootstrap,
                                   remoteAddress: SocketAddress,
                                   timer: HashedWheelTimer,
@@ -285,7 +305,7 @@ class RemoteClientPipelineFactory(name: String,
 @ChannelHandler.Sharable
 class RemoteClientHandler(val name: String,
                           val futures: ConcurrentMap[Long, CompletableFuture[_]],
-                          val supervisors: ConcurrentMap[String, ActorID],
+                          val supervisors: ConcurrentMap[String, ActorRef],
                           val bootstrap: ClientBootstrap,
                           val remoteAddress: SocketAddress,
                           val timer: HashedWheelTimer,
@@ -325,12 +345,12 @@ class RemoteClientHandler(val name: String,
         futures.remove(reply.getId)
       } else {
         val exception = new IllegalArgumentException("Unknown message received in remote client handler: " + result)
-        client.listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientError(exception))
+        client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(exception))
         throw exception
       }
     } catch {
       case e: Exception =>
-       client.listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientError(e))
+       client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(e))
         log.error("Unexpected exception in remote client handler: %s", e)
         throw e
     }
@@ -345,7 +365,7 @@ class RemoteClientHandler(val name: String,
         // Wait until the connection attempt succeeds or fails.
         client.connection.awaitUninterruptibly
         if (!client.connection.isSuccess) {
-          client.listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientError(client.connection.getCause))
+          client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(client.connection.getCause))
           log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)
         }
       }
@@ -353,17 +373,17 @@ class RemoteClientHandler(val name: String,
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-   client.listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientConnected(client.hostname, client.port))
+   client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
     log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientDisconnected(client.hostname, client.port))
+    client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientDisconnected(client.hostname, client.port))
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    client.listeners.toArray.foreach(l => l.asInstanceOf[ActorID] ! RemoteClientError(event.getCause))
+    client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(event.getCause))
     log.error(event.getCause, "Unexpected exception from downstream in remote client")
     event.getChannel.close
   }

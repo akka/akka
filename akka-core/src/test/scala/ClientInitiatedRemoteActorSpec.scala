@@ -45,7 +45,7 @@ object SendOneWayAndReplySenderActor {
 }
 class SendOneWayAndReplySenderActor extends Actor {
   var state: Option[AnyRef] = None
-  var sendTo: ActorID = _
+  var sendTo: ActorRef = _
   var latch: CountDownLatch = _
 
   def sendOff = sendTo ! "Hello"

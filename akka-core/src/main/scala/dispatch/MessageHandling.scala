@@ -7,15 +7,15 @@ package se.scalablesolutions.akka.dispatch
 import java.util.List
 
 import se.scalablesolutions.akka.util.{HashCode, Logging}
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 import java.util.concurrent.ConcurrentHashMap
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
-final class MessageInvocation(val receiver: ActorID,
+final class MessageInvocation(val receiver: ActorRef,
                               val message: Any,
-                              val replyTo : Option[Either[ActorID, CompletableFuture[Any]]],
+                              val replyTo : Option[Either[ActorRef, CompletableFuture[Any]]],
                               val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 
@@ -56,12 +56,12 @@ trait MessageInvoker {
 }
 
 trait MessageDispatcher extends Logging {
-  protected val references = new ConcurrentHashMap[String, ActorID]
+  protected val references = new ConcurrentHashMap[String, ActorRef]
   def dispatch(invocation: MessageInvocation)
   def start
   def shutdown
-  def register(actorId: ActorID) = references.put(actorId.uuid, actorId)
-  def unregister(actorId: ActorID) = {
+  def register(actorId: ActorRef) = references.put(actorId.uuid, actorId)
+  def unregister(actorId: ActorRef) = {
     references.remove(actorId.uuid)
     if (canBeShutDown)
       shutdown // shut down in the dispatcher's references is zero

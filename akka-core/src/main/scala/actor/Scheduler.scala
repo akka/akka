@@ -26,7 +26,7 @@ case class SchedulerException(msg: String, e: Throwable) extends RuntimeExceptio
  * Rework of David Pollak's ActorPing class in the Lift Project
  * which is licensed under the Apache 2 License.
  */
-class ScheduleActor(val receiver: ActorID, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
+class ScheduleActor(val receiver: ActorRef, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
   lifeCycle = Some(LifeCycle(Permanent))
 
   def receive = {
@@ -39,14 +39,14 @@ class ScheduleActor(val receiver: ActorID, val future: ScheduledFuture[AnyRef]) 
 
 object Scheduler extends Actor {
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
-  private val schedulers = new ConcurrentHashMap[ActorID, ActorID]
+  private val schedulers = new ConcurrentHashMap[ActorRef, ActorRef]
   faultHandler = Some(OneForOneStrategy(5, 5000))
   trapExit = List(classOf[Throwable])
   start
 
-  def schedule(receiver: ActorID, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
+  def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
     try {
-      startLink(new ActorID(() => new ScheduleActor(
+      startLink(new ActorRef(() => new ScheduleActor(
         receiver,
         service.scheduleAtFixedRate(new java.lang.Runnable {
           def run = receiver ! message;
@@ -58,7 +58,7 @@ object Scheduler extends Actor {
 
   def restart = service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
-  def stopSupervising(actorId: ActorID) = {
+  def stopSupervising(actorId: ActorRef) = {
     unlink(actorId)
     schedulers.remove(actorId)
   }

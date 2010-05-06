@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.stm
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 
@@ -61,7 +61,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
     private case object Get extends DataFlowVariableMessage
 
     private val value = new AtomicReference[Option[T]](None)
-    private val blockedReaders = new ConcurrentLinkedQueue[ActorID]
+    private val blockedReaders = new ConcurrentLinkedQueue[ActorRef]
 
     private class In[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
       timeout = TIME_OUT

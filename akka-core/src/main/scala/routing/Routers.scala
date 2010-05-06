@@ -4,13 +4,13 @@
 
 package se.scalablesolutions.akka.patterns
 
-import se.scalablesolutions.akka.actor.{Actor, ActorID}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 trait Dispatcher { self: Actor =>
 
   protected def transform(msg: Any): Any = msg
 
-  protected def routes: PartialFunction[Any, ActorID]
+  protected def routes: PartialFunction[Any, ActorRef]
 
   protected def dispatch: PartialFunction[Any, Unit] = {
     case a if routes.isDefinedAt(a) =>
@@ -22,7 +22,7 @@ trait Dispatcher { self: Actor =>
 }
 
 trait LoadBalancer extends Dispatcher { self: Actor =>
-  protected def seq: InfiniteIterator[ActorID]
+  protected def seq: InfiniteIterator[ActorRef]
 
   protected def routes = { case x if seq.hasNext => seq.next }
 }
