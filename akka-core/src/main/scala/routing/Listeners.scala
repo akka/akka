@@ -11,6 +11,12 @@ case class Listen(listener: ActorID) extends ListenerMessage
 case class Deafen(listener: ActorID) extends ListenerMessage 
 case class WithListeners(f: Set[ActorID] => Unit) extends ListenerMessage
 
+/** Listeners is a generic trait to implement listening capability on an Actor
+ *  Use the <code>gossip(msg)</code> method to have it sent to the listenees
+ *  Send <code>Listen(self)</code> to start listening
+ *  Send <code>Deafen(self)</code> to stop listening
+ *  Send <code>WithListeners(fun)</code> to traverse the current listeners
+ */
 trait Listeners { self : Actor =>
   import se.scalablesolutions.akka.actor.Agent
   private lazy val listeners = Agent(Set[ActorID]())
