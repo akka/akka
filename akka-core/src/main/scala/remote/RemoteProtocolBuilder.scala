@@ -17,7 +17,6 @@ object RemoteProtocolBuilder {
   private var SERIALIZER_SBINARY: Serializer.SBinary = Serializer.SBinary
   private var SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
 
-
   def setClassLoader(cl: ClassLoader) = {
     SERIALIZER_JAVA.classLoader = Some(cl)
     SERIALIZER_JAVA_JSON.classLoader = Some(cl)
@@ -26,6 +25,8 @@ object RemoteProtocolBuilder {
   
   def getMessage(request: RemoteRequest): Any = {
     request.getProtocol match {
+      case SerializationProtocol.JAVA =>
+        unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
       case SerializationProtocol.SBINARY =>
         val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(request.getMessage.toByteArray)
@@ -38,15 +39,13 @@ object RemoteProtocolBuilder {
       case SerializationProtocol.PROTOBUF =>
         val messageClass = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
         SERIALIZER_PROTOBUF.in(request.getMessage.toByteArray, Some(messageClass))
-      case SerializationProtocol.JAVA =>
-        unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
-      case SerializationProtocol.AVRO =>
-        throw new UnsupportedOperationException("Avro protocol is not yet supported")
     }
   }
 
   def getMessage(reply: RemoteReply): Any = {
     reply.getProtocol match {
+      case SerializationProtocol.JAVA =>
+        unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
       case SerializationProtocol.SBINARY =>
         val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(reply.getMessage.toByteArray)
@@ -59,10 +58,6 @@ object RemoteProtocolBuilder {
       case SerializationProtocol.PROTOBUF =>
         val messageClass = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
         SERIALIZER_PROTOBUF.in(reply.getMessage.toByteArray, Some(messageClass))
-      case SerializationProtocol.JAVA =>
-        unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
-      case SerializationProtocol.AVRO =>
-        throw new UnsupportedOperationException("Avro protocol is not yet supported")
     }
   }
 

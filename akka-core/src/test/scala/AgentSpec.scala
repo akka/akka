@@ -3,6 +3,7 @@ package se.scalablesolutions.akka.actor
 import se.scalablesolutions.akka.actor.Actor.transactor
 import se.scalablesolutions.akka.stm.Transaction.Global.atomic
 import se.scalablesolutions.akka.util.Logging
+import Actor._
 
 import org.scalatest.Suite
 import org.scalatest.junit.JUnitRunner

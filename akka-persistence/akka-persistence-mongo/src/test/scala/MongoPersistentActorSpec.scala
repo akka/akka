@@ -7,7 +7,8 @@ import org.scalatest.junit.JUnitSuite
 import _root_.dispatch.json.{JsNumber, JsValue}
 import _root_.dispatch.json.Js._
 
-import se.scalablesolutions.akka.actor.{Transactor, Actor}
+import se.scalablesolutions.akka.actor.{Transactor, Actor, ActorID}
+import Actor._
 
 /**
  * A persistent actor based on MongoDB storage.
@@ -23,8 +24,8 @@ import se.scalablesolutions.akka.actor.{Transactor, Actor}
  */
 
 case class Balance(accountNo: String)
-case class Debit(accountNo: String, amount: BigInt, failer: Actor)
-case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: Actor)
+case class Debit(accountNo: String, amount: BigInt, failer: ActorID)
+case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: ActorID)
 case class Credit(accountNo: String, amount: BigInt)
 case class Log(start: Int, finish: Int)
 case object LogSize
@@ -104,9 +105,9 @@ class BankAccountActor extends Transactor {
 class MongoPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
-    val bactor = new BankAccountActor
+    val bactor = newActor[BankAccountActor]
     bactor.start
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
     bactor !! Credit("a-123", 5000)
     bactor !! Debit("a-123", 3000, failer)
@@ -136,14 +137,14 @@ class MongoPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulDebit = {
-    val bactor = new BankAccountActor
+    val bactor = newActor[BankAccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
 
     val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
     assertEquals(BigInt(5000), BigInt(b.intValue))
 
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
     try {
       bactor !! Debit("a-123", 7000, failer)
@@ -159,14 +160,14 @@ class MongoPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulMultiDebit = {
-    val bactor = new BankAccountActor
+    val bactor = newActor[BankAccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
 
     val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
     assertEquals(BigInt(5000), BigInt(b.intValue))
 
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
     try {
       bactor !! MultiDebit("a-123", List(500, 2000, 1000, 3000), failer)

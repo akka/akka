@@ -5,6 +5,7 @@
 package sample.rest.scala
 
 import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.stm.TransactionalState
 import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
 import se.scalablesolutions.akka.config.ScalaConfig._
@@ -26,16 +27,16 @@ class Boot {
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
       Supervise(
-        new SimpleService,
+        newActor[SimpleService],
         LifeCycle(Permanent)) ::
       Supervise(
-        new Chat,
+        newActor[Chat],
         LifeCycle(Permanent)) ::
       Supervise(
-         new PersistentSimpleService,
+         newActor[PersistentSimpleService],
          LifeCycle(Permanent)) ::
       Supervise(
-         new PubSub,
+         newActor[PubSub],
          LifeCycle(Permanent))
       :: Nil))
   factory.newInstance.start
@@ -58,7 +59,7 @@ class SimpleService extends Transactor {
 
   @GET
   @Produces(Array("text/html"))
-  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
+  def count = (self !! Tick).getOrElse(<error>Error in counter</error>)
 
   def receive = {
     case Tick => if (hasStartedTicking) {
@@ -110,7 +111,7 @@ class PersistentSimpleService extends Transactor {
 
   @GET
   @Produces(Array("text/html"))
-  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
+  def count = (self !! Tick).getOrElse(<error>Error in counter</error>)
 
   def receive = {
     case Tick => if (hasStartedTicking) {
@@ -152,7 +153,7 @@ class Chat extends Actor with Logging {
   @Consumes(Array("application/x-www-form-urlencoded"))
   @Produces(Array("text/html"))
   def publishMessage(form: MultivaluedMap[String, String]) =
-    (this !! Chat(form.getFirst("name"),
+    (self !! Chat(form.getFirst("name"),
                   form.getFirst("action"),
                   form.getFirst("message"))).getOrElse("System__error")
 }

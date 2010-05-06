@@ -6,9 +6,18 @@ import org.apache.camel.component.mock.MockEndpoint
 import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
-import se.scalablesolutions.akka.actor.Actor.Sender.Self
+import se.scalablesolutions.akka.actor.Actor._
+
+object ProducerFeatureTest {
+  class TestProducer(uri: String) extends Actor with Producer {
+    def endpointUri = uri
+    def receive = produce
+  }
+}
 
 class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
+  import ProducerFeatureTest._
+  
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     CamelContextManager.init
@@ -27,7 +36,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message sync and receive response") {
       given("a registered synchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = new TestProducer("direct:producer-test-2") with Sync
+      val producer = newActor(() => new TestProducer("direct:producer-test-2") with Sync)
       producer.start
 
       when("a test message is sent to the producer")
@@ -41,7 +50,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message async and receive response") {
       given("a registered asynchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = new TestProducer("direct:producer-test-2")
+      val producer = newActor(() => new TestProducer("direct:producer-test-2"))
       producer.start
 
       when("a test message is sent to the producer")
@@ -55,7 +64,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message sync and receive failure") {
       given("a registered synchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = new TestProducer("direct:producer-test-2") with Sync
+      val producer = newActor(() => new TestProducer("direct:producer-test-2") with Sync)
       producer.start
 
       when("a fail message is sent to the producer")
@@ -71,7 +80,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message async and receive failure") {
       given("a registered asynchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = new TestProducer("direct:producer-test-2")
+      val producer = newActor(() => new TestProducer("direct:producer-test-2"))
       producer.start
 
       when("a fail message is sent to the producer")
@@ -87,7 +96,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message sync oneway") {
       given("a registered synchronous one-way producer for endpoint direct:producer-test-1")
-      val producer = new TestProducer("direct:producer-test-1") with Sync with Oneway
+      val producer = newActor(() => new TestProducer("direct:producer-test-1") with Sync with Oneway)
       producer.start
 
       when("a test message is sent to the producer")
@@ -100,7 +109,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message async oneway") {
       given("a registered asynchronous one-way producer for endpoint direct:producer-test-1")
-      val producer = new TestProducer("direct:producer-test-1") with Oneway
+      val producer = newActor(() => new TestProducer("direct:producer-test-1") with Oneway)
       producer.start
 
       when("a test message is sent to the producer")
@@ -114,11 +123,6 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
   private def mockEndpoint = CamelContextManager.context.getEndpoint("mock:mock", classOf[MockEndpoint])
   
-  class TestProducer(uri: String) extends Actor with Producer {
-    def endpointUri = uri
-    def receive = produce
-  }
-
   class TestRoute extends RouteBuilder {
     def configure {
       // for one-way messaging tests

@@ -7,7 +7,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Actor, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorID, Transactor}
+import Actor._
 
 /**
  * A persistent actor based on Redis sortedset storage.
@@ -42,7 +43,7 @@ case class SCORE(h: Hacker)
 case class RANGE(start: Int, end: Int)
 
 // add and remove subject to the condition that there will be at least 3 hackers
-case class MULTI(add: List[Hacker], rem: List[Hacker], failer: Actor)
+case class MULTI(add: List[Hacker], rem: List[Hacker], failer: ActorID)
 
 class SortedSetActor extends Transactor {
   timeout = 100000
@@ -110,7 +111,7 @@ class RedisPersistentSortedSetSpec extends
   val h6 = Hacker("Alan Turing", "1912")
 
   describe("Add and report cardinality of the set") {
-    val qa = new SortedSetActor
+    val qa = newActor[SortedSetActor]
     qa.start
 
     it("should enter 6 hackers") {
@@ -166,10 +167,10 @@ class RedisPersistentSortedSetSpec extends
 
   describe("Transaction semantics") {
     it("should rollback on exception") {
-      val qa = new SortedSetActor
+      val qa = newActor[SortedSetActor]
       qa.start
 
-      val failer = new PersistentFailerActor
+      val failer = newActor[PersistentFailerActor]
       failer.start
 
       (qa !! SIZE).get.asInstanceOf[Int] should equal(0)
@@ -194,7 +195,7 @@ class RedisPersistentSortedSetSpec extends
 
   describe("zrange") {
     it ("should report proper range") {
-      val qa = new SortedSetActor
+      val qa = newActor[SortedSetActor]
       qa.start
       qa !! ADD(h1)
       qa !! ADD(h2)
@@ -213,7 +214,7 @@ class RedisPersistentSortedSetSpec extends
     }
 
     it ("should report proper rge") {
-      val qa = new SortedSetActor
+      val qa = newActor[SortedSetActor]
       qa.start
       qa !! ADD(h1)
       qa !! ADD(h2)

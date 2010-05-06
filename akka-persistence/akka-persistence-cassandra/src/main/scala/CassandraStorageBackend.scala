@@ -117,7 +117,14 @@ private[akka] object CassandraStorageBackend extends
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
   }
 
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = {
+  /**
+   * if <tt>start</tt> and <tt>finish</tt> both are defined, ignore <tt>count</tt> and
+   * report the range [start, finish)
+   * if <tt>start</tt> is not defined, assume <tt>start</tt> = 0
+   * if <tt>start</tt> == 0 and <tt>finish</tt> == 0, return an empty collection
+   */
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): 
+    List[Array[Byte]] = {
     val startBytes = if (start.isDefined) intToBytes(start.get) else null
     val finishBytes = if (finish.isDefined) intToBytes(finish.get) else null
     val columns: List[ColumnOrSuperColumn] = sessions.withSession {

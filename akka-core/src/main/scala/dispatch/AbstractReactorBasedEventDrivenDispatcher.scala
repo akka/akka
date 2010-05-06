@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.dispatch
 import java.util.{LinkedList, Queue, List}
 import java.util.HashMap
 
-import se.scalablesolutions.akka.actor.{ActorMessageInvoker, Actor}
+import se.scalablesolutions.akka.actor.{ActorMessageInvoker, Actor, ActorID}
 
 abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) extends MessageDispatcher {
   @volatile protected var active: Boolean = false
@@ -15,17 +15,17 @@ abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) exten
   protected val messageInvokers = new HashMap[AnyRef, MessageInvoker]
   protected var selectorThread: Thread = _
   protected val guard = new Object
-
+  
   def dispatch(invocation: MessageInvocation) = queue.append(invocation) 
 
-  override def register(actor: Actor) = synchronized {
-    messageInvokers.put(actor, new ActorMessageInvoker(actor))
-    super.register(actor)
+  override def register(actorId: ActorID) = synchronized {
+    messageInvokers.put(actorId, new ActorMessageInvoker(actorId))
+    super.register(actorId)
   }
 
-  override def unregister(actor: Actor) = synchronized {
-    messageInvokers.remove(actor)
-    super.unregister(actor)
+  override def unregister(actorId: ActorID) = synchronized {
+    messageInvokers.remove(actorId)
+    super.unregister(actorId)
   }
 
   def shutdown = if (active) {

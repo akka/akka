@@ -47,30 +47,18 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
   makeRemote(hostname, port)
 }
 
+// Life-cycle messages for the Actors
 @serializable sealed trait LifeCycleMessage
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMessage
 case class Restart(reason: Throwable) extends LifeCycleMessage
-case class Exit(dead: Actor, killer: Throwable) extends LifeCycleMessage
-case class Unlink(child: Actor) extends LifeCycleMessage
-case class UnlinkAndStop(child: Actor) extends LifeCycleMessage
+case class Exit(dead: ActorID, killer: Throwable) extends LifeCycleMessage
+case class Unlink(child: ActorID) extends LifeCycleMessage
+case class UnlinkAndStop(child: ActorID) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
+// Exceptions for Actors
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
-
-sealed abstract class DispatcherType
-object DispatcherType {
-  case object EventBasedThreadPooledProxyInvokingDispatcher extends DispatcherType
-  case object EventBasedSingleThreadDispatcher extends DispatcherType
-  case object EventBasedThreadPoolDispatcher extends DispatcherType
-  case object ThreadBasedDispatcher extends DispatcherType
-}
-
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
-  def invoke(handle: MessageInvocation) = actor.invoke(handle)
-}
+class ActorInitializationException private[akka](message: String) extends RuntimeException(message)
 
 /**
  * Utility class with factory methods for creating Actors.
@@ -78,15 +66,44 @@ class ActorMessageInvoker(val actor: Actor) extends MessageInvoker {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
-  val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
+  val TIMEOUT =            config.getInt("akka.actor.timeout", 5000)
+  val HOSTNAME =           config.getString("akka.remote.server.hostname", "localhost")
+  val PORT =               config.getInt("akka.remote.server.port", 9999)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
-  val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
-  val PORT = config.getInt("akka.remote.server.port", 9999)
 
+  // FIXME remove next release
   object Sender {
     @deprecated("import Actor.Sender.Self is not needed anymore, just use 'actor ! msg'")
     object Self
   }
+
+  /**
+   * Creates a new ActorID out of the Actor with type T.
+   * <pre>
+   *   import Actor._
+   *   val actor = newActor[MyActor]
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   */
+  def newActor[T <: Actor: Manifest]: ActorID = new ActorID(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+
+  /**
+   * Creates a new ActorID out of the Actor. Allows you to pass in a factory function 
+   * that creates the Actor. Please note that this function can be invoked multiple 
+   * times if for example the Actor is supervised and needs to be restarted.
+   * <p/>
+   * This function should <b>NOT</b> be used for remote actors.
+   * <pre>
+   *   import Actor._
+   *   val actor = newActor(() => new MyActor)
+   *   actor.start
+   *   actor ! message
+   *   actor.stop
+   * </pre>
+   */
+  def newActor(factory: () => Actor): ActorID = new ActorID(factory)
 
   /**
    * Use to create an anonymous event-driven actor.
@@ -104,11 +121,12 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def actor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
-    lifeCycle = Some(LifeCycle(Permanent))
-    start
-    def receive: PartialFunction[Any, Unit] = body
-  }
+  def actor(body: PartialFunction[Any, Unit]): ActorID =
+    new ActorID(() => new Actor() {
+      lifeCycle = Some(LifeCycle(Permanent))
+      start
+      def receive: PartialFunction[Any, Unit] = body
+    })
 
   /**
    * Use to create an anonymous transactional event-driven actor.
@@ -126,11 +144,12 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def transactor(body: PartialFunction[Any, Unit]): Actor = new Transactor() {
-    lifeCycle = Some(LifeCycle(Permanent))
-    start
-    def receive: PartialFunction[Any, Unit] = body
-  }
+  def transactor(body: PartialFunction[Any, Unit]): ActorID =
+    new ActorID(() => new Transactor() {
+      lifeCycle = Some(LifeCycle(Permanent))
+      start
+      def receive: PartialFunction[Any, Unit] = body
+    })
 
   /**
    * Use to create an anonymous event-driven actor with a 'temporary' life-cycle configuration,
@@ -146,11 +165,12 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def temporaryActor(body: PartialFunction[Any, Unit]): Actor = new Actor() {
-    lifeCycle = Some(LifeCycle(Temporary))
-    start
-    def receive = body
-  }
+  def temporaryActor(body: PartialFunction[Any, Unit]): ActorID =
+    new ActorID(() => new Actor() {
+      lifeCycle = Some(LifeCycle(Temporary))
+      start
+      def receive = body
+    })
 
   /**
    * Use to create an anonymous event-driven actor with both an init block and a message loop block.
@@ -171,12 +191,13 @@ object Actor extends Logging {
    */
   def init[A](body: => Unit) = {
     def handler[A](body: => Unit) = new {
-      def receive(handler: PartialFunction[Any, Unit]) = new Actor() {
-        lifeCycle = Some(LifeCycle(Permanent))
-        start
-        body
-        def receive = handler
-      }
+      def receive(handler: PartialFunction[Any, Unit]) =
+        new ActorID(() => new Actor() {
+          lifeCycle = Some(LifeCycle(Permanent))
+          start
+          body
+          def receive = handler
+        })
     }
     handler(body)
   }
@@ -200,12 +221,290 @@ object Actor extends Logging {
     case object Spawn
     new Actor() {
       start
-      this ! Spawn
+      self ! Spawn
       def receive = {
         case Spawn => body; stop
       }
     }
   }
+  
+  /** Starts the specified actor and returns it, useful for:
+   *  <pre>val actor = new FooActor
+   *  actor.start
+   *  //Gets replaced by
+   *  val actor = start(new FooActor)
+   *  </pre>
+   */
+  def start[T <: Actor](actor : T) : T = {
+    actor.start
+    actor
+  }
+  
+}
+
+/**
+ * ActorID is an immutable and serializable handle to an Actor.
+ * Create an ActorID for an Actor by using the factory method on the Actor object.
+ * Here is an example: 
+ * <pre>
+ *   import Actor._
+ * 
+ *   val actor = newActor[MyActor]
+ *   actor.start
+ *   actor ! message
+ *   actor.stop
+ * </pre>
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+final class ActorID private[akka] () {
+  private[akka] var newActorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None)
+
+  private[akka] def this(clazz: Class[_ <: Actor]) = { 
+    this()
+    newActorFactory = Left(Some(clazz))
+  }
+  
+  private[akka] def this(factory: () => Actor) = {
+    this()
+    newActorFactory = Right(Some(factory))
+  }
+  
+  private[akka] lazy val actor: Actor = {
+    val actor = newActorFactory match {
+      case Left(Some(clazz)) => 
+        try { 
+          clazz.newInstance 
+        } catch { 
+          case e: InstantiationException => throw new ActorInitializationException(
+            "Could not instantiate Actor due to:\n" + e + 
+            "\nMake sure Actor is defined inside a class/trait," + 
+            "\nif so put it outside the class/trait, f.e. in a companion object.") 
+        }
+      case Right(Some(factory)) => 
+        factory()
+      case _ => 
+        throw new ActorInitializationException("Can't create Actor, no Actor class or factory function in scope")
+    }
+    if (actor eq null) throw new ActorInitializationException("Actor instance passed to ActorID can not be 'null'")
+    actor
+  }
+  
+  /**
+   * Returns the class for the Actor instance that is managed by the ActorID.
+   */
+  def actorClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
+  
+  /**
+   * Starts up the actor and its message queue.
+   */
+  def start: ActorID = {
+    actor.start
+    this
+  }
+
+  /**
+   * Shuts down the actor its dispatcher and message queue.
+   * Alias for 'stop'.
+   */
+  protected def exit: Unit = actor.stop
+
+  /**
+   * Shuts down the actor its dispatcher and message queue.
+   */
+  def stop: Unit = actor.stop
+
+  /**
+   * Is the actor running?
+   */
+  def isRunning: Boolean = actor.isRunning
+
+  /**
+   * Returns the mailbox size.
+   */
+  def mailboxSize: Int = actor.mailboxSize
+
+  /**
+   * Returns the supervisor, if there is one.
+   */
+  def supervisor: Option[ActorID] = actor.supervisor
+
+  /**
+   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
+   * <p/>
+   *
+   * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
+   * <p/>
+   *
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable,
+   * if invoked from within an Actor. If not then no sender is available.
+   * <pre>
+   *   actor ! message
+   * </pre>
+   * <p/>
+   */
+  def !(message: Any)(implicit sender: Option[ActorID] = None) = {
+    if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
+    if (actor.isRunning) actor.postMessageToMailbox(message, sender)
+    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+
+  /**
+   * Sends a message asynchronously and waits on a future for a reply message.
+   * <p/>
+   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
+   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
+   * <p/>
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
+   * implement request/response message exchanges.
+   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
+   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
+   */
+  def !![T](message: Any, timeout: Long): Option[T] = {
+    if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
+    if (actor.isRunning) {
+      val future = actor.postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
+      val isActiveObject = message.isInstanceOf[Invocation]
+      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) 
+        future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
+      try {
+        future.await
+      } catch {
+        case e: FutureTimeoutException =>
+          if (isActiveObject) throw e
+          else None
+      }
+
+      if (future.exception.isDefined) throw future.exception.get._2
+      else future.result
+    }
+    else throw new IllegalStateException(
+      "Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+
+  /**
+   * Sends a message asynchronously and waits on a future for a reply message.
+   * Uses the time-out defined in the Actor.
+   * <p/>
+   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
+   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
+   * <p/>
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
+   * implement request/response message exchanges.
+   * <p/>
+   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
+   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
+   */
+  def !![T](message: Any): Option[T] = !![T](message, actor.timeout)
+
+  /**
+   * Sends a message asynchronously returns a future holding the eventual reply message.
+   * <p/>
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
+   * implement request/response message exchanges.
+   * If you are sending messages using <code>!!!</code> then you <b>have to</b> use <code>reply(..)</code>
+   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
+   */
+  def !!![T](message: Any): Future[T] = {
+    if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
+    if (actor.isRunning) {
+      actor.postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, actor.timeout, None)
+    } else throw new IllegalStateException(
+      "Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+
+  /**
+   * Forwards the message and passes the original sender actor as the sender.
+   * <p/>
+   * Works with '!', '!!' and '!!!'.
+   */
+  def forward(message: Any)(implicit sender: Some[ActorID]) = {
+    if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
+    if (actor.isRunning) {
+      sender.get.actor.replyTo match {
+        case Some(Left(actorID)) => actor.postMessageToMailbox(message, Some(actorID))
+        case Some(Right(future)) => actor.postMessageToMailboxAndCreateFutureResultWithTimeout(message, actor.timeout, Some(future))
+        case _                   => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
+      }
+    } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+  }
+
+  /**
+   * Get the dispatcher for this actor.
+   */
+  def dispatcher: MessageDispatcher = actor.messageDispatcher
+
+  /**
+   * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
+   */
+  def dispatcher_=(md: MessageDispatcher): Unit = actor.dispatcher = md
+
+  /**
+   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
+   */
+  def makeRemote(hostname: String, port: Int): Unit =
+    if (actor.isRunning) throw new IllegalStateException("Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
+    else actor.makeRemote(new InetSocketAddress(hostname, port))
+
+  /**
+   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
+   */
+  def makeRemote(address: InetSocketAddress): Unit = actor.makeRemote(address)
+
+  /**
+   * Set the contact address for this actor. This is used for replying to messages sent asynchronously when no reply channel exists.
+   */
+  def setReplyToAddress(hostname: String, port: Int): Unit = actor.setReplyToAddress(new InetSocketAddress(hostname, port))
+
+  def setReplyToAddress(address: InetSocketAddress): Unit = actor.setReplyToAddress(address)
+
+  /**
+   * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
+   * However, it will always participate in an existing transaction.
+   * If transactionality want to be completely turned off then do it by invoking:
+   * <pre/>
+   *  TransactionManagement.disableTransactions
+   * </pre>
+   */
+  def makeTransactionRequired = actor.makeTransactionRequired
+
+  /**
+   * Returns the id for the actor.
+   */
+  def id = actor.getId
+
+  /**
+   * Returns the uuid for the actor.
+   */
+  def uuid = actor.uuid
+  
+  /**
+   * Returns the remote address for the actor, if any, else None.
+   */
+  def remoteAddress: Option[InetSocketAddress] = actor._remoteAddress
+
+  /**
+   * Returns the default timeout for the actor.
+   */
+  def timeout: Long = actor.timeout
+
+  override def toString: String = "ActorID[" + actor.toString + "]"
+  override def hashCode: Int = actor.hashCode
+  override def equals(that: Any): Boolean = actor.equals(that)
+
+  private[akka] def supervisor_=(sup: Option[ActorID]): Unit = actor._supervisor = sup
+
+  private[akka] def trapExit: List[Class[_ <: Throwable]] = actor.trapExit
+  private[akka] def trapExit_=(exits: List[Class[_ <: Throwable]]) = actor.trapExit = exits
+
+  private[akka] def lifeCycle: Option[LifeCycle] = actor.lifeCycle
+  private[akka] def lifeCycle_=(cycle: Option[LifeCycle]) = actor.lifeCycle = cycle
+
+  private[akka] def faultHandler: Option[FaultHandlingStrategy] = actor.faultHandler
+  private[akka] def faultHandler_=(handler: Option[FaultHandlingStrategy]) = actor.faultHandler = handler
 }
 
 /**
@@ -222,9 +521,22 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends TransactionManagement with Logging {
-  implicit protected val self: Some[Actor] = Some(this)
   // Only mutable for RemoteServer in order to maintain identity across nodes
   private[akka] var _uuid = UUID.newUuid.toString
+
+  /**
+   * The 'self' field holds the ActorID for this actor.
+   * Can be used to send messages to itself:
+   * <pre>
+   * self ! message
+   * </pre>
+   * Note: if you are using the 'self' field in the constructor of the Actor
+   *       then you have to make the fields/operations that are using it 'lazy'.
+   */
+   implicit val self = new ActorID(() => this)
+
+   /** For internal use only */
+   implicit val _selfOption = Some(self)
 
   // ====================================
   // private fields
@@ -236,8 +548,8 @@ trait Actor extends TransactionManagement with Logging {
   @volatile private[akka] var _isKilled = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
-  private[akka] var _linkedActors: Option[HashSet[Actor]] = None
-  private[akka] var _supervisor: Option[Actor] = None
+  private[akka] var _linkedActors: Option[HashSet[ActorID]] = None
+  private[akka] var _supervisor: Option[ActorID] = None
   private[akka] var _replyToAddress: Option[InetSocketAddress] = None
   private[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
 
@@ -247,17 +559,13 @@ trait Actor extends TransactionManagement with Logging {
    */
   private[akka] val _dispatcherLock: Lock = new ReentrantLock
 
-  // ====================================
-  // protected fields
-  // ====================================
-
   /**
    * Holds the reference to the sender of the currently processed message.
-   * Is None if no sender was specified
-   * Is Some(Left(Actor)) if sender is an actor
-   * Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
+   * - Is None if no sender was specified
+   * - Is Some(Left(Actor)) if sender is an actor
+   * - Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
    */
-  protected var replyTo: Option[Either[Actor,CompletableFuture[Any]]] = None
+  private[akka] var replyTo: Option[Either[ActorID, CompletableFuture[Any]]] = None
 
   // ====================================
   // ==== USER CALLBACKS TO OVERRIDE ====
@@ -279,8 +587,8 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * User overridable callback/setting.
    * <p/>
-   * Defines the default timeout for '!!' invocations,
-   * e.g. the timeout for the future returned by the call to '!!'.
+   * Defines the default timeout for '!!' and '!!!' invocations,
+   * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
    */
   @volatile var timeout: Long = Actor.TIMEOUT
 
@@ -417,18 +725,17 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * Starts up the actor and its message queue.
    */
-  def start: Actor = synchronized {
+  def start: Unit = synchronized {
     if (_isShutDown) throw new IllegalStateException("Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!_isRunning) {
-      messageDispatcher.register(this)
+      messageDispatcher.register(self)
       messageDispatcher.start
       _isRunning = true
       init
       initTransactionalState
     }
     Actor.log.debug("[%s] has started", toString)
-    ActorRegistry.register(this)
-    this
+    ActorRegistry.register(self)
   }
 
   /**
@@ -442,14 +749,19 @@ trait Actor extends TransactionManagement with Logging {
    */
   def stop = synchronized {
     if (_isRunning) {
-      messageDispatcher.unregister(this)
+      messageDispatcher.unregister(self)
       _isRunning = false
       _isShutDown = true
       shutdown
-      ActorRegistry.unregister(this)
+      ActorRegistry.unregister(self)
       _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
     }
   }
+
+  /**
+   * Is the actor killed?
+   */
+  def isKilled: Boolean = _isKilled
 
   /**
    * Is the actor running?
@@ -465,137 +777,41 @@ trait Actor extends TransactionManagement with Logging {
   /**
    * Returns the supervisor, if there is one.
    */
-  def supervisor: Option[Actor] = _supervisor
-
-  /**
-   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
-   * <p/>
-   *
-   * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
-   * <p/>
-   *
-   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable,
-   * if invoked from within an Actor. If not then no sender is available.
-   * <pre>
-   *   actor ! message
-   * </pre>
-   * <p/>
-   */
-  def !(message: Any)(implicit sender: Option[Actor] = None) = {
-    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (_isRunning) postMessageToMailbox(message, sender)
-    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-  }
-
-  /**
-   * Sends a message asynchronously and waits on a future for a reply message.
-   * <p/>
-   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
-   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
-   * implement request/response message exchanges.
-   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-  def !![T](message: Any, timeout: Long): Option[T] = {
-    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (_isRunning) {
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
-      val isActiveObject = message.isInstanceOf[Invocation]
-      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
-      try {
-        future.await
-      } catch {
-        case e: FutureTimeoutException =>
-          if (isActiveObject) throw e
-          else None
-      }
-      
-      if (future.exception.isDefined) throw future.exception.get._2
-      else future.result
-    }
-    else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
-  }
-
-  /**
-   * Sends a message asynchronously and waits on a future for a reply message.
-   * Uses the time-out defined in the Actor. 
-   * <p/>
-   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
-   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
-   * implement request/response message exchanges.
-   * <p/>
-   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-  def !![T](message: Any): Option[T] = !![T](message, timeout)
-
-  /**
-   * FIXME document !!!
-   */
-  def !!![T](message: Any): Future[T] = {
-    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (_isRunning) {
-      postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
-    } else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
-  }
-
-  /**
-   * Forwards the message and passes the original sender actor as the sender.
-   * <p/>
-   * Works with both '!' and '!!'.
-   */
-  def forward(message: Any)(implicit sender: Some[Actor]) = {
-    if (_isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (_isRunning) {
-      sender.get.replyTo match {
-        case Some(Left(actor))   => postMessageToMailbox(message, Some(actor))
-        case Some(Right(future)) => postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, Some(future))
-        case _                   => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
-      }
-    } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
-  }
+  def supervisor: Option[ActorID] = _supervisor
 
   /**
    * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
+   * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to
    */
   protected[this] def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
-              "\n\tNo sender in scope, can't reply. " +
-              "\n\tYou have probably used the '!' method to either; " +
-              "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
-              "\n\t\t2. Send a message from an instance that is *not* an actor" +
-              "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
-              "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-              "\n\tthat will be bound by the argument passed to 'reply'." +
-              "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
-  
+    "\n\tNo sender in scope, can't reply. " +
+    "\n\tYou have probably used the '!' method to either; " +
+    "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
+    "\n\t\t2. Send a message from an instance that is *not* an actor" +
+    "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
+    "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
+    "\n\tthat will be bound by the argument passed to 'reply'." +
+    "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
+
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
+   * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
-  protected[this] def reply_?(message: Any) : Boolean = replyTo match {
-    case Some(Left(actor))   => 
+  protected[this] def reply_?(message: Any): Boolean = replyTo match {
+    case Some(Left(actor)) =>
       actor ! message
       true
-      
-    case Some(Right(future : Future[Any])) => 
+    case Some(Right(future: Future[Any])) =>
       future completeWithResult message
       true
-      
-    case _ => 
+    case _ =>
       false
   }
-  
+
   /**
    * Get the dispatcher for this actor.
    */
@@ -606,9 +822,9 @@ trait Actor extends TransactionManagement with Logging {
    */
   def dispatcher_=(md: MessageDispatcher): Unit = synchronized {
     if (!_isRunning) {
-      messageDispatcher.unregister(this)
+      messageDispatcher.unregister(self)
       messageDispatcher = md
-      messageDispatcher.register(this)
+      messageDispatcher.register(self)
     } else throw new IllegalArgumentException(
       "Can not swap dispatcher for " + toString + " after it has been started")
   }
@@ -663,12 +879,12 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def link(actor: Actor) = {
-    if (actor._supervisor.isDefined) throw new IllegalStateException(
-      "Actor can only have one supervisor [" + actor + "], e.g. link(actor) fails")
-    getLinkedActors.add(actor)
-    actor._supervisor = Some(this)
-    Actor.log.debug("Linking actor [%s] to actor [%s]", actor, this)
+  protected[this] def link(actorId: ActorID) = {
+    if (actorId.supervisor.isDefined) throw new IllegalStateException(
+      "Actor can only have one supervisor [" + actorId + "], e.g. link(actor) fails")
+    getLinkedActors.add(actorId)
+    actorId.supervisor = Some(self)
+    Actor.log.debug("Linking actor [%s] to actor [%s]", actorId, this)
   }
 
   /**
@@ -676,12 +892,12 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def unlink(actor: Actor) = {
-    if (!getLinkedActors.contains(actor)) throw new IllegalStateException(
-      "Actor [" + actor + "] is not a linked actor, can't unlink")
-    getLinkedActors.remove(actor)
-    actor._supervisor = None
-    Actor.log.debug("Unlinking actor [%s] from actor [%s]", actor, this)
+  protected[this] def unlink(actorId: ActorID) = {
+    if (!getLinkedActors.contains(actorId)) throw new IllegalStateException(
+      "Actor [" + actorId + "] is not a linked actor, can't unlink")
+    getLinkedActors.remove(actorId)
+    actorId.supervisor = None
+    Actor.log.debug("Unlinking actor [%s] from actor [%s]", actorId, this)
   }
 
   /**
@@ -689,11 +905,11 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def startLink(actor: Actor) = {
+  protected[this] def startLink(actorId: ActorID) = {
     try {
-      actor.start
+      actorId.start
     } finally {
-      link(actor)
+      link(actorId)
     }
   }
 
@@ -702,12 +918,12 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def startLinkRemote(actor: Actor, hostname: String, port: Int) = {
+  protected[this] def startLinkRemote(actorId: ActorID, hostname: String, port: Int) = {
     try {
-      actor.makeRemote(hostname, port)
-      actor.start
+      actorId.makeRemote(hostname, port)
+      actorId.start
     } finally {
-      link(actor)
+      link(actorId)
     }
   }
 
@@ -716,10 +932,10 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawn[T <: Actor : Manifest] : T = {
-    val actor = spawnButDoNotStart[T]
-    actor.start
-    actor
+  protected[this] def spawn[T <: Actor : Manifest]: ActorID = {
+    val actorId = spawnButDoNotStart[T]
+    actorId.start
+    actorId
   }
 
   /**
@@ -727,7 +943,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): T = {
+  protected[this] def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorID = {
     val actor = spawnButDoNotStart[T]
     actor.makeRemote(hostname, port)
     actor.start
@@ -739,7 +955,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLink[T <: Actor: Manifest]: T = {
+  protected[this] def spawnLink[T <: Actor: Manifest]: ActorID = {
     val actor = spawnButDoNotStart[T]
     try {
       actor.start
@@ -754,7 +970,7 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): T = {
+  protected[this] def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorID = {
     val actor = spawnButDoNotStart[T]
     try {
       actor.makeRemote(hostname, port)
@@ -783,15 +999,15 @@ trait Actor extends TransactionManagement with Logging {
 
   private[akka] def _resume = _isSuspended = false
 
-  private def spawnButDoNotStart[T <: Actor : Manifest] : T = {
+  private def spawnButDoNotStart[T <: Actor : Manifest]: ActorID = {
     val actor = manifest[T].erasure.asInstanceOf[Class[T]].newInstance
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
       actor.dispatcher = dispatcher
     }
-    actor
+    new ActorID(() => actor)
   }
 
-  protected[akka] def postMessageToMailbox(message: Any, sender: Option[Actor]): Unit = {
+  protected[akka] def postMessageToMailbox(message: Any, sender: Option[ActorID]): Unit = {
     joinTransaction(message)
 
     if (_remoteAddress.isDefined) {
@@ -810,11 +1026,11 @@ trait Actor extends TransactionManagement with Logging {
       // set the source fields used to reply back to the original sender
       // (i.e. not the remote proxy actor)
       if (sender.isDefined) {
-        val s = sender.get
+        val s = sender.get.actor
         requestBuilder.setSourceTarget(s.getClass.getName)
         requestBuilder.setSourceUuid(s.uuid)
 
-        val (host, port) = s._replyToAddress.map(a => (a.getHostName,a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
+        val (host, port) = s._replyToAddress.map(a => (a.getHostName, a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
 
         Actor.log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
 
@@ -825,12 +1041,12 @@ trait Actor extends TransactionManagement with Logging {
           val server = new RemoteServer
           server.start(host, port)
         }
-        RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.getId, sender.get)
+        RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.id, sender.get)
       }
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(_remoteAddress.get).send[Any](requestBuilder.build, None)
     } else {
-      val invocation = new MessageInvocation(this, message, sender.map(Left(_)), transactionSet.get)
+      val invocation = new MessageInvocation(self, message, sender.map(Left(_)), transactionSet.get)
       if (messageDispatcher.usesActorMailbox) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
@@ -863,8 +1079,8 @@ trait Actor extends TransactionManagement with Logging {
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFuture[T](timeout)
-      val invocation = new MessageInvocation(this, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
-      
+      val invocation = new MessageInvocation(self, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
+
       if (messageDispatcher.usesActorMailbox)
         _mailbox.add(invocation)
 
@@ -908,9 +1124,9 @@ trait Actor extends TransactionManagement with Logging {
         _isKilled = true
         Actor.log.error(e, "Could not invoke actor [%s]", this)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-        if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
-        replyTo match { 
-          case Some(Right(future)) => future.completeWithException(this, e)
+        if (_supervisor.isDefined) _supervisor.get ! Exit(self, e)
+        replyTo match {
+          case Some(Right(future)) => future.completeWithException(self, e)
           case _ =>
         }
     } finally {
@@ -958,8 +1174,8 @@ trait Actor extends TransactionManagement with Logging {
         } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
-        replyTo match { 
-          case Some(Right(future)) => future.completeWithException(this, e)
+        replyTo match {
+          case Some(Right(future)) => future.completeWithException(self, e)
           case _ =>
         }
 
@@ -967,7 +1183,7 @@ trait Actor extends TransactionManagement with Logging {
         if (topLevelTransaction) clearTransactionSet
 
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-        if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
+        if (_supervisor.isDefined) _supervisor.get ! Exit(self, e)
     } finally {
       clearTransaction
       if (topLevelTransaction) clearTransactionSet
@@ -985,13 +1201,13 @@ trait Actor extends TransactionManagement with Logging {
     case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
 
-  private[this] def handleTrapExit(dead: Actor, reason: Throwable): Unit = {
+  private[this] def handleTrapExit(dead: ActorID, reason: Throwable): Unit = {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
       if (faultHandler.isDefined) {
         faultHandler.get match {
           // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
           case AllForOneStrategy(maxNrOfRetries, withinTimeRange) => restartLinkedActors(reason)
-          case OneForOneStrategy(maxNrOfRetries, withinTimeRange) => dead.restart(reason)
+          case OneForOneStrategy(maxNrOfRetries, withinTimeRange) => dead.actor.restart(reason)
         }
       } else throw new IllegalStateException(
         "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
@@ -1000,8 +1216,9 @@ trait Actor extends TransactionManagement with Logging {
   }
 
   private[this] def restartLinkedActors(reason: Throwable) = {
-    getLinkedActors.toArray.toList.asInstanceOf[List[Actor]].foreach {
-      actor =>
+    getLinkedActors.toArray.toList.asInstanceOf[List[ActorID]].foreach {
+      actorId =>
+        val actor = actorId.actor
         if (actor.lifeCycle.isEmpty) actor.lifeCycle = Some(LifeCycle(Permanent))
         actor.lifeCycle.get match {
           case LifeCycle(scope, _) => {
@@ -1011,11 +1228,13 @@ trait Actor extends TransactionManagement with Logging {
               case Temporary =>
                 Actor.log.info("Actor [%s] configured as TEMPORARY and will not be restarted.", actor.id)
                 actor.stop
-                getLinkedActors.remove(actor) // remove the temporary actor
+                getLinkedActors.remove(actorId) // remove the temporary actor
                 // if last temporary actor is gone, then unlink me from supervisor
                 if (getLinkedActors.isEmpty) {
-                  Actor.log.info("All linked actors have died permanently (they were all configured as TEMPORARY)\n\tshutting down and unlinking supervisor actor as well [%s].", actor.id)
-                  _supervisor.foreach(_ ! UnlinkAndStop(this))
+                  Actor.log.info("All linked actors have died permanently (they were all configured as TEMPORARY)" +
+                                "\n\tshutting down and unlinking supervisor actor as well [%s].", 
+                                actor.id)
+                  _supervisor.foreach(_ ! UnlinkAndStop(self))
                 }
             }
           }
@@ -1033,14 +1252,14 @@ trait Actor extends TransactionManagement with Logging {
 
   private[akka] def registerSupervisorAsRemoteActor: Option[String] = synchronized {
     if (_supervisor.isDefined) {
-      RemoteClient.clientFor(_remoteAddress.get).registerSupervisorForActor(this)
+      RemoteClient.clientFor(_remoteAddress.get).registerSupervisorForActor(self)
       Some(_supervisor.get.uuid)
     } else None
   }
 
-  protected def getLinkedActors: HashSet[Actor] = {
+  protected def getLinkedActors: HashSet[ActorID] = {
     if (_linkedActors.isEmpty) {
-      val set = new HashSet[Actor]
+      val set = new HashSet[ActorID]
       _linkedActors = Some(set)
       set
     } else _linkedActors.get
@@ -1081,3 +1300,21 @@ trait Actor extends TransactionManagement with Logging {
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
 }
+
+sealed abstract class DispatcherType
+object DispatcherType {
+  case object EventBasedThreadPooledProxyInvokingDispatcher extends DispatcherType
+  case object EventBasedSingleThreadDispatcher extends DispatcherType
+  case object EventBasedThreadPoolDispatcher extends DispatcherType
+  case object ThreadBasedDispatcher extends DispatcherType
+}
+
+/**
+ * For internal use only.
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class ActorMessageInvoker private[akka] (val actorId: ActorID) extends MessageInvoker {
+  def invoke(handle: MessageInvocation) = actorId.actor.invoke(handle)
+}
+

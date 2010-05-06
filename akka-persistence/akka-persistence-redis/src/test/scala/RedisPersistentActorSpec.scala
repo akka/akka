@@ -3,7 +3,8 @@ package se.scalablesolutions.akka.persistence.redis
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.{Actor, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorID, Transactor}
+import Actor._
 
 /**
  * A persistent actor based on Redis storage.
@@ -19,8 +20,8 @@ import se.scalablesolutions.akka.actor.{Actor, Transactor}
  */
 
 case class Balance(accountNo: String)
-case class Debit(accountNo: String, amount: BigInt, failer: Actor)
-case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: Actor)
+case class Debit(accountNo: String, amount: BigInt, failer: ActorID)
+case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: ActorID)
 case class Credit(accountNo: String, amount: BigInt)
 case class Log(start: Int, finish: Int)
 case object LogSize
@@ -100,9 +101,9 @@ import org.scalatest.junit.JUnitSuite
 class RedisPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
-    val bactor = new AccountActor
+    val bactor = newActor[AccountActor]
     bactor.start
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
     bactor !! Credit("a-123", 5000)
     bactor !! Debit("a-123", 3000, failer)
@@ -126,12 +127,12 @@ class RedisPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulDebit = {
-    val bactor = new AccountActor
+    val bactor = newActor[AccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
     assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
 
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
     try {
       bactor !! Debit("a-123", 7000, failer)
@@ -147,13 +148,13 @@ class RedisPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulMultiDebit = {
-    val bactor = new AccountActor
+    val bactor = newActor[AccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
 
     assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
-    val failer = new PersistentFailerActor
+    val failer = newActor[PersistentFailerActor]
     failer.start
     try {
       bactor !! MultiDebit("a-123", List(500, 2000, 1000, 3000), failer)

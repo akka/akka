@@ -10,7 +10,7 @@ import org.apache.camel.{Processor, ExchangePattern, Exchange, ProducerTemplate}
 import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.spi.Synchronization
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorID}
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 import se.scalablesolutions.akka.util.Logging
 
@@ -162,7 +162,7 @@ trait Producer { self: Actor =>
  */
 class ProducerResponseSender(
     headers: Map[String, Any],
-    replyTo : Option[Either[Actor,CompletableFuture[Any]]],
+    replyTo : Option[Either[ActorID, CompletableFuture[Any]]],
     producer: Actor) extends Synchronization with Logging {
 
   implicit val producerActor = Some(producer) // the response sender
@@ -180,9 +180,9 @@ class ProducerResponseSender(
   def onComplete(exchange: Exchange) = reply(exchange.toResponseMessage(headers))
 
   private def reply(message: Any) = replyTo match {
-    case Some(Left(actor)) => actor ! message
+    case Some(Left(actor))   => actor ! message
     case Some(Right(future)) => future.completeWithResult(message)
-    case _ => log.warning("No destination for sending response")
+    case _                   => log.warning("No destination for sending response")
   }
 }
 

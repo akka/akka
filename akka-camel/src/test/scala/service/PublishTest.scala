@@ -4,32 +4,11 @@ import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.Consumer
 
-class PublishTest extends JUnitSuite {
-  @Test def shouldCreatePublishRequestList = {
-    val publish = Publish.forConsumers(List(new ConsumeAnnotatedActor))
-    assert(publish === List(Publish("mock:test1", "test", false)))
-  }
-
-  @Test def shouldCreateSomePublishRequestWithActorId = {
-    val publish = Publish.forConsumer(new ConsumeAnnotatedActor)
-    assert(publish === Some(Publish("mock:test1", "test", false)))
-  }
-
-  @Test def shouldCreateSomePublishRequestWithActorUuid = {
-    val actor = new ConsumerActor
-    val publish = Publish.forConsumer(actor)
-    assert(publish === Some(Publish("mock:test2", actor.uuid, true)))
-    assert(publish === Some(Publish("mock:test2", actor.uuid, true)))
-  }
-
-  @Test def shouldCreateNone = {
-    val publish = Publish.forConsumer(new PlainActor)
-    assert(publish === None)
-  }
-
+object PublishTest {
   @consume("mock:test1")
   class ConsumeAnnotatedActor extends Actor {
     id = "test"
@@ -43,5 +22,30 @@ class PublishTest extends JUnitSuite {
 
   class PlainActor extends Actor {
     protected def receive = null
+  }
+}
+
+class PublishTest extends JUnitSuite {
+  import PublishTest._
+  
+  @Test def shouldCreatePublishRequestList = {
+    val publish = Publish.forConsumers(List(newActor[ConsumeAnnotatedActor]))
+    assert(publish === List(Publish("mock:test1", "test", false)))
+  }
+
+  @Test def shouldCreateSomePublishRequestWithActorId = {
+    val publish = Publish.forConsumer(newActor[ConsumeAnnotatedActor])
+    assert(publish === Some(Publish("mock:test1", "test", false)))
+  }
+
+  @Test def shouldCreateSomePublishRequestWithActorUuid = {
+    val ca = newActor[ConsumerActor]
+    val publish = Publish.forConsumer(ca)
+    assert(publish === Some(Publish("mock:test2", ca.uuid, true)))
+  }
+
+  @Test def shouldCreateNone = {
+    val publish = Publish.forConsumer(newActor[PlainActor])
+    assert(publish === None)
   }
 }

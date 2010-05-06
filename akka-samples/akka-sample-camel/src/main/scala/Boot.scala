@@ -7,6 +7,7 @@ import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import se.scalablesolutions.akka.actor.SupervisorFactory
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.config.ScalaConfig._
 
@@ -27,15 +28,15 @@ class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-      Supervise(new Consumer1, LifeCycle(Permanent)) ::
-      Supervise(new Consumer2, LifeCycle(Permanent)) :: Nil))
+      Supervise(newActor[Consumer1], LifeCycle(Permanent)) ::
+      Supervise(newActor[Consumer2], LifeCycle(Permanent)) :: Nil))
   factory.newInstance.start
 
   // Routing example
 
-  val producer = new Producer1
-  val mediator = new Transformer(producer)
-  val consumer = new Consumer3(mediator)
+  val producer = newActor[Producer1]
+  val mediator = newActor(() => new Transformer(producer))
+  val consumer = newActor(() => new Consumer3(mediator))
 
   producer.start
   mediator.start
@@ -54,9 +55,9 @@ class Boot {
   //val cometdPublisher = new Publisher("cometd-publisher", cometdUri).start
 
   val jmsUri = "jms:topic:test"
-  val jmsSubscriber1 = new Subscriber("jms-subscriber-1", jmsUri).start
-  val jmsSubscriber2 = new Subscriber("jms-subscriber-2", jmsUri).start
-  val jmsPublisher = new Publisher("jms-publisher", jmsUri).start
+  val jmsSubscriber1 = newActor(() => new Subscriber("jms-subscriber-1", jmsUri)).start
+  val jmsSubscriber2 = newActor(() => new Subscriber("jms-subscriber-2", jmsUri)).start
+  val jmsPublisher =   newActor(() => new Publisher("jms-publisher", jmsUri)).start
 
   //val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
   val jmsPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher).start
