@@ -337,6 +337,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     mainResources +++
     mainDependencies.scalaJars +++
     descendents(info.projectPath, "*.conf") +++
+    descendents(info.projectPath / "scripts", "run_akka.sh") +++
     descendents(info.projectPath / "dist", "*.jar") +++
     descendents(info.projectPath / "deploy", "*.jar") +++
     descendents(path("lib") ##, "*.jar") +++
