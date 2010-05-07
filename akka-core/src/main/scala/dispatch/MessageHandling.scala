@@ -60,9 +60,9 @@ trait MessageDispatcher extends Logging {
   def dispatch(invocation: MessageInvocation)
   def start
   def shutdown
-  def register(actorId: ActorRef) = references.put(actorId.uuid, actorId)
-  def unregister(actorId: ActorRef) = {
-    references.remove(actorId.uuid)
+  def register(actorRef: ActorRef) = references.put(actorRef.uuid, actorRef)
+  def unregister(actorRef: ActorRef) = {
+    references.remove(actorRef.uuid)
     if (canBeShutDown)
       shutdown // shut down in the dispatcher's references is zero
   }

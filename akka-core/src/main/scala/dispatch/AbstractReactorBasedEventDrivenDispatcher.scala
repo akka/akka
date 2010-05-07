@@ -18,14 +18,14 @@ abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) exten
   
   def dispatch(invocation: MessageInvocation) = queue.append(invocation) 
 
-  override def register(actorId: ActorRef) = synchronized {
-    messageInvokers.put(actorId, new ActorMessageInvoker(actorId))
-    super.register(actorId)
+  override def register(actorRef: ActorRef) = synchronized {
+    messageInvokers.put(actorRef, new ActorMessageInvoker(actorRef))
+    super.register(actorRef)
   }
 
-  override def unregister(actorId: ActorRef) = synchronized {
-    messageInvokers.remove(actorId)
-    super.unregister(actorId)
+  override def unregister(actorRef: ActorRef) = synchronized {
+    messageInvokers.remove(actorRef)
+    super.unregister(actorRef)
   }
 
   def shutdown = if (active) {

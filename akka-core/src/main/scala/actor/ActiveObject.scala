@@ -5,8 +5,8 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
-import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestIdFactory}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequestProtocol
+import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestProtocolIdFactory}
 import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
@@ -284,9 +284,9 @@ object ActiveObject {
     actor.initialize(target, proxy)
     actor.timeout = timeout
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
-    val actorId = new ActorRef(() => actor)
-    AspectInitRegistry.register(proxy, AspectInit(target, actorId, remoteAddress, timeout))
-    actorId.start
+    val actorRef = new ActorRef(() => actor)
+    AspectInitRegistry.register(proxy, AspectInit(target, actorRef, remoteAddress, timeout))
+    actorRef.start
     proxy.asInstanceOf[T]
   }
 
@@ -295,9 +295,9 @@ object ActiveObject {
     actor.initialize(target.getClass, target)
     actor.timeout = timeout
     if (remoteAddress.isDefined) actor.makeRemote(remoteAddress.get)
-    val actorId = new ActorRef(() => actor)
-    AspectInitRegistry.register(proxy, AspectInit(intf, actorId, remoteAddress, timeout))
-    actorId.start
+    val actorRef = new ActorRef(() => actor)
+    AspectInitRegistry.register(proxy, AspectInit(intf, actorRef, remoteAddress, timeout))
+    actorRef.start
     proxy.asInstanceOf[T]
   }
 
@@ -388,10 +388,10 @@ private[akka] object AspectInitRegistry {
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],
-  val actorId: ActorRef,
+  val actorRef: ActorRef,
   val remoteAddress: Option[InetSocketAddress],
   val timeout: Long) {
-  def this(target: Class[_], actorId: ActorRef, timeout: Long) = this(target, actorId, None, timeout)
+  def this(target: Class[_], actorRef: ActorRef, timeout: Long) = this(target, actorRef, None, timeout)
 }
 
 /**
@@ -405,7 +405,7 @@ private[akka] sealed case class AspectInit(
 private[akka] sealed class ActiveObjectAspect {
   @volatile private var isInitialized = false
   private var target: Class[_] = _
-  private var actorId: ActorRef = _
+  private var actorRef: ActorRef = _
   private var remoteAddress: Option[InetSocketAddress] = _
   private var timeout: Long = _
 
@@ -414,7 +414,7 @@ private[akka] sealed class ActiveObjectAspect {
     if (!isInitialized) {
       val init = AspectInitRegistry.initFor(joinPoint.getThis)
       target = init.target
-      actorId = init.actorId
+      actorRef = init.actorRef
       remoteAddress = init.remoteAddress
       timeout = init.timeout
       isInitialized = true
@@ -430,10 +430,10 @@ private[akka] sealed class ActiveObjectAspect {
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     if (isOneWay(rtti)) {
-      (actorId ! Invocation(joinPoint, true, true) ).asInstanceOf[AnyRef]
+      (actorRef ! Invocation(joinPoint, true, true) ).asInstanceOf[AnyRef]
     }
     else {
-      val result = actorId !! (Invocation(joinPoint, false, isVoid(rtti)), timeout)
+      val result = actorRef !! (Invocation(joinPoint, false, isVoid(rtti)), timeout)
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }
@@ -443,17 +443,17 @@ private[akka] sealed class ActiveObjectAspect {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val oneWay_? = isOneWay(rtti) || isVoid(rtti)
     val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
-    val requestBuilder = RemoteRequest.newBuilder
-      .setId(RemoteRequestIdFactory.nextId)
+    val requestBuilder = RemoteRequestProtocol.newBuilder
+      .setId(RemoteRequestProtocolIdFactory.nextId)
       .setMethod(rtti.getMethod.getName)
       .setTarget(target.getName)
-      .setUuid(actorId.uuid)
+      .setUuid(actorRef.uuid)
       .setTimeout(timeout)
       .setIsActor(false)
       .setIsOneWay(oneWay_?)
       .setIsEscaped(false)
     RemoteProtocolBuilder.setMessage(message, requestBuilder)
-    val id = actorId.actor.registerSupervisorAsRemoteActor
+    val id = actorRef.actor.registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
     val remoteMessage = requestBuilder.build
     val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage, None)
