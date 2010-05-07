@@ -6,8 +6,12 @@ package se.scalablesolutions.akka.patterns
 
 import se.scalablesolutions.akka.actor.ActorRef
 
+/** An Iterator that is either always empty or yields an infinite number of Ts
+ */
 trait InfiniteIterator[T] extends Iterator[T]
 
+/** CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List
+ */
 class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
   @volatile private[this] var current: List[T] = items
 
@@ -20,6 +24,10 @@ class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
   }
 }
 
+/** 
+ * This InfiniteIterator always returns the Actor that has the currently smallest mailbox
+ * useful for work-stealing.
+ */
 class SmallestMailboxFirstIterator(items : List[ActorRef]) extends InfiniteIterator[ActorRef] {
   def hasNext = items != Nil
 
