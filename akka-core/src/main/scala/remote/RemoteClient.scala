@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol}
 import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.util.{UUID, Logging}
@@ -31,7 +31,7 @@ import scala.collection.mutable.{HashSet, HashMap}
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteRequestIdFactory {
+object RemoteRequestProtocolIdFactory {
   private val nodeId = UUID.newUuid
   private val id = new AtomicLong
 
@@ -64,23 +64,15 @@ private[akka] class RemoteActorProxy private (
   val remoteClient = RemoteClient.clientFor(hostname, port)
 
   override def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    val requestBuilder = RemoteRequest.newBuilder
-        .setId(RemoteRequestIdFactory.nextId)
+    val requestBuilder = RemoteRequestProtocol.newBuilder
+        .setId(RemoteRequestProtocolIdFactory.nextId)
         .setTarget(className)
         .setTimeout(timeOut)
         .setUuid(uuid)
         .setIsActor(true)
         .setIsOneWay(true)
         .setIsEscaped(false)
-    if (senderOption.isDefined) {
-      val sender = senderOption.get.actor
-      requestBuilder.setSourceTarget(sender.getClass.getName)
-      requestBuilder.setSourceUuid(sender.uuid)
-      val (host, port) = sender._replyToAddress.map(address => 
-        (address.getHostName, address.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
-      requestBuilder.setSourceHostname(host)
-      requestBuilder.setSourcePort(port)
-    }
+    senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
     RemoteProtocolBuilder.setMessage(message, requestBuilder)
     remoteClient.send[Any](requestBuilder.build, None)
   }
@@ -89,14 +81,15 @@ private[akka] class RemoteActorProxy private (
       message: Any,
       timeout: Long,
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val requestBuilder = RemoteRequest.newBuilder
-        .setId(RemoteRequestIdFactory.nextId)
+    val requestBuilder = RemoteRequestProtocol.newBuilder
+        .setId(RemoteRequestProtocolIdFactory.nextId)
         .setTarget(className)
         .setTimeout(timeout)
         .setUuid(uuid)
         .setIsActor(true)
         .setIsOneWay(false)
         .setIsEscaped(false)
+    //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
     RemoteProtocolBuilder.setMessage(message, requestBuilder)
     val future = remoteClient.send(requestBuilder.build, senderFuture)
     if (future.isDefined) future.get
@@ -121,14 +114,14 @@ object RemoteClient extends Logging {
   def actorFor(className: String, hostname: String, port: Int): ActorRef =
     actorFor(className, className, 5000L, hostname, port)
 
-  def actorFor(actorId: String, className: String, hostname: String, port: Int): ActorRef =
-    actorFor(actorId, className, 5000L, hostname, port)
+  def actorFor(actorRef: String, className: String, hostname: String, port: Int): ActorRef =
+    actorFor(actorRef, className, 5000L, hostname, port)
 
   def actorFor(className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     actorFor(className, className, timeout, hostname, port)
 
-  def actorFor(actorId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef = 
-    RemoteActorProxy(actorId, className, hostname, port, timeout)
+  def actorFor(actorRef: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef = 
+    RemoteActorProxy(actorRef, className, hostname, port, timeout)
 
   def clientFor(hostname: String, port: Int): RemoteClient = clientFor(new InetSocketAddress(hostname, port))
 
@@ -237,7 +230,7 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
     }
   }
 
-  def send[T](request: RemoteRequest, senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = if (isRunning) {
+  def send[T](request: RemoteRequestProtocol, senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = if (isRunning) {
     if (request.getIsOneWay) {
       connection.getChannel.write(request)
       None
@@ -256,17 +249,17 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
     throw exception
   }
 
-  def registerSupervisorForActor(actorId: ActorRef) =
-    if (!actorId.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actorId + " since it is not under supervision")
-    else supervisors.putIfAbsent(actorId.supervisor.get.uuid, actorId)
+  def registerSupervisorForActor(actorRef: ActorRef) =
+    if (!actorRef.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actorRef + " since it is not under supervision")
+    else supervisors.putIfAbsent(actorRef.supervisor.get.uuid, actorRef)
 
-  def deregisterSupervisorForActor(actorId: ActorRef) =
-    if (!actorId.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actorId + " since it is not under supervision")
-    else supervisors.remove(actorId.supervisor.get.uuid)
+  def deregisterSupervisorForActor(actorRef: ActorRef) =
+    if (!actorRef.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actorRef + " since it is not under supervision")
+    else supervisors.remove(actorRef.supervisor.get.uuid)
 
-  def registerListener(actorId: ActorRef) = listeners.add(actorId)
+  def registerListener(actorRef: ActorRef) = listeners.add(actorRef)
 
-  def deregisterListener(actorId: ActorRef) = listeners.remove(actorId)
+  def deregisterListener(actorRef: ActorRef) = listeners.remove(actorRef)
 }
 
 /**
@@ -283,7 +276,7 @@ class RemoteClientPipelineFactory(name: String,
     val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT)
     val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
-    val protobufDec = new ProtobufDecoder(RemoteReply.getDefaultInstance)
+    val protobufDec = new ProtobufDecoder(RemoteReplyProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
     val zipCodec = RemoteServer.COMPRESSION_SCHEME match {
       case "zlib" => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL), new ZlibDecoder))
@@ -323,9 +316,9 @@ class RemoteClientHandler(val name: String,
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
     try {
       val result = event.getMessage
-      if (result.isInstanceOf[RemoteReply]) {
-        val reply = result.asInstanceOf[RemoteReply]
-        log.debug("Remote client received RemoteReply[\n%s]", reply.toString)
+      if (result.isInstanceOf[RemoteReplyProtocol]) {
+        val reply = result.asInstanceOf[RemoteReplyProtocol]
+        log.debug("Remote client received RemoteReplyProtocol[\n%s]", reply.toString)
         val future = futures.get(reply.getId).asInstanceOf[CompletableFuture[Any]]
         if (reply.getIsSuccessful) {
           val message = RemoteProtocolBuilder.getMessage(reply)
@@ -388,7 +381,7 @@ class RemoteClientHandler(val name: String,
     event.getChannel.close
   }
 
-  private def parseException(reply: RemoteReply) = {
+  private def parseException(reply: RemoteReplyProtocol) = {
     val exception = reply.getException
     val exceptionType = Class.forName(exception.substring(0, exception.indexOf('$')))
     val exceptionMessage = exception.substring(exception.indexOf('$') + 1, exception.length)

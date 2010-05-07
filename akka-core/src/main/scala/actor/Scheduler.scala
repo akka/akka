@@ -58,9 +58,9 @@ object Scheduler extends Actor {
 
   def restart = service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
-  def stopSupervising(actorId: ActorRef) = {
-    unlink(actorId)
-    schedulers.remove(actorId)
+  def stopSupervising(actorRef: ActorRef) = {
+    unlink(actorRef)
+    schedulers.remove(actorRef)
   }
 
   override def shutdown = {

@@ -103,9 +103,9 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   
   override def stop = synchronized {
     super[Actor].stop
-    getLinkedActors.toArray.toList.asInstanceOf[List[ActorRef]].foreach { actorId =>
-      actorId.stop
-      log.info("Shutting actor down: %s", actorId)
+    getLinkedActors.toArray.toList.asInstanceOf[List[ActorRef]].foreach { actorRef =>
+      actorRef.stop
+      log.info("Shutting actor down: %s", actorRef)
     }
     log.info("Stopping supervisor: %s", this)
   }
@@ -119,19 +119,19 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
     case SupervisorConfig(_, servers) =>
       servers.map(server =>
         server match {
-          case Supervise(actorId, lifeCycle, remoteAddress) =>
-            val className = actorId.actor.getClass.getName
+          case Supervise(actorRef, lifeCycle, remoteAddress) =>
+            val className = actorRef.actor.getClass.getName
             val currentActors = { 
               val list = actors.get(className)
               if (list eq null) List[ActorRef]()
               else list
             }
-            actors.put(className, actorId :: currentActors)
-            actorId.actor.lifeCycle = Some(lifeCycle)
-            startLink(actorId)
+            actors.put(className, actorRef :: currentActors)
+            actorRef.actor.lifeCycle = Some(lifeCycle)
+            startLink(actorRef)
             remoteAddress.foreach(address => RemoteServer.actorsFor(
               RemoteServer.Address(address.hostname, address.port))
-              .actors.put(actorId.id, actorId))
+              .actors.put(actorRef.id, actorRef))
 
            case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
              val supervisor = { 
