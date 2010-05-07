@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.serialization.Serializable.SBinary
 import se.scalablesolutions.akka.serialization.{Serializer, Serializable, SerializationProtocol}
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol}
 
 import com.google.protobuf.{Message, ByteString}
 
@@ -23,7 +23,7 @@ object RemoteProtocolBuilder {
     SERIALIZER_SCALA_JSON.classLoader = Some(cl)
   }
   
-  def getMessage(request: RemoteRequest): Any = {
+  def getMessage(request: RemoteRequestProtocol): Any = {
     request.getProtocol match {
       case SerializationProtocol.JAVA =>
         unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
@@ -42,7 +42,7 @@ object RemoteProtocolBuilder {
     }
   }
 
-  def getMessage(reply: RemoteReply): Any = {
+  def getMessage(reply: RemoteReplyProtocol): Any = {
     reply.getProtocol match {
       case SerializationProtocol.JAVA =>
         unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
@@ -61,7 +61,7 @@ object RemoteProtocolBuilder {
     }
   }
 
-  def setMessage(message: Any, builder: RemoteRequest.Builder) = {
+  def setMessage(message: Any, builder: RemoteRequestProtocol.Builder) = {
     if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
       builder.setProtocol(SerializationProtocol.SBINARY)
@@ -89,7 +89,7 @@ object RemoteProtocolBuilder {
     }
   }
 
-  def setMessage(message: Any, builder: RemoteReply.Builder) = {
+  def setMessage(message: Any, builder: RemoteReplyProtocol.Builder) = {
     if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
       builder.setProtocol(SerializationProtocol.SBINARY)

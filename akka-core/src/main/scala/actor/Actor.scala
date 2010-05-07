@@ -11,10 +11,10 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequest
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteProtocolBuilder, RemoteRequestIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteActorProxy, RemoteProtocolBuilder, RemoteRequestProtocolIdFactory}
 
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.commitbarriers.CountDownCommitBarrier
@@ -228,24 +228,54 @@ object Actor extends Logging {
     }
   }
   
-  /** Starts the specified actor and returns it, useful for:
-   *  <pre>val actor = new FooActor
+  /** 
+   * Starts the specified actor and returns it, useful for simplifying code such as:
+   * <pre>
+   *  val actor = new FooActor
    *  actor.start
-   *  //Gets replaced by
+   * </pre>
+   * can be replaced with:
+   * <pre>
+   *  import Actor._
+   *
    *  val actor = start(new FooActor)
-   *  </pre>
+   * </pre>
    */
   def start[T <: Actor](actor : T) : T = {
     actor.start
     actor
   }
-  
+}
+
+/**
+ * The ActorRef object can be used to create ActorRef instances out of its binary
+ * protobuf based representation.
+ * <pre>
+ *   val actorRef = ActorRef.fromBinary(bytes)
+ *   actorRef ! message // send message to remote actor through its reference
+ * </pre>
+ * 
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object ActorRef {
+  def fromBinary(bytes: Array[Byte]): ActorRef = 
+    fromProtocol(RemoteProtocol.ActorRefProtocol.newBuilder.mergeFrom(bytes).build)
+
+  def fromProtocol(protocol: RemoteProtocol.ActorRefProtocol): ActorRef =
+    RemoteActorProxy(
+      protocol.getUuid,
+      protocol.getActorClassName,
+      protocol.getSourceHostname,
+      protocol.getSourcePort,
+      protocol.getTimeout)
 }
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
+ * <p/>
  * Create an ActorRef for an Actor by using the factory method on the Actor object.
- * Here is an example: 
+ * <p/>
+ * Here is an example on how to create an actor with a default constructor.
  * <pre>
  *   import Actor._
  * 
@@ -254,24 +284,23 @@ object Actor extends Logging {
  *   actor ! message
  *   actor.stop
  * </pre>
+ * Here is an example on how to create an actor with a non-default constructor.
+ * <pre>
+ *   import Actor._
+ * 
+ *   val actor = newActor(() => new MyActor(...))
+ *   actor.start
+ *   actor ! message
+ *   actor.stop
+ * </pre>
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class ActorRef private[akka] () {
-  private[akka] var newActorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None)
+  private[akka] var actorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None)
 
-  private[akka] def this(clazz: Class[_ <: Actor]) = { 
-    this()
-    newActorFactory = Left(Some(clazz))
-  }
-  
-  private[akka] def this(factory: () => Actor) = {
-    this()
-    newActorFactory = Right(Some(factory))
-  }
-  
   private[akka] lazy val actor: Actor = {
-    val actor = newActorFactory match {
+    val actor = actorFactory match {
       case Left(Some(clazz)) => 
         try { 
           clazz.newInstance 
@@ -289,6 +318,39 @@ final class ActorRef private[akka] () {
     if (actor eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
     actor
   }
+  
+  private[akka] def this(clazz: Class[_ <: Actor]) = { 
+    this()
+    actorFactory = Left(Some(clazz))
+  }
+  
+  private[akka] def this(factory: () => Actor) = {
+    this()
+    actorFactory = Right(Some(factory))
+  }
+  
+  def toProtocol: RemoteProtocol.ActorRefProtocol = {
+    val (host, port) = actor._replyToAddress.map(address => 
+      (address.getHostName, address.getPort))
+      .getOrElse((Actor.HOSTNAME, Actor.PORT))
+
+    if (!actor._registeredInRemoteNodeDuringSerialization) { 
+      Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
+      if (RemoteServer.serverFor(host, port).isEmpty) (new RemoteServer).start(host, port)
+      RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(uuid, this)
+      actor._registeredInRemoteNodeDuringSerialization = true
+    }
+    
+    RemoteProtocol.ActorRefProtocol.newBuilder
+      .setUuid(uuid)
+      .setActorClassName(actorClass.getName)
+      .setSourceHostname(host)
+      .setSourcePort(port)
+      .setTimeout(timeout)
+      .build
+  }
+  
+  def toBinary: Array[Byte] = toProtocol.toByteArray
   
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
@@ -397,7 +459,7 @@ final class ActorRef private[akka] () {
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !![T](message: Any): Option[T] = !![T](message, actor.timeout)
+  def !![T](message: Any)(implicit sender: Option[ActorRef] = None): Option[T] = !![T](message, actor.timeout)
 
   /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
@@ -425,7 +487,7 @@ final class ActorRef private[akka] () {
     if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (actor.isRunning) {
       sender.get.actor.replyTo match {
-        case Some(Left(actorID)) => actor.postMessageToMailbox(message, Some(actorID))
+        case Some(Left(actorRef)) => actor.postMessageToMailbox(message, Some(actorRef))
         case Some(Right(future)) => actor.postMessageToMailboxAndCreateFutureResultWithTimeout(message, actor.timeout, Some(future))
         case _                   => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
       }
@@ -546,6 +608,7 @@ trait Actor extends TransactionManagement with Logging {
   @volatile private[this] var _isSuspended = true
   @volatile private[this] var _isShutDown = false
   @volatile private[akka] var _isKilled = false
+  @volatile private[akka] var _registeredInRemoteNodeDuringSerialization = false
   private var _hotswap: Option[PartialFunction[Any, Unit]] = None
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None
   private[akka] var _linkedActors: Option[HashSet[ActorRef]] = None
@@ -755,6 +818,7 @@ trait Actor extends TransactionManagement with Logging {
       shutdown
       ActorRegistry.unregister(self)
       _remoteAddress.foreach(address => RemoteClient.unregister(address.getHostName, address.getPort, uuid))
+      RemoteNode.unregister(self)
     }
   }
 
@@ -849,7 +913,8 @@ trait Actor extends TransactionManagement with Logging {
 
 
   /**
-   * Set the contact address for this actor. This is used for replying to messages sent asynchronously when no reply channel exists.
+   * Set the contact address for this actor. This is used for replying to messages sent 
+   * asynchronously when no reply channel exists.
    */
   def setReplyToAddress(hostname: String, port: Int): Unit = setReplyToAddress(new InetSocketAddress(hostname, port))
 
@@ -879,12 +944,12 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def link(actorId: ActorRef) = {
-    if (actorId.supervisor.isDefined) throw new IllegalStateException(
-      "Actor can only have one supervisor [" + actorId + "], e.g. link(actor) fails")
-    getLinkedActors.add(actorId)
-    actorId.supervisor = Some(self)
-    Actor.log.debug("Linking actor [%s] to actor [%s]", actorId, this)
+  protected[this] def link(actorRef: ActorRef) = {
+    if (actorRef.supervisor.isDefined) throw new IllegalStateException(
+      "Actor can only have one supervisor [" + actorRef + "], e.g. link(actor) fails")
+    getLinkedActors.add(actorRef)
+    actorRef.supervisor = Some(self)
+    Actor.log.debug("Linking actor [%s] to actor [%s]", actorRef, this)
   }
 
   /**
@@ -892,12 +957,12 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def unlink(actorId: ActorRef) = {
-    if (!getLinkedActors.contains(actorId)) throw new IllegalStateException(
-      "Actor [" + actorId + "] is not a linked actor, can't unlink")
-    getLinkedActors.remove(actorId)
-    actorId.supervisor = None
-    Actor.log.debug("Unlinking actor [%s] from actor [%s]", actorId, this)
+  protected[this] def unlink(actorRef: ActorRef) = {
+    if (!getLinkedActors.contains(actorRef)) throw new IllegalStateException(
+      "Actor [" + actorRef + "] is not a linked actor, can't unlink")
+    getLinkedActors.remove(actorRef)
+    actorRef.supervisor = None
+    Actor.log.debug("Unlinking actor [%s] from actor [%s]", actorRef, this)
   }
 
   /**
@@ -905,11 +970,11 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def startLink(actorId: ActorRef) = {
+  protected[this] def startLink(actorRef: ActorRef) = {
     try {
-      actorId.start
+      actorRef.start
     } finally {
-      link(actorId)
+      link(actorRef)
     }
   }
 
@@ -918,12 +983,12 @@ trait Actor extends TransactionManagement with Logging {
    * <p/>
    * To be invoked from within the actor itself.
    */
-  protected[this] def startLinkRemote(actorId: ActorRef, hostname: String, port: Int) = {
+  protected[this] def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int) = {
     try {
-      actorId.makeRemote(hostname, port)
-      actorId.start
+      actorRef.makeRemote(hostname, port)
+      actorRef.start
     } finally {
-      link(actorId)
+      link(actorRef)
     }
   }
 
@@ -933,9 +998,9 @@ trait Actor extends TransactionManagement with Logging {
    * To be invoked from within the actor itself.
    */
   protected[this] def spawn[T <: Actor : Manifest]: ActorRef = {
-    val actorId = spawnButDoNotStart[T]
-    actorId.start
-    actorId
+    val actorRef = spawnButDoNotStart[T]
+    actorRef.start
+    actorRef
   }
 
   /**
@@ -1007,15 +1072,15 @@ trait Actor extends TransactionManagement with Logging {
     new ActorRef(() => actor)
   }
 
-  protected[akka] def postMessageToMailbox(message: Any, sender: Option[ActorRef]): Unit = {
+  protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
     joinTransaction(message)
 
     if (_remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequest.newBuilder
-          .setId(RemoteRequestIdFactory.nextId)
+      val requestBuilder = RemoteProtocol.RemoteRequestProtocol.newBuilder
+          .setId(RemoteRequestProtocolIdFactory.nextId)
           .setTarget(this.getClass.getName)
           .setTimeout(this.timeout)
-          .setUuid(this.id)
+          .setUuid(this.uuid)
           .setIsActor(true)
           .setIsOneWay(true)
           .setIsEscaped(false)
@@ -1023,30 +1088,12 @@ trait Actor extends TransactionManagement with Logging {
       val id = registerSupervisorAsRemoteActor
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
 
-      // set the source fields used to reply back to the original sender
-      // (i.e. not the remote proxy actor)
-      if (sender.isDefined) {
-        val s = sender.get.actor
-        requestBuilder.setSourceTarget(s.getClass.getName)
-        requestBuilder.setSourceUuid(s.uuid)
+      senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
 
-        val (host, port) = s._replyToAddress.map(a => (a.getHostName, a.getPort)).getOrElse((Actor.HOSTNAME, Actor.PORT))
-
-        Actor.log.debug("Setting sending actor as %s @ %s:%s", s.getClass.getName, host, port)
-
-        requestBuilder.setSourceHostname(host)
-        requestBuilder.setSourcePort(port)
-
-        if (RemoteServer.serverFor(host, port).isEmpty) {
-          val server = new RemoteServer
-          server.start(host, port)
-        }
-        RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(sender.get.id, sender.get)
-      }
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
       RemoteClient.clientFor(_remoteAddress.get).send[Any](requestBuilder.build, None)
     } else {
-      val invocation = new MessageInvocation(self, message, sender.map(Left(_)), transactionSet.get)
+      val invocation = new MessageInvocation(self, message, senderOption.map(Left(_)), transactionSet.get)
       if (messageDispatcher.usesActorMailbox) {
         _mailbox.add(invocation)
         if (_isSuspended) invocation.send
@@ -1062,28 +1109,30 @@ trait Actor extends TransactionManagement with Logging {
     joinTransaction(message)
 
     if (_remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequest.newBuilder
-          .setId(RemoteRequestIdFactory.nextId)
+      val requestBuilder = RemoteProtocol.RemoteRequestProtocol.newBuilder
+          .setId(RemoteRequestProtocolIdFactory.nextId)
           .setTarget(this.getClass.getName)
           .setTimeout(this.timeout)
-          .setUuid(this.id)
+          .setUuid(this.uuid)
           .setIsActor(true)
           .setIsOneWay(false)
           .setIsEscaped(false)
+      
+      //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
+      
       val id = registerSupervisorAsRemoteActor
       if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
+      
       val future = RemoteClient.clientFor(_remoteAddress.get).send(requestBuilder.build, senderFuture)
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFuture[T](timeout)
-      val invocation = new MessageInvocation(self, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
-
-      if (messageDispatcher.usesActorMailbox)
-        _mailbox.add(invocation)
-
+      val invocation = new MessageInvocation(
+        self, message, Some(Right(future.asInstanceOf[CompletableFuture[Any]])), transactionSet.get)
+      if (messageDispatcher.usesActorMailbox) _mailbox.add(invocation)
       invocation.send
       future
     }
@@ -1217,8 +1266,8 @@ trait Actor extends TransactionManagement with Logging {
 
   private[this] def restartLinkedActors(reason: Throwable) = {
     getLinkedActors.toArray.toList.asInstanceOf[List[ActorRef]].foreach {
-      actorId =>
-        val actor = actorId.actor
+      actorRef =>
+        val actor = actorRef.actor
         if (actor.lifeCycle.isEmpty) actor.lifeCycle = Some(LifeCycle(Permanent))
         actor.lifeCycle.get match {
           case LifeCycle(scope, _) => {
@@ -1228,7 +1277,7 @@ trait Actor extends TransactionManagement with Logging {
               case Temporary =>
                 Actor.log.info("Actor [%s] configured as TEMPORARY and will not be restarted.", actor.id)
                 actor.stop
-                getLinkedActors.remove(actorId) // remove the temporary actor
+                getLinkedActors.remove(actorRef) // remove the temporary actor
                 // if last temporary actor is gone, then unlink me from supervisor
                 if (getLinkedActors.isEmpty) {
                   Actor.log.info("All linked actors have died permanently (they were all configured as TEMPORARY)" +
@@ -1314,7 +1363,7 @@ object DispatcherType {
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ActorMessageInvoker private[akka] (val actorId: ActorRef) extends MessageInvoker {
-  def invoke(handle: MessageInvocation) = actorId.actor.invoke(handle)
+class ActorMessageInvoker private[akka] (val actorRef: ActorRef) extends MessageInvoker {
+  def invoke(handle: MessageInvocation) = actorRef.actor.invoke(handle)
 }
 

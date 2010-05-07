@@ -31,7 +31,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
 
-  implicit def actorId2actor(actorId: ActorRef): Actor = actorId.actor
+  implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
   
   /** Type of the actors registered in this dispatcher. */
   private var actorType:Option[Class[_]] = None
@@ -193,15 +193,15 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
-  override def register(actorId: ActorRef) = {
-    verifyActorsAreOfSameType(actorId)
-    pooledActors.add(actorId)
-    super.register(actorId)
+  override def register(actorRef: ActorRef) = {
+    verifyActorsAreOfSameType(actorRef)
+    pooledActors.add(actorRef)
+    super.register(actorRef)
   }
 
-  override def unregister(actorId: ActorRef) = {
-    pooledActors.remove(actorId)
-    super.unregister(actorId)
+  override def unregister(actorRef: ActorRef) = {
+    pooledActors.remove(actorRef)
+    super.unregister(actorRef)
   }
 
   def usesActorMailbox = true

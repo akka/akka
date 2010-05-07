@@ -105,7 +105,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   }
 
   @Test
-  def shouldSendRemoteReply = {
+  def shouldSendRemoteReplyProtocol = {
     implicit val timeout = 500000000L
     val actor = RemoteClient.actorFor(
       "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",

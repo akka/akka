@@ -20,7 +20,7 @@ object FutureSpec {
 class FutureSpec extends JUnitSuite {
   import FutureSpec._
   
-  @Test def shouldActorReplyResultThroughExplicitFuture = {
+  @Test def shouldActorReplyResultThroughExplicitFuture {
     val actor = newActor[TestActor]
     actor.start
     val future = actor !!! "Hello"
@@ -30,7 +30,7 @@ class FutureSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldActorReplyExceptionThroughExplicitFuture = {
+  @Test def shouldActorReplyExceptionThroughExplicitFuture {
     val actor = newActor[TestActor]
     actor.start
     val future = actor !!! "Failure"
