@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.stm
 
 import se.scalablesolutions.akka.util.UUID
 
-import org.multiverse.stms.alpha.AlphaRef
+import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 
 /**
  * Example Scala usage:
@@ -56,6 +56,14 @@ trait Committable {
   def commit: Unit
 }
 
+object RefFactory {
+  private val factory = getGlobalStmInstance.getProgrammaticReferenceFactoryBuilder.build
+  
+  def createRef[T] = factory.atomicCreateReference[T]()
+
+  def createRef[T](value: T) = factory.atomicCreateReference(value)
+}
+
 /**
  * Alias to TransactionalRef.
  * 
@@ -101,8 +109,8 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
   val uuid = UUID.newUuid.toString
 
   private[this] val ref = {
-    if (initialOpt.isDefined) new AlphaRef(initialOpt.get)
-    else new AlphaRef[T]
+    if (initialOpt.isDefined) RefFactory.createRef(initialOpt.get)
+    else RefFactory.createRef[T]
   }
 
   def swap(elem: T) = {
