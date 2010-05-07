@@ -121,15 +121,15 @@ object Publish {
   def forConsumer(actor: ActorRef): Option[Publish] =
     forConsumeAnnotated(actor) orElse forConsumerType(actor)
 
-  private def forConsumeAnnotated(actorId: ActorRef): Option[Publish] = {
-    val annotation = actorId.actorClass.getAnnotation(classOf[consume])
+  private def forConsumeAnnotated(actorRef: ActorRef): Option[Publish] = {
+    val annotation = actorRef.actorClass.getAnnotation(classOf[consume])
     if (annotation eq null) None
-    else if (actorId.remoteAddress.isDefined) None // do not publish proxies
-    else Some(Publish(annotation.value, actorId.id, false))
+    else if (actorRef.remoteAddress.isDefined) None // do not publish proxies
+    else Some(Publish(annotation.value, actorRef.id, false))
   }
 
-  private def forConsumerType(actorId: ActorRef): Option[Publish] =
-    if (!actorId.actor.isInstanceOf[Consumer]) None
-    else if (actorId.remoteAddress.isDefined) None
-    else Some(Publish(actorId.actor.asInstanceOf[Consumer].endpointUri, actorId.uuid, true))
+  private def forConsumerType(actorRef: ActorRef): Option[Publish] =
+    if (!actorRef.actor.isInstanceOf[Consumer]) None
+    else if (actorRef.remoteAddress.isDefined) None
+    else Some(Publish(actorRef.actor.asInstanceOf[Consumer].endpointUri, actorRef.uuid, true))
 }

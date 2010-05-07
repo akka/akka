@@ -57,9 +57,9 @@ object ActorRegistry extends Logging {
     val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
-      val actorId = elements.nextElement
-      if (manifest.erasure.isAssignableFrom(actorId.actor.getClass)) {
-        all += actorId
+      val actorRef = elements.nextElement
+      if (manifest.erasure.isAssignableFrom(actorRef.actor.getClass)) {
+        all += actorRef
       }
     }
     all.toList
@@ -92,24 +92,24 @@ object ActorRegistry extends Logging {
   /**
    * Registers an actor in the ActorRegistry.
    */
-  def register(actorId: ActorRef) = {
+  def register(actorRef: ActorRef) = {
     // UUID
-    actorsByUUID.put(actorId.uuid, actorId)
+    actorsByUUID.put(actorRef.uuid, actorRef)
 
     // ID
-    val id = actorId.id
-    if (id eq null) throw new IllegalStateException("Actor.id is null " + actorId)
-    if (actorsById.containsKey(id)) actorsById.put(id, actorId :: actorsById.get(id))
-    else actorsById.put(id, actorId :: Nil)
+    val id = actorRef.id
+    if (id eq null) throw new IllegalStateException("Actor.id is null " + actorRef)
+    if (actorsById.containsKey(id)) actorsById.put(id, actorRef :: actorsById.get(id))
+    else actorsById.put(id, actorRef :: Nil)
 
     // Class name
-    val className = actorId.actor.getClass.getName
+    val className = actorRef.actor.getClass.getName
     if (actorsByClassName.containsKey(className)) {
-      actorsByClassName.put(className, actorId :: actorsByClassName.get(className))
-    } else actorsByClassName.put(className, actorId :: Nil)
+      actorsByClassName.put(className, actorRef :: actorsByClassName.get(className))
+    } else actorsByClassName.put(className, actorRef :: Nil)
 
     // notify listeners
-    foreachListener(_ ! ActorRegistered(actorId))
+    foreachListener(_ ! ActorRegistered(actorRef))
   }
 
   /**

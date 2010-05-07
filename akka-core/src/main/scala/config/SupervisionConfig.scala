@@ -25,13 +25,13 @@ object ScalaConfig {
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
   
-  class Supervise(val actorId: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
+  class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
   object Supervise {
-    def apply(actorId: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorId, lifeCycle, remoteAddress)
-    def apply(actorId: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorId, lifeCycle, null)
-    def unapply(supervise: Supervise) = Some((supervise.actorId, supervise.lifeCycle, supervise.remoteAddress))
+    def apply(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorRef, lifeCycle, remoteAddress)
+    def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, null)
+    def unapply(supervise: Supervise) = Some((supervise.actorRef, supervise.lifeCycle, supervise.remoteAddress))
   }
 
   case class RestartStrategy(
@@ -227,8 +227,8 @@ object JavaConfig {
         intf, target, lifeCycle.transform, timeout, transactionRequired, dispatcher,
         if (remoteAddress ne null) se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
 
-    def newSupervised(actorId: ActorRef) =
-      se.scalablesolutions.akka.config.ScalaConfig.Supervise(actorId, lifeCycle.transform)
+    def newSupervised(actorRef: ActorRef) =
+      se.scalablesolutions.akka.config.ScalaConfig.Supervise(actorRef, lifeCycle.transform)
   }
   
 }
