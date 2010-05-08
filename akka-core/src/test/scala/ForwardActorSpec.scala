@@ -24,7 +24,7 @@ object ForwardActorSpec {
 
 
   class ForwardActor extends Actor {
-    val receiverActor = newActor[ReceiverActor]
+    val receiverActor = actorOf[ReceiverActor]
     receiverActor.start
     def receive = {
       case "SendBang" => receiverActor.forward("SendBang")
@@ -33,7 +33,7 @@ object ForwardActorSpec {
   }
 
   class BangSenderActor extends Actor {
-    val forwardActor = newActor[ForwardActor]
+    val forwardActor = actorOf[ForwardActor]
     forwardActor.start
     forwardActor ! "SendBang"
     def receive = {
@@ -43,7 +43,7 @@ object ForwardActorSpec {
 
   class BangBangSenderActor extends Actor {
     val latch = new CountDownLatch(1)
-    val forwardActor = newActor[ForwardActor]
+    val forwardActor = actorOf[ForwardActor]
     forwardActor.start
     (forwardActor !! "SendBangBang") match {
       case Some(_) => latch.countDown
@@ -60,7 +60,7 @@ class ForwardActorSpec extends JUnitSuite {
   
   @Test
   def shouldForwardActorReferenceWhenInvokingForwardOnBang {
-    val senderActor = newActor[BangSenderActor]
+    val senderActor = actorOf[BangSenderActor]
     val latch = senderActor.actor.asInstanceOf[BangSenderActor]
       .forwardActor.actor.asInstanceOf[ForwardActor]
       .receiverActor.actor.asInstanceOf[ReceiverActor]
@@ -73,7 +73,7 @@ class ForwardActorSpec extends JUnitSuite {
 
   @Test
   def shouldForwardActorReferenceWhenInvokingForwardOnBangBang {
-    val senderActor = newActor[BangBangSenderActor]
+    val senderActor = actorOf[BangBangSenderActor]
     senderActor.start
     val latch = senderActor.actor.asInstanceOf[BangBangSenderActor].latch
     assert(latch.await(1L, TimeUnit.SECONDS)) 

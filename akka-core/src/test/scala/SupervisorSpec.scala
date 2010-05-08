@@ -419,7 +419,7 @@ class SupervisorSpec extends JUnitSuite {
   // Creat some supervisors with different configurations
 
   def getSingleActorAllForOneSupervisor: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
+    pingpong1 = actorOf[PingPong1Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -432,7 +432,7 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
+    pingpong1 = actorOf[PingPong1Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -445,9 +445,9 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
-    pingpong2 = newActor[PingPong2Actor]
-    pingpong3 = newActor[PingPong3Actor]
+    pingpong1 = actorOf[PingPong1Actor]
+    pingpong2 = actorOf[PingPong2Actor]
+    pingpong3 = actorOf[PingPong3Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -468,9 +468,9 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
-    pingpong2 = newActor[PingPong2Actor]
-    pingpong3 = newActor[PingPong3Actor]
+    pingpong1 = actorOf[PingPong1Actor]
+    pingpong2 = actorOf[PingPong2Actor]
+    pingpong3 = actorOf[PingPong3Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -491,9 +491,9 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
-    pingpong2 = newActor[PingPong2Actor]
-    pingpong3 = newActor[PingPong3Actor]
+    pingpong1 = actorOf[PingPong1Actor]
+    pingpong2 = actorOf[PingPong2Actor]
+    pingpong3 = actorOf[PingPong3Actor]
 
     val factory = SupervisorFactory(
         SupervisorConfig(

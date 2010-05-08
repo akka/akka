@@ -17,6 +17,6 @@ object Application2 {
     val camelService = CamelService.newInstance
     camelService.load
     RemoteNode.start("localhost", 7777)
-    RemoteNode.register("remote2", newActor[RemoteActor2].start)
+    RemoteNode.register("remote2", actorOf[RemoteActor2].start)
   }
 }

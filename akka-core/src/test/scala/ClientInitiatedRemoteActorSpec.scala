@@ -90,7 +90,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
 
   @Test
   def shouldSendOneWay = {
-    val actor = newActor[RemoteActorSpecActorUnidirectional]
+    val actor = actorOf[RemoteActorSpecActorUnidirectional]
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
     actor ! "OneWay"
@@ -100,10 +100,10 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
 
   @Test
   def shouldSendOneWayAndReceiveReply = {
-    val actor = newActor[SendOneWayAndReplyReceiverActor]
+    val actor = actorOf[SendOneWayAndReplyReceiverActor]
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
-    val sender = newActor[SendOneWayAndReplySenderActor]
+    val sender = actorOf[SendOneWayAndReplySenderActor]
     sender.setReplyToAddress(HOSTNAME, PORT2)
     sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendTo = actor
     sender.start
@@ -117,7 +117,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
 
   @Test
   def shouldSendBangBangMessageAndReceiveReply = {
-    val actor = newActor[RemoteActorSpecActorBidirectional]
+    val actor = actorOf[RemoteActorSpecActorBidirectional]
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
     val result = actor !! "Hello"
@@ -128,7 +128,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   @Test
   def shouldSendAndReceiveRemoteException = {
     implicit val timeout = 500000000L
-    val actor = newActor[RemoteActorSpecActorBidirectional]
+    val actor = actorOf[RemoteActorSpecActorBidirectional]
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
     try {

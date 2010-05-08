@@ -27,16 +27,16 @@ class Boot {
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
       Supervise(
-        newActor[SimpleService],
+        actorOf[SimpleService],
         LifeCycle(Permanent)) ::
       Supervise(
-        newActor[Chat],
+        actorOf[Chat],
         LifeCycle(Permanent)) ::
       Supervise(
-         newActor[PersistentSimpleService],
+         actorOf[PersistentSimpleService],
          LifeCycle(Permanent)) ::
       Supervise(
-         newActor[PubSub],
+         actorOf[PubSub],
          LifeCycle(Permanent))
       :: Nil))
   factory.newInstance.start

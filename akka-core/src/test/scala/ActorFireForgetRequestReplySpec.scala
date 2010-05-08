@@ -46,7 +46,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
   @Test
   def shouldReplyToBangMessageUsingReply = {
     state.finished.reset
-    val replyActor = newActor[ReplyActor]
+    val replyActor = actorOf[ReplyActor]
     replyActor.start
     val senderActor = actorOf(new SenderActor(replyActor))
     senderActor.start
@@ -59,7 +59,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
   @Test
   def shouldReplyToBangMessageUsingImplicitSender = {
     state.finished.reset
-    val replyActor = newActor[ReplyActor]
+    val replyActor = actorOf[ReplyActor]
     replyActor.start
     val senderActor = actorOf(new SenderActor(replyActor))
     senderActor.start

@@ -79,7 +79,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access an actor from the custom Camel route") {
 
       given("a registered actor and a custom route to that actor")
-      val actor = newActor[TestActor].start
+      val actor = actorOf[TestActor].start
 
       when("sending a a message to that route")
       val response = CamelContextManager.template.requestBody("direct:custom-route-test-1", "msg3")

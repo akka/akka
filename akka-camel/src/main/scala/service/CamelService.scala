@@ -20,7 +20,7 @@ trait CamelService extends Bootable with Logging {
 
   import CamelContextManager._
 
-  private[camel] val consumerPublisher = newActor[ConsumerPublisher]
+  private[camel] val consumerPublisher = actorOf[ConsumerPublisher]
   private[camel] val publishRequestor =  actorOf(new PublishRequestor(consumerPublisher))
 
   /**
