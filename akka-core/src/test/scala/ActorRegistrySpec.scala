@@ -21,7 +21,7 @@ class ActorRegistrySpec extends JUnitSuite {
   
   @Test def shouldGetActorByIdFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor = newActor[TestActor]
+    val actor = actorOf[TestActor]
     actor.start
     val actors = ActorRegistry.actorsFor("MyID")
     assert(actors.size === 1)
@@ -32,7 +32,7 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorByUUIDFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor = newActor[TestActor]
+    val actor = actorOf[TestActor]
     val uuid = actor.uuid
     actor.start
     val actorOrNone = ActorRegistry.actorFor(uuid)
@@ -43,7 +43,7 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorByClassFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor = newActor[TestActor]
+    val actor = actorOf[TestActor]
     actor.start
     val actors = ActorRegistry.actorsFor(classOf[TestActor])
     assert(actors.size === 1)
@@ -54,7 +54,7 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorByManifestFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor = newActor[TestActor]
+    val actor = actorOf[TestActor]
     actor.start
     val actors = ActorRegistry.actorsFor[TestActor]
     assert(actors.size === 1)
@@ -65,9 +65,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorsByIdFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor1 = newActor[TestActor]
+    val actor1 = actorOf[TestActor]
     actor1.start
-    val actor2 = newActor[TestActor]
+    val actor2 = actorOf[TestActor]
     actor2.start
     val actors = ActorRegistry.actorsFor("MyID")
     assert(actors.size === 2)
@@ -81,9 +81,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorsByClassFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor1 = newActor[TestActor]
+    val actor1 = actorOf[TestActor]
     actor1.start
-    val actor2 = newActor[TestActor]
+    val actor2 = actorOf[TestActor]
     actor2.start
     val actors = ActorRegistry.actorsFor(classOf[TestActor])
     assert(actors.size === 2)
@@ -97,9 +97,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetActorsByManifestFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor1 = newActor[TestActor]
+    val actor1 = actorOf[TestActor]
     actor1.start
-    val actor2 = newActor[TestActor]
+    val actor2 = actorOf[TestActor]
     actor2.start
     val actors = ActorRegistry.actorsFor[TestActor]
     assert(actors.size === 2)
@@ -113,9 +113,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetAllActorsFromActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor1 = newActor[TestActor]
+    val actor1 = actorOf[TestActor]
     actor1.start
-    val actor2 = newActor[TestActor]
+    val actor2 = actorOf[TestActor]
     actor2.start
     val actors = ActorRegistry.actors
     assert(actors.size === 2)
@@ -129,9 +129,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldGetResponseByAllActorsInActorRegistryWhenInvokingForeach = {
     ActorRegistry.shutdownAll
-    val actor1 = newActor[TestActor]
+    val actor1 = actorOf[TestActor]
     actor1.start
-    val actor2 = newActor[TestActor]
+    val actor2 = actorOf[TestActor]
     actor2.start
     record = ""
     ActorRegistry.foreach(actor => actor !! "ping")
@@ -142,9 +142,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldShutdownAllActorsInActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor1 = newActor[TestActor]
+    val actor1 = actorOf[TestActor]
     actor1.start
-    val actor2 = newActor[TestActor]
+    val actor2 = actorOf[TestActor]
     actor2.start
     ActorRegistry.shutdownAll
     assert(ActorRegistry.actors.size === 0)
@@ -152,9 +152,9 @@ class ActorRegistrySpec extends JUnitSuite {
 
   @Test def shouldRemoveUnregisterActorInActorRegistry = {
     ActorRegistry.shutdownAll
-    val actor1 = newActor[TestActor]
+    val actor1 = actorOf[TestActor]
     actor1.start
-    val actor2 = newActor[TestActor]
+    val actor2 = actorOf[TestActor]
     actor2.start
     assert(ActorRegistry.actors.size === 2)
     ActorRegistry.unregister(actor1)

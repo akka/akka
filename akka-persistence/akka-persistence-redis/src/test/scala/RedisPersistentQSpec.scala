@@ -53,7 +53,7 @@ import org.scalatest.junit.JUnitSuite
 class RedisPersistentQSpec extends JUnitSuite {
   @Test
   def testSuccessfulNQ = {
-    val qa = newActor[QueueActor]
+    val qa = actorOf[QueueActor]
     qa.start
     qa !! NQ("a-123")
     qa !! NQ("a-124")
@@ -64,7 +64,7 @@ class RedisPersistentQSpec extends JUnitSuite {
 
   @Test
   def testSuccessfulDQ = {
-    val qa = newActor[QueueActor]
+    val qa = actorOf[QueueActor]
     qa.start
     qa !! NQ("a-123")
     qa !! NQ("a-124")
@@ -80,9 +80,9 @@ class RedisPersistentQSpec extends JUnitSuite {
 
   @Test
   def testSuccessfulMNDQ = {
-    val qa = newActor[QueueActor]
+    val qa = actorOf[QueueActor]
     qa.start
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
 
     qa !! NQ("a-123")
@@ -100,9 +100,9 @@ class RedisPersistentQSpec extends JUnitSuite {
 
   @Test
   def testMixedMNDQ = {
-    val qa = newActor[QueueActor]
+    val qa = actorOf[QueueActor]
     qa.start
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
 
     // 3 enqueues

@@ -13,7 +13,7 @@ object ActorShutdownRunner {
       }
     }
 
-    val myActor = newActor[MyActor]
+    val myActor = actorOf[MyActor]
     myActor.start
     myActor ! "test"
     myActor.stop

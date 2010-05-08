@@ -84,8 +84,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
   }
   
   @Test def canNotUseActorsOfDifferentTypesInSameDispatcher: Unit = {
-    val first = newActor[FirstActor]
-    val second = newActor[SecondActor]
+    val first = actorOf[FirstActor]
+    val second = actorOf[SecondActor]
 
     first.start
     intercept[IllegalStateException] {

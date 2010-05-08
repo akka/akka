@@ -40,7 +40,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReplySync = {
-    val actor = newActor[TestActor]
+    val actor = actorOf[TestActor]
     actor.start
     val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
@@ -48,7 +48,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReplyAsync = {
-    val actor = newActor[TestActor]
+    val actor = actorOf[TestActor]
     actor.start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
@@ -56,7 +56,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   }
 
   @Test def shouldSendReceiveException = {
-    val actor = newActor[TestActor]
+    val actor = actorOf[TestActor]
     actor.start
     try {
       actor !! "Failure"

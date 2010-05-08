@@ -67,9 +67,9 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
 
     server.start(HOSTNAME, PORT)
 
-    server.register(newActor[RemoteActorSpecActorUnidirectional])
-    server.register(newActor[RemoteActorSpecActorBidirectional])
-    server.register(newActor[RemoteActorSpecActorAsyncSender])
+    server.register(actorOf[RemoteActorSpecActorUnidirectional])
+    server.register(actorOf[RemoteActorSpecActorBidirectional])
+    server.register(actorOf[RemoteActorSpecActorAsyncSender])
 
     Thread.sleep(1000)
   }

@@ -81,13 +81,13 @@ object Actor extends Logging {
    * Creates a new ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
-   *   val actor = newActor[MyActor]
+   *   val actor = actorOf[MyActor]
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    */
-  def newActor[T <: Actor: Manifest]: ActorRef = new ActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor: Manifest]: ActorRef = new ActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
    * Creates a new ActorRef out of the Actor. Allows you to pass in a factory function 
@@ -279,7 +279,7 @@ object ActorRef {
  * <pre>
  *   import Actor._
  * 
- *   val actor = newActor[MyActor]
+ *   val actor = actorOf[MyActor]
  *   actor.start
  *   actor ! message
  *   actor.stop

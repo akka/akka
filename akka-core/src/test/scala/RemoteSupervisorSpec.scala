@@ -335,7 +335,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     // Then create a concrete container in which we mix in support for the specific
     // implementation of the Actors we want to use.
 
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -350,7 +350,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -364,11 +364,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong2 = newActor[RemotePingPong2Actor]
+    pingpong2 = actorOf[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong3 = newActor[RemotePingPong3Actor]
+    pingpong3 = actorOf[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -390,11 +390,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong2 = newActor[RemotePingPong2Actor]
+    pingpong2 = actorOf[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong3 = newActor[RemotePingPong3Actor]
+    pingpong3 = actorOf[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(
@@ -416,11 +416,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong2 = newActor[RemotePingPong2Actor]
+    pingpong2 = actorOf[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong3 = newActor[RemotePingPong3Actor]
+    pingpong3 = actorOf[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
 
     val factory = SupervisorFactory(

@@ -76,7 +76,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
  
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = newActor[CassandraPersistentActor]
+    val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -86,10 +86,10 @@ class CassandraPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = newActor[CassandraPersistentActor]
+    val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     try {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
@@ -101,7 +101,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = newActor[CassandraPersistentActor]
+    val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetVectorState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -110,10 +110,10 @@ class CassandraPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testVectorShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = newActor[CassandraPersistentActor]
+    val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetVectorState("init") // set init state
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     try {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
@@ -124,7 +124,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = newActor[CassandraPersistentActor]
+    val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetRefState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -134,10 +134,10 @@ class CassandraPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = newActor[CassandraPersistentActor]
+    val stateful = actorOf[CassandraPersistentActor]
     stateful.start
     stateful !! SetRefState("init") // set init state
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     try {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method

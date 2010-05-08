@@ -17,7 +17,7 @@ object ServerInitiatedRemoteActorServer {
 
   def run = {
     RemoteNode.start("localhost", 9999)
-    RemoteNode.register("hello-service", newActor[HelloWorldActor])
+    RemoteNode.register("hello-service", actorOf[HelloWorldActor])
   }
 
   def main(args: Array[String]) = run

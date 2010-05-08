@@ -28,13 +28,13 @@ class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-      Supervise(newActor[Consumer1], LifeCycle(Permanent)) ::
-      Supervise(newActor[Consumer2], LifeCycle(Permanent)) :: Nil))
+      Supervise(actorOf[Consumer1], LifeCycle(Permanent)) ::
+      Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
   factory.newInstance.start
 
   // Routing example
 
-  val producer = newActor[Producer1]
+  val producer = actorOf[Producer1]
   val mediator = actorOf(new Transformer(producer))
   val consumer = actorOf(new Consumer3(mediator))
 
