@@ -24,12 +24,12 @@ class PublishRequestorTest extends JUnitSuite {
   @After def tearDown = ActorRegistry.shutdownAll
 
   @Test def shouldReceivePublishRequestOnActorRegisteredEvent = {
-    val consumer = newActor(() => new Actor with Consumer {
+    val consumer = actorOf(new Actor with Consumer {
       def endpointUri = "mock:test"
       protected def receive = null
     }).start
-    val publisher = newActor(() => new PublisherMock with Countdown[Publish])
-    val requestor = newActor(() => new PublishRequestor(publisher))
+    val publisher = actorOf(new PublisherMock with Countdown[Publish])
+    val requestor = actorOf(new PublishRequestor(publisher))
     publisher.start
     requestor.start
     requestor.!(ActorRegistered(consumer))(None)

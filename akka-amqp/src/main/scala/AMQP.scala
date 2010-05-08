@@ -94,7 +94,7 @@ object AMQP {
         returnListener: Option[ReturnListener],
         shutdownListener: Option[ShutdownListener],
         initReconnectDelay: Long): ActorRef = {
-      val producer = newActor(() => new Producer(
+      val producer = actorOf( new Producer(
         new ConnectionFactory(config),
         hostname, port,
         exchangeName,
@@ -117,7 +117,7 @@ object AMQP {
         durable: Boolean,
         autoDelete: Boolean,
         configurationArguments: Map[String, AnyRef]): ActorRef = {
-      val consumer = newActor(() => new Consumer(
+      val consumer = actorOf( new Consumer(
         new ConnectionFactory(config),
         hostname, port,
         exchangeName,

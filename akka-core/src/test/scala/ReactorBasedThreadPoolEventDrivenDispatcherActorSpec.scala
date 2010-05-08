@@ -26,7 +26,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
 
   @Test def shouldSendOneWay = {
     val oneWay = new CountDownLatch(1)
-    val actor = newActor(() => new Actor {
+    val actor = actorOf(new Actor {
       dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
       def receive = {
         case "OneWay" => oneWay.countDown

@@ -130,7 +130,7 @@ trait SessionManagement { this: Actor =>
   protected def sessionManagement: PartialFunction[Any, Unit] = {
     case Login(username) => 
       log.info("User [%s] has logged in", username)
-      val session = newActor(() => new Session(username, storage))
+      val session = actorOf(new Session(username, storage))
       session.start
       sessions += (username -> session)
       

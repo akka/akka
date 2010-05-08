@@ -27,7 +27,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
 
   @Test def shouldSendOneWay = {
     var oneWay = new CountDownLatch(1)
-    val actor = newActor(() => new Actor {
+    val actor = actorOf(new Actor {
       dispatcher = Dispatchers.newThreadBasedDispatcher(this)
       def receive = {
         case "OneWay" => oneWay.countDown

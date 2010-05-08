@@ -38,7 +38,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     // register test consumer before starting the CamelService
-    newActor(() => new TestConsumer("direct:publish-test-1")).start
+    actorOf(new TestConsumer("direct:publish-test-1")).start
     // Consigure a custom camel route
     CamelContextManager.init
     CamelContextManager.context.addRoutes(new TestRoute)
@@ -61,7 +61,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("two consumer actors registered before and after CamelService startup")
       service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
-      newActor(() => new TestConsumer("direct:publish-test-2")).start
+      actorOf(new TestConsumer("direct:publish-test-2")).start
 
       when("requests are sent to these actors")
       service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish

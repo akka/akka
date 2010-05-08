@@ -52,7 +52,7 @@ import se.scalablesolutions.akka.actor.Actor._
 object Pub {
   println("starting publishing service ..")
   val r = new RedisClient("localhost", 6379)
-  val p = newActor(() => new Publisher(r))
+  val p = actorOf(new Publisher(r))
   p.start
 
   def publish(channel: String, message: String) = {
@@ -63,7 +63,7 @@ object Pub {
 object Sub {
   println("starting subscription service ..")
   val r = new RedisClient("localhost", 6379)
-  val s = newActor(() => new Subscriber(r))
+  val s = actorOf(new Subscriber(r))
   s.start
   s ! Register(callback) 
 

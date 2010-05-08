@@ -21,7 +21,7 @@ trait CamelService extends Bootable with Logging {
   import CamelContextManager._
 
   private[camel] val consumerPublisher = newActor[ConsumerPublisher]
-  private[camel] val publishRequestor =  newActor(() => new PublishRequestor(consumerPublisher))
+  private[camel] val publishRequestor =  actorOf(new PublishRequestor(consumerPublisher))
 
   /**
    * Starts the CamelService. Any started actor that is a consumer actor will be (asynchronously)

@@ -35,8 +35,8 @@ class Boot {
   // Routing example
 
   val producer = newActor[Producer1]
-  val mediator = newActor(() => new Transformer(producer))
-  val consumer = newActor(() => new Consumer3(mediator))
+  val mediator = actorOf(new Transformer(producer))
+  val consumer = actorOf(new Consumer3(mediator))
 
   producer.start
   mediator.start
@@ -55,9 +55,9 @@ class Boot {
   //val cometdPublisher = new Publisher("cometd-publisher", cometdUri).start
 
   val jmsUri = "jms:topic:test"
-  val jmsSubscriber1 = newActor(() => new Subscriber("jms-subscriber-1", jmsUri)).start
-  val jmsSubscriber2 = newActor(() => new Subscriber("jms-subscriber-2", jmsUri)).start
-  val jmsPublisher =   newActor(() => new Publisher("jms-publisher", jmsUri)).start
+  val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
+  val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
+  val jmsPublisher =   actorOf(new Publisher("jms-publisher", jmsUri)).start
 
   //val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
   val jmsPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher).start

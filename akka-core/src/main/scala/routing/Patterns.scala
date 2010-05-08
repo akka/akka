@@ -27,7 +27,7 @@ object Patterns {
   /** Creates a LoadBalancer from the thunk-supplied InfiniteIterator
    */
    def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef = 
-    newActor(() => new Actor with LoadBalancer {
+    actorOf(new Actor with LoadBalancer {
       start
       val seq = actors
     })
@@ -35,7 +35,7 @@ object Patterns {
   /** Creates a Dispatcher given a routing and a message-transforming function
    */
    def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef = 
-    newActor(() => new Actor with Dispatcher {
+    actorOf(new Actor with Dispatcher {
       start
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
@@ -43,7 +43,7 @@ object Patterns {
 
   /** Creates a Dispatcher given a routing
    */
-   def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = newActor(() => new Actor with Dispatcher {
+   def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = actorOf(new Actor with Dispatcher {
     start
     def routes = routing
   })

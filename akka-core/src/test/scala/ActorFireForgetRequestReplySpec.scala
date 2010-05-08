@@ -48,7 +48,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     state.finished.reset
     val replyActor = newActor[ReplyActor]
     replyActor.start
-    val senderActor = newActor(() => new SenderActor(replyActor))
+    val senderActor = actorOf(new SenderActor(replyActor))
     senderActor.start
     senderActor ! "Init"
     try { state.finished.await(1L, TimeUnit.SECONDS) } 
@@ -61,7 +61,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     state.finished.reset
     val replyActor = newActor[ReplyActor]
     replyActor.start
-    val senderActor = newActor(() => new SenderActor(replyActor))
+    val senderActor = actorOf(new SenderActor(replyActor))
     senderActor.start
     senderActor ! "InitImplicit"
     try { state.finished.await(1L, TimeUnit.SECONDS) } 

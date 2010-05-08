@@ -110,7 +110,7 @@ class InMemFailerActor extends Actor {
 class InMemoryActorSpec extends JUnitSuite {
   @Test
   def shouldOneWayMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = newActor(() => new InMemStatefulActor(2))
+    val stateful = actorOf(new InMemStatefulActor(2))
     stateful.start
     stateful ! SetMapStateOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -130,7 +130,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = newActor(() => new InMemStatefulActor(2))
+    val stateful = actorOf(new InMemStatefulActor(2))
     stateful.start
     val failer = newActor[InMemFailerActor]
     failer.start
@@ -157,7 +157,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = newActor(() => new InMemStatefulActor(2))
+    val stateful = actorOf(new InMemStatefulActor(2))
     stateful.start
     stateful ! SetVectorStateOneWay("init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -177,7 +177,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayVectorShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = newActor(() => new InMemStatefulActor(2))
+    val stateful = actorOf(new InMemStatefulActor(2))
     stateful.start
     stateful ! SetVectorStateOneWay("init") // set init state
     Thread.sleep(1000)
@@ -205,7 +205,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = newActor(() => new InMemStatefulActor(2))
+    val stateful = actorOf(new InMemStatefulActor(2))
     stateful.start
     stateful ! SetRefStateOneWay("init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -225,7 +225,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = newActor(() => new InMemStatefulActor(2))
+    val stateful = actorOf(new InMemStatefulActor(2))
     stateful.start
     stateful ! SetRefStateOneWay("init") // set init state
     Thread.sleep(1000)

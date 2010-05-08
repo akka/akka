@@ -87,7 +87,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
   @Test def testListener = {  
     val latch = new CountDownLatch(2)
     val num = new AtomicInteger(0)
-    val i = newActor(() => new Actor with Listeners {
+    val i = actorOf(new Actor with Listeners {
       def receive = listenerManagement orElse {
         case "foo" =>  gossip("bar")
       }
