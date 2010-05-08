@@ -24,7 +24,7 @@ import java.lang.reflect.Method
  */
 private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfiguratorBase with Logging {
   private var injector: Injector = _
-  private var supervisor: Option[Supervisor]  = None
+  private var supervisor: Option[ActorRef]  = None
   private var restartStrategy: RestartStrategy  = _
   private var components: List[Component] = _
   private var supervised: List[Supervise] = Nil
@@ -82,19 +82,19 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
-    val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
-    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
+    val actorRef = new ActorRef(() => new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
+    if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined) 
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
-    val proxy = ActiveObject.newInstance(targetClass, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    val proxy = ActiveObject.newInstance(targetClass, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     if (remoteAddress.isDefined) {
       RemoteServer
         .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
         .activeObjects.put(targetClass.getName, proxy)
     }
-    supervised ::= Supervise(new ActorRef(() => actor), component.lifeCycle)
+    supervised ::= Supervise(actorRef, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
   }
@@ -103,20 +103,20 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val targetClass = component.intf.get
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
-    val actor = new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks)
-    if (component.dispatcher.isDefined) actor.dispatcher = component.dispatcher.get
+    val actorRef = new ActorRef(() => new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
+    if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined) 
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = ActiveObject.newInstance(
-      targetClass, targetInstance, actor, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+      targetClass, targetInstance, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     if (remoteAddress.isDefined) {
       RemoteServer
         .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
         .activeObjects.put(targetClass.getName, proxy)
     }
-    supervised ::= Supervise(new ActorRef(() => actor), component.lifeCycle)
+    supervised ::= Supervise(actorRef, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }

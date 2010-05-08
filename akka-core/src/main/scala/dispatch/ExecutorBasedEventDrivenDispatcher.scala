@@ -65,8 +65,8 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
         var lockAcquiredOnce = false
         // this do-wile loop is required to prevent missing new messages between the end of the inner while
         // loop and releasing the lock
-        val lock = invocation.receiver.actor._dispatcherLock
-        val mailbox = invocation.receiver.actor._mailbox
+        val lock = invocation.receiver._dispatcherLock
+        val mailbox = invocation.receiver._mailbox
         do {
           if (lock.tryLock) {
             lockAcquiredOnce = true

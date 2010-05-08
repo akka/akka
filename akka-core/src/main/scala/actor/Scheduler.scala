@@ -38,15 +38,16 @@ class ScheduleActor(val receiver: ActorRef, val future: ScheduledFuture[AnyRef])
 }
 
 object Scheduler extends Actor {
+  import Actor._
+  
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
   private val schedulers = new ConcurrentHashMap[ActorRef, ActorRef]
   faultHandler = Some(OneForOneStrategy(5, 5000))
   trapExit = List(classOf[Throwable])
-  start
 
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
     try {
-      startLink(new ActorRef(() => new ScheduleActor(
+      startLink(newActor(() => new ScheduleActor(
         receiver,
         service.scheduleAtFixedRate(new java.lang.Runnable {
           def run = receiver ! message;
