@@ -9,7 +9,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 /** A Dispatcher is a trait whose purpose is to route incoming messages to actors
  */
 trait Dispatcher { this: Actor =>
-  implicit val sender = Some(self)
+//  implicit val sender = Some(self)
 
   protected def transform(msg: Any): Any = msg
 

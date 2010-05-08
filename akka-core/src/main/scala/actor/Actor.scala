@@ -1104,6 +1104,22 @@ sealed class ActorRef private[akka] () extends TransactionManagement {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends Logging {
+ 
+   /** 
+    * For internal use only.
+    */
+  protected implicit val _selfSenderRef: Some[ActorRef] = { 
+    val ref = Actor.actorRefInCreation.value
+    Actor.actorRefInCreation.value = None
+    if (ref.isEmpty) throw new ActorInitializationException(
+       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." + 
+       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." + 
+       "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." + 
+       "\n\tEither use:" + 
+       "\n\t\t'val actor = Actor.newActor[MyActor]', or" + 
+       "\n\t\t'val actor = Actor.newActor(() => new MyActor(..))'")
+    else ref.asInstanceOf[Some[ActorRef]]
+  }
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -1115,22 +1131,7 @@ trait Actor extends Logging {
    * Note: if you are using the 'self' field in the constructor of the Actor
    *       then you have to make the fields/operations that are using it 'lazy'.
    */
-  def self: ActorRef = _selfSenderRef.getOrElse(throw new IllegalStateException(
-     "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." + 
-     "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." + 
-     "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." + 
-     "\n\tEither use:" + 
-     "\n\t\t'val actor = Actor.newActor[MyActor]', or" + 
-     "\n\t\t'val actor = Actor.newActor(() => new MyActor(..))'"))
-   
-   /** 
-    * For internal use only.
-    */
-  protected implicit var _selfSenderRef: Option[ActorRef] = { 
-    val ref = Actor.actorRefInCreation.value
-    Actor.actorRefInCreation.value = None
-    ref
-  }
+  val self: ActorRef = _selfSenderRef.get
 
   /**
    * Holds the hot swapped partial function.
