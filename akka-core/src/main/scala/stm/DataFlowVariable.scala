@@ -40,7 +40,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
   }
 
   def thread[A <: AnyRef, R <: AnyRef](body: A => R) =
-    new ReactiveEventBasedThread(body).start
+    newActor(() => new ReactiveEventBasedThread(body)).start
 
   private class ReactiveEventBasedThread[A <: AnyRef, T <: AnyRef](body: A => T)
     extends Actor {
@@ -65,7 +65,6 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
 
     private class In[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
       timeout = TIME_OUT
-      start
       def receive = {
         case Set(v) =>
           if (dataFlow.value.compareAndSet(None, Some(v.asInstanceOf[T]))) {
@@ -80,7 +79,6 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
 
     private class Out[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
       timeout = TIME_OUT
-      start
       private var readerFuture: Option[CompletableFuture[T]] = None
       def receive = {
         case Get =>
@@ -88,7 +86,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
           if (ref.isDefined)
             reply(ref.get)
           else {
-            readerFuture = replyTo match { 
+            readerFuture = self.replyTo match { 
               case Some(Right(future)) => Some(future.asInstanceOf[CompletableFuture[T]])
               case _ => None
             }
@@ -98,7 +96,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       }
     }
 
-    private[this] val in = newActor(() => new In(this))
+    private[this] val in = newActor(() => new In(this)).start
 
     def <<(ref: DataFlowVariable[T]) = in ! Set(ref())
 
@@ -108,7 +106,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       val ref = value.get
       if (ref.isDefined) ref.get
       else {
-        val out = newActor(() => new Out(this))
+        val out = newActor(() => new Out(this)).start
         blockedReaders.offer(out)
         val result = out !! Get
         out ! Exit
