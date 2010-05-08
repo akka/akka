@@ -423,43 +423,22 @@ final class ActorRef private[akka] () {
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !![T](message: Any, timeout: Long): Option[T] = {
-    if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
-    if (actor.isRunning) {
-      val future = actor.postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
-      val isActiveObject = message.isInstanceOf[Invocation]
-      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) 
-        future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
-      try {
-        future.await
-      } catch {
-        case e: FutureTimeoutException =>
-          if (isActiveObject) throw e
-          else None
-      }
-
-      if (future.exception.isDefined) throw future.exception.get._2
-      else future.result
+  def !![T](message: Any, timeout: Long = actor.timeout): Option[T] = {
+    val future = !!![T](message,timeout)
+    val isActiveObject = message.isInstanceOf[Invocation]
+    if (isActiveObject && message.asInstanceOf[Invocation].isVoid) 
+      future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
+    try {
+      future.await
+    } catch {
+      case e: FutureTimeoutException =>
+        if (isActiveObject) throw e
+        else None
     }
-    else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
-  }
 
-  /**
-   * Sends a message asynchronously and waits on a future for a reply message.
-   * Uses the time-out defined in the Actor.
-   * <p/>
-   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
-   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
-   * implement request/response message exchanges.
-   * <p/>
-   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-  def !![T](message: Any)(implicit sender: Option[ActorRef] = None): Option[T] = !![T](message, actor.timeout)
+    if (future.exception.isDefined) throw future.exception.get._2
+    else future.result
+  }
 
   /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
@@ -470,10 +449,10 @@ final class ActorRef private[akka] () {
    * If you are sending messages using <code>!!!</code> then you <b>have to</b> use <code>reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !!![T](message: Any): Future[T] = {
+  def !!![T](message: Any, timeout : Long = actor.timeout): Future[T] = {
     if (actor.isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (actor.isRunning) {
-      actor.postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, actor.timeout, None)
+      actor.postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
     } else throw new IllegalStateException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
