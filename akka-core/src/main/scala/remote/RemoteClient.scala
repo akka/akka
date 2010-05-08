@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol}
-import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, RemoteActorRef}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.util.{UUID, Logging}
 import se.scalablesolutions.akka.config.Config.config
@@ -44,62 +44,6 @@ case class RemoteClientDisconnected(host: String, port: Int) extends RemoteClien
 case class RemoteClientConnected(host: String, port: Int) extends RemoteClientLifeCycleEvent
 
 /**
- * Remote Actor proxy factory.
- * 
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] object RemoteActorProxy {
-  def apply(uuid: String, className: String, hostname: String, port: Int, timeout: Long): ActorRef =
-    new ActorRef(() => new RemoteActorProxy(uuid, className, hostname, port, timeout))
-}
-
-/**
- * Remote Actor proxy.
- * 
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] class RemoteActorProxy private (
-  uuid: String, className: String, hostname: String, port: Int, timeOut: Long) extends Actor {
-  start
-  val remoteClient = RemoteClient.clientFor(hostname, port)
-
-  override def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
-        .setTarget(className)
-        .setTimeout(timeOut)
-        .setUuid(uuid)
-        .setIsActor(true)
-        .setIsOneWay(true)
-        .setIsEscaped(false)
-    senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
-    RemoteProtocolBuilder.setMessage(message, requestBuilder)
-    remoteClient.send[Any](requestBuilder.build, None)
-  }
-
-  override def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
-      message: Any,
-      timeout: Long,
-      senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
-        .setTarget(className)
-        .setTimeout(timeout)
-        .setUuid(uuid)
-        .setIsActor(true)
-        .setIsOneWay(false)
-        .setIsEscaped(false)
-    //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
-    RemoteProtocolBuilder.setMessage(message, requestBuilder)
-    val future = remoteClient.send(requestBuilder.build, senderFuture)
-    if (future.isDefined) future.get
-    else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
-  }
-
-  def receive = {case _ => {}}
-}
-
-/**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
@@ -121,7 +65,7 @@ object RemoteClient extends Logging {
     actorFor(className, className, timeout, hostname, port)
 
   def actorFor(actorRef: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef = 
-    RemoteActorProxy(actorRef, className, hostname, port, timeout)
+    RemoteActorRef(actorRef, className, hostname, port, timeout)
 
   def clientFor(hostname: String, port: Int): RemoteClient = clientFor(new InetSocketAddress(hostname, port))
 

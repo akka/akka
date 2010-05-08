@@ -42,14 +42,13 @@ import java.util.concurrent.ConcurrentHashMap
 class SupervisorFactory(val config: SupervisorConfig) extends Logging {
   type ExceptionList = List[Class[_ <: Throwable]]
 
-  def newInstance: Supervisor = newInstanceFor(config)
+  def newInstance: ActorRef = newInstanceFor(config)
 
-  def newInstanceFor(config: SupervisorConfig): Supervisor = config match {
+  def newInstanceFor(config: SupervisorConfig): ActorRef = config match {
     case SupervisorConfig(restartStrategy, _) =>
       val supervisor = create(restartStrategy)
-      supervisor.start
       supervisor.configure(config, this)
-      supervisor
+      Actor.newActor(() => supervisor).start
   }
 
   protected def create(strategy: RestartStrategy): Supervisor = strategy match {
@@ -84,7 +83,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   faultHandler = Some(handler)
   
   // FIXME should Supervisor really havea newThreadBasedDispatcher??
-  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(this)
 
   private val actors = new ConcurrentHashMap[String, List[ActorRef]]
   
@@ -96,14 +95,12 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
   
   def isDefined(clazz: Class[_]): Boolean = actors.containsKey(clazz.getName)
 
-  override def start: Unit = synchronized {
+  override def init: Unit = synchronized {
     ConfiguratorRepository.registerConfigurator(this)
-    super[Actor].start
   }
   
-  override def stop = synchronized {
-    super[Actor].stop
-    getLinkedActors.toArray.toList.asInstanceOf[List[ActorRef]].foreach { actorRef =>
+  override def shutdown: Unit = synchronized {
+    self.linkedActors.toArray.toList.asInstanceOf[List[ActorRef]].foreach { actorRef =>
       actorRef.stop
       log.info("Shutting actor down: %s", actorRef)
     }
@@ -131,7 +128,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
             startLink(actorRef)
             remoteAddress.foreach(address => RemoteServer.actorsFor(
               RemoteServer.Address(address.hostname, address.port))
-              .actors.put(actorRef.id, actorRef))
+                .actors.put(actorRef.id, actorRef))
 
            case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
              val supervisor = { 
@@ -140,14 +137,14 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
                instance
              }
              supervisor.lifeCycle = Some(LifeCycle(Permanent))
-             val className = supervisor.getClass.getName
+             val className = supervisor.actorClass.getName
              val currentSupervisors = { 
                val list = actors.get(className)
                if (list eq null) List[ActorRef]()
                else list
              }
-             actors.put(className, supervisor.self :: currentSupervisors)
-             link(supervisor.self)
+             actors.put(className, supervisor :: currentSupervisors)
+             link(supervisor)
         })
   }
 }

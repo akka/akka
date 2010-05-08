@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.remote
 import se.scalablesolutions.akka.config.Config.config
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRegistry}
+import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor, ActorRef, ActorRegistry}
 import se.scalablesolutions.akka.util.Logging
 import scala.collection.immutable.{Map, HashMap}
 
@@ -76,7 +76,6 @@ trait ClusterActor extends Actor with Cluster {
  */
 private[akka] object ClusterActor {
   sealed trait ClusterMessage
-
   private[akka] case class RelayedMessage(actorClassFQN: String, msg: AnyRef) extends ClusterMessage
   private[akka] case class Message[ADDR_T](sender: ADDR_T, msg: Array[Byte])
   private[akka] case object PapersPlease extends ClusterMessage
@@ -236,32 +235,37 @@ object Cluster extends Cluster with Logging {
   lazy val DEFAULT_SERIALIZER_CLASS_NAME = Serializer.Java.getClass.getName
 
   @volatile private[remote] var clusterActor: Option[ClusterActor] = None
+  @volatile private[remote] var clusterActorRef: Option[ActorRef] = None
 
-  private[remote] def createClusterActor(loader : ClassLoader): Option[ClusterActor] = {
+  private[remote] def createClusterActor(loader: ClassLoader): Option[ActorRef] = {
     val name = config.getString("akka.remote.cluster.actor")
     if (name.isEmpty) throw new IllegalArgumentException(
       "Can't start cluster since the 'akka.remote.cluster.actor' configuration option is not defined")
 
-    val serializer = Class.forName(config.getString("akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME)).newInstance.asInstanceOf[Serializer]
+    val serializer = Class.forName(config.getString(
+      "akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
+      .newInstance.asInstanceOf[Serializer]
     serializer.classLoader = Some(loader)
     try {
       name map {
         fqn =>
           val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
           a setSerializer serializer
-          a
+          new ActorRef(() => a)
       }
     }
     catch {
-      case e => log.error(e, "Couldn't load Cluster provider: [%s]", name.getOrElse("Not specified")); None
+      case e => 
+        log.error(e, "Couldn't load Cluster provider: [%s]", name.getOrElse("Not specified"))
+        None
     }
   }
 
-  private[akka] def createSupervisor(actor: ClusterActor): Option[Supervisor] = {
+  private[akka] def createSupervisor(actor: ActorRef): Option[ActorRef] = {
     val sup = SupervisorFactory(
       SupervisorConfig(
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
-        Supervise(actor.self, LifeCycle(Permanent)) :: Nil)
+        Supervise(actor, LifeCycle(Permanent)) :: Nil)
       ).newInstance
     Some(sup)
   }
@@ -281,12 +285,15 @@ object Cluster extends Cluster with Logging {
 
   def start: Unit = start(None)
 
-  def start(serializerClassLoader : Option[ClassLoader]): Unit = synchronized {
+  def start(serializerClassLoader: Option[ClassLoader]): Unit = synchronized {
     log.info("Starting up Cluster Service...")
     if (clusterActor.isEmpty) {
-      for{ actor <- createClusterActor(serializerClassLoader getOrElse getClass.getClassLoader)
-             sup <- createSupervisor(actor) } {
-        clusterActor = Some(actor)
+      for { 
+        actorRef <- createClusterActor(serializerClassLoader getOrElse getClass.getClassLoader)
+        sup <- createSupervisor(actorRef) 
+      } {
+        clusterActorRef = Some(actorRef)
+        clusterActor = Some(actorRef.actor.asInstanceOf[ClusterActor])
         sup.start
       }
     }
@@ -294,8 +301,8 @@ object Cluster extends Cluster with Logging {
 
   def shutdown: Unit = synchronized {
     log.info("Shutting down Cluster Service...")
-    for{
-      c <- clusterActor
+    for {
+      c <- clusterActorRef
       s <- c._supervisor
     } s.stop
     clusterActor = None

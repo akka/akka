@@ -70,7 +70,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    */
   private def tryProcessMailbox(receiver: ActorRef): Boolean = {
     var lockAcquiredOnce = false
-    val lock = receiver.actor._dispatcherLock
+    val lock = receiver._dispatcherLock
     // this do-wile loop is required to prevent missing new messages between the end of processing
     // the mailbox and releasing the lock
     do {
