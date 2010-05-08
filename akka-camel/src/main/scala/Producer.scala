@@ -19,7 +19,7 @@ import se.scalablesolutions.akka.util.Logging
  *
  * @author Martin Krasser
  */
-trait Producer { self: Actor =>
+trait Producer { this: Actor =>
 
   private val headersToCopyDefault = Set(Message.MessageExchangeId)
 
@@ -191,7 +191,7 @@ class ProducerResponseSender(
  *
  * @author Martin Krasser
  */
-trait Oneway extends Producer { self: Actor =>
+trait Oneway extends Producer { this: Actor =>
   override def oneway = true
 }
 
@@ -200,7 +200,7 @@ trait Oneway extends Producer { self: Actor =>
  *
  * @author Martin Krasser
  */
-trait Sync extends Producer { self: Actor =>
+trait Sync extends Producer { this: Actor =>
   override def async = false
 }
 
