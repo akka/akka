@@ -99,9 +99,11 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
 */
 sealed class Agent[T] private (initialValue: T) extends Transactor {
-  start
   import Agent._
-  log.debug("Starting up Agent [%s]", _uuid)
+  import Actor._
+  _selfOption = Some(newActor(() => this).start)
+  
+  log.debug("Starting up Agent [%s]", uuid)
   
   private lazy val value = Ref[T]()
   
@@ -138,7 +140,7 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
   * method and then waits for its result on a CountDownLatch.
   */
   final def get: T = {
-    if (isTransactionInScope) throw new AgentException(
+    if (self.isTransactionInScope) throw new AgentException(
       "Can't call Agent.get within an enclosing transaction.\n\tWould block indefinitely.\n\tPlease refactor your code.")
     val ref = new AtomicReference[T]
     val latch = new CountDownLatch(1)

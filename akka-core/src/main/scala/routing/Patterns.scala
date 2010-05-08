@@ -28,25 +28,22 @@ object Patterns {
    */
    def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef = 
     newActor(() => new Actor with LoadBalancer {
-      start
       val seq = actors
-    })
+    }).start
 
   /** Creates a Dispatcher given a routing and a message-transforming function
    */
    def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef = 
     newActor(() => new Actor with Dispatcher {
-      start
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
-    })
+    }).start
 
   /** Creates a Dispatcher given a routing
    */
    def dispatcherActor(routing: PF[Any, ActorRef]): ActorRef = newActor(() => new Actor with Dispatcher {
-    start
     def routes = routing
-  })
+  }).start
 
   /** Creates an actor that pipes all incoming messages to 
    *  both another actor and through the supplied function
