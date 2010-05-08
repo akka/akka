@@ -27,7 +27,7 @@ import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 
   def thread(body: => Unit) = {
-    val thread = newActor(() => new IsolatedEventBasedThread(body)).start
+    val thread = actorOf(new IsolatedEventBasedThread(body)).start
     thread ! Start
     thread
   }
@@ -98,7 +98,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       }
     }
 
-    private[this] val in = newActor(() => new In(this))
+    private[this] val in = actorOf(new In(this))
 
     def <<(ref: DataFlowVariable[T]) = in ! Set(ref())
 
@@ -108,7 +108,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       val ref = value.get
       if (ref.isDefined) ref.get
       else {
-        val out = newActor(() => new Out(this))
+        val out = actorOf(new Out(this))
         blockedReaders.offer(out)
         val result = out !! Get
         out ! Exit

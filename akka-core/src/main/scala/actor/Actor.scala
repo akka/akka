@@ -97,13 +97,13 @@ object Actor extends Logging {
    * This function should <b>NOT</b> be used for remote actors.
    * <pre>
    *   import Actor._
-   *   val actor = newActor(() => new MyActor)
+   *   val actor = actorOf(new MyActor)
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    */
-  def newActor(factory: () => Actor): ActorRef = new ActorRef(factory)
+  def actorOf(factory: => Actor): ActorRef = new ActorRef(() => factory)
 
   /**
    * Use to create an anonymous event-driven actor.
@@ -288,7 +288,7 @@ object ActorRef {
  * <pre>
  *   import Actor._
  * 
- *   val actor = newActor(() => new MyActor(...))
+ *   val actor = actorOf(new MyActor(...))
  *   actor.start
  *   actor ! message
  *   actor.stop
