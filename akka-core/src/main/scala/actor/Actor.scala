@@ -731,6 +731,8 @@ sealed class ActorRef private[akka] () extends TransactionManagement {
     } finally {
       link(actor)
     }
+    actor._selfOption = Some(this)
+    if (actor eq null) throw new ActorInitializationException("Actor instance passed to ActorRef can not be 'null'")
     actor
   }
 
@@ -747,7 +749,6 @@ sealed class ActorRef private[akka] () extends TransactionManagement {
     } finally {
       link(actor)
     }
-    actor
   }
 
   /**
@@ -1468,8 +1469,16 @@ object DispatcherType {
 }
 
 /**
- * For internal use only.
- * 
+ * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
+ * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
+ * <p/>
+ * An actor has a well-defined (non-cyclic) life-cycle.
+ * <pre>
+ * => NEW (newly created actor) - can't receive messages (yet)
+ *     => STARTED (when 'start' is invoked) - can receive messages
+ *         => SHUT DOWN (when 'exit' is invoked) - can't do anything
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActorMessageInvoker private[akka] (val actorRef: ActorRef) extends MessageInvoker {
