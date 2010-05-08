@@ -114,7 +114,7 @@ trait Producer { self: Actor =>
   protected def produceAsync(msg: Any): Unit = {
     val cmsg = Message.canonicalize(msg)
     val sync = new ProducerResponseSender(
-      cmsg.headers(headersToCopy), this.replyTo, this)
+      cmsg.headers(headersToCopy), self.replyTo, this)
     template.asyncCallback(endpointUri, createInOutExchange.fromRequestMessage(cmsg), sync)
   }
 

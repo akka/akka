@@ -101,7 +101,7 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 sealed class Agent[T] private (initialValue: T) extends Transactor {
   import Agent._
   import Actor._
-  _selfOption = Some(newActor(() => this).start)
+  _selfSenderRef = Some(newActor(() => this).start)
   
   log.debug("Starting up Agent [%s]", uuid)
   

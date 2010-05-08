@@ -8,7 +8,8 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 /** A Dispatcher is a trait whose purpose is to route incoming messages to actors
  */
-trait Dispatcher { self: Actor =>
+trait Dispatcher { this: Actor =>
+  implicit val sender = Some(self)
 
   protected def transform(msg: Any): Any = msg
 
@@ -16,7 +17,7 @@ trait Dispatcher { self: Actor =>
 
   protected def dispatch: PartialFunction[Any, Unit] = {
     case a if routes.isDefinedAt(a) =>
-      if (self.self.replyTo.isDefined) routes(a).forward(transform(a))(Some(self.self))
+      if (self.replyTo.isDefined) routes(a) forward transform(a)
       else routes(a).!(transform(a))(None)
   }
 
