@@ -45,7 +45,7 @@ trait CamelService extends Bootable with Logging {
     ActorRegistry.addRegistrationListener(publishRequestor.start)
 
     // publish already registered consumer actors
-    for (publish <- Publish.forConsumers(ActorRegistry.actors)) consumerPublisher ! publish
+    for (actor <- ActorRegistry.actors; event <- ConsumerRegistered.forConsumer(actor)) consumerPublisher ! event
   }
 
   /**
