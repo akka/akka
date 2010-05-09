@@ -99,7 +99,7 @@ object ActiveObject {
   def newInstance[T](target: Class[T], config: ActiveObjectConfiguration): T = {
     val actor = newActor(() => new Dispatcher(config._transactionRequired, config._restartCallbacks))
      if (config._messageDispatcher.isDefined) {
-       actor.messageDispatcher = config._messageDispatcher.get
+       actor.dispatcher = config._messageDispatcher.get
      }
      newInstance(target, actor, config._host, config._timeout)
   }
@@ -107,7 +107,7 @@ object ActiveObject {
   def newInstance[T](intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration): T = {
     val actor = newActor(() => new Dispatcher(config._transactionRequired, config._restartCallbacks))
      if (config._messageDispatcher.isDefined) {
-       actor.messageDispatcher = config._messageDispatcher.get
+       actor.dispatcher = config._messageDispatcher.get
      }
      newInstance(intf, target, actor, config._host, config._timeout)
   }
@@ -163,21 +163,21 @@ object ActiveObject {
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
   def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher): T = {
     val actor = newActor(() => new Dispatcher(false, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
   def newInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(false, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher): T = {
     val actor = newActor(() => new Dispatcher(false, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
@@ -185,14 +185,14 @@ object ActiveObject {
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, 
                      dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(false, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
   def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
@@ -200,14 +200,14 @@ object ActiveObject {
   def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, 
                      dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, None, timeout)
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
@@ -215,14 +215,14 @@ object ActiveObject {
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, 
                      dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, None, timeout)
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
   def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = newActor(() => new Dispatcher(false, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
@@ -230,14 +230,14 @@ object ActiveObject {
   def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, 
                            hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(false, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = newActor(() => new Dispatcher(false, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
@@ -245,7 +245,7 @@ object ActiveObject {
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, 
                            hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(false, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
@@ -253,7 +253,7 @@ object ActiveObject {
   def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, 
                            dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
@@ -261,7 +261,7 @@ object ActiveObject {
   def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, 
                           hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
@@ -269,7 +269,7 @@ object ActiveObject {
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, 
                            dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, None))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
@@ -277,7 +277,7 @@ object ActiveObject {
   def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, 
                            dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = newActor(() => new Dispatcher(transactionRequired, restartCallbacks))
-    actor.messageDispatcher = dispatcher
+    actor.dispatcher = dispatcher
     newInstance(intf, target, actor, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
