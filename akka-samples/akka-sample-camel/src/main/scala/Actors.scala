@@ -59,6 +59,31 @@ class Consumer3(transformer: ActorRef) extends Actor with Consumer {
   }
 }
 
+class Consumer4 extends Actor with Consumer with Logging {
+  def endpointUri = "jetty:http://0.0.0.0:8877/camel/stop"
+
+  def receive = {
+    case msg: Message => msg.bodyAs(classOf[String]) match {
+      case "stop" => {
+        reply("Consumer4 stopped")
+        stop
+      }
+      case body   => reply(body)
+    }
+  }
+}
+
+class Consumer5 extends Actor with Consumer with Logging {
+  def endpointUri = "jetty:http://0.0.0.0:8877/camel/start"
+
+  def receive = {
+    case _ => {
+      new Consumer4().start;
+      reply("Consumer4 started")
+    }
+  }
+}
+
 class Transformer(producer: ActorRef) extends Actor {
   protected def receive = {
     case msg: Message => producer.forward(msg.transformBody[String]("- %s -" format _))

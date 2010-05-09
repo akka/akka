@@ -61,7 +61,9 @@ class Boot {
 
   //val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
   val jmsPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher).start
-  
+
+  new Consumer4().start // POSTing "stop" to http://0.0.0.0:8877/camel/stop stops and unpublishes this actor
+  new Consumer5().start // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
 }
 
 class CustomRouteBuilder extends RouteBuilder {
