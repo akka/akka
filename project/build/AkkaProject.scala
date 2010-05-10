@@ -42,7 +42,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // val configgy = "Configgy" at "http://www.lag.net/repo"
   val codehaus = "Codehaus" at "http://repository.codehaus.org"
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val jboss = "jBoss" at "http://repository.jboss.org/maven2"
+  val jboss = "jBoss" at "https://repository.jboss.org/nexus/content/groups/public/"
   val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val google = "Google" at "http://google-maven-repository.googlecode.com/svn/repository"
   val java_net = "java.net" at "http://download.java.net/maven/2"
@@ -136,7 +136,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val netty = "org.jboss.netty" % "netty" % "3.2.0.BETA1" % "compile"
+    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.Beta1" % "0.6.6" % "compile"
     val dispatch_http = "net.databinder" % "dispatch-http_2.8.0.Beta1" % "0.6.6" % "compile"
