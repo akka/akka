@@ -131,20 +131,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def tryDonateAndProcessMessages(receiver: ActorRef, thief: ActorRef) = {
     if (thief._dispatcherLock.tryLock) {
       try {
-        donateAndProcessMessages(receiver, thief)
+        while(donateMessage(receiver, thief))
+          processMailbox(thief)
       } finally {
         thief._dispatcherLock.unlock
       }
-    }
-  }
-
-  /**
-   * Donate messages to the thief and process them on the thief as long as the receiver has more messages.
-   */
-  private def donateAndProcessMessages(receiver: ActorRef, thief: ActorRef): Unit = {
-    if(donateMessage(receiver, thief)) {
-        processMailbox(thief)
-        donateAndProcessMessages(receiver, thief)
     }
   }
 
@@ -155,7 +146,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     val donated = receiver._mailbox.pollLast
     if (donated ne null) {
       donated.replyTo match {
-        case None                => thief.self.!(donated.message)(None)
+        case None                => thief.self.postMessageToMailbox(donated.message,None)
         case Some(Left(actor))   => thief.self.postMessageToMailbox(donated.message,Some(actor))
         case Some(Right(future)) => thief.self.postMessageToMailboxAndCreateFutureResultWithTimeout[Any](donated.message,receiver.timeout,Some(future))
       }
