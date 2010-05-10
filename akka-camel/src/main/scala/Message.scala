@@ -23,8 +23,20 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    *
    * @see CamelContextManager.
    */
+  @deprecated("use bodyAs[T](implicit m: Manifest[T]): T instead") 
   def bodyAs[T](clazz: Class[T]): T =
     CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](clazz, body)
+
+  /**
+   * Returns the body of the message converted to the type <code>T</code>. Conversion is done
+   * using Camel's type converter. The type converter is obtained from the CamelContext managed
+   * by CamelContextManager. Applications have to ensure proper initialization of
+   * CamelContextManager.
+   *
+   * @see CamelContextManager.
+   */
+  def bodyAs[T](implicit m: Manifest[T]): T =
+    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], body)
 
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
@@ -41,7 +53,15 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    *
    * @see Message#bodyAs(Class)
    */
+  @deprecated("use setBodyAs[T](implicit m: Manifest[T]): Message instead") 
   def setBodyAs[T](clazz: Class[T]): Message = setBody(bodyAs(clazz))
+
+  /**
+   * Creates a Message with a new <code>body</code> converted to type <code>T</code>.
+   *
+   * @see Message#bodyAs(Class)
+   */
+  def setBodyAs[T](implicit m: Manifest[T]): Message = setBody(bodyAs[T])
 
   /**
    * Creates a Message with a new <code>body</code>.

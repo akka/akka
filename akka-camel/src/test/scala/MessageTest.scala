@@ -14,12 +14,12 @@ class MessageTest extends JUnitSuite with BeforeAndAfterAll {
   override protected def beforeAll = CamelContextManager.init
 
   @Test def shouldConvertDoubleBodyToString = {
-    assertEquals("1.4", Message(1.4, null).bodyAs(classOf[String]))
+    assertEquals("1.4", Message(1.4, null).bodyAs[String])
   }
 
   @Test def shouldThrowExceptionWhenConvertingDoubleBodyToInputStream {
     intercept[NoTypeConversionAvailableException] {
-      Message(1.4, null).bodyAs(classOf[InputStream])
+      Message(1.4, null).bodyAs[InputStream]
     }
   }
 
@@ -37,7 +37,7 @@ class MessageTest extends JUnitSuite with BeforeAndAfterAll {
   @Test def shouldConvertBodyAndPreserveHeaders = {
     assertEquals(
       Message("1.4", Map("A" -> "1")),
-      Message(1.4  , Map("A" -> "1")).setBodyAs(classOf[String]))
+      Message(1.4  , Map("A" -> "1")).setBodyAs[String])
   }
 
   @Test def shouldSetBodyAndPreserveHeaders = {

@@ -40,14 +40,14 @@ class Consumer1 extends Actor with Consumer with Logging {
   def endpointUri = "file:data/input"
 
   def receive = {
-    case msg: Message => log.info("received %s" format msg.bodyAs(classOf[String]))
+    case msg: Message => log.info("received %s" format msg.bodyAs[String])
   }
 }
 
 @consume("jetty:http://0.0.0.0:8877/camel/test1")
 class Consumer2 extends Actor {
   def receive = {
-    case msg: Message => reply("Hello %s" format msg.bodyAs(classOf[String]))
+    case msg: Message => reply("Hello %s" format msg.bodyAs[String])
   }
 }
 
@@ -55,7 +55,7 @@ class Consumer3(transformer: ActorRef) extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/welcome"
 
   def receive = {
-    case msg: Message => transformer.forward(msg.setBodyAs(classOf[String]))
+    case msg: Message => transformer.forward(msg.setBodyAs[String])
   }
 }
 
@@ -63,7 +63,7 @@ class Consumer4 extends Actor with Consumer with Logging {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/stop"
 
   def receive = {
-    case msg: Message => msg.bodyAs(classOf[String]) match {
+    case msg: Message => msg.bodyAs[String] match {
       case "stop" => {
         reply("Consumer4 stopped")
         stop
@@ -110,7 +110,7 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
 
   protected def receive = {
     case msg: Message => {
-      publisher ! msg.bodyAs(classOf[String])
+      publisher ! msg.bodyAs[String]
       reply("message published")
     }
   }
