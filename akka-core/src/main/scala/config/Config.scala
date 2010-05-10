@@ -28,17 +28,7 @@ object Config extends Logging {
   }
 
   val config = {
-    if (HOME.isDefined) {
-      try {
-        val configFile = HOME.get + "/config/akka.conf"
-        Configgy.configure(configFile)
-        log.info("AKKA_HOME is defined to [%s], config loaded from [%s].", HOME.get, configFile)
-      } catch {
-        case e: ParseException => throw new IllegalStateException(
-          "'akka.conf' config file can not be found in [" + HOME + "/config/akka.conf] aborting." +
-          "\n\tEither add it in the 'config' directory or add it to the classpath.")
-      }
-    } else if (System.getProperty("akka.config", "") != "") {
+    if (System.getProperty("akka.config", "") != "") {
       val configFile = System.getProperty("akka.config", "")
       try {
         Configgy.configure(configFile)
@@ -47,20 +37,33 @@ object Config extends Logging {
         case e: ParseException => throw new IllegalStateException(
           "Config could not be loaded from -Dakka.config=" + configFile)
       }
-    } else {
+    } else if (getClass.getClassLoader.getResource("akka.conf") != null) {
       try {
         Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
         log.info("Config loaded from the application classpath.")
       } catch {
         case e: ParseException => throw new IllegalStateException(
-          "\nCan't find 'akka.conf' configuration file." +
-          "\nOne of the three ways of locating the 'akka.conf' file needs to be defined:" +
-          "\n\t1. Define 'AKKA_HOME' environment variable to the root of the Akka distribution." +
-          "\n\t2. Define the '-Dakka.config=...' system property option." +
-          "\n\t3. Put the 'akka.conf' file on the classpath." +
-          "\nI have no way of finding the 'akka.conf' configuration file." +
-          "\nAborting.")
+          "Can't load 'akka.conf' config file from application classpath.")
       }
+    } else if (HOME.isDefined) {
+      try {
+        val configFile = HOME.get + "/config/akka.conf"
+        Configgy.configure(configFile)
+        log.info("AKKA_HOME is defined as [%s], config loaded from [%s].", HOME.get, configFile)
+      } catch {
+        case e: ParseException => throw new IllegalStateException(
+          "AKKA_HOME is defined as [" + HOME.get + "] " +
+          "but the 'akka.conf' config file can not be found at [" + HOME.get + "/config/akka.conf].")
+      }
+    } else {
+      throw new IllegalStateException(
+        "\nCan't load 'akka.conf'." +
+        "\nOne of the three ways of locating the 'akka.conf' file needs to be defined:" +
+        "\n\t1. Define the '-Dakka.config=...' system property option." +
+        "\n\t2. Put the 'akka.conf' file on the classpath." +
+        "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
+        "\nI have no way of finding the 'akka.conf' configuration file." +
+        "\nAborting.")
     }
     Configgy.config
   }
