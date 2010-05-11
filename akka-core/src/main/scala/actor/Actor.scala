@@ -509,7 +509,7 @@ trait Actor extends Logging {
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  def dispatcher_=(md: MessageDispatcher): Unit =
+  def dispatcher_=(md: MessageDispatcher): Unit = 
     if (!self.isRunning) _messageDispatcher = md
     else throw new IllegalArgumentException(
       "Can not swap dispatcher for " + toString + " after it has been started")
