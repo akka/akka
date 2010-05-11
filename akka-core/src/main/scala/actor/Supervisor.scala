@@ -99,13 +99,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
     ConfiguratorRepository.registerConfigurator(this)
   }
   
-  override def shutdown: Unit = synchronized {
-    self.linkedActors.toArray.toList.asInstanceOf[List[ActorRef]].foreach { actorRef =>
-      actorRef.stop
-      log.info("Shutting actor down: %s", actorRef)
-    }
-    log.info("Stopping supervisor: %s", this)
-  }
+  override def shutdown: Unit = synchronized { self.shutdownLinkedActors }
 
   def receive = {
     case unknown => throw new IllegalArgumentException(
