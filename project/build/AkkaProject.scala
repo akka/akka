@@ -209,8 +209,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile"
-    val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "compile"
-    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "compile"
+    val slf4j = "org.slf4j" % "slf4j-api" % "1.6.0" % "compile"
+    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.6.0" % "compile"
     val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
     // testing
     val high_scale = "org.apache.cassandra" % "high-scale-lib" % CASSANDRA_VERSION % "test"
