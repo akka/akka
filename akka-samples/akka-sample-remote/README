@@ -14,6 +14,7 @@ To run the sample:
   - Step down into to the root of the Akka distribution.
   - Set 'export AKKA_HOME=<root of distribution>.
   - Run 'sbt'
+  - Run 'update' followed by 'compile' if you have not done that before.
   - Run 'project akka-sample-remote'
   - Run 'console' to start up a REPL (interpreter).
 2. In the first REPL you get execute: 
@@ -39,6 +40,7 @@ To run the sample:
   - Step down into to the root of the Akka distribution.
   - Set 'export AKKA_HOME=<root of distribution>.
   - Run 'sbt'
+  - Run 'update' followed by 'compile' if you have not done that before.
   - Run 'project akka-sample-remote'
   - Run 'console' to start up a REPL (interpreter).
 2. In the first REPL you get execute: 
