@@ -205,8 +205,7 @@ class ChatService extends
   SessionManagement with 
   ChatManagement with 
   RedisChatStorageFactory {
-  override def start {
-    super.start
+  override def init = {
     RemoteNode.start("localhost", 9999)
     RemoteNode.register("chat:service", self)
   }

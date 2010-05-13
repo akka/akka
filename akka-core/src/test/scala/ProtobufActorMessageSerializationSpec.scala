@@ -27,7 +27,6 @@ object ProtobufActorMessageSerializationSpec {
   var server: RemoteServer = null
 
   class RemoteActorSpecActorBidirectional extends Actor {
-    start
     def receive = {
       case pojo: ProtobufPOJO =>
         val id = pojo.getId
@@ -45,7 +44,7 @@ class ProtobufActorMessageSerializationSpec extends JUnitSuite {
   def init() {
     server = new RemoteServer
     server.start(HOSTNAME, PORT)
-    server.register("RemoteActorSpecActorBidirectional", newActor[RemoteActorSpecActorBidirectional])
+    server.register("RemoteActorSpecActorBidirectional", newActor[RemoteActorSpecActorBidirectional].start)
     Thread.sleep(1000)
   }
 
@@ -58,7 +57,7 @@ class ProtobufActorMessageSerializationSpec extends JUnitSuite {
   }
 
   @Test
-  def shouldSendReplyAsync = {
+  def shouldSendReplyAsync  {
     val actor = RemoteClient.actorFor("RemoteActorSpecActorBidirectional", 5000L, HOSTNAME, PORT)
     val result = actor !! ProtobufPOJO.newBuilder
         .setId(11)

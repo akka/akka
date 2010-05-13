@@ -69,6 +69,7 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
 case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMessage
 case class Restart(reason: Throwable) extends LifeCycleMessage
 case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage
+case class Link(child: ActorRef) extends LifeCycleMessage
 case class Unlink(child: ActorRef) extends LifeCycleMessage
 case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
@@ -97,7 +98,7 @@ object Actor extends Logging {
   }
 
   /**
-   * Creates a new ActorRef out of the Actor with type T.
+   * Creates a Actor.newActor out of the Actor with type T.
    * <pre>
    *   import Actor._
    *   val actor = newActor[MyActor]
@@ -106,10 +107,10 @@ object Actor extends Logging {
    *   actor.stop
    * </pre>
    */
-  def newActor[T <: Actor: Manifest]: ActorRef = new ActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def newActor[T <: Actor: Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-   * Creates a new ActorRef out of the Actor. Allows you to pass in a factory function 
+   * Creates a Actor.newActor out of the Actor. Allows you to pass in a factory function 
    * that creates the Actor. Please note that this function can be invoked multiple 
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
@@ -122,7 +123,7 @@ object Actor extends Logging {
    *   actor.stop
    * </pre>
    */
-  def newActor(factory: () => Actor): ActorRef = new ActorRef(factory)
+  def newActor(factory: () => Actor): ActorRef = new LocalActorRef(factory)
 
   /**
    * Use to create an anonymous event-driven actor.
@@ -301,7 +302,7 @@ trait Actor extends Logging {
   /**
    * Holds the hot swapped partial function.
    */
-  private[this] var _hotswap: Option[PartialFunction[Any, Unit]] = None // FIXME: _hotswap should be a stack
+  private var _hotswap: Option[PartialFunction[Any, Unit]] = None // FIXME: _hotswap should be a stack
 
   // ========================================
   // ==== CALLBACKS FOR USER TO OVERRIDE ====
@@ -478,7 +479,7 @@ trait Actor extends Logging {
   /**
    * Starts the actor.
    */
-  def start = self.start
+  def start = self.startOnCreation = true
 
   /**
    * Shuts down the actor its dispatcher and message queue.

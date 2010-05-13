@@ -13,7 +13,7 @@ object ActorFireForgetRequestReplySpec {
 
     def receive = {
       case "Send" => reply("Reply")
-      case "SendImplicit" => replyTo.get.left.get ! "ReplyImplicit"
+      case "SendImplicit" => self.replyTo.get.left.get ! "ReplyImplicit"
     }
   }
 

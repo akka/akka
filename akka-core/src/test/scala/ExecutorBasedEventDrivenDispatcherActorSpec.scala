@@ -32,7 +32,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   
   private val unit = TimeUnit.MILLISECONDS
 
-  @Test def shouldSendOneWay = {
+  @Test def shouldSendOneWay {
     val actor = newActor[OneWayTestActor]
     actor.start
     val result = actor ! "OneWay"
@@ -40,7 +40,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldSendReplySync = {
+  @Test def shouldSendReplySync {
     val actor = newActor[TestActor]
     actor.start
     val result: String = (actor !! ("Hello", 10000)).get
@@ -48,7 +48,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldSendReplyAsync = {
+  @Test def shouldSendReplyAsync {
     val actor = newActor[TestActor]
     actor.start
     val result = actor !! "Hello"
@@ -56,7 +56,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldSendReceiveException = {
+  @Test def shouldSendReceiveException {
     val actor = newActor[TestActor]
     actor.start
     try {

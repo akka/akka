@@ -17,7 +17,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorMessageInvoker}
 class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler: MessageInvoker) 
   extends MessageDispatcher {
   
-  def this(actor: Actor) = this(actor.getClass.getName, new ActorMessageInvoker(new ActorRef(() => actor)))
+  def this(actor: Actor) = this(actor.getClass.getName, new ActorMessageInvoker(Actor.newActor(() => actor)))
 
   private val queue = new BlockingMessageQueue(name)
   private var selectorThread: Thread = _

@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.remote.protobuf;
 
 /*
   Compile with:
-  cd ./akka-util-java/src/main/java
+  cd ./akka-core/src/main/java
   protoc se/scalablesolutions/akka/remote/protobuf/RemoteProtocol.proto --java_out .
 */
 

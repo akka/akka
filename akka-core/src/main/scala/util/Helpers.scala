@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.util
 
 import java.security.MessageDigest
-import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class SystemFailure(cause: Throwable) extends RuntimeException(cause)
 
@@ -37,31 +36,6 @@ object Helpers extends Logging {
       sb.append(hex.charAt((n & 0xF) >> 4)).append(hex.charAt(n & 0xF))
     })
     sb.toString
-  }
-
- // ================================================
-  class ReadWriteLock {
-    private val rwl = new ReentrantReadWriteLock
-    private val readLock = rwl.readLock
-    private val writeLock = rwl.writeLock
-
-    def withWriteLock[T](body: => T): T = {
-      writeLock.lock
-      try {
-        body
-      } finally {
-        writeLock.unlock
-      }
-    }
-
-    def withReadLock[T](body: => T): T = {
-      readLock.lock
-      try {
-        body
-      } finally {
-        readLock.unlock
-      }
-    }
   }
 }
 

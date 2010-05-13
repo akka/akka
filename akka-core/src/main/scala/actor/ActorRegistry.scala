@@ -92,27 +92,28 @@ object ActorRegistry extends Logging {
   /**
    * Registers an actor in the ActorRegistry.
    */
-  def register(actorId: ActorRef) = {
+  def register(actor: ActorRef) = {
     // UUID
-    actorsByUUID.put(actorId.uuid, actorId)
+    actorsByUUID.put(actor.uuid, actor)
 
     // ID
-    val id = actorId.id
-    if (id eq null) throw new IllegalStateException("Actor.id is null " + actorId)
-    if (actorsById.containsKey(id)) actorsById.put(id, actorId :: actorsById.get(id))
-    else actorsById.put(id, actorId :: Nil)
+    val id = actor.id
+    if (id eq null) throw new IllegalStateException("Actor.id is null " + actor)
+    if (actorsById.containsKey(id)) actorsById.put(id, actor :: actorsById.get(id))
+    else actorsById.put(id, actor :: Nil)
 
     // Class name
-    val className = actorId.actor.getClass.getName
+    val className = actor.actor.getClass.getName
     if (actorsByClassName.containsKey(className)) {
-      actorsByClassName.put(className, actorId :: actorsByClassName.get(className))
-    } else actorsByClassName.put(className, actorId :: Nil)
+      actorsByClassName.put(className, actor :: actorsByClassName.get(className))
+    } else actorsByClassName.put(className, actor :: Nil)
 
     // notify listeners
-    foreachListener(_ ! ActorRegistered(actorId))
+    foreachListener(_ ! ActorRegistered(actor))
   }
 
   /**
+   * FIXME: WRONG - unregisters all actors with the same id and class name, should remove the right one in each list
    * Unregisters an actor in the ActorRegistry.
    */
   def unregister(actor: ActorRef) = {

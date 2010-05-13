@@ -226,7 +226,7 @@ class RemoteServer extends Logging {
       log.info("Unregistering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
       val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
       server.actors.remove(actorRef.id)
-      if (actorRef._registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
+      if (actorRef.registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
     }
   }
 
@@ -241,7 +241,7 @@ class RemoteServer extends Logging {
       val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
       val actorRef = server.actors.get(id)
       server.actors.remove(id)
-      if (actorRef._registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
+      if (actorRef.registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
     }
   }
 }
@@ -464,10 +464,10 @@ class RemoteServerHandler(
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
         else Class.forName(name)
-        val actorRef = new ActorRef(() => clazz.newInstance.asInstanceOf[Actor])
-        actorRef._uuid = uuid
+        val actorRef = Actor.newActor(() => clazz.newInstance.asInstanceOf[Actor])
+        actorRef.uuid = uuid
         actorRef.timeout = timeout
-        actorRef._remoteAddress = None
+        actorRef.remoteAddress = None
         actors.put(uuid, actorRef)
         actorRef
       } catch {

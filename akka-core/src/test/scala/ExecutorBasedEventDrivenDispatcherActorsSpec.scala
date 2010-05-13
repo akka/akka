@@ -14,7 +14,7 @@ import Actor._
  */
 class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustMatchers {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
-    messageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+    dispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
     id = "SlowActor"
 
     def receive = {
@@ -26,7 +26,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
   }
 
   class FastActor(finishedCounter: CountDownLatch) extends Actor {
-    messageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+    dispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
     id = "FastActor"
 
     def receive = {
@@ -36,7 +36,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     }
   }
 
-  @Test def slowActorShouldntBlockFastActor = {
+  @Test def slowActorShouldntBlockFastActor {
     val sFinished = new CountDownLatch(50)
     val fFinished = new CountDownLatch(10)
     val s = newActor(() => new SlowActor(sFinished)).start

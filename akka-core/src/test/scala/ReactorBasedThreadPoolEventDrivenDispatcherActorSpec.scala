@@ -24,7 +24,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
 
   private val unit = TimeUnit.MILLISECONDS
 
-  @Test def shouldSendOneWay = {
+  @Test def shouldSendOneWay {
     val oneWay = new CountDownLatch(1)
     val actor = newActor(() => new Actor {
       dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
@@ -38,7 +38,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldSendReplySync = {
+  @Test def shouldSendReplySync {
     val actor = newActor[TestActor]
     actor.start
     val result: String = (actor !! ("Hello", 10000)).get
@@ -46,7 +46,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldSendReplyAsync = {
+  @Test def shouldSendReplyAsync {
     val actor = newActor[TestActor]
     actor.start
     val result = actor !! "Hello"
@@ -54,7 +54,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldSendReceiveException = {
+  @Test def shouldSendReceiveException {
     val actor = newActor[TestActor]
     actor.start
     try {
