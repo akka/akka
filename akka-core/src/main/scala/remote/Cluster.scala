@@ -251,7 +251,7 @@ object Cluster extends Cluster with Logging {
         fqn =>
           val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
           a setSerializer serializer
-          new ActorRef(() => a)
+          Actor.newActor(() => a)
       }
     }
     catch {
@@ -261,15 +261,11 @@ object Cluster extends Cluster with Logging {
     }
   }
 
-  private[akka] def createSupervisor(actor: ActorRef): Option[ActorRef] = {
-    val sup = SupervisorFactory(
+  private[akka] def createSupervisor(actor: ActorRef): Option[Supervisor] =
+    Some(Supervisor(
       SupervisorConfig(
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
-        Supervise(actor, LifeCycle(Permanent)) :: Nil)
-      ).newInstance
-    Some(sup)
-  }
-
+        Supervise(actor, LifeCycle(Permanent)) :: Nil)))
 
   def name = clusterActor.map(_.name).getOrElse("No cluster")
 
@@ -303,7 +299,7 @@ object Cluster extends Cluster with Logging {
     log.info("Shutting down Cluster Service...")
     for {
       c <- clusterActorRef
-      s <- c._supervisor
+      s <- c.supervisor
     } s.stop
     clusterActor = None
   }

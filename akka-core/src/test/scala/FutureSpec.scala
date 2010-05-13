@@ -41,7 +41,7 @@ class FutureSpec extends JUnitSuite {
   }
 
   /*
-  @Test def shouldFutureAwaitEitherLeft = {
+  @Test def shouldFutureAwaitEitherLeft {
     val actor1 = newActor[TestActor]
     actor1.start
     val actor2 = newActor[TestActor]
@@ -55,7 +55,7 @@ class FutureSpec extends JUnitSuite {
     actor2.stop
   }
 
-  @Test def shouldFutureAwaitEitherRight = {
+  @Test def shouldFutureAwaitEitherRight {
     val actor1 = newActor[TestActor]
     actor1.start
     val actor2 = newActor[TestActor]
@@ -69,7 +69,7 @@ class FutureSpec extends JUnitSuite {
     actor2.stop
   }
   */
-  @Test def shouldFutureAwaitOneLeft = {
+  @Test def shouldFutureAwaitOneLeft {
     val actor1 = newActor[TestActor]
     actor1.start
     val actor2 = newActor[TestActor]
@@ -83,7 +83,7 @@ class FutureSpec extends JUnitSuite {
     actor2.stop
   }
 
-  @Test def shouldFutureAwaitOneRight = {
+  @Test def shouldFutureAwaitOneRight {
     val actor1 = newActor[TestActor]
     actor1.start
     val actor2 = newActor[TestActor]
@@ -97,7 +97,7 @@ class FutureSpec extends JUnitSuite {
     actor2.stop
   }
 
-  @Test def shouldFutureAwaitAll = {
+  @Test def shouldFutureAwaitAll {
     val actor1 = newActor[TestActor]
     actor1.start
     val actor2 = newActor[TestActor]

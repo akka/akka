@@ -24,7 +24,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     scenario("one-way communication using actor id") {
       val actor = new Tester with Retain with Countdown[Message]
       actor.start
-      template.sendBody("actor:%s" format actor.getId, "Martin")
+      template.sendBody("actor:%s" format actor.id, "Martin")
       assert(actor.waitFor)
       assert(actor.body === "Martin")
     }
@@ -40,7 +40,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     scenario("two-way communication using actor id") {
       val actor = new Tester with Respond
       actor.start
-      assert(template.requestBody("actor:%s" format actor.getId, "Martin") === "Hello Martin")
+      assert(template.requestBody("actor:%s" format actor.id, "Martin") === "Hello Martin")
     }
 
     scenario("two-way communication using actor uuid") {

@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.config
 import com.google.inject._
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher, ActorRef}
+import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher, ActorRef, Actor}
 import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 
@@ -24,7 +24,7 @@ import java.lang.reflect.Method
  */
 private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfiguratorBase with Logging {
   private var injector: Injector = _
-  private var supervisor: Option[ActorRef]  = None
+  private var supervisor: Option[Supervisor]  = None
   private var restartStrategy: RestartStrategy  = _
   private var components: List[Component] = _
   private var supervised: List[Supervise] = Nil
@@ -82,7 +82,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
-    val actorRef = new ActorRef(() => new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
+    val actorRef = Actor.newActor(() => new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined) 
@@ -103,7 +103,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val targetClass = component.intf.get
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
-    val actorRef = new ActorRef(() => new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
+    val actorRef = Actor.newActor(() => new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined) 
@@ -130,7 +130,6 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
   override def supervise: ActiveObjectConfiguratorBase = synchronized {
     if (injector eq null) inject
     supervisor = Some(ActiveObject.supervise(restartStrategy, supervised))
-    supervisor.get.start
     ConfiguratorRepository.registerConfigurator(this)
     this
   }
@@ -164,7 +163,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
   }
 
   def stop = synchronized {
-    if (supervisor.isDefined) supervisor.get.stop
+    if (supervisor.isDefined) supervisor.get.shutdown
   }
 }
  

@@ -70,7 +70,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    */
   private def tryProcessMailbox(receiver: ActorRef): Boolean = {
     var lockAcquiredOnce = false
-    val lock = receiver._dispatcherLock
+    val lock = receiver.dispatcherLock
     // this do-wile loop is required to prevent missing new messages between the end of processing
     // the mailbox and releasing the lock
     do {
@@ -82,7 +82,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
           lock.unlock
         }
       }
-    } while ((lockAcquiredOnce && !receiver._mailbox.isEmpty))
+    } while ((lockAcquiredOnce && !receiver.mailbox.isEmpty))
 
     return lockAcquiredOnce
   }
@@ -91,10 +91,10 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * Process the messages in the mailbox of the given actor.
    */
   private def processMailbox(receiver: ActorRef) = {
-    var messageInvocation = receiver._mailbox.poll
+    var messageInvocation = receiver.mailbox.poll
     while (messageInvocation != null) {
       messageInvocation.invoke
-      messageInvocation = receiver._mailbox.poll
+      messageInvocation = receiver.mailbox.poll
     }
   }
 
@@ -128,7 +128,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
       val index = (i + startIndex) % actors.length
       val actor = actors(index)
       if (actor != receiver) { // skip ourselves
-        if (actor._mailbox.isEmpty) { // only pick actors that will most likely be able to process the messages
+        if (actor.mailbox.isEmpty) { // only pick actors that will most likely be able to process the messages
           return (Some(actor), index)
         }
       }
@@ -141,11 +141,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * the thiefs dispatching lock, because in that case another thread is already processing the thiefs mailbox.
    */
   private def tryDonateAndProcessMessages(receiver: ActorRef, thief: ActorRef) = {
-    if (thief._dispatcherLock.tryLock) {
+    if (thief.dispatcherLock.tryLock) {
       try {
         donateAndProcessMessages(receiver, thief)
       } finally {
-        thief._dispatcherLock.unlock
+        thief.dispatcherLock.unlock
       }
     }
   }
@@ -170,7 +170,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * Steal a message from the receiver and give it to the thief.
    */
   private def donateMessage(receiver: ActorRef, thief: ActorRef): Option[MessageInvocation] = {
-    val donated = receiver._mailbox.pollLast
+    val donated = receiver.mailbox.pollLast
     if (donated != null) {
       thief.self ! donated.message
       return Some(donated)

@@ -19,18 +19,18 @@ object ActorRegistrySpec {
 class ActorRegistrySpec extends JUnitSuite {
   import ActorRegistrySpec._
   
-  @Test def shouldGetActorByIdFromActorRegistry = {
+  @Test def shouldGetActorByIdFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor = newActor[TestActor]
     actor.start
     val actors = ActorRegistry.actorsFor("MyID")
     assert(actors.size === 1)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
     actor.stop
   }
 
-  @Test def shouldGetActorByUUIDFromActorRegistry = {
+  @Test def shouldGetActorByUUIDFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor = newActor[TestActor]
     val uuid = actor.uuid
@@ -41,29 +41,29 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldGetActorByClassFromActorRegistry = {
+  @Test def shouldGetActorByClassFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor = newActor[TestActor]
     actor.start
     val actors = ActorRegistry.actorsFor(classOf[TestActor])
     assert(actors.size === 1)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
     actor.stop
   }
 
-  @Test def shouldGetActorByManifestFromActorRegistry = {
+  @Test def shouldGetActorByManifestFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor = newActor[TestActor]
     actor.start
     val actors = ActorRegistry.actorsFor[TestActor]
     assert(actors.size === 1)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
     actor.stop
   }
 
-  @Test def shouldGetActorsByIdFromActorRegistry = {
+  @Test def shouldGetActorsByIdFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor1 = newActor[TestActor]
     actor1.start
@@ -72,14 +72,14 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor("MyID")
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
     actor1.stop
     actor2.stop
   }
 
-  @Test def shouldGetActorsByClassFromActorRegistry = {
+  @Test def shouldGetActorsByClassFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor1 = newActor[TestActor]
     actor1.start
@@ -88,14 +88,14 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor(classOf[TestActor])
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
     actor1.stop
     actor2.stop
   }
 
-  @Test def shouldGetActorsByManifestFromActorRegistry = {
+  @Test def shouldGetActorsByManifestFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor1 = newActor[TestActor]
     actor1.start
@@ -104,14 +104,14 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor[TestActor]
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
     actor1.stop
     actor2.stop
   }
 
-  @Test def shouldGetAllActorsFromActorRegistry = {
+  @Test def shouldGetAllActorsFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor1 = newActor[TestActor]
     actor1.start
@@ -120,14 +120,14 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actors
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].getId === "MyID")
+    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
     actor1.stop
     actor2.stop
   }
 
-  @Test def shouldGetResponseByAllActorsInActorRegistryWhenInvokingForeach = {
+  @Test def shouldGetResponseByAllActorsInActorRegistryWhenInvokingForeach {
     ActorRegistry.shutdownAll
     val actor1 = newActor[TestActor]
     actor1.start
@@ -140,7 +140,7 @@ class ActorRegistrySpec extends JUnitSuite {
     actor2.stop
   }
 
-  @Test def shouldShutdownAllActorsInActorRegistry = {
+  @Test def shouldShutdownAllActorsInActorRegistry {
     ActorRegistry.shutdownAll
     val actor1 = newActor[TestActor]
     actor1.start
@@ -150,7 +150,7 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(ActorRegistry.actors.size === 0)
   }
 
-  @Test def shouldRemoveUnregisterActorInActorRegistry = {
+  @Test def shouldRemoveUnregisterActorInActorRegistry {
     ActorRegistry.shutdownAll
     val actor1 = newActor[TestActor]
     actor1.start

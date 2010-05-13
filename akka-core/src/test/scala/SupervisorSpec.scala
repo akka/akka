@@ -30,7 +30,7 @@ object SupervisorSpec {
       case Die =>
         throw new RuntimeException("DIE")
     }
-    override protected def postRestart(reason: Throwable) {
+    override def postRestart(reason: Throwable) {
       messageLog.put(reason.getMessage)
     }
   }
@@ -43,7 +43,7 @@ object SupervisorSpec {
       case Die =>
         throw new RuntimeException("DIE")
     }
-    override protected def postRestart(reason: Throwable) {
+    override def postRestart(reason: Throwable) {
       messageLog.put(reason.getMessage)
     }
   }
@@ -57,7 +57,7 @@ object SupervisorSpec {
         throw new RuntimeException("DIE")
     }
 
-    override protected def postRestart(reason: Throwable) {
+    override def postRestart(reason: Throwable) {
       messageLog.put(reason.getMessage)
     }
   }
@@ -419,7 +419,7 @@ class SupervisorSpec extends JUnitSuite {
   // Creat some supervisors with different configurations
 
   def getSingleActorAllForOneSupervisor: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
+    pingpong1 = newActor[PingPong1Actor].start
 
     val factory = SupervisorFactory(
         SupervisorConfig(
@@ -432,53 +432,75 @@ class SupervisorSpec extends JUnitSuite {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
+    pingpong1 = newActor[PingPong1Actor].start
 
-    val factory = SupervisorFactory(
-        SupervisorConfig(
-          RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          :: Nil))
-    factory.newInstance
+    Supervisor(
+      SupervisorConfig(
+        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+        :: Nil))
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
-    pingpong2 = newActor[PingPong2Actor]
-    pingpong3 = newActor[PingPong3Actor]
+    pingpong1 = newActor[PingPong1Actor].start
+    pingpong2 = newActor[PingPong2Actor].start
+    pingpong3 = newActor[PingPong3Actor].start
 
-    val factory = SupervisorFactory(
-        SupervisorConfig(
-          RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          ::
-          Supervise(
-            pingpong2,
-            LifeCycle(Permanent))
-          ::
-          Supervise(
-            pingpong3,
-            LifeCycle(Permanent))
-          :: Nil))
-    factory.newInstance
+    Supervisor(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+        ::
+        Supervise(
+          pingpong2,
+          LifeCycle(Permanent))
+        ::
+        Supervise(
+          pingpong3,
+          LifeCycle(Permanent))
+        :: Nil))
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
-    pingpong2 = newActor[PingPong2Actor]
-    pingpong3 = newActor[PingPong3Actor]
+    pingpong1 = newActor[PingPong1Actor].start
+    pingpong2 = newActor[PingPong2Actor].start
+    pingpong3 = newActor[PingPong3Actor].start
 
-    val factory = SupervisorFactory(
+    Supervisor(
+      SupervisorConfig(
+        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+        ::
+        Supervise(
+          pingpong2,
+          LifeCycle(Permanent))
+        ::
+        Supervise(
+          pingpong3,
+          LifeCycle(Permanent))
+        :: Nil))
+  }
+
+  def getNestedSupervisorsAllForOneConf: Supervisor = {
+    pingpong1 = newActor[PingPong1Actor].start
+    pingpong2 = newActor[PingPong2Actor].start
+    pingpong3 = newActor[PingPong3Actor].start
+
+    Supervisor(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+        ::
         SupervisorConfig(
-          RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          ::
+          RestartStrategy(AllForOne, 3, 100, Nil),
           Supervise(
             pingpong2,
             LifeCycle(Permanent))
@@ -486,33 +508,7 @@ class SupervisorSpec extends JUnitSuite {
           Supervise(
             pingpong3,
             LifeCycle(Permanent))
-          :: Nil))
-    factory.newInstance
+          :: Nil)
+        :: Nil))
   }
-
-  def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[PingPong1Actor]
-    pingpong2 = newActor[PingPong2Actor]
-    pingpong3 = newActor[PingPong3Actor]
-
-    val factory = SupervisorFactory(
-        SupervisorConfig(
-          RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
-          Supervise(
-            pingpong1,
-            LifeCycle(Permanent))
-          ::
-          SupervisorConfig(
-            RestartStrategy(AllForOne, 3, 100, Nil),
-            Supervise(
-              pingpong2,
-              LifeCycle(Permanent))
-            ::
-            Supervise(
-              pingpong3,
-              LifeCycle(Permanent))
-            :: Nil)
-          :: Nil))
-     factory.newInstance
-   }
 }

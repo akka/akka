@@ -374,8 +374,8 @@ object ActiveObject {
     this
   }
 
-  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): ActorRef =  
-    SupervisorFactory(SupervisorConfig(restartStrategy, components)).newInstance.start
+  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =  
+    Supervisor(SupervisorConfig(restartStrategy, components))
 }
 
 private[akka] object AspectInitRegistry {
@@ -522,9 +522,6 @@ private[akka] sealed class ActiveObjectAspect {
     that.asInstanceOf[Invocation].isVoid == isVoid
   }
 }
-
-// FIXME Jan Kronquist: started work on issue 121
-private[akka] case class Link(val actor: ActorRef)
 
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()

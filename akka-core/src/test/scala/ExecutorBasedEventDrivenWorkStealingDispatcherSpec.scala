@@ -16,7 +16,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   val parentActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
-    messageDispatcher = delayableActorDispatcher
+    dispatcher = delayableActorDispatcher
     var invocationCount = 0
     id = name
 
@@ -30,17 +30,17 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   }
   
   class FirstActor extends Actor {
-    messageDispatcher = sharedActorDispatcher
+    dispatcher = sharedActorDispatcher
     def receive = {case _ => {}}
   }
 
   class SecondActor extends Actor {
-    messageDispatcher = sharedActorDispatcher
+    dispatcher = sharedActorDispatcher
     def receive = {case _ => {}}
   }
 
   class ParentActor extends Actor {
-    messageDispatcher = parentActorDispatcher
+    dispatcher = parentActorDispatcher
     def receive = {case _ => {}}
   }
 
@@ -54,7 +54,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
 class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers {
   import ExecutorBasedEventDrivenWorkStealingDispatcherSpec._
   
-  @Test def fastActorShouldStealWorkFromSlowActor = {
+  @Test def fastActorShouldStealWorkFromSlowActor  {
     val finishedCounter = new CountDownLatch(110)
 
     val slow = newActor(() => new DelayableActor("slow", 50, finishedCounter)).start
@@ -78,7 +78,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     }
 
     finishedCounter.await(5, TimeUnit.SECONDS)
-    fast.actor.asInstanceOf[DelayableActor].invocationCount must be > (slow.actor.asInstanceOf[DelayableActor].invocationCount)
+    fast.actor.asInstanceOf[DelayableActor].invocationCount must be > 
+    (slow.actor.asInstanceOf[DelayableActor].invocationCount)
     slow.stop
     fast.stop
   }
@@ -94,8 +95,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
   }
 
   @Test def canNotUseActorsOfDifferentSubTypesInSameDispatcher: Unit = {
-    val parent = new ParentActor
-    val child = new ChildActor
+    val parent = newActor[ParentActor]
+    val child = newActor[ChildActor]
 
     parent.start
     intercept[IllegalStateException] {
