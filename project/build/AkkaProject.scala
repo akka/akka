@@ -199,7 +199,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.3-SNAPSHOT" % "compile"
+    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.3" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
