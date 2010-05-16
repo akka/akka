@@ -35,6 +35,7 @@ object Log {
   }
 
   override def postRestart(reason: Throwable) {
+    println("================= POST RESTART")
     Log.messageLog.put(reason.getMessage)
   }
 }
@@ -50,6 +51,7 @@ object Log {
   }
 
   override def postRestart(reason: Throwable) {
+    println("================= POST RESTART")
     Log.messageLog.put(reason.getMessage)
   }
 }
@@ -65,6 +67,7 @@ object Log {
   }
 
   override def postRestart(reason: Throwable) {
+    println("================= POST RESTART")
     Log.messageLog.put(reason.getMessage)
   }
 }
@@ -105,7 +108,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong1 !! BinaryString("Die")
     }
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -118,21 +121,21 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
       pingpong1 !! BinaryString("Die")
     }
 
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -145,7 +148,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
 
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -153,26 +156,29 @@ class RemoteSupervisorSpec extends JUnitSuite {
     Log.messageLog.clear
     val sup = getSingleActorAllForOneSupervisor
     sup.start
+
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
+
     intercept[RuntimeException] {
       pingpong1 !! BinaryString("Die")
     }
 
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
+
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -181,11 +187,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getMultipleActorsOneForOneConf
     sup.start
     intercept[RuntimeException] {
-      pingpong3 !! BinaryString("Die")
+      pingpong1 !! BinaryString("Die")
     }
 
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -206,20 +212,20 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
       pingpong2 !! BinaryString("Die")
     }
 
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
@@ -234,13 +240,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -253,13 +259,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
 
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -280,26 +286,26 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
       pingpong2 !! BinaryString("Die")
     }
 
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
@@ -314,13 +320,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
 
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(1, TimeUnit.SECONDS)
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -411,15 +417,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
-            ::
-            Supervise(
-              pingpong2,
-              LifeCycle(Permanent))
-            ::
-            Supervise(
-              pingpong3,
-              LifeCycle(Permanent))
-            :: Nil))
+          ::
+        Supervise(
+          pingpong2,
+          LifeCycle(Permanent))
+          ::
+        Supervise(
+          pingpong3,
+          LifeCycle(Permanent))
+          :: Nil))
     factory.newInstance
   }
 
