@@ -1216,8 +1216,7 @@ private[akka] case class RemoteActorRef private[akka] (
   timeout = _timeout
   
   start
-  Thread.sleep(1000)
-  val remoteClient = RemoteClient.clientFor(hostname, port)
+  lazy val remoteClient = RemoteClient.clientFor(hostname, port)
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
     val requestBuilder = RemoteRequestProtocol.newBuilder
