@@ -180,7 +180,20 @@ class SupervisorSpec extends JUnitSuite {
     }
   }
 
-  @Test def shouldKillMultipleActorsOneForOne = {
+  @Test def shouldKillMultipleActorsOneForOne1 = {
+    clearMessageLogs
+    val sup = getMultipleActorsOneForOneConf
+    sup.start
+    intercept[RuntimeException] {
+      pingpong1 !! (Die, 100)
+    }
+
+    expect("DIE") {
+      messageLog.poll(1, TimeUnit.SECONDS)
+    }
+  }
+
+  @Test def shouldKillMultipleActorsOneForOne2 = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
     sup.start

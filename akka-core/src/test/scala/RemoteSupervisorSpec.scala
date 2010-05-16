@@ -182,12 +182,25 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
   }
 
-  @Test def shouldKillMultipleActorsOneForOne = {
+  @Test def shouldKillMultipleActorsOneForOne1 = {
     Log.messageLog.clear
     val sup = getMultipleActorsOneForOneConf
     sup.start
     intercept[RuntimeException] {
       pingpong1 !! BinaryString("Die")
+    }
+
+    expect("DIE") {
+      Log.messageLog.poll(5, TimeUnit.SECONDS)
+    }
+  }
+
+  @Test def shouldKillMultipleActorsOneForOne2 = {
+    Log.messageLog.clear
+    val sup = getMultipleActorsOneForOneConf
+    sup.start
+    intercept[RuntimeException] {
+      pingpong3 !! BinaryString("Die")
     }
 
     expect("DIE") {
