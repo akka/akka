@@ -33,7 +33,7 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
     with Suite with MockitoSugar with MustMatchers {
   import BasicAuthenticatorSpec._
   
-  val authenticator = newActor[BasicAuthenticator]
+  val authenticator = actorOf[BasicAuthenticator]
   authenticator.start
 
   @Test def testChallenge = {
