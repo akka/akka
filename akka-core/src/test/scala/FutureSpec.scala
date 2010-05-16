@@ -9,7 +9,7 @@ object FutureSpec {
   class TestActor extends Actor {
     def receive = {
       case "Hello" =>
-        reply("World")
+        self.reply("World")
       case "NoReply" => {}
       case "Failure" =>
         throw new RuntimeException("expected")

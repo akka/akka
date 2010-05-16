@@ -80,5 +80,5 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: Actor) = new ThreadBasedDispatcher(actor)
+  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
 }

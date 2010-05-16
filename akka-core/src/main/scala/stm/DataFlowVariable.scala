@@ -46,7 +46,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
     extends Actor {
     def receive = {
       case Exit => exit
-      case message => reply(body(message.asInstanceOf[A]))
+      case message => self.reply(body(message.asInstanceOf[A]))
     }
   }
 
@@ -64,7 +64,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
     private val blockedReaders = new ConcurrentLinkedQueue[ActorRef]
 
     private class In[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
-      timeout = TIME_OUT
+      self.timeout = TIME_OUT
       def receive = {
         case Set(v) =>
           if (dataFlow.value.compareAndSet(None, Some(v.asInstanceOf[T]))) {
@@ -78,13 +78,13 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
     }
 
     private class Out[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
-      timeout = TIME_OUT
+      self.timeout = TIME_OUT
       private var readerFuture: Option[CompletableFuture[T]] = None
       def receive = {
         case Get =>
           val ref = dataFlow.value.get
           if (ref.isDefined)
-            reply(ref.get)
+            self.reply(ref.get)
           else {
             readerFuture = self.replyTo match { 
               case Some(Right(future)) => Some(future.asInstanceOf[CompletableFuture[T]])
@@ -348,7 +348,6 @@ object Test4 extends Application {
 
 // =======================================
 object Test5 extends Application {
-  import Actor.Sender.Self
   import DataFlow._
 
   // create four 'Int' data flow variables

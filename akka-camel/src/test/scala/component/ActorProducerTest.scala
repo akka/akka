@@ -61,7 +61,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test def shouldSendMessageToActorAndTimeout: Unit = {
     val actor = newActor(() => new Tester {
-      timeout = 1
+      self.timeout = 1
     })
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)

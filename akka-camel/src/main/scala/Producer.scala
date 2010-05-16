@@ -20,7 +20,7 @@ import se.scalablesolutions.akka.util.Logging
  * @author Martin Krasser
  */
 trait Producer { this: Actor =>
-
+  
   private val headersToCopyDefault = Set(Message.MessageExchangeId)
 
   /**
@@ -128,7 +128,7 @@ trait Producer { this: Actor =>
     case msg => {
       if      ( oneway && !async)    produceOnewaySync(msg)
       else if ( oneway &&  async)    produceOnewayAsync(msg)
-      else if (!oneway && !async)    reply(produceSync(msg))
+      else if (!oneway && !async)    self.reply(produceSync(msg))
       else  /*(!oneway &&  async)*/  produceAsync(msg)
     }
   }

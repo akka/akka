@@ -112,6 +112,9 @@ object RemoteServer {
     else Some(server)
   }
 
+  private[akka] def serverFor(address: InetSocketAddress): Option[RemoteServer] =
+    serverFor(address.getHostName, address.getPort)
+
   private[remote] def register(hostname: String, port: Int, server: RemoteServer) =
     remoteServers.put(Address(hostname, port), server)
 
@@ -154,13 +157,22 @@ class RemoteServer extends Logging {
 
   def isRunning = _isRunning
 
-  def start: Unit = start(None)
+  def start: RemoteServer =
+    start(hostname, port, None)
 
-  def start(loader: Option[ClassLoader]): Unit = start(hostname, port, loader)
+  def start(loader: Option[ClassLoader]): RemoteServer =
+    start(hostname, port, loader)
 
-  def start(_hostname: String, _port: Int): Unit = start(_hostname, _port, None)
+  def start(address: InetSocketAddress): RemoteServer =
+    start(address.getHostName, address.getPort, None)
 
-  def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): Unit = synchronized {
+  def start(address: InetSocketAddress, loader: Option[ClassLoader]): RemoteServer =
+    start(address.getHostName, address.getPort, loader)
+
+  def start(_hostname: String, _port: Int): RemoteServer =
+    start(_hostname, _port, None)
+
+  def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): RemoteServer = synchronized {
     try {
       if (!_isRunning) {
         hostname = _hostname
@@ -182,6 +194,7 @@ class RemoteServer extends Logging {
     } catch {
       case e => log.error(e, "Could not start up remote server")
     }
+    this
   }
 
   def shutdown = synchronized {
@@ -334,7 +347,7 @@ class RemoteServerHandler(
     val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actorRef.start
     val message = RemoteProtocolBuilder.getMessage(request)
-    if (request.getIsOneWay) {
+    if (request.hasSender) {
       val sender = request.getSender
       if (sender ne null) actorRef.!(message)(Some(ActorRef.fromProtocol(sender)))
     } else {

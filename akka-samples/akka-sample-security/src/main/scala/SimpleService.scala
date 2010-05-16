@@ -4,7 +4,7 @@
 
 package sample.security
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Transactor, Actor}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
@@ -90,8 +90,7 @@ import javax.annotation.security.{RolesAllowed, DenyAll, PermitAll}
 import javax.ws.rs.{GET, Path, Produces}
 
 @Path("/secureticker")
-class SecureTickActor extends Actor with Logging {
-  makeTransactionRequired
+class SecureTickActor extends Transactor with Logging {
 
   case object Tick
   private val KEY = "COUNTER"
@@ -135,11 +134,11 @@ class SecureTickActor extends Actor with Logging {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.intValue
       storage.put(KEY, counter + 1)
-      reply(new Integer(counter + 1))
+      self.reply(new Integer(counter + 1))
     } else {
       storage.put(KEY, 0)
       hasStartedTicking = true
-      reply(new Integer(0))
+      self.reply(new Integer(0))
     }
   }
 }

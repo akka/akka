@@ -16,9 +16,9 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   val parentActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
-    dispatcher = delayableActorDispatcher
+    self.dispatcher = delayableActorDispatcher
     var invocationCount = 0
-    id = name
+    self.id = name
 
     def receive = {
       case x: Int => {
@@ -30,17 +30,17 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   }
   
   class FirstActor extends Actor {
-    dispatcher = sharedActorDispatcher
+    self.dispatcher = sharedActorDispatcher
     def receive = {case _ => {}}
   }
 
   class SecondActor extends Actor {
-    dispatcher = sharedActorDispatcher
+    self.dispatcher = sharedActorDispatcher
     def receive = {case _ => {}}
   }
 
   class ParentActor extends Actor {
-    dispatcher = parentActorDispatcher
+    self.dispatcher = parentActorDispatcher
     def receive = {case _ => {}}
   }
 

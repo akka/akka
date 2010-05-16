@@ -46,26 +46,26 @@ case class RANGE(start: Int, end: Int)
 case class MULTI(add: List[Hacker], rem: List[Hacker], failer: ActorRef)
 
 class SortedSetActor extends Transactor {
-  timeout = 100000
+  self.timeout = 100000
   private lazy val hackers = RedisStorage.newSortedSet
 
   def receive = {
     case ADD(h) =>
       hackers.+(h.name.getBytes, h.zscore)
-      reply(true)
+      self.reply(true)
 
     case REMOVE(h) =>
       hackers.-(h.name.getBytes)
-      reply(true)
+      self.reply(true)
 
     case SIZE =>
-      reply(hackers.size)
+      self.reply(hackers.size)
 
     case SCORE(h) =>
-      reply(hackers.zscore(h.name.getBytes))
+      self.reply(hackers.zscore(h.name.getBytes))
 
     case RANGE(s, e) =>
-      reply(hackers.zrange(s, e))
+      self.reply(hackers.zrange(s, e))
 
     case MULTI(a, r, failer) =>
       a.foreach{ h: Hacker => 
@@ -81,7 +81,7 @@ class SortedSetActor extends Transactor {
         case e: Exception => 
           failer !! "Failure"
       }
-      reply((a.size, r.size))
+      self.reply((a.size, r.size))
   }
 }
 

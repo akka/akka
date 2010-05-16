@@ -97,7 +97,7 @@ trait ChatStorage extends Actor
  * Redis-backed chat storage implementation.
  */
 class RedisChatStorage extends ChatStorage {
-  lifeCycle = Some(LifeCycle(Permanent))    
+  self.lifeCycle = Some(LifeCycle(Permanent))    
   val CHAT_LOG = "akka.chat.log"
   
   private var chatLog = atomic { RedisStorage.getVector(CHAT_LOG) }
@@ -111,7 +111,7 @@ class RedisChatStorage extends ChatStorage {
 
     case GetChatLog(_) => 
       val messageList = atomic { chatLog.map(bytes => new String(bytes, "UTF-8")).toList }
-      reply(ChatLog(messageList))
+      self.reply(ChatLog(messageList))
   }
   
   override def postRestart(reason: Throwable) = chatLog = RedisStorage.getVector(CHAT_LOG)  
@@ -163,15 +163,15 @@ trait ChatManagement { this: Actor =>
  * Creates and links a RedisChatStorage.
  */
 trait RedisChatStorageFactory { this: Actor =>
-  val storage = spawnLink[RedisChatStorage] // starts and links ChatStorage
+  val storage = this.self.spawnLink[RedisChatStorage] // starts and links ChatStorage
 }
 
 /**
  * Chat server. Manages sessions and redirects all other messages to the Session for the client.
  */
 trait ChatServer extends Actor {
-  faultHandler = Some(OneForOneStrategy(5, 5000))
-  trapExit = List(classOf[Exception])
+  self.faultHandler = Some(OneForOneStrategy(5, 5000))
+  self.trapExit = List(classOf[Exception])
   
   val storage: ActorRef
 
@@ -188,7 +188,7 @@ trait ChatServer extends Actor {
   override def shutdown = { 
     log.info("Chat server is shutting down...")
     shutdownSessions
-    unlink(storage)
+    self.unlink(storage)
     storage.stop
   }
 }

@@ -9,11 +9,11 @@ import Actor._
 
 object ThreadBasedActorSpec {
   class TestActor extends Actor {
-    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
     
     def receive = {
       case "Hello" =>
-        reply("World")
+        self.reply("World")
       case "Failure" =>
         throw new RuntimeException("expected")
     }
@@ -28,7 +28,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
   @Test def shouldSendOneWay  {
     var oneWay = new CountDownLatch(1)
     val actor = newActor(() => new Actor {
-      dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
       def receive = {
         case "OneWay" => oneWay.countDown
       }

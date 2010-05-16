@@ -284,7 +284,7 @@ object ActiveObject {
   private[akka] def newInstance[T](target: Class[T], actorRef: ActorRef, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val proxy = Proxy.newInstance(target, false, false)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target, proxy)
-    actorRef.actor.timeout = timeout
+    actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(target, actorRef, remoteAddress, timeout))
     actorRef.start
@@ -294,7 +294,7 @@ object ActiveObject {
   private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actorRef: ActorRef, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, false)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target.getClass, target)
-    actorRef.actor.timeout = timeout
+    actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(intf, actorRef, remoteAddress, timeout))
     actorRef.start
@@ -544,8 +544,8 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef) = {
-    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) makeTransactionRequired
-    id = targetClass.getName
+    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) self.makeTransactionRequired
+    self.id = targetClass.getName
     target = Some(targetInstance)
     val methods = targetInstance.getClass.getDeclaredMethods.toList
 
@@ -592,10 +592,10 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
     case Invocation(joinPoint, isOneWay, _) =>
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed
-      else reply(joinPoint.proceed)
-// Jan Kronquist: started work on issue 121
-    case Link(target) => link(target)
-    case Unlink(target) => unlink(target)
+      else self.reply(joinPoint.proceed)
+    // Jan Kronquist: started work on issue 121
+    case Link(target)   => self.link(target)
+    case Unlink(target) => self.unlink(target)
     case unexpected =>
       throw new IllegalStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }

@@ -10,11 +10,10 @@ import se.scalablesolutions.akka.remote.{RemoteClient, RemoteNode}
 import se.scalablesolutions.akka.util.Logging
 
 class HelloWorldActor extends Actor {
-  start
   def receive = {
     case "Hello" => 
       log.info("Received 'Hello'")
-      reply("World")
+      self.reply("World")
   }
 }
 
@@ -23,7 +22,7 @@ object ServerManagedRemoteActorServer extends Logging {
   def run = {
     RemoteNode.start("localhost", 9999)
     log.info("Remote node started")
-    RemoteNode.register("hello-service", newActor[HelloWorldActor])
+    RemoteNode.register("hello-service", newActor[HelloWorldActor].start)
     log.info("Remote actor registered and started")
   }
 

@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.camel.Consumer
 object PublishTest {
   @consume("mock:test1")
   class ConsumeAnnotatedActor extends Actor {
-    id = "test"
+    self.id = "test"
     protected def receive = null
   }
 

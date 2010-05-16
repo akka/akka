@@ -9,10 +9,10 @@ import Actor._
 
 object ReactorBasedThreadPoolEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
-    dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
+    self.dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(self.uuid)
     def receive = {
       case "Hello" =>
-        reply("World")
+        self.reply("World")
       case "Failure" =>
         throw new RuntimeException("expected")
     }
@@ -27,7 +27,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
   @Test def shouldSendOneWay {
     val oneWay = new CountDownLatch(1)
     val actor = newActor(() => new Actor {
-      dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(uuid)
+      self.dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(self.uuid)
       def receive = {
         case "OneWay" => oneWay.countDown
       }

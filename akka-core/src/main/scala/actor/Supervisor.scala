@@ -164,7 +164,8 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */                                  
-sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
+sealed class Supervisor private[akka] (
+  handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
   extends Configurator {
   
   private val children = new ConcurrentHashMap[String, List[ActorRef]]
@@ -202,7 +203,7 @@ sealed class Supervisor private[akka] (handler: FaultHandlingStrategy, trapExcep
               else list
             }
             children.put(className, actorRef :: currentActors)
-            actorRef.actor.lifeCycle = Some(lifeCycle)
+            actorRef.lifeCycle = Some(lifeCycle)
             supervisor ! Link(actorRef)
             remoteAddress.foreach(address => RemoteServer.actorsFor(
               RemoteServer.Address(address.hostname, address.port))
@@ -241,16 +242,16 @@ final class SupervisorActor private[akka] (
   handler: FaultHandlingStrategy, 
   trapExceptions: List[Class[_ <: Throwable]])
   extends Actor {
-
-  trapExit = trapExceptions
-  faultHandler = Some(handler)
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self) 
+  self.trapExit = trapExceptions
+  self.faultHandler = Some(handler)
 
   override def shutdown: Unit = self.shutdownLinkedActors
 
   def receive = {
-    case Link(child)          => startLink(child)
-    case Unlink(child)        => unlink(child)
-    case UnlinkAndStop(child) => unlink(child); child.stop
+    case Link(child)          => self.startLink(child)
+    case Unlink(child)        => self.unlink(child)
+    case UnlinkAndStop(child) => self.unlink(child); child.stop
     case unknown              => throw new IllegalArgumentException(
       "Supervisor can only respond to 'Link' and 'Unlink' messages. Unknown message [" + unknown + "]")
   }

@@ -21,11 +21,11 @@ object Log {
 }
 
 @serializable class RemotePingPong1Actor extends Actor {
-  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
   def receive = {
     case BinaryString("Ping") =>
       Log.messageLog.put("ping")
-      reply("pong")
+      self.reply("pong")
 
     case OneWay =>
       Log.oneWayLog += "oneway"
@@ -40,11 +40,11 @@ object Log {
 }
 
 @serializable class RemotePingPong2Actor extends Actor {
-  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
   def receive = {
     case BinaryString("Ping") =>
       Log.messageLog.put("ping")
-      reply("pong")
+      self.reply("pong")
     case BinaryString("Die") =>
       throw new RuntimeException("DIE")
   }
@@ -55,11 +55,11 @@ object Log {
 }
 
 @serializable class RemotePingPong3Actor extends Actor {
-  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
   def receive = {
     case BinaryString("Ping") =>
       Log.messageLog.put("ping")
-      reply("pong")
+      self.reply("pong")
     case BinaryString("Die") =>
       throw new RuntimeException("DIE")
   }

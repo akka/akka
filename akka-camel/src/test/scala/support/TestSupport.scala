@@ -9,10 +9,10 @@ trait Receive[T] {
   def onMessage(msg: T): Unit
 }
 
-trait Respond extends Receive[Message] {self: Actor =>
+trait Respond extends Receive[Message] { this: Actor =>
   abstract override def onMessage(msg: Message): Unit = {
     super.onMessage(msg)
-    reply(response(msg))
+    this.self.reply(response(msg))
   }
   def response(msg: Message): Any = "Hello %s" format msg.body
 }
