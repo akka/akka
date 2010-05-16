@@ -251,7 +251,7 @@ object Cluster extends Cluster with Logging {
         fqn =>
           val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
           a setSerializer serializer
-          Actor.newActor(() => a)
+          Actor.actorOf(a)
       }
     }
     catch {

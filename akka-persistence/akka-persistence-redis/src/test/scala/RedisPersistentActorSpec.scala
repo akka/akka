@@ -101,9 +101,9 @@ import org.scalatest.junit.JUnitSuite
 class RedisPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
-    val bactor = newActor[AccountActor]
+    val bactor = actorOf[AccountActor]
     bactor.start
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     bactor !! Credit("a-123", 5000)
     bactor !! Debit("a-123", 3000, failer)
@@ -127,12 +127,12 @@ class RedisPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulDebit = {
-    val bactor = newActor[AccountActor]
+    val bactor = actorOf[AccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
     assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
 
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     try {
       bactor !! Debit("a-123", 7000, failer)
@@ -148,13 +148,13 @@ class RedisPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulMultiDebit = {
-    val bactor = newActor[AccountActor]
+    val bactor = actorOf[AccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
 
     assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     try {
       bactor !! MultiDebit("a-123", List(500, 2000, 1000, 3000), failer)

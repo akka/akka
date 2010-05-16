@@ -105,9 +105,9 @@ class BankAccountActor extends Transactor {
 class MongoPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
-    val bactor = newActor[BankAccountActor]
+    val bactor = actorOf[BankAccountActor]
     bactor.start
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     bactor !! Credit("a-123", 5000)
     bactor !! Debit("a-123", 3000, failer)
@@ -137,14 +137,14 @@ class MongoPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulDebit = {
-    val bactor = newActor[BankAccountActor]
+    val bactor = actorOf[BankAccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
 
     val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
     assertEquals(BigInt(5000), BigInt(b.intValue))
 
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     try {
       bactor !! Debit("a-123", 7000, failer)
@@ -160,14 +160,14 @@ class MongoPersistentActorSpec extends JUnitSuite {
 
   @Test
   def testUnsuccessfulMultiDebit = {
-    val bactor = newActor[BankAccountActor]
+    val bactor = actorOf[BankAccountActor]
     bactor.start
     bactor !! Credit("a-123", 5000)
 
     val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
     assertEquals(BigInt(5000), BigInt(b.intValue))
 
-    val failer = newActor[PersistentFailerActor]
+    val failer = actorOf[PersistentFailerActor]
     failer.start
     try {
       bactor !! MultiDebit("a-123", List(500, 2000, 1000, 3000), failer)

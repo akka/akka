@@ -17,7 +17,7 @@ object Application1 {
   def main(args: Array[String]) {
     implicit val sender: Option[ActorRef] = None
 
-    val actor1 = newActor[RemoteActor1]
+    val actor1 = actorOf[RemoteActor1]
     val actor2 = RemoteClient.actorFor("remote2", "localhost", 7777)
 
     actor1.start

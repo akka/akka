@@ -62,9 +62,9 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
 
     server.start(HOSTNAME, PORT)
 
-    server.register(newActor[RemoteActorSpecActorUnidirectional])
-    server.register(newActor[RemoteActorSpecActorBidirectional])
-    server.register(newActor[RemoteActorSpecActorAsyncSender])
+    server.register(actorOf[RemoteActorSpecActorUnidirectional])
+    server.register(actorOf[RemoteActorSpecActorBidirectional])
+    server.register(actorOf[RemoteActorSpecActorAsyncSender])
 
     Thread.sleep(1000)
   }
@@ -110,7 +110,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
       "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
-    val sender = newActor[RemoteActorSpecActorAsyncSender]
+    val sender = actorOf[RemoteActorSpecActorAsyncSender]
     sender.homeAddress = (HOSTNAME, PORT + 1)
     sender.start
     sender ! Send(actor)

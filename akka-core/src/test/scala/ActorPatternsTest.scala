@@ -12,13 +12,14 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.junit.{Before, After, Test}
 import scala.collection.mutable.HashSet
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 @RunWith(classOf[JUnitRunner])
 class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMatchers with Logging {
   import Patterns._
   @Test def testDispatcher = {
     val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
-
+    val latch = new CountDownLatch(1)
     var targetOk = 0
     val t1 = actor {
       case `testMsg1` => targetOk += 2
@@ -26,7 +27,9 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     }
 
     val t2 = actor {
-      case `testMsg3` => targetOk += 8
+      case `testMsg3` => 
+        targetOk += 8
+        latch.countDown
     }
 
     val d = dispatcherActor {
@@ -37,7 +40,8 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     d ! testMsg1
     d ! testMsg2
     d ! testMsg3
-    Thread.sleep(1000)
+    val done = latch.await(5,TimeUnit.SECONDS)
+    done must be (true)
     targetOk must be(14)
     t1.stop
     t2.stop
@@ -54,7 +58,6 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     val bar : Any = "bar"
     l ! foo
     l ! bar
-    Thread.sleep(1000)
     msgs must ( have size (2) and contain (foo) and contain (bar) )
     t1.stop
     l.stop
@@ -81,12 +84,10 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     d.stop
   }
   
-  @Test def testListener = {
-    import java.util.concurrent.{ CountDownLatch, TimeUnit }
-  
+  @Test def testListener = {  
     val latch = new CountDownLatch(2)
     val num = new AtomicInteger(0)
-    val i = newActor(() => new Actor with Listeners {
+    val i = actorOf(new Actor with Listeners {
       def receive = listenerManagement orElse {
         case "foo" =>  gossip("bar")
       }

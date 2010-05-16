@@ -26,6 +26,7 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
 import java.util.{HashSet => JHashSet}
 
 /*
+// FIXME add support for ActorWithNestedReceive
 trait ActorWithNestedReceive extends Actor {
   import Actor.actor
   private var nestedReactsProcessors: List[ActorRef] = Nil
@@ -90,32 +91,32 @@ object Actor extends Logging {
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
 
   /**
-   * Creates a Actor.newActor out of the Actor with type T.
+   * Creates a Actor.actorOf out of the Actor with type T.
    * <pre>
    *   import Actor._
-   *   val actor = newActor[MyActor]
+   *   val actor = actorOf[MyActor]
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    */
-  def newActor[T <: Actor: Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor: Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-   * Creates a Actor.newActor out of the Actor. Allows you to pass in a factory function 
+   * Creates a Actor.actorOf out of the Actor. Allows you to pass in a factory function 
    * that creates the Actor. Please note that this function can be invoked multiple 
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
    * This function should <b>NOT</b> be used for remote actors.
    * <pre>
    *   import Actor._
-   *   val actor = newActor(() => new MyActor)
+   *   val actor = actorOf(new MyActor)
    *   actor.start
    *   actor ! message
    *   actor.stop
    * </pre>
    */
-  def newActor(factory: () => Actor): ActorRef = new LocalActorRef(factory)
+  def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory)
 
   /**
    * Use to create an anonymous event-driven actor.
@@ -134,7 +135,7 @@ object Actor extends Logging {
    * </pre>
    */
   def actor(body: PartialFunction[Any, Unit]): ActorRef =
-    newActor(() => new Actor() {
+    actorOf(new Actor() {
       self.lifeCycle = Some(LifeCycle(Permanent))
       def receive: PartialFunction[Any, Unit] = body
     }).start
@@ -156,7 +157,7 @@ object Actor extends Logging {
    * </pre>
    */
   def transactor(body: PartialFunction[Any, Unit]): ActorRef =
-    newActor(() => new Transactor() {
+    actorOf(new Transactor() {
       self.lifeCycle = Some(LifeCycle(Permanent))
       def receive: PartialFunction[Any, Unit] = body
     }).start
@@ -176,7 +177,7 @@ object Actor extends Logging {
    * </pre>
    */
   def temporaryActor(body: PartialFunction[Any, Unit]): ActorRef =
-    newActor(() => new Actor() {
+    actorOf(new Actor() {
       self.lifeCycle = Some(LifeCycle(Temporary))
       def receive = body
     }).start
@@ -201,7 +202,7 @@ object Actor extends Logging {
   def init[A](body: => Unit) = {
     def handler[A](body: => Unit) = new {
       def receive(handler: PartialFunction[Any, Unit]) =
-        newActor(() => new Actor() {
+        actorOf(new Actor() {
           self.lifeCycle = Some(LifeCycle(Permanent))
           body
           def receive = handler
@@ -227,7 +228,7 @@ object Actor extends Logging {
    */
   def spawn(body: => Unit): Unit = {
     case object Spawn
-    newActor(() => new Actor() {
+    actorOf(new Actor() {
       self ! Spawn
       def receive = {
         case Spawn => body; self.stop
@@ -235,6 +236,7 @@ object Actor extends Logging {
     }).start
   }
 }
+
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
@@ -263,8 +265,8 @@ trait Actor extends Logging {
        "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." + 
        "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." + 
        "\n\tEither use:" + 
-       "\n\t\t'val actor = Actor.newActor[MyActor]', or" + 
-       "\n\t\t'val actor = Actor.newActor(() => new MyActor(..))'")
+       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" + 
+       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
     else ref
   }
 

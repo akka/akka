@@ -57,8 +57,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
   @Test def fastActorShouldStealWorkFromSlowActor  {
     val finishedCounter = new CountDownLatch(110)
 
-    val slow = newActor(() => new DelayableActor("slow", 50, finishedCounter)).start
-    val fast = newActor(() => new DelayableActor("fast", 10, finishedCounter)).start
+    val slow = actorOf(new DelayableActor("slow", 50, finishedCounter)).start
+    val fast = actorOf(new DelayableActor("fast", 10, finishedCounter)).start
 
     for (i <- 1 to 100) {
       // send most work to slow actor
@@ -85,8 +85,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
   }
   
   @Test def canNotUseActorsOfDifferentTypesInSameDispatcher: Unit = {
-    val first = newActor[FirstActor]
-    val second = newActor[SecondActor]
+    val first = actorOf[FirstActor]
+    val second = actorOf[SecondActor]
 
     first.start
     intercept[IllegalStateException] {
@@ -95,8 +95,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
   }
 
   @Test def canNotUseActorsOfDifferentSubTypesInSameDispatcher: Unit = {
-    val parent = newActor[ParentActor]
-    val child = newActor[ChildActor]
+    val parent = actorOf[ParentActor]
+    val child = actorOf[ChildActor]
 
     parent.start
     intercept[IllegalStateException] {

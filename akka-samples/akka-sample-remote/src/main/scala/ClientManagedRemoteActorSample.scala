@@ -29,7 +29,7 @@ object ClientManagedRemoteActorServer extends Logging {
 object ClientManagedRemoteActorClient extends Logging {
   
   def run = {
-    val actor = newActor[RemoteHelloWorldActor].start
+    val actor = actorOf[RemoteHelloWorldActor].start
     log.info("Remote actor created, moved to the server")
     log.info("Sending 'Hello' to remote actor")
     val result = actor !! "Hello"

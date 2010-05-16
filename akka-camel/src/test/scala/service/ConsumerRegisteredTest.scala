@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.Consumer
 
-object PublishTest {
+object ConsumerRegisteredTest {
   @consume("mock:test1")
   class ConsumeAnnotatedActor extends Actor {
     self.id = "test"
@@ -25,27 +25,28 @@ object PublishTest {
   }
 }
 
-class PublishTest extends JUnitSuite {
-  import PublishTest._
+class ConsumerRegisteredTest extends JUnitSuite {
+  import ConsumerRegisteredTest._
   
   @Test def shouldCreatePublishRequestList = {
-    val publish = Publish.forConsumers(List(newActor[ConsumeAnnotatedActor]))
-    assert(publish === List(Publish("mock:test1", "test", false)))
+    val as = List(actorOf[ConsumeAnnotatedActor])
+    val events = for (a <- as; e <- ConsumerRegistered.forConsumer(a)) yield e
+    assert(events === List(ConsumerRegistered(classOf[ConsumeAnnotatedActor].getName, "mock:test1", "test", false)))
   }
 
   @Test def shouldCreateSomePublishRequestWithActorId = {
-    val publish = Publish.forConsumer(newActor[ConsumeAnnotatedActor])
-    assert(publish === Some(Publish("mock:test1", "test", false)))
+    val event = ConsumerRegistered.forConsumer(actorOf[ConsumeAnnotatedActor])
+    assert(event === Some(ConsumerRegistered(classOf[ConsumeAnnotatedActor].getName, "mock:test1", "test", false)))
   }
 
   @Test def shouldCreateSomePublishRequestWithActorUuid = {
-    val ca = newActor[ConsumerActor]
-    val publish = Publish.forConsumer(ca)
-    assert(publish === Some(Publish("mock:test2", ca.uuid, true)))
+    val ca = actorOf[ConsumerActor]
+    val event = ConsumerRegistered.forConsumer(ca)
+    assert(event === Some(ConsumerRegistered(ca.actor.getClass.getName, "mock:test2", ca.uuid, true)))
   }
 
   @Test def shouldCreateNone = {
-    val publish = Publish.forConsumer(newActor[PlainActor])
-    assert(publish === None)
+    val event = ConsumerRegistered.forConsumer(actorOf[PlainActor])
+    assert(event === None)
   }
 }

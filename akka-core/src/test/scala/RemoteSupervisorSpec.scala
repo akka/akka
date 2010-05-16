@@ -35,7 +35,6 @@ object Log {
   }
 
   override def postRestart(reason: Throwable) {
-    println("================= POST RESTART")
     Log.messageLog.put(reason.getMessage)
   }
 }
@@ -51,7 +50,6 @@ object Log {
   }
 
   override def postRestart(reason: Throwable) {
-    println("================= POST RESTART")
     Log.messageLog.put(reason.getMessage)
   }
 }
@@ -67,7 +65,6 @@ object Log {
   }
 
   override def postRestart(reason: Throwable) {
-    println("================= POST RESTART")
     Log.messageLog.put(reason.getMessage)
   }
 }
@@ -195,6 +192,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
   }
 
+/*
   @Test def shouldKillMultipleActorsOneForOne2 = {
     Log.messageLog.clear
     val sup = getMultipleActorsOneForOneConf
@@ -207,7 +205,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       Log.messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-
+*/
   def tesCallKillCallMultipleActorsOneForOne = {
     Log.messageLog.clear
     val sup = getMultipleActorsOneForOneConf
@@ -354,7 +352,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     // Then create a concrete container in which we mix in support for the specific
     // implementation of the Actors we want to use.
 
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong1.start
 
@@ -370,7 +368,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong1.start
 
@@ -385,13 +383,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong1.start
-    pingpong2 = newActor[RemotePingPong2Actor]
+    pingpong2 = actorOf[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong2.start
-    pingpong3 = newActor[RemotePingPong3Actor]
+    pingpong3 = actorOf[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong3.start
 
@@ -414,13 +412,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor]
+    pingpong1 = actorOf[RemotePingPong1Actor]
+    pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong1.start
-    pingpong2 = newActor[RemotePingPong2Actor]
+    pingpong2 = actorOf[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong2.start
-    pingpong3 = newActor[RemotePingPong3Actor]
+    pingpong3 = actorOf[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
     pingpong3.start
 
@@ -443,12 +443,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = newActor[RemotePingPong1Actor].start
+    pingpong1 = actorOf[RemotePingPong1Actor]
     pingpong1.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong2 = newActor[RemotePingPong2Actor].start
+    pingpong1.start
+    pingpong2 = actorOf[RemotePingPong2Actor]
     pingpong2.makeRemote(RemoteServer.HOSTNAME, 9988)
-    pingpong3 = newActor[RemotePingPong3Actor].start
+    pingpong2.start
+    pingpong3 = actorOf[RemotePingPong3Actor]
     pingpong3.makeRemote(RemoteServer.HOSTNAME, 9988)
+    pingpong3.start
 
     val factory = SupervisorFactory(
       SupervisorConfig(

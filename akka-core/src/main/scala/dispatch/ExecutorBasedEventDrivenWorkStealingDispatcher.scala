@@ -51,12 +51,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
         if (!tryProcessMailbox(invocation.receiver)) {
           // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
           // to another actor and then process his mailbox in stead.
-          findThief(invocation.receiver) match {
-            case Some(thief) => {
-              tryDonateAndProcessMessages(invocation.receiver, thief)
-            }
-            case None => { /* no other actor in the pool */ }
-          }
+          findThief(invocation.receiver).foreach( tryDonateAndProcessMessages(invocation.receiver,_) ) 
         }
       }
     })
@@ -101,18 +96,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def findThief(receiver: ActorRef): Option[ActorRef] = {
     // copy to prevent concurrent modifications having any impact
     val actors = pooledActors.toArray(new Array[ActorRef](pooledActors.size))
-    var i = lastThiefIndex
-    if (i > actors.size)
-      i = 0
-
+    val i = if ( lastThiefIndex > actors.size ) 0 else lastThiefIndex
+    
     // we risk to pick a thief which is unregistered from the dispatcher in the meantime, but that typically means
     // the dispatcher is being shut down...
-    doFindThief(receiver, actors, i) match {
-      case (thief: Option[ActorRef], index: Int) => {
-        lastThiefIndex = (index + 1) % actors.size
-        return thief
-      }
-    }
+    val (thief: Option[ActorRef], index: Int) = doFindThief(receiver, actors, i)
+    lastThiefIndex = (index + 1) % actors.size
+    thief
   }
 
   /**
@@ -127,13 +117,9 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     for (i <- 0 to actors.length) {
       val index = (i + startIndex) % actors.length
       val actor = actors(index)
-      if (actor != receiver) { // skip ourselves
-        if (actor.mailbox.isEmpty) { // only pick actors that will most likely be able to process the messages
-          return (Some(actor), index)
-        }
-      }
+      if (actor != receiver && actor.mailbox.isEmpty) return (Some(actor), index)
     }
-    return (None, startIndex) // nothing found, reuse same start index next time
+    (None, startIndex) // nothing found, reuse same start index next time
   }
 
   /**
@@ -143,7 +129,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def tryDonateAndProcessMessages(receiver: ActorRef, thief: ActorRef) = {
     if (thief.dispatcherLock.tryLock) {
       try {
-        donateAndProcessMessages(receiver, thief)
+        while(donateMessage(receiver, thief))
+          processMailbox(thief)
       } finally {
         thief.dispatcherLock.unlock
       }
@@ -151,30 +138,19 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   /**
-   * Donate messages to the thief and process them on the thief as long as the receiver has more messages.
-   */
-  private def donateAndProcessMessages(receiver: ActorRef, thief: ActorRef): Unit = {
-    donateMessage(receiver, thief) match {
-      case None => {
-        // no more messages to donate
-        return
-      }
-      case Some(donatedInvocation) => {
-        processMailbox(thief)
-        return donateAndProcessMessages(receiver, thief)
-      }
-    }
-  }
-
-  /**
    * Steal a message from the receiver and give it to the thief.
    */
-  private def donateMessage(receiver: ActorRef, thief: ActorRef): Option[MessageInvocation] = {
+  private def donateMessage(receiver: ActorRef, thief: ActorRef): Boolean = {
     val donated = receiver.mailbox.pollLast
-    if (donated != null) {
-      thief.self ! donated.message
-      return Some(donated)
-    } else return None
+    if (donated ne null) {
+      donated.replyTo match {
+        case None                => thief.self.postMessageToMailbox(donated.message, None)
+        case Some(Left(actor))   => thief.self.postMessageToMailbox(donated.message, Some(actor.asInstanceOf[ActorRef]))
+        case Some(Right(future)) => thief.self.postMessageToMailboxAndCreateFutureResultWithTimeout[Any](
+          donated.message, receiver.timeout, Some(future.asInstanceOf[CompletableFuture[Any]]))
+      }
+      true
+    } else false
   }
 
   def start = if (!active) {
@@ -206,16 +182,16 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   def usesActorMailbox = true
 
-  private def verifyActorsAreOfSameType(newActorId: ActorRef) = {
+  private def verifyActorsAreOfSameType(actorOfId: ActorRef) = {
     actorType match {
       case None => {
-        actorType = Some(newActorId.actor.getClass)
+        actorType = Some(actorOfId.actor.getClass)
       }
       case Some(aType) => {
-        if (aType != newActorId.actor.getClass)
+        if (aType != actorOfId.actor.getClass)
           throw new IllegalStateException(
             String.format("Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
-              newActorId.actor, aType))
+              actorOfId.actor, aType))
       }
     }
   }

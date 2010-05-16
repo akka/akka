@@ -42,10 +42,10 @@ class Boot extends Logging {
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(
-          newActor[SimpleService],
+          actorOf[SimpleService],
           LifeCycle(Permanent)) ::
         Supervise(
-          newActor[PersistentSimpleService],
+          actorOf[PersistentSimpleService],
           LifeCycle(Permanent)) ::
         Nil))
     factory.newInstance.start

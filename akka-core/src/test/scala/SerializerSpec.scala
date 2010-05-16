@@ -7,12 +7,12 @@ import org.junit.{Test, Before, After}
 
 import scala.reflect.BeanInfo
 
-//@BeanInfo 
+@BeanInfo
 case class Foo(foo: String) {
   def this() = this(null)
 }
 
-//@BeanInfo
+@BeanInfo
 case class MyMessage(val id: String, val value: Tuple2[String, Int]) {
   private def this() = this(null, null)
 }

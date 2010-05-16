@@ -48,9 +48,8 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
   @Test
   def shouldReplyToBangMessageUsingReply = {
     state.finished.reset
-    val replyActor = newActor[ReplyActor].start
-    val senderActor = newActor(() => new SenderActor(replyActor))
-    senderActor.start
+    val replyActor = actorOf[ReplyActor].start
+    val senderActor = actorOf(new SenderActor(replyActor)).start
     senderActor ! "Init"
     try { state.finished.await(1L, TimeUnit.SECONDS) } 
     catch { case e: TimeoutException => fail("Never got the message") }
@@ -60,8 +59,8 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
   @Test
   def shouldReplyToBangMessageUsingImplicitSender = {
     state.finished.reset
-    val replyActor = newActor[ReplyActor].start
-    val senderActor = newActor(() => new SenderActor(replyActor)).start
+    val replyActor = actorOf[ReplyActor].start
+    val senderActor = actorOf(new SenderActor(replyActor)).start
     senderActor ! "InitImplicit"
     try { state.finished.await(1L, TimeUnit.SECONDS) } 
     catch { case e: TimeoutException => fail("Never got the message") }

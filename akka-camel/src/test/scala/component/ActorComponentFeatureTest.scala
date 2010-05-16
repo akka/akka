@@ -23,7 +23,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     import Actor._
     
     scenario("one-way communication using actor id") {
-      val actor = newActor(() => new Tester with Retain with Countdown[Message])
+      val actor = actorOf(new Tester with Retain with Countdown[Message])
       actor.start
       template.sendBody("actor:%s" format actor.id, "Martin")
       assert(actor.actor.asInstanceOf[Countdown[Message]].waitFor)
@@ -31,7 +31,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     }
 
     scenario("one-way communication using actor uuid") {
-      val actor = newActor(() => new Tester with Retain with Countdown[Message])
+      val actor = actorOf(new Tester with Retain with Countdown[Message])
       actor.start
       template.sendBody("actor:uuid:%s" format actor.uuid, "Martin")
       assert(actor.actor.asInstanceOf[Countdown[Message]].waitFor)
@@ -39,19 +39,19 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     }
 
     scenario("two-way communication using actor id") {
-      val actor = newActor(() => new Tester with Respond)
+      val actor = actorOf(new Tester with Respond)
       actor.start
       assert(template.requestBody("actor:%s" format actor.id, "Martin") === "Hello Martin")
     }
 
     scenario("two-way communication using actor uuid") {
-      val actor = newActor(() => new Tester with Respond)
+      val actor = actorOf(new Tester with Respond)
       actor.start
       assert(template.requestBody("actor:uuid:%s" format actor.uuid, "Martin") === "Hello Martin")
     }
 
     scenario("two-way communication with timeout") {
-      val actor = newActor(() => new Tester {
+      val actor = actorOf(new Tester {
         self.timeout = 1
       })
       actor.start
