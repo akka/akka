@@ -35,9 +35,6 @@ trait CamelService extends Bootable with Logging {
     if (!initialized) init
     if (!started) start
 
-    // Camel should cache input streams
-    context.setStreamCaching(true)
-
     // start actor that exposes consumer actors via Camel endpoints
     consumerPublisher.start
 
