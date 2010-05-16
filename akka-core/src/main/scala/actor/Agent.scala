@@ -102,7 +102,7 @@ sealed class Agent[T] private (initialValue: T) {
   import Agent._
   import Actor._
   
-  private val dispatcher = newActor(() => new AgentDispatcher[T](initialValue)).start
+  private val dispatcher = actorOf(new AgentDispatcher[T](initialValue)).start
   dispatcher ! Value(initialValue)
  
   /**

@@ -27,7 +27,7 @@ class ThreadBasedActorSpec extends JUnitSuite {
 
   @Test def shouldSendOneWay  {
     var oneWay = new CountDownLatch(1)
-    val actor = newActor(() => new Actor {
+    val actor = actorOf(new Actor {
       self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
       def receive = {
         case "OneWay" => oneWay.countDown
@@ -38,22 +38,22 @@ class ThreadBasedActorSpec extends JUnitSuite {
     actor.stop
   }
 
-  @Test def shouldSendReplySync  {
-    val actor = newActor[TestActor].start
+  @Test def shouldSendReplySync = {
+    val actor = actorOf[TestActor].start
     val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
     actor.stop
   }
 
-  @Test def shouldSendReplyAsync  {
-    val actor = newActor[TestActor].start
+  @Test def shouldSendReplyAsync = {
+    val actor = actorOf[TestActor].start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
 
-  @Test def shouldSendReceiveException  {
-    val actor = newActor[TestActor].start
+  @Test def shouldSendReceiveException = {
+    val actor = actorOf[TestActor].start
     try {
       actor !! "Failure"
       fail("Should have thrown an exception")

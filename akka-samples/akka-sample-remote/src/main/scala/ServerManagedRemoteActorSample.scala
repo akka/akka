@@ -22,7 +22,7 @@ object ServerManagedRemoteActorServer extends Logging {
   def run = {
     RemoteNode.start("localhost", 9999)
     log.info("Remote node started")
-    RemoteNode.register("hello-service", newActor[HelloWorldActor].start)
+    RemoteNode.register("hello-service", actorOf[HelloWorldActor])
     log.info("Remote actor registered and started")
   }
 

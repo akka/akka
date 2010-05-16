@@ -18,18 +18,18 @@ class Boot {
       // Dummy implementations of all authentication actors
       // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
       Supervise(
-        newActor[BasicAuthenticationService],
+        actorOf[BasicAuthenticationService],
         LifeCycle(Permanent)) ::
      /**
       Supervise(
-        newActor[DigestAuthenticationService],
+        actorOf[DigestAuthenticationService],
         LifeCycle(Permanent)) ::
       Supervise(
-        newActor[SpnegoAuthenticationService],
+        actorOf[SpnegoAuthenticationService],
         LifeCycle(Permanent)) ::
       **/
       Supervise(
-        newActor[SecureTickActor],
+        actorOf[SecureTickActor],
         LifeCycle(Permanent)):: Nil))
 
   val supervisor = factory.newInstance

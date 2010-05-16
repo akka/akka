@@ -27,26 +27,9 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Map => JMap}
 
-/*
-trait ActorWithNestedReceive extends Actor {
-  import Actor.actor
-  private var nestedReactsProcessors: List[ActorRef] = Nil
-  private val processNestedReacts: PartialFunction[Any, Unit] = {
-    case message if !nestedReactsProcessors.isEmpty =>
-      val processors = nestedReactsProcessors.reverse
-      processors.head forward message
-      nestedReactsProcessors = processors.tail.reverse
-  }
- 
-  protected def react: PartialFunction[Any, Unit]
-  protected def reactAgain(pf: PartialFunction[Any, Unit]) = nestedReactsProcessors ::= actor(pf)
-  protected def receive = processNestedReacts orElse react
-}
-*/
-
 /**
  * The ActorRef object can be used to deserialize ActorRef instances from of its binary representation
- * or its Protocol Buffers (protobuf) Message representation to a Actor.newActor instance.
+ * or its Protocol Buffers (protobuf) Message representation to a Actor.actorOf instance.
  * <p/>
  * Binary -> ActorRef:
  * <pre>
@@ -90,16 +73,22 @@ object ActorRef {
  * <pre>
  *   import Actor._
  * 
- *   val actor = newActor[MyActor]
+ *   val actor = actorOf[MyActor]
  *   actor.start
  *   actor ! message
  *   actor.stop
  * </pre>
+ * 
+ * You can also create and start actors like this: 
+ * <pre>
+ *   val actor = actorOf[MyActor].start
+ * </pre>
+ *  
  * Here is an example on how to create an actor with a non-default constructor.
  * <pre>
  *   import Actor._
  * 
- *   val actor = newActor(() => new MyActor(...))
+ *   val actor = actorOf(new MyActor(...))
  *   actor.start
  *   actor ! message
  *   actor.stop
@@ -374,14 +363,9 @@ trait ActorRef extends TransactionManagement {
    * Returns true if reply was sent, and false if unable to determine what to reply to.
    */
   def reply_?(message: Any): Boolean = replyTo match {
-    case Some(Left(actor)) =>
-      actor ! message
-      true
-    case Some(Right(future: Future[Any])) =>
-      future completeWithResult message
-      true
-    case _ =>
-      false
+    case Some(Left(actor))                => actor ! message; true
+    case Some(Right(future: Future[Any])) => future completeWithResult message; true
+    case _                                => false
   }
   
   /**
@@ -714,8 +698,7 @@ sealed class LocalActorRef private[akka](
    * Returns the remote address for the actor, if any, else None.
    */
   def remoteAddress: Option[InetSocketAddress] = guard.withGuard { _remoteAddress }
-  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = 
-    guard.withGuard { _remoteAddress = addr }
+  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = guard.withGuard { _remoteAddress = addr }
 
   /**
    * Starts up the actor and its message queue.
@@ -878,11 +861,8 @@ sealed class LocalActorRef private[akka](
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = guard.withGuard { _supervisor = sup }
 
   private def spawnButDoNotStart[T <: Actor: Manifest]: ActorRef = guard.withGuard {
-    val actor = manifest[T].erasure.asInstanceOf[Class[T]].newInstance
-    val actorRef = Actor.newActor(() => actor)
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) {
-      actorRef.dispatcher = dispatcher
-    }
+    val actorRef = Actor.actorOf(manifest[T].erasure.asInstanceOf[Class[T]].newInstance)
+    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actorRef.dispatcher = dispatcher
     actorRef
   }
 
@@ -896,8 +876,9 @@ sealed class LocalActorRef private[akka](
         } catch { 
           case e: InstantiationException => throw new ActorInitializationException(
             "Could not instantiate Actor due to:\n" + e + 
-            "\nMake sure Actor is defined inside a class/trait," + 
-            "\nif so put it outside the class/trait, f.e. in a companion object.") 
+            "\nMake sure Actor is NOT defined inside a class/trait," + 
+            "\nif so put it outside the class/trait, f.e. in a companion object," +
+            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.") 
         }
       case Right(Some(factory)) => 
         factory()

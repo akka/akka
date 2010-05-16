@@ -36,7 +36,7 @@ Then to run the sample:
 2. In the first REPL you get execute: 
   - scala> import sample.chat._
   - scala> import se.scalablesolutions.akka.actor.Actor._
-  - scala> val chatService = newActor[ChatService].start
+  - scala> val chatService = actorOf[ChatService].start
 3. In the second REPL you get execute: 
     - scala> import sample.chat._
     - scala> Runner.run
@@ -130,7 +130,7 @@ trait SessionManagement { this: Actor =>
   protected def sessionManagement: PartialFunction[Any, Unit] = {
     case Login(username) => 
       log.info("User [%s] has logged in", username)
-      val session = newActor(() => new Session(username, storage))
+      val session = actorOf(new Session(username, storage))
       session.start
       sessions += (username -> session)
       
@@ -197,7 +197,7 @@ trait ChatServer extends Actor {
  * Class encapsulating the full Chat Service.
  * Start service by invoking:
  * <pre>
- * val chatService = Actor.newActor[ChatService].start
+ * val chatService = Actor.actorOf[ChatService].start
  * </pre>
  */
 class ChatService extends 

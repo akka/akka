@@ -182,7 +182,6 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
       futures.synchronized {
         val futureResult = if (senderFuture.isDefined) senderFuture.get
         else new DefaultCompletableFuture[T](request.getTimeout)
-        println("------ SETTING ID: " + request.getId + " " + name)
         futures.put(request.getId, futureResult)
         connection.getChannel.write(request)
         Some(futureResult)
@@ -264,7 +263,6 @@ class RemoteClientHandler(val name: String,
       if (result.isInstanceOf[RemoteReplyProtocol]) {
         val reply = result.asInstanceOf[RemoteReplyProtocol]
         log.debug("Remote client received RemoteReplyProtocol[\n%s]", reply.toString)
-        println("------ GETTING ID: " + reply.getId + " " + name)
         val future = futures.get(reply.getId).asInstanceOf[CompletableFuture[Any]]
         if (reply.getIsSuccessful) {
           val message = RemoteProtocolBuilder.getMessage(reply)

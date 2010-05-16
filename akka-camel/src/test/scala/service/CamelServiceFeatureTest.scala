@@ -38,7 +38,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     // register test consumer before starting the CamelService
-    newActor(() => new TestConsumer("direct:publish-test-1")).start
+    actorOf(new TestConsumer("direct:publish-test-1")).start
     // Consigure a custom camel route
     CamelContextManager.init
     CamelContextManager.context.addRoutes(new TestRoute)
@@ -61,10 +61,10 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("two consumer actors registered before and after CamelService startup")
       service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
-      newActor(() => new TestConsumer("direct:publish-test-2")).start
+      actorOf(new TestConsumer("direct:publish-test-2")).start
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
 
       when("requests are sent to these actors")
-      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
       val response1 = CamelContextManager.template.requestBody("direct:publish-test-1", "msg1")
       val response2 = CamelContextManager.template.requestBody("direct:publish-test-2", "msg2")
 
@@ -74,12 +74,38 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     }
   }
 
+  feature("Unpublish registered consumer actor from the global CamelContext") {
+
+    scenario("attempt access to unregistered consumer actor via Camel direct-endpoint") {
+      val endpointUri = "direct:unpublish-test-1"
+
+      given("a consumer actor that has been stopped")
+      assert(CamelContextManager.context.hasEndpoint(endpointUri) eq null)
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
+      val consumer = actorOf(new TestConsumer(endpointUri)).start
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
+      assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
+
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectUnpublishCount(1)
+      consumer.stop
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitUnpublish
+      // endpoint is still there but the route has been stopped
+      assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
+
+      when("a request is sent to this actor")
+      val response1 = CamelContextManager.template.requestBody(endpointUri, "msg1")
+
+      then("the direct endpoint falls back to its default behaviour and returns the original message")
+      assert(response1 === "msg1")
+    }
+  }
+
   feature("Configure a custom Camel route for the global CamelContext") {
 
     scenario("access an actor from the custom Camel route") {
 
       given("a registered actor and a custom route to that actor")
-      val actor = newActor[TestActor].start
+      val actor = actorOf[TestActor].start
 
       when("sending a a message to that route")
       val response = CamelContextManager.template.requestBody("direct:custom-route-test-1", "msg3")

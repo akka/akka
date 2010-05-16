@@ -84,11 +84,11 @@ object Supervisor {
 object SupervisorActor {
   def apply(config: SupervisorConfig): ActorRef = { 
     val (handler, trapExits) = SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config)
-    newActor(() => new SupervisorActor(handler, trapExits)).start
+    actorOf(new SupervisorActor(handler, trapExits)).start
   }
 
   def apply(handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]): ActorRef = 
-    newActor(() => new SupervisorActor(handler, trapExceptions)).start
+    actorOf(new SupervisorActor(handler, trapExceptions)).start
 }
 
 /**

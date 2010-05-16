@@ -111,7 +111,7 @@ class RedisPersistentSortedSetSpec extends
   val h6 = Hacker("Alan Turing", "1912")
 
   describe("Add and report cardinality of the set") {
-    val qa = newActor[SortedSetActor]
+    val qa = actorOf[SortedSetActor]
     qa.start
 
     it("should enter 6 hackers") {
@@ -167,10 +167,10 @@ class RedisPersistentSortedSetSpec extends
 
   describe("Transaction semantics") {
     it("should rollback on exception") {
-      val qa = newActor[SortedSetActor]
+      val qa = actorOf[SortedSetActor]
       qa.start
 
-      val failer = newActor[PersistentFailerActor]
+      val failer = actorOf[PersistentFailerActor]
       failer.start
 
       (qa !! SIZE).get.asInstanceOf[Int] should equal(0)
@@ -195,7 +195,7 @@ class RedisPersistentSortedSetSpec extends
 
   describe("zrange") {
     it ("should report proper range") {
-      val qa = newActor[SortedSetActor]
+      val qa = actorOf[SortedSetActor]
       qa.start
       qa !! ADD(h1)
       qa !! ADD(h2)
@@ -214,7 +214,7 @@ class RedisPersistentSortedSetSpec extends
     }
 
     it ("should report proper rge") {
-      val qa = newActor[SortedSetActor]
+      val qa = actorOf[SortedSetActor]
       qa.start
       qa !! ADD(h1)
       qa !! ADD(h2)

@@ -36,7 +36,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message sync and receive response") {
       given("a registered synchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = newActor(() => new TestProducer("direct:producer-test-2") with Sync)
+      val producer = actorOf(new TestProducer("direct:producer-test-2") with Sync)
       producer.start
 
       when("a test message is sent to the producer")
@@ -50,7 +50,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message async and receive response") {
       given("a registered asynchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = newActor(() => new TestProducer("direct:producer-test-2"))
+      val producer = actorOf(new TestProducer("direct:producer-test-2"))
       producer.start
 
       when("a test message is sent to the producer")
@@ -64,7 +64,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message sync and receive failure") {
       given("a registered synchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = newActor(() => new TestProducer("direct:producer-test-2") with Sync)
+      val producer = actorOf(new TestProducer("direct:producer-test-2") with Sync)
       producer.start
 
       when("a fail message is sent to the producer")
@@ -80,7 +80,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message async and receive failure") {
       given("a registered asynchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = newActor(() => new TestProducer("direct:producer-test-2"))
+      val producer = actorOf(new TestProducer("direct:producer-test-2"))
       producer.start
 
       when("a fail message is sent to the producer")
@@ -96,7 +96,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message sync oneway") {
       given("a registered synchronous one-way producer for endpoint direct:producer-test-1")
-      val producer = newActor(() => new TestProducer("direct:producer-test-1") with Sync with Oneway)
+      val producer = actorOf(new TestProducer("direct:producer-test-1") with Sync with Oneway)
       producer.start
 
       when("a test message is sent to the producer")
@@ -109,7 +109,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message async oneway") {
       given("a registered asynchronous one-way producer for endpoint direct:producer-test-1")
-      val producer = newActor(() => new TestProducer("direct:producer-test-1") with Oneway)
+      val producer = actorOf(new TestProducer("direct:producer-test-1") with Oneway)
       producer.start
 
       when("a test message is sent to the producer")

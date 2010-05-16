@@ -44,7 +44,7 @@ class ProtobufActorMessageSerializationSpec extends JUnitSuite {
   def init() {
     server = new RemoteServer
     server.start(HOSTNAME, PORT)
-    server.register("RemoteActorSpecActorBidirectional", newActor[RemoteActorSpecActorBidirectional].start)
+    server.register("RemoteActorSpecActorBidirectional", actorOf[RemoteActorSpecActorBidirectional])
     Thread.sleep(1000)
   }
 

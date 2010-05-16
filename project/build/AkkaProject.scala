@@ -42,7 +42,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // val configgy = "Configgy" at "http://www.lag.net/repo"
   val codehaus = "Codehaus" at "http://repository.codehaus.org"
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val jboss = "jBoss" at "http://repository.jboss.org/maven2"
+  val jboss = "jBoss" at "https://repository.jboss.org/nexus/content/groups/public/"
   val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val google = "Google" at "http://google-maven-repository.googlecode.com/svn/repository"
   val java_net = "java.net" at "http://download.java.net/maven/2"
@@ -136,7 +136,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val netty = "org.jboss.netty" % "netty" % "3.2.0.BETA1" % "compile"
+    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.Beta1" % "0.6.6" % "compile"
     val dispatch_http = "net.databinder" % "dispatch-http_2.8.0.Beta1" % "0.6.6" % "compile"
@@ -150,7 +150,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val werkz = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % "2.1" % "compile"
     val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5" % "2.1" % "compile"
     val configgy = "net.lag" % "configgy" % "2.8.0.Beta1-1.5-SNAPSHOT" % "compile"
-    val guicey = "org.guiceyfruit" % "guice-core" % "2.0-beta-4" % "compile"
+    val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
+    val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
     val multiverse = "org.multiverse" % "multiverse-alpha" % "0.5" % "compile"
     
@@ -209,8 +210,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra = "org.apache.cassandra" % "cassandra" % CASSANDRA_VERSION % "compile"
-    val slf4j = "org.slf4j" % "slf4j-api" % "1.5.8" % "compile"
-    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.5.8" % "compile"
+    val slf4j = "org.slf4j" % "slf4j-api" % "1.6.0" % "compile"
+    val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % "1.6.0" % "compile"
     val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
     // testing
     val high_scale = "org.apache.cassandra" % "high-scale-lib" % CASSANDRA_VERSION % "test"
@@ -337,6 +338,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     mainResources +++
     mainDependencies.scalaJars +++
     descendents(info.projectPath, "*.conf") +++
+    descendents(info.projectPath / "scripts", "run_akka.sh") +++
     descendents(info.projectPath / "dist", "*.jar") +++
     descendents(info.projectPath / "deploy", "*.jar") +++
     descendents(path("lib") ##, "*.jar") +++

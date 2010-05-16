@@ -32,33 +32,29 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   
   private val unit = TimeUnit.MILLISECONDS
 
-  @Test def shouldSendOneWay {
-    val actor = newActor[OneWayTestActor]
-    actor.start
+  @Test def shouldSendOneWay = {
+    val actor = actorOf[OneWayTestActor].start
     val result = actor ! "OneWay"
     assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 
-  @Test def shouldSendReplySync {
-    val actor = newActor[TestActor]
-    actor.start
+  @Test def shouldSendReplySync = {
+    val actor = actorOf[TestActor].start
     val result: String = (actor !! ("Hello", 10000)).get
     assert("World" === result)
     actor.stop
   }
 
-  @Test def shouldSendReplyAsync {
-    val actor = newActor[TestActor]
-    actor.start
+  @Test def shouldSendReplyAsync = {
+    val actor = actorOf[TestActor].start
     val result = actor !! "Hello"
     assert("World" === result.get.asInstanceOf[String])
     actor.stop
   }
 
-  @Test def shouldSendReceiveException {
-    val actor = newActor[TestActor]
-    actor.start
+  @Test def shouldSendReceiveException = {
+    val actor = actorOf[TestActor].start
     try {
       actor !! "Failure"
       fail("Should have thrown an exception")

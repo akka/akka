@@ -210,10 +210,11 @@ class RemoteServer extends Logging {
   // TODO: register active object in RemoteServer as well
 
   /**
-   * Register Remote Actor by the Actor's 'id' field.
+   * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
   def register(actorRef: ActorRef) = synchronized {
     if (_isRunning) {
+      if (!actorRef.isRunning) actorRef.start
       log.info("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
       RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actorRef.id, actorRef)
     }
@@ -226,6 +227,7 @@ class RemoteServer extends Logging {
    */
   def register(id: String, actorRef: ActorRef) = synchronized {
     if (_isRunning) {
+      if (!actorRef.isRunning) actorRef.start
       log.info("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
       RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(id, actorRef)
     }
@@ -476,8 +478,8 @@ class RemoteServerHandler(
       try {
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
-        else Class.forName(name)
-        val actorRef = Actor.newActor(() => clazz.newInstance.asInstanceOf[Actor])
+                    else Class.forName(name)
+        val actorRef = Actor.actorOf(clazz.newInstance.asInstanceOf[Actor])
         actorRef.uuid = uuid
         actorRef.timeout = timeout
         actorRef.remoteAddress = None

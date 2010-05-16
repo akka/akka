@@ -28,15 +28,15 @@ class Boot {
   val factory = SupervisorFactory(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-      Supervise(newActor[Consumer1], LifeCycle(Permanent)) ::
-      Supervise(newActor[Consumer2], LifeCycle(Permanent)) :: Nil))
+      Supervise(actorOf[Consumer1], LifeCycle(Permanent)) ::
+      Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
   factory.newInstance.start
 
   // Routing example
 
-  val producer = newActor[Producer1]
-  val mediator = newActor(() => new Transformer(producer))
-  val consumer = newActor(() => new Consumer3(mediator))
+  val producer = actorOf[Producer1]
+  val mediator = actorOf(new Transformer(producer))
+  val consumer = actorOf(new Consumer3(mediator))
 
   producer.start
   mediator.start
@@ -55,12 +55,15 @@ class Boot {
   //val cometdPublisher = new Publisher("cometd-publisher", cometdUri).start
 
   val jmsUri = "jms:topic:test"
-  val jmsSubscriber1 = newActor(() => new Subscriber("jms-subscriber-1", jmsUri)).start
-  val jmsSubscriber2 = newActor(() => new Subscriber("jms-subscriber-2", jmsUri)).start
-  val jmsPublisher =   newActor(() => new Publisher("jms-publisher", jmsUri)).start
+  val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
+  val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
+  val jmsPublisher =   actorOf(new Publisher("jms-publisher", jmsUri)).start
 
-  //val cometdPublisherBridge = newActor(() => new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher)).start
-  val jmsPublisherBridge = newActor(() => new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start
+  //val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
+  val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start
+
+  actorOf[Consumer4].start // POSTing "stop" to http://0.0.0.0:8877/camel/stop stops and unpublishes this actor
+  actorOf[Consumer5].start // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
 }
 
 class CustomRouteBuilder extends RouteBuilder {

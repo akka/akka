@@ -47,7 +47,7 @@ object Scheduler extends Actor {
 
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
     try {
-      self.startLink(newActor(() => new ScheduleActor(
+      self.startLink(actorOf(new ScheduleActor(
         receiver,
         service.scheduleAtFixedRate(new java.lang.Runnable {
           def run = receiver ! message;
