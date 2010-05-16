@@ -8,7 +8,10 @@ class CamelContextLifecycleTest extends JUnitSuite with CamelContextLifecycle {
   @Test def shouldManageCustomCamelContext {
     assert(context === null)
     assert(template === null)
-    init(new TestCamelContext)
+    val ctx = new TestCamelContext
+    assert(ctx.isStreamCaching === false)
+    init(ctx)
+    assert(context.isStreamCaching === true)
     assert(!context.asInstanceOf[TestCamelContext].isStarted)
     assert(!template.asInstanceOf[DefaultProducerTemplate].isStarted)
     start
