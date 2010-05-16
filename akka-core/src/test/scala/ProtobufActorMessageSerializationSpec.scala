@@ -30,7 +30,7 @@ object ProtobufActorMessageSerializationSpec {
     def receive = {
       case pojo: ProtobufPOJO =>
         val id = pojo.getId
-        reply(id + 1)
+        self.reply(id + 1)
       case msg =>
         throw new RuntimeException("Expected a ProtobufPOJO message but got: " + msg)
     }

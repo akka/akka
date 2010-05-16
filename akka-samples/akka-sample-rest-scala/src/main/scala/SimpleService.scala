@@ -65,11 +65,11 @@ class SimpleService extends Transactor {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
-      reply(<success>Tick:{counter + 1}</success>)
+      self.reply(<success>Tick:{counter + 1}</success>)
     } else {
       storage.put(KEY, new Integer(0))
       hasStartedTicking = true
-      reply(<success>Tick: 0</success>)
+      self.reply(<success>Tick: 0</success>)
     }
   }
 }
@@ -118,11 +118,11 @@ class PersistentSimpleService extends Transactor {
       val bytes = storage.get(KEY.getBytes).get
       val counter = ByteBuffer.wrap(bytes).getInt
       storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
-      reply(<success>Tick:{counter + 1}</success>)
+      self.reply(<success>Tick:{counter + 1}</success>)
     } else {
       storage.put(KEY.getBytes, Array(0.toByte))
       hasStartedTicking = true
-      reply(<success>Tick: 0</success>)
+      self.reply(<success>Tick: 0</success>)
     }
   }
 }
@@ -139,8 +139,8 @@ class Chat extends Actor with Logging {
   def receive = {
     case Chat(who, what, msg) => {
       what match {
-        case "login" => reply("System Message__" + who + " has joined.")
-        case "post" => reply("" + who + "__" + msg)
+        case "login" => self.reply("System Message__" + who + " has joined.")
+        case "post" => self.reply("" + who + "__" + msg)
         case _ => throw new WebApplicationException(422)
       }
     }

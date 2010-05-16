@@ -35,7 +35,7 @@ class AccountActor extends Transactor {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:%s".format(accountNo).getBytes)
-      reply(BigInt(new String(accountState.get(accountNo.getBytes).get)))
+      self.reply(BigInt(new String(accountState.get(accountNo.getBytes).get)))
 
     // debit amount: can fail
     case Debit(accountNo, amount, failer) =>
@@ -49,7 +49,7 @@ class AccountActor extends Transactor {
       accountState.put(accountNo.getBytes, (m - amount).toString.getBytes)
       if (amount > m)
         failer !! "Failure"
-      reply(m - amount)
+      self.reply(m - amount)
 
     // many debits: can fail
     // demonstrates true rollback even if multiple puts have been done
@@ -67,7 +67,7 @@ class AccountActor extends Transactor {
         accountState.put(accountNo.getBytes, (m - bal).toString.getBytes)
       }
       if (bal > m) failer !! "Failure"
-      reply(m - bal)
+      self.reply(m - bal)
 
     // credit amount
     case Credit(accountNo, amount) =>
@@ -79,13 +79,13 @@ class AccountActor extends Transactor {
         case None => 0
       }
       accountState.put(accountNo.getBytes, (m + amount).toString.getBytes)
-      reply(m + amount)
+      self.reply(m + amount)
 
     case LogSize =>
-      reply(txnLog.length.asInstanceOf[AnyRef])
+      self.reply(txnLog.length.asInstanceOf[AnyRef])
 
     case Log(start, finish) =>
-      reply(txnLog.slice(start, finish))
+      self.reply(txnLog.slice(start, finish))
   }
 }
 

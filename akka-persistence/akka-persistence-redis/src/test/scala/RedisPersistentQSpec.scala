@@ -25,12 +25,12 @@ class QueueActor extends Transactor {
     // enqueue
     case NQ(accountNo) =>
       accounts.enqueue(accountNo.getBytes)
-      reply(true)
+      self.reply(true)
 
     // dequeue
     case DQ =>
       val d = new String(accounts.dequeue)
-      reply(d)
+      self.reply(d)
 
     // multiple NQ and DQ
     case MNDQ(enqs, no, failer) =>
@@ -41,11 +41,11 @@ class QueueActor extends Transactor {
         case e: Exception => 
           failer !! "Failure"
       }
-      reply(true)
+      self.reply(true)
 
     // size
     case SZ =>
-      reply(accounts.size)
+      self.reply(accounts.size)
   }
 }
 

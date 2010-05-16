@@ -23,7 +23,7 @@ class AgentSpec extends junit.framework.TestCase with Suite with MustMatchers {
     agent send (_ * 2)
     val result = agent()
     result must be(12)
-    agent.stop
+    agent.close
   }
 
   @Test def testSendValue = {
@@ -31,7 +31,7 @@ class AgentSpec extends junit.framework.TestCase with Suite with MustMatchers {
     agent send 6
     val result = agent()
     result must be(6)
-    agent.stop
+    agent.close
   }
 
   @Test def testSendProc = {
@@ -42,7 +42,7 @@ class AgentSpec extends junit.framework.TestCase with Suite with MustMatchers {
     agent sendProc { e => result += e; latch.countDown }
     assert(latch.await(5, TimeUnit.SECONDS))
     result must be(10)
-    agent.stop
+    agent.close
   }
 
   @Test def testOneAgentsendWithinEnlosingTransactionSuccess = {

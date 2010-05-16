@@ -27,7 +27,7 @@ case class SchedulerException(msg: String, e: Throwable) extends RuntimeExceptio
  * which is licensed under the Apache 2 License.
  */
 class ScheduleActor(val receiver: ActorRef, val future: ScheduledFuture[AnyRef]) extends Actor with Logging {
-  lifeCycle = Some(LifeCycle(Permanent))
+  self.lifeCycle = Some(LifeCycle(Permanent))
 
   def receive = {
     case UnSchedule =>
@@ -42,12 +42,12 @@ object Scheduler extends Actor {
   
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
   private val schedulers = new ConcurrentHashMap[ActorRef, ActorRef]
-  faultHandler = Some(OneForOneStrategy(5, 5000))
-  trapExit = List(classOf[Throwable])
+  self.faultHandler = Some(OneForOneStrategy(5, 5000))
+  self.trapExit = List(classOf[Throwable])
 
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
     try {
-      startLink(newActor(() => new ScheduleActor(
+      self.startLink(newActor(() => new ScheduleActor(
         receiver,
         service.scheduleAtFixedRate(new java.lang.Runnable {
           def run = receiver ! message;
@@ -60,7 +60,7 @@ object Scheduler extends Actor {
   def restart = service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   def stopSupervising(actorRef: ActorRef) = {
-    unlink(actorRef)
+    self.unlink(actorRef)
     schedulers.remove(actorRef)
   }
 

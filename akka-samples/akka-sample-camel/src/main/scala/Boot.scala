@@ -59,9 +59,8 @@ class Boot {
   val jmsSubscriber2 = newActor(() => new Subscriber("jms-subscriber-2", jmsUri)).start
   val jmsPublisher =   newActor(() => new Publisher("jms-publisher", jmsUri)).start
 
-  //val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
-  val jmsPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher).start
-  
+  //val cometdPublisherBridge = newActor(() => new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher)).start
+  val jmsPublisherBridge = newActor(() => new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start
 }
 
 class CustomRouteBuilder extends RouteBuilder {

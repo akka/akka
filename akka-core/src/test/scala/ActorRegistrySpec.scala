@@ -7,11 +7,11 @@ import Actor._
 object ActorRegistrySpec {
   var record = ""
   class TestActor extends Actor {
-    id = "MyID"
+    self.id = "MyID"
     def receive = {
       case "ping" =>
         record = "pong" + record
-        reply("got ping")
+        self.reply("got ping")
     }
   }  
 }
@@ -26,7 +26,7 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor("MyID")
     assert(actors.size === 1)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.head.id === "MyID")
     actor.stop
   }
 
@@ -48,7 +48,7 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor(classOf[TestActor])
     assert(actors.size === 1)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.head.id === "MyID")
     actor.stop
   }
 
@@ -59,7 +59,7 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor[TestActor]
     assert(actors.size === 1)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.head.id === "MyID")
     actor.stop
   }
 
@@ -72,9 +72,9 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor("MyID")
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.head.id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.last.id === "MyID")
     actor1.stop
     actor2.stop
   }
@@ -88,9 +88,9 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor(classOf[TestActor])
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.head.id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.last.id === "MyID")
     actor1.stop
     actor2.stop
   }
@@ -104,9 +104,9 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actorsFor[TestActor]
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.head.id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.last.id === "MyID")
     actor1.stop
     actor2.stop
   }
@@ -120,9 +120,9 @@ class ActorRegistrySpec extends JUnitSuite {
     val actors = ActorRegistry.actors
     assert(actors.size === 2)
     assert(actors.head.actor.isInstanceOf[TestActor])
-    assert(actors.head.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.head.id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
-    assert(actors.last.actor.asInstanceOf[TestActor].id === "MyID")
+    assert(actors.last.id === "MyID")
     actor1.stop
     actor2.stop
   }

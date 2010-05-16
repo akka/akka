@@ -98,39 +98,12 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 * @author Viktor Klang
 * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
 */
-sealed class Agent[T] private (initialValue: T) extends Transactor {
+sealed class Agent[T] private (initialValue: T) {
   import Agent._
   import Actor._
-//  _selfSenderRef = Some(newActor(() => this).start)
   
-  log.debug("Starting up Agent [%s]", uuid)
-  
-  private lazy val value = Ref[T]()
-  
-  self ! Value(initialValue)
- 
-  /**
-   * Periodically handles incoming messages.
-   */
-  def receive = {
-    case Value(v: T) =>
-      swap(v)
-    case Function(fun: (T => T)) =>
-      swap(fun(value.getOrWait))
-    case Procedure(proc: (T => Unit)) =>
-      proc(copyStrategy(value.getOrElse(throw new AgentException("Could not read Agent's value; value is null"))))
-  }
- 
-  /**
-   * Specifies how a copy of the value is made, defaults to using identity.
-   */
-  protected def copyStrategy(t: T): T = t
- 
-  /**
-   * Performs a CAS operation, atomically swapping the internal state with the value 
-   * provided as a by-name parameter.
-   */
-  private final def swap(newData: => T): Unit = value.swap(newData)
+  private val dispatcher = newActor(() => new AgentDispatcher[T](initialValue)).start
+  dispatcher ! Value(initialValue)
  
   /**
   * Submits a request to read the internal state.
@@ -140,8 +113,9 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
   * method and then waits for its result on a CountDownLatch.
   */
   final def get: T = {
-    if (self.isTransactionInScope) throw new AgentException(
-      "Can't call Agent.get within an enclosing transaction.\n\tWould block indefinitely.\n\tPlease refactor your code.")
+    if (dispatcher.isTransactionInScope) throw new AgentException(
+      "Can't call Agent.get within an enclosing transaction."+ 
+      "\n\tWould block indefinitely.\n\tPlease refactor your code.")
     val ref = new AtomicReference[T]
     val latch = new CountDownLatch(1)
     sendProc((v: T) => {ref.set(v); latch.countDown})
@@ -159,22 +133,22 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
   /**
    * Submits the provided function for execution against the internal agent's state.
    */
-  final def apply(message: (T => T)): Unit = self ! Function(message)
+  final def apply(message: (T => T)): Unit = dispatcher ! Function(message)
  
   /**
    * Submits a new value to be set as the new agent's internal state.
    */
-  final def apply(message: T): Unit = self ! Value(message)
+  final def apply(message: T): Unit = dispatcher ! Value(message)
  
   /**
    * Submits the provided function of type 'T => T' for execution against the internal agent's state.
    */
-  final def send(message: (T) => T): Unit = self ! Function(message)
+  final def send(message: (T) => T): Unit = dispatcher ! Function(message)
  
   /**
    * Submits a new value to be set as the new agent's internal state.
    */
-  final def send(message: T): Unit = self ! Value(message)
+  final def send(message: T): Unit = dispatcher ! Value(message)
   
   /**
    * Asynchronously submits a procedure of type 'T => Unit' to read the internal state. 
@@ -182,7 +156,7 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
    * of the internal state will be used, depending on the underlying effective copyStrategy.
    * Does not change the value of the agent (this).
    */
-  final def sendProc(f: (T) => Unit): Unit = self ! Procedure(f)
+  final def sendProc(f: (T) => Unit): Unit = dispatcher ! Procedure(f)
 
   /**
    * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
@@ -207,7 +181,7 @@ sealed class Agent[T] private (initialValue: T) extends Transactor {
    * 
    * A closed agent can never be used again.
    */
-  def close = stop
+  def close = dispatcher.stop
 }
  
 /**
@@ -221,20 +195,44 @@ object Agent {
   /*
    * The internal messages for passing around requests.
    */
-  private case class Value[T](value: T)
-  private case class Function[T](fun: ((T) => T))
-  private case class Procedure[T](fun: ((T) => Unit))
+  private[akka] case class Value[T](value: T)
+  private[akka] case class Function[T](fun: ((T) => T))
+  private[akka] case class Procedure[T](fun: ((T) => Unit))
  
   /**
    * Creates a new Agent of type T with the initial value of value.
    */
   def apply[T](value: T): Agent[T] = new Agent(value)
+}
+
+/**
+ * Agent dispatcher Actor.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+final class AgentDispatcher[T] private[akka] (initialValue: T) extends Transactor {
+  import Agent._
+  import Actor._
+  log.debug("Starting up Agent [%s]", self.uuid)
+  
+  private lazy val value = Ref[T]()
+   
+  /**
+   * Periodically handles incoming messages.
+   */
+  def receive = {
+    case Value(v: T) =>
+      swap(v)
+    case Function(fun: (T => T)) =>
+      swap(fun(value.getOrWait))
+    case Procedure(proc: (T => Unit)) =>
+      proc(value.getOrElse(throw new AgentException("Could not read Agent's value; value is null")))
+  }
  
   /**
-   * Creates a new Agent of type T with the initial value of value and with the 
-   * specified copy function.
+   * Performs a CAS operation, atomically swapping the internal state with the value 
+   * provided as a by-name parameter.
    */
-  def apply[T](value: T, newCopyStrategy: (T) => T) = new Agent(value) {
-    override def copyStrategy(t: T) = newCopyStrategy(t)
-  }
+  private final def swap(newData: => T): Unit = value.swap(newData)
 }
+ 

@@ -14,7 +14,7 @@ import se.scalablesolutions.akka.util.Logging
 trait ThreadPoolBuilder {
   val name: String
 
-  private val NR_START_THREADS = 4
+  private val NR_START_THREADS = 16
   private val NR_MAX_THREADS = 128
   private val KEEP_ALIVE_TIME = 60000L // default is one minute
   private val MILLISECONDS = TimeUnit.MILLISECONDS

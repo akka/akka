@@ -9,16 +9,18 @@ import Actor._
 
 object ActorFireForgetRequestReplySpec {
   class ReplyActor extends Actor {
-    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
     def receive = {
-      case "Send" => reply("Reply")
-      case "SendImplicit" => self.replyTo.get.left.get ! "ReplyImplicit"
+      case "Send" => 
+        self.reply("Reply")
+      case "SendImplicit" => 
+        self.replyTo.get.left.get ! "ReplyImplicit"
     }
   }
 
   class SenderActor(replyActor: ActorRef) extends Actor {
-    dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
     def receive = {
       case "Init" => replyActor ! "Send"
@@ -42,12 +44,11 @@ object ActorFireForgetRequestReplySpec {
 
 class ActorFireForgetRequestReplySpec extends JUnitSuite {
   import ActorFireForgetRequestReplySpec._
-  
+
   @Test
   def shouldReplyToBangMessageUsingReply = {
     state.finished.reset
-    val replyActor = newActor[ReplyActor]
-    replyActor.start
+    val replyActor = newActor[ReplyActor].start
     val senderActor = newActor(() => new SenderActor(replyActor))
     senderActor.start
     senderActor ! "Init"
@@ -59,10 +60,8 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
   @Test
   def shouldReplyToBangMessageUsingImplicitSender = {
     state.finished.reset
-    val replyActor = newActor[ReplyActor]
-    replyActor.start
-    val senderActor = newActor(() => new SenderActor(replyActor))
-    senderActor.start
+    val replyActor = newActor[ReplyActor].start
+    val senderActor = newActor(() => new SenderActor(replyActor)).start
     senderActor ! "InitImplicit"
     try { state.finished.await(1L, TimeUnit.SECONDS) } 
     catch { case e: TimeoutException => fail("Never got the message") }

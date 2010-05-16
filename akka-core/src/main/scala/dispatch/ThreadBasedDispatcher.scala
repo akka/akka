@@ -14,11 +14,10 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorMessageInvoker}
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler: MessageInvoker) 
-  extends MessageDispatcher {
-  
-  def this(actor: Actor) = this(actor.getClass.getName, new ActorMessageInvoker(Actor.newActor(() => actor)))
-
+class ThreadBasedDispatcher(actor: ActorRef) extends MessageDispatcher {
+  private val name = actor.getClass.getName + ":" + actor.uuid
+  private val threadName = "thread-based:dispatcher:" + name 
+  private val messageHandler = new ActorMessageInvoker(actor)
   private val queue = new BlockingMessageQueue(name)
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
@@ -27,7 +26,7 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
 
   def start = if (!active) {
     active = true
-    selectorThread = new Thread {
+    selectorThread = new Thread(threadName) {
       override def run = {
         while (active) {
           try {

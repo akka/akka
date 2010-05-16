@@ -39,7 +39,7 @@ class BankAccountActor extends Transactor {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:" + accountNo)
-      reply(accountState.get(accountNo).get)
+      self.reply(accountState.get(accountNo).get)
 
     // debit amount: can fail
     case Debit(accountNo, amount, failer) =>
@@ -54,7 +54,7 @@ class BankAccountActor extends Transactor {
       accountState.put(accountNo, (m - amount))
       if (amount > m)
         failer !! "Failure"
-      reply(m - amount)
+      self.reply(m - amount)
 
     // many debits: can fail
     // demonstrates true rollback even if multiple puts have been done
@@ -72,7 +72,7 @@ class BankAccountActor extends Transactor {
         accountState.put(accountNo, (m - bal))
       }
       if (bal > m) failer !! "Failure"
-      reply(m - bal)
+      self.reply(m - bal)
 
     // credit amount
     case Credit(accountNo, amount) =>
@@ -85,13 +85,13 @@ class BankAccountActor extends Transactor {
         case None => 0
       }
       accountState.put(accountNo, (m + amount))
-      reply(m + amount)
+      self.reply(m + amount)
 
     case LogSize =>
-      reply(txnLog.length.asInstanceOf[AnyRef])
+      self.reply(txnLog.length.asInstanceOf[AnyRef])
 
     case Log(start, finish) =>
-      reply(txnLog.slice(start, finish))
+      self.reply(txnLog.slice(start, finish))
   }
 }
 

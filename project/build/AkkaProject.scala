@@ -70,7 +70,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
   // ------------------------------------------------------------
-  // create executable jar
+  // Run Akka microkernel using 'sbt run' + use for packaging executable JAR
   override def mainClass = Some("se.scalablesolutions.akka.kernel.Main")
 
   override def packageOptions =

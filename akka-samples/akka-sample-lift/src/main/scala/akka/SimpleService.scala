@@ -32,11 +32,11 @@ class SimpleService extends Transactor {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
-      reply(<h1>Tick: {counter + 1}</h1>)
+      self.reply(<h1>Tick: {counter + 1}</h1>)
     } else {
       storage.put(KEY, new Integer(0))
       hasStartedTicking = true
-      reply(<h1>Tick: 0</h1>)
+      self.reply(<h1>Tick: 0</h1>)
     }
   }
 }
@@ -65,11 +65,11 @@ class PersistentSimpleService extends Transactor {
       val bytes = storage.get(KEY.getBytes).get
       val counter = ByteBuffer.wrap(bytes).getInt
       storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
-      reply(<success>Tick:{counter + 1}</success>)
+      self.reply(<success>Tick:{counter + 1}</success>)
     } else {
       storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(0).array)
       hasStartedTicking = true
-      reply(<success>Tick: 0</success>)
+      self.reply(<success>Tick: 0</success>)
     }
   }
 }

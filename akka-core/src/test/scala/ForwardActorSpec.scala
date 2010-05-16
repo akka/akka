@@ -18,7 +18,7 @@ object ForwardActorSpec {
         ForwardState.sender = Some(self.replyTo.get.left.get)
         latch.countDown
       }
-      case "SendBangBang" => reply("SendBangBang")
+      case "SendBangBang" => self.reply("SendBangBang")
     }
   }
 

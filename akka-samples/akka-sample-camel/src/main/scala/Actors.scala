@@ -12,7 +12,7 @@ class RemoteActor1 extends RemoteActor("localhost", 7777) with Consumer {
   def endpointUri = "jetty:http://localhost:6644/remote1"
 
   protected def receive = {
-    case msg: Message => reply(Message("hello %s" format msg.body, Map("sender" -> "remote1")))
+    case msg: Message => self.reply(Message("hello %s" format msg.body, Map("sender" -> "remote1")))
   }
 }
 
@@ -23,7 +23,7 @@ class RemoteActor2 extends Actor with Consumer {
   def endpointUri = "jetty:http://localhost:6644/remote2"
 
   protected def receive = {
-    case msg: Message => reply(Message("hello %s" format msg.body, Map("sender" -> "remote2")))
+    case msg: Message => self.reply(Message("hello %s" format msg.body, Map("sender" -> "remote2")))
   }
 }
 
@@ -47,7 +47,7 @@ class Consumer1 extends Actor with Consumer with Logging {
 @consume("jetty:http://0.0.0.0:8877/camel/test1")
 class Consumer2 extends Actor {
   def receive = {
-    case msg: Message => reply("Hello %s" format msg.bodyAs(classOf[String]))
+    case msg: Message => self.reply("Hello %s" format msg.bodyAs(classOf[String]))
   }
 }
 
@@ -74,7 +74,7 @@ class Subscriber(name:String, uri: String) extends Actor with Consumer with Logg
 }
 
 class Publisher(name: String, uri: String) extends Actor with Producer {
-  id = name
+  self.id = name
   def endpointUri = uri
   override def oneway = true
   protected def receive = produce
@@ -86,7 +86,7 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
   protected def receive = {
     case msg: Message => {
       publisher ! msg.bodyAs(classOf[String])
-      reply("message published")
+      self.reply("message published")
     }
   }
 }

@@ -26,11 +26,10 @@ case class FailureOneWay(key: String, value: String, failer: ActorRef)
 
 case object GetNotifier
 
-class InMemStatefulActor(expectedInvocationCount: Int) extends Actor {
+class InMemStatefulActor(expectedInvocationCount: Int) extends Transactor {
   def this() = this(0)
-  timeout = 5000
-  makeTransactionRequired
-
+  self.timeout = 5000
+  
   val notifier = new CountDownLatch(expectedInvocationCount)
 
   private lazy val mapState = TransactionalState.newMap[String, String]
@@ -39,40 +38,40 @@ class InMemStatefulActor(expectedInvocationCount: Int) extends Actor {
 
   def receive = {
     case GetNotifier =>
-      reply(notifier)
+      self.reply(notifier)
     case GetMapState(key) =>
-      reply(mapState.get(key).get)
+      self.reply(mapState.get(key).get)
       notifier.countDown
     case GetVectorSize =>
-      reply(vectorState.length.asInstanceOf[AnyRef])
+      self.reply(vectorState.length.asInstanceOf[AnyRef])
       notifier.countDown
     case GetRefState =>
-      reply(refState.get.get)
+      self.reply(refState.get.get)
       notifier.countDown
     case SetMapState(key, msg) =>
       mapState.put(key, msg)
-      reply(msg)
+      self.reply(msg)
       notifier.countDown
     case SetVectorState(msg) =>
       vectorState.add(msg)
-      reply(msg)
+      self.reply(msg)
       notifier.countDown
     case SetRefState(msg) =>
       refState.swap(msg)
-      reply(msg)
+      self.reply(msg)
       notifier.countDown
     case Success(key, msg) =>
       mapState.put(key, msg)
       vectorState.add(msg)
       refState.swap(msg)
-      reply(msg)
+      self.reply(msg)
       notifier.countDown
     case Failure(key, msg, failer) =>
       mapState.put(key, msg)
       vectorState.add(msg)
       refState.swap(msg)
       failer !! "Failure"
-      reply(msg)
+      self.reply(msg)
       notifier.countDown
 
     case SetMapStateOneWay(key, msg) =>
@@ -99,8 +98,8 @@ class InMemStatefulActor(expectedInvocationCount: Int) extends Actor {
 }
 
 @serializable
-class InMemFailerActor extends Actor {
-  makeTransactionRequired
+class InMemFailerActor extends Transactor {
+  
   def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")

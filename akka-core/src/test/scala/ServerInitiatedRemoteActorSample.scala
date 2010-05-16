@@ -7,9 +7,10 @@ import se.scalablesolutions.akka.util.Logging
 import Actor._
 
 class HelloWorldActor extends Actor {
-  start
+  self.start
+
   def receive = {
-    case "Hello" => reply("World")
+    case "Hello" => self.reply("World")
   }
 }
 

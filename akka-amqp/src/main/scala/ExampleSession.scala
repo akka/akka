@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.Actor.Sender.Self
 
 import com.rabbitmq.client.ConnectionParameters
 

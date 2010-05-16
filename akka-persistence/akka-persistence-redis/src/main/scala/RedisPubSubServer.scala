@@ -16,19 +16,19 @@ class Subscriber(client: RedisClient) extends Actor {
   def receive = {
     case Subscribe(channels) =>
       client.subscribe(channels.head, channels.tail: _*)(callback)
-      reply(true)
+      self.reply(true)
 
     case Register(cb) =>
       callback = cb
-      reply(true)
+      self.reply(true)
 
     case Unsubscribe(channels) =>
       client.unsubscribe(channels.head, channels.tail: _*)
-      reply(true)
+      self.reply(true)
 
     case UnsubscribeAll =>
       client.unsubscribe
-      reply(true)
+      self.reply(true)
   }
 }
 
@@ -36,7 +36,7 @@ class Publisher(client: RedisClient) extends Actor {
   def receive = {
     case Publish(channel, message) =>
       client.publish(channel, message)
-      reply(true)
+      self.reply(true)
   }
 }
 

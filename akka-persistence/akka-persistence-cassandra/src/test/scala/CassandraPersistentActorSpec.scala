@@ -26,7 +26,7 @@ case class SuccessOneWay(key: String, value: String)
 case class FailureOneWay(key: String, value: String, failer: ActorRef)
 
 class CassandraPersistentActor extends Transactor {
-  timeout = 100000
+  self.timeout = 100000
 
   private lazy val mapState = CassandraStorage.newMap
   private lazy val vectorState = CassandraStorage.newVector
@@ -34,31 +34,31 @@ class CassandraPersistentActor extends Transactor {
 
   def receive = {
     case GetMapState(key) =>
-      reply(mapState.get(key.getBytes("UTF-8")).get)
+      self.reply(mapState.get(key.getBytes("UTF-8")).get)
     case GetVectorSize =>
-      reply(vectorState.length.asInstanceOf[AnyRef])
+      self.reply(vectorState.length.asInstanceOf[AnyRef])
     case GetRefState =>
-      reply(refState.get.get)
+      self.reply(refState.get.get)
     case SetMapState(key, msg) =>
       mapState.put(key.getBytes("UTF-8"), msg.getBytes("UTF-8"))
-      reply(msg)
+      self.reply(msg)
     case SetVectorState(msg) =>
       vectorState.add(msg.getBytes("UTF-8"))
-      reply(msg)
+      self.reply(msg)
     case SetRefState(msg) =>
       refState.swap(msg.getBytes("UTF-8"))
-      reply(msg)
+      self.reply(msg)
     case Success(key, msg) =>
       mapState.put(key.getBytes("UTF-8"), msg.getBytes("UTF-8"))
       vectorState.add(msg.getBytes("UTF-8"))
       refState.swap(msg.getBytes("UTF-8"))
-      reply(msg)
+      self.reply(msg)
     case Failure(key, msg, failer) =>
       mapState.put(key.getBytes("UTF-8"), msg.getBytes("UTF-8"))
       vectorState.add(msg.getBytes("UTF-8"))
       refState.swap(msg.getBytes("UTF-8"))
       failer !! "Failure"
-      reply(msg)
+      self.reply(msg)
   }
 }
 

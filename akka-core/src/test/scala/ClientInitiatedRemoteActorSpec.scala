@@ -16,7 +16,7 @@ object RemoteActorSpecActorUnidirectional {
   val latch = new CountDownLatch(1)  
 }
 class RemoteActorSpecActorUnidirectional extends Actor {
-  dispatcher = Dispatchers.newThreadBasedDispatcher(this)
+  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
   def receive = {
     case "OneWay" =>
@@ -27,7 +27,7 @@ class RemoteActorSpecActorUnidirectional extends Actor {
 class RemoteActorSpecActorBidirectional extends Actor {
   def receive = {
     case "Hello" =>
-      reply("World")
+      self.reply("World")
     case "Failure" =>
       throw new RuntimeException("expected")
   }
@@ -36,7 +36,7 @@ class RemoteActorSpecActorBidirectional extends Actor {
 class SendOneWayAndReplyReceiverActor extends Actor {
   def receive = {
     case "Hello" =>
-      reply("World")
+      self.reply("World")
   }
 }
 
@@ -64,15 +64,11 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   val PORT1 = 9990
   val PORT2 = 9991
   var s1: RemoteServer = null
-  var s2: RemoteServer = null
 
   @Before
   def init() {
     s1 = new RemoteServer()
-    s2 = new RemoteServer()
-
     s1.start(HOSTNAME, PORT1)
-    s2.start(HOSTNAME, PORT2)
     Thread.sleep(1000)
   }
 
@@ -83,7 +79,6 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   @After
   def finished() {
     s1.shutdown
-    s2.shutdown
     RemoteClient.shutdownAll
     Thread.sleep(1000)
   }
@@ -104,7 +99,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     actor.makeRemote(HOSTNAME, PORT1)
     actor.start
     val sender = newActor[SendOneWayAndReplySenderActor]
-    sender.setReplyToAddress(HOSTNAME, PORT2)
+    sender.homeAddress = (HOSTNAME, PORT2)
     sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendTo = actor
     sender.start
     sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendOff
