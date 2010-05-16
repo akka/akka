@@ -24,10 +24,10 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
   @BeanProperty var clusterName = ""
   @BeanProperty var broadcaster : Broadcaster = null
 
-  override def init : Unit = ()
-
-  /** Stops the actor */
-  def destroy : Unit = stop
+  /** 
+   * Stops the actor 
+   */
+  def destroy: Unit = self.stop
 
   /**
    * Relays all non ClusterCometBroadcast messages to the other AkkaClusterBroadcastFilters in the cluster
@@ -45,10 +45,10 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
 
   def receive = { 
     //Only handle messages intended for this particular instance
-    case b@ClusterCometBroadcast(c,_) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast b
+    case b @ ClusterCometBroadcast(c, _) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast b
     case _ =>
   }
 
   //Since this class is instantiated by Atmosphere, we need to make sure it's started
-  start
+  self.start
 }

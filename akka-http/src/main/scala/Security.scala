@@ -192,10 +192,10 @@ trait AuthenticationActor[C <: Credentials] extends Actor {
       verify(extractCredentials(req)) match {
         case Some(u: UserInfo) => {
           req.setSecurityContext(mkSecurityContext(req, u))
-          if (roles.exists(req.isUserInRole(_))) reply(OK)
-          else reply(Response.status(Response.Status.FORBIDDEN).build)
+          if (roles.exists(req.isUserInRole(_))) self.reply(OK)
+          else self.reply(Response.status(Response.Status.FORBIDDEN).build)
         }
-        case _ => reply(unauthorized)
+        case _ => self.reply(unauthorized)
       }
     }
   }
