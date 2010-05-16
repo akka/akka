@@ -35,7 +35,7 @@ class BankAccountActor extends Transactor {
   private lazy val accountState = MongoStorage.newMap
   private lazy val txnLog = MongoStorage.newVector
 
-  def receive: PartialFunction[Any, Unit] = {
+  def receive: Receive = {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:" + accountNo)

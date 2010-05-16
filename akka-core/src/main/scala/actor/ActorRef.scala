@@ -186,7 +186,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Holds the hot swapped partial function.
    */
-  protected[akka] var hotswap: Option[PartialFunction[Any, Unit]] = None // FIXME: _hotswap should be a stack
+  protected[akka] var hotswap: Option[Actor.Receive] = None // FIXME: _hotswap should be a stack
 
   /**
    * User overridable callback/setting.
