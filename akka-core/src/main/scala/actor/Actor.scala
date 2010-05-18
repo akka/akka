@@ -73,10 +73,11 @@ object Actor extends Logging {
   val TIMEOUT =            config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
-  /** A Receive is the type that defines actor message behavior
-   *  currently modeled as a PartialFunction[Any,Unit]
+  /**
+   * A Receive is a convenience type that defines actor message behavior currently modeled as
+   * a PartialFunction[Any, Unit].
    */
-  type Receive = PartialFunction[Any,Unit]
+  type Receive = PartialFunction[Any, Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
 
@@ -88,6 +89,10 @@ object Actor extends Logging {
    *   actor.start
    *   actor ! message
    *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf[MyActor].start
    * </pre>
    */
   def actorOf[T <: Actor: Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
@@ -104,6 +109,10 @@ object Actor extends Logging {
    *   actor.start
    *   actor ! message
    *   actor.stop
+   * </pre>
+   * You can create and start the actor in one statement like this:
+   * <pre>
+   *   val actor = actorOf(new MyActor).start
    * </pre>
    */
   def actorOf(factory: => Actor): ActorRef = new LocalActorRef(() => factory)
@@ -239,17 +248,57 @@ object Actor extends Logging {
  *         => SHUT DOWN (when 'exit' is invoked) - can't do anything
  * </pre>
  *
+ * <p/>
+ * The Actor's API is available in the 'self' member variable.
+ * 
+ * <p/>
+ * Here you find functions like:
+ *   - !, !!, !!! and forward
+ *   - link, unlink, startLink, spawnLink etc
+ *   - makeTransactional, makeRemote etc.
+ *   - start, stop
+ *   - etc.
+ *
+ * <p/>
+ * Here you also find fields like
+ *   - dispatcher = ...
+ *   - id = ...
+ *   - lifeCycle = ...
+ *   - faultHandler = ...
+ *   - trapExit = ...
+ *   - etc.
+ *  
+ * <p/>
+ * This means that to use them you have to prefix them with 'self', like this: <tt>self ! Message</tt>
+ *
+ * However, for convenience you can import these functions and fields like below, which will allow you do
+ * drop the 'self' prefix: 
+ * <pre>
+ * class MyActor extends Actor {
+ *   import self._
+ *   id = ...
+ *   dispatcher = ...
+ *   spawnLink[OtherActor]
+ *   ...
+ * }
+ * </pre>
+ * 
+ * <p/>
+ * The Actor trait also has a 'log' member field that can be used for logging within the Actor.
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends Logging {
-  //Type alias because traits cannot have companion objects...
+  /**
+   * Type alias because traits cannot have companion objects.
+   */
   type Receive = Actor.Receive
 
-   /** 
+   /* 
     * For internal use only, functions as the implicit sender references when invoking 
-    * one of the message send functions (!, !!, !!! and forward).
+    * one of the message send functions (!, !! and !!!).
     */
-  implicit val optionSelf: Option[ActorRef] = { 
+  implicit val optionSelf: Option[ActorRef] = {
     val ref = Actor.actorRefInCreation.value
     Actor.actorRefInCreation.value = None
     if (ref.isEmpty) throw new ActorInitializationException(
@@ -258,10 +307,15 @@ trait Actor extends Logging {
        "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." + 
        "\n\tEither use:" + 
        "\n\t\t'val actor = Actor.actorOf[MyActor]', or" + 
-       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
+       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'" + 
+       "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
     else ref
   }
 
+  /*
+   * For internal use only, functions as the implicit sender references when invoking
+   * the forward function.
+   */
   implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
 
   /**
@@ -274,13 +328,12 @@ trait Actor extends Logging {
    */
   val self: ActorRef = optionSelf.get
   self.id = getClass.getName
-  import self._
   
   /**
    * User overridable callback/setting.
    * <p/>
    * Partial function implementing the actor logic.
-   * To be implemented by subclassing actor.
+   * To be implemented by concrete actor class.
    * <p/>
    * Example code:
    * <pre>

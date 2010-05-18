@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Map => JMap}
+import java.lang.reflect.Field
 
 /**
  * The ActorRef object can be used to deserialize ActorRef instances from of its binary representation
@@ -593,7 +594,11 @@ sealed class LocalActorRef private[akka](
 
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
-  
+
+  // Needed to be able to null out the 'val self: ActorRef' member variables to make the Actor
+  // instance eligeble for garbage collection
+  private val actorSelfFields = findActorSelfField(actor.getClass)
+
   if (runActorInitialization) initializeActorInstance
   
   /**
@@ -720,6 +725,7 @@ sealed class LocalActorRef private[akka](
       remoteAddress.foreach(address => RemoteClient.unregister(
         address.getHostName, address.getPort, uuid))
       RemoteNode.unregister(this)
+      nullOutActorRefReferencesFor(actorInstance.get)
     } else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
 
@@ -1082,6 +1088,7 @@ sealed class LocalActorRef private[akka](
       Actor.log.debug("Restarting linked actors for actor [%s].", id)
       Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
       failedActor.preRestart(reason)
+      nullOutActorRefReferencesFor(failedActor)
       val freshActor = newActor
       freshActor.synchronized {
         freshActor.init
@@ -1137,7 +1144,30 @@ sealed class LocalActorRef private[akka](
 
   protected[akka] def linkedActorsAsList: List[ActorRef] = 
     linkedActors.values.toArray.toList.asInstanceOf[List[ActorRef]]
-  
+
+  private def nullOutActorRefReferencesFor(actor: Actor) = {
+    actorSelfFields._1.set(actor, null)
+    actorSelfFields._2.set(actor, null)
+    actorSelfFields._3.set(actor, null)
+  }
+
+  private def findActorSelfField(clazz: Class[_]): Tuple3[Field, Field, Field] = {
+    try {
+      val selfField =       clazz.getDeclaredField("self")
+      val optionSelfField = clazz.getDeclaredField("optionSelf")
+      val someSelfField =   clazz.getDeclaredField("someSelf")
+      selfField.setAccessible(true)
+      optionSelfField.setAccessible(true)
+      someSelfField.setAccessible(true)
+      (selfField, optionSelfField, someSelfField)
+    } catch {
+      case e: NoSuchFieldException =>
+        val parent = clazz.getSuperclass
+        if (parent != null) findActorSelfField(parent)
+        else throw new IllegalStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+    }
+  }
+
   private def initializeActorInstance = if (!isRunning) {
     dispatcher.register(this)
     dispatcher.start
