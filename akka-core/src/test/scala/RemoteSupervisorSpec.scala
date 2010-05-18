@@ -40,7 +40,6 @@ object Log {
 }
 
 @serializable class RemotePingPong2Actor extends Actor {
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
   def receive = {
     case BinaryString("Ping") =>
       Log.messageLog.put("ping")
@@ -55,7 +54,6 @@ object Log {
 }
 
 @serializable class RemotePingPong3Actor extends Actor {
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
   def receive = {
     case BinaryString("Ping") =>
       Log.messageLog.put("ping")
