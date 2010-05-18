@@ -9,7 +9,10 @@ import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, F
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.remote.RemoteServer
 import Actor._
+
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
+
+class SupervisorException private[akka](message: String) extends RuntimeException(message)
 
 /**
  * Factory object for creating supervisors declarative. It creates instances of the 'Supervisor' class.
@@ -31,9 +34,12 @@ import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
  *      Nil))
  * </pre>
  *
- * You can use the declaratively created Supervisor to link and unlink child children
- * dynamically using the 'link' and 'unlink' methods.
- * 
+ * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
+ * <pre>
+ * supervisor.link(child)
+ * supervisor.unlink(child)
+ * </pre>
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Supervisor {
@@ -47,12 +53,6 @@ object Supervisor {
  * Here is a sample on how to use the programmatic API (note that the supervisor is automatically started):
  * <pre>
  * val supervisor = SupervisorActor(AllForOneStrategy(maxNrOfRetries, timeRange), Array(classOf[Throwable]))
- * 
- * // link and unlink child actors dynamically
- * supervisor ! Link(child1) // starts the actor if not started yet, starts and links atomically
- * supervisor ! Unlink(child2)
- * supervisor ! UnlinkAndStop(child3)
- * </pre>
  *
  * Here is a sample on how to use the declarative API:
  * <pre>
@@ -66,15 +66,13 @@ object Supervisor {
  *        mySecondActor,
  *        LifeCycle(Permanent)) ::
  *      Nil))
- * 
- * // link and unlink child actors dynamically
- * supervisor ! Link(child1) // starts the actor if not started yet, starts and links atomically
- * supervisor ! Unlink(child2)
- * supervisor ! UnlinkAndStop(child3)
  * </pre>
- *
- * You can use the declaratively created Supervisor to link and unlink child children
- * dynamically using the 'link' and 'unlink' methods.
+ * 
+ * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
+ * <pre>
+ * supervisor.link(child)
+ * supervisor.unlink(child)
+ * </pre>
  * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -163,6 +161,7 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
 sealed class Supervisor private[akka] (
   handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
   extends Configurator {
+  import Supervisor._
   
   private val childActors = new ConcurrentHashMap[String, List[ActorRef]]
   private val childSupervisors = new CopyOnWriteArrayList[Supervisor] 
@@ -177,9 +176,9 @@ sealed class Supervisor private[akka] (
   
   def shutdown: Unit = supervisor.stop
 
-  def link(child: ActorRef) = supervisor ! Link(child)
+  def link(child: ActorRef) = supervisor.link(child)
 
-  def unlink(child: ActorRef) = supervisor ! Unlink(child)
+  def unlink(child: ActorRef) = supervisor.unlink(child)
 
   // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
   def getInstance[T](clazz: Class[T]): List[T] = childActors.get(clazz.getName).asInstanceOf[List[T]]
@@ -204,7 +203,7 @@ sealed class Supervisor private[akka] (
             }
             childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
-            supervisor ! Link(actorRef)
+            supervisor.link(actorRef)
             remoteAddress.foreach { address => RemoteServer
               .actorsFor(RemoteServer.Address(address.hostname, address.port))
               .actors.put(actorRef.id, actorRef)
@@ -212,7 +211,7 @@ sealed class Supervisor private[akka] (
 
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
-            supervisor ! Link(childSupervisor.supervisor)
+            supervisor.link(childSupervisor.supervisor)
             childSupervisors.add(childSupervisor)
         })
   }
@@ -225,11 +224,14 @@ sealed class Supervisor private[akka] (
  * Here is a sample on how to use it:
  * <pre>
  * val supervisor = Supervisor(AllForOneStrategy(maxNrOfRetries, timeRange), Array(classOf[Throwable]))
- * supervisor ! Link(child1) // starts the actor if not started yet, starts and links atomically
- * supervisor ! Unlink(child2)
- * supervisor ! UnlinkAndStop(child3)
  * </pre>
  *
+ * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
+ * <pre>
+ * supervisor.link(child)
+ * supervisor.unlink(child)
+ * </pre>
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class SupervisorActor private[akka] (
@@ -242,11 +244,8 @@ final class SupervisorActor private[akka] (
   override def shutdown: Unit = shutdownLinkedActors
 
   def receive = {
-    case Link(child)          => startLink(child)
-    case Unlink(child)        => unlink(child)
-    case UnlinkAndStop(child) => unlink(child); child.stop
-    case unknown              => throw new IllegalArgumentException(
-      "Supervisor can only respond to 'Link' and 'Unlink' messages. Unknown message [" + unknown + "]")
+    case unknown => throw new SupervisorException(
+      "SupervisorActor can not respond to messages. Unknown message [" + unknown + "]")
   }
 }
 

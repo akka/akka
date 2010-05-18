@@ -16,19 +16,23 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 object Log {
-  var messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
-  var oneWayLog: String = ""
+  val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
+  val oneWayLog = new LinkedBlockingQueue[String]
+
+  def clearMessageLogs {
+    messageLog.clear
+    oneWayLog.clear
+  }
 }
 
 @serializable class RemotePingPong1Actor extends Actor {
-//  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
   def receive = {
     case BinaryString("Ping") =>
       Log.messageLog.put("ping")
       self.reply("pong")
 
     case OneWay =>
-      Log.oneWayLog += "oneway"
+      Log.oneWayLog.put("oneway")
 
     case BinaryString("Die") =>
       throw new RuntimeException("DIE")
@@ -85,260 +89,365 @@ class RemoteSupervisorSpec extends JUnitSuite {
   var pingpong2: ActorRef = _
   var pingpong3: ActorRef = _
 
+  import Log._
+
   @Test def shouldStartServer = {
     Log.messageLog.clear
     val sup = getSingleActorAllForOneSupervisor
-    sup.start
 
     expect("pong") {
       (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+    }
+  }
+  @Test def shouldStartServerForNestedSupervisorHierarchy = {
+    clearMessageLogs
+    val sup = getNestedSupervisorsAllForOneConf
+    sup.start
+
+    expect("pong") {
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
   }
 
   @Test def shouldKillSingleActorOneForOne = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
-    sup.start
+
     intercept[RuntimeException] {
-      pingpong1 !! BinaryString("Die")
+      pingpong1 !! (BinaryString("Die"), 5000)
     }
+
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldCallKillCallSingleActorOneForOne = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
-    sup.start
+
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong1 !! BinaryString("Die")
+      pingpong1 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldKillSingleActorAllForOne = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getSingleActorAllForOneSupervisor
-    sup.start
+
     intercept[RuntimeException] {
-      pingpong1 !! BinaryString("Die")
+      pingpong1 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldCallKillCallSingleActorAllForOne = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getSingleActorAllForOneSupervisor
-    sup.start
 
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
-
     intercept[RuntimeException] {
-      pingpong1 !! BinaryString("Die")
+      pingpong1 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
-
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldKillMultipleActorsOneForOne1 = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
-    sup.start
+
     intercept[RuntimeException] {
-      pingpong1 !! BinaryString("Die")
+      pingpong1 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
-/*
+  /*
+  // Uncomment when the same test passes in SupervisorSpec - pending bug
   @Test def shouldKillMultipleActorsOneForOne2 = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
-    sup.start
+
     intercept[RuntimeException] {
-      pingpong3 !! BinaryString("Die")
+      pingpong3 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 */
-  def tesCallKillCallMultipleActorsOneForOne = {
-    Log.messageLog.clear
+  @Test def shouldKillCallMultipleActorsOneForOne = {
+    clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
-    sup.start
+
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! BinaryString("Die")
+      pingpong2 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
   @Test def shouldKillMultipleActorsAllForOne = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getMultipleActorsAllForOneConf
-    sup.start
+
     intercept[RuntimeException] {
-      pingpong2 !! BinaryString("Die")
+      pingpong2 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
-  def tesCallKillCallMultipleActorsAllForOne = {
-    Log.messageLog.clear
+  @Test def shouldCallKillCallMultipleActorsAllForOne = {
+    clearMessageLogs
     val sup = getMultipleActorsAllForOneConf
-    sup.start
+
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! BinaryString("Die")
+      pingpong2 !! (BinaryString("Die"), 5000)
     }
 
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      Log.messageLog.poll(5, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
+  /*
+  
+  @Test def shouldOneWayKillSingleActorOneForOne = {
+    clearMessageLogs
+    val sup = getSingleActorOneForOneSupervisor
+
+    pingpong1 ! BinaryString("Die")
+
+    expect("DIE") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+  }
+
+  @Test def shouldOneWayCallKillCallSingleActorOneForOne = {
+    clearMessageLogs
+    val sup = getSingleActorOneForOneSupervisor
+
+    pingpong1 ! OneWay
+
+    expect("oneway") {
+      oneWayLog.poll(5, TimeUnit.SECONDS)
+    }
+    pingpong1 ! BinaryString("Die")
+
+    expect("DIE") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    pingpong1 ! OneWay
+
+    expect("oneway") {
+      oneWayLog.poll(5, TimeUnit.SECONDS)
+    }
+  }
+
+  @Test def shouldRestartKilledActorsForNestedSupervisorHierarchy = {
+    clearMessageLogs
+    val sup = getNestedSupervisorsAllForOneConf
+
+
+    expect("pong") {
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+    }
+
+    expect("ping") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    intercept[RuntimeException] {
+      pingpong2 !! (BinaryString("Die"), 5000)
+    }
+
+    expect("DIE") {
+      messageLog.poll(5 , TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    expect("DIE") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    expect("pong") {
+      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+    }
+
+    expect("pong") {
+      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+    }
+
+    expect("ping") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+    expect("ping") {
+      messageLog.poll(5, TimeUnit.SECONDS)
+    }
+  }
+   */
   // =============================================
   // Creat some supervisors with different configurations
 

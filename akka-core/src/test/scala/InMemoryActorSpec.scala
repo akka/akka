@@ -7,24 +7,27 @@ import org.junit.Test
 import se.scalablesolutions.akka.stm.{TransactionalState, TransactionalMap, TransactionalRef, TransactionalVector}
 import Actor._
 
-case class GetMapState(key: String)
-case object GetVectorState
-case object GetVectorSize
-case object GetRefState
+object InMemoryActorSpec {
+  case class GetMapState(key: String)
+  case object GetVectorState
+  case object GetVectorSize
+  case object GetRefState
 
-case class SetMapState(key: String, value: String)
-case class SetVectorState(key: String)
-case class SetRefState(key: String)
-case class Success(key: String, value: String)
-case class Failure(key: String, value: String, failer: ActorRef)
+  case class SetMapState(key: String, value: String)
+  case class SetVectorState(key: String)
+  case class SetRefState(key: String)
+  case class Success(key: String, value: String)
+  case class Failure(key: String, value: String, failer: ActorRef)
 
-case class SetMapStateOneWay(key: String, value: String)
-case class SetVectorStateOneWay(key: String)
-case class SetRefStateOneWay(key: String)
-case class SuccessOneWay(key: String, value: String)
-case class FailureOneWay(key: String, value: String, failer: ActorRef)
+  case class SetMapStateOneWay(key: String, value: String)
+  case class SetVectorStateOneWay(key: String)
+  case class SetRefStateOneWay(key: String)
+  case class SuccessOneWay(key: String, value: String)
+  case class FailureOneWay(key: String, value: String, failer: ActorRef)
 
-case object GetNotifier
+  case object GetNotifier
+}
+import InMemoryActorSpec._
 
 class InMemStatefulActor(expectedInvocationCount: Int) extends Transactor {
   def this() = this(0)

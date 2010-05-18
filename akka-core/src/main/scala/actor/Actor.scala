@@ -6,24 +6,8 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.stm.Transaction.Global._
-import se.scalablesolutions.akka.stm.TransactionManagement._
-import se.scalablesolutions.akka.stm.TransactionManagement
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol, ActorRefProtocol}
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteProtocolBuilder, RemoteRequestProtocolIdFactory}
-import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.util.{HashCode, Logging, UUID}
-
-import org.multiverse.api.ThreadLocalTransaction._
-import org.multiverse.commitbarriers.CountDownCommitBarrier
-
-import jsr166x.{Deque, ConcurrentLinkedDeque}
-
-import java.net.InetSocketAddress
-import java.util.concurrent.locks.{Lock, ReentrantLock}
-import java.util.{HashSet => JHashSet}
+import se.scalablesolutions.akka.util.Logging
 
 /*
 // FIXME add support for ActorWithNestedReceive
@@ -365,6 +349,7 @@ trait Actor extends Logging {
     case HotSwap(code) =>        self.hotswap = code
     case Restart(reason) =>      self.restart(reason)
     case Exit(dead, reason) =>   self.handleTrapExit(dead, reason)
+    case Link(child) =>          self.link(child)
     case Unlink(child) =>        self.unlink(child)
     case UnlinkAndStop(child) => self.unlink(child); child.stop
     case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")

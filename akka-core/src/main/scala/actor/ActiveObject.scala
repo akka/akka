@@ -317,7 +317,7 @@ object ActiveObject {
       throw new IllegalStateException("Can't link when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
       throw new IllegalStateException("Can't link when the supervised is not an active object"))
-    supervisorActor !! Link(supervisedActor)
+    supervisorActor.link(supervisedActor)
   }
 
   /**
@@ -334,7 +334,7 @@ object ActiveObject {
       throw new IllegalStateException("Can't link when the supervised is not an active object"))
     supervisorActor.trapExit = trapExceptions.toList
     supervisorActor.faultHandler = Some(handler)
-    supervisorActor !! Link(supervisedActor)
+    supervisorActor.link(supervisedActor)
   }
 
   /**
@@ -347,7 +347,7 @@ object ActiveObject {
       throw new IllegalStateException("Can't unlink when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
       throw new IllegalStateException("Can't unlink when the supervised is not an active object"))
-    supervisorActor !! Unlink(supervisedActor)
+    supervisorActor.unlink(supervisedActor)
   }
 
   /**
