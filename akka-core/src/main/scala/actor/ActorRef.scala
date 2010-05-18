@@ -185,7 +185,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Holds the hot swapped partial function.
    */
-  protected[akka] var hotswap: Option[Actor.Receive] = None // FIXME: _hotswap should be a stack
+  protected[akka] var hotswap: Option[PartialFunction[Any, Unit]] = None // FIXME: _hotswap should be a stack
 
   /**
    * User overridable callback/setting.
@@ -1074,7 +1074,7 @@ sealed class LocalActorRef private[akka](
   }
 
   protected[akka] def restart(reason: Throwable): Unit = {
-    _isBeingRestarted = true    
+    //_isBeingRestarted = true
     Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
     restartLinkedActors(reason)
     val failedActor = actorInstance.get
@@ -1084,7 +1084,6 @@ sealed class LocalActorRef private[akka](
       failedActor.preRestart(reason)
       val freshActor = newActor
       freshActor.synchronized {
-        initializeActorInstance
         freshActor.init
         freshActor.initTransactionalState
         actorInstance.set(freshActor)
@@ -1139,7 +1138,7 @@ sealed class LocalActorRef private[akka](
   protected[akka] def linkedActorsAsList: List[ActorRef] = 
     linkedActors.values.toArray.toList.asInstanceOf[List[ActorRef]]
   
-  private def initializeActorInstance = if (!isRunning || isBeingRestarted) {
+  private def initializeActorInstance = if (!isRunning) {
     dispatcher.register(this)
     dispatcher.start
     actor.init // run actor init and initTransactionalState callbacks

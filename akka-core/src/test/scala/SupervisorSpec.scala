@@ -11,7 +11,7 @@ import Actor._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import java.util.concurrent.{ConcurrentLinkedQueue, TimeUnit, BlockingQueue, LinkedBlockingQueue}
+import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 
 object SupervisorSpec {
   var messageLog = new LinkedBlockingQueue[String]
@@ -24,8 +24,7 @@ object SupervisorSpec {
   
   class PingPong1Actor extends Actor {
     import self._
-    dispatcher = Dispatchers.newThreadBasedDispatcher(self)
-    timeout = 1000
+    //dispatcher = Dispatchers.newThreadBasedDispatcher(self)
     def receive = {
       case Ping =>
         messageLog.put("ping")
@@ -35,40 +34,44 @@ object SupervisorSpec {
         oneWayLog.put("oneway")
 
       case Die =>
+        println("******************** GOT DIE 1")
         throw new RuntimeException("DIE")
     }
     override def postRestart(reason: Throwable) {
+      println("******************** restart 1")
       messageLog.put(reason.getMessage)
     }
   }
 
   class PingPong2Actor extends Actor {
     import self._
-    timeout = 1000
     def receive = {
       case Ping =>
         messageLog.put("ping")
         reply("pong")
       case Die =>
+        println("******************** GOT DIE 2")
         throw new RuntimeException("DIE")
     }
     override def postRestart(reason: Throwable) {
+      println("******************** restart 2")
       messageLog.put(reason.getMessage)
     }
   }
 
   class PingPong3Actor extends Actor {
     import self._
-    timeout = 1000
     def receive = {
       case Ping =>
         messageLog.put("ping")
         reply("pong")
       case Die =>
+        println("******************** GOT DIE 3")
         throw new RuntimeException("DIE")
     }
 
     override def postRestart(reason: Throwable) {
+      println("******************** restart 3")
       messageLog.put(reason.getMessage)
     }
   }
@@ -107,7 +110,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldKillSingleActorOneForOne = {
     clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
-    sup.start
+    
     intercept[RuntimeException] {
       pingpong1 !! (Die, 5000)
     }
@@ -120,7 +123,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorOneForOne = {
     clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
-    sup.start
+    
     expect("pong") {
       (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
@@ -147,7 +150,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldKillSingleActorAllForOne = {
     clearMessageLogs
     val sup = getSingleActorAllForOneSupervisor
-    sup.start
+    
     intercept[RuntimeException] {
       pingpong1 !! (Die, 5000)
     }
@@ -160,7 +163,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldCallKillCallSingleActorAllForOne = {
     clearMessageLogs
     val sup = getSingleActorAllForOneSupervisor
-    sup.start
+    
     expect("pong") {
       (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
@@ -187,7 +190,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldKillMultipleActorsOneForOne1 = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
-    sup.start
+    
     intercept[RuntimeException] {
       pingpong1 !! (Die, 5000)
     }
@@ -200,7 +203,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldKillMultipleActorsOneForOne2 = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
-    sup.start
+    
     intercept[RuntimeException] {
       pingpong3 !! (Die, 5000)
     }
@@ -213,7 +216,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldKillCallMultipleActorsOneForOne = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
-    sup.start
+    
     expect("pong") {
       (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
@@ -268,7 +271,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldKillMultipleActorsAllForOne = {
     clearMessageLogs
     val sup = getMultipleActorsAllForOneConf
-    sup.start
+    
     intercept[RuntimeException] {
       pingpong2 !! (Die, 5000)
     }
@@ -287,7 +290,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldCallKillCallMultipleActorsAllForOne = {
     clearMessageLogs
     val sup = getMultipleActorsAllForOneConf
-    sup.start
+    
     expect("pong") {
       (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
@@ -348,7 +351,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldOneWayKillSingleActorOneForOne = {
     clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
-    sup.start
+    
     pingpong1 ! Die
 
     expect("DIE") {
@@ -359,7 +362,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldOneWayCallKillCallSingleActorOneForOne = {
     clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
-    sup.start
+    
     pingpong1 ! OneWay
 
     expect("oneway") {
@@ -380,7 +383,7 @@ class SupervisorSpec extends JUnitSuite {
   @Test def shouldRestartKilledActorsForNestedSupervisorHierarchy = {
     clearMessageLogs
     val sup = getNestedSupervisorsAllForOneConf
-    sup.start
+    
 
     expect("pong") {
       (pingpong1 !! (Ping, 5000)).getOrElse("nil")
@@ -497,7 +500,7 @@ class SupervisorSpec extends JUnitSuite {
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
-          pingpong3,
+          pingpong1,
           LifeCycle(Permanent))
         ::
         Supervise(
@@ -505,7 +508,7 @@ class SupervisorSpec extends JUnitSuite {
           LifeCycle(Permanent))
         ::
         Supervise(
-          pingpong1,
+          pingpong3,
           LifeCycle(Permanent))
         :: Nil))
   }
