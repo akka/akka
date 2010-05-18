@@ -30,15 +30,15 @@ import java.util.{HashSet => JHashSet}
 trait ActorWithNestedReceive extends Actor {
   import Actor.actor
   private var nestedReactsProcessors: List[ActorRef] = Nil
-  private val processNestedReacts: PartialFunction[Any, Unit] = {
+  private val processNestedReacts: Receive = {
     case message if !nestedReactsProcessors.isEmpty =>
       val processors = nestedReactsProcessors.reverse
       processors.head forward message
       nestedReactsProcessors = processors.tail.reverse
   }
  
-  protected def react: PartialFunction[Any, Unit]
-  protected def reactAgain(pf: PartialFunction[Any, Unit]) = nestedReactsProcessors ::= actor(pf)
+  protected def react: Receive
+  protected def reactAgain(pf: Receive) = nestedReactsProcessors ::= actor(pf)
   protected def receive = processNestedReacts orElse react
 }
 */
@@ -67,7 +67,7 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
 
 // Life-cycle messages for the Actors
 @serializable sealed trait LifeCycleMessage
-case class HotSwap(code: Option[PartialFunction[Any, Unit]]) extends LifeCycleMessage
+case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
 case class Restart(reason: Throwable) extends LifeCycleMessage
 case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage
 case class Link(child: ActorRef) extends LifeCycleMessage
@@ -88,6 +88,11 @@ class ActorInitializationException private[akka](message: String) extends Runtim
 object Actor extends Logging {
   val TIMEOUT =            config.getInt("akka.actor.timeout", 5000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
+
+  /** A Receive is the type that defines actor message behavior
+   *  currently modeled as a PartialFunction[Any,Unit]
+   */
+  type Receive = PartialFunction[Any,Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
 
@@ -135,10 +140,10 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def actor(body: PartialFunction[Any, Unit]): ActorRef =
+  def actor(body: Receive): ActorRef =
     actorOf(new Actor() {
       self.lifeCycle = Some(LifeCycle(Permanent))
-      def receive: PartialFunction[Any, Unit] = body
+      def receive: Receive = body
     }).start
 
   /**
@@ -157,10 +162,10 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def transactor(body: PartialFunction[Any, Unit]): ActorRef =
+  def transactor(body: Receive): ActorRef =
     actorOf(new Transactor() {
       self.lifeCycle = Some(LifeCycle(Permanent))
-      def receive: PartialFunction[Any, Unit] = body
+      def receive: Receive = body
     }).start
 
   /**
@@ -177,7 +182,7 @@ object Actor extends Logging {
    * }
    * </pre>
    */
-  def temporaryActor(body: PartialFunction[Any, Unit]): ActorRef =
+  def temporaryActor(body: Receive): ActorRef =
     actorOf(new Actor() {
       self.lifeCycle = Some(LifeCycle(Temporary))
       def receive = body
@@ -202,7 +207,7 @@ object Actor extends Logging {
    */
   def init[A](body: => Unit) = {
     def handler[A](body: => Unit) = new {
-      def receive(handler: PartialFunction[Any, Unit]) =
+      def receive(handler: Receive) =
         actorOf(new Actor() {
           self.lifeCycle = Some(LifeCycle(Permanent))
           body
@@ -253,6 +258,8 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends Logging {
+  //Type alias because traits cannot have companion objects...
+  type Receive = Actor.Receive
 
    /** 
     * For internal use only, functions as the implicit sender references when invoking 
@@ -306,7 +313,7 @@ trait Actor extends Logging {
    * }
    * </pre>
    */
-  protected def receive: PartialFunction[Any, Unit]
+  protected def receive: Receive
 
   /**
    * User overridable callback/setting.
@@ -352,9 +359,9 @@ trait Actor extends Logging {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] def base: PartialFunction[Any, Unit] = lifeCycles orElse (self.hotswap getOrElse receive)
+  private[akka] def base: Receive = lifeCycles orElse (self.hotswap getOrElse receive)
 
-  private val lifeCycles: PartialFunction[Any, Unit] = {
+  private val lifeCycles: Receive = {
     case HotSwap(code) =>        self.hotswap = code
     case Restart(reason) =>      self.restart(reason)
     case Exit(dead, reason) =>   self.handleTrapExit(dead, reason)

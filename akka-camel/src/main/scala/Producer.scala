@@ -124,7 +124,7 @@ trait Producer { this: Actor =>
    * the protected produce methods depending on the return values of
    * <code>oneway</code> and <code>async</code>.
    */
-  protected def produce: PartialFunction[Any, Unit] = {
+  protected def produce: Receive = {
     case msg => {
       if      ( oneway && !async)    produceOnewaySync(msg)
       else if ( oneway &&  async)    produceOnewayAsync(msg)

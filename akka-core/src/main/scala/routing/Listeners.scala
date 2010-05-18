@@ -21,7 +21,7 @@ trait Listeners { self : Actor =>
   import se.scalablesolutions.akka.actor.Agent
   private lazy val listeners = Agent(Set[ActorRef]())
 
-  protected def listenerManagement : PartialFunction[Any,Unit] = {
+  protected def listenerManagement : Receive = {
     case Listen(l) => listeners( _ + l)
     case Deafen(l) => listeners( _ - l )
     case WithListeners(f) => listeners foreach f
