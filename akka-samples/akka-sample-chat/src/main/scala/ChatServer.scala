@@ -127,7 +127,7 @@ trait SessionManagement { this: Actor =>
   val storage: ActorRef // needs someone to provide the ChatStorage
   val sessions = new HashMap[String, ActorRef]
   
-  protected def sessionManagement: PartialFunction[Any, Unit] = {
+  protected def sessionManagement: Receive = {
     case Login(username) => 
       log.info("User [%s] has logged in", username)
       val session = actorOf(new Session(username, storage))
@@ -153,7 +153,7 @@ trait SessionManagement { this: Actor =>
 trait ChatManagement { this: Actor =>
   val sessions: HashMap[String, ActorRef] // needs someone to provide the Session map
   
-  protected def chatManagement: PartialFunction[Any, Unit] = {
+  protected def chatManagement: Receive = {
     case msg @ ChatMessage(from, _) => sessions(from) ! msg
     case msg @ GetChatLog(from) =>     sessions(from) forward msg
   }
@@ -181,8 +181,8 @@ trait ChatServer extends Actor {
   def receive = sessionManagement orElse chatManagement
   
   // abstract methods to be defined somewhere else
-  protected def chatManagement: PartialFunction[Any, Unit]
-  protected def sessionManagement: PartialFunction[Any, Unit]   
+  protected def chatManagement: Receive
+  protected def sessionManagement: Receive   
   protected def shutdownSessions: Unit
 
   override def shutdown = { 

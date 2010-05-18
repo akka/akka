@@ -187,7 +187,7 @@ trait AuthenticationActor[C <: Credentials] extends Actor {
    * and a se3curity context is created for the ContainerRequest
    * this should ensure good integration with current Jersey security
    */
-  protected val authenticate: PartialFunction[Any, Unit] = {
+  protected val authenticate: Receive = {
     case Authenticate(req, roles) => {
       verify(extractCredentials(req)) match {
         case Some(u: UserInfo) => {
@@ -254,7 +254,7 @@ trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] w
   val nonceMap = mkNonceMap
 
   //Discards old nonces
-  protected val invalidateNonces: PartialFunction[Any, Unit] = {
+  protected val invalidateNonces: Receive = {
     case InvalidateNonces =>
       val ts = System.currentTimeMillis
       nonceMap.filter(tuple => (ts - tuple._2) < nonceValidityPeriod)

@@ -15,7 +15,7 @@ trait Dispatcher { this: Actor =>
 
   protected def routes: PartialFunction[Any, ActorRef]
 
-  protected def dispatch: PartialFunction[Any, Unit] = {
+  protected def dispatch: Receive = {
     case a if routes.isDefinedAt(a) =>
       if (self.replyTo.isDefined) routes(a).forward(transform(a))(Some(self))
       else routes(a).!(transform(a))(None)
