@@ -11,8 +11,7 @@ import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.dispatch.Dispatchers
 import se.scalablesolutions.akka.remote.RemoteServer
 import Actor._
-
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 
 /**
  * Factory object for creating supervisors declarative. It creates instances of the 'Supervisor' class.
@@ -132,7 +131,6 @@ object SupervisorFactory {
     }
 }
 
-
 /**
  * For internal use only. 
  * 
@@ -146,7 +144,7 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
   def newInstanceFor(config: SupervisorConfig): Supervisor = {
     val (handler, trapExits) = SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config)
     val supervisor = new Supervisor(handler, trapExits)
-    supervisor.configure(config, this)
+    supervisor.configure(config)
     supervisor.start
     supervisor
   }
@@ -168,8 +166,9 @@ sealed class Supervisor private[akka] (
   handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
   extends Configurator {
   
-  private val children = new ConcurrentHashMap[String, List[ActorRef]]
-  private val supervisor = SupervisorActor(handler, trapExceptions) 
+  private val childActors = new ConcurrentHashMap[String, List[ActorRef]]
+  private val childSupervisors = new CopyOnWriteArrayList[Supervisor] 
+  private[akka] val supervisor = SupervisorActor(handler, trapExceptions)
    
   def uuid = supervisor.uuid
    
@@ -184,42 +183,39 @@ sealed class Supervisor private[akka] (
 
   def unlink(child: ActorRef) = supervisor ! Unlink(child)
 
-  def getInstance[T](clazz: Class[T]): List[T] = children.get(clazz.getName).asInstanceOf[List[T]]
+  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
+  def getInstance[T](clazz: Class[T]): List[T] = childActors.get(clazz.getName).asInstanceOf[List[T]]
 
-  def getComponentInterfaces: List[Class[_]] = 
-    children.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
+  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
+  def getComponentInterfaces: List[Class[_]] =
+    childActors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
   
-  def isDefined(clazz: Class[_]): Boolean = children.containsKey(clazz.getName)
+  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
+  def isDefined(clazz: Class[_]): Boolean = childActors.containsKey(clazz.getName)
 
-  def configure(config: SupervisorConfig, factory: SupervisorFactory) = config match {
+  def configure(config: SupervisorConfig): Unit = config match {
     case SupervisorConfig(_, servers) =>
       servers.map(server =>
         server match {
           case Supervise(actorRef, lifeCycle, remoteAddress) =>
             val className = actorRef.actor.getClass.getName
             val currentActors = { 
-              val list = children.get(className)
+              val list = childActors.get(className)
               if (list eq null) List[ActorRef]()
               else list
             }
-            children.put(className, actorRef :: currentActors)
+            childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
             supervisor ! Link(actorRef)
-            remoteAddress.foreach(address => RemoteServer.actorsFor(
-              RemoteServer.Address(address.hostname, address.port))
-                .actors.put(actorRef.id, actorRef))
+            remoteAddress.foreach { address => RemoteServer
+              .actorsFor(RemoteServer.Address(address.hostname, address.port))
+              .actors.put(actorRef.id, actorRef)
+            }
 
-           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
-             val childSupervisor = SupervisorActor(supervisorConfig)
-             childSupervisor.lifeCycle = Some(LifeCycle(Permanent))
-             val className = childSupervisor.uuid
-             val currentSupervisors = { 
-               val list = children.get(className)
-               if (list eq null) List[ActorRef]()
-               else list
-             }
-             children.put(className, childSupervisor :: currentSupervisors)
-             supervisor ! Link(childSupervisor)
+          case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
+            val childSupervisor = Supervisor(supervisorConfig)
+            supervisor ! Link(childSupervisor.supervisor)
+            childSupervisors.add(childSupervisor)
         })
   }
 }
@@ -240,18 +236,18 @@ sealed class Supervisor private[akka] (
  */
 final class SupervisorActor private[akka] (
   handler: FaultHandlingStrategy, 
-  trapExceptions: List[Class[_ <: Throwable]])
-  extends Actor {
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self) 
-  self.trapExit = trapExceptions
-  self.faultHandler = Some(handler)
+  trapExceptions: List[Class[_ <: Throwable]]) extends Actor {
+  import self._
+//  dispatcher = Dispatchers.newThreadBasedDispatcher(self) 
+  trapExit = trapExceptions
+  faultHandler = Some(handler)
 
-  override def shutdown: Unit = self.shutdownLinkedActors
+  override def shutdown: Unit = shutdownLinkedActors
 
   def receive = {
-    case Link(child)          => self.startLink(child)
-    case Unlink(child)        => self.unlink(child)
-    case UnlinkAndStop(child) => self.unlink(child); child.stop
+    case Link(child)          => startLink(child)
+    case Unlink(child)        => unlink(child)
+    case UnlinkAndStop(child) => unlink(child); child.stop
     case unknown              => throw new IllegalArgumentException(
       "Supervisor can only respond to 'Link' and 'Unlink' messages. Unknown message [" + unknown + "]")
   }

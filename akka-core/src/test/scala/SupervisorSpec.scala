@@ -23,11 +23,13 @@ object SupervisorSpec {
   }
   
   class PingPong1Actor extends Actor {
-    self.timeout = 1000
+    import self._
+    dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+    timeout = 1000
     def receive = {
       case Ping =>
         messageLog.put("ping")
-        self.reply("pong")
+        reply("pong")
 
       case OneWay =>
         oneWayLog.put("oneway")
@@ -41,11 +43,12 @@ object SupervisorSpec {
   }
 
   class PingPong2Actor extends Actor {
-    self.timeout = 1000
+    import self._
+    timeout = 1000
     def receive = {
       case Ping =>
         messageLog.put("ping")
-        self.reply("pong")
+        reply("pong")
       case Die =>
         throw new RuntimeException("DIE")
     }
@@ -55,11 +58,12 @@ object SupervisorSpec {
   }
 
   class PingPong3Actor extends Actor {
-    self.timeout = 1000
+    import self._
+    timeout = 1000
     def receive = {
       case Ping =>
         messageLog.put("ping")
-        self.reply("pong")
+        reply("pong")
       case Die =>
         throw new RuntimeException("DIE")
     }
@@ -86,7 +90,7 @@ class SupervisorSpec extends JUnitSuite {
     sup.start
 
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
   }
 
@@ -96,7 +100,7 @@ class SupervisorSpec extends JUnitSuite {
     sup.start
 
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
   }
 
@@ -105,11 +109,11 @@ class SupervisorSpec extends JUnitSuite {
     val sup = getSingleActorOneForOneSupervisor
     sup.start
     intercept[RuntimeException] {
-      pingpong1 !! (Die, 100)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -118,25 +122,25 @@ class SupervisorSpec extends JUnitSuite {
     val sup = getSingleActorOneForOneSupervisor
     sup.start
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong1 !! (Die, 100)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -145,11 +149,11 @@ class SupervisorSpec extends JUnitSuite {
     val sup = getSingleActorAllForOneSupervisor
     sup.start
     intercept[RuntimeException] {
-      pingpong1 !! (Die, 100)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -158,25 +162,25 @@ class SupervisorSpec extends JUnitSuite {
     val sup = getSingleActorAllForOneSupervisor
     sup.start
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong1 !! (Die, 100)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -185,79 +189,79 @@ class SupervisorSpec extends JUnitSuite {
     val sup = getMultipleActorsOneForOneConf
     sup.start
     intercept[RuntimeException] {
-      pingpong1 !! (Die, 100)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-/*
+
   @Test def shouldKillMultipleActorsOneForOne2 = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
     sup.start
     intercept[RuntimeException] {
-      pingpong3 !! (Die, 100)
+      pingpong3 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-*/
+
   @Test def shouldKillCallMultipleActorsOneForOne = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
     sup.start
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (Ping, 100)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (Ping, 100)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! (Die, 100)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (Ping, 100)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (Ping, 100)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -266,17 +270,17 @@ class SupervisorSpec extends JUnitSuite {
     val sup = getMultipleActorsAllForOneConf
     sup.start
     intercept[RuntimeException] {
-      pingpong2 !! (Die, 100)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -285,59 +289,59 @@ class SupervisorSpec extends JUnitSuite {
     val sup = getMultipleActorsAllForOneConf
     sup.start
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (Ping, 100)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (Ping, 100)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! (Die, 100)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (Ping, 100)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (Ping, 100)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -348,7 +352,7 @@ class SupervisorSpec extends JUnitSuite {
     pingpong1 ! Die
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
@@ -359,83 +363,82 @@ class SupervisorSpec extends JUnitSuite {
     pingpong1 ! OneWay
 
     expect("oneway") {
-      oneWayLog.poll(1, TimeUnit.SECONDS)
+      oneWayLog.poll(5, TimeUnit.SECONDS)
     }
     pingpong1 ! Die
 
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     pingpong1 ! OneWay
     
     expect("oneway") {
-      oneWayLog.poll(1, TimeUnit.SECONDS)
+      oneWayLog.poll(5, TimeUnit.SECONDS)
     }
   }
 
-/*
   @Test def shouldRestartKilledActorsForNestedSupervisorHierarchy = {
     clearMessageLogs
     val sup = getNestedSupervisorsAllForOneConf
     sup.start
 
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (Ping, 100)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (Ping, 100)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! (Die, 100)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("DIE") {
-      messageLog.poll(1 , TimeUnit.SECONDS)
+      messageLog.poll(5 , TimeUnit.SECONDS)
     }
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("DIE") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (Ping, 100)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (Ping, 100)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (Ping, 100)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("ping") {
-      messageLog.poll(1, TimeUnit.SECONDS)
+      messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-*/
+
   // =============================================
   // Create some supervisors with different configurations
 
@@ -444,7 +447,7 @@ class SupervisorSpec extends JUnitSuite {
 
     Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
@@ -456,7 +459,7 @@ class SupervisorSpec extends JUnitSuite {
 
     Supervisor(
       SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
@@ -470,7 +473,7 @@ class SupervisorSpec extends JUnitSuite {
 
     Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
@@ -492,9 +495,9 @@ class SupervisorSpec extends JUnitSuite {
 
     Supervisor(
       SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
-          pingpong1,
+          pingpong3,
           LifeCycle(Permanent))
         ::
         Supervise(
@@ -502,7 +505,7 @@ class SupervisorSpec extends JUnitSuite {
           LifeCycle(Permanent))
         ::
         Supervise(
-          pingpong3,
+          pingpong1,
           LifeCycle(Permanent))
         :: Nil))
   }
@@ -514,13 +517,13 @@ class SupervisorSpec extends JUnitSuite {
 
     Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
         ::
         SupervisorConfig(
-          RestartStrategy(AllForOne, 3, 100, Nil),
+          RestartStrategy(AllForOne, 3, 5000, Nil),
           Supervise(
             pingpong2,
             LifeCycle(Permanent))

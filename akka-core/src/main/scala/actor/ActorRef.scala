@@ -101,9 +101,8 @@ trait ActorRef extends TransactionManagement {
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile protected[akka] var _uuid = UUID.newUuid.toString
   @volatile protected[this] var _isRunning = false
-  @volatile protected[this] var _isSuspended = true
   @volatile protected[this] var _isShutDown = false
-  @volatile protected[akka] var _isKilled = false
+  @volatile protected[akka] var _isBeingRestarted = false
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
   @volatile protected[akka] var startOnCreation = false
@@ -213,9 +212,9 @@ trait ActorRef extends TransactionManagement {
  protected[akka] def replyTo_=(rt: Option[Either[ActorRef, CompletableFuture[Any]]]) = guard.withGuard { _replyTo = rt }
 
   /**
-   * Is the actor killed?
+   * Is the actor being restarted?
    */
-  def isKilled: Boolean = _isKilled
+  def isBeingRestarted: Boolean = _isBeingRestarted
 
   /**
    * Is the actor running?
@@ -252,9 +251,9 @@ trait ActorRef extends TransactionManagement {
    * <p/>
    */
   def !(message: Any)(implicit sender: Option[ActorRef] = None) = {
-    if (isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (isRunning) postMessageToMailbox(message, sender)
-    else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+    else throw new ActorInitializationException(
+      "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
   /**
@@ -270,7 +269,6 @@ trait ActorRef extends TransactionManagement {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def !![T](message: Any, timeout: Long): Option[T] = {
-    if (isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
       val isActiveObject = message.isInstanceOf[Invocation]
@@ -287,9 +285,8 @@ trait ActorRef extends TransactionManagement {
 
       if (future.exception.isDefined) throw future.exception.get._2
       else future.result
-    }
-    else throw new IllegalStateException(
-      "Actor has not been started, you need to invoke 'actor.start' before using it")
+    } else throw new ActorInitializationException(
+        "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
   /**
@@ -318,9 +315,8 @@ trait ActorRef extends TransactionManagement {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def !!![T](message: Any): Future[T] = {
-    if (isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, None)
-    else throw new IllegalStateException(
+    else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -330,14 +326,13 @@ trait ActorRef extends TransactionManagement {
    * Works with '!', '!!' and '!!!'.
    */
   def forward(message: Any)(implicit sender: Some[ActorRef]) = {
-    if (isKilled) throw new ActorKilledException("Actor [" + toString + "] has been killed, can't respond to messages")
     if (isRunning) {
       sender.get.replyTo match {
         case Some(Left(actorRef)) => postMessageToMailbox(message, Some(actorRef))
         case Some(Right(future))  => postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, Some(future))
         case _                    => throw new IllegalStateException("Can't forward message when initial sender is not an actor")
       }
-    } else throw new IllegalStateException("Actor has not been started, you need to invoke 'actor.start' before using it")
+    } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
   
   /**
@@ -643,8 +638,8 @@ sealed class LocalActorRef private[akka](
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
   def dispatcher_=(md: MessageDispatcher): Unit = guard.withGuard {
-    if (!isRunning) _dispatcher = md
-    else throw new IllegalArgumentException(
+    if (!isRunning || isBeingRestarted) _dispatcher = md
+    else throw new ActorInitializationException(
       "Can not swap dispatcher for " + toString + " after it has been started")
   }
 
@@ -657,21 +652,20 @@ sealed class LocalActorRef private[akka](
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
    */
   def makeRemote(hostname: String, port: Int): Unit =
-    if (isRunning) throw new IllegalStateException(
+    if (!isRunning || isBeingRestarted) makeRemote(new InetSocketAddress(hostname, port))
+    else throw new ActorInitializationException(
       "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
-    else makeRemote(new InetSocketAddress(hostname, port))
 
   /**
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
    */
   def makeRemote(address: InetSocketAddress): Unit = guard.withGuard {
-    if (isRunning) throw new IllegalStateException(
-      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
-    else {
+    if (!isRunning || isBeingRestarted) {
       _remoteAddress = Some(address)
       RemoteClient.register(address.getHostName, address.getPort, uuid)
       homeAddress = (RemoteServer.HOSTNAME, RemoteServer.PORT)
-    }
+    } else throw new ActorInitializationException(
+      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
   }
 
   /**
@@ -683,9 +677,9 @@ sealed class LocalActorRef private[akka](
    * </pre>
    */
   def makeTransactionRequired = guard.withGuard {
-    if (isRunning) throw new IllegalArgumentException(
+    if (!isRunning || isBeingRestarted) isTransactor = true
+    else throw new ActorInitializationException(
       "Can not make actor transaction required after it has been started")
-    else isTransactor = true
   }
 
   /**
@@ -704,7 +698,7 @@ sealed class LocalActorRef private[akka](
    * Starts up the actor and its message queue.
    */
   def start: ActorRef = guard.withGuard {
-    if (isShutdown) throw new IllegalStateException(
+    if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
       if (!isInInitialization) initializeActorInstance
@@ -726,7 +720,7 @@ sealed class LocalActorRef private[akka](
       remoteAddress.foreach(address => RemoteClient.unregister(
         address.getHostName, address.getPort, uuid))
       RemoteNode.unregister(this)
-    }
+    } else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
 
   /**
@@ -915,9 +909,8 @@ sealed class LocalActorRef private[akka](
       val invocation = new MessageInvocation(this, message, senderOption.map(Left(_)), transactionSet.get)
       if (dispatcher.usesActorMailbox) {
         _mailbox.add(invocation)
-        if (_isSuspended) invocation.send
-      }
-      else invocation.send
+        invocation.send
+      } else invocation.send
     }
   }
 
@@ -990,7 +983,7 @@ sealed class LocalActorRef private[akka](
         "No handler matching message [" + message + "] in " + toString)
     } catch {
       case e =>
-        _isKilled = true
+        _isBeingRestarted = true
         Actor.log.error(e, "Could not invoke actor [%s]", toString)
         // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
         if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
@@ -1038,6 +1031,7 @@ sealed class LocalActorRef private[akka](
     } catch {
       case e: IllegalStateException => {}
       case e =>
+        _isBeingRestarted = true
         // abort transaction set
         if (isTransactionSetInScope) try {
           getTransactionSetInScope.abort
@@ -1080,6 +1074,7 @@ sealed class LocalActorRef private[akka](
   }
 
   protected[akka] def restart(reason: Throwable): Unit = {
+    _isBeingRestarted = true    
     Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
     restartLinkedActors(reason)
     val failedActor = actorInstance.get
@@ -1087,18 +1082,16 @@ sealed class LocalActorRef private[akka](
       Actor.log.debug("Restarting linked actors for actor [%s].", id)
       Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
       failedActor.preRestart(reason)
-      failedActor.shutdown
-      _isRunning = false
       val freshActor = newActor
       freshActor.synchronized {
+        initializeActorInstance
         freshActor.init
         freshActor.initTransactionalState
-        _isRunning = true
         actorInstance.set(freshActor)
         Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
         freshActor.postRestart(reason)
       }
-      _isKilled = false
+      _isBeingRestarted = false
     }
   }
 
@@ -1146,7 +1139,7 @@ sealed class LocalActorRef private[akka](
   protected[akka] def linkedActorsAsList: List[ActorRef] = 
     linkedActors.values.toArray.toList.asInstanceOf[List[ActorRef]]
   
-  private def initializeActorInstance = if (!isRunning) {
+  private def initializeActorInstance = if (!isRunning || isBeingRestarted) {
     dispatcher.register(this)
     dispatcher.start
     actor.init // run actor init and initTransactionalState callbacks

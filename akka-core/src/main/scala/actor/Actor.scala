@@ -76,6 +76,7 @@ case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
 
 // Exceptions for Actors
+class ActorStartException private[akka](message: String) extends RuntimeException(message)
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
 class ActorInitializationException private[akka](message: String) extends RuntimeException(message)
 
@@ -281,8 +282,8 @@ trait Actor extends Logging {
    * </pre>
    */
   val self: ActorRef = optionSelf.get
-
   self.id = getClass.getName
+  import self._
   
   /**
    * User overridable callback/setting.
