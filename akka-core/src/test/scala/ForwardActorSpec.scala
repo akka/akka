@@ -15,7 +15,7 @@ object ForwardActorSpec {
     val latch = new CountDownLatch(1)
     def receive = {
       case "SendBang" => {
-        ForwardState.sender = Some(self.replyTo.get.left.get)
+        ForwardState.sender = self.sender
         latch.countDown
       }
       case "SendBangBang" => self.reply("SendBangBang")
