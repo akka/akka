@@ -228,11 +228,12 @@ object Actor extends Logging {
   def spawn(body: => Unit): Unit = {
     case object Spawn
     actorOf(new Actor() {
+      self.start
       self ! Spawn
       def receive = {
         case Spawn => body; self.stop
       }
-    }).start
+    })
   }
 }
 

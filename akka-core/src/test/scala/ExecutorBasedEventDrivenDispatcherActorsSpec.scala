@@ -14,7 +14,6 @@ import Actor._
  */
 class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustMatchers {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
-    self.dispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
     self.id = "SlowActor"
 
     def receive = {
@@ -26,7 +25,6 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
   }
 
   class FastActor(finishedCounter: CountDownLatch) extends Actor {
-    self.dispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
     self.id = "FastActor"
 
     def receive = {
@@ -55,6 +53,8 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     // now assert that f is finished while s is still busy
     fFinished.await
     assert(sFinished.getCount > 0)
+    sFinished.await
+    assert(sFinished.getCount === 0)
     f.stop
     s.stop
   }

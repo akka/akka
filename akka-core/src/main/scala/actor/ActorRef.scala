@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.config.Config.config
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction.Global._
@@ -716,6 +716,9 @@ sealed class LocalActorRef private[akka](
     if (isShutdown) throw new ActorStartException(
       "Can't restart an actor that has been shut down with 'stop' or 'exit'")
     if (!isRunning) {
+      dispatcher.register(this)
+      dispatcher.start
+      _isRunning = true
       if (!isInInitialization) initializeActorInstance
       else runActorInitialization = true
     }
@@ -979,7 +982,11 @@ sealed class LocalActorRef private[akka](
   /**
    * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation) = actor.synchronized {
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {
+    if (isShutdown) {
+      Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
+      return
+    }
     try {
       sender = messageHandle.sender
       senderFuture = messageHandle.senderFuture
@@ -1172,15 +1179,12 @@ sealed class LocalActorRef private[akka](
     }
   }
 
-  private def initializeActorInstance = if (!isRunning) {
-    dispatcher.register(this)
-    dispatcher.start
+  private def initializeActorInstance = {
     actor.init // run actor init and initTransactionalState callbacks
     actor.initTransactionalState
     Actor.log.debug("[%s] has started", toString)
     ActorRegistry.register(this)
     if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
-    _isRunning = true
   }
 
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
