@@ -24,5 +24,5 @@ class DispatcherBeanDefinitionParser extends AbstractSingleBeanDefinitionParser 
   /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#getBeanClass(org.w3c.dom.Element)
    */
-  override def getBeanClass(element: Element) = classOf[DispatcherFactoryBean]
+  override def getBeanClass(element: Element): Class[_] = classOf[DispatcherFactoryBean]
 }
