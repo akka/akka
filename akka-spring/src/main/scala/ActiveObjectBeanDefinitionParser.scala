@@ -25,5 +25,5 @@ class ActiveObjectBeanDefinitionParser extends AbstractSingleBeanDefinitionParse
   /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#getBeanClass(org.w3c.dom.Element)
    */
-  override def getBeanClass(element: Element) = classOf[ActiveObjectFactoryBean]
+  override def getBeanClass(element: Element): Class[_] = classOf[ActiveObjectFactoryBean]
 }
