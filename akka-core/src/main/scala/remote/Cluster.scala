@@ -249,9 +249,11 @@ object Cluster extends Cluster with Logging {
     try {
       name map {
         fqn =>
-          val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
-          a setSerializer serializer
-          Actor.actorOf(a)
+          Actor.actorOf({
+			val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
+	        a setSerializer serializer
+	        a
+          })
       }
     }
     catch {
@@ -288,7 +290,7 @@ object Cluster extends Cluster with Logging {
         actorRef <- createClusterActor(serializerClassLoader getOrElse getClass.getClassLoader)
         sup <- createSupervisor(actorRef) 
       } {
-        clusterActorRef = Some(actorRef)
+        clusterActorRef = Some(actorRef.start)
         clusterActor = Some(actorRef.actor.asInstanceOf[ClusterActor])
         sup.start
       }
