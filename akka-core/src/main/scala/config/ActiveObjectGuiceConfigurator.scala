@@ -89,11 +89,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = ActiveObject.newInstance(targetClass, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
-    if (remoteAddress.isDefined) {
-      RemoteServer
-        .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
-        .activeObjects.put(targetClass.getName, proxy)
-    }
+    remoteAddress.foreach(address => RemoteServer.registerActiveObject(address, targetClass.getName, proxy))
     supervised ::= Supervise(actorRef, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
@@ -111,11 +107,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
       else None
     val proxy = ActiveObject.newInstance(
       targetClass, targetInstance, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
-    if (remoteAddress.isDefined) {
-      RemoteServer
-        .actorsFor(RemoteServer.Address(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
-        .activeObjects.put(targetClass.getName, proxy)
-    }
+    remoteAddress.foreach(address => RemoteServer.registerActiveObject(address, targetClass.getName, proxy))
     supervised ::= Supervise(actorRef, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)

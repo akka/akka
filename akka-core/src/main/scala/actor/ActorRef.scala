@@ -571,12 +571,7 @@ trait ActorRef extends TransactionManagement {
 
   protected def processSender(senderOption: Option[ActorRef], requestBuilder: RemoteRequestProtocol.Builder) = {
     senderOption.foreach { sender =>
-      val address = sender.homeAddress
-      val server = RemoteServer.serverFor(address) match {
-        case Some(server) => server
-        case None         => (new RemoteServer).start(address)
-      }
-      server.register(sender.uuid, sender)
+      RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
       requestBuilder.setSender(sender.toProtocol)
     }
   }
@@ -620,8 +615,8 @@ sealed class LocalActorRef private[akka](
 
     if (!registeredInRemoteNodeDuringSerialization) { 
       Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
-      if (RemoteServer.serverFor(host, port).isEmpty) (new RemoteServer).start(host, port)
-      RemoteServer.actorsFor(RemoteServer.Address(host, port)).actors.put(uuid, this)
+      RemoteServer.getOrCreateServer(homeAddress)
+      RemoteServer.registerActor(homeAddress, uuid, this)
       registeredInRemoteNodeDuringSerialization = true
     }
     

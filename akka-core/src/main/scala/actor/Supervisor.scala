@@ -11,6 +11,7 @@ import se.scalablesolutions.akka.remote.RemoteServer
 import Actor._
 
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
+import java.net.InetSocketAddress
 
 class SupervisorException private[akka](message: String) extends RuntimeException(message)
 
@@ -204,11 +205,8 @@ sealed class Supervisor private[akka] (
             childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
             supervisor.link(actorRef)
-            remoteAddress.foreach { address => RemoteServer
-              .actorsFor(RemoteServer.Address(address.hostname, address.port))
-              .actors.put(actorRef.id, actorRef)
-            }
-
+            remoteAddress.foreach(address => 
+              RemoteServer.registerActor(new InetSocketAddress(address.hostname, address.port), actorRef.uuid, actorRef))
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
