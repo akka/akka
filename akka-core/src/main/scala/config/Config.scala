@@ -6,11 +6,13 @@ package se.scalablesolutions.akka.config
 
 import se.scalablesolutions.akka.util.Logging
 
-import net.lag.configgy.{Configgy, ParseException}
+import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
 class ConfigurationException(message: String) extends RuntimeException(message)
 
 /**
+ * Loads up the configuration (from the akka.conf file).
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config extends Logging {
@@ -40,6 +42,7 @@ object Config extends Logging {
           "Config could not be loaded from -Dakka.config=" + configFile + 
           "\n\tdue to: " + e.toString)
       }
+      Configgy.config
     } else if (getClass.getClassLoader.getResource("akka.conf") != null) {
       try {
         Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
@@ -49,6 +52,7 @@ object Config extends Logging {
           "Can't load 'akka.conf' config file from application classpath," +
           "\n\tdue to: " + e.toString)
       }
+      Configgy.config
     } else if (HOME.isDefined) {
       try {
         val configFile = HOME.get + "/config/akka.conf"
@@ -60,23 +64,24 @@ object Config extends Logging {
           "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/akka.conf]," +
           "\n\tdue to: " + e.toString)
       }
+      Configgy.config
     } else {
-      throw new ConfigurationException(
+      log.warning(
         "\nCan't load 'akka.conf'." +
         "\nOne of the three ways of locating the 'akka.conf' file needs to be defined:" +
         "\n\t1. Define the '-Dakka.config=...' system property option." +
         "\n\t2. Put the 'akka.conf' file on the classpath." +
         "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
         "\nI have no way of finding the 'akka.conf' configuration file." +
-        "\nAborting.")
+        "\nUsing default values everywhere.")
+      CConfig.fromString("<akka></akka>")
     }
-    Configgy.config
   }
 
-  val CONFIG_VERSION = config.getString("akka.version", "0")
+  val CONFIG_VERSION = config.getString("akka.version", VERSION)
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(
     "Akka JAR version [" + VERSION + "] is different than the provided config ('akka.conf') version [" + CONFIG_VERSION + "]")
-  val startTime = System.currentTimeMillis
 
+  val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
 }

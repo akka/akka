@@ -62,7 +62,7 @@ trait Cluster {
  * @author Viktor Klang
  */
 trait ClusterActor extends Actor with Cluster {
-  val name = config.getString("akka.remote.cluster.name") getOrElse "default"
+  val name = config.getString("akka.remote.cluster.name", "default")
 
   @volatile protected var serializer : Serializer = _
 
@@ -233,12 +233,13 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
  */
 object Cluster extends Cluster with Logging {
   lazy val DEFAULT_SERIALIZER_CLASS_NAME = Serializer.Java.getClass.getName
+  lazy val DEFAULT_CLUSTER_ACTOR_CLASS_NAME = classOf[JGroupsClusterActor].getName
 
   @volatile private[remote] var clusterActor: Option[ClusterActor] = None
   @volatile private[remote] var clusterActorRef: Option[ActorRef] = None
 
   private[remote] def createClusterActor(loader: ClassLoader): Option[ActorRef] = {
-    val name = config.getString("akka.remote.cluster.actor")
+    val name = config.getString("akka.remote.cluster.actor", DEFAULT_CLUSTER_ACTOR_CLASS_NAME)
     if (name.isEmpty) throw new IllegalArgumentException(
       "Can't start cluster since the 'akka.remote.cluster.actor' configuration option is not defined")
 
@@ -246,19 +247,16 @@ object Cluster extends Cluster with Logging {
       "akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
       .newInstance.asInstanceOf[Serializer]
     serializer.classLoader = Some(loader)
+
     try {
-      name map {
-        fqn =>
-          Actor.actorOf({
-			val a = Class.forName(fqn).newInstance.asInstanceOf[ClusterActor]
-	        a setSerializer serializer
-	        a
-          })
-      }
-    }
-    catch {
+      Some(Actor.actorOf {
+        val a = Class.forName(name).newInstance.asInstanceOf[ClusterActor]
+        a setSerializer serializer
+        a
+      })
+    } catch {
       case e => 
-        log.error(e, "Couldn't load Cluster provider: [%s]", name.getOrElse("Not specified"))
+        log.error(e, "Couldn't load Cluster provider: [%s]", name)
         None
     }
   }
