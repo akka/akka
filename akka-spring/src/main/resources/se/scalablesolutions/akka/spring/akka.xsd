@@ -76,7 +76,7 @@
     <xsd:attribute name="core-pool-size" type="xsd:integer"/>
     <xsd:attribute name="max-pool-size" type="xsd:integer"/>
     <xsd:attribute name="keep-alive" type="xsd:long"/>
-    <xsd:attribute name="rejection-policy" type="rejection-policy-type"/>    
+    <xsd:attribute name="rejection-policy" type="rejection-policy-type"/>
   </xsd:complexType>
 
   <!-- Remote -->

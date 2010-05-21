@@ -17,9 +17,9 @@ import java.net.InetSocketAddress
 import java.lang.reflect.Method
 
 /**
- * This is an class for internal usage. Instead use the <code>se.scalablesolutions.akka.config.ActiveObjectConfigurator</code> 
+ * This is an class for internal usage. Instead use the <code>se.scalablesolutions.akka.config.ActiveObjectConfigurator</code>
  * class for creating ActiveObjects.
- *  
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfiguratorBase with Logging {
@@ -85,7 +85,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
-      if (component.remoteAddress.isDefined) 
+      if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = ActiveObject.newInstance(targetClass, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
@@ -102,7 +102,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
-      if (component.remoteAddress.isDefined) 
+      if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
     val proxy = ActiveObject.newInstance(
@@ -158,4 +158,4 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     if (supervisor.isDefined) supervisor.get.shutdown
   }
 }
- 
+

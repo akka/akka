@@ -20,7 +20,7 @@ trait ActorWithNestedReceive extends Actor {
       processors.head forward message
       nestedReactsProcessors = processors.tail.reverse
   }
- 
+
   protected def react: Receive
   protected def reactAgain(pf: Receive) = nestedReactsProcessors ::= actor(pf)
   protected def receive = processNestedReacts orElse react
@@ -98,8 +98,8 @@ object Actor extends Logging {
   def actorOf[T <: Actor: Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-   * Creates a Actor.actorOf out of the Actor. Allows you to pass in a factory function 
-   * that creates the Actor. Please note that this function can be invoked multiple 
+   * Creates a Actor.actorOf out of the Actor. Allows you to pass in a factory function
+   * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
    * This function should <b>NOT</b> be used for remote actors.
@@ -251,7 +251,7 @@ object Actor extends Logging {
  *
  * <p/>
  * The Actor's API is available in the 'self' member variable.
- * 
+ *
  * <p/>
  * Here you find functions like:
  *   - !, !!, !!! and forward
@@ -268,12 +268,12 @@ object Actor extends Logging {
  *   - faultHandler = ...
  *   - trapExit = ...
  *   - etc.
- *  
+ *
  * <p/>
  * This means that to use them you have to prefix them with 'self', like this: <tt>self ! Message</tt>
  *
  * However, for convenience you can import these functions and fields like below, which will allow you do
- * drop the 'self' prefix: 
+ * drop the 'self' prefix:
  * <pre>
  * class MyActor extends Actor {
  *   import self._
@@ -283,7 +283,7 @@ object Actor extends Logging {
  *   ...
  * }
  * </pre>
- * 
+ *
  * <p/>
  * The Actor trait also has a 'log' member field that can be used for logging within the Actor.
  *
@@ -295,20 +295,20 @@ trait Actor extends Logging {
    */
   type Receive = Actor.Receive
 
-   /* 
-    * For internal use only, functions as the implicit sender references when invoking 
+   /*
+    * For internal use only, functions as the implicit sender references when invoking
     * one of the message send functions (!, !! and !!!).
     */
   implicit val optionSelf: Option[ActorRef] = {
     val ref = Actor.actorRefInCreation.value
     Actor.actorRefInCreation.value = None
     if (ref.isEmpty) throw new ActorInitializationException(
-       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." + 
-       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." + 
-       "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." + 
-       "\n\tEither use:" + 
-       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" + 
-       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'" + 
+       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
+       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
+       "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
+       "\n\tEither use:" +
+       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
+       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'" +
        "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
     else ref
   }
@@ -329,7 +329,7 @@ trait Actor extends Logging {
    */
   val self: ActorRef = optionSelf.get
   self.id = getClass.getName
-  
+
   /**
    * User overridable callback/setting.
    * <p/>
@@ -408,7 +408,7 @@ trait Actor extends Logging {
     case UnlinkAndStop(child) => self.unlink(child); child.stop
     case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
-  
+
   override def hashCode: Int = self.hashCode
 
   override def equals(that: Any): Boolean = self.equals(that)
@@ -418,14 +418,14 @@ trait Actor extends Logging {
 
 /**
  * Base class for the different dispatcher types.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed abstract class DispatcherType
 
 /**
  * Module that holds the different dispatcher types.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object DispatcherType {

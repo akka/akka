@@ -18,7 +18,7 @@ import org.w3c.dom.Element
 @RunWith(classOf[JUnitRunner])
 class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
   private class Parser extends ActiveObjectParser
-  
+
   describe("An ActiveObjectParser") {
     val parser = new Parser()
     it("should parse the active object configuration") {

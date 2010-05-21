@@ -102,11 +102,11 @@ object RemoteServer {
   private[akka] def registerActor(address: InetSocketAddress, uuid: String, actor: ActorRef) = guard.withWriteGuard {
     actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
   }
-  
+
   private[akka] def registerActiveObject(address: InetSocketAddress, name: String, activeObject: AnyRef) = guard.withWriteGuard {
     actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).activeObjects.put(name, activeObject)
   }
-  
+
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
     serverFor(address) match {
       case Some(server) => server
@@ -239,7 +239,7 @@ class RemoteServer extends Logging {
   /**
    * Register Remote Actor by a specific 'id' passed as argument.
    * <p/>
-   * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself. 
+   * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
   def register(id: String, actorRef: ActorRef) = synchronized {
     if (_isRunning) {
@@ -262,9 +262,9 @@ class RemoteServer extends Logging {
   }
 
   /**
-   * Unregister Remote Actor by specific 'id'. 
+   * Unregister Remote Actor by specific 'id'.
    * <p/>
-   * NOTE: You need to call this method if you have registered an actor by a custom ID. 
+   * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
   def unregister(id: String) = synchronized {
     if (_isRunning) {

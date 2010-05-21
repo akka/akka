@@ -12,13 +12,13 @@ import se.scalablesolutions.akka.util.Logging
 
 /**
  * Detects if there is a UserTransaction or TransactionManager available in the JNDI.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionContainer extends Logging {
   val AKKA_JTA_TRANSACTION_SERVICE_CLASS = "se.scalablesolutions.akka.jta.AtomikosTransactionService"
   val DEFAULT_USER_TRANSACTION_NAME =                     "java:comp/UserTransaction"
-  val FALLBACK_TRANSACTION_MANAGER_NAMES =                "java:comp/TransactionManager" :: 
+  val FALLBACK_TRANSACTION_MANAGER_NAMES =                "java:comp/TransactionManager" ::
                                                           "java:appserver/TransactionManager" ::
                                                           "java:pm/TransactionManager" ::
                                                           "java:/TransactionManager" :: Nil
@@ -27,12 +27,12 @@ object TransactionContainer extends Logging {
   val JTA_PROVIDER = config.getString("akka.jta.provider", "from-jndi")
 
   private var synchronizationRegistry: Option[TransactionSynchronizationRegistry] = None
-  
+
   def apply(tm: Either[Option[UserTransaction], Option[TransactionManager]]) = new TransactionContainer(tm)
-  
+
   def apply(): TransactionContainer =
     JTA_PROVIDER match {
-      case "from-jndi" => 
+      case "from-jndi" =>
         new TransactionContainer(findUserTransaction match {
           case None => Right(findTransactionManager)
           case tm =>   Left(tm)
@@ -43,19 +43,19 @@ object TransactionContainer extends Logging {
                .newInstance.asInstanceOf[TransactionService]
                .transactionContainer
         } catch {
-          case e: ClassNotFoundException => 
+          case e: ClassNotFoundException =>
             throw new StmConfigurationException(
-              "JTA provider defined as 'atomikos', but the AtomikosTransactionService classes can not be found." + 
+              "JTA provider defined as 'atomikos', but the AtomikosTransactionService classes can not be found." +
               "\n\tPlease make sure you have 'akka-jta' JAR and its dependencies on your classpath.")
         }
-      case _ => 
+      case _ =>
         throw new StmConfigurationException(
         "No UserTransaction on TransactionManager could be found in scope." +
-        "\n\tEither add 'akka-jta' to the classpath or make sure there is a" + 
+        "\n\tEither add 'akka-jta' to the classpath or make sure there is a" +
         "\n\tTransactionManager or UserTransaction defined in the JNDI.")
-      
+
     }
-  
+
   def findUserTransaction: Option[UserTransaction] = {
     val located = createInitialContext.lookup(DEFAULT_USER_TRANSACTION_NAME)
     if (located eq null) None
@@ -74,7 +74,7 @@ object TransactionContainer extends Logging {
         log.info("JTA TransactionSynchronizationRegistry detected [%s]", located)
         synchronizationRegistry = Some(located.asInstanceOf[TransactionSynchronizationRegistry])
         synchronizationRegistry
-      }      
+      }
     }
   }
 
@@ -100,49 +100,49 @@ object TransactionContainer extends Logging {
  * JTA transaction container holding either a UserTransaction or a TransactionManager.
  * <p/>
  * The TransactionContainer is created using the factory <tt>val container = TransactionContainer()</tt>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionContainer private (val tm: Either[Option[UserTransaction], Option[TransactionManager]]) {
 
   def registerSynchronization(sync: Synchronization) = {
     TransactionContainer.findSynchronizationRegistry match { // try to use SynchronizationRegistry in JNDI
-      case Some(registry) => 
+      case Some(registry) =>
         registry.asInstanceOf[TransactionSynchronizationRegistry].registerInterposedSynchronization(sync)
       case None =>
         tm match {
           case Right(Some(txMan)) => // try to use TransactionManager
             txMan.getTransaction.registerSynchronization(sync)
           case _ =>
-            log.warning("Cannot find TransactionSynchronizationRegistry in JNDI, can't register STM synchronization")          
+            log.warning("Cannot find TransactionSynchronizationRegistry in JNDI, can't register STM synchronization")
         }
     }
   }
-  
+
   def begin = tm match {
     case Left(Some(userTx)) => userTx.begin
     case Right(Some(txMan)) => txMan.begin
     case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
-  
+
   def commit = tm match {
     case Left(Some(userTx)) => userTx.commit
     case Right(Some(txMan)) => txMan.commit
     case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
-  
+
   def rollback =  tm match {
     case Left(Some(userTx)) => userTx.rollback
     case Right(Some(txMan)) => txMan.rollback
     case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
-  
+
   def getStatus = tm match {
     case Left(Some(userTx)) => userTx.getStatus
     case Right(Some(txMan)) => txMan.getStatus
     case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
-  
+
   def isInExistingTransaction = tm match {
     case Left(Some(userTx)) => userTx.getStatus == Status.STATUS_ACTIVE
     case Right(Some(txMan)) => txMan.getStatus == Status.STATUS_ACTIVE
@@ -154,7 +154,7 @@ class TransactionContainer private (val tm: Either[Option[UserTransaction], Opti
     case Right(Some(txMan)) => txMan.getStatus == Status.STATUS_MARKED_ROLLBACK
     case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
-  
+
   def setRollbackOnly = tm match {
     case Left(Some(userTx)) => userTx.setRollbackOnly
     case Right(Some(txMan)) => txMan.setRollbackOnly
@@ -165,7 +165,7 @@ class TransactionContainer private (val tm: Either[Option[UserTransaction], Opti
     case Right(Some(txMan)) => txMan.suspend
     case _ => throw new StmConfigurationException("Does not have a TransactionManager in scope")
   }
-  
+
   def resume(tx: JtaTransaction) = tm match {
     case Right(Some(txMan)) => txMan.resume(tx)
     case _ => throw new StmConfigurationException("Does not have a TransactionManager in scope")
@@ -197,6 +197,6 @@ class StmSynchronization(tc: TransactionContainer, tx: Transaction) extends Sync
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait TransactionService {
-  def transactionContainer: TransactionContainer  
+  def transactionContainer: TransactionContainer
 }
 

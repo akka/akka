@@ -15,17 +15,17 @@ object Main {
 }
 
 /**
- * The Akka Kernel, is used to start And shutdown Akka in standalone/kernel mode. 
- * 
+ * The Akka Kernel, is used to start And shutdown Akka in standalone/kernel mode.
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Kernel extends AkkaLoader {
   /**
    * Boots up the Kernel with default bootables
    */
-  def boot: Unit = boot(true, 
-    new EmbeddedAppServer with BootableActorLoaderService 
-    with BootableRemoteActorService 
+  def boot: Unit = boot(true,
+    new EmbeddedAppServer with BootableActorLoaderService
+    with BootableRemoteActorService
     with CamelService)
 
   //For testing purposes only

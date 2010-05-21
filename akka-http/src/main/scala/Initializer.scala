@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.util.{Logging, Bootable}
 
 import javax.servlet.{ServletContextListener, ServletContextEvent}
- 
+
  /**
   * This class can be added to web.xml mappings as a listener to start and shutdown Akka.
   *
@@ -22,13 +22,13 @@ import javax.servlet.{ServletContextListener, ServletContextEvent}
   *  </listener>
   * ...
   *</web-app>
-  */ 
+  */
 class Initializer extends ServletContextListener {
    lazy val loader = new AkkaLoader
-     
-   def contextDestroyed(e: ServletContextEvent): Unit = 
+
+   def contextDestroyed(e: ServletContextEvent): Unit =
      loader.shutdown
-     
-   def contextInitialized(e: ServletContextEvent): Unit = 
+
+   def contextInitialized(e: ServletContextEvent): Unit =
      loader.boot(true, new BootableActorLoaderService with BootableRemoteActorService with CamelService)
  }

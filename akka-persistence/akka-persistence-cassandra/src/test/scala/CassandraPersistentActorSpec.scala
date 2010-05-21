@@ -73,7 +73,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
 
   //@Before
   //def startCassandra = EmbeddedCassandraService.start
- 
+
   @Test
   def testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = actorOf[CassandraPersistentActor]

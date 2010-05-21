@@ -24,7 +24,7 @@ class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
   }
 }
 
-/** 
+/**
  * This InfiniteIterator always returns the Actor that has the currently smallest mailbox
  * useful for work-stealing.
  */
@@ -32,4 +32,4 @@ class SmallestMailboxFirstIterator(items : List[ActorRef]) extends InfiniteItera
   def hasNext = items != Nil
 
   def next = items.reduceLeft((a1, a2) => if (a1.mailboxSize < a2.mailboxSize) a1 else a2)
-} 
+}

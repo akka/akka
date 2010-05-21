@@ -32,7 +32,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   @volatile private var active: Boolean = false
 
   implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
-  
+
   /** Type of the actors registered in this dispatcher. */
   private var actorType:Option[Class[_]] = None
 
@@ -51,7 +51,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
         if (!tryProcessMailbox(invocation.receiver)) {
           // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
           // to another actor and then process his mailbox in stead.
-          findThief(invocation.receiver).foreach( tryDonateAndProcessMessages(invocation.receiver,_) ) 
+          findThief(invocation.receiver).foreach( tryDonateAndProcessMessages(invocation.receiver,_) )
         }
       }
     })
@@ -97,7 +97,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     // copy to prevent concurrent modifications having any impact
     val actors = pooledActors.toArray(new Array[ActorRef](pooledActors.size))
     val i = if ( lastThiefIndex > actors.size ) 0 else lastThiefIndex
-    
+
     // we risk to pick a thief which is unregistered from the dispatcher in the meantime, but that typically means
     // the dispatcher is being shut down...
     val (thief: Option[ActorRef], index: Int) = doFindThief(receiver, actors, i)

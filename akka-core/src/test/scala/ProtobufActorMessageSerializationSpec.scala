@@ -68,4 +68,4 @@ class ProtobufActorMessageSerializationSpec extends JUnitSuite {
     actor.stop
   }
 }
-                          
+

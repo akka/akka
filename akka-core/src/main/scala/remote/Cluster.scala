@@ -255,7 +255,7 @@ object Cluster extends Cluster with Logging {
         a
       })
     } catch {
-      case e => 
+      case e =>
         log.error(e, "Couldn't load Cluster provider: [%s]", name)
         None
     }
@@ -284,9 +284,9 @@ object Cluster extends Cluster with Logging {
   def start(serializerClassLoader: Option[ClassLoader]): Unit = synchronized {
     log.info("Starting up Cluster Service...")
     if (clusterActor.isEmpty) {
-      for { 
+      for {
         actorRef <- createClusterActor(serializerClassLoader getOrElse getClass.getClassLoader)
-        sup <- createSupervisor(actorRef) 
+        sup <- createSupervisor(actorRef)
       } {
         clusterActorRef = Some(actorRef.start)
         clusterActor = Some(actorRef.actor.asInstanceOf[ClusterActor])

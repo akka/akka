@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.camel.{CamelContextManager, Message, Consumer}
 import Actor._
 
 object CamelServiceFeatureTest {
-  
+
   class TestConsumer(uri: String) extends Actor with Consumer {
     def endpointUri = uri
     protected def receive = {
@@ -32,7 +32,7 @@ object CamelServiceFeatureTest {
 
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
   import CamelServiceFeatureTest._
-  
+
   var service: CamelService = CamelService.newInstance
 
   override protected def beforeAll = {
@@ -46,7 +46,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
     // start the CamelService
     service.load
-    // await publication of first test consumer 
+    // await publication of first test consumer
     service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
   }
 

@@ -17,19 +17,19 @@ object ExecutorBasedEventDrivenDispatcherActorSpec {
     }
   }
 
-  object OneWayTestActor { 
-    val oneWay = new CountDownLatch(1)  
+  object OneWayTestActor {
+    val oneWay = new CountDownLatch(1)
   }
   class OneWayTestActor extends Actor {
     self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid)
     def receive = {
       case "OneWay" => OneWayTestActor.oneWay.countDown
     }
-  }  
+  }
 }
 class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   import ExecutorBasedEventDrivenDispatcherActorSpec._
-  
+
   private val unit = TimeUnit.MILLISECONDS
 
   @Test def shouldSendOneWay = {

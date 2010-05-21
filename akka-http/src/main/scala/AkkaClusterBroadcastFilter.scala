@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
- 
+
 package se.scalablesolutions.akka.comet
 
 import se.scalablesolutions.akka.actor.Actor
@@ -24,8 +24,8 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
   @BeanProperty var clusterName = ""
   @BeanProperty var broadcaster : Broadcaster = null
 
-  /** 
-   * Stops the actor 
+  /**
+   * Stops the actor
    */
   def destroy: Unit = self.stop
 
@@ -36,14 +36,14 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRe
    */
   def filter(o : AnyRef) = new BroadcastFilter.BroadcastAction(o match {
     case ClusterCometBroadcast(_,m) => m   //Do not re-broadcast, just unbox and pass along
- 
+
     case m : AnyRef => {                   //Relay message to the cluster and pass along
       Cluster.relayMessage(classOf[AkkaClusterBroadcastFilter],ClusterCometBroadcast(clusterName,m))
       m
     }
   })
 
-  def receive = { 
+  def receive = {
     //Only handle messages intended for this particular instance
     case b @ ClusterCometBroadcast(c, _) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast b
     case _ =>

@@ -353,7 +353,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
   }
 
   /*
-  
+
   @Test def shouldOneWayKillSingleActorOneForOne = {
     clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
