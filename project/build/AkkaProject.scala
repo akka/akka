@@ -17,7 +17,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val ATMO_VERSION = "0.5.4"
   val CASSANDRA_VERSION = "0.5.0"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
-  val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
+  val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC2-SNAPSHOT"
 
   // ------------------------------------------------------------
   lazy val deployPath = info.projectPath / "deploy"
@@ -136,9 +136,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
-    val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.Beta1" % "0.6.6" % "compile"
-    val dispatch_http = "net.databinder" % "dispatch-http_2.8.0.Beta1" % "0.6.6" % "compile"
-    val sjson = "sjson.json" % "sjson" % "0.5-2.8.Beta1" % "compile"
+    val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.RC2" % "0.7.3" % "compile"
+    val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.8.0.RC2" % "0.7.3" % "compile"
+    val sjson = "sjson.json" % "sjson" % "0.5-SNAPSHOT-2.8.RC2" % "compile"
     val sbinary = "sbinary" % "sbinary" % "2.8.0.Beta1-2.8.0.Beta1-0.3.1-SNAPSHOT" % "compile"
     val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
     val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
@@ -147,7 +147,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
     val werkz = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % "2.1" % "compile"
     val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5" % "2.1" % "compile"
-    val configgy = "net.lag" % "configgy" % "2.8.0.Beta1-1.5-SNAPSHOT" % "compile"
+    val configgy = "net.lag" % "configgy" % "2.8.0.RC2-1.5.2-SNAPSHOT" % "compile"
     val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
     val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"

@@ -338,7 +338,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   // keeps a pointer to the underlying storage for the enxt candidate to be dequeued
   protected val pickMeForDQ = TransactionalRef[Int]()
 
-  localQ.swap(Queue.Empty)
+  localQ.swap(Queue.empty)
   pickMeForDQ.swap(0)
 
   // to be concretized in subclasses
@@ -355,7 +355,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
       storage.remove(uuid)
     }
     enqueuedNDequeuedEntries.clear
-    localQ.swap(Queue.Empty)
+    localQ.swap(Queue.empty)
     pickMeForDQ.swap(0)
   }
 
@@ -392,7 +392,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   override def clear = { 
     register
     shouldClearOnCommit.swap(true)
-    localQ.swap(Queue.Empty)
+    localQ.swap(Queue.empty)
     pickMeForDQ.swap(0)
   }
   
@@ -407,7 +407,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     enqueue(elem)
     this
   }
-  override def ++=(elems: Iterator[A]) = { 
+  def ++=(elems: Iterator[A]) = { 
     enqueue(elems.toList: _*)
     this
   }
