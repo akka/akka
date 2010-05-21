@@ -139,11 +139,11 @@ class RemoteClient(val hostname: String, val port: Int) extends Logging {
     Executors.newCachedThreadPool)
 
   private val bootstrap = new ClientBootstrap(channelFactory)
-  private val openChannels = new DefaultChannelGroup(classOf[RemoteClient].getName);
-
   private val timer = new HashedWheelTimer
   private val remoteAddress = new InetSocketAddress(hostname, port)
+
   private[remote] var connection: ChannelFuture = _
+  private[remote] val openChannels = new DefaultChannelGroup(classOf[RemoteClient].getName);
 
   bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, remoteAddress, timer, this))
   bootstrap.setOption("tcpNoDelay", true)
@@ -296,11 +296,10 @@ class RemoteClientHandler(val name: String,
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = if (client.isRunning) {
     timer.newTimeout(new TimerTask() {
       def run(timeout: Timeout) = {
+        client.openChannels.remove(event.getChannel)
         log.debug("Remote client reconnecting to [%s]", remoteAddress)
         client.connection = bootstrap.connect(remoteAddress)
-
-        // Wait until the connection attempt succeeds or fails.
-        client.connection.awaitUninterruptibly
+        client.connection.awaitUninterruptibly // Wait until the connection attempt succeeds or fails.
         if (!client.connection.isSuccess) {
           client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(client.connection.getCause))
           log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)

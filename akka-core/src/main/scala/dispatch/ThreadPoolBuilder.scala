@@ -30,7 +30,7 @@ trait ThreadPoolBuilder {
 
   def isShutdown = executor.isShutdown
 
-  def buildThreadPool = synchronized {
+  def buildThreadPool: Unit = synchronized {
     ensureNotActive
     inProcessOfBuilding = false
     if (boundedExecutorBound > 0) {
