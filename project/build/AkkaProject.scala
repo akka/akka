@@ -17,7 +17,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val ATMO_VERSION = "0.5.4"
   val CASSANDRA_VERSION = "0.5.0"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
-  val SCALATEST_VERSION = "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT"
+  val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC2-SNAPSHOT"
 
   // ------------------------------------------------------------
   lazy val deployPath = info.projectPath / "deploy"
