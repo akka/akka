@@ -108,7 +108,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
     if (auth == "N/A") throw new IllegalStateException("The config option 'akka.rest.authenticator' is not defined in 'akka.conf'")
     auth
   }
-  
+
   /**
    * Currently we always take the first, since there usually should be at most one authentication actor, but a round-robin
    * strategy could be implemented in the future
@@ -410,7 +410,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
   /**
    * keytab location with credentials for the service principal
    */
-  lazy val keyTabLocation = { 
+  lazy val keyTabLocation = {
     val p = Config.config.getString("akka.rest.kerberos.keyTabLocation", "N/A")
     if (p == "N/A") throw new IllegalStateException("The config option 'akka.rest.kerberos.keyTabLocation' is not defined in 'akka.conf'")
     p
