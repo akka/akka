@@ -16,7 +16,7 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
   /**
    * Parses the given element and returns a ActiveObjectProperties.
    * @param element dom element to parse
-   * @return configuration for the active object 
+   * @return configuration for the active object
    */
   def parseActiveObject(element: Element): ActiveObjectProperties = {
     val objectProperties = new ActiveObjectProperties()

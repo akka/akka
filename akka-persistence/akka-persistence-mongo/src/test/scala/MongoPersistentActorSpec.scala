@@ -47,7 +47,7 @@ class BankAccountActor extends Transactor {
 
       val m: BigInt =
       accountState.get(accountNo) match {
-        case Some(JsNumber(n)) => 
+        case Some(JsNumber(n)) =>
           BigInt(n.asInstanceOf[BigDecimal].intValue)
         case None => 0
       }
@@ -112,17 +112,17 @@ class MongoPersistentActorSpec extends JUnitSuite {
     bactor !! Credit("a-123", 5000)
     bactor !! Debit("a-123", 3000, failer)
 
-    val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
+    val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
     assertEquals(BigInt(2000), BigInt(b.intValue))
 
     bactor !! Credit("a-123", 7000)
 
-    val JsNumber(b1) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
+    val JsNumber(b1) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
     assertEquals(BigInt(9000), BigInt(b1.intValue))
 
     bactor !! Debit("a-123", 8000, failer)
 
-    val JsNumber(b2) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
+    val JsNumber(b2) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
     assertEquals(BigInt(1000), BigInt(b2.intValue))
 
     assert(7 == (bactor !! LogSize).get.asInstanceOf[Int])
@@ -141,7 +141,7 @@ class MongoPersistentActorSpec extends JUnitSuite {
     bactor.start
     bactor !! Credit("a-123", 5000)
 
-    val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
+    val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
     assertEquals(BigInt(5000), BigInt(b.intValue))
 
     val failer = actorOf[PersistentFailerActor]
@@ -151,7 +151,7 @@ class MongoPersistentActorSpec extends JUnitSuite {
       fail("should throw exception")
     } catch { case e: RuntimeException => {}}
 
-    val JsNumber(b1) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
+    val JsNumber(b1) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
     assertEquals(BigInt(5000), BigInt(b1.intValue))
 
     // should not count the failed one
@@ -164,7 +164,7 @@ class MongoPersistentActorSpec extends JUnitSuite {
     bactor.start
     bactor !! Credit("a-123", 5000)
 
-    val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
+    val JsNumber(b) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
     assertEquals(BigInt(5000), BigInt(b.intValue))
 
     val failer = actorOf[PersistentFailerActor]
@@ -174,7 +174,7 @@ class MongoPersistentActorSpec extends JUnitSuite {
       fail("should throw exception")
     } catch { case e: RuntimeException => {}}
 
-    val JsNumber(b1) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue] 
+    val JsNumber(b1) = (bactor !! Balance("a-123")).get.asInstanceOf[JsValue]
     assertEquals(BigInt(5000), BigInt(b1.intValue))
 
     // should not count the failed one

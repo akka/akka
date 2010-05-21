@@ -39,7 +39,7 @@ class ExecutorBasedEventDrivenDispatcherActorsSpec extends JUnitSuite with MustM
     val fFinished = new CountDownLatch(10)
     val s = actorOf(new SlowActor(sFinished)).start
     val f = actorOf(new FastActor(fFinished)).start
-     
+
     // send a lot of stuff to s
     for (i <- 1 to 50) {
       s ! i

@@ -12,9 +12,9 @@ object ActorFireForgetRequestReplySpec {
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
     def receive = {
-      case "Send" => 
+      case "Send" =>
         self.reply("Reply")
-      case "SendImplicit" => 
+      case "SendImplicit" =>
         self.sender.get ! "ReplyImplicit"
     }
   }
@@ -34,7 +34,7 @@ object ActorFireForgetRequestReplySpec {
         state.finished.await
       }
     }
-  }  
+  }
 
   object state {
     var s = "NIL"
@@ -51,7 +51,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     val replyActor = actorOf[ReplyActor].start
     val senderActor = actorOf(new SenderActor(replyActor)).start
     senderActor ! "Init"
-    try { state.finished.await(1L, TimeUnit.SECONDS) } 
+    try { state.finished.await(1L, TimeUnit.SECONDS) }
     catch { case e: TimeoutException => fail("Never got the message") }
     assert("Reply" === state.s)
   }
@@ -62,7 +62,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     val replyActor = actorOf[ReplyActor].start
     val senderActor = actorOf(new SenderActor(replyActor)).start
     senderActor ! "InitImplicit"
-    try { state.finished.await(1L, TimeUnit.SECONDS) } 
+    try { state.finished.await(1L, TimeUnit.SECONDS) }
     catch { case e: TimeoutException => fail("Never got the message") }
     assert("ReplyImplicit" === state.s)
   }

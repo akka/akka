@@ -60,7 +60,7 @@ class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
     */
    override def createCometSupportResolver() : CometSupportResolver = {
       import scala.collection.JavaConversions._
- 
+
       new DefaultCometSupportResolver(config) {
          type CS = CometSupport[_ <: AtmosphereResource[_,_]]
          override def resolveMultipleNativeSupportConflict(available : JList[Class[_ <: CS]]) : CS = {
@@ -70,7 +70,7 @@ class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
                  case _ => super.resolveMultipleNativeSupportConflict(available)
              }
         }
- 
+
         override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CS = {
            val predef = config.getInitParameter("cometSupport")
            if (testClassExists(predef)) newCometSupport(predef)

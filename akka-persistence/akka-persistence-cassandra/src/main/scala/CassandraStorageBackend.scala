@@ -123,7 +123,7 @@ private[akka] object CassandraStorageBackend extends
    * if <tt>start</tt> is not defined, assume <tt>start</tt> = 0
    * if <tt>start</tt> == 0 and <tt>finish</tt> == 0, return an empty collection
    */
-  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): 
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int):
     List[Array[Byte]] = {
     val startBytes = if (start.isDefined) intToBytes(start.get) else null
     val finishBytes = if (finish.isDefined) intToBytes(finish.get) else null

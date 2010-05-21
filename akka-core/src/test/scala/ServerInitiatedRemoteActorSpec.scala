@@ -12,7 +12,7 @@ object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
   val PORT = 9990
   var server: RemoteServer = null
- 
+
   case class Send(actor: ActorRef)
 
   object RemoteActorSpecActorUnidirectional {
@@ -135,4 +135,4 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     actor.stop
   }
 }
-                          
+

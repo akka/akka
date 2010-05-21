@@ -20,7 +20,7 @@ import se.scalablesolutions.akka.util.Logging
  * @author Martin Krasser
  */
 trait Producer { this: Actor =>
-  
+
   private val headersToCopyDefault = Set(Message.MessageExchangeId)
 
   /**
@@ -162,7 +162,7 @@ trait Producer { this: Actor =>
  */
 class ProducerResponseSender(
     headers: Map[String, Any],
-    sender: Option[ActorRef], 
+    sender: Option[ActorRef],
     senderFuture: Option[CompletableFuture[Any]],
     producer: Actor) extends Synchronization with Logging {
 

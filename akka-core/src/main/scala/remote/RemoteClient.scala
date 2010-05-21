@@ -28,7 +28,7 @@ import scala.collection.mutable.{HashSet, HashMap}
 
 /**
  * Atomic remote request/reply message id generator.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteRequestProtocolIdFactory {
@@ -64,7 +64,7 @@ object RemoteClient extends Logging {
   def actorFor(className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     actorFor(className, className, timeout, hostname, port)
 
-  def actorFor(actorRef: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef = 
+  def actorFor(actorRef: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     RemoteActorRef(actorRef, className, hostname, port, timeout)
 
   def clientFor(hostname: String, port: Int): RemoteClient = clientFor(new InetSocketAddress(hostname, port))

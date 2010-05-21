@@ -14,12 +14,12 @@ object FutureSpec {
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }  
+  }
 }
 
 class FutureSpec extends JUnitSuite {
   import FutureSpec._
-  
+
   @Test def shouldActorReplyResultThroughExplicitFuture {
     val actor = actorOf[TestActor]
     actor.start

@@ -27,7 +27,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     }
 
     val t2 = actor {
-      case `testMsg3` => 
+      case `testMsg3` =>
         targetOk += 8
         latch.countDown
     }
@@ -36,7 +36,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
       case `testMsg1`|`testMsg2` => t1
       case `testMsg3` => t2
     }.start
-      
+
     d ! testMsg1
     d ! testMsg2
     d ! testMsg3
@@ -83,8 +83,8 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     t2.stop
     d.stop
   }
-  
-  @Test def testListener = {  
+
+  @Test def testListener = {
     val latch = new CountDownLatch(2)
     val num = new AtomicInteger(0)
     val i = actorOf(new Actor with Listeners {
@@ -93,17 +93,17 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
       }
     })
     i.start
-      
-    def newListener = actor { 
-      case "bar" => 
+
+    def newListener = actor {
+      case "bar" =>
       num.incrementAndGet
       latch.countDown
     }
-      
+
     val a1 = newListener
     val a2 = newListener
     val a3 = newListener
-    
+
     i ! Listen(a1)
     i ! Listen(a2)
     i ! Listen(a3)

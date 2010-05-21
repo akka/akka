@@ -14,7 +14,7 @@ class AkkaLoader extends Logging {
   @volatile private var hasBooted = false
 
   @volatile private var _bundles: Option[Bootable] = None
-  
+
   def bundles = _bundles;
 
   /*

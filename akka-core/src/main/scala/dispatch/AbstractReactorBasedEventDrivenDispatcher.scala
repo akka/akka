@@ -15,8 +15,8 @@ abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) exten
   protected val messageInvokers = new HashMap[AnyRef, MessageInvoker]
   protected var selectorThread: Thread = _
   protected val guard = new Object
-  
-  def dispatch(invocation: MessageInvocation) = queue.append(invocation) 
+
+  def dispatch(invocation: MessageInvocation) = queue.append(invocation)
 
   override def register(actorRef: ActorRef) = synchronized {
     messageInvokers.put(actorRef, new ActorMessageInvoker(actorRef))

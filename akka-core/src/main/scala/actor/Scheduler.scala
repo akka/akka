@@ -23,7 +23,7 @@ import se.scalablesolutions.akka.util.Logging
 
 object Scheduler {
   import Actor._
-  
+
   case object UnSchedule
   case class SchedulerException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
@@ -33,7 +33,7 @@ object Scheduler {
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
     try {
       val future = service.scheduleAtFixedRate(
-        new Runnable { def run = receiver ! message }, 
+        new Runnable { def run = receiver ! message },
         initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
       val scheduler = actorOf(new ScheduleActor(future)).start
       schedulers.put(scheduler, scheduler)

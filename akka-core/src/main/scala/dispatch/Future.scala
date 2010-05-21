@@ -44,7 +44,7 @@ object Futures {
   def awaitEither[T](f1: Future[T], f2: Future[T]): Option[T] = {
     import Actor.Sender.Self
     import Actor.{spawn, actor}
-      
+
     case class Result(res: Option[T])
     val handOff = new SynchronousQueue[Option[T]]
     spawn {

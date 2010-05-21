@@ -39,7 +39,7 @@ object Config extends Logging {
         log.info("Config loaded from -Dakka.config=%s", configFile)
       } catch {
         case e: ParseException => throw new ConfigurationException(
-          "Config could not be loaded from -Dakka.config=" + configFile + 
+          "Config could not be loaded from -Dakka.config=" + configFile +
           "\n\tdue to: " + e.toString)
       }
       Configgy.config

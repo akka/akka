@@ -13,12 +13,12 @@ object ActorRegistrySpec {
         record = "pong" + record
         self.reply("got ping")
     }
-  }  
+  }
 }
 
 class ActorRegistrySpec extends JUnitSuite {
   import ActorRegistrySpec._
-  
+
   @Test def shouldGetActorByIdFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor = actorOf[TestActor]

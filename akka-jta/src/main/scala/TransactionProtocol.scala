@@ -66,12 +66,12 @@ import javax.transaction.{
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait TransactionProtocol extends Logging {
-  
+
   protected val synchronization: JList[Synchronization] = new CopyOnWriteArrayList[Synchronization]
   protected val joinTransactionFuns: JList[() => Unit] = new CopyOnWriteArrayList[() => Unit]
   protected val exceptionsNotToRollbackOn: JList[Class[_ <: Exception]] = new CopyOnWriteArrayList[Class[_ <: Exception]]
 
-  def joinTransaction: Unit = { 
+  def joinTransaction: Unit = {
     val it = joinTransactionFuns.iterator
     while (it.hasNext) {
       val fn = it.next
@@ -94,7 +94,7 @@ trait TransactionProtocol extends Logging {
   /**
    * Wraps body in a transaction with REQUIRED semantics.
    * <p/>
-   * Creates a new transaction if no transaction is active in scope, else joins the outer transaction. 
+   * Creates a new transaction if no transaction is active in scope, else joins the outer transaction.
    */
   def withTxRequired[T](body: => T): T = {
     val tm = TransactionContext.getTransactionContainer
@@ -157,7 +157,7 @@ trait TransactionProtocol extends Logging {
    * Throws a TransactionRequiredException if there is no transaction active in scope.
    */
   def withTxMandatory[T](body: => T): T = {
-    if (!isInExistingTransaction(TransactionContext.getTransactionContainer)) 
+    if (!isInExistingTransaction(TransactionContext.getTransactionContainer))
       throw new TransactionRequiredException("No active TX at method with TX type set to MANDATORY")
     body
   }
@@ -168,7 +168,7 @@ trait TransactionProtocol extends Logging {
    * Throws a SystemException in case of an existing transaction in scope.
    */
   def withTxNever[T](body: => T): T = {
-    if (isInExistingTransaction(TransactionContext.getTransactionContainer)) 
+    if (isInExistingTransaction(TransactionContext.getTransactionContainer))
       throw new SystemException("Detected active TX at method with TX type set to NEVER")
     body
   }
@@ -199,7 +199,7 @@ trait TransactionProtocol extends Logging {
    * @param tm the transaction manager
    * @return boolean
    */
-  protected def isInExistingTransaction(tm: TransactionContainer): Boolean = 
+  protected def isInExistingTransaction(tm: TransactionContainer): Boolean =
     tm.getStatus != Status.STATUS_NO_TRANSACTION
 
   /**
@@ -208,7 +208,7 @@ trait TransactionProtocol extends Logging {
    * @param tm the transaction manager
    * @return boolean
    */
-  protected def isRollbackOnly(tm: TransactionContainer): Boolean = 
+  protected def isRollbackOnly(tm: TransactionContainer): Boolean =
     tm.getStatus == Status.STATUS_MARKED_ROLLBACK
 
   /**

@@ -45,10 +45,10 @@ trait BootableActorLoaderService extends Bootable with Logging {
       log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy)
       log.debug("Loading dependencies [%s]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
-      
+
       val parentClassLoader = classOf[Seq[_]].getClassLoader
       URLClassLoader.newInstance(
-        allJars.toArray.asInstanceOf[Array[URL]], 
+        allJars.toArray.asInstanceOf[Array[URL]],
         ClassLoader.getSystemClassLoader)
         //parentClassLoader)
     } else getClass.getClassLoader)
