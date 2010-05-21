@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>sjson.json</groupId>
+  <artifactId>sjson</artifactId>
+  <version>0.5_2.8.0.RC2-SNAPSHOT</version>
+  <versioning>
+    <versions>
+      <version>0.5_2.8.0.RC2-SNAPSHOT</version>
+      <version>0.5-SNAPSHOT-2.8.RC2</version>
+    </versions>
+    <lastUpdated>20100519171604</lastUpdated>
+  </versioning>
+</metadata>
