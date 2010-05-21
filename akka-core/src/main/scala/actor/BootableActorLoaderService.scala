@@ -29,21 +29,28 @@ trait BootableActorLoaderService extends Bootable with Logging {
         log.error("Could not find a deploy directory at [%s]", DEPLOY)
         System.exit(-1)
       }
-      val filesToDeploy = DEPLOY_DIR.listFiles.toArray.toList.asInstanceOf[List[File]].filter(_.getName.endsWith(".jar"))
+      val filesToDeploy = DEPLOY_DIR.listFiles.toArray.toList
+        .asInstanceOf[List[File]].filter(_.getName.endsWith(".jar"))
       var dependencyJars: List[URL] = Nil
       filesToDeploy.map { file =>
         val jarFile = new JarFile(file)
         val en = jarFile.entries
         while (en.hasMoreElements) {
           val name = en.nextElement.getName
-          if (name.endsWith(".jar")) dependencyJars ::= new File(String.format("jar:file:%s!/%s", jarFile.getName, name)).toURI.toURL
+          if (name.endsWith(".jar")) dependencyJars ::= new File(
+            String.format("jar:file:%s!/%s", jarFile.getName, name)).toURI.toURL
         }
       }
       val toDeploy = filesToDeploy.map(_.toURI.toURL)
       log.info("Deploying applications from [%s]: [%s]", DEPLOY, toDeploy)
       log.debug("Loading dependencies [%s]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
-      new URLClassLoader(allJars.toArray.asInstanceOf[Array[URL]] , getClass.getClassLoader)
+      
+      val parentClassLoader = classOf[Seq[_]].getClassLoader
+      URLClassLoader.newInstance(
+        allJars.toArray.asInstanceOf[Array[URL]], 
+        ClassLoader.getSystemClassLoader)
+        //parentClassLoader)
     } else getClass.getClassLoader)
   }
 

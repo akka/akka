@@ -56,12 +56,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_http = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
   lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_cluster = project("akka-cluster", "akka-cluster", new AkkaClusterProject(_), akka_core)
   lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
   lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
-    akka_core, akka_http, akka_spring, akka_camel, akka_persistence,
-    akka_cluster, akka_amqp)
+    akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -85,11 +83,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // create a manifest with all akka jars and dependency jars on classpath
   override def manifestClassPath = Some(allArtifacts.getFiles
     .filter(_.getName.endsWith(".jar"))
+    .filter(!_.getName.contains("scala-library"))
     .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") +
     " scala-library.jar" +
     " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-cluster%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
@@ -154,6 +152,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
     val multiverse = "org.multiverse" % "multiverse-alpha" % "0.5" % "compile"
+    val jgroups = "jgroups" % "jgroups" % "2.8.0.CR7" % "compile"
     
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
@@ -230,10 +229,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaMongoProject(_), akka_persistence_common)
     lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra",
       new AkkaCassandraProject(_), akka_persistence_common)
-  }
-
-  class AkkaClusterProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val jgroups = "jgroups" % "jgroups" % "2.8.0.CR7" % "compile"
   }
 
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)

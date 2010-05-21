@@ -1,13 +1,12 @@
-package se.scalablesolutions.akka.cluster.jgroups
+package se.scalablesolutions.akka.remote
 
 import org.jgroups.{JChannel, View => JG_VIEW, Address, Message => JG_MSG, ExtendedMembershipListener, Receiver}
 import org.jgroups.util.Util
 
-import se.scalablesolutions.akka.remote.BasicClusterActor
-
 /**
  * Clustering support via JGroups.
- * @Author Viktor Klang
+ *
+ * @author Viktor Klang
  */
 class JGroupsClusterActor extends BasicClusterActor {
   import scala.collection.JavaConversions._
@@ -20,7 +19,7 @@ class JGroupsClusterActor extends BasicClusterActor {
 
   override def init = {
     super.init
-    log debug "Initiating JGroups-based cluster actor"
+    log info "Initiating JGroups-based cluster actor"
     isActive = true
 
     // Set up the JGroups local endpoint
@@ -58,7 +57,7 @@ class JGroupsClusterActor extends BasicClusterActor {
 
   override def shutdown = {
     super.shutdown
-    log debug ("Shutting down %s", toString)
+    log info ("Shutting down %s", toString)
     isActive = false
     channel.foreach(Util shutdown _)
     channel = None
