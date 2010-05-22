@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.config
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef} 
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
 sealed abstract class FaultHandlingStrategy
@@ -24,7 +24,7 @@ object ScalaConfig {
   abstract class Scope extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
-  
+
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
@@ -135,7 +135,7 @@ object JavaConfig {
     def transform = se.scalablesolutions.akka.config.ScalaConfig.RestartStrategy(
       scheme.transform, maxNrOfRetries, withinTimeRange, trapExceptions.toList)
   }
-  
+
   class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
     def this(scope: Scope) = this(scope, null)
     def transform = {
@@ -230,5 +230,5 @@ object JavaConfig {
     def newSupervised(actorRef: ActorRef) =
       se.scalablesolutions.akka.config.ScalaConfig.Supervise(actorRef, lifeCycle.transform)
   }
-  
+
 }

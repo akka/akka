@@ -16,7 +16,7 @@ object ReactorBasedThreadPoolEventDrivenDispatcherActorSpec {
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }  
+  }
 }
 
 class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {

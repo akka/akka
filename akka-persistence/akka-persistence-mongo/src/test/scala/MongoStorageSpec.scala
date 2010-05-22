@@ -122,7 +122,7 @@ class MongoStorageSpec extends JUnitSuite {
   @Test
   def testMapInsertForTransactionId = {
     fillMap
-    
+
     // add some more to changeSet
     changeSetM += "5" -> Foo(12, "dg")
     changeSetM += "6" -> java.util.Calendar.getInstance.getTime
@@ -182,7 +182,7 @@ class MongoStorageSpec extends JUnitSuite {
     }
 
     // get the entire map
-    val l: List[Tuple2[AnyRef, AnyRef]] = 
+    val l: List[Tuple2[AnyRef, AnyRef]] =
       MongoStorageBackend.getMapStorageFor("U-M1")
 
     assertEquals(4, l.size)
@@ -210,7 +210,7 @@ class MongoStorageSpec extends JUnitSuite {
     MongoStorageBackend.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
 
     // specify start and count
-    val l: List[Tuple2[AnyRef, AnyRef]] = 
+    val l: List[Tuple2[AnyRef, AnyRef]] =
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", Some(Integer.valueOf(2)), None, 3)
 
@@ -224,7 +224,7 @@ class MongoStorageSpec extends JUnitSuite {
     val ls = l(1)._2.asInstanceOf[JsValue]
     val num_list(l1) = ls
     assertEquals(List(10, 20, 30), l1)
-    
+
     // specify start, finish and count where finish - start == count
     assertEquals(3,
       MongoStorageBackend.getMapStorageRangeFor(
@@ -235,12 +235,12 @@ class MongoStorageSpec extends JUnitSuite {
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", Some(Integer.valueOf(2)), Some(Integer.valueOf(9)), 3).size)
 
-    // do not specify start or finish 
+    // do not specify start or finish
     assertEquals(3,
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", None, None, 3).size)
 
-    // specify finish and count 
+    // specify finish and count
     assertEquals(3,
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", None, Some(Integer.valueOf(3)), 3).size)

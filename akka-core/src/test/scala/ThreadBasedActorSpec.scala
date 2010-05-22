@@ -10,19 +10,19 @@ import Actor._
 object ThreadBasedActorSpec {
   class TestActor extends Actor {
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
-    
+
     def receive = {
       case "Hello" =>
         self.reply("World")
       case "Failure" =>
         throw new RuntimeException("expected")
     }
-  }  
+  }
 }
 
 class ThreadBasedActorSpec extends JUnitSuite {
   import ThreadBasedActorSpec._
-  
+
   private val unit = TimeUnit.MILLISECONDS
 
   @Test def shouldSendOneWay  {

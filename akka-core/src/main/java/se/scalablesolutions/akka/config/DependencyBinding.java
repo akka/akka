@@ -10,7 +10,7 @@ package se.scalablesolutions.akka.config;
 public class DependencyBinding {
   private final Class intf;
   private final Object target;
-  
+
   public DependencyBinding(final Class intf, final Object target) {
     this.intf = intf;
     this.target = target;

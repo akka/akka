@@ -32,7 +32,7 @@ object BasicAuthenticatorSpec {
 class BasicAuthenticatorSpec extends junit.framework.TestCase
     with Suite with MockitoSugar with MustMatchers {
   import BasicAuthenticatorSpec._
-  
+
   val authenticator = actorOf[BasicAuthenticator]
   authenticator.start
 
@@ -57,13 +57,13 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
     val result: AnyRef = (authenticator !! (Authenticate(req, List("chef")), 10000)).get
 
     result must be(OK)
-    // the authenticator must have set a security context 
+    // the authenticator must have set a security context
     verify(req).setSecurityContext(any[SecurityContext])
   }
 
   @Test def testUnauthorized = {
     val req = mock[ContainerRequest]
-    
+
     // fake a basic auth header -> this will authenticate the user
     when(req.getHeaderValue("Authorization")).thenReturn("Basic " + new String(Base64.encode("foo:bar")))
     when(req.isUserInRole("chef")).thenReturn(false) // this will deny access

@@ -15,7 +15,7 @@ import com.google.inject.Singleton;
  */
 public class ActiveObjectGuiceModule extends AbstractModule {
   private final List<DependencyBinding> bindings;
-  
+
   public ActiveObjectGuiceModule(final List<DependencyBinding> bindings) {
     this.bindings = bindings;
   }
@@ -25,7 +25,7 @@ public class ActiveObjectGuiceModule extends AbstractModule {
     for (int i = 0; i < bindings.size(); i++) {
       final DependencyBinding db = bindings.get(i);
       //if (db.getInterface() ne null) bind((Class) db.getInterface()).to((Class) db.getTarget()).in(Singleton.class);
-      //else 
+      //else
       this.bind(db.getInterface()).toInstance(db.getTarget());
     }
   }

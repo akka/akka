@@ -10,7 +10,7 @@ import Actor._
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 
-object ExecutorBasedEventDrivenWorkStealingDispatcherSpec { 
+object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   val delayableActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
   val sharedActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
   val parentActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
@@ -28,7 +28,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
       }
     }
   }
-  
+
   class FirstActor extends Actor {
     self.dispatcher = sharedActorDispatcher
     def receive = {case _ => {}}
@@ -53,7 +53,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
  */
 class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with MustMatchers {
   import ExecutorBasedEventDrivenWorkStealingDispatcherSpec._
-  
+
   @Test def fastActorShouldStealWorkFromSlowActor  {
     val finishedCounter = new CountDownLatch(110)
 
@@ -78,12 +78,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     }
 
     finishedCounter.await(5, TimeUnit.SECONDS)
-    fast.actor.asInstanceOf[DelayableActor].invocationCount must be > 
+    fast.actor.asInstanceOf[DelayableActor].invocationCount must be >
     (slow.actor.asInstanceOf[DelayableActor].invocationCount)
     slow.stop
     fast.stop
   }
-  
+
   @Test def canNotUseActorsOfDifferentTypesInSameDispatcher: Unit = {
     val first = actorOf[FirstActor]
     val second = actorOf[SecondActor]

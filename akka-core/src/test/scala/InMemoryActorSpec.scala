@@ -32,7 +32,7 @@ import InMemoryActorSpec._
 class InMemStatefulActor(expectedInvocationCount: Int) extends Transactor {
   def this() = this(0)
   self.timeout = 5000
-  
+
   val notifier = new CountDownLatch(expectedInvocationCount)
 
   private lazy val mapState = TransactionalState.newMap[String, String]
@@ -102,7 +102,7 @@ class InMemStatefulActor(expectedInvocationCount: Int) extends Transactor {
 
 @serializable
 class InMemFailerActor extends Transactor {
-  
+
   def receive = {
     case "Failure" =>
       throw new RuntimeException("expected")

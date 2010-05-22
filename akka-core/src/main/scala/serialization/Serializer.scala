@@ -34,7 +34,7 @@ class SerializerFactory {
   def getJavaJSON: JavaJSON.type = JavaJSON
   def getScalaJSON: ScalaJSON.type = ScalaJSON
   def getSBinary: SBinary.type = SBinary
-  def getProtobuf: Protobuf.type = Protobuf  
+  def getProtobuf: Protobuf.type = Protobuf
 }
 
 /**
@@ -67,7 +67,7 @@ object Serializer {
     }
 
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-      val in = 
+      val in =
         if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
         else new ObjectInputStream(new ByteArrayInputStream(bytes))
       val obj = in.readObject
@@ -88,14 +88,14 @@ object Serializer {
         "Can't serialize a non-protobuf message using protobuf [" + obj + "]")
       obj.asInstanceOf[Message].toByteArray
     }
-    
+
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       if (!clazz.isDefined) throw new IllegalArgumentException(
-        "Need a protobuf message class to be able to serialize bytes using protobuf") 
+        "Need a protobuf message class to be able to serialize bytes using protobuf")
       // TODO: should we cache this method lookup?
       val message = clazz.get.getDeclaredMethod(
         "getDefaultInstance", EMPTY_CLASS_ARRAY: _*).invoke(null, EMPTY_ANY_REF_ARRAY: _*).asInstanceOf[Message]
-      message.toBuilder().mergeFrom(bytes).build                                                                                  
+      message.toBuilder().mergeFrom(bytes).build
     }
 
     def in(bytes: Array[Byte], clazz: Class[_]): AnyRef = {
@@ -124,7 +124,7 @@ object Serializer {
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       if (!clazz.isDefined) throw new IllegalArgumentException(
         "Can't deserialize JSON to instance if no class is provided")
-      val in = 
+      val in =
         if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
         else new ObjectInputStream(new ByteArrayInputStream(bytes))
       val obj = mapper.readValue(in, clazz.get).asInstanceOf[AnyRef]
@@ -137,7 +137,7 @@ object Serializer {
       mapper.readValue(json, clazz).asInstanceOf[AnyRef]
     }
   }
-  
+
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
@@ -149,7 +149,7 @@ object Serializer {
 
     // FIXME set ClassLoader on SJSONSerializer.SJSON
     def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
-    
+
     import scala.reflect.Manifest
     def in[T](json: String)(implicit m: Manifest[T]): AnyRef = {
       SJSONSerializer.SJSON.in(json)(m)
@@ -168,13 +168,13 @@ object Serializer {
     import sbinary._
     import sbinary.Operations._
     import sbinary.DefaultProtocol._
-    
+
     def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = in[T](out[T](obj), None)
 
     def out[T](t : T)(implicit bin : Writes[T]): Array[Byte] = toByteArray[T](t)
 
     def in[T](array : Array[Byte], clazz: Option[Class[T]])(implicit bin : Reads[T]): T = fromByteArray[T](array)
- 
+
     def in[T](array : Array[Byte])(implicit bin : Reads[T]): T = fromByteArray[T](array)
   }
 }

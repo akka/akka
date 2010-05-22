@@ -11,7 +11,7 @@ package se.scalablesolutions.akka.stm
  * <pre>
  * scala> ResultOrFailure(1)
  * res0: ResultOrFailure[Int] = ResultOrFailure@a96606
- *  
+ *
  * scala> res0()
  * res1: Int = 1
  *
@@ -19,13 +19,13 @@ package se.scalablesolutions.akka.stm
  *
  * scala> res0()
  * res3: Int = 3
- * 
+ *
  * scala> res0() = { println("Hello world"); 3}
  * Hello world
  *
  * scala> res0()
  * res5: Int = 3
- *  
+ *
  * scala> res0() = error("Lets see what happens here...")
  *
  * scala> res0()

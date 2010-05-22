@@ -306,22 +306,22 @@ object Transaction {
   private[akka] var transaction: Option[MultiverseTransaction] = None
   private[this] val persistentStateMap = new HashMap[String, Committable]
   private[akka] val depth = new AtomicInteger(0)
-  
+
   val jta: Option[TransactionContainer] =
     if (JTA_AWARE) Some(TransactionContainer())
     else None
-  
+
   log.trace("Creating %s", toString)
 
   // --- public methods ---------
 
   def begin = synchronized {
-    jta.foreach { txContainer => 
+    jta.foreach { txContainer =>
       txContainer.begin
       txContainer.registerSynchronization(new StmSynchronization(txContainer, this))
     }
   }
-  
+
   def commit = synchronized {
     log.trace("Committing transaction %s", toString)
     Transaction.atomic0 {
@@ -347,7 +347,7 @@ object Transaction {
   // --- internal methods ---------
 
   private def isJtaTxActive(status: Int) = status == Status.STATUS_ACTIVE
-  
+
   private[akka] def status_? = status
 
   private[akka] def increment = depth.incrementAndGet

@@ -68,7 +68,7 @@ object AkkaSpringConfigurationTags {
   val VAL_LIFECYCYLE_TEMPORARY = "temporary"
   val VAL_LIFECYCYLE_PERMANENT = "permanent"
 
-  // Failover 
+  // Failover
   val VAL_ALL_FOR_ONE = "AllForOne"
   val VAL_ONE_FOR_ONE = "OneForOne"
 
@@ -76,7 +76,7 @@ object AkkaSpringConfigurationTags {
   val VAL_ABORT_POLICY = "abort-policy"
   val VAL_CALLER_RUNS_POLICY = "caller-runs-policy"
   val VAL_DISCARD_OLDEST_POLICY = "discard-oldest-policy"
-  val VAL_DISCARD_POLICY = "discard-policy" 
+  val VAL_DISCARD_POLICY = "discard-policy"
 
   // dispatcher queue types
   val VAL_BOUNDED_LINKED_BLOCKING_QUEUE = "bounded-linked-blocking-queue"

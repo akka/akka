@@ -18,7 +18,7 @@ trait ThreadPoolBuilder {
   private val NR_MAX_THREADS = 128
   private val KEEP_ALIVE_TIME = 60000L // default is one minute
   private val MILLISECONDS = TimeUnit.MILLISECONDS
-  
+
   private var threadPoolBuilder: ThreadPoolExecutor = _
   private var boundedExecutorBound = -1
   private var inProcessOfBuilding = false
@@ -30,7 +30,7 @@ trait ThreadPoolBuilder {
 
   def isShutdown = executor.isShutdown
 
-  def buildThreadPool = synchronized {
+  def buildThreadPool: Unit = synchronized {
     ensureNotActive
     inProcessOfBuilding = false
     if (boundedExecutorBound > 0) {
@@ -152,7 +152,7 @@ trait ThreadPoolBuilder {
   }
 
   def ensureNotActive: Unit
-  
+
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */

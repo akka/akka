@@ -22,7 +22,7 @@ class ActiveObjectProperties {
   var port: Int = _
   var lifecyclye: String = ""
   var dispatcher: DispatcherProperties = _
-  
+
 
   /**
    * Sets the properties to the given builder.

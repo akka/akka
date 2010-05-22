@@ -17,7 +17,7 @@ object ProducerFeatureTest {
 
 class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
   import ProducerFeatureTest._
-  
+
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     CamelContextManager.init
@@ -122,7 +122,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
   }
 
   private def mockEndpoint = CamelContextManager.context.getEndpoint("mock:mock", classOf[MockEndpoint])
-  
+
   class TestRoute extends RouteBuilder {
     def configure {
       // for one-way messaging tests

@@ -25,7 +25,7 @@ object ServerInitiatedRemoteActorServer {
 }
 
 object ServerInitiatedRemoteActorClient extends Logging {
-  
+
   def run = {
     val actor = RemoteClient.actorFor("hello-service", "localhost", 9999)
     val result = actor !! "Hello"

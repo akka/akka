@@ -13,7 +13,7 @@ import Actor._
 case class Send(actor: Actor)
 
 object RemoteActorSpecActorUnidirectional {
-  val latch = new CountDownLatch(1)  
+  val latch = new CountDownLatch(1)
 }
 class RemoteActorSpecActorUnidirectional extends Actor {
   self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)

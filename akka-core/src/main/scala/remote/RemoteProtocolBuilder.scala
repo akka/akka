@@ -22,7 +22,7 @@ object RemoteProtocolBuilder {
     SERIALIZER_JAVA_JSON.classLoader = Some(cl)
     SERIALIZER_SCALA_JSON.classLoader = Some(cl)
   }
-  
+
   def getMessage(request: RemoteRequestProtocol): Any = {
     request.getProtocol match {
       case SerializationProtocol.JAVA =>

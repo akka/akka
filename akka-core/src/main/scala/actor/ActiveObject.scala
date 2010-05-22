@@ -30,8 +30,8 @@ object Annotations {
 }
 
 /**
- * Configuration factory for Active Objects. 
- * 
+ * Configuration factory for Active Objects.
+ *
  * FIXDOC: document ActiveObjectConfiguration
  */
 final class ActiveObjectConfiguration {
@@ -74,7 +74,7 @@ final class ActiveObjectConfiguration {
  */
 object ActiveObject {
   import Actor.actorOf
-  
+
   val AKKA_CAMEL_ROUTING_SCHEME = "akka"
   private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
@@ -182,7 +182,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, 
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long,
                      dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = actorOf(new Dispatcher(false, restartCallbacks))
     actor.dispatcher = dispatcher
@@ -197,7 +197,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
-  def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, 
+  def newInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean,
                      dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = actorOf(new Dispatcher(transactionRequired, restartCallbacks))
     actor.dispatcher = dispatcher
@@ -212,7 +212,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
-  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, 
+  def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean,
                      dispatcher: MessageDispatcher, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = actorOf(new Dispatcher(transactionRequired, restartCallbacks))
     actor.dispatcher = dispatcher
@@ -227,7 +227,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
-  def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher, 
+  def newRemoteInstance[T](target: Class[T], timeout: Long, dispatcher: MessageDispatcher,
                            hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = actorOf(new Dispatcher(false, restartCallbacks))
     actor.dispatcher = dispatcher
@@ -242,7 +242,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher, 
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, dispatcher: MessageDispatcher,
                            hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = actorOf(new Dispatcher(false, restartCallbacks))
     actor.dispatcher = dispatcher
@@ -250,7 +250,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
-  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, 
+  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean,
                            dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = actorOf(new Dispatcher(transactionRequired, None))
     actor.dispatcher = dispatcher
@@ -258,7 +258,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
-  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher, 
+  def newRemoteInstance[T](target: Class[T], timeout: Long, transactionRequired: Boolean, dispatcher: MessageDispatcher,
                           hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = actorOf(new Dispatcher(transactionRequired, restartCallbacks))
     actor.dispatcher = dispatcher
@@ -266,7 +266,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, 
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean,
                            dispatcher: MessageDispatcher, hostname: String, port: Int): T = {
     val actor = actorOf(new Dispatcher(transactionRequired, None))
     actor.dispatcher = dispatcher
@@ -274,7 +274,7 @@ object ActiveObject {
   }
 
   @deprecated("use newInstance(intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration) instead")
-  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean, 
+  def newRemoteInstance[T](intf: Class[T], target: AnyRef, timeout: Long, transactionRequired: Boolean,
                            dispatcher: MessageDispatcher, hostname: String, port: Int, restartCallbacks: Option[RestartCallbacks]): T = {
     val actor = actorOf(new Dispatcher(transactionRequired, restartCallbacks))
     actor.dispatcher = dispatcher
@@ -374,7 +374,7 @@ object ActiveObject {
     this
   }
 
-  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =  
+  private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
     Supervisor(SupervisorConfig(restartStrategy, components))
 }
 
@@ -556,12 +556,12 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
         preRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(pre, ZERO_ITEM_CLASS_ARRAY: _*)
         } catch { case e => throw new IllegalStateException(
-          "Could not find pre restart method [" + pre + "] \nin [" + 
+          "Could not find pre restart method [" + pre + "] \nin [" +
           targetClass.getName + "]. \nIt must have a zero argument definition.") })
         postRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(post, ZERO_ITEM_CLASS_ARRAY: _*)
         } catch { case e => throw new IllegalStateException(
-          "Could not find post restart method [" + post + "] \nin [" + 
+          "Could not find post restart method [" + post + "] \nin [" +
           targetClass.getName + "]. \nIt must have a zero argument definition.") })
     }
 
@@ -571,11 +571,11 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
 
     if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
       throw new IllegalStateException(
-        "Method annotated with @prerestart or defined as a restart callback in \n[" + 
+        "Method annotated with @prerestart or defined as a restart callback in \n[" +
         targetClass.getName + "] must have a zero argument definition")
     if (postRestart.isDefined && postRestart.get.getParameterTypes.length != 0)
       throw new IllegalStateException(
-        "Method annotated with @postrestart or defined as a restart callback in \n[" + 
+        "Method annotated with @postrestart or defined as a restart callback in \n[" +
         targetClass.getName + "] must have a zero argument definition")
 
     if (preRestart.isDefined) preRestart.get.setAccessible(true)
@@ -583,7 +583,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
 
     // see if we have a method annotated with @inittransactionalstate, if so invoke it
     initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
-    if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0) 
+    if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0)
       throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
     if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }

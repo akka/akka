@@ -27,7 +27,7 @@ class ActorComponent extends DefaultComponent {
     val idAndUuid = idAndUuidPair(remaining)
     new ActorEndpoint(uri, this, idAndUuid._1, idAndUuid._2)
   }
-  
+
   private def idAndUuidPair(remaining: String): Tuple2[Option[String], Option[String]] = {
     remaining split ":" toList match {
       case             id :: Nil => (Some(id), None)
@@ -52,13 +52,13 @@ class ActorComponent extends DefaultComponent {
 
  * @author Martin Krasser
  */
-class ActorEndpoint(uri: String, 
-                    comp: ActorComponent, 
-                    val id: Option[String], 
+class ActorEndpoint(uri: String,
+                    comp: ActorComponent,
+                    val id: Option[String],
                     val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
 
   /**
-   * @throws UnsupportedOperationException 
+   * @throws UnsupportedOperationException
    */
   def createConsumer(processor: Processor): Consumer =
     throw new UnsupportedOperationException("actor consumer not supported yet")
@@ -106,7 +106,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
    * Send the exchange in-message to the given actor using the ! operator. The message
    * send to the actor is of type se.scalablesolutions.akka.camel.Message.
    */
-  protected def processInOnly(exchange: Exchange, actor: ActorRef): Unit = 
+  protected def processInOnly(exchange: Exchange, actor: ActorRef): Unit =
     actor ! exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
 
   /**

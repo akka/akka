@@ -23,7 +23,7 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    *
    * @see CamelContextManager.
    */
-  @deprecated("use bodyAs[T](implicit m: Manifest[T]): T instead") 
+  @deprecated("use bodyAs[T](implicit m: Manifest[T]): T instead")
   def bodyAs[T](clazz: Class[T]): T =
     CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](clazz, body)
 
@@ -53,7 +53,7 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    *
    * @see Message#bodyAs(Class)
    */
-  @deprecated("use setBodyAs[T](implicit m: Manifest[T]): Message instead") 
+  @deprecated("use setBodyAs[T](implicit m: Manifest[T]): Message instead")
   def setBodyAs[T](clazz: Class[T]): Message = setBody(bodyAs(clazz))
 
   /**
@@ -200,7 +200,7 @@ class CamelExchangeAdapter(exchange: Exchange) {
    *
    * @see Failure
    */
-  def toFailureMessage(headers: Map[String, Any]): Failure = 
+  def toFailureMessage(headers: Map[String, Any]): Failure =
     Failure(exchange.getException, headers ++ responseMessage.toMessage.headers)
 
   private def requestMessage = exchange.getIn
@@ -246,19 +246,19 @@ class CamelMessageAdapter(val cm: CamelMessage) {
 /**
  * Defines conversion methods to CamelExchangeAdapter and CamelMessageAdapter.
  * Imported by applications
- * that implicitly want to use conversion methods of CamelExchangeAdapter and CamelMessageAdapter. 
+ * that implicitly want to use conversion methods of CamelExchangeAdapter and CamelMessageAdapter.
  */
 object CamelMessageConversion {
-  
+
   /**
    * Creates an CamelExchangeAdapter for the given Camel exchange.
    */
-  implicit def toExchangeAdapter(ce: Exchange): CamelExchangeAdapter = 
+  implicit def toExchangeAdapter(ce: Exchange): CamelExchangeAdapter =
     new CamelExchangeAdapter(ce)
 
   /**
    * Creates an CamelMessageAdapter for the given Camel message.
    */
-  implicit def toMessageAdapter(cm: CamelMessage): CamelMessageAdapter = 
+  implicit def toMessageAdapter(cm: CamelMessage): CamelMessageAdapter =
     new CamelMessageAdapter(cm)
 }

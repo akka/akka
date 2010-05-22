@@ -37,7 +37,7 @@ class ReactorBasedSingleThreadEventDrivenDispatcher(name: String) extends Abstra
   }
 
   def isShutdown = !active
-  
+
   def usesActorMailbox = false
 
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {

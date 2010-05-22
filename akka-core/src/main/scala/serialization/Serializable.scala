@@ -32,20 +32,20 @@ trait Serializable {
 
 /**
  * Serialization protocols.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Serializable {
 
   /**
-   * Example on how to use the SBinary serialization protocol: 
+   * Example on how to use the SBinary serialization protocol:
    * <pre>
    * case class User(val usernamePassword: Tuple2[String, String],
    *                 val email: String,
    *                 val age: Int)
    *   extends Serializable.SBinary[User] {
    *   def this() = this(null, null, 0)
-   *   import sbinary.DefaultProtocol._                                             
+   *   import sbinary.DefaultProtocol._
    *   implicit object UserFormat extends Format[User] {
    *     def reads(in : Input) = User(
    *       read[Tuple2[String, String]](in),
@@ -74,7 +74,7 @@ object Serializable {
   trait JSON extends Serializable {
     def toJSON: String
   }
-  
+
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */

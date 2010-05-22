@@ -38,7 +38,7 @@ class QueueActor extends Transactor {
       try {
         (1 to no).foreach(e => accounts.dequeue)
       } catch {
-        case e: Exception => 
+        case e: Exception =>
           failer !! "Failure"
       }
       self.reply(true)

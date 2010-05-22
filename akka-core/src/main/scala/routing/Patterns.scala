@@ -21,19 +21,19 @@ object Patterns {
 
   /** Interceptor is a filter(x,y) where x.isDefinedAt is considered to be always true
    */
-  def intercept[A, B](interceptor: (A) => Unit, interceptee: PF[A, B]): PF[A, B] = 
+  def intercept[A, B](interceptor: (A) => Unit, interceptee: PF[A, B]): PF[A, B] =
     filter({case a if a.isInstanceOf[A] => interceptor(a)}, interceptee)
 
   /** Creates a LoadBalancer from the thunk-supplied InfiniteIterator
    */
-   def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef = 
+   def loadBalancerActor(actors: => InfiniteIterator[ActorRef]): ActorRef =
     actorOf(new Actor with LoadBalancer {
       val seq = actors
     }).start
 
   /** Creates a Dispatcher given a routing and a message-transforming function
    */
-   def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef = 
+   def dispatcherActor(routing: PF[Any, ActorRef], msgTransformer: (Any) => Any): ActorRef =
     actorOf(new Actor with Dispatcher {
       override def transform(msg: Any) = msgTransformer(msg)
       def routes = routing
@@ -45,9 +45,9 @@ object Patterns {
     def routes = routing
   }).start
 
-  /** Creates an actor that pipes all incoming messages to 
+  /** Creates an actor that pipes all incoming messages to
    *  both another actor and through the supplied function
    */
-  def loggerActor(actorToLog: ActorRef, logger: (Any) => Unit): ActorRef = 
+  def loggerActor(actorToLog: ActorRef, logger: (Any) => Unit): ActorRef =
     dispatcherActor({case _ => actorToLog}, logger)
 }
