@@ -22,7 +22,7 @@ object ExampleSession {
     direct
 
     Thread.sleep(1000)
-    
+
     println("==== FANOUT ===")
     fanout
   }

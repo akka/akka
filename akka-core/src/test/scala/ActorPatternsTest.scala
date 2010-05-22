@@ -19,7 +19,6 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
   import Patterns._
   @Test def testDispatcher = {
     val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
-
     val targetOk = new AtomicInteger(0)
     val t1 = actorOf( new Actor() {
 	  def receive = {
@@ -82,8 +81,8 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     t1ProcessedCount.get must be < (t2ProcessedCount.get) // because t1 is much slower and thus has a bigger mailbox all the time
     for(a <- List(t1,t2,d)) a.stop
   }
-  
-  @Test def testListener = {  
+
+  @Test def testListener = {
     val latch = new CountDownLatch(2)
     val num = new AtomicInteger(0)
     val i = actorOf(new Actor with Listeners {
@@ -92,17 +91,17 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
       }
     })
     i.start
-      
-    def newListener = actor { 
-      case "bar" => 
+
+    def newListener = actor {
+      case "bar" =>
       num.incrementAndGet
       latch.countDown
     }
-      
+
     val a1 = newListener
     val a2 = newListener
     val a3 = newListener
-    
+
     i ! Listen(a1)
     i ! Listen(a2)
     i ! Listen(a3)

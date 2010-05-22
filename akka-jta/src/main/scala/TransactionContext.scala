@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
 
 /**
- * The TransactionContext object manages the transactions. 
+ * The TransactionContext object manages the transactions.
  * Can be used as higher-order functional 'atomic blocks' or monadic.
  *
  * Manages a thread-local stack of TransactionContexts.
@@ -19,7 +19,7 @@ import se.scalablesolutions.akka.config.Config._
  * Example usage 1:
  * <pre>
  * import TransactionContext._
- * 
+ *
  * withTxRequired {
  *   ... // transactional stuff
  * }
@@ -53,7 +53,7 @@ import se.scalablesolutions.akka.config.Config._
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionContext extends TransactionProtocol with Logging {
-  implicit val tc = TransactionContainer()                    
+  implicit val tc = TransactionContainer()
 
   private[TransactionContext] val stack = new scala.util.DynamicVariable(new TransactionContext(tc))
 
@@ -68,7 +68,7 @@ object TransactionContext extends TransactionProtocol with Logging {
    *         if (status != Status.STATUS_ROLLEDBACK &&
    *             status != Status.STATUS_ROLLING_BACK &&
    *             status != Status.STATUS_MARKED_ROLLBACK) {
-   *           log.debug("Flushing EntityManager...") 
+   *           log.debug("Flushing EntityManager...")
    *           em.flush // flush EntityManager on success
    *         }
    *       } catch {
@@ -87,16 +87,16 @@ object TransactionContext extends TransactionProtocol with Logging {
    *     }
    *   })
    * </pre>
-   * You should also override the 'joinTransaction' and 'handleException' methods. 
-   * See ScalaDoc for these methods in the 'TransactionProtocol' for details. 
+   * You should also override the 'joinTransaction' and 'handleException' methods.
+   * See ScalaDoc for these methods in the 'TransactionProtocol' for details.
    */
   def registerSynchronization(sync: Synchronization) = synchronization.add(sync)
-  
+
   /**
    * Registeres a join transaction function.
    * <p/>
    * Here is an example on how to integrate with JPA EntityManager.
-   * 
+   *
    * <pre>
    * TransactionContext.registerJoinTransactionFun(() => {
    *   val em: EntityManager = ... // get the EntityManager
@@ -105,12 +105,12 @@ object TransactionContext extends TransactionProtocol with Logging {
    * </pre>
    */
   def registerJoinTransactionFun(fn: () => Unit) = joinTransactionFuns.add(fn)
-  
+
   /**
    * Handle exception. Can be overriden by concrete transaction service implementation.
    * <p/>
    * Here is an example on how to handle JPA exceptions.
-   * 
+   *
    * <pre>
    * TransactionContext.registerExceptionNotToRollbackOn(classOf[NoResultException])
    * TransactionContext.registerExceptionNotToRollbackOn(classOf[NonUniqueResultException])

@@ -18,7 +18,7 @@ import com.google.inject._
  * <p/>
  * If you don't want declarative configuration then you should use the <code>ActiveObject</code>
  * factory methods.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectConfigurator {

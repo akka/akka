@@ -16,7 +16,7 @@ private[akka] trait Configurator {
    * @param clazz the class for the active object
    * @return the active object for the class
    */
-  def getInstance[T](clazz: Class[T]): List[T]  
+  def getInstance[T](clazz: Class[T]): List[T]
 
   def getComponentInterfaces: List[Class[_]]
 

@@ -88,7 +88,7 @@ class AgentSpec extends junit.framework.TestCase with Suite with MustMatchers {
     result must be(4)
     agent1.close
   }
-  
+
   @Test def testAgentMap = {
     val agent1 = Agent(3)
     val result = for (first <- agent1) yield first + 1

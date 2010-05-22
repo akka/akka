@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 sealed trait ListenerMessage
 case class Listen(listener: ActorRef) extends ListenerMessage
-case class Deafen(listener: ActorRef) extends ListenerMessage 
+case class Deafen(listener: ActorRef) extends ListenerMessage
 case class WithListeners(f: Set[ActorRef] => Unit) extends ListenerMessage
 
 /** Listeners is a generic trait to implement listening capability on an Actor
@@ -26,6 +26,6 @@ trait Listeners { self : Actor =>
     case Deafen(l) => listeners( _ - l )
     case WithListeners(f) => listeners foreach f
   }
-  
+
   protected def gossip(msg : Any) = listeners foreach ( _ foreach ( _ ! msg ) )
 }

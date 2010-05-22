@@ -80,7 +80,7 @@ object AMQP {
   class AMQPSupervisor extends Actor with Logging {
     import scala.collection.JavaConversions._
     import self._
-    
+
     private val connections = new ConcurrentHashMap[ActorRef, ActorRef]
 
     self.faultHandler = Some(OneForOneStrategy(5, 5000))
@@ -364,7 +364,7 @@ object AMQP {
 
     import scala.collection.JavaConversions._
     import self._
-    
+
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
 

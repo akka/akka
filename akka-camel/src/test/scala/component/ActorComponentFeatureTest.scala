@@ -11,17 +11,17 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     CamelContextManager.init
-    CamelContextManager.start 
+    CamelContextManager.start
   }
 
   override protected def afterAll = CamelContextManager.stop
 
   override protected def afterEach = ActorRegistry.shutdownAll
-  
+
   feature("Communicate with an actor from a Camel application using actor endpoint URIs") {
     import CamelContextManager.template
     import Actor._
-    
+
     scenario("one-way communication using actor id") {
       val actor = actorOf(new Tester with Retain with Countdown[Message])
       actor.start

@@ -45,7 +45,7 @@ object Dispatchers {
       super.register(actor)
     }
   }
-  
+
   object globalReactorBasedSingleThreadEventDrivenDispatcher extends ReactorBasedSingleThreadEventDrivenDispatcher("global")
   object globalReactorBasedThreadPoolEventDrivenDispatcher extends ReactorBasedThreadPoolEventDrivenDispatcher("global")
 

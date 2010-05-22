@@ -96,7 +96,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
     active = false
     references.clear
   }
-  
+
   def usesActorMailbox = true
 
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(

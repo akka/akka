@@ -11,6 +11,7 @@ import se.scalablesolutions.akka.remote.RemoteServer
 import Actor._
 
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
+import java.net.InetSocketAddress
 
 class SupervisorException private[akka](message: String) extends RuntimeException(message)
 
@@ -19,7 +20,7 @@ class SupervisorException private[akka](message: String) extends RuntimeExceptio
  * These are not actors, if you need a supervisor that is an Actor then you have to use the 'SupervisorActor'
  * factory object.
  * <p/>
- * 
+ *
  * Here is a sample on how to use it:
  * <pre>
  *  val supervisor = Supervisor(
@@ -49,7 +50,7 @@ object Supervisor {
 /**
  * Factory object for creating supervisors as Actors, it has both a declarative and programatic API.
  * <p/>
- * 
+ *
  * Here is a sample on how to use the programmatic API (note that the supervisor is automatically started):
  * <pre>
  * val supervisor = SupervisorActor(AllForOneStrategy(maxNrOfRetries, timeRange), Array(classOf[Throwable]))
@@ -67,22 +68,22 @@ object Supervisor {
  *        LifeCycle(Permanent)) ::
  *      Nil))
  * </pre>
- * 
+ *
  * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
  * <pre>
  * supervisor.link(child)
  * supervisor.unlink(child)
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object SupervisorActor {
-  def apply(config: SupervisorConfig): ActorRef = { 
+  def apply(config: SupervisorConfig): ActorRef = {
     val (handler, trapExits) = SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config)
     actorOf(new SupervisorActor(handler, trapExits)).start
   }
 
-  def apply(handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]): ActorRef = 
+  def apply(handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]): ActorRef =
     actorOf(new SupervisorActor(handler, trapExceptions)).start
 }
 
@@ -116,9 +117,9 @@ object SupervisorActor {
  */
 object SupervisorFactory {
   def apply(config: SupervisorConfig) = new SupervisorFactory(config)
-  
-  private[akka] def retrieveFaultHandlerAndTrapExitsFrom(config: SupervisorConfig): 
-    Tuple2[FaultHandlingStrategy, List[Class[_ <: Throwable]]] = config match { 
+
+  private[akka] def retrieveFaultHandlerAndTrapExitsFrom(config: SupervisorConfig):
+    Tuple2[FaultHandlingStrategy, List[Class[_ <: Throwable]]] = config match {
     case SupervisorConfig(RestartStrategy(scheme, maxNrOfRetries, timeRange, trapExceptions), _) =>
       scheme match {
         case AllForOne => (AllForOneStrategy(maxNrOfRetries, timeRange), trapExceptions)
@@ -128,8 +129,8 @@ object SupervisorFactory {
 }
 
 /**
- * For internal use only. 
- * 
+ * For internal use only.
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Logging {
@@ -148,32 +149,32 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
 
 /**
  * <b>NOTE:</b>
- * <p/> 
+ * <p/>
  * The supervisor class is only used for the configuration system when configuring supervisor
  * hierarchies declaratively. Should not be used as part of the regular programming API. Instead
  * wire the children together using 'link', 'spawnLink' etc. and set the 'trapExit' flag in the
  * children that should trap error signals and trigger restart.
- * <p/> 
+ * <p/>
  * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up children.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */                                  
+ */
 sealed class Supervisor private[akka] (
   handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
   extends Configurator {
   import Supervisor._
-  
+
   private val childActors = new ConcurrentHashMap[String, List[ActorRef]]
-  private val childSupervisors = new CopyOnWriteArrayList[Supervisor] 
+  private val childSupervisors = new CopyOnWriteArrayList[Supervisor]
   private[akka] val supervisor = SupervisorActor(handler, trapExceptions)
-   
+
   def uuid = supervisor.uuid
-   
-  def start: Supervisor = { 
+
+  def start: Supervisor = {
     ConfiguratorRepository.registerConfigurator(this)
     this
   }
-  
+
   def shutdown: Unit = supervisor.stop
 
   def link(child: ActorRef) = supervisor.link(child)
@@ -186,7 +187,7 @@ sealed class Supervisor private[akka] (
   // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
   def getComponentInterfaces: List[Class[_]] =
     childActors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
-  
+
   // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
   def isDefined(clazz: Class[_]): Boolean = childActors.containsKey(clazz.getName)
 
@@ -196,7 +197,7 @@ sealed class Supervisor private[akka] (
         server match {
           case Supervise(actorRef, lifeCycle, remoteAddress) =>
             val className = actorRef.actor.getClass.getName
-            val currentActors = { 
+            val currentActors = {
               val list = childActors.get(className)
               if (list eq null) List[ActorRef]()
               else list
@@ -204,11 +205,8 @@ sealed class Supervisor private[akka] (
             childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
             supervisor.link(actorRef)
-            remoteAddress.foreach { address => RemoteServer
-              .actorsFor(RemoteServer.Address(address.hostname, address.port))
-              .actors.put(actorRef.id, actorRef)
-            }
-
+            remoteAddress.foreach(address =>
+              RemoteServer.registerActor(new InetSocketAddress(address.hostname, address.port), actorRef.uuid, actorRef))
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
@@ -231,11 +229,11 @@ sealed class Supervisor private[akka] (
  * supervisor.link(child)
  * supervisor.unlink(child)
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class SupervisorActor private[akka] (
-  handler: FaultHandlingStrategy, 
+  handler: FaultHandlingStrategy,
   trapExceptions: List[Class[_ <: Throwable]]) extends Actor {
   import self._
   trapExit = trapExceptions

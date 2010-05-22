@@ -11,54 +11,54 @@ public final class ProtobufProtocol {
       com.google.protobuf.GeneratedMessage {
     // Use ProtobufPOJO.newBuilder() to construct.
     private ProtobufPOJO() {}
-    
+
     private static final ProtobufPOJO defaultInstance = new ProtobufPOJO();
     public static ProtobufPOJO getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public ProtobufPOJO getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.actor.ProtobufProtocol.internal_static_se_scalablesolutions_akka_actor_ProtobufPOJO_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.actor.ProtobufProtocol.internal_static_se_scalablesolutions_akka_actor_ProtobufPOJO_fieldAccessorTable;
     }
-    
+
     // required uint64 id = 1;
     public static final int ID_FIELD_NUMBER = 1;
     private boolean hasId;
     private long id_ = 0L;
     public boolean hasId() { return hasId; }
     public long getId() { return id_; }
-    
+
     // required string name = 2;
     public static final int NAME_FIELD_NUMBER = 2;
     private boolean hasName;
     private java.lang.String name_ = "";
     public boolean hasName() { return hasName; }
     public java.lang.String getName() { return name_; }
-    
+
     // required bool status = 3;
     public static final int STATUS_FIELD_NUMBER = 3;
     private boolean hasStatus;
     private boolean status_ = false;
     public boolean hasStatus() { return hasStatus; }
     public boolean getStatus() { return status_; }
-    
+
     public final boolean isInitialized() {
       if (!hasId) return false;
       if (!hasName) return false;
       if (!hasStatus) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (hasId()) {
@@ -72,12 +72,12 @@ public final class ProtobufProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasId()) {
         size += com.google.protobuf.CodedOutputStream
@@ -95,7 +95,7 @@ public final class ProtobufProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -153,31 +153,31 @@ public final class ProtobufProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO result;
-      
+
       // Construct using se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -186,20 +186,20 @@ public final class ProtobufProtocol {
         result = new se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO getDefaultInstanceForType() {
         return se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -209,7 +209,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -218,7 +218,7 @@ public final class ProtobufProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -228,7 +228,7 @@ public final class ProtobufProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO) {
           return mergeFrom((se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO)other);
@@ -237,7 +237,7 @@ public final class ProtobufProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO other) {
         if (other == se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO.getDefaultInstance()) return this;
         if (other.hasId()) {
@@ -252,7 +252,7 @@ public final class ProtobufProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -289,8 +289,8 @@ public final class ProtobufProtocol {
           }
         }
       }
-      
-      
+
+
       // required uint64 id = 1;
       public boolean hasId() {
         return result.hasId();
@@ -308,7 +308,7 @@ public final class ProtobufProtocol {
         result.id_ = 0L;
         return this;
       }
-      
+
       // required string name = 2;
       public boolean hasName() {
         return result.hasName();
@@ -329,7 +329,7 @@ public final class ProtobufProtocol {
         result.name_ = getDefaultInstance().getName();
         return this;
       }
-      
+
       // required bool status = 3;
       public boolean hasStatus() {
         return result.hasStatus();
@@ -348,22 +348,22 @@ public final class ProtobufProtocol {
         return this;
       }
     }
-    
+
     static {
       se.scalablesolutions.akka.actor.ProtobufProtocol.getDescriptor();
     }
-    
+
     static {
       se.scalablesolutions.akka.actor.ProtobufProtocol.internalForceInit();
     }
   }
-  
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_se_scalablesolutions_akka_actor_ProtobufPOJO_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_se_scalablesolutions_akka_actor_ProtobufPOJO_fieldAccessorTable;
-  
+
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -397,6 +397,6 @@ public final class ProtobufProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
+
   public static void internalForceInit() {}
 }

@@ -87,15 +87,15 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
 
       val value1 = atomic { ref1.get.get }
       val value2 = atomic { ref2.get.get }
-      
+
       value1 should be(1)
       value2 should be(2)
     }
 
     it("should be able to be used in a 'foreach' for comprehension") {
       val ref = Ref(3)
-      
-      var result = 0      
+
+      var result = 0
 
       atomic {
         for (value <- ref) {
@@ -133,7 +133,7 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
 
       value3 should be(3)
     }
-    
+
     it("should be able to be used in a 'filter' for comprehension") {
       val ref1 = Ref(1)
 
@@ -142,7 +142,7 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       }
 
       val optLess2 = atomic { refLess2.get }
-      
+
       val refGreater2 = atomic {
         for (value <- ref1 if value > 2) yield value
       }

@@ -21,13 +21,13 @@ import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
  * val myVector = TransactionalVector()
  * val myRef = TransactionalRef()
  * </pre>
- * 
+ *
  * <p/>
  * Example Java usage:
  * <pre>
  * TransactionalMap myMap = TransactionalState.newMap();
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionalState {
@@ -58,7 +58,7 @@ trait Committable {
 
 object RefFactory {
   private val factory = getGlobalStmInstance.getProgrammaticReferenceFactoryBuilder.build
-  
+
   def createRef[T] = factory.atomicCreateReference[T]()
 
   def createRef[T](value: T) = factory.atomicCreateReference(value)
@@ -66,7 +66,7 @@ object RefFactory {
 
 /**
  * Alias to TransactionalRef.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Ref {
@@ -79,7 +79,7 @@ object Ref {
 
 /**
  * Alias to Ref.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionalRef {
@@ -146,7 +146,7 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
     ensureIsInTransaction
     !ref.isNull
   }
-  
+
   def isEmpty: Boolean = {
     ensureIsInTransaction
     ref.isNull
@@ -171,7 +171,7 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
    * Necessary to keep from being implicitly converted to Iterable in for comprehensions.
    */
   def withFilter(p: T => Boolean): WithFilter = new WithFilter(p)
-        
+
   class WithFilter(p: T => Boolean) {
     def map[B](f: T => B): TransactionalRef[B] = self filter p map f
     def flatMap[B](f: T => TransactionalRef[B]): TransactionalRef[B] = self filter p flatMap f
@@ -228,14 +228,14 @@ class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends 
   val uuid = UUID.newUuid.toString
 
   protected[this] val ref = new TransactionalRef(initialOpt.orElse(Some(new HashTrie[K, V])))
- 
-  def -=(key: K) = { 
+
+  def -=(key: K) = {
     remove(key)
     this
   }
 
   def +=(key: K, value: V) = put(key, value)
-  
+
   def +=(kv: (K, V)) = {
     put(kv._1,kv._2)
     this
@@ -249,7 +249,7 @@ class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends 
   }
 
   def get(key: K): Option[V] = ref.get.get.get(key)
- 
+
   override def put(key: K, value: V): Option[V] = {
     val map = ref.get.get
     val oldValue = map.get(key)
@@ -262,7 +262,7 @@ class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends 
     val oldValue = map.get(key)
     ref.swap(map.update(key, value))
   }
-  
+
   def iterator = ref.get.get.iterator
 
   override def elements: Iterator[(K, V)] = ref.get.get.iterator
@@ -272,15 +272,15 @@ class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends 
   override def clear = ref.swap(new HashTrie[K, V])
 
   override def size: Int = ref.get.get.size
- 
+
   override def hashCode: Int = System.identityHashCode(this);
 
   override def equals(other: Any): Boolean =
-    other.isInstanceOf[TransactionalMap[_, _]] && 
+    other.isInstanceOf[TransactionalMap[_, _]] &&
     other.hashCode == hashCode
 
   override def toString = if (outsideTransaction) "<TransactionalMap>" else super.toString
-  
+
   def outsideTransaction =
     org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
 }
@@ -302,9 +302,9 @@ class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Trans
   val uuid = UUID.newUuid.toString
 
   private[this] val ref = new TransactionalRef(initialOpt.orElse(Some(EmptyVector)))
- 
+
   def clear = ref.swap(EmptyVector)
-  
+
   def +(elem: T) = add(elem)
 
   def add(elem: T) = ref.swap(ref.get.get + elem)
@@ -324,12 +324,12 @@ class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Trans
 
   override def hashCode: Int = System.identityHashCode(this);
 
-  override def equals(other: Any): Boolean = 
-    other.isInstanceOf[TransactionalVector[_]] && 
+  override def equals(other: Any): Boolean =
+    other.isInstanceOf[TransactionalVector[_]] &&
     other.hashCode == hashCode
 
   override def toString = if (outsideTransaction) "<TransactionalVector>" else super.toString
-  
+
   def outsideTransaction =
     org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
 }

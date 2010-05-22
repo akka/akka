@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.actor.Actor
 
 class ActorComponentProvider(val clazz: Class[_], val configurators: List[Configurator])
     extends IoCFullyManagedComponentProvider with Logging {
-   
+
   override def getScope = ComponentScope.Singleton
 
   override def getInstance: AnyRef = {

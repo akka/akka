@@ -103,9 +103,11 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
       }
   }
 
-  lazy val authenticatorFQN =
-    Config.config.getString("akka.rest.authenticator")
-    .getOrElse(throw new IllegalStateException("akka.rest.authenticator"))
+  lazy val authenticatorFQN = {
+    val auth = Config.config.getString("akka.rest.authenticator", "N/A")
+    if (auth == "N/A") throw new IllegalStateException("The config option 'akka.rest.authenticator' is not defined in 'akka.conf'")
+    auth
+  }
 
   /**
    * Currently we always take the first, since there usually should be at most one authentication actor, but a round-robin
@@ -399,19 +401,31 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
   /**
    * principal name for the HTTP kerberos service, i.e HTTP/  { server } @  { realm }
    */
-  lazy val servicePrincipal = Config.config.getString("akka.rest.kerberos.servicePrincipal").getOrElse(throw new IllegalStateException("akka.rest.kerberos.servicePrincipal"))
+  lazy val servicePrincipal = {
+    val p = Config.config.getString("akka.rest.kerberos.servicePrincipal", "N/A")
+    if (p == "N/A") throw new IllegalStateException("The config option 'akka.rest.kerberos.servicePrincipal' is not defined in 'akka.conf'")
+    p
+  }
 
   /**
    * keytab location with credentials for the service principal
    */
-  lazy val keyTabLocation = Config.config.getString("akka.rest.kerberos.keyTabLocation").getOrElse(throw new IllegalStateException("akka.rest.kerberos.keyTabLocation"))
+  lazy val keyTabLocation = {
+    val p = Config.config.getString("akka.rest.kerberos.keyTabLocation", "N/A")
+    if (p == "N/A") throw new IllegalStateException("The config option 'akka.rest.kerberos.keyTabLocation' is not defined in 'akka.conf'")
+    p
+  }
 
-  lazy val kerberosDebug = Config.config.getString("akka.rest.kerberos.kerberosDebug").getOrElse("false")
+  lazy val kerberosDebug = {
+    val p = Config.config.getString("akka.rest.kerberos.kerberosDebug", "N/A")
+    if (p == "N/A") throw new IllegalStateException("The config option 'akka.rest.kerberos.kerberosDebug' is not defined in 'akka.conf'")
+    p
+  }
 
   /**
    * is not used by this authenticator, so accept an empty value
    */
-  lazy val realm = Config.config.getString("akka.rest.kerberos.realm").getOrElse("")
+  lazy val realm = Config.config.getString("akka.rest.kerberos.realm", "")
 
   /**
    * verify the kerberos token from a client with the server

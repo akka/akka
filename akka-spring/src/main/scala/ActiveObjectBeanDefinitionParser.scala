@@ -14,7 +14,7 @@ import org.w3c.dom.Element
  * @author michaelkober
  */
 class ActiveObjectBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectParser {
-  /* 
+  /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
   override def doParse(element: Element, parserContext: ParserContext, builder: BeanDefinitionBuilder) {
@@ -25,5 +25,5 @@ class ActiveObjectBeanDefinitionParser extends AbstractSingleBeanDefinitionParse
   /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#getBeanClass(org.w3c.dom.Element)
    */
-  override def getBeanClass(element: Element) = classOf[ActiveObjectFactoryBean]
+  override def getBeanClass(element: Element): Class[_] = classOf[ActiveObjectFactoryBean]
 }

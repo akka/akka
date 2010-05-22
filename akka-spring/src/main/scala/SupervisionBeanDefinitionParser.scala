@@ -58,8 +58,8 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
     trapExits.map(DomUtils.getTextValue(_).toClass).toArray
   }
 
-  /* 
+  /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#getBeanClass(org.w3c.dom.Element)
    */
-  override def getBeanClass(element: Element) = classOf[SupervisionFactoryBean]
+  override def getBeanClass(element: Element): Class[_] = classOf[SupervisionFactoryBean]
 }

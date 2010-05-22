@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.util.Logging
 
 /**
  * Defines the lifecycle of a CamelContext. Allowed state transitions are
- * init -> start -> stop -> init -> ... etc. 
+ * init -> start -> stop -> init -> ... etc.
  *
  * @author Martin Krasser
  */

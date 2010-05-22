@@ -27,7 +27,7 @@ object ConsumerRegisteredTest {
 
 class ConsumerRegisteredTest extends JUnitSuite {
   import ConsumerRegisteredTest._
-  
+
   @Test def shouldCreatePublishRequestList = {
     val as = List(actorOf[ConsumeAnnotatedActor])
     val events = for (a <- as; e <- ConsumerRegistered.forConsumer(a)) yield e

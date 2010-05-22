@@ -68,17 +68,17 @@ class SortedSetActor extends Transactor {
       self.reply(hackers.zrange(s, e))
 
     case MULTI(a, r, failer) =>
-      a.foreach{ h: Hacker => 
+      a.foreach{ h: Hacker =>
         hackers.+(h.name.getBytes, h.zscore)
       }
       try {
-        r.foreach{ h => 
+        r.foreach{ h =>
           if (hackers.size <= 3)
             throw new SetThresholdViolationException
           hackers.-(h.name.getBytes)
         }
       } catch {
-        case e: Exception => 
+        case e: Exception =>
           failer !! "Failure"
       }
       self.reply((a.size, r.size))
@@ -88,16 +88,16 @@ class SortedSetActor extends Transactor {
 import RedisStorageBackend._
 
 @RunWith(classOf[JUnitRunner])
-class RedisPersistentSortedSetSpec extends 
-  Spec with 
-  ShouldMatchers with 
+class RedisPersistentSortedSetSpec extends
+  Spec with
+  ShouldMatchers with
   BeforeAndAfterAll {
-  
+
   override def beforeAll {
     flushDB
     println("** destroyed database")
   }
-  
+
   override def afterAll {
     flushDB
     println("** destroyed database")
@@ -223,16 +223,16 @@ class RedisPersistentSortedSetSpec extends
       qa !! ADD(h5)
       qa !! ADD(h6)
       (qa !! SIZE).get.asInstanceOf[Int] should equal(6)
-      (qa !! RANGE(0, 5)).get.asInstanceOf[List[_]].size should equal(6) 
-      (qa !! RANGE(0, 6)).get.asInstanceOf[List[_]].size should equal(6) 
-      (qa !! RANGE(0, 3)).get.asInstanceOf[List[_]].size should equal(4) 
-      (qa !! RANGE(0, 1)).get.asInstanceOf[List[_]].size should equal(2) 
-      (qa !! RANGE(0, 0)).get.asInstanceOf[List[_]].size should equal(1) 
-      (qa !! RANGE(3, 1)).get.asInstanceOf[List[_]].size should equal(0) 
-      (qa !! RANGE(0, -1)).get.asInstanceOf[List[_]].size should equal(6) 
-      (qa !! RANGE(0, -2)).get.asInstanceOf[List[_]].size should equal(5) 
-      (qa !! RANGE(0, -4)).get.asInstanceOf[List[_]].size should equal(3) 
-      (qa !! RANGE(-4, -1)).get.asInstanceOf[List[_]].size should equal(4) 
+      (qa !! RANGE(0, 5)).get.asInstanceOf[List[_]].size should equal(6)
+      (qa !! RANGE(0, 6)).get.asInstanceOf[List[_]].size should equal(6)
+      (qa !! RANGE(0, 3)).get.asInstanceOf[List[_]].size should equal(4)
+      (qa !! RANGE(0, 1)).get.asInstanceOf[List[_]].size should equal(2)
+      (qa !! RANGE(0, 0)).get.asInstanceOf[List[_]].size should equal(1)
+      (qa !! RANGE(3, 1)).get.asInstanceOf[List[_]].size should equal(0)
+      (qa !! RANGE(0, -1)).get.asInstanceOf[List[_]].size should equal(6)
+      (qa !! RANGE(0, -2)).get.asInstanceOf[List[_]].size should equal(5)
+      (qa !! RANGE(0, -4)).get.asInstanceOf[List[_]].size should equal(3)
+      (qa !! RANGE(-4, -1)).get.asInstanceOf[List[_]].size should equal(4)
     }
   }
 }

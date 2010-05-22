@@ -52,12 +52,12 @@ object ForwardActorSpec {
     def receive = {
       case _ => {}
     }
-  }  
+  }
 }
 
 class ForwardActorSpec extends JUnitSuite {
   import ForwardActorSpec._
-  
+
   @Test
   def shouldForwardActorReferenceWhenInvokingForwardOnBang {
     val senderActor = actorOf[BangSenderActor]
@@ -76,6 +76,6 @@ class ForwardActorSpec extends JUnitSuite {
     val senderActor = actorOf[BangBangSenderActor]
     senderActor.start
     val latch = senderActor.actor.asInstanceOf[BangBangSenderActor].latch
-    assert(latch.await(1L, TimeUnit.SECONDS)) 
+    assert(latch.await(1L, TimeUnit.SECONDS))
   }
 }
