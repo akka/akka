@@ -19,41 +19,41 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
   import Patterns._
   @Test def testDispatcher = {
     val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
-    val latch = new CountDownLatch(1)
-    var targetOk = 0
-    val t1 = actor {
-      case `testMsg1` => targetOk += 2
-      case `testMsg2` => targetOk += 4
-    }
+    val targetOk = new AtomicInteger(0)
+    val t1 = actorOf( new Actor() {
+	  def receive = {
+        case `testMsg1` => self.reply(3)
+        case `testMsg2` => self.reply(7)
+      }
+    } ).start
 
-    val t2 = actor {
-      case `testMsg3` =>
-        targetOk += 8
-        latch.countDown
-    }
+    val t2 = actorOf( new Actor() {
+	  def receive = {
+        case `testMsg3` => self.reply(11)
+      }
+    }).start
 
     val d = dispatcherActor {
       case `testMsg1`|`testMsg2` => t1
       case `testMsg3` => t2
     }.start
 
-    d ! testMsg1
-    d ! testMsg2
-    d ! testMsg3
-    val done = latch.await(5,TimeUnit.SECONDS)
-    done must be (true)
-    targetOk must be(14)
-    t1.stop
-    t2.stop
-    d.stop
+    val result = for {
+      a <- (d.!![Int](testMsg1,5000))
+      b <- (d.!![Int](testMsg2,5000))
+      c <- (d.!![Int](testMsg3,5000))
+    } yield a + b + c
+      
+    result.get must be(21)
+	for(a <- List(t1,t2,d)) a.stop
   }
 
   @Test def testLogger = {
-    val msgs = new HashSet[Any]
+    val msgs = new java.util.concurrent.ConcurrentSkipListSet[Any]
     val t1 = actor {
       case _ =>
     }
-    val l = loggerActor(t1,(x) => msgs += x).start
+    val l = loggerActor(t1,(x) => msgs.add(x)).start
     val foo : Any = "foo"
     val bar : Any = "bar"
     l ! foo
@@ -79,9 +79,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     for (i <- 1 to 500) d ! i
     Thread.sleep(6000)
     t1ProcessedCount.get must be < (t2ProcessedCount.get) // because t1 is much slower and thus has a bigger mailbox all the time
-    t1.stop
-    t2.stop
-    d.stop
+    for(a <- List(t1,t2,d)) a.stop
   }
 
   @Test def testListener = {
@@ -114,6 +112,6 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     val done = latch.await(5,TimeUnit.SECONDS)
     done must be (true)
     num.get must be (2)
-    i.stop
+    for(a <- List(i,a1,a2,a3)) a.stop
   }
 }
