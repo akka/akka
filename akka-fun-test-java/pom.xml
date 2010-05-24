@@ -6,26 +6,42 @@
   <name>Akka Functional Tests in Java</name>
   <artifactId>akka-fun-test-java</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
-  <version>0.7</version>
+  <version>0.9</version>
   <packaging>jar</packaging>
 
   <properties>
-    <scala.version>2.7.7</scala.version>
+    <scala.version>2.8.0.RC2</scala.version>
     <atmosphere.version>0.5.2</atmosphere.version>
     <jersey.version>1.1.5</jersey.version>
     <grizzly.version>1.9.18-i</grizzly.version>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>embedded-repo</id>
+      <name>Embedded Repository</name>
+      <url>file://Users/jboner/src/scala/akka/embedded-repo</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>scala-tools.org</id>
+      <name>Scala-Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </pluginRepository>
+  </pluginRepositories>
+
   <dependencies>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
-      <artifactId>akka-kernel_2.7.7</artifactId>
-      <version>0.7</version>
+      <artifactId>akka-kernel_2.8.0.RC2</artifactId>
+      <version>0.9</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
-      <artifactId>akka-persistence-cassandra_2.7.7</artifactId>
-      <version>0.7</version>
+      <artifactId>akka-persistence-cassandra_2.8.0.RC2</artifactId>
+      <version>0.9</version>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
