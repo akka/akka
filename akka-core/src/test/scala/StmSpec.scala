@@ -81,5 +81,33 @@ class StmSpec extends
       }
       total should equal(0)
     }
+
+    it("should be able to initialize with atomic block inside actor constructor") {
+      try {
+        val actor = actorOf[StmTestActor]
+      } catch {
+        case e => fail(e.toString)
+      }
+    }
   }
+}
+
+class StmTestActor extends Actor {
+  import se.scalablesolutions.akka.persistence.redis.RedisStorage
+  import se.scalablesolutions.akka.stm.Transaction.Global
+  private var eventLog = Global.atomic { RedisStorage.getVector("log") }
+
+  def receive = { case _ => () }
+    /*
+    case msg @ EnrichTrade(trade) => 
+      atomic { eventLog + msg.toString.getBytes("UTF-8") }
+
+    case msg @ ValueTrade(trade) => 
+      atomic { eventLog + msg.toString.getBytes("UTF-8") }
+
+    case GetEventLog(trade) => 
+      val eventList = atomic { eventLog.map(bytes => new String(bytes, "UTF-8")).toList }
+      reply(EventLog(eventList))
+  }
+  */
 }
