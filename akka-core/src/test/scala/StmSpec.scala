@@ -82,9 +82,16 @@ class StmSpec extends
       total should equal(0)
     }
 
-    it("should be able to initialize with atomic block inside actor constructor") {
+    it("should be able to initialize with atomic {..} block inside actor constructor") {
+      import StmSpecVectorTestActor._
       try {
-        val actor = actorOf[StmTestActor]
+        val actor = actorOf[StmSpecVectorTestActor].start
+        actor !! Add(5)
+        val size1: Int = (actor !! Size).getOrElse(fail("Could not get Vector::size"))
+        size1 should equal(2)
+        actor !! Add(2)
+        val size2: Int = (actor !! Size).getOrElse(fail("Could not get Vector::size"))
+        size2 should equal(2)
       } catch {
         case e => fail(e.toString)
       }
@@ -92,22 +99,24 @@ class StmSpec extends
   }
 }
 
-class StmTestActor extends Actor {
-  import se.scalablesolutions.akka.persistence.redis.RedisStorage
+object StmSpecVectorTestActor {
+  case class Add(value: Int)
+  case object Size
+  case object Success
+}
+class StmSpecVectorTestActor extends Actor {
+  import StmSpecVectorTestActor._
   import se.scalablesolutions.akka.stm.Transaction.Global
-  private var eventLog = Global.atomic { RedisStorage.getVector("log") }
 
-  def receive = { case _ => () }
-    /*
-    case msg @ EnrichTrade(trade) => 
-      atomic { eventLog + msg.toString.getBytes("UTF-8") }
+  private var vector: TransactionalVector[Int] = Global.atomic { TransactionalVector(1) }
 
-    case msg @ ValueTrade(trade) => 
-      atomic { eventLog + msg.toString.getBytes("UTF-8") }
+  def receive = {
+    case Add(value) => 
+      Global.atomic { vector + value}
+      self.reply(Success)
 
-    case GetEventLog(trade) => 
-      val eventList = atomic { eventLog.map(bytes => new String(bytes, "UTF-8")).toList }
-      reply(EventLog(eventList))
+    case Size => 
+      val size = Global.atomic { vector.size }
+      self.reply(size)
   }
-  */
 }
