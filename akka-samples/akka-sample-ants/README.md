@@ -24,8 +24,10 @@ Running
 First time, 'sbt update' to get dependencies, then to run Ants use 'sbt run'. 
 Here is an example. First type 'sbt' to start SBT interactively, the run 'update' and 'run': 
 
-% sbt
+> % sbt
+
 > update
+
 > run
 
 
