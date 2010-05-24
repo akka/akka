@@ -152,7 +152,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
     val multiverse = "org.multiverse" % "multiverse-alpha" % "0.5" % "compile"
-    val jgroups = "jgroups" % "jgroups" % "2.8.0.CR7" % "compile"
+    val jgroups = "jgroups" % "jgroups" % "2.9.0.GA" % "compile"
     
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
