@@ -53,7 +53,7 @@ import org.scalatest.junit.JUnitSuite
 class RedisPersistentQSpec extends JUnitSuite {
   @Test
   def testSuccessfulNQ = {
-    val qa = actorOf[QueueActor]
+    val qa = actorOf(new QueueActor)
     qa.start
     qa !! NQ("a-123")
     qa !! NQ("a-124")
