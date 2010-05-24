@@ -4,6 +4,7 @@
 
 import sbt._
 import sbt.CompileOrder._
+import spde._
 
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
@@ -198,7 +199,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val redis = "com.redis" % "redisclient" % "2.8.0.RC2-1.4-SNAPSHOT" % "compile"
+    val redis = "com.redis" % "redisclient" % "2.8.0.Beta1-1.3" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
@@ -249,8 +250,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
     val jta_spec = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
   }
+  
+  // ================= TESTS ==================
 
-  // examples
   class AkkaFunTestProject(info: ProjectInfo) extends DefaultProject(info) {
     val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
@@ -264,7 +266,15 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
   }
 
+  // ================= EXAMPLES ==================
+
+  class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
+    val scalaToolsSnapshots = ScalaToolsSnapshots
+    override def spdeSourcePath = mainSourcePath / "spde"
+  }
+
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+
   class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
@@ -300,6 +310,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
+      new AkkaSampleAntsProject(_), akka_core)
     lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
       new AkkaSampleChatProject(_), akka_kernel)
     lazy val akka_sample_pubsub = project("akka-sample-pubsub", "akka-sample-pubsub",
@@ -351,14 +363,17 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     def deployPath: Path
 
     lazy val dist = distAction
+  
     def distAction = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
       `package`, packageDocs, packageSrc) describedAs("Deploying")
+  
     def deployTask(jar: Path, docs: Path, src: Path, toDir: Path, 
                    genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
       gen(jar, toDir, genJar, "Deploying bits") orElse
       gen(docs, toDir, genDocs, "Deploying docs") orElse
       gen(src, toDir, genSource, "Deploying sources")
     }
+  
     private def gen(jar: Path, toDir: Path, flag: Boolean, msg: String): Option[String] =
       if (flag) {
         log.info(msg + " " + jar)
