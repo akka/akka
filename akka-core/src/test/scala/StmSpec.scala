@@ -81,35 +81,39 @@ class StmSpec extends
       }
       total should equal(0)
     }
+  }
 
+  describe("Transaction.Global") {
     it("should be able to initialize with atomic {..} block inside actor constructor") {
-      import StmSpecVectorTestActor._
+      import GlobalTransactionVectorTestActor._
       try {
-        val actor = actorOf[StmSpecVectorTestActor].start
+        val actor = actorOf[GlobalTransactionVectorTestActor].start
         actor !! Add(5)
         val size1: Int = (actor !! Size).getOrElse(fail("Could not get Vector::size"))
         size1 should equal(2)
         actor !! Add(2)
         val size2: Int = (actor !! Size).getOrElse(fail("Could not get Vector::size"))
-        size2 should equal(2)
+        size2 should equal(3)
       } catch {
-        case e => fail(e.toString)
+        case e => 
+          e.printStackTrace
+          fail(e.toString)
       }
     }
   }
 }
 
-object StmSpecVectorTestActor {
+object GlobalTransactionVectorTestActor {
   case class Add(value: Int)
   case object Size
   case object Success
 }
-class StmSpecVectorTestActor extends Actor {
-  import StmSpecVectorTestActor._
+class GlobalTransactionVectorTestActor extends Actor {
+  import GlobalTransactionVectorTestActor._
   import se.scalablesolutions.akka.stm.Transaction.Global
 
   private var vector: TransactionalVector[Int] = Global.atomic { TransactionalVector(1) }
-
+  
   def receive = {
     case Add(value) => 
       Global.atomic { vector + value}

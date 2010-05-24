@@ -975,7 +975,7 @@ sealed class LocalActorRef private[akka](
   }
 
   /**
-   * Callback for the dispatcher. E.g. single entry point to the user code and all protected[this] methods.
+   * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {
     if (isShutdown) {
@@ -1180,6 +1180,7 @@ sealed class LocalActorRef private[akka](
     Actor.log.debug("[%s] has started", toString)
     ActorRegistry.register(this)
     if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
+    clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
   }
 
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
