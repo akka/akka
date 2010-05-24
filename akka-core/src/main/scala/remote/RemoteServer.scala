@@ -130,11 +130,7 @@ object RemoteServer {
   }
 
   private def actorsFor(remoteServerAddress: RemoteServer.Address): RemoteActorSet = {
-    remoteActorSets.get(remoteServerAddress).getOrElse {
-      val remoteActorSet = new RemoteActorSet
-      remoteActorSets.put(remoteServerAddress, remoteActorSet)
-      remoteActorSet
-    }
+    remoteActorSets.getOrElseUpdate(remoteServerAddress,new RemoteActorSet)
   }
 }
 
