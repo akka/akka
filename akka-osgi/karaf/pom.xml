@@ -15,8 +15,8 @@
     <packaging>pom</packaging>
 
     <properties>
-        <karaf.url>http://www.apache.org/dist/felix/apache-felix-karaf-1.2.0.tar.gz</karaf.url>
-        <karaf.root.dir>apache-felix-karaf-1.2.0</karaf.root.dir>
+        <karaf.url>http://www.apache.org/dist/felix/apache-felix-karaf-1.4.0.tar.gz</karaf.url>
+        <karaf.root.dir>apache-felix-karaf-1.4.0</karaf.root.dir>
     </properties>
 
     <dependencies>
