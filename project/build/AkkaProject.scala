@@ -273,7 +273,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val jta_spec = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
   }
 
-  // examples
+  // ================= TEST ==================
   class AkkaFunTestProject(info: ProjectInfo) extends DefaultProject(info) {
     val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
@@ -285,6 +285,12 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit = "junit" % "junit" % "4.5" % "test"
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
+  }
+  
+  // ================= EXAMPLES ==================
+  class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
+    val scalaToolsSnapshots = ScalaToolsSnapshots
+    override def spdeSourcePath = mainSourcePath / "spde"
   }
 
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
@@ -323,6 +329,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
+      new AkkaSampleAntsProject(_), akka_core)
     lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
       new AkkaSampleChatProject(_), akka_kernel)
     lazy val akka_sample_pubsub = project("akka-sample-pubsub", "akka-sample-pubsub",
