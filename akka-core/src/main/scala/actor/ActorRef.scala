@@ -51,18 +51,22 @@ object ActorRef {
    * Deserializes the ActorRef instance from a byte array (Array[Byte]) into an ActorRef instance.
    */
   def fromBinary(bytes: Array[Byte]): ActorRef =
-    fromProtocol(ActorRefProtocol.newBuilder.mergeFrom(bytes).build)
+    fromProtocol(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
+
+  def fromBinary(bytes: Array[Byte], loader: ClassLoader): ActorRef =
+    fromProtocol(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
 
   /**
    * Deserializes the ActorRef instance from a Protocol Buffers (protobuf) Message into an ActorRef instance.
    */
-  private[akka] def fromProtocol(protocol: ActorRefProtocol): ActorRef =
+  private[akka] def fromProtocol(protocol: ActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
     RemoteActorRef(
       protocol.getUuid,
       protocol.getActorClassName,
       protocol.getSourceHostname,
       protocol.getSourcePort,
-      protocol.getTimeout)
+      protocol.getTimeout,
+      loader)
 }
 
 /**
@@ -1217,13 +1221,13 @@ sealed class LocalActorRef private[akka](
  */
 private[akka] case class RemoteActorRef private[akka] (
 //  uuid: String, className: String, hostname: String, port: Int, timeOut: Long, isOnRemoteHost: Boolean) extends ActorRef {
-  uuuid: String, val className: String, val hostname: String, val port: Int, _timeout: Long)
+  uuuid: String, val className: String, val hostname: String, val port: Int, _timeout: Long, loader: Option[ClassLoader])
   extends ActorRef {
   _uuid = uuuid
   timeout = _timeout
-
+  
   start
-  lazy val remoteClient = RemoteClient.clientFor(hostname, port)
+  lazy val remoteClient = RemoteClient.clientFor(hostname, port, loader)
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
     val requestBuilder = RemoteRequestProtocol.newBuilder
