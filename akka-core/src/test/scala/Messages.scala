@@ -5,6 +5,9 @@
 package se.scalablesolutions.akka
 
 import se.scalablesolutions.akka.serialization.Serializable
+import sbinary._
+import sbinary.Operations._
+import sbinary.DefaultProtocol._
 
 sealed abstract class TestMessage
 case object Ping extends TestMessage
@@ -18,7 +21,7 @@ case class User(val usernamePassword: Tuple2[String, String],
                 val age: Int)
    extends Serializable.SBinary[User] {
   def this() = this(null, null, 0)
-  import sbinary.DefaultProtocol._                                             
+  import sbinary.DefaultProtocol._
   implicit object UserFormat extends Format[User] {
     def reads(in : Input) = User(
       read[Tuple2[String, String]](in),

@@ -7,7 +7,8 @@ package se.scalablesolutions.akka.stm
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 
 /**
@@ -19,9 +20,15 @@ object DataFlow {
   case object Start
   case object Exit
 
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
+
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.dispatch.CompletableFuture
+
   def thread(body: => Unit) = {
-    val thread = new IsolatedEventBasedThread(body).start
-    thread send Start
+    val thread = actorOf(new IsolatedEventBasedThread(body)).start
+    thread ! Start
     thread
   }
 
@@ -33,13 +40,13 @@ object DataFlow {
   }
 
   def thread[A <: AnyRef, R <: AnyRef](body: A => R) =
-    new ReactiveEventBasedThread(body).start
+    actorOf(new ReactiveEventBasedThread(body)).start
 
   private class ReactiveEventBasedThread[A <: AnyRef, T <: AnyRef](body: A => T)
     extends Actor {
     def receive = {
       case Exit => exit
-      case message => reply(body(message.asInstanceOf[A]))
+      case message => self.reply(body(message.asInstanceOf[A]))
     }
   }
 
@@ -54,11 +61,10 @@ object DataFlow {
     private case object Get extends DataFlowVariableMessage
 
     private val value = new AtomicReference[Option[T]](None)
-    private val blockedReaders = new ConcurrentLinkedQueue[Actor]
+    private val blockedReaders = new ConcurrentLinkedQueue[ActorRef]
 
     private class In[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
-      timeout = TIME_OUT
-      start
+      self.timeout = TIME_OUT
       def receive = {
         case Set(v) =>
           if (dataFlow.value.compareAndSet(None, Some(v.asInstanceOf[T]))) {
@@ -72,39 +78,38 @@ object DataFlow {
     }
 
     private class Out[T <: Any](dataFlow: DataFlowVariable[T]) extends Actor {
-      timeout = TIME_OUT
-      start
-      private var readerFuture: Option[CompletableFuture] = None
+      self.timeout = TIME_OUT
+      private var readerFuture: Option[CompletableFuture[T]] = None
       def receive = {
         case Get =>
           val ref = dataFlow.value.get
-          if (ref.isDefined) reply(ref.get)
-          else readerFuture = senderFuture
-        case Set(v) => if (readerFuture.isDefined) readerFuture.get.completeWithResult(v)
+          if (ref.isDefined) self.reply(ref.get)
+          else readerFuture = self.senderFuture.asInstanceOf[Option[CompletableFuture[T]]]
+        case Set(v:T) => if (readerFuture.isDefined) readerFuture.get.completeWithResult(v)
         case Exit =>  exit
       }
     }
 
-    private[this] val in = new In(this)
+    private[this] val in = actorOf(new In(this)).start
 
-    def <<(ref: DataFlowVariable[T]) = in send Set(ref())
+    def <<(ref: DataFlowVariable[T]) = in ! Set(ref())
 
-    def <<(value: T) = in send Set(value)
+    def <<(value: T) = in ! Set(value)
 
     def apply(): T = {
       val ref = value.get
       if (ref.isDefined) ref.get
       else {
-        val out = new Out(this)
+        val out = actorOf(new Out(this)).start
         blockedReaders.offer(out)
         val result = out !! Get
-        out send Exit
+        out ! Exit
         result.getOrElse(throw new DataFlowVariableException(
           "Timed out (after " + TIME_OUT + " milliseconds) while waiting for result"))
       }
     }
 
-    def shutdown = in send Exit
+    def shutdown = in ! Exit
   }
 
   /**
@@ -138,7 +143,7 @@ object DataFlow {
         "Access by index other than '0' is not supported by DataFlowStream")
     }
 
-    override def elements: Iterator[T] = new Iterator[T] {
+    def iterator: Iterator[T] = new Iterator[T] {
       private val iter = queue.iterator
       def hasNext: Boolean = iter.hasNext
       def next: T = { val ref = iter.next; ref() }
@@ -337,7 +342,6 @@ object Test4 extends Application {
 
 // =======================================
 object Test5 extends Application {
-  import Actor.Sender.Self
   import DataFlow._
 
   // create four 'Int' data flow variables

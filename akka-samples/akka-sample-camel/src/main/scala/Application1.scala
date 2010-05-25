@@ -1,6 +1,7 @@
 package sample.camel
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.camel.Message
 import se.scalablesolutions.akka.remote.RemoteClient
 
@@ -14,9 +15,9 @@ object Application1 {
   //
 
   def main(args: Array[String]) {
-    implicit val sender: Option[Actor] = None
+    implicit val sender: Option[ActorRef] = None
 
-    val actor1 = new RemoteActor1
+    val actor1 = actorOf[RemoteActor1]
     val actor2 = RemoteClient.actorFor("remote2", "localhost", 7777)
 
     actor1.start

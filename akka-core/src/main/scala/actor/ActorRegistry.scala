@@ -10,6 +10,10 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.Manifest
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 
+sealed trait ActorRegistryEvent
+case class ActorRegistered(actor: ActorRef) extends ActorRegistryEvent
+case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
+
 /**
  * Registry holding all Actor instances in the whole system.
  * Mapped by:
@@ -17,21 +21,22 @@ import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
  * <li>the Actor's UUID</li>
  * <li>the Actor's id field (which can be set by user-code)</li>
  * <li>the Actor's class</li>
+ * <li>all Actors that are subtypes of a specific type</li>
  * <ul>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends Logging {
-  private val actorsByUUID =          new ConcurrentHashMap[String, Actor]
-  private val actorsById =            new ConcurrentHashMap[String, List[Actor]]
-  private val actorsByClassName =     new ConcurrentHashMap[String, List[Actor]]
-  private val registrationListeners = new CopyOnWriteArrayList[Actor]
+  private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
+  private val actorsById =            new ConcurrentHashMap[String, List[ActorRef]]
+  private val actorsByClassName =     new ConcurrentHashMap[String, List[ActorRef]]
+  private val registrationListeners = new CopyOnWriteArrayList[ActorRef]
 
   /**
    * Returns all actors in the system.
    */
-  def actors: List[Actor] = {
-    val all = new ListBuffer[Actor]
+  def actors: List[ActorRef] = {
+    val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) all += elements.nextElement
     all.toList
@@ -40,7 +45,7 @@ object ActorRegistry extends Logging {
   /**
    * Invokes a function for all actors.
    */
-  def foreach(f: (Actor) => Unit) = {
+  def foreach(f: (ActorRef) => Unit) = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) f(elements.nextElement)
   }
@@ -48,13 +53,13 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument.
    */
-  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[T] = {
-    val all = new ListBuffer[T]
+  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] = {
+    val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
-      val actor = elements.nextElement
-      if (manifest.erasure.isAssignableFrom(actor.getClass)) {
-        all += actor.asInstanceOf[T]
+      val actorId = elements.nextElement
+      if (manifest.erasure.isAssignableFrom(actorId.actor.getClass)) {
+        all += actorId
       }
     }
     all.toList
@@ -63,24 +68,23 @@ object ActorRegistry extends Logging {
   /**
    * Finds all actors of the exact type specified by the class passed in as the Class argument.
    */
-  def actorsFor[T <: Actor](clazz: Class[T]): List[T] = {
-    if (actorsByClassName.containsKey(clazz.getName)) {
-      actorsByClassName.get(clazz.getName).asInstanceOf[List[T]]
-    } else Nil
+  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] = {
+    if (actorsByClassName.containsKey(clazz.getName)) actorsByClassName.get(clazz.getName)
+    else Nil
   }
 
   /**
    * Finds all actors that has a specific id.
    */
-  def actorsFor(id: String): List[Actor] = {
-    if (actorsById.containsKey(id)) actorsById.get(id).asInstanceOf[List[Actor]]
+  def actorsFor(id: String): List[ActorRef] = {
+    if (actorsById.containsKey(id)) actorsById.get(id)
     else Nil
   }
 
    /**
    * Finds the actor that has a specific UUID.
    */
-  def actorFor(uuid: String): Option[Actor] = {
+  def actorFor(uuid: String): Option[ActorRef] = {
     if (actorsByUUID.containsKey(uuid)) Some(actorsByUUID.get(uuid))
     else None
   }
@@ -88,35 +92,36 @@ object ActorRegistry extends Logging {
   /**
    * Registers an actor in the ActorRegistry.
    */
-  def register(actor: Actor) = {
+  def register(actor: ActorRef) = {
     // UUID
     actorsByUUID.put(actor.uuid, actor)
 
     // ID
-    val id = actor.getId
+    val id = actor.id
     if (id eq null) throw new IllegalStateException("Actor.id is null " + actor)
     if (actorsById.containsKey(id)) actorsById.put(id, actor :: actorsById.get(id))
     else actorsById.put(id, actor :: Nil)
 
     // Class name
-    val className = actor.getClass.getName
+    val className = actor.actor.getClass.getName
     if (actorsByClassName.containsKey(className)) {
       actorsByClassName.put(className, actor :: actorsByClassName.get(className))
     } else actorsByClassName.put(className, actor :: Nil)
 
     // notify listeners
-    foreachListener(_.!(ActorRegistered(actor))(None))
+    foreachListener(_ ! ActorRegistered(actor))
   }
 
   /**
+   * FIXME: WRONG - unregisters all actors with the same id and class name, should remove the right one in each list
    * Unregisters an actor in the ActorRegistry.
    */
-  def unregister(actor: Actor) = {
+  def unregister(actor: ActorRef) = {
     actorsByUUID remove actor.uuid
-    actorsById remove actor.getId
+    actorsById remove actor.id
     actorsByClassName remove actor.getClass.getName
     // notify listeners
-    foreachListener(_.!(ActorUnregistered(actor))(None))
+    foreachListener(_ ! ActorUnregistered(actor))
   }
 
   /**
@@ -134,22 +139,25 @@ object ActorRegistry extends Logging {
   /**
    * Adds the registration <code>listener</code> this this registry's listener list.
    */
-  def addRegistrationListener(listener: Actor) = {
+  def addRegistrationListener(listener: ActorRef) = {
+    listener.start
     registrationListeners.add(listener)
   }
 
   /**
    * Removes the registration <code>listener</code> this this registry's listener list.
    */
-  def removeRegistrationListener(listener: Actor) = {
+  def removeRegistrationListener(listener: ActorRef) = {
+    listener.stop
     registrationListeners.remove(listener)
   }
 
-  private def foreachListener(f: (Actor) => Unit) {
+  private def foreachListener(f: (ActorRef) => Unit) {
     val iterator = registrationListeners.iterator
-    while (iterator.hasNext) f(iterator.next)
+    while (iterator.hasNext) {
+      val listener = iterator.next
+      if (listener.isRunning) f(listener)
+      else log.warning("Can't send ActorRegistryEvent to [%s] since it is not running.", listener)
+    }
   }
 }
-
-case class ActorRegistered(actor: Actor)
-case class ActorUnregistered(actor: Actor)

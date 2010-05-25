@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.serialization.Serializable.SBinary
 import se.scalablesolutions.akka.serialization.{Serializer, Serializable, SerializationProtocol}
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequest, RemoteReply}
+import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol}
 
 import com.google.protobuf.{Message, ByteString}
 
@@ -17,18 +17,18 @@ object RemoteProtocolBuilder {
   private var SERIALIZER_SBINARY: Serializer.SBinary = Serializer.SBinary
   private var SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
 
-
   def setClassLoader(cl: ClassLoader) = {
     SERIALIZER_JAVA.classLoader = Some(cl)
     SERIALIZER_JAVA_JSON.classLoader = Some(cl)
     SERIALIZER_SCALA_JSON.classLoader = Some(cl)
   }
-  
-  def getMessage(request: RemoteRequest): Any = {
+
+  def getMessage(request: RemoteRequestProtocol): Any = {
     request.getProtocol match {
+      case SerializationProtocol.JAVA =>
+        unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
       case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(
-          new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+        val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(request.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
@@ -39,15 +39,13 @@ object RemoteProtocolBuilder {
       case SerializationProtocol.PROTOBUF =>
         val messageClass = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
         SERIALIZER_PROTOBUF.in(request.getMessage.toByteArray, Some(messageClass))
-      case SerializationProtocol.JAVA =>
-        unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
-      case SerializationProtocol.AVRO =>
-        throw new UnsupportedOperationException("Avro protocol is not yet supported")
     }
   }
 
-  def getMessage(reply: RemoteReply): Any = {
+  def getMessage(reply: RemoteReplyProtocol): Any = {
     reply.getProtocol match {
+      case SerializationProtocol.JAVA =>
+        unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
       case SerializationProtocol.SBINARY =>
         val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(reply.getMessage.toByteArray)
@@ -60,14 +58,10 @@ object RemoteProtocolBuilder {
       case SerializationProtocol.PROTOBUF =>
         val messageClass = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
         SERIALIZER_PROTOBUF.in(reply.getMessage.toByteArray, Some(messageClass))
-      case SerializationProtocol.JAVA =>
-        unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
-      case SerializationProtocol.AVRO =>
-        throw new UnsupportedOperationException("Avro protocol is not yet supported")
     }
   }
 
-  def setMessage(message: Any, builder: RemoteRequest.Builder) = {
+  def setMessage(message: Any, builder: RemoteRequestProtocol.Builder) = {
     if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
       builder.setProtocol(SerializationProtocol.SBINARY)
@@ -95,7 +89,7 @@ object RemoteProtocolBuilder {
     }
   }
 
-  def setMessage(message: Any, builder: RemoteReply.Builder) = {
+  def setMessage(message: Any, builder: RemoteReplyProtocol.Builder) = {
     if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
       builder.setProtocol(SerializationProtocol.SBINARY)

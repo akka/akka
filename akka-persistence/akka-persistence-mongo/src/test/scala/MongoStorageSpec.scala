@@ -1,19 +1,19 @@
 package se.scalablesolutions.akka.persistence.mongo
 
-import junit.framework.TestCase
-
 import org.junit.{Test, Before}
 import org.junit.Assert._
+import org.scalatest.junit.JUnitSuite
 import _root_.dispatch.json._
 import _root_.dispatch.json.Js._
+import java.util.NoSuchElementException
 
 @scala.reflect.BeanInfo case class Foo(no: Int, name: String)
-class MongoStorageSpec extends TestCase {
+class MongoStorageSpec extends JUnitSuite {
 
   val changeSetV = new scala.collection.mutable.ArrayBuffer[AnyRef]
   val changeSetM = new scala.collection.mutable.HashMap[AnyRef, AnyRef]
 
-  override def setUp = {
+  @Before def initialize() = {
     MongoStorageBackend.coll.drop
   }
 
@@ -111,18 +111,37 @@ class MongoStorageSpec extends TestCase {
     try {
       MongoStorageBackend.getVectorStorageEntryFor("U-A1", 1)
       fail("should throw an exception")
-    } catch {case e: Predef.NoSuchElementException => {}}
+    } catch {case e: NoSuchElementException => {}}
 
     try {
       MongoStorageBackend.getVectorStorageRangeFor("U-A1", Some(2), None, 12)
       fail("should throw an exception")
-    } catch {case e: Predef.NoSuchElementException => {}}
+    } catch {case e: NoSuchElementException => {}}
+  }
+
+  @Test
+  def testVectorUpdateForTransactionId = {
+    import MongoStorageBackend._
+
+    changeSetV += "debasish"   // string
+    changeSetV += List(1, 2, 3) // Scala List
+    changeSetV += List(100, 200)
+
+    insertVectorStorageEntriesFor("U-A1", changeSetV.toList)
+    assertEquals(3, getVectorStorageSizeFor("U-A1"))
+    updateVectorStorageEntryFor("U-A1", 0, "maulindu")
+    val JsString(str) = getVectorStorageEntryFor("U-A1", 0).asInstanceOf[JsString]
+    assertEquals("maulindu", str)
+
+    updateVectorStorageEntryFor("U-A1", 1, Map("1"->"dg", "2"->"mc"))
+    val JsObject(m) = getVectorStorageEntryFor("U-A1", 1).asInstanceOf[JsObject]
+    assertEquals(m.keySet.size, 2)
   }
 
   @Test
   def testMapInsertForTransactionId = {
     fillMap
-    
+
     // add some more to changeSet
     changeSetM += "5" -> Foo(12, "dg")
     changeSetM += "6" -> java.util.Calendar.getInstance.getTime
@@ -182,7 +201,7 @@ class MongoStorageSpec extends TestCase {
     }
 
     // get the entire map
-    val l: List[Tuple2[AnyRef, AnyRef]] = 
+    val l: List[Tuple2[AnyRef, AnyRef]] =
       MongoStorageBackend.getMapStorageFor("U-M1")
 
     assertEquals(4, l.size)
@@ -191,14 +210,14 @@ class MongoStorageSpec extends TestCase {
     assertTrue(l.map(_._1).contains("3"))
     assertTrue(l.map(_._1).contains("4"))
 
-    val JsString(str) = l.filter(_._1 == "2").first._2
+    val JsString(str) = l.filter(_._1 == "2").head._2
     assertEquals(str, "peter")
 
     // trying to fetch for a non-existent transaction will throw
     try {
       MongoStorageBackend.getMapStorageFor("U-M2")
       fail("should throw an exception")
-    } catch {case e: Predef.NoSuchElementException => {}}
+    } catch {case e: NoSuchElementException => {}}
 
     changeSetM.clear
   }
@@ -210,7 +229,7 @@ class MongoStorageSpec extends TestCase {
     MongoStorageBackend.insertMapStorageEntriesFor("U-M1", changeSetM.toList)
 
     // specify start and count
-    val l: List[Tuple2[AnyRef, AnyRef]] = 
+    val l: List[Tuple2[AnyRef, AnyRef]] =
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", Some(Integer.valueOf(2)), None, 3)
 
@@ -224,7 +243,7 @@ class MongoStorageSpec extends TestCase {
     val ls = l(1)._2.asInstanceOf[JsValue]
     val num_list(l1) = ls
     assertEquals(List(10, 20, 30), l1)
-    
+
     // specify start, finish and count where finish - start == count
     assertEquals(3,
       MongoStorageBackend.getMapStorageRangeFor(
@@ -235,12 +254,12 @@ class MongoStorageSpec extends TestCase {
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", Some(Integer.valueOf(2)), Some(Integer.valueOf(9)), 3).size)
 
-    // do not specify start or finish 
+    // do not specify start or finish
     assertEquals(3,
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", None, None, 3).size)
 
-    // specify finish and count 
+    // specify finish and count
     assertEquals(3,
       MongoStorageBackend.getMapStorageRangeFor(
         "U-M1", None, Some(Integer.valueOf(3)), 3).size)

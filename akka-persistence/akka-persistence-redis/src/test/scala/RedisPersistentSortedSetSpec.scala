@@ -7,7 +7,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.{Actor, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
+import Actor._
 
 /**
  * A persistent actor based on Redis sortedset storage.
@@ -42,61 +43,61 @@ case class SCORE(h: Hacker)
 case class RANGE(start: Int, end: Int)
 
 // add and remove subject to the condition that there will be at least 3 hackers
-case class MULTI(add: List[Hacker], rem: List[Hacker], failer: Actor)
+case class MULTI(add: List[Hacker], rem: List[Hacker], failer: ActorRef)
 
 class SortedSetActor extends Transactor {
-  timeout = 100000
+  self.timeout = 100000
   private lazy val hackers = RedisStorage.newSortedSet
 
   def receive = {
     case ADD(h) =>
       hackers.+(h.name.getBytes, h.zscore)
-      reply(true)
+      self.reply(true)
 
     case REMOVE(h) =>
       hackers.-(h.name.getBytes)
-      reply(true)
+      self.reply(true)
 
     case SIZE =>
-      reply(hackers.size)
+      self.reply(hackers.size)
 
     case SCORE(h) =>
-      reply(hackers.zscore(h.name.getBytes))
+      self.reply(hackers.zscore(h.name.getBytes))
 
     case RANGE(s, e) =>
-      reply(hackers.zrange(s, e))
+      self.reply(hackers.zrange(s, e))
 
     case MULTI(a, r, failer) =>
-      a.foreach{ h: Hacker => 
+      a.foreach{ h: Hacker =>
         hackers.+(h.name.getBytes, h.zscore)
       }
       try {
-        r.foreach{ h => 
+        r.foreach{ h =>
           if (hackers.size <= 3)
             throw new SetThresholdViolationException
           hackers.-(h.name.getBytes)
         }
       } catch {
-        case e: Exception => 
+        case e: Exception =>
           failer !! "Failure"
       }
-      reply((a.size, r.size))
+      self.reply((a.size, r.size))
   }
 }
 
 import RedisStorageBackend._
 
 @RunWith(classOf[JUnitRunner])
-class RedisPersistentSortedSetSpec extends 
-  Spec with 
-  ShouldMatchers with 
+class RedisPersistentSortedSetSpec extends
+  Spec with
+  ShouldMatchers with
   BeforeAndAfterAll {
-  
+
   override def beforeAll {
     flushDB
     println("** destroyed database")
   }
-  
+
   override def afterAll {
     flushDB
     println("** destroyed database")
@@ -110,7 +111,7 @@ class RedisPersistentSortedSetSpec extends
   val h6 = Hacker("Alan Turing", "1912")
 
   describe("Add and report cardinality of the set") {
-    val qa = new SortedSetActor
+    val qa = actorOf[SortedSetActor]
     qa.start
 
     it("should enter 6 hackers") {
@@ -144,7 +145,7 @@ class RedisPersistentSortedSetSpec extends
         qa !! REMOVE(h7)
       }
       catch {
-        case e: Predef.NoSuchElementException =>
+        case e: NoSuchElementException =>
           e.getMessage should endWith("not present")
       }
     }
@@ -166,10 +167,10 @@ class RedisPersistentSortedSetSpec extends
 
   describe("Transaction semantics") {
     it("should rollback on exception") {
-      val qa = new SortedSetActor
+      val qa = actorOf[SortedSetActor]
       qa.start
 
-      val failer = new PersistentFailerActor
+      val failer = actorOf[PersistentFailerActor]
       failer.start
 
       (qa !! SIZE).get.asInstanceOf[Int] should equal(0)
@@ -194,7 +195,7 @@ class RedisPersistentSortedSetSpec extends
 
   describe("zrange") {
     it ("should report proper range") {
-      val qa = new SortedSetActor
+      val qa = actorOf[SortedSetActor]
       qa.start
       qa !! ADD(h1)
       qa !! ADD(h2)
@@ -213,7 +214,7 @@ class RedisPersistentSortedSetSpec extends
     }
 
     it ("should report proper rge") {
-      val qa = new SortedSetActor
+      val qa = actorOf[SortedSetActor]
       qa.start
       qa !! ADD(h1)
       qa !! ADD(h2)
@@ -222,16 +223,16 @@ class RedisPersistentSortedSetSpec extends
       qa !! ADD(h5)
       qa !! ADD(h6)
       (qa !! SIZE).get.asInstanceOf[Int] should equal(6)
-      (qa !! RANGE(0, 5)).get.asInstanceOf[List[_]].size should equal(6) 
-      (qa !! RANGE(0, 6)).get.asInstanceOf[List[_]].size should equal(6) 
-      (qa !! RANGE(0, 3)).get.asInstanceOf[List[_]].size should equal(4) 
-      (qa !! RANGE(0, 1)).get.asInstanceOf[List[_]].size should equal(2) 
-      (qa !! RANGE(0, 0)).get.asInstanceOf[List[_]].size should equal(1) 
-      (qa !! RANGE(3, 1)).get.asInstanceOf[List[_]].size should equal(0) 
-      (qa !! RANGE(0, -1)).get.asInstanceOf[List[_]].size should equal(6) 
-      (qa !! RANGE(0, -2)).get.asInstanceOf[List[_]].size should equal(5) 
-      (qa !! RANGE(0, -4)).get.asInstanceOf[List[_]].size should equal(3) 
-      (qa !! RANGE(-4, -1)).get.asInstanceOf[List[_]].size should equal(4) 
+      (qa !! RANGE(0, 5)).get.asInstanceOf[List[_]].size should equal(6)
+      (qa !! RANGE(0, 6)).get.asInstanceOf[List[_]].size should equal(6)
+      (qa !! RANGE(0, 3)).get.asInstanceOf[List[_]].size should equal(4)
+      (qa !! RANGE(0, 1)).get.asInstanceOf[List[_]].size should equal(2)
+      (qa !! RANGE(0, 0)).get.asInstanceOf[List[_]].size should equal(1)
+      (qa !! RANGE(3, 1)).get.asInstanceOf[List[_]].size should equal(0)
+      (qa !! RANGE(0, -1)).get.asInstanceOf[List[_]].size should equal(6)
+      (qa !! RANGE(0, -2)).get.asInstanceOf[List[_]].size should equal(5)
+      (qa !! RANGE(0, -4)).get.asInstanceOf[List[_]].size should equal(3)
+      (qa !! RANGE(-4, -1)).get.asInstanceOf[List[_]].size should equal(4)
     }
   }
 }

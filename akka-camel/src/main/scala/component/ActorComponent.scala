@@ -11,7 +11,7 @@ import java.util.concurrent.TimeoutException
 import org.apache.camel.{Exchange, Consumer, Processor}
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
-import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
+import se.scalablesolutions.akka.actor.{ActorRegistry, Actor, ActorRef}
 import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message}
 
 /**
@@ -27,7 +27,7 @@ class ActorComponent extends DefaultComponent {
     val idAndUuid = idAndUuidPair(remaining)
     new ActorEndpoint(uri, this, idAndUuid._1, idAndUuid._2)
   }
-  
+
   private def idAndUuidPair(remaining: String): Tuple2[Option[String], Option[String]] = {
     remaining split ":" toList match {
       case             id :: Nil => (Some(id), None)
@@ -52,13 +52,13 @@ class ActorComponent extends DefaultComponent {
 
  * @author Martin Krasser
  */
-class ActorEndpoint(uri: String, 
-                    comp: ActorComponent, 
-                    val id: Option[String], 
+class ActorEndpoint(uri: String,
+                    comp: ActorComponent,
+                    val id: Option[String],
                     val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
 
   /**
-   * @throws UnsupportedOperationException 
+   * @throws UnsupportedOperationException
    */
   def createConsumer(processor: Processor): Consumer =
     throw new UnsupportedOperationException("actor consumer not supported yet")
@@ -106,7 +106,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
    * Send the exchange in-message to the given actor using the ! operator. The message
    * send to the actor is of type se.scalablesolutions.akka.camel.Message.
    */
-  protected def processInOnly(exchange: Exchange, actor: Actor): Unit = 
+  protected def processInOnly(exchange: Exchange, actor: ActorRef): Unit =
     actor ! exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
 
   /**
@@ -114,7 +114,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
    * out-message is populated from the actor's reply message.  The message sent to the
    * actor is of type se.scalablesolutions.akka.camel.Message.
    */
-  protected def processInOut(exchange: Exchange, actor: Actor) {
+  protected def processInOut(exchange: Exchange, actor: ActorRef) {
     val header = Map(Message.MessageExchangeId -> exchange.getExchangeId)
     val result: Any = actor !! exchange.toRequestMessage(header)
 
@@ -128,14 +128,14 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
     }
   }
 
-  private def target: Option[Actor] =
+  private def target: Option[ActorRef] =
     if (ep.id.isDefined) targetById(ep.id.get)
     else targetByUuid(ep.uuid.get)
 
   private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
     case Nil          => None
     case actor :: Nil => Some(actor)
-    case actors       => Some(actors.first)
+    case actors       => Some(actors.head)
   }
 
   private def targetByUuid(uuid: String) = ActorRegistry.actorFor(uuid)

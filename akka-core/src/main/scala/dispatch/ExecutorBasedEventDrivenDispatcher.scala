@@ -55,7 +55,7 @@ package se.scalablesolutions.akka.dispatch
  */
 class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
-  
+
   val name: String = "event-driven:executor:dispatcher:" + _name
   init
 
@@ -65,21 +65,23 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
         var lockAcquiredOnce = false
         // this do-wile loop is required to prevent missing new messages between the end of the inner while
         // loop and releasing the lock
+        val lock = invocation.receiver.dispatcherLock
+        val mailbox = invocation.receiver.mailbox
         do {
-          if (invocation.receiver._dispatcherLock.tryLock) {
+          if (lock.tryLock) {
             lockAcquiredOnce = true
             try {
               // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
-              var messageInvocation = invocation.receiver._mailbox.poll
+              var messageInvocation = mailbox.poll
               while (messageInvocation != null) {
                 messageInvocation.invoke
-                messageInvocation = invocation.receiver._mailbox.poll
+                messageInvocation = mailbox.poll
               }
             } finally {
-              invocation.receiver._dispatcherLock.unlock
+              lock.unlock
             }
           }
-        } while ((lockAcquiredOnce && !invocation.receiver._mailbox.isEmpty))
+        } while ((lockAcquiredOnce && !mailbox.isEmpty))
       }
     })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
@@ -89,12 +91,14 @@ class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatche
   }
 
   def shutdown = if (active) {
-    log.debug("Shutting down ThreadBasedDispatcher [%s]", name)
+    log.debug("Shutting down ExecutorBasedEventDrivenDispatcher [%s]", name)
     executor.shutdownNow
     active = false
     references.clear
   }
-  
+
+  def usesActorMailbox = true
+
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 

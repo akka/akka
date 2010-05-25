@@ -2,6 +2,8 @@ package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.actor.Actor
 
+import Actor._
+
 object ActorShutdownRunner {
   def main(args: Array[String]) {
     class MyActor extends Actor {
@@ -11,9 +13,9 @@ object ActorShutdownRunner {
       }
     }
 
-    val myActor = new MyActor
+    val myActor = actorOf[MyActor]
     myActor.start
-    myActor.send("test")
+    myActor ! "test"
     myActor.stop
   }
 }

@@ -7,14 +7,13 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client.{AMQP => RabbitMQ, _}
 import com.rabbitmq.client.ConnectionFactory
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 
 import scala.collection.mutable.HashMap
-
-import org.scala_tools.javautils.Imports._
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Timer, TimerTask}
@@ -52,10 +51,10 @@ object AMQP {
       exchangeName: String,
       returnListener: Option[ReturnListener],
       shutdownListener: Option[ShutdownListener],
-      initReconnectDelay: Long) =
+      initReconnectDelay: Long): ActorRef =
     supervisor.newProducer(
       config, hostname, port, exchangeName, returnListener, shutdownListener, initReconnectDelay)
-  
+
   def newConsumer(
       config: ConnectionParameters,
       hostname: String,
@@ -67,23 +66,35 @@ object AMQP {
       passive: Boolean,
       durable: Boolean,
       autoDelete: Boolean,
-      configurationArguments: Map[String, AnyRef]) =
+      configurationArguments: Map[String, AnyRef]): ActorRef =
     supervisor.newConsumer(
       config, hostname, port, exchangeName, exchangeType,
       shutdownListener, initReconnectDelay,
       passive, durable, autoDelete, configurationArguments)
 
-  def stopConnection(connection: FaultTolerantConnectionActor) = supervisor.stopConnection(connection)
+  def stopConnection(connection: ActorRef) = supervisor.stopConnection(connection)
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  class AMQPSupervisor extends Actor {
-    private val connections = new ConcurrentHashMap[FaultTolerantConnectionActor, FaultTolerantConnectionActor]
+  class AMQPSupervisor extends Logging {
 
-    faultHandler = Some(OneForOneStrategy(5, 5000))
-    trapExit = List(classOf[Throwable])
-    start
+    class AMQPSupervisorActor extends Actor {
+      import scala.collection.JavaConversions._
+      import self._
+
+      faultHandler = Some(OneForOneStrategy(5, 5000))
+      trapExit = List(classOf[Throwable])
+
+      def receive = {
+        case _ => {} // ignore all messages
+      }
+    }
+
+    import scala.collection.JavaConversions._
+
+    private val supervisor = actorOf[AMQPSupervisorActor].start
+    private val connections = new ConcurrentHashMap[ActorRef, ActorRef]
 
     def newProducer(
         config: ConnectionParameters,
@@ -92,15 +103,15 @@ object AMQP {
         exchangeName: String,
         returnListener: Option[ReturnListener],
         shutdownListener: Option[ShutdownListener],
-        initReconnectDelay: Long): Producer = {
-      val producer = new Producer(
+        initReconnectDelay: Long): ActorRef = {
+      val producer = actorOf(new Producer(
         new ConnectionFactory(config),
         hostname, port,
         exchangeName,
         returnListener,
         shutdownListener,
-        initReconnectDelay)
-      startLink(producer)
+        initReconnectDelay))
+      supervisor.startLink(producer)
       producer
     }
 
@@ -114,9 +125,9 @@ object AMQP {
         initReconnectDelay: Long,
         passive: Boolean,
         durable: Boolean,
-        autoDelete: Boolean,        
-        configurationArguments: Map[String, AnyRef]): Consumer = {
-      val consumer = new Consumer(
+        autoDelete: Boolean,
+        configurationArguments: Map[String, AnyRef]): ActorRef = {
+      val consumer = actorOf(new Consumer(
         new ConnectionFactory(config),
         hostname, port,
         exchangeName,
@@ -126,24 +137,20 @@ object AMQP {
         passive,
         durable,
         autoDelete,
-        configurationArguments)
-      startLink(consumer)
+        configurationArguments))
+      supervisor.startLink(consumer)
       consumer
     }
 
-    def stopConnection(connection: FaultTolerantConnectionActor) = {
+    def stopConnection(connection: ActorRef) = {
       connection ! Stop
-      unlink(connection)
+      supervisor.unlink(connection)
       connections.remove(connection)
     }
 
-    override def shutdown = {
-      connections.values.asScala.foreach(_ ! Stop)
+    def shutdown = {
+      asMap(connections).valuesIterator.foreach(_ ! Stop)
       exit
-    }
-
-    def receive = {
-      case _ => {} // ignore all messages
     }
   }
 
@@ -185,14 +192,14 @@ object AMQP {
    */
   class MessageConsumerListener(val queueName: String,
                                 val routingKey: String,
-                                val exclusive: Boolean, 
-                                val autoDelete: Boolean, 
+                                val exclusive: Boolean,
+                                val autoDelete: Boolean,
                                 val isUsingExistingQueue: Boolean,
-                                val actor: Actor) extends AMQPMessage { 
+                                val actor: ActorRef) extends AMQPMessage {
     /**
      * Creates a non-exclusive, non-autodelete message listener.
      */
-    def this(queueName: String, routingKey: String, actor: Actor) = this (queueName, routingKey, false, false, false, actor)
+    def this(queueName: String, routingKey: String, actor: ActorRef) = this (queueName, routingKey, false, false, false, actor)
 
     private[akka] var tag: Option[String] = None
 
@@ -238,15 +245,15 @@ object AMQP {
   object MessageConsumerListener {
     def apply(queueName: String,
               routingKey: String,
-              exclusive: Boolean, 
-              autoDelete: Boolean, 
+              exclusive: Boolean,
+              autoDelete: Boolean,
               isUsingExistingQueue: Boolean,
-              actor: Actor) =
+              actor: ActorRef) =
       new MessageConsumerListener(queueName, routingKey, exclusive, autoDelete, isUsingExistingQueue, actor)
 
     def apply(queueName: String,
               routingKey: String,
-              actor: Actor) =
+              actor: ActorRef) =
       new MessageConsumerListener(queueName, routingKey, false, false, false, actor)
   }
 
@@ -356,13 +363,18 @@ object AMQP {
       val initReconnectDelay: Long,
       val passive: Boolean,
       val durable: Boolean,
-      val autoDelete: Boolean,        
+      val autoDelete: Boolean,
       val configurationArguments: Map[java.lang.String, Object])
       extends FaultTolerantConnectionActor {
-    consumer: Consumer =>
+
+    import scala.collection.JavaConversions._
+    import self._
 
     faultHandler = Some(OneForOneStrategy(5, 5000))
     trapExit = List(classOf[Throwable])
+
+    //FIXME use better strategy to convert scala.immutable.Map to java.util.Map
+    private val jConfigMap = configurationArguments.foldLeft(new java.util.HashMap[String,Object]){ (m,kv) => { m.put(kv._1,kv._2); m } }
 
     private val listeners = new HashMap[MessageConsumerListener, MessageConsumerListener]
 
@@ -395,7 +407,7 @@ object AMQP {
         throw cause
 
       case Stop =>
-        listeners.elements.toList.map(_._2).foreach(unregisterListener(_))
+        listeners.iterator.toList.map(_._2).foreach(unregisterListener(_))
         disconnect
         exit
 
@@ -411,22 +423,22 @@ object AMQP {
     protected def setupChannel = {
       connection = connectionFactory.newConnection(hostname, port)
       channel = connection.createChannel
-      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, configurationArguments.asJava)
-      listeners.elements.toList.map(_._2).foreach(registerListener)
+      channel.exchangeDeclare(exchangeName.toString, exchangeType.toString, passive, durable, autoDelete, jConfigMap)
+      listeners.iterator.toList.map(_._2).foreach(registerListener)
       if (shutdownListener.isDefined) connection.addShutdownListener(shutdownListener.get)
     }
 
     private def registerListener(listener: MessageConsumerListener) = {
       log.debug("Register MessageConsumerListener %s", listener.toString(exchangeName))
       listeners.put(listener, listener)
-      
+
       if (!listener.isUsingExistingQueue) {
         log.debug("Declaring new queue for MessageConsumerListener [%s]", listener.queueName)
         channel.queueDeclare(
-          listener.queueName, 
-          passive, durable, 
-          listener.exclusive, listener.autoDelete, 
-          configurationArguments.asJava)
+          listener.queueName,
+          passive, durable,
+          listener.exclusive, listener.autoDelete,
+          jConfigMap)
       }
 
       log.debug("Binding new queue for MessageConsumerListener [%s]", listener.queueName)
@@ -450,7 +462,7 @@ object AMQP {
               log.error(
                 cause, "Delivery of message to MessageConsumerListener [%s] failed",
                 listener.toString(exchangeName))
-              consumer ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and reconnect
+              self ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and reconnect
           }
         }
 
@@ -460,14 +472,14 @@ object AMQP {
               "MessageConsumerListener [" + listener + "] does not have a tag")
             listener.tag.get == listenerTag
           }
-          listeners.elements.toList.map(_._2).find(hasTag(_, listenerTag)) match {
+          listeners.iterator.toList.map(_._2).find(hasTag(_, listenerTag)) match {
             case None => log.error(
               "Could not find message listener for tag [%s]; can't shut listener down", listenerTag)
             case Some(listener) =>
               log.warning(
                 "MessageConsumerListener [%s] is being shutdown by [%s] due to [%s]",
                 listener.toString(exchangeName), signal.getReference, signal.getReason)
-              consumer ! UnregisterMessageConsumerListener(listener)
+              self ! UnregisterMessageConsumerListener(listener)
           }
         }
       })
@@ -480,7 +492,7 @@ object AMQP {
           "Can't unregister message consumer listener [%s]; no such listener",
           listener.toString(exchangeName))
         case Some(listener) =>
-          listeners - listener
+          listeners -= listener
           listener.tag match {
             case None => log.warning(
               "Can't unregister message consumer listener [%s]; no listener tag",
@@ -511,7 +523,7 @@ object AMQP {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait FaultTolerantConnectionActor extends Actor {
+  trait FaultTolerantConnectionActor extends Actor with Logging {
     val reconnectionTimer = new Timer
 
     var connection: Connection = _
@@ -543,7 +555,7 @@ object AMQP {
     def bindQueue(name: String) {
       channel.queueBind(name, exchangeName, name)
     }
-  
+
     def createBindQueue: String = {
       val name = createQueue
       channel.queueBind(name, exchangeName, name)
@@ -586,10 +598,10 @@ object AMQP {
       } catch {
         case e: Exception =>
           val waitInMillis = delay * 2
-          val self = this
+          val outerActorRef = self
           log.debug("Trying to reconnect to AMQP server in %n milliseconds [%s]", waitInMillis, this)
           reconnectionTimer.schedule(new TimerTask() {
-            override def run = self ! Reconnect(waitInMillis)
+            override def run = outerActorRef ! Reconnect(waitInMillis)
           }, delay)
       }
     }

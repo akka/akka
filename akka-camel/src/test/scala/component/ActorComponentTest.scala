@@ -5,7 +5,6 @@ import org.junit._
 import org.scalatest.junit.JUnitSuite
 
 class ActorComponentTest extends JUnitSuite {
-
   val component: ActorComponent = ActorComponentTest.mockComponent
 
   @Test def shouldCreateEndpointWithIdDefined = {

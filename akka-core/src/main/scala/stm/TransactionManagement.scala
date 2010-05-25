@@ -4,9 +4,9 @@
 
 package se.scalablesolutions.akka.stm
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import se.scalablesolutions.akka.util.Logging
+
+import java.util.concurrent.atomic.AtomicBoolean
 
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.commitbarriers.CountDownCommitBarrier
@@ -40,18 +40,18 @@ object TransactionManagement extends TransactionManagement {
 
   private[akka] def getTransactionSet: CountDownCommitBarrier = {
     val option = transactionSet.get
-    if ((option eq null) || option.isEmpty) throw new IllegalStateException("No TransactionSet in scope")
-    option.get
+    if ((option eq null) || option.isEmpty) throw new StmConfigurationException("No Transaction set in scope")
+    else option.get
   }
 
   private[akka] def getTransaction: Transaction = {
     val option = transaction.get
-    if ((option eq null) || option.isEmpty) throw new IllegalStateException("No Transaction in scope")
+    if ((option eq null) || option.isEmpty) throw new StmConfigurationException("No Transaction in scope")
     option.get
   }
 }
 
-trait TransactionManagement extends Logging {
+trait TransactionManagement {
 
   private[akka] def createNewTransactionSet: CountDownCommitBarrier = {
     val txSet = new CountDownCommitBarrier(1, TransactionManagement.FAIR_TRANSACTIONS)
@@ -65,7 +65,9 @@ trait TransactionManagement extends Logging {
   private[akka] def setTransaction(tx: Option[Transaction]) =
     if (tx.isDefined) TransactionManagement.transaction.set(tx)
 
-  private[akka] def clearTransactionSet = TransactionManagement.transactionSet.set(None)
+  private[akka] def clearTransactionSet = {
+    TransactionManagement.transactionSet.set(None)
+  }
 
   private[akka] def clearTransaction = {
     TransactionManagement.transaction.set(None)

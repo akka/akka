@@ -7,27 +7,26 @@ package se.scalablesolutions.akka.dispatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.Queue
 
-import se.scalablesolutions.akka.actor.{Actor, ActorMessageInvoker}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorMessageInvoker}
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler: MessageInvoker) 
-  extends MessageDispatcher {
-  
-  def this(actor: Actor) = this(actor.getClass.getName, new ActorMessageInvoker(actor))
-
+class ThreadBasedDispatcher(actor: ActorRef) extends MessageDispatcher {
+  private val name = actor.getClass.getName + ":" + actor.uuid
+  private val threadName = "thread-based:dispatcher:" + name
+  private val messageHandler = new ActorMessageInvoker(actor)
   private val queue = new BlockingMessageQueue(name)
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
 
-  def dispatch(invocation: MessageInvocation) = queue.append(invocation) 
+  def dispatch(invocation: MessageInvocation) = queue.append(invocation)
 
   def start = if (!active) {
     active = true
-    selectorThread = new Thread {
+    selectorThread = new Thread(threadName) {
       override def run = {
         while (active) {
           try {
@@ -38,11 +37,13 @@ class ThreadBasedDispatcher private[akka] (val name: String, val messageHandler:
     }
     selectorThread.start
   }
-                       
+
   def isShutdown = !active
 
+  def usesActorMailbox = false
+
   def shutdown = if (active) {
-    log.debug("Shutting down ExecutorBasedEventDrivenDispatcher [%s]", name)
+    log.debug("Shutting down ThreadBasedDispatcher [%s]", name)
     active = false
     selectorThread.interrupt
     references.clear

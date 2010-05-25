@@ -15,7 +15,7 @@ import se.scalablesolutions.akka.config.Config.config
 import scala.collection.mutable.Map
 
 import org.apache.cassandra.db.ColumnFamily
-import org.apache.cassandra.service._
+import org.apache.cassandra.thrift._
 
 import org.apache.thrift.transport._
 import org.apache.thrift.protocol._
@@ -24,15 +24,14 @@ import org.apache.thrift.protocol._
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait CassandraSession extends Closeable with Flushable {
-  import scala.collection.jcl.Conversions._
-  import org.scala_tools.javautils.Imports._
+  import scala.collection.JavaConversions._
   import java.util.{Map => JMap, List => JList}
 
   protected val client: Cassandra.Client
   protected val keyspace: String
 
   val obtainedAt: Long
-  val consistencyLevel: Int
+  val consistencyLevel: ConsistencyLevel
   val schema: JMap[String, JMap[String, String]]
 
   /**
@@ -54,52 +53,55 @@ trait CassandraSession extends Closeable with Flushable {
   def /(key: String, columnParent: ColumnParent, start: Array[Byte], end: Array[Byte], ascending: Boolean, count: Int): List[ColumnOrSuperColumn] =
     /(key, columnParent, start, end, ascending, count, consistencyLevel)
 
-  def /(key: String, columnParent: ColumnParent, start: Array[Byte], end: Array[Byte], ascending: Boolean, count: Int, consistencyLevel: Int): List[ColumnOrSuperColumn] =
-    client.get_slice(keyspace, key, columnParent, new SlicePredicate(null, new SliceRange(start, end, ascending, count)), consistencyLevel).toList
+  def /(key: String, columnParent: ColumnParent, start: Array[Byte], end: Array[Byte], ascending: Boolean, count: Int, consistencyLevel: ConsistencyLevel): List[ColumnOrSuperColumn] = {
+    val slicePredicate = new SlicePredicate
+    slicePredicate.setSlice_range(new SliceRange(start, end, ascending, count))
+    client.get_slice(keyspace, key, columnParent, slicePredicate, consistencyLevel).toList
+  }
 
   def /(key: String, columnParent: ColumnParent, slicePredicate: SlicePredicate): List[ColumnOrSuperColumn] =
     client.get_slice(keyspace, key, columnParent, slicePredicate, consistencyLevel).toList
 
-  def /(key: String, columnParent: ColumnParent, slicePredicate: SlicePredicate, consistencyLevel: Int): List[ColumnOrSuperColumn] =
+  def /(key: String, columnParent: ColumnParent, slicePredicate: SlicePredicate, consistencyLevel: ConsistencyLevel): List[ColumnOrSuperColumn] =
     client.get_slice(keyspace, key, columnParent, slicePredicate, consistencyLevel).toList
 
   def |(key: String, colPath: ColumnPath): Option[ColumnOrSuperColumn] =
     |(key, colPath, consistencyLevel)
 
-  def |(key: String, colPath: ColumnPath, consistencyLevel: Int): Option[ColumnOrSuperColumn] =
+  def |(key: String, colPath: ColumnPath, consistencyLevel: ConsistencyLevel): Option[ColumnOrSuperColumn] =
     client.get(keyspace, key, colPath, consistencyLevel)
 
   def |#(key: String, columnParent: ColumnParent): Int =
     |#(key, columnParent, consistencyLevel)
 
-  def |#(key: String, columnParent: ColumnParent, consistencyLevel: Int): Int =
+  def |#(key: String, columnParent: ColumnParent, consistencyLevel: ConsistencyLevel): Int =
     client.get_count(keyspace, key, columnParent, consistencyLevel)
 
   def ++|(key: String, colPath: ColumnPath, value: Array[Byte]): Unit =
     ++|(key, colPath, value, obtainedAt, consistencyLevel)
 
-  def ++|(key: String, colPath: ColumnPath, value: Array[Byte], consistencyLevel: Int): Unit =
+  def ++|(key: String, colPath: ColumnPath, value: Array[Byte], consistencyLevel: ConsistencyLevel): Unit =
     ++|(key, colPath, value, obtainedAt, consistencyLevel)
 
   def ++|(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long): Unit =
     ++|(key, colPath, value, timestamp, consistencyLevel)
 
-  def ++|(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long, consistencyLevel: Int) =
+  def ++|(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long, consistencyLevel: ConsistencyLevel) =
     client.insert(keyspace, key, colPath, value, timestamp, consistencyLevel)
 
   def ++|(key: String, batch: Map[String, List[ColumnOrSuperColumn]]): Unit =
     ++|(key, batch, consistencyLevel)
 
-  def ++|(key: String, batch: Map[String, List[ColumnOrSuperColumn]], consistencyLevel: Int): Unit = {
+  def ++|(key: String, batch: Map[String, List[ColumnOrSuperColumn]], consistencyLevel: ConsistencyLevel): Unit = {
     val jmap = new java.util.HashMap[String, JList[ColumnOrSuperColumn]]
-    for (entry <- batch; (key, value) = entry) jmap.put(key, value.asJava)
+    for (entry <- batch; (key, value) = entry) jmap.put(key, new java.util.ArrayList(value))
     client.batch_insert(keyspace, key, jmap, consistencyLevel)
   }
 
   def --(key: String, columnPath: ColumnPath, timestamp: Long): Unit =
     --(key, columnPath, timestamp, consistencyLevel)
 
-  def --(key: String, columnPath: ColumnPath, timestamp: Long, consistencyLevel: Int): Unit =
+  def --(key: String, columnPath: ColumnPath, timestamp: Long, consistencyLevel: ConsistencyLevel): Unit =
     client.remove(keyspace, key, columnPath, timestamp, consistencyLevel)
 
   // ====================================
@@ -108,38 +110,37 @@ trait CassandraSession extends Closeable with Flushable {
 
   def getSlice(key: String, columnParent: ColumnParent, start: Array[Byte], end: Array[Byte], ascending: Boolean, count: Int) = / (key, columnParent, start, end, ascending, count, consistencyLevel)
 
-  def getSlice(key: String, columnParent: ColumnParent, start: Array[Byte], end: Array[Byte], ascending: Boolean, count: Int, consistencyLevel: Int) = / (key, columnParent, start, end, ascending, count, consistencyLevel)
+  def getSlice(key: String, columnParent: ColumnParent, start: Array[Byte], end: Array[Byte], ascending: Boolean, count: Int, consistencyLevel: ConsistencyLevel) = / (key, columnParent, start, end, ascending, count, consistencyLevel)
 
   def getSlice(key: String, columnParent: ColumnParent, slicePredicate: SlicePredicate) = / (key, columnParent, slicePredicate)
 
-  def getSlice(key: String, columnParent: ColumnParent, slicePredicate: SlicePredicate, consistencyLevel: Int) = / (key, columnParent, slicePredicate, consistencyLevel)
+  def getSlice(key: String, columnParent: ColumnParent, slicePredicate: SlicePredicate, consistencyLevel: ConsistencyLevel) = / (key, columnParent, slicePredicate, consistencyLevel)
 
 
   def get(key: String, colPath: ColumnPath) = |(key, colPath)
 
-  def get(key: String, colPath: ColumnPath, consistencyLevel: Int) = |(key, colPath, consistencyLevel)
+  def get(key: String, colPath: ColumnPath, consistencyLevel: ConsistencyLevel) = |(key, colPath, consistencyLevel)
 
   def getCount(key: String, columnParent: ColumnParent)= |#(key, columnParent)
 
-  def getCount(key: String, columnParent: ColumnParent, consistencyLevel: Int) = |#(key, columnParent, consistencyLevel)
+  def getCount(key: String, columnParent: ColumnParent, consistencyLevel: ConsistencyLevel) = |#(key, columnParent, consistencyLevel)
 
 
   def insert(key: String, colPath: ColumnPath, value: Array[Byte]): Unit = ++|(key, colPath, value)
 
-  def insert(key: String, colPath: ColumnPath, value: Array[Byte], consistencyLevel: Int): Unit = ++|(key, colPath, value, consistencyLevel)
+  def insert(key: String, colPath: ColumnPath, value: Array[Byte], consistencyLevel: ConsistencyLevel): Unit = ++|(key, colPath, value, consistencyLevel)
 
   def insert(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long): Unit = ++|(key, colPath, value, timestamp)
 
-  def insert(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long, consistencyLevel: Int) = ++|(key, colPath, value, timestamp, consistencyLevel)
-
+  def insert(key: String, colPath: ColumnPath, value: Array[Byte], timestamp: Long, consistencyLevel: ConsistencyLevel) = ++|(key, colPath, value, timestamp, consistencyLevel)
 
   def insert(key: String, batch: Map[String, List[ColumnOrSuperColumn]]): Unit = ++|(key, batch)
 
-  def insert(key: String, batch: Map[String, List[ColumnOrSuperColumn]], consistencyLevel: Int): Unit = ++|(key, batch, consistencyLevel)
+  def insert(key: String, batch: Map[String, List[ColumnOrSuperColumn]], consistencyLevel: ConsistencyLevel): Unit = ++|(key, batch, consistencyLevel)
 
   def remove(key: String, columnPath: ColumnPath, timestamp: Long): Unit = --(key, columnPath, timestamp)
 
-  def remove(key: String, columnPath: ColumnPath, timestamp: Long, consistencyLevel: Int): Unit = --(key, columnPath, timestamp, consistencyLevel)
+  def remove(key: String, columnPath: ColumnPath, timestamp: Long, consistencyLevel: ConsistencyLevel): Unit = --(key, columnPath, timestamp, consistencyLevel)
 
 }
 
@@ -148,14 +149,14 @@ class CassandraSessionPool[T <: TTransport](
   transportPool: Pool[T],
   inputProtocol: Protocol,
   outputProtocol: Protocol,
-  consistency: Int) extends Closeable with Logging {
+  consistency: ConsistencyLevel) extends Closeable with Logging {
 
-  def this(space: String, transportPool: Pool[T], ioProtocol: Protocol, consistency: Int) =
+  def this(space: String, transportPool: Pool[T], ioProtocol: Protocol, consistency: ConsistencyLevel) =
     this (space, transportPool, ioProtocol, ioProtocol, consistency)
 
   def newSession: CassandraSession = newSession(consistency)
 
-  def newSession(consistencyLevel: Int): CassandraSession = {
+  def newSession(consistencyLevel: ConsistencyLevel): CassandraSession = {
     val socket = transportPool.borrowObject
     val cassandraClient = new Cassandra.Client(inputProtocol(socket), outputProtocol(socket))
     val cassandraSchema = cassandraClient.describe_keyspace(space)

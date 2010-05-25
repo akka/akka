@@ -10,7 +10,7 @@ import org.apache.camel.{Processor, ExchangePattern, Exchange, ProducerTemplate}
 import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.spi.Synchronization
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 import se.scalablesolutions.akka.util.Logging
 
@@ -19,7 +19,7 @@ import se.scalablesolutions.akka.util.Logging
  *
  * @author Martin Krasser
  */
-trait Producer { self: Actor =>
+trait Producer { this: Actor =>
 
   private val headersToCopyDefault = Set(Message.MessageExchangeId)
 
@@ -66,7 +66,7 @@ trait Producer { self: Actor =>
    * @param msg: the message to produce. The message is converted to its canonical
    *             representation via Message.canonicalize.
    */
-  protected def produceOneway(msg: Any): Unit =
+  protected def produceOnewaySync(msg: Any): Unit =
     template.send(endpointUri, createInOnlyExchange.fromRequestMessage(Message.canonicalize(msg)))
 
   /**
@@ -90,7 +90,7 @@ trait Producer { self: Actor =>
    *             representation via Message.canonicalize.
    * @return either a response Message or a Failure object.
    */
-  protected def produce(msg: Any): Any = {
+  protected def produceSync(msg: Any): Any = {
     val cmsg = Message.canonicalize(msg)
     val requestProcessor = new Processor() {
       def process(exchange: Exchange) = exchange.fromRequestMessage(cmsg)
@@ -114,7 +114,7 @@ trait Producer { self: Actor =>
   protected def produceAsync(msg: Any): Unit = {
     val cmsg = Message.canonicalize(msg)
     val sync = new ProducerResponseSender(
-      cmsg.headers(headersToCopy), this.sender, this.senderFuture, this)
+      cmsg.headers(headersToCopy), self.sender, self.senderFuture, this)
     template.asyncCallback(endpointUri, createInOutExchange.fromRequestMessage(cmsg), sync)
   }
 
@@ -124,11 +124,11 @@ trait Producer { self: Actor =>
    * the protected produce methods depending on the return values of
    * <code>oneway</code> and <code>async</code>.
    */
-  protected def produce: PartialFunction[Any, Unit] = {
+  protected def produce: Receive = {
     case msg => {
-      if      ( oneway && !async)    produceOneway(msg)
+      if      ( oneway && !async)    produceOnewaySync(msg)
       else if ( oneway &&  async)    produceOnewayAsync(msg)
-      else if (!oneway && !async)    reply(produce(msg))
+      else if (!oneway && !async)    self.reply(produceSync(msg))
       else  /*(!oneway &&  async)*/  produceAsync(msg)
     }
   }
@@ -162,8 +162,8 @@ trait Producer { self: Actor =>
  */
 class ProducerResponseSender(
     headers: Map[String, Any],
-    sender: Option[Actor],
-    senderFuture: Option[CompletableFuture],
+    sender: Option[ActorRef],
+    senderFuture: Option[CompletableFuture[Any]],
     producer: Actor) extends Synchronization with Logging {
 
   implicit val producerActor = Some(producer) // the response sender
@@ -181,12 +181,27 @@ class ProducerResponseSender(
   def onComplete(exchange: Exchange) = reply(exchange.toResponseMessage(headers))
 
   private def reply(message: Any) = {
-    sender match {
-      case Some(actor) => actor ! message
-      case None => senderFuture match {
-        case Some(future) => future.completeWithResult(message)
-        case None => log.warning("No destination for sending response")
-      }
-    }
+    if (senderFuture.isDefined) senderFuture.get completeWithResult message
+    else if (sender.isDefined) sender.get ! message
+    else log.warning("No destination for sending response")
   }
 }
+
+/**
+ * A one-way producer.
+ *
+ * @author Martin Krasser
+ */
+trait Oneway extends Producer { this: Actor =>
+  override def oneway = true
+}
+
+/**
+ * A synchronous producer.
+ *
+ * @author Martin Krasser
+ */
+trait Sync extends Producer { this: Actor =>
+  override def async = false
+}
+
