@@ -16,7 +16,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // project versions
   val JERSEY_VERSION = "1.1.5"
   val ATMO_VERSION = "0.5.4"
-  val CASSANDRA_VERSION = "0.5.0"
+  val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC2-SNAPSHOT"
 
@@ -25,8 +25,12 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val distPath = info.projectPath / "dist"
 
   override def compileOptions = super.compileOptions ++
-    Seq("-deprecation", "-Xmigration", "-Xcheckinit", 
-        "-Xstrict-warnings", "-Xwarninit", "-encoding", "utf8")
+    Seq("-deprecation", 
+        "-Xmigration", 
+        "-Xcheckinit", 
+        "-Xstrict-warnings", 
+        "-Xwarninit", 
+        "-encoding", "utf8")
         .map(x => CompileOption(x))
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
@@ -194,7 +198,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val thrift = "com.facebook" % "thrift" % "1.0" % "compile"
+    val thrift = "com.facebook" % "thrift" % "r917130" % "compile"
     val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile"
   }
 
@@ -218,7 +222,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val cassandra_clhm = "org.apache.cassandra" % "clhm-production" % CASSANDRA_VERSION % "test"
     val commons_coll = "commons-collections" % "commons-collections" % "3.2.1" % "test"
     val google_coll = "com.google.collections" % "google-collections" % "1.0" % "test"
-    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    //override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {

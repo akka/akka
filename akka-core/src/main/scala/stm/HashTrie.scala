@@ -218,7 +218,7 @@ private[stm] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, V]], bi
         new BitmappedNode(shift)(newTable, bits)
       }
     } else {
-      val newTable = new Array[Node[K, A]](Math.max(table.length, i + 1))
+      val newTable = new Array[Node[K, A]](math.max(table.length, i + 1))
       Array.copy(table, 0, newTable, 0, table.length)
 
       newTable(i) = new LeafNode(key, hash, value)
@@ -244,7 +244,7 @@ private[stm] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, V]], bi
       } else if (node.isInstanceOf[EmptyNode[_]]) {
         if (size == 1) new EmptyNode[K] else {
           val adjustedBits = bits ^ mask
-          val log = Math.log(adjustedBits) / Math.log(2)
+          val log = math.log(adjustedBits) / math.log(2)
 
           if (log.toInt.toDouble == log) {      // last one
             table(log.toInt)
@@ -286,7 +286,7 @@ private[stm] class BitmappedNode[K, +V](shift: Int)(table: Array[Node[K, V]], bi
 
 private[stm] object BitmappedNode {
   def apply[K, V](shift: Int)(node: SingleNode[K, V], key: K, hash: Int, value: V) = {
-    val table = new Array[Node[K, V]](Math.max((hash >>> shift) & 0x01f, (node.hash >>> shift) & 0x01f) + 1)
+    val table = new Array[Node[K, V]](math.max((hash >>> shift) & 0x01f, (node.hash >>> shift) & 0x01f) + 1)
 
     val preBits = {
       val i = (node.hash >>> shift) & 0x01f
