@@ -2,9 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package sample.scala
+package sample.rest.scala
 
 import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.stm.TransactionalState
 import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
 import se.scalablesolutions.akka.config.ScalaConfig._
@@ -26,16 +27,16 @@ class Boot {
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
       Supervise(
-        new SimpleService,
+        actorOf[SimpleService],
         LifeCycle(Permanent)) ::
       Supervise(
-        new Chat,
+        actorOf[Chat],
         LifeCycle(Permanent)) ::
       Supervise(
-         new PersistentSimpleService,
+         actorOf[PersistentSimpleService],
          LifeCycle(Permanent)) ::
       Supervise(
-         new PubSub,
+         actorOf[PubSub],
          LifeCycle(Permanent))
       :: Nil))
   factory.newInstance.start
@@ -50,7 +51,7 @@ class Boot {
  */
 @Path("/scalacount")
 class SimpleService extends Transactor {
-  
+
   case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
@@ -58,17 +59,17 @@ class SimpleService extends Transactor {
 
   @GET
   @Produces(Array("text/html"))
-  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
+  def count = (self !! Tick).getOrElse(<error>Error in counter</error>)
 
   def receive = {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
-      reply(<success>Tick:{counter + 1}</success>)
+      self.reply(<success>Tick:{counter + 1}</success>)
     } else {
       storage.put(KEY, new Integer(0))
       hasStartedTicking = true
-      reply(<success>Tick: 0</success>)
+      self.reply(<success>Tick: 0</success>)
     }
   }
 }
@@ -87,7 +88,7 @@ class PubSub extends Actor {
   @Broadcast
   @Path("/topic/{topic}/{message}/")
   @Produces(Array("text/plain;charset=ISO-8859-1"))
-  @Cluster(Array(classOf[AkkaClusterBroadcastFilter])) { val name = "foo" }
+  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "foo")
   def say(@PathParam("topic") topic: Broadcaster, @PathParam("message") message: String): Broadcastable = new Broadcastable(message, topic)
 
   def receive = { case _ => }
@@ -110,24 +111,24 @@ class PersistentSimpleService extends Transactor {
 
   @GET
   @Produces(Array("text/html"))
-  def count = (this !! Tick).getOrElse(<error>Error in counter</error>)
+  def count = (self !! Tick).getOrElse(<error>Error in counter</error>)
 
   def receive = {
     case Tick => if (hasStartedTicking) {
       val bytes = storage.get(KEY.getBytes).get
       val counter = ByteBuffer.wrap(bytes).getInt
       storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
-      reply(<success>Tick:{counter + 1}</success>)
+      self.reply(<success>Tick:{counter + 1}</success>)
     } else {
       storage.put(KEY.getBytes, Array(0.toByte))
       hasStartedTicking = true
-      reply(<success>Tick: 0</success>)
+      self.reply(<success>Tick: 0</success>)
     }
   }
 }
 
 @Path("/chat")
-class Chat extends Actor {
+class Chat extends Actor with Logging {
   case class Chat(val who: String, val what: String, val msg: String)
 
   @Suspend
@@ -138,8 +139,8 @@ class Chat extends Actor {
   def receive = {
     case Chat(who, what, msg) => {
       what match {
-        case "login" => reply("System Message__" + who + " has joined.")
-        case "post" => reply("" + who + "__" + msg)
+        case "login" => self.reply("System Message__" + who + " has joined.")
+        case "post" => self.reply("" + who + "__" + msg)
         case _ => throw new WebApplicationException(422)
       }
     }
@@ -148,17 +149,17 @@ class Chat extends Actor {
 
   @POST
   @Broadcast(Array(classOf[XSSHtmlFilter], classOf[JsonpFilter]))
-  @Cluster(Array(classOf[AkkaClusterBroadcastFilter])) { val name = "bar" }
+  //FIXME @Cluster(value = Array(classOf[AkkaClusterBroadcastFilter]),name = "bar")
   @Consumes(Array("application/x-www-form-urlencoded"))
   @Produces(Array("text/html"))
   def publishMessage(form: MultivaluedMap[String, String]) =
-    (this !! Chat(form.getFirst("name"),
+    (self !! Chat(form.getFirst("name"),
                   form.getFirst("action"),
                   form.getFirst("message"))).getOrElse("System__error")
 }
 
 
-class JsonpFilter extends BroadcastFilter[String] with Logging {
+class JsonpFilter extends BroadcastFilter with Logging {
   def filter(an: AnyRef) = {
     val m = an.toString
     var name = m

@@ -2,12 +2,13 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.security.samples
+package sample.security
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Transactor, Actor}
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.security.{DigestAuthenticationActor, UserInfo}
+import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
 import se.scalablesolutions.akka.stm.TransactionalState
 
 class Boot {
@@ -17,20 +18,19 @@ class Boot {
       // Dummy implementations of all authentication actors
       // see akka.conf to enable one of these for the AkkaSecurityFilterFactory
       Supervise(
-        new BasicAuthenticationService,
+        actorOf[BasicAuthenticationService],
         LifeCycle(Permanent)) ::
      /**
       Supervise(
-        new DigestAuthenticationService,
+        actorOf[DigestAuthenticationService],
         LifeCycle(Permanent)) ::
       Supervise(
-        new SpnegoAuthenticationService,
+        actorOf[SpnegoAuthenticationService],
         LifeCycle(Permanent)) ::
       **/
       Supervise(
-        new SecureTickActor,
+        actorOf[SecureTickActor],
         LifeCycle(Permanent)):: Nil))
-
 
   val supervisor = factory.newInstance
   supervisor.start
@@ -90,8 +90,7 @@ import javax.annotation.security.{RolesAllowed, DenyAll, PermitAll}
 import javax.ws.rs.{GET, Path, Produces}
 
 @Path("/secureticker")
-class SecureTickActor extends Actor with Logging {
-  makeTransactionRequired
+class SecureTickActor extends Transactor with Logging {
 
   case object Tick
   private val KEY = "COUNTER"
@@ -124,7 +123,7 @@ class SecureTickActor extends Actor with Logging {
   @DenyAll
   def paranoiaTick = tick
 
-  def tick = (this !! Tick) match {
+  def tick = (self !! Tick) match {
     case (Some(counter)) => (<success>Tick:
       {counter}
     </success>)
@@ -135,11 +134,11 @@ class SecureTickActor extends Actor with Logging {
     case Tick => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.intValue
       storage.put(KEY, counter + 1)
-      reply(new Integer(counter + 1))
+      self.reply(new Integer(counter + 1))
     } else {
       storage.put(KEY, 0)
       hasStartedTicking = true
-      reply(new Integer(0))
+      self.reply(new Integer(0))
     }
   }
 }

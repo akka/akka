@@ -1,11 +1,10 @@
 package se.scalablesolutions.akka.persistence.redis
 
-import junit.framework.TestCase
-
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.{Actor, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
+import Actor._
 
 /**
  * A persistent actor based on Redis queue storage.
@@ -16,7 +15,7 @@ import se.scalablesolutions.akka.actor.{Actor, Transactor}
 
 case class NQ(accountNo: String)
 case object DQ
-case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: Actor)
+case class MNDQ(accountNos: List[String], noOfDQs: Int, failer: ActorRef)
 case object SZ
 
 class QueueActor extends Transactor {
@@ -26,12 +25,12 @@ class QueueActor extends Transactor {
     // enqueue
     case NQ(accountNo) =>
       accounts.enqueue(accountNo.getBytes)
-      reply(true)
+      self.reply(true)
 
     // dequeue
     case DQ =>
       val d = new String(accounts.dequeue)
-      reply(d)
+      self.reply(d)
 
     // multiple NQ and DQ
     case MNDQ(enqs, no, failer) =>
@@ -39,64 +38,71 @@ class QueueActor extends Transactor {
       try {
         (1 to no).foreach(e => accounts.dequeue)
       } catch {
-        case e: Exception => 
+        case e: Exception =>
           failer !! "Failure"
       }
-      reply(true)
+      self.reply(true)
 
     // size
     case SZ =>
-      reply(accounts.size)
+      self.reply(accounts.size)
   }
 }
 
-class RedisPersistentQSpec extends TestCase {
+import org.scalatest.junit.JUnitSuite
+class RedisPersistentQSpec extends JUnitSuite {
   @Test
   def testSuccessfulNQ = {
-    val qa = new QueueActor
+    val qa = actorOf(new QueueActor)
     qa.start
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    assertEquals(3, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(3 == t)
   }
 
   @Test
   def testSuccessfulDQ = {
-    val qa = new QueueActor
+    val qa = actorOf[QueueActor]
     qa.start
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    assertEquals(3, (qa !! SZ).get)
+    val s: Int = (qa !! SZ).get
+    assertTrue(3 == s)
     assertEquals("a-123", (qa !! DQ).get)
     assertEquals("a-124", (qa !! DQ).get)
     assertEquals("a-125", (qa !! DQ).get)
-    assertEquals(0, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(0 == t)
   }
 
   @Test
   def testSuccessfulMNDQ = {
-    val qa = new QueueActor
+    val qa = actorOf[QueueActor]
     qa.start
-    val failer = new PersistentFailerActor
+    val failer = actorOf[PersistentFailerActor]
     failer.start
 
     qa !! NQ("a-123")
     qa !! NQ("a-124")
     qa !! NQ("a-125")
-    assertEquals(3, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(3 == t)
     assertEquals("a-123", (qa !! DQ).get)
-    assertEquals(2, (qa !! SZ).get)
+    val s: Int = (qa !! SZ).get
+    assertTrue(2 == s)
     qa !! MNDQ(List("a-126", "a-127"), 2, failer)
-    assertEquals(2, (qa !! SZ).get)
+    val u: Int = (qa !! SZ).get
+    assertTrue(2 == u)
   }
 
   @Test
   def testMixedMNDQ = {
-    val qa = new QueueActor
+    val qa = actorOf[QueueActor]
     qa.start
-    val failer = new PersistentFailerActor
+    val failer = actorOf[PersistentFailerActor]
     failer.start
 
     // 3 enqueues
@@ -104,22 +110,26 @@ class RedisPersistentQSpec extends TestCase {
     qa !! NQ("a-124")
     qa !! NQ("a-125")
 
-    assertEquals(3, (qa !! SZ).get)
+    val t: Int = (qa !! SZ).get
+    assertTrue(3 == t)
 
     // dequeue 1
     assertEquals("a-123", (qa !! DQ).get)
 
     // size == 2
-    assertEquals(2, (qa !! SZ).get)
+    val s: Int = (qa !! SZ).get
+    assertTrue(2 == s)
 
     // enqueue 2, dequeue 2 => size == 2
     qa !! MNDQ(List("a-126", "a-127"), 2, failer)
-    assertEquals(2, (qa !! SZ).get)
+    val u: Int = (qa !! SZ).get
+    assertTrue(2 == u)
 
     // enqueue 2 => size == 4
     qa !! NQ("a-128")
     qa !! NQ("a-129")
-    assertEquals(4, (qa !! SZ).get)
+    val v: Int = (qa !! SZ).get
+    assertTrue(4 == v)
 
     // enqueue 1 => size 5
     // dequeue 6 => fail transaction
@@ -128,6 +138,7 @@ class RedisPersistentQSpec extends TestCase {
       qa !! MNDQ(List("a-130"), 6, failer)
     } catch { case e: Exception => {} }
 
-    assertEquals(4, (qa !! SZ).get)
+    val w: Int = (qa !! SZ).get
+    assertTrue(4 == w)
   }
 }

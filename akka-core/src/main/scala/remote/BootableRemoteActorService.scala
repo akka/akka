@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
- 
+
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
@@ -19,16 +19,16 @@ trait BootableRemoteActorService extends Bootable with Logging {
   protected lazy val remoteServerThread = new Thread(new Runnable() {
     def run = RemoteNode.start(self.applicationLoader)
   }, "Akka Remote Service")
-  
+
   def startRemoteService = remoteServerThread.start
-  
+
   abstract override def onLoad   = {
     super.onLoad //Initialize BootableActorLoaderService before remote service
     if(config.getBool("akka.remote.server.service", true)){
-      
+
       if(config.getBool("akka.remote.cluster.service", true))
         Cluster.start(self.applicationLoader)
-     
+
       log.info("Initializing Remote Actors Service...")
       startRemoteService
       log.info("Remote Actors Service initialized!")

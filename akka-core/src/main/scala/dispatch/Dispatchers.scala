@@ -4,14 +4,14 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 /**
  * Scala API. Dispatcher factory.
  * <p/>
  * Example usage:
  * <pre/>
- *   val dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name")
+ *   val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name")
  *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
@@ -25,7 +25,7 @@ import se.scalablesolutions.akka.actor.Actor
  * <p/>
  * Example usage:
  * <pre/>
- *   MessageDispatcher dispatcher = Dispatchers.newEventBasedThreadPoolDispatcher("name");
+ *   MessageDispatcher dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("name");
  *   dispatcher
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
@@ -39,7 +39,13 @@ import se.scalablesolutions.akka.actor.Actor
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers {
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global")
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global") {
+    override def register(actor: ActorRef) = {
+      if (isShutdown) init
+      super.register(actor)
+    }
+  }
+
   object globalReactorBasedSingleThreadEventDrivenDispatcher extends ReactorBasedSingleThreadEventDrivenDispatcher("global")
   object globalReactorBasedThreadPoolEventDrivenDispatcher extends ReactorBasedThreadPoolEventDrivenDispatcher("global")
 
@@ -49,6 +55,13 @@ object Dispatchers {
    * Has a fluent builder interface for configuring its semantics.
    */
   def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
+
+  /**
+   * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String) = new ExecutorBasedEventDrivenWorkStealingDispatcher(name)
 
   /**
    * Creates a reactor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -67,5 +80,5 @@ object Dispatchers {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: Actor) = new ThreadBasedDispatcher(actor)
+  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
 }

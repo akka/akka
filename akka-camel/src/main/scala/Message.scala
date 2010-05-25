@@ -7,8 +7,6 @@ package se.scalablesolutions.akka.camel
 import org.apache.camel.{Exchange, Message => CamelMessage}
 import org.apache.camel.util.ExchangeHelper
 
-import scala.collection.jcl.{Map => MapWrapper}
-
 /**
  * An immutable representation of a Camel message. Actor classes that mix in
  * se.scalablesolutions.akka.camel.Producer or
@@ -16,12 +14,7 @@ import scala.collection.jcl.{Map => MapWrapper}
  *
  * @author Martin Krasser
  */
-case class Message(val body: Any, val headers: Map[String, Any]) {
-  /**
-   * Creates a message with a body and an empty header map.
-   */
-  def this(body: Any) = this(body, Map.empty)
-
+case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
   /**
    * Returns the body of the message converted to the type given by the <code>clazz</code>
    * argument. Conversion is done using Camel's type converter. The type converter is obtained
@@ -30,8 +23,20 @@ case class Message(val body: Any, val headers: Map[String, Any]) {
    *
    * @see CamelContextManager.
    */
+  @deprecated("use bodyAs[T](implicit m: Manifest[T]): T instead")
   def bodyAs[T](clazz: Class[T]): T =
     CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](clazz, body)
+
+  /**
+   * Returns the body of the message converted to the type <code>T</code>. Conversion is done
+   * using Camel's type converter. The type converter is obtained from the CamelContext managed
+   * by CamelContextManager. Applications have to ensure proper initialization of
+   * CamelContextManager.
+   *
+   * @see CamelContextManager.
+   */
+  def bodyAs[T](implicit m: Manifest[T]): T =
+    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], body)
 
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
@@ -48,7 +53,15 @@ case class Message(val body: Any, val headers: Map[String, Any]) {
    *
    * @see Message#bodyAs(Class)
    */
+  @deprecated("use setBodyAs[T](implicit m: Manifest[T]): Message instead")
   def setBodyAs[T](clazz: Class[T]): Message = setBody(bodyAs(clazz))
+
+  /**
+   * Creates a Message with a new <code>body</code> converted to type <code>T</code>.
+   *
+   * @see Message#bodyAs(Class)
+   */
+  def setBodyAs[T](implicit m: Manifest[T]): Message = setBody(bodyAs[T])
 
   /**
    * Creates a Message with a new <code>body</code>.
@@ -58,23 +71,23 @@ case class Message(val body: Any, val headers: Map[String, Any]) {
   /**
    * Creates a new Message with new <code>headers</code>.
    */
-  def setHeaders(headers: Map[String, Any]) = new Message(this.body, headers)
+  def setHeaders(headers: Map[String, Any]) = copy(this.body, headers)
 
   /**
    * Creates a new Message with the <code>headers</code> argument added to the existing headers.
    */
-  def addHeaders(headers: Map[String, Any]) = new Message(this.body, this.headers ++ headers)
+  def addHeaders(headers: Map[String, Any]) = copy(this.body, this.headers ++ headers)
 
   /**
    * Creates a new Message with the <code>header</code> argument added to the existing headers.
    */
-  def addHeader(header: (String, Any)) = new Message(this.body, this.headers + header)
+  def addHeader(header: (String, Any)) = copy(this.body, this.headers + header)
 
   /**
    * Creates a new Message where the header with name <code>headerName</code> is removed from
    * the existing headers.
    */
-  def removeHeader(headerName: String) = new Message(this.body, this.headers - headerName)
+  def removeHeader(headerName: String) = copy(this.body, this.headers - headerName)
 }
 
 /**
@@ -115,7 +128,7 @@ object Message {
  *
  * @author Martin Krasser
  */
-case class Failure(val cause: Exception, val headers: Map[String, Any])
+case class Failure(val cause: Exception, val headers: Map[String, Any] = Map.empty)
 
 /**
  * Adapter for converting an org.apache.camel.Exchange to and from Message and Failure objects.
@@ -187,7 +200,7 @@ class CamelExchangeAdapter(exchange: Exchange) {
    *
    * @see Failure
    */
-  def toFailureMessage(headers: Map[String, Any]): Failure = 
+  def toFailureMessage(headers: Map[String, Any]): Failure =
     Failure(exchange.getException, headers ++ responseMessage.toMessage.headers)
 
   private def requestMessage = exchange.getIn
@@ -224,26 +237,28 @@ class CamelMessageAdapter(val cm: CamelMessage) {
    */
   def toMessage(headers: Map[String, Any]): Message = Message(cm.getBody, cmHeaders(headers, cm))
 
+  import scala.collection.JavaConversions._
+
   private def cmHeaders(headers: Map[String, Any], cm: CamelMessage) =
-    headers ++ MapWrapper[String, AnyRef](cm.getHeaders).elements
+    headers ++ cm.getHeaders
 }
 
 /**
  * Defines conversion methods to CamelExchangeAdapter and CamelMessageAdapter.
  * Imported by applications
- * that implicitly want to use conversion methods of CamelExchangeAdapter and CamelMessageAdapter. 
+ * that implicitly want to use conversion methods of CamelExchangeAdapter and CamelMessageAdapter.
  */
 object CamelMessageConversion {
-  
+
   /**
    * Creates an CamelExchangeAdapter for the given Camel exchange.
    */
-  implicit def toExchangeAdapter(ce: Exchange): CamelExchangeAdapter = 
+  implicit def toExchangeAdapter(ce: Exchange): CamelExchangeAdapter =
     new CamelExchangeAdapter(ce)
 
   /**
    * Creates an CamelMessageAdapter for the given Camel message.
    */
-  implicit def toMessageAdapter(cm: CamelMessage): CamelMessageAdapter = 
+  implicit def toMessageAdapter(cm: CamelMessage): CamelMessageAdapter =
     new CamelMessageAdapter(cm)
 }

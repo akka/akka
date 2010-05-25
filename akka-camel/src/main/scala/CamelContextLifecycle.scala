@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.util.Logging
 
 /**
  * Defines the lifecycle of a CamelContext. Allowed state transitions are
- * init -> start -> stop -> init -> ... etc. 
+ * init -> start -> stop -> init -> ... etc.
  *
  * @author Martin Krasser
  */
@@ -75,10 +75,13 @@ trait CamelContextLifecycle extends Logging {
   def init: Unit = init(new DefaultCamelContext)
 
   /**
-   * Initializes this lifecycle object with the given CamelContext.
+   * Initializes this lifecycle object with the given CamelContext. For the passed
+   * CamelContext stream-caching is enabled. If applications want to disable stream-
+   * caching they can do so after this method returned and prior to calling start.
    */
   def init(context: CamelContext) {
     this.context = context
+    this.context.setStreamCaching(true)
     this.template = context.createProducerTemplate
     _initialized = true
     log.info("Camel context initialized")

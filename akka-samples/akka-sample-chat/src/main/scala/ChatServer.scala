@@ -2,18 +2,19 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>.
  */
 
-package se.scalablesolutions.akka.sample.chat
+package sample.chat
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, RemoteActor}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, ActorRef, RemoteActor}
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.persistence.redis.RedisStorage
-import se.scalablesolutions.akka.stm.Transaction._
+import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.util.Logging
+import Actor._
 
 /******************************************************************************
 Akka Chat Client/Server Sample Application
@@ -33,10 +34,11 @@ Then to run the sample:
   - Set 'export AKKA_HOME=<root of distribution>.
   - Run 'sbt console' to start up a REPL (interpreter).
 2. In the first REPL you get execute: 
-  - scala> import se.scalablesolutions.akka.sample.chat._
-  - scala> ChatService.start
-3. In the first REPL you get execute: 
-    - scala> import se.scalablesolutions.akka.sample.chat._
+  - scala> import sample.chat._
+  - scala> import se.scalablesolutions.akka.actor.Actor._
+  - scala> val chatService = actorOf[ChatService].start
+3. In the second REPL you get execute: 
+    - scala> import sample.chat._
     - scala> Runner.run
 4. See the chat simulation run.
 5. Run it again to see full speed after first initialization.
@@ -59,7 +61,6 @@ case class ChatMessage(from: String, message: String) extends Event
  * Chat client.
  */
 class ChatClient(val name: String) { 
-  import Actor.Sender.Self
   val chat = RemoteClient.actorFor("chat:service", "localhost", 9999)
 
   def login =                 chat ! Login(name) 
@@ -71,7 +72,7 @@ class ChatClient(val name: String) {
 /**
  * Internal chat client session.
  */
-class Session(user: String, storage: Actor) extends Actor {
+class Session(user: String, storage: ActorRef) extends Actor {
   private val loginTime = System.currentTimeMillis
   private var userLog: List[String] = Nil
   
@@ -96,7 +97,7 @@ trait ChatStorage extends Actor
  * Redis-backed chat storage implementation.
  */
 class RedisChatStorage extends ChatStorage {
-  lifeCycle = Some(LifeCycle(Permanent))    
+  self.lifeCycle = Some(LifeCycle(Permanent))    
   val CHAT_LOG = "akka.chat.log"
   
   private var chatLog = atomic { RedisStorage.getVector(CHAT_LOG) }
@@ -106,15 +107,11 @@ class RedisChatStorage extends ChatStorage {
   def receive = {
     case msg @ ChatMessage(from, message) => 
       log.debug("New chat message [%s]", message)
-      atomic { 
-        chatLog + message.getBytes("UTF-8")
-      }
+      atomic { chatLog + message.getBytes("UTF-8") }
 
     case GetChatLog(_) => 
-      val messageList = atomic {
-        chatLog.map(bytes => new String(bytes, "UTF-8")).toList
-      }
-      reply(ChatLog(messageList))
+      val messageList = atomic { chatLog.map(bytes => new String(bytes, "UTF-8")).toList }
+      self.reply(ChatLog(messageList))
   }
   
   override def postRestart(reason: Throwable) = chatLog = RedisStorage.getVector(CHAT_LOG)  
@@ -127,13 +124,13 @@ class RedisChatStorage extends ChatStorage {
  */
 trait SessionManagement { this: Actor => 
   
-  val storage: ChatStorage // needs someone to provide the ChatStorage
-  val sessions = new HashMap[String, Actor]
+  val storage: ActorRef // needs someone to provide the ChatStorage
+  val sessions = new HashMap[String, ActorRef]
   
-  protected def sessionManagement: PartialFunction[Any, Unit] = {
+  protected def sessionManagement: Receive = {
     case Login(username) => 
       log.info("User [%s] has logged in", username)
-      val session = new Session(username, storage)
+      val session = actorOf(new Session(username, storage))
       session.start
       sessions += (username -> session)
       
@@ -154,9 +151,9 @@ trait SessionManagement { this: Actor =>
  * Uses self-type annotation (this: Actor =>) to declare that it needs to be mixed in with an Actor.
  */
 trait ChatManagement { this: Actor =>
-  val sessions: HashMap[String, Actor] // needs someone to provide the Session map
+  val sessions: HashMap[String, ActorRef] // needs someone to provide the Session map
   
-  protected def chatManagement: PartialFunction[Any, Unit] = {
+  protected def chatManagement: Receive = {
     case msg @ ChatMessage(from, _) => sessions(from) ! msg
     case msg @ GetChatLog(from) =>     sessions(from) forward msg
   }
@@ -166,17 +163,17 @@ trait ChatManagement { this: Actor =>
  * Creates and links a RedisChatStorage.
  */
 trait RedisChatStorageFactory { this: Actor =>
-  val storage: ChatStorage = spawnLink(classOf[RedisChatStorage]) // starts and links ChatStorage
+  val storage = this.self.spawnLink[RedisChatStorage] // starts and links ChatStorage
 }
 
 /**
  * Chat server. Manages sessions and redirects all other messages to the Session for the client.
  */
 trait ChatServer extends Actor {
-  faultHandler = Some(OneForOneStrategy(5, 5000))
-  trapExit = List(classOf[Exception])
+  self.faultHandler = Some(OneForOneStrategy(5, 5000))
+  self.trapExit = List(classOf[Exception])
   
-  val storage: ChatStorage
+  val storage: ActorRef
 
   log.info("Chat service is starting up...")
 
@@ -184,31 +181,33 @@ trait ChatServer extends Actor {
   def receive = sessionManagement orElse chatManagement
   
   // abstract methods to be defined somewhere else
-  protected def chatManagement: PartialFunction[Any, Unit]
-  protected def sessionManagement: PartialFunction[Any, Unit]   
+  protected def chatManagement: Receive
+  protected def sessionManagement: Receive   
   protected def shutdownSessions: Unit
 
   override def shutdown = { 
     log.info("Chat server is shutting down...")
     shutdownSessions
-    unlink(storage)
+    self.unlink(storage)
     storage.stop
   }
 }
 
 /**
- * Object encapsulating the full Chat Service.
+ * Class encapsulating the full Chat Service.
+ * Start service by invoking:
+ * <pre>
+ * val chatService = Actor.actorOf[ChatService].start
+ * </pre>
  */
-object ChatService extends 
+class ChatService extends 
   ChatServer with 
   SessionManagement with 
   ChatManagement with 
   RedisChatStorageFactory {
-  override def start: Actor = {
-    super.start
+  override def init = {
     RemoteNode.start("localhost", 9999)
-    RemoteNode.register("chat:service", this)
-    this
+    RemoteNode.register("chat:service", self)
   }
 }
 

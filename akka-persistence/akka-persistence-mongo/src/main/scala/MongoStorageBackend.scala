@@ -11,6 +11,8 @@ import se.scalablesolutions.akka.config.Config.config
 
 import sjson.json.Serializer._
 
+import java.util.NoSuchElementException
+
 import com.mongodb._
 
 import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
@@ -125,7 +127,7 @@ private[akka] object MongoStorageBackend extends
     val m =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
       }
@@ -143,7 +145,7 @@ private[akka] object MongoStorageBackend extends
     val m =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
       }
@@ -162,7 +164,7 @@ private[akka] object MongoStorageBackend extends
       else count
 
     val n =
-      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sort((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
+      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sortWith((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
     val vals =
       for(s <- n)
         yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
@@ -181,7 +183,7 @@ private[akka] object MongoStorageBackend extends
       }
     } catch {
       case e =>
-        throw new Predef.NoSuchElementException(e.getMessage)
+        throw new NoSuchElementException(e.getMessage)
     }
   }
 
@@ -221,7 +223,7 @@ private[akka] object MongoStorageBackend extends
       val o =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
 
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
@@ -230,7 +232,7 @@ private[akka] object MongoStorageBackend extends
         o.get(index).asInstanceOf[Array[Byte]])
     } catch {
       case e =>
-        throw new Predef.NoSuchElementException(e.getMessage)
+        throw new NoSuchElementException(e.getMessage)
     }
   }
 
@@ -240,26 +242,47 @@ private[akka] object MongoStorageBackend extends
       val o =
       nullSafeFindOne(name) match {
         case None =>
-          throw new Predef.NoSuchElementException(name + " not present")
+          throw new NoSuchElementException(name + " not present")
 
         case Some(dbo) =>
           dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
       }
 
+      val s = if (start.isDefined) start.get else 0
+      val cnt =
+        if (finish.isDefined) {
+          val f = finish.get
+          if (f >= s) (f - s) else count
+        }
+        else count
+
       // pick the subrange and make a Scala list
       val l =
-        List(o.subList(start.get, start.get + count).toArray: _*)
+        List(o.subList(s, s + cnt).toArray: _*)
 
       for(e <- l)
         yield serializer.in[AnyRef](e.asInstanceOf[Array[Byte]])
     } catch {
       case e =>
-        throw new Predef.NoSuchElementException(e.getMessage)
+        throw new NoSuchElementException(e.getMessage)
     }
   }
 
-  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) =
-    throw new UnsupportedOperationException("MongoStorageBackend::insertVectorStorageEntriesFor is not implemented")
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = {
+    val q = new BasicDBObject
+    q.put(KEY, name)
+
+    val dbobj =
+      coll.findOneNS(q) match {
+        case None =>
+          throw new NoSuchElementException(name + " not present")
+        case Some(dbo) => dbo
+      }
+    val currentList = dbobj.get(VALUE).asInstanceOf[JArrayList[AnyRef]]
+    currentList.set(index, serializer.out(elem))
+    coll.update(q, 
+      new BasicDBObject().append(KEY, name).append(VALUE, currentList))
+  }
 
   def getVectorStorageSizeFor(name: String): Int = {
     nullSafeFindOne(name) match {

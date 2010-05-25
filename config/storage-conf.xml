@@ -55,53 +55,116 @@
   -->
   <Keyspaces>
     <Keyspace Name="akka">
-      <!-- The fraction of keys per sstable whose locations we
-           keep in memory in "mostly LRU" order.  (JUST the key
-           locations, NOT any column values.)
-
-           The amount of memory used by the default setting of
-           0.01 is comparable to the amount used by the internal
-           per-sstable key index. Consider increasing this is
-           fine if you have fewer, wider rows.  Set to 0 to
-           disable entirely.
-      -->
-      <KeysCachedFraction>0.01</KeysCachedFraction>
       <!--
-           The CompareWith attribute tells Cassandra how to sort the columns
-           for slicing operations.  For backwards compatibility, the default
-           is to use AsciiType, which is probably NOT what you want.
-           Other options are BytesType, UTF8Type, LexicalUUIDType, TimeUUIDType, and LongType.
-           You can also specify the fully-qualified class name to a class
-           of your choice implementing org.apache.cassandra.db.marshal.IType.
-
-           SuperColumns have a similar CompareSubcolumnsWith attribute.
-
-           ByteType: simple sort by byte value.  No validation is performed.
-           AsciiType: like BytesType, but validates that the input can be parsed as US-ASCII.
-           UTF8Type: A string encoded as UTF8
-           LongType: A 64bit long
-           LexicalUUIDType: a 128bit UUID, compared lexically (by byte value)
-           TimeUUIDType: a 128bit version 1 UUID, compared by timestamp
-
-           (To get the closest approximation to 0.3-style supercolumns,
-           you would use CompareWith=UTF8Type CompareSubcolumnsWith=LongType.)
-
-           if FlushPeriodInMinutes is configured and positive, it will be
-           flushed to disk with that period whether it is dirty or not.
-           This is intended for lightly-used columnfamilies so that they
-           do not prevent commitlog segments from being purged.
-
+       ~ ColumnFamily definitions have one required attribute (Name)
+       ~ and several optional ones.
+       ~
+       ~ The CompareWith attribute tells Cassandra how to sort the columns
+       ~ for slicing operations.  The default is BytesType, which is a
+       ~ straightforward lexical comparison of the bytes in each column.
+       ~ Other options are AsciiType, UTF8Type, LexicalUUIDType, TimeUUIDType,
+       ~ and LongType.  You can also specify the fully-qualified class
+       ~ name to a class of your choice extending
+       ~ org.apache.cassandra.db.marshal.AbstractType.
+       ~ 
+       ~ SuperColumns have a similar CompareSubcolumnsWith attribute.
+       ~ 
+       ~ BytesType: Simple sort by byte value.  No validation is performed.
+       ~ AsciiType: Like BytesType, but validates that the input can be 
+       ~            parsed as US-ASCII.
+       ~ UTF8Type: A string encoded as UTF8
+       ~ LongType: A 64bit long
+       ~ LexicalUUIDType: A 128bit UUID, compared lexically (by byte value)
+       ~ TimeUUIDType: a 128bit version 1 UUID, compared by timestamp
+       ~
+       ~ (To get the closest approximation to 0.3-style supercolumns, you
+       ~ would use CompareWith=UTF8Type CompareSubcolumnsWith=LongType.)
+       ~
+       ~ An optional `Comment` attribute may be used to attach additional
+       ~ human-readable information about the column family to its definition.
+       ~ 
+       ~ The optional KeysCached attribute specifies
+       ~ the number of keys per sstable whose locations we keep in
+       ~ memory in "mostly LRU" order.  (JUST the key locations, NOT any
+       ~ column values.) Specify a fraction (value less than 1), a percentage
+       ~ (ending in a % sign) or an absolute number of keys to cache.
+       ~ KeysCached defaults to 200000 keys.
+       ~
+       ~ The optional RowsCached attribute specifies the number of rows
+       ~ whose entire contents we cache in memory. Do not use this on
+       ~ ColumnFamilies with large rows, or ColumnFamilies with high write:read
+       ~ ratios. Specify a fraction (value less than 1), a percentage (ending in
+       ~ a % sign) or an absolute number of rows to cache. 
+       ~ RowsCached defaults to 0, i.e., row cache is off by default.
+       ~
+       ~ Remember, when using caches as a percentage, they WILL grow with
+       ~ your data set!
       -->
-      <ColumnFamily CompareWith="UTF8Type" Name="map"/>
+      <ColumnFamily Name="map" 
+                    CompareWith="UTF8Type" 
+                    KeysCached="100%" />
       <!-- FIXME: change vector to a super column -->
-      <ColumnFamily CompareWith="UTF8Type" Name="vector"/>
-      <ColumnFamily CompareWith="UTF8Type" Name="ref"/>
+      <ColumnFamily Name="vector" 
+                    CompareWith="UTF8Type" 
+                    KeysCached="100%" />
+      <ColumnFamily Name="ref" 
+                    CompareWith="UTF8Type" 
+                    KeysCached="100%" />
 
-      <!--ColumnFamily CompareWith="UTF8Type" Name="Standard1" FlushPeriodInMinutes="60"/>
-      <ColumnFamily CompareWith="TimeUUIDType" Name="StandardByUUID1"/>
-      <ColumnFamily ColumnType="Super" CompareWith="UTF8Type" CompareSubcolumnsWith="UTF8Type" Name="Super1"/-->
+      <!--ColumnFamily Name="Standard1" CompareWith="BytesType"/>
+      <ColumnFamily Name="Standard2" 
+                    CompareWith="UTF8Type"
+                    KeysCached="100%"/>
+      <ColumnFamily Name="StandardByUUID1" CompareWith="TimeUUIDType" />
+      <ColumnFamily Name="Super1"
+                    ColumnType="Super"
+                    CompareWith="BytesType"
+                    CompareSubcolumnsWith="BytesType" />
+      <ColumnFamily Name="Super2"
+                    ColumnType="Super"
+                    CompareWith="UTF8Type"
+                    CompareSubcolumnsWith="UTF8Type"
+                    RowsCached="10000"
+                    KeysCached="50%"
+                    Comment="A column family with supercolumns, whose column and subcolumn names are UTF8 strings"/-->
+
+      <!--
+       ~ Strategy: Setting this to the class that implements
+       ~ IReplicaPlacementStrategy will change the way the node picker works.
+       ~ Out of the box, Cassandra provides
+       ~ org.apache.cassandra.locator.RackUnawareStrategy and
+       ~ org.apache.cassandra.locator.RackAwareStrategy (place one replica in
+       ~ a different datacenter, and the others on different racks in the same
+       ~ one.)
+      -->
+      <ReplicaPlacementStrategy>org.apache.cassandra.locator.RackUnawareStrategy</ReplicaPlacementStrategy>
+
+      <!-- Number of replicas of the data -->
+      <ReplicationFactor>1</ReplicationFactor>
+
+      <!--
+       ~ EndPointSnitch: Setting this to the class that implements
+       ~ AbstractEndpointSnitch, which lets Cassandra know enough
+       ~ about your network topology to route requests efficiently.
+       ~ Out of the box, Cassandra provides org.apache.cassandra.locator.EndPointSnitch,
+       ~ and PropertyFileEndPointSnitch is available in contrib/.
+      -->
+      <EndPointSnitch>org.apache.cassandra.locator.EndPointSnitch</EndPointSnitch>
+        
     </Keyspace>
   </Keyspaces>
+
+  <!--
+   ~ Authenticator: any IAuthenticator may be used, including your own as long
+   ~ as it is on the classpath.  Out of the box, Cassandra provides
+   ~ org.apache.cassandra.auth.AllowAllAuthenticator and,
+   ~ org.apache.cassandra.auth.SimpleAuthenticator 
+   ~ (SimpleAuthenticator uses access.properties and passwd.properties by
+   ~ default).
+   ~
+   ~ If you don't specify an authenticator, AllowAllAuthenticator is used.
+  -->
+  <Authenticator>org.apache.cassandra.auth.AllowAllAuthenticator</Authenticator>
 
   <!--
    ~ Partitioner: any IPartitioner may be used, including your own as long
@@ -134,28 +197,6 @@
   <InitialToken></InitialToken>
 
   <!--
-   ~ EndPointSnitch: Setting this to the class that implements
-   ~ IEndPointSnitch which will see if two endpoints are in the same data
-   ~ center or on the same rack. Out of the box, Cassandra provides
-   ~ org.apache.cassandra.locator.EndPointSnitch
-  -->
-  <EndPointSnitch>org.apache.cassandra.locator.EndPointSnitch</EndPointSnitch>
-
-  <!--
-   ~ Strategy: Setting this to the class that implements
-   ~ IReplicaPlacementStrategy will change the way the node picker works.
-   ~ Out of the box, Cassandra provides
-   ~ org.apache.cassandra.locator.RackUnawareStrategy and
-   ~ org.apache.cassandra.locator.RackAwareStrategy (place one replica in
-   ~ a different datacenter, and the others on different racks in the same
-   ~ one.)
-  -->
-  <ReplicaPlacementStrategy>org.apache.cassandra.locator.RackUnawareStrategy</ReplicaPlacementStrategy>
-
-  <!-- Number of replicas of the data -->
-  <ReplicationFactor>1</ReplicationFactor>
-
-  <!--
    ~ Directories: Specify where Cassandra should store different data on
    ~ disk.  Keep the data disks and the CommitLog disks separate for best
    ~ performance
@@ -164,8 +205,6 @@
   <DataFileDirectories>
       <DataFileDirectory>cassandra/data</DataFileDirectory>
   </DataFileDirectories>
-  <CalloutLocation>cassandra/callouts</CalloutLocation>
-  <StagingFileDirectory>cassandra/staging</StagingFileDirectory>
 
 
   <!--
@@ -181,7 +220,7 @@
   <!-- Miscellaneous -->
 
   <!-- Time to wait for a reply from other nodes before failing the command -->
-  <RpcTimeoutInMillis>5000</RpcTimeoutInMillis>
+  <RpcTimeoutInMillis>10000</RpcTimeoutInMillis>
   <!-- Size to allow commitlog to grow to before creating a new segment -->
   <CommitLogRotationThresholdInMB>128</CommitLogRotationThresholdInMB>
 
@@ -198,10 +237,8 @@
    ~ address associated with the hostname (it might not be).
   -->
   <ListenAddress>localhost</ListenAddress>
-  <!-- TCP port, for commands and data -->
+  <!-- internal communications port -->
   <StoragePort>7000</StoragePort>
-  <!-- UDP port, for membership communications (gossip) -->
-  <ControlPort>7001</ControlPort>
 
   <!--
    ~ The address to bind the Thrift RPC service to. Unlike ListenAddress
@@ -225,6 +262,26 @@
   <!--======================================================================-->
   <!-- Memory, Disk, and Performance                                        -->
   <!--======================================================================-->
+
+  <!--
+   ~ Access mode.  mmapped i/o is substantially faster, but only practical on
+   ~ a 64bit machine (which notably does not include EC2 "small" instances)
+   ~ or relatively small datasets.  "auto", the safe choice, will enable
+   ~ mmapping on a 64bit JVM.  Other values are "mmap", "mmap_index_only"
+   ~ (which may allow you to get part of the benefits of mmap on a 32bit
+   ~ machine by mmapping only index files) and "standard".
+   ~ (The buffer size settings that follow only apply to standard,
+   ~ non-mmapped i/o.)
+   -->
+  <DiskAccessMode>auto</DiskAccessMode>
+
+  <!--
+   ~ Size of compacted row above which to log a warning.  (If compacted
+   ~ rows do not fit in memory, Cassandra will crash.  This is explained
+   ~ in http://wiki.apache.org/cassandra/CassandraLimitations and is
+   ~ scheduled to be fixed in 0.7.)
+  -->
+  <RowWarningThresholdInMB>512</RowWarningThresholdInMB>
 
   <!--
    ~ Buffer size to use when performing contiguous column slices. Increase
@@ -256,19 +313,24 @@
   <ColumnIndexSizeInKB>64</ColumnIndexSizeInKB>
 
   <!--
-   ~ The maximum amount of data to store in memory per ColumnFamily before
-   ~ flushing to disk.  Note: There is one memtable per column family, and 
+   ~ Flush memtable after this much data has been inserted, including
+   ~ overwritten data.  There is one memtable per column family, and 
    ~ this threshold is based solely on the amount of data stored, not
    ~ actual heap memory usage (there is some overhead in indexing the
    ~ columns).
   -->
-  <MemtableSizeInMB>64</MemtableSizeInMB>
+  <MemtableThroughputInMB>64</MemtableThroughputInMB>
+  <!--
+   ~ Throughput setting for Binary Memtables.  Typically these are
+   ~ used for bulk load so you want them to be larger.
+  -->
+  <BinaryMemtableThroughputInMB>256</BinaryMemtableThroughputInMB>
   <!--
    ~ The maximum number of columns in millions to store in memory per
    ~ ColumnFamily before flushing to disk.  This is also a per-memtable
-   ~ setting.  Use with MemtableSizeInMB to tune memory usage.
+   ~ setting.  Use with MemtableThroughputInMB to tune memory usage.
   -->
-  <MemtableObjectCountInMillions>0.1</MemtableObjectCountInMillions>
+  <MemtableOperationsInMillions>0.3</MemtableOperationsInMillions>
   <!--
    ~ The maximum time to leave a dirty memtable unflushed.
    ~ (While any affected columnfamilies have unflushed data from a
@@ -298,7 +360,7 @@
    ~ This is less necessary in Cassandra than in traditional databases
    ~ since replication reduces the odds of losing data from a failure
    ~ after writing the log entry but before it actually reaches the disk.
-   ~ So the other option is "timed," where writes may be acked immediately
+   ~ So the other option is "periodic," where writes may be acked immediately
    ~ and the CommitLog is simply synced every CommitLogSyncPeriodInMS
    ~ milliseconds.
   -->
@@ -327,11 +389,4 @@
    ~ ten days.
   -->
   <GCGraceSeconds>864000</GCGraceSeconds>
-
-  <!--
-   ~ The threshold size in megabytes the binary memtable must grow to,
-   ~ before it's submitted for flushing to disk.
-  -->
-  <BinaryMemtableSizeInMB>256</BinaryMemtableSizeInMB>
-
 </Storage>

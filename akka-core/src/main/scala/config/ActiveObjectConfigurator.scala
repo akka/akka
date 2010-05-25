@@ -6,11 +6,10 @@ package se.scalablesolutions.akka.config
 
 import JavaConfig._
 
-import com.google.inject._
+import java.util.{List => JList}
+import java.util.{ArrayList}
 
-import java.util._
-//import org.apache.camel.impl.{JndiRegistry, DefaultCamelContext}
-//import org.apache.camel.{Endpoint, Routes}
+import com.google.inject._
 
 /**
  * Configurator for the Active Objects. Used to do declarative configuration of supervision.
@@ -19,20 +18,29 @@ import java.util._
  * <p/>
  * If you don't want declarative configuration then you should use the <code>ActiveObject</code>
  * factory methods.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveObjectConfigurator {
+  import scala.collection.JavaConversions._
   // TODO: make pluggable once we have f.e a SpringConfigurator
   private val INSTANCE = new ActiveObjectGuiceConfigurator
 
   /**
-   * Returns the active abject that has been put under supervision for the class specified.
+   * Returns the a list with all active objects that has been put under supervision for the class specified.
+   *
+   * @param clazz the class for the active object
+   * @return a list with all the active objects for the class
+   */
+  def getInstances[T](clazz: Class[T]): JList[T] = INSTANCE.getInstance(clazz).foldLeft(new ArrayList[T]){ (l, i) => l add i ; l }
+
+  /**
+   * Returns the first item in a list of all active objects that has been put under supervision for the class specified.
    *
    * @param clazz the class for the active object
    * @return the active object for the class
    */
-  def getInstance[T](clazz: Class[T]): T = INSTANCE.getInstance(clazz)
+  def getInstance[T](clazz: Class[T]): T = INSTANCE.getInstance(clazz).head
 
   def configure(restartStrategy: RestartStrategy, components: Array[Component]): ActiveObjectConfigurator = {
     INSTANCE.configure(
@@ -56,13 +64,7 @@ class ActiveObjectConfigurator {
     this
   }
 
-  //def addRoutes(routes: Routes): ActiveObjectConfigurator  = {
-  //  INSTANCE.addRoutes(routes)
-  //  this
- // }
-
-  
-  def getComponentInterfaces: List[Class[_]] = {
+  def getComponentInterfaces: JList[Class[_]] = {
     val al = new ArrayList[Class[_]]
     for (c <- INSTANCE.getComponentInterfaces) al.add(c)
     al
@@ -70,14 +72,8 @@ class ActiveObjectConfigurator {
 
   def getExternalDependency[T](clazz: Class[T]): T = INSTANCE.getExternalDependency(clazz)
 
-  //def getRoutingEndpoint(uri: String): Endpoint = INSTANCE.getRoutingEndpoint(uri)
-
-  //def getRoutingEndpoints: java.util.Collection[Endpoint] = INSTANCE.getRoutingEndpoints
-
-  //def getRoutingEndpoints(uri: String): java.util.Collection[Endpoint] = INSTANCE.getRoutingEndpoints(uri)
-
   // TODO: should this be exposed?
-  def getGuiceModules: List[Module] = INSTANCE.getGuiceModules
+  def getGuiceModules: JList[Module] = INSTANCE.getGuiceModules
 
   def reset = INSTANCE.reset
 

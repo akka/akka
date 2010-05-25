@@ -125,15 +125,17 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
   private def resume(actor: AnyRef) = synchronized {
     busyActors.add(actor)
   }
-  
+
   private def suspend(actor: AnyRef) = synchronized {
-    busyActors.remove(actor)    
+    busyActors.remove(actor)
   }
-  
+
   private def passFairnessCheck(nrOfBusyMessages: Int) = {
     if (fair) true
     else nrOfBusyMessages < 100
   }
+
+  def usesActorMailbox = false
 
   def ensureNotActive: Unit = if (active) throw new IllegalStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")

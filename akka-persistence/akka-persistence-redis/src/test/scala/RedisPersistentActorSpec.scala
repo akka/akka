@@ -1,11 +1,10 @@
 package se.scalablesolutions.akka.persistence.redis
 
-import junit.framework.TestCase
-
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-import se.scalablesolutions.akka.actor.{Actor, Transactor}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Transactor}
+import Actor._
 
 /**
  * A persistent actor based on Redis storage.
@@ -21,9 +20,10 @@ import se.scalablesolutions.akka.actor.{Actor, Transactor}
  */
 
 case class Balance(accountNo: String)
-case class Debit(accountNo: String, amount: BigInt, failer: Actor)
-case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: Actor)
+case class Debit(accountNo: String, amount: BigInt, failer: ActorRef)
+case class MultiDebit(accountNo: String, amounts: List[BigInt], failer: ActorRef)
 case class Credit(accountNo: String, amount: BigInt)
+case class Log(start: Int, finish: Int)
 case object LogSize
 
 class AccountActor extends Transactor {
@@ -35,7 +35,7 @@ class AccountActor extends Transactor {
     // check balance
     case Balance(accountNo) =>
       txnLog.add("Balance:%s".format(accountNo).getBytes)
-      reply(BigInt(new String(accountState.get(accountNo.getBytes).get)))
+      self.reply(BigInt(new String(accountState.get(accountNo.getBytes).get)))
 
     // debit amount: can fail
     case Debit(accountNo, amount, failer) =>
@@ -49,7 +49,7 @@ class AccountActor extends Transactor {
       accountState.put(accountNo.getBytes, (m - amount).toString.getBytes)
       if (amount > m)
         failer !! "Failure"
-      reply(m - amount)
+      self.reply(m - amount)
 
     // many debits: can fail
     // demonstrates true rollback even if multiple puts have been done
@@ -67,7 +67,7 @@ class AccountActor extends Transactor {
         accountState.put(accountNo.getBytes, (m - bal).toString.getBytes)
       }
       if (bal > m) failer !! "Failure"
-      reply(m - bal)
+      self.reply(m - bal)
 
     // credit amount
     case Credit(accountNo, amount) =>
@@ -79,10 +79,13 @@ class AccountActor extends Transactor {
         case None => 0
       }
       accountState.put(accountNo.getBytes, (m + amount).toString.getBytes)
-      reply(m + amount)
+      self.reply(m + amount)
 
     case LogSize =>
-      reply(txnLog.length.asInstanceOf[AnyRef])
+      self.reply(txnLog.length.asInstanceOf[AnyRef])
+
+    case Log(start, finish) =>
+      self.reply(txnLog.slice(start, finish))
   }
 }
 
@@ -94,14 +97,16 @@ class AccountActor extends Transactor {
   }
 }
 
-class RedisPersistentActorSpec extends TestCase {
+import org.scalatest.junit.JUnitSuite
+class RedisPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
-    val bactor = new AccountActor
+    val bactor = actorOf(new AccountActor)
     bactor.start
-    val failer = new PersistentFailerActor
+    // val failer = actorOf[PersistentFailerActor]
+    val failer = actorOf(new PersistentFailerActor)
+    val a: Option[BigInt] = bactor !! Credit("a-123", 5000)
     failer.start
-    bactor !! Credit("a-123", 5000)
     bactor !! Debit("a-123", 3000, failer)
     assertEquals(BigInt(2000), (bactor !! Balance("a-123")).get)
 
@@ -111,17 +116,26 @@ class RedisPersistentActorSpec extends TestCase {
     bactor !! Debit("a-123", 8000, failer)
     assertEquals(BigInt(1000), (bactor !! Balance("a-123")).get)
 
-    assertEquals(7, (bactor !! LogSize).get)
+    /**
+    val c: Int = (bactor !! LogSize).get
+    assertTrue(7 == c)
+    import scala.collection.mutable.ArrayBuffer
+    assert((bactor !! Log(0, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 7)
+    assert((bactor !! Log(0, 0)).get.asInstanceOf[ArrayBuffer[String]].size == 0)
+    assert((bactor !! Log(1, 2)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
+    assert((bactor !! Log(6, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
+    assert((bactor !! Log(0, 1)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
+  **/
   }
 
   @Test
   def testUnsuccessfulDebit = {
-    val bactor = new AccountActor
+    val bactor = actorOf(new AccountActor)
     bactor.start
     bactor !! Credit("a-123", 5000)
     assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
 
-    val failer = new PersistentFailerActor
+    val failer = actorOf(new PersistentFailerActor)
     failer.start
     try {
       bactor !! Debit("a-123", 7000, failer)
@@ -131,18 +145,19 @@ class RedisPersistentActorSpec extends TestCase {
     assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
 
     // should not count the failed one
-    assertEquals(3, (bactor !! LogSize).get)
+    // val c: Int = (bactor !! LogSize).get
+    // assertTrue(3 == c)
   }
 
   @Test
   def testUnsuccessfulMultiDebit = {
-    val bactor = new AccountActor
+    val bactor = actorOf(new AccountActor)
     bactor.start
     bactor !! Credit("a-123", 5000)
 
     assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
-    val failer = new PersistentFailerActor
+    val failer = actorOf(new PersistentFailerActor)
     failer.start
     try {
       bactor !! MultiDebit("a-123", List(500, 2000, 1000, 3000), failer)
@@ -152,6 +167,7 @@ class RedisPersistentActorSpec extends TestCase {
     assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
     // should not count the failed one
-    assertEquals(3, (bactor !! LogSize).get)
+    // val c: Int = (bactor !! LogSize).get
+    // assertTrue(3 == c)
   }
 }

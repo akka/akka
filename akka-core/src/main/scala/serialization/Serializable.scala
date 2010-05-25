@@ -8,8 +8,7 @@ import org.codehaus.jackson.map.ObjectMapper
 
 import com.google.protobuf.Message
 
-import scala.reflect.Manifest
-
+import reflect.Manifest
 import sbinary.DefaultProtocol
 
 import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
@@ -17,12 +16,11 @@ import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
 import sjson.json.{Serializer=>SJSONSerializer}
 
 object SerializationProtocol {
+  val JAVA = 0
   val SBINARY = 1
   val SCALA_JSON = 2
   val JAVA_JSON = 3
   val PROTOBUF = 4
-  val JAVA = 5
-  val AVRO = 6  
 }
 
 /**
@@ -34,20 +32,20 @@ trait Serializable {
 
 /**
  * Serialization protocols.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Serializable {
 
   /**
-   * Example on how to use the SBinary serialization protocol: 
+   * Example on how to use the SBinary serialization protocol:
    * <pre>
    * case class User(val usernamePassword: Tuple2[String, String],
    *                 val email: String,
    *                 val age: Int)
    *   extends Serializable.SBinary[User] {
    *   def this() = this(null, null, 0)
-   *   import sbinary.DefaultProtocol._                                             
+   *   import sbinary.DefaultProtocol._
    *   implicit object UserFormat extends Format[User] {
    *     def reads(in : Input) = User(
    *       read[Tuple2[String, String]](in),
@@ -76,7 +74,7 @@ object Serializable {
   trait JSON extends Serializable {
     def toJSON: String
   }
-  
+
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
@@ -106,14 +104,5 @@ object Serializable {
   trait ScalaJSON extends JSON {
     def toJSON: String = new String(toBytes, "UTF-8")
     def toBytes: Array[Byte] = SJSONSerializer.SJSON.out(this)
-  }
-  
-  /**
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  trait Protobuf[T] extends Serializable {
-    def fromBytes(bytes: Array[Byte]): T = getMessage.toBuilder.mergeFrom(bytes).asInstanceOf[T]
-    def toBytes: Array[Byte] = getMessage.toByteArray
-    def getMessage: Message
   }
 }

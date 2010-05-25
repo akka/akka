@@ -4,10 +4,9 @@
 
 package se.scalablesolutions.akka.stm
 
-import se.scalablesolutions.akka.stm.Transaction.atomic
 import se.scalablesolutions.akka.util.UUID
 
-import org.multiverse.stms.alpha.AlphaRef
+import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 
 /**
  * Example Scala usage:
@@ -22,19 +21,24 @@ import org.multiverse.stms.alpha.AlphaRef
  * val myVector = TransactionalVector()
  * val myRef = TransactionalRef()
  * </pre>
- * 
+ *
  * <p/>
  * Example Java usage:
  * <pre>
  * TransactionalMap myMap = TransactionalState.newMap();
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionalState {
   def newMap[K, V] = TransactionalMap[K, V]()
+  def newMap[K, V](pairs: (K, V)*) = TransactionalMap(pairs: _*)
+
   def newVector[T] = TransactionalVector[T]()
+  def newVector[T](elems: T*) = TransactionalVector(elems :_*)
+
   def newRef[T] = TransactionalRef[T]()
+  def newRef[T](initialValue: T) = TransactionalRef(initialValue)
 }
 
 /**
@@ -52,37 +56,43 @@ trait Committable {
   def commit: Unit
 }
 
+object RefFactory {
+  private val factory = getGlobalStmInstance.getProgrammaticReferenceFactoryBuilder.build
+
+  def createRef[T] = factory.atomicCreateReference[T]()
+
+  def createRef[T](value: T) = factory.atomicCreateReference(value)
+}
+
 /**
  * Alias to TransactionalRef.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Ref {
+  type Ref[T] = TransactionalRef[T]
+
   def apply[T]() = new Ref[T]
+
+  def apply[T](initialValue: T) = new Ref[T](Some(initialValue))
 }
 
 /**
  * Alias to Ref.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionalRef {
 
   /**
-   * An implicit conversion that converts an Option to an Iterable value.
+   * An implicit conversion that converts a TransactionalRef to an Iterable value.
    */
   implicit def ref2Iterable[T](ref: TransactionalRef[T]): Iterable[T] = ref.toList
 
   def apply[T]() = new TransactionalRef[T]
-}
 
-/**
- * Implements a transactional managed reference. 
- * Alias to TransactionalRef.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class Ref[T] extends TransactionalRef[T]
+  def apply[T](initialValue: T) = new TransactionalRef[T](Some(initialValue))
+}
 
 /**
  * Implements a transactional managed reference.
@@ -90,17 +100,29 @@ class Ref[T] extends TransactionalRef[T]
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalRef[T] extends Transactional {
+class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
+  self =>
+
   import org.multiverse.api.ThreadLocalTransaction._
 
   implicit val txInitName = "TransactionalRef:Init"
   val uuid = UUID.newUuid.toString
 
-  private[this] lazy val ref: AlphaRef[T] = new AlphaRef
+  private[this] val ref = {
+    if (initialOpt.isDefined) RefFactory.createRef(initialOpt.get)
+    else RefFactory.createRef[T]
+  }
 
   def swap(elem: T) = {
     ensureIsInTransaction
     ref.set(elem)
+  }
+
+  def alter(f: T => T): T = {
+    ensureIsInTransaction
+    ensureNotNull
+    ref.set(f(ref.get))
+    ref.get
   }
 
   def get: Option[T] = {
@@ -124,35 +146,47 @@ class TransactionalRef[T] extends Transactional {
     ensureIsInTransaction
     !ref.isNull
   }
-  
+
   def isEmpty: Boolean = {
     ensureIsInTransaction
     ref.isNull
   }
 
-  def map[B](f: T => B): Option[B] = {
+  def map[B](f: T => B): TransactionalRef[B] = {
     ensureIsInTransaction
-    if (isEmpty) None else Some(f(ref.get))
+    if (isEmpty) TransactionalRef[B] else TransactionalRef(f(ref.get))
   }
 
-  def flatMap[B](f: T => Option[B]): Option[B] = {
+  def flatMap[B](f: T => TransactionalRef[B]): TransactionalRef[B] = {
     ensureIsInTransaction
-    if (isEmpty) None else f(ref.get)
+    if (isEmpty) TransactionalRef[B] else f(ref.get)
   }
 
-  def filter(p: T => Boolean): Option[T] = {
+  def filter(p: T => Boolean): TransactionalRef[T] = {
     ensureIsInTransaction
-    if (isEmpty || p(ref.get)) Some(ref.get) else None
+    if (isDefined && p(ref.get)) TransactionalRef(ref.get) else TransactionalRef[T]
   }
 
-  def foreach(f: T => Unit) {
+  /**
+   * Necessary to keep from being implicitly converted to Iterable in for comprehensions.
+   */
+  def withFilter(p: T => Boolean): WithFilter = new WithFilter(p)
+
+  class WithFilter(p: T => Boolean) {
+    def map[B](f: T => B): TransactionalRef[B] = self filter p map f
+    def flatMap[B](f: T => TransactionalRef[B]): TransactionalRef[B] = self filter p flatMap f
+    def foreach[U](f: T => U): Unit = self filter p foreach f
+    def withFilter(q: T => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
+  }
+
+  def foreach[U](f: T => U): Unit = {
     ensureIsInTransaction
-    if (!isEmpty) f(ref.get)
+    if (isDefined) f(ref.get)
   }
 
   def elements: Iterator[T] = {
     ensureIsInTransaction
-    if (isEmpty) Iterator.empty else Iterator.fromValues(ref.get)
+    if (isEmpty) Iterator.empty else Iterator(ref.get)
   }
 
   def toList: List[T] = {
@@ -172,10 +206,15 @@ class TransactionalRef[T] extends Transactional {
 
   private def ensureIsInTransaction =
     if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
+
+  private def ensureNotNull =
+    if (ref.isNull) throw new RuntimeException("Cannot alter Ref's value when it is null")
 }
 
 object TransactionalMap {
   def apply[K, V]() = new TransactionalMap[K, V]
+
+  def apply[K, V](pairs: (K, V)*) = new TransactionalMap(Some(HashTrie(pairs: _*)))
 }
 
 /**
@@ -185,20 +224,32 @@ object TransactionalMap {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalMap[K, V] extends Transactional with scala.collection.mutable.Map[K, V] {
-  protected[this] val ref = TransactionalRef[HashTrie[K, V]]
+class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends Transactional with scala.collection.mutable.Map[K, V] {
   val uuid = UUID.newUuid.toString
 
-  ref.swap(new HashTrie[K, V])
- 
-  def -=(key: K) = remove(key)
+  protected[this] val ref = new TransactionalRef(initialOpt.orElse(Some(new HashTrie[K, V])))
+
+  def -=(key: K) = {
+    remove(key)
+    this
+  }
 
   def +=(key: K, value: V) = put(key, value)
 
-  def remove(key: K) = ref.swap(ref.get.get - key)
+  def +=(kv: (K, V)) = {
+    put(kv._1,kv._2)
+    this
+  }
+
+  override def remove(key: K) = {
+    val map = ref.get.get
+    val oldValue = map.get(key)
+    ref.swap(ref.get.get - key)
+    oldValue
+  }
 
   def get(key: K): Option[V] = ref.get.get.get(key)
- 
+
   override def put(key: K, value: V): Option[V] = {
     val map = ref.get.get
     val oldValue = map.get(key)
@@ -206,29 +257,38 @@ class TransactionalMap[K, V] extends Transactional with scala.collection.mutable
     oldValue
   }
 
-  def update(key: K, value: V) = {
+  override def update(key: K, value: V) = {
     val map = ref.get.get
     val oldValue = map.get(key)
     ref.swap(map.update(key, value))
   }
 
-  def elements: Iterator[(K, V)] = ref.get.get.elements
+  def iterator = ref.get.get.iterator
+
+  override def elements: Iterator[(K, V)] = ref.get.get.iterator
 
   override def contains(key: K): Boolean = ref.get.get.contains(key)
 
   override def clear = ref.swap(new HashTrie[K, V])
 
-  def size: Int = ref.get.get.size
- 
+  override def size: Int = ref.get.get.size
+
   override def hashCode: Int = System.identityHashCode(this);
 
   override def equals(other: Any): Boolean =
-    other.isInstanceOf[TransactionalMap[_, _]] && 
+    other.isInstanceOf[TransactionalMap[_, _]] &&
     other.hashCode == hashCode
+
+  override def toString = if (outsideTransaction) "<TransactionalMap>" else super.toString
+
+  def outsideTransaction =
+    org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
 }
 
 object TransactionalVector {
   def apply[T]() = new TransactionalVector[T]
+
+  def apply[T](elems: T*) = new TransactionalVector(Some(Vector(elems: _*)))
 }
 
 /**
@@ -238,15 +298,13 @@ object TransactionalVector {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
+class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Transactional with IndexedSeq[T] {
   val uuid = UUID.newUuid.toString
 
-  private[this] val ref = TransactionalRef[Vector[T]]
+  private[this] val ref = new TransactionalRef(initialOpt.orElse(Some(EmptyVector)))
 
-  ref.swap(EmptyVector)
- 
   def clear = ref.swap(EmptyVector)
-  
+
   def +(elem: T) = add(elem)
 
   def add(elem: T) = ref.swap(ref.get.get + elem)
@@ -266,8 +324,13 @@ class TransactionalVector[T] extends Transactional with RandomAccessSeq[T] {
 
   override def hashCode: Int = System.identityHashCode(this);
 
-  override def equals(other: Any): Boolean = 
-    other.isInstanceOf[TransactionalVector[_]] && 
+  override def equals(other: Any): Boolean =
+    other.isInstanceOf[TransactionalVector[_]] &&
     other.hashCode == hashCode
+
+  override def toString = if (outsideTransaction) "<TransactionalVector>" else super.toString
+
+  def outsideTransaction =
+    org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
 }
 

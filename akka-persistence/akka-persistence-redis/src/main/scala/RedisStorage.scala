@@ -27,7 +27,7 @@ object RedisStorage extends Storage {
   def newVector(id: String): PersistentVector[ElementType] = new RedisPersistentVector(id)
   def newRef(id: String): PersistentRef[ElementType] = new RedisPersistentRef(id)
   override def newQueue(id: String): PersistentQueue[ElementType] = new RedisPersistentQueue(id)
-  override def newSortedSet(id: String): PersistentSortedSet[ElementType] = 
+  override def newSortedSet(id: String): PersistentSortedSet[ElementType] =
     new RedisPersistentSortedSet(id)
 }
 

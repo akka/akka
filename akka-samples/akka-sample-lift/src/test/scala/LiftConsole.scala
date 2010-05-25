@@ -1,4 +1,4 @@
-import _root_.bootstrap.liftweb.Boot
+/*import _root_.bootstrap.liftweb.Boot
 import _root_.scala.tools.nsc.MainGenericRunner
 
 object LiftConsole {
@@ -13,3 +13,4 @@ object LiftConsole {
     exit(0)
   }
 }
+*/

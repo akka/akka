@@ -8,7 +8,7 @@ package se.scalablesolutions.akka.serialization
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Compression {
-  
+
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
