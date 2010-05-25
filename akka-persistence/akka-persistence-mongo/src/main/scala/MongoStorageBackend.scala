@@ -268,8 +268,21 @@ private[akka] object MongoStorageBackend extends
     }
   }
 
-  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) =
-    throw new UnsupportedOperationException("MongoStorageBackend::insertVectorStorageEntriesFor is not implemented")
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = {
+    val q = new BasicDBObject
+    q.put(KEY, name)
+
+    val dbobj =
+      coll.findOneNS(q) match {
+        case None =>
+          throw new NoSuchElementException(name + " not present")
+        case Some(dbo) => dbo
+      }
+    val currentList = dbobj.get(VALUE).asInstanceOf[JArrayList[AnyRef]]
+    currentList.set(index, serializer.out(elem))
+    coll.update(q, 
+      new BasicDBObject().append(KEY, name).append(VALUE, currentList))
+  }
 
   def getVectorStorageSizeFor(name: String): Int = {
     nullSafeFindOne(name) match {

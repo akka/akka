@@ -120,6 +120,25 @@ class MongoStorageSpec extends JUnitSuite {
   }
 
   @Test
+  def testVectorUpdateForTransactionId = {
+    import MongoStorageBackend._
+
+    changeSetV += "debasish"   // string
+    changeSetV += List(1, 2, 3) // Scala List
+    changeSetV += List(100, 200)
+
+    insertVectorStorageEntriesFor("U-A1", changeSetV.toList)
+    assertEquals(3, getVectorStorageSizeFor("U-A1"))
+    updateVectorStorageEntryFor("U-A1", 0, "maulindu")
+    val JsString(str) = getVectorStorageEntryFor("U-A1", 0).asInstanceOf[JsString]
+    assertEquals("maulindu", str)
+
+    updateVectorStorageEntryFor("U-A1", 1, Map("1"->"dg", "2"->"mc"))
+    val JsObject(m) = getVectorStorageEntryFor("U-A1", 1).asInstanceOf[JsObject]
+    assertEquals(m.keySet.size, 2)
+  }
+
+  @Test
   def testMapInsertForTransactionId = {
     fillMap
 
