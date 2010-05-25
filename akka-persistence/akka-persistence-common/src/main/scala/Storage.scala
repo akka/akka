@@ -90,10 +90,9 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
   val storage: MapStorageBackend[K, V]
 
   def commit = {
+    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get) storage.removeMapStorageFor(uuid)
     removedEntries.toList.foreach(key => storage.removeMapStorageFor(uuid, key))
     storage.insertMapStorageEntriesFor(uuid, newAndUpdatedEntries.toList)
-    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get)
-      storage.removeMapStorageFor(uuid)
     newAndUpdatedEntries.clear
     removedEntries.clear
   }
