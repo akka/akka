@@ -226,7 +226,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaMongoProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val mongo = "org.mongodb" % "mongo-java-driver" % "1.1" % "compile"
+    val mongo = "org.mongodb" % "mongo-java-driver" % "1.4" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
