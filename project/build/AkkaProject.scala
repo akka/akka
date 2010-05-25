@@ -240,7 +240,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val cassandra_clhm = "org.apache.cassandra" % "clhm-production" % CASSANDRA_VERSION % "test"
     val commons_coll = "commons-collections" % "commons-collections" % "3.2.1" % "test"
     val google_coll = "com.google.collections" % "google-collections" % "1.0" % "test"
-    //override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
