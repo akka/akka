@@ -67,15 +67,22 @@ object RemoteClient extends Logging {
   def actorFor(actorRef: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     RemoteActorRef(actorRef, className, hostname, port, timeout)
 
-  def clientFor(hostname: String, port: Int): RemoteClient = clientFor(new InetSocketAddress(hostname, port))
+  def clientFor(hostname: String, port: Int): RemoteClient = clientFor(new InetSocketAddress(hostname, port), None)
 
-  def clientFor(address: InetSocketAddress): RemoteClient = synchronized {
+  def clientFor(hostname: String, port: Int, loader: ClassLoader): RemoteClient = clientFor(new InetSocketAddress(hostname, port), Some(loader))
+
+  def clientFor(address: InetSocketAddress): RemoteClient = clientFor(address, None)
+
+  def clientFor(address: InetSocketAddress, loader: ClassLoader): RemoteClient = clientFor(address, Some(loader))
+
+  private def clientFor(address: InetSocketAddress, loader: Option[ClassLoader]): RemoteClient = synchronized {
     val hostname = address.getHostName
     val port = address.getPort
     val hash = hostname + ':' + port
+    loader.foreach(RemoteProtocolBuilder.setClassLoader(_))
     if (remoteClients.contains(hash)) remoteClients(hash)
     else {
-      val client = new RemoteClient(hostname, port)
+      val client = new RemoteClient(hostname, port, loader)
       client.connect
       remoteClients += hash -> client
       client
@@ -126,7 +133,7 @@ object RemoteClient extends Logging {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteClient(val hostname: String, val port: Int) extends Logging {
+class RemoteClient(val hostname: String, val port: Int, loader: Option[ClassLoader]) extends Logging {
   val name = "RemoteClient@" + hostname + "::" + port
 
   @volatile private[remote] var isRunning = false
@@ -287,7 +294,7 @@ class RemoteClientHandler(val name: String,
       }
     } catch {
       case e: Exception =>
-       client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(e))
+        client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(e))
         log.error("Unexpected exception in remote client handler: %s", e)
         throw e
     }

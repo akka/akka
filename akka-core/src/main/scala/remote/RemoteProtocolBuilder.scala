@@ -18,9 +18,10 @@ object RemoteProtocolBuilder {
   private var SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
 
   def setClassLoader(cl: ClassLoader) = {
-    SERIALIZER_JAVA.classLoader = Some(cl)
-    SERIALIZER_JAVA_JSON.classLoader = Some(cl)
+    SERIALIZER_JAVA.classLoader       = Some(cl)
+    SERIALIZER_JAVA_JSON.classLoader  = Some(cl)
     SERIALIZER_SCALA_JSON.classLoader = Some(cl)
+    SERIALIZER_SBINARY.classLoader    = Some(cl)
   }
 
   def getMessage(request: RemoteRequestProtocol): Any = {
@@ -28,7 +29,10 @@ object RemoteProtocolBuilder {
       case SerializationProtocol.JAVA =>
         unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
       case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(new String(request.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+        val classToLoad = new String(request.getMessageManifest.toByteArray)
+        val clazz = if (SERIALIZER_SBINARY.classLoader.isDefined) SERIALIZER_SBINARY.classLoader.get.loadClass(classToLoad)
+                    else Class.forName(classToLoad)
+        val renderer = clazz.newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(request.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
@@ -47,7 +51,10 @@ object RemoteProtocolBuilder {
       case SerializationProtocol.JAVA =>
         unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
       case SerializationProtocol.SBINARY =>
-        val renderer = Class.forName(new String(reply.getMessageManifest.toByteArray)).newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+        val classToLoad = new String(reply.getMessageManifest.toByteArray)
+        val clazz = if (SERIALIZER_SBINARY.classLoader.isDefined) SERIALIZER_SBINARY.classLoader.get.loadClass(classToLoad)
+                    else Class.forName(classToLoad)
+        val renderer = clazz.newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
         renderer.fromBytes(reply.getMessage.toByteArray)
       case SerializationProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
