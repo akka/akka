@@ -105,10 +105,9 @@ private[akka] object CassandraStorageBackend extends
     }
   }
 
-  def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = {
-    throw new UnsupportedOperationException("CassandraStorageBackend::insertVectorStorageEntriesFor is not implemented")
-  }
-
+  def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = 
+    elements.foreach(insertVectorStorageEntryFor(name, _))
+  
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
     val columnPath = new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family)
     columnPath.setColumn(intToBytes(index))

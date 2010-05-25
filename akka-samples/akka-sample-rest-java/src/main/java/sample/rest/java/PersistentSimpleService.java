@@ -36,7 +36,7 @@ public class PersistentSimpleService {
   public String count() {
     if (storage == null) storage = CassandraStorage.newMap();
     if (!hasStartedTicking) {
-      storage.put(KEY.getBytes(), ByteBuffer.allocate(2).putInt(0).array());
+      storage.put(KEY.getBytes(), ByteBuffer.allocate(4).putInt(0).array());
       hasStartedTicking = true;
       return "Tick: 0\n";
     } else {
