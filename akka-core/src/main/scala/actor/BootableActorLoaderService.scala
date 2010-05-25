@@ -11,6 +11,13 @@ import java.util.jar.JarFile
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 import se.scalablesolutions.akka.config.Config._
 
+object ActorModules {
+  import java.util.concurrent.atomic.AtomicReference
+  private val _loader = new AtomicReference[Option[ClassLoader]](None)
+  def loader_? = _loader.get
+  private[actor] def loader_?(cl : Option[ClassLoader]) = _loader.set(cl)
+}
+
 /**
  * Handles all modules in the deploy directory (load and unload)
  */
@@ -46,15 +53,14 @@ trait BootableActorLoaderService extends Bootable with Logging {
       log.debug("Loading dependencies [%s]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
 
-      val parentClassLoader = classOf[Seq[_]].getClassLoader
       URLClassLoader.newInstance(
         allJars.toArray.asInstanceOf[Array[URL]],
         ClassLoader.getSystemClassLoader)
-        //parentClassLoader)
     } else getClass.getClassLoader)
   }
 
   abstract override def onLoad = {
+	ActorModules.loader_?(applicationLoader)
     for (loader <- applicationLoader; clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
