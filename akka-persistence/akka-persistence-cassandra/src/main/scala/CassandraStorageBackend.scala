@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.config.Config.config
 
-import org.apache.cassandra.service._
+import org.apache.cassandra.thrift._
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -23,23 +23,27 @@ private[akka] object CassandraStorageBackend extends
 
   type ElementType = Array[Byte]
 
-  val KEYSPACE = "akka"
-  val MAP_COLUMN_PARENT = new ColumnParent("map", null)
-  val VECTOR_COLUMN_PARENT = new ColumnParent("vector", null)
-  val REF_COLUMN_PARENT = new ColumnParent("ref", null)
-  val REF_KEY = "item".getBytes("UTF-8")
-  val EMPTY_BYTE_ARRAY = new Array[Byte](0)
+  val KEYSPACE             = "akka"
+  val MAP_COLUMN_PARENT    = new ColumnParent("map")
+  val VECTOR_COLUMN_PARENT = new ColumnParent("vector")
+  val REF_COLUMN_PARENT    = new ColumnParent("ref")
+  val REF_KEY              = "item".getBytes("UTF-8")
+  val EMPTY_BYTE_ARRAY     = new Array[Byte](0)
 
   val CASSANDRA_SERVER_HOSTNAME = config.getString("akka.storage.cassandra.hostname", "127.0.0.1")
-  val CASSANDRA_SERVER_PORT = config.getInt("akka.storage.cassandra.port", 9160)
+  val CASSANDRA_SERVER_PORT     = config.getInt("akka.storage.cassandra.port", 9160)
   val CONSISTENCY_LEVEL = {
     config.getString("akka.storage.cassandra.consistency-level", "QUORUM") match {
-      case "ZERO" =>   0
-      case "ONE" =>    1
-      case "QUORUM" => 2
-      case "ALL" =>    3
-      case unknown => throw new IllegalArgumentException(
-        "Cassandra consistency level [" + unknown + "] is not supported. Expected one of [ZERO, ONE, QUORUM, ALL]")
+      case "ZERO"         => ConsistencyLevel.ZERO
+      case "ONE"          => ConsistencyLevel.ONE
+      case "QUORUM"       => ConsistencyLevel.QUORUM
+      case "DCQUORUM"     => ConsistencyLevel.DCQUORUM
+      case "DCQUORUMSYNC" => ConsistencyLevel.DCQUORUMSYNC
+      case "ALL"          => ConsistencyLevel.ALL
+      case "ANY"          => ConsistencyLevel.ANY
+      case unknown        => throw new IllegalArgumentException(
+        "Cassandra consistency level [" + unknown + "] is not supported." + 
+        "\n\tExpected one of [ZERO, ONE, QUORUM, DCQUORUM, DCQUORUMSYNC, ALL, ANY] in the akka.conf configuration file.")
     }
   }
   val IS_ASCENDING = true
@@ -58,9 +62,11 @@ private[akka] object CassandraStorageBackend extends
   // ===============================================================
 
   def insertRefStorageFor(name: String, element: Array[Byte]) = {
+    val columnPath = new ColumnPath(REF_COLUMN_PARENT.getColumn_family)
+    columnPath.setColumn(REF_KEY)
     sessions.withSession {
       _ ++| (name,
-        new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY),
+        columnPath,
         element,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
@@ -68,9 +74,11 @@ private[akka] object CassandraStorageBackend extends
   }
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = {
+    val columnPath = new ColumnPath(REF_COLUMN_PARENT.getColumn_family)
+    columnPath.setColumn(REF_KEY)
     try {
       val column: Option[ColumnOrSuperColumn] = sessions.withSession {
-        _ | (name, new ColumnPath(REF_COLUMN_PARENT.getColumn_family, null, REF_KEY))
+        _ | (name, columnPath)
       }
       if (column.isDefined) Some(column.get.getColumn.value)
       else None
@@ -86,9 +94,11 @@ private[akka] object CassandraStorageBackend extends
   // ===============================================================
 
   def insertVectorStorageEntryFor(name: String, element: Array[Byte]) = {
+    val columnPath = new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family)
+    columnPath.setColumn(intToBytes(getVectorStorageSizeFor(name)))
     sessions.withSession {
       _ ++| (name,
-        new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(getVectorStorageSizeFor(name))),
+        columnPath,
         element,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
@@ -100,9 +110,11 @@ private[akka] object CassandraStorageBackend extends
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
+    val columnPath = new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family)
+    columnPath.setColumn(intToBytes(index))
     sessions.withSession {
       _ ++| (name,
-        new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)),
+        columnPath,
         elem,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
@@ -110,8 +122,10 @@ private[akka] object CassandraStorageBackend extends
   }
 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] =  {
+    val columnPath = new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family)
+    columnPath.setColumn(intToBytes(index))
     val column: Option[ColumnOrSuperColumn] = sessions.withSession {
-      _ | (name, new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family, null, intToBytes(index)))
+      _ | (name, columnPath)
     }
     if (column.isDefined) column.get.column.value
     else throw new NoSuchElementException("No element for vector [" + name + "] and index [" + index + "]")
@@ -149,9 +163,11 @@ private[akka] object CassandraStorageBackend extends
   // ===============================================================
 
   def insertMapStorageEntryFor(name: String, key: Array[Byte], element: Array[Byte]) = {
+    val columnPath = new ColumnPath(MAP_COLUMN_PARENT.getColumn_family)
+    columnPath.setColumn(key)
     sessions.withSession {
       _ ++| (name,
-        new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, key),
+        columnPath,
         element,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
@@ -172,8 +188,10 @@ private[akka] object CassandraStorageBackend extends
 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
     try {
+      val columnPath = new ColumnPath(MAP_COLUMN_PARENT.getColumn_family)
+      columnPath.setColumn(key)
       val column: Option[ColumnOrSuperColumn] = sessions.withSession {
-        _ | (name, new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, key))
+        _ | (name, columnPath)
       }
       if (column.isDefined) Some(column.get.getColumn.value)
       else None
@@ -206,9 +224,11 @@ private[akka] object CassandraStorageBackend extends
 
   def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
     val keyBytes = if (key eq null) null else key
+    val columnPath = new ColumnPath(MAP_COLUMN_PARENT.getColumn_family)
+    columnPath.setColumn(keyBytes)
     sessions.withSession {
       _ -- (name,
-        new ColumnPath(MAP_COLUMN_PARENT.getColumn_family, null, keyBytes),
+        columnPath,
         System.currentTimeMillis,
         CONSISTENCY_LEVEL)
     }
