@@ -105,7 +105,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
     stateful.start
     stateful !! SetVectorState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    assertEquals(2, (stateful !! GetVectorSize).get)
+    assertEquals(2, (stateful !! GetVectorSize).get.asInstanceOf[java.lang.Integer].intValue)
   }
 
   @Test
@@ -119,7 +119,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    assertEquals(1, (stateful !! GetVectorSize).get)
+    assertEquals(1, (stateful !! GetVectorSize).get.asInstanceOf[java.lang.Integer].intValue)
   }
 
   @Test
@@ -148,7 +148,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
   }
 
 }
-
+/*
 import org.apache.cassandra.service.CassandraDaemon
 object EmbeddedCassandraService {
 
@@ -171,3 +171,4 @@ object EmbeddedCassandraService {
   def start: Unit = {}
 
 }
+*/
