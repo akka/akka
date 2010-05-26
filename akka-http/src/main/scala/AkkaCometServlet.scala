@@ -15,15 +15,7 @@ import org.atmosphere.container.GrizzlyCometSupport
 import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport,CometSupportResolver,DefaultCometSupportResolver}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
 
-/**
- * Akka's Comet servlet to be used when deploying actors exposed as Comet (and REST) services in a
- * standard servlet container, e.g. not using the Akka Kernel.
- * <p/>
- * Used by the Akka Kernel to bootstrap REST and Comet.
- */
-class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
-  val servlet = new RestServlet with AtmosphereServletProcessor {
-
+class AtmosphereRestServlet extends RestServlet with AtmosphereServletProcessor {
     //Delegate to implement the behavior for AtmosphereHandler
     private val handler = new AbstractReflectorAtmosphereHandler {
       override def onRequest(event: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
@@ -44,6 +36,16 @@ class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
     }
   }
 
+/**
+ * Akka's Comet servlet to be used when deploying actors exposed as Comet (and REST) services in a
+ * standard servlet container, e.g. not using the Akka Kernel.
+ * <p/>
+ * Used by the Akka Kernel to bootstrap REST and Comet.
+ */
+class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
+  lazy val servlet = createRestServlet
+
+  protected def createRestServlet : AtmosphereRestServlet = new AtmosphereRestServlet
   /**
    * We override this to avoid Atmosphere looking for it's atmosphere.xml file
    * Instead we specify what semantics we want in code.
