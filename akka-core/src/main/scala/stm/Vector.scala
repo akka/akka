@@ -276,7 +276,7 @@ class Vector[+T] private (val length: Int, shift: Int, root: Array[AnyRef], tail
     var back = new Vector[(T, A)]
     var i = 0
 
-    val limit = Math.min(length, that.length)
+    val limit = math.min(length, that.length)
     while (i < limit) {
       back += (apply(i), that(i))
       i += 1

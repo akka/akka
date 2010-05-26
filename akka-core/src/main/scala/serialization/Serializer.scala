@@ -169,13 +169,13 @@ object Serializer {
     import sbinary.Operations._
     import sbinary.DefaultProtocol._
 
+    var classLoader: Option[ClassLoader] = None
+
     def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = in[T](out[T](obj), None)
 
     def out[T](t : T)(implicit bin : Writes[T]): Array[Byte] = toByteArray[T](t)
 
     def in[T](array : Array[Byte], clazz: Option[Class[T]])(implicit bin : Reads[T]): T = fromByteArray[T](array)
-
-    def in[T](array : Array[Byte])(implicit bin : Reads[T]): T = fromByteArray[T](array)
   }
 }
 
