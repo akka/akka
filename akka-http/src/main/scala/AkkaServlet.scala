@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.rest
 
 import se.scalablesolutions.akka.config.Config.config
-import se.scalablesolutions.akka.actor.ActorModules
 import com.sun.jersey.api.core.ResourceConfig
 import com.sun.jersey.spi.container.servlet.ServletContainer
 import com.sun.jersey.spi.container.WebApplication
@@ -28,13 +27,6 @@ class AkkaServlet extends ServletContainer {
       "com.sun.jersey.spi.container.ResourceFilters",
       config.getList("akka.rest.filters").mkString(","))
 
-    val cl = Thread.currentThread.getContextClassLoader
-    Thread.currentThread.setContextClassLoader(ActorModules.loader_?.getOrElse(cl))
-    try {
-      webApplication.initiate(resourceConfig)
-    }
-    finally{
-      Thread.currentThread.setContextClassLoader(cl)
-    }
+    webApplication.initiate(resourceConfig)
   }
 }
