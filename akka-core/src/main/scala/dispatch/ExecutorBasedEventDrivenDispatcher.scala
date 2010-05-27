@@ -4,6 +4,8 @@
 
 package se.scalablesolutions.akka.dispatch
 
+import se.scalablesolutions.akka.actor.ActorRef
+
 /**
  * Default settings are:
  * <pre/>
@@ -53,40 +55,53 @@ package se.scalablesolutions.akka.dispatch
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
+class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispatchers.THROUGHPUT) extends MessageDispatcher with ThreadPoolBuilder {
   @volatile private var active: Boolean = false
 
   val name: String = "event-driven:executor:dispatcher:" + _name
   init
 
-  def dispatch(invocation: MessageInvocation) = if (active) {
+  def dispatch(invocation: MessageInvocation) = dispatch(invocation.receiver)
+
+  def dispatch(receiver: ActorRef): Unit = if (active) {
     executor.execute(new Runnable() {
       def run = {
         var lockAcquiredOnce = false
-        // this do-wile loop is required to prevent missing new messages between the end of the inner while
+        var finishedBeforeMailboxEmpty = false
+        // this do-while loop is required to prevent missing new messages between the end of the inner while
         // loop and releasing the lock
-        val lock = invocation.receiver.dispatcherLock
-        val mailbox = invocation.receiver.mailbox
+        val lock = receiver.dispatcherLock
+        val mailbox = receiver.mailbox
         do {
           if (lock.tryLock) {
             lockAcquiredOnce = true
             try {
               // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
+              var i = 0
               var messageInvocation = mailbox.poll
               while (messageInvocation != null) {
                 messageInvocation.invoke
-                messageInvocation = mailbox.poll
+                i += 1
+                if (i < throughput)
+                  messageInvocation = mailbox.poll
+                else {
+                  finishedBeforeMailboxEmpty = !mailbox.isEmpty
+                  messageInvocation = null
+                }
               }
             } finally {
               lock.unlock
+              if (finishedBeforeMailboxEmpty) dispatch(receiver)
             }
           }
-        } while ((lockAcquiredOnce && !mailbox.isEmpty))
+        } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !mailbox.isEmpty))
       }
     })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
 
   def start = if (!active) {
+    log.debug("Starting ExecutorBasedEventDrivenDispatcher [%s]", name)
+    log.debug("Throughput for %s = %d", name, throughput)
     active = true
   }
 
