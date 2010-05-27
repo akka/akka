@@ -142,7 +142,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val publishLocalMvn = runMvnInstall 
     def runMvnInstall = task {
         for(absPath <- akkaArtifacts.getPaths) {
-          val artifactRE = """(.*)/dist/(.*)_(.*).jar""".r
+          val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
           val artifactRE(path, artifactId, artifactVersion) = absPath  
           val command = "mvn install:install-file" + 
                         " -Dfile=" + absPath +
