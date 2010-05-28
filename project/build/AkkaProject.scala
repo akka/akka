@@ -40,20 +40,29 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
 
-  // ------------------------------------------------------------
-  // repositories
-  val embeddedrepo = "embedded repo" at (info.projectPath / "embedded-repo").asURL.toString
+  // -------------------------------------------------------------------------------------------------------------------
+  // Repositories
+  // Every dependency that cannot be resolved from the built-in repositories (Maven Central and Scala Tools Releases)
+  // must be resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
+  // Therefore, if repositories are defined this must happen as def, not as val.
+  // -------------------------------------------------------------------------------------------------------------------
+  val embeddedRepo            = "Embedded Repo" at (info.projectPath / "embedded-repo").asURL.toString  // Fast enough => No need for a module configuration here!
+  val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
+  def guiceyFruitRepo         = "GuiceyFruit Repo" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
+  val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", guiceyFruitRepo)
+  def jbossRepo               = "JBoss Repo" at "https://repository.jboss.org/nexus/content/groups/public/"
+  val jbossModuleConfig       = ModuleConfiguration("org.jboss", jbossRepo)
+  val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", jbossRepo)
+  val jgroupsModuleConfig     = ModuleConfiguration("jgroups", jbossRepo)
+  /*
   val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   // val configgy = "Configgy" at "http://www.lag.net/repo"
   val codehaus = "Codehaus" at "http://repository.codehaus.org"
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val jboss = "jBoss" at "https://repository.jboss.org/nexus/content/groups/public/"
-  val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val google = "Google" at "http://google-maven-repository.googlecode.com/svn/repository"
   val java_net = "java.net" at "http://download.java.net/maven/2"
-  val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
-  val scala_tools_releases = "scala-tools releases" at "http://scala-tools.org/repo-releases"
+  */
 
   // ------------------------------------------------------------
   // project defintions
