@@ -54,8 +54,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val jbossModuleConfig       = ModuleConfiguration("org.jboss", jbossRepo)
   val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", jbossRepo)
   val jgroupsModuleConfig     = ModuleConfiguration("jgroups", jbossRepo)
+  def sunjdmkRepo             = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
+  val jmsModuleConfig         = ModuleConfiguration("javax.jms", sunjdmkRepo)
+  val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", sunjdmkRepo)
+  val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", sunjdmkRepo)
   /*
-  val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
   val databinder = "DataBinder" at "http://databinder.net/repo"
   // val configgy = "Configgy" at "http://www.lag.net/repo"
   val codehaus = "Codehaus" at "http://repository.codehaus.org"
