@@ -8,16 +8,16 @@ import org.junit.{Before, After, Test}
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 @RunWith(classOf[JUnitRunner])
-class ActorUtilTest extends junit.framework.TestCase with Suite with MustMatchers {
+class ActorObjectUtilFunctionsTest extends junit.framework.TestCase with Suite with MustMatchers {
   import Actor._
   @Test def testSpawn = {
     val latch = new CountDownLatch(1)
 
     spawn {
-	  latch.countDown
+      latch.countDown
     }
 
-    val done = latch.await(5,TimeUnit.SECONDS)
+    val done = latch.await(10,TimeUnit.SECONDS)
     done must be (true)
   }
 }
