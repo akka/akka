@@ -281,10 +281,16 @@ object Transaction {
           tx.transaction = Some(mtx)
           setTransaction(Some(tx))
           txSet.registerOnCommitTask(new Runnable() {
-            def run = tx.commit
+            def run = { 
+              log.trace("=========> Committing transaction [%s]", mtx)
+              tx.commit
+            }
           })
           txSet.registerOnAbortTask(new Runnable() {
-            def run = tx.abort
+            def run = { 
+              log.trace("=========> Aborting transaction [%s]", mtx)
+              tx.abort
+            }
           })
         }
       }.execute()
