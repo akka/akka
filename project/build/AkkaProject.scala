@@ -162,7 +162,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.RC3" % "0.7.4" % "compile"
     val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.8.0.RC3" % "0.7.4" % "compile"
-    val sjson = "sjson.json" % "sjson" % "0.5-SNAPSHOT-2.8.RC2" % "compile"
+    val sjson = "sjson.json" % "sjson" % "0.6-SNAPSHOT-2.8.RC3" % "compile"
     val sbinary = "sbinary" % "sbinary" % "2.8.0.RC3-0.3.1-SNAPSHOT" % "compile"
     val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
     val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
@@ -222,7 +222,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val redis = "com.redis" % "redisclient" % "2.8.0.RC2-1.4-SNAPSHOT" % "compile"
+    val redis = "com.redis" % "redisclient" % "2.8.0.RC3-1.4-SNAPSHOT" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
