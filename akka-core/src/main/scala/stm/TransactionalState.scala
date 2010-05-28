@@ -205,7 +205,7 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
   }
 
   private def ensureIsInTransaction =
-    if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
+   ()// if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
 
   private def ensureNotNull =
     if (ref.isNull) throw new RuntimeException("Cannot alter Ref's value when it is null")

@@ -250,6 +250,10 @@ object Transaction {
      */
     def foreach(f: => Unit): Unit = atomic {f}
 
+
+// FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
+//getTransactionSetInScope.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
+
     /**
      * See ScalaDoc on Transaction.Global class.
      */
@@ -262,10 +266,6 @@ object Transaction {
           val txSet = getTransactionSetInScope
           log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
           txSet.joinCommit(mtx)
-
-          // FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
-          //getTransactionSetInScope.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
-
           clearTransaction
           result
         }
@@ -280,16 +280,15 @@ object Transaction {
           tx.begin
           tx.transaction = Some(mtx)
           setTransaction(Some(tx))
-          txSet.registerOnCommitTask(new Runnable() {
-            def run = { 
-              log.trace("=========> Committing transaction [%s]", mtx)
-              tx.commit
-            }
-          })
-          txSet.registerOnAbortTask(new Runnable() {
-            def run = { 
-              log.trace("=========> Aborting transaction [%s]", mtx)
-              tx.abort
+          mtx.registerLifecycleListener(new TransactionLifecycleListener() {
+            def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event.name match {
+              case "postCommit" => 
+                log.trace("Committing transaction [%s]", mtx)
+                tx.commit
+              case "postAbort" => 
+                log.trace("Aborting transaction [%s]", mtx)
+                tx.abort
+              case _ => {}
             }
           })
         }
