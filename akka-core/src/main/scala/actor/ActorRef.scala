@@ -206,16 +206,6 @@ trait ActorRef extends TransactionManagement {
    */
   protected[akka] val dispatcherLock = new ReentrantLock
 
-  /**
-   * Holds the reference to the sender of the currently processed message.
-   * - Is None if no sender was specified
-   * - Is Some(Left(Actor)) if sender is an actor
-   * - Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
-   */
-// protected[this] var _replyTo: Option[Either[ActorRef, CompletableFuture[Any]]] = None
-// protected[akka] def replyTo: Option[Either[ActorRef, CompletableFuture[Any]]] = guard.withGuard { _replyTo }
-// protected[akka] def replyTo_=(rt: Option[Either[ActorRef, CompletableFuture[Any]]]) = guard.withGuard { _replyTo = rt }
-
   protected[akka] var _sender: Option[ActorRef] = None
   protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
   protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
