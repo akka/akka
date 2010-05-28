@@ -206,23 +206,23 @@ trait ActorRef extends TransactionManagement {
    */
   protected[akka] val dispatcherLock = new ReentrantLock
 
+  protected[akka] var _sender: Option[ActorRef] = None
+  protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
+  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
+  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
+
   /**
-   * Holds the reference to the sender of the currently processed message.
-   * - Is None if no sender was specified
-   * - Is Some(Left(Actor)) if sender is an actor
-   * - Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
+   * The reference sender Actor of the last received message.
+   * Is defined if the message was sent from another Actor, else None.
    */
-// protected[this] var _replyTo: Option[Either[ActorRef, CompletableFuture[Any]]] = None
-// protected[akka] def replyTo: Option[Either[ActorRef, CompletableFuture[Any]]] = guard.withGuard { _replyTo }
-// protected[akka] def replyTo_=(rt: Option[Either[ActorRef, CompletableFuture[Any]]]) = guard.withGuard { _replyTo = rt }
+  def sender: Option[ActorRef] = guard.withGuard { _sender }
 
- protected[akka] var _sender: Option[ActorRef] = None
- protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
- protected[akka] def sender: Option[ActorRef] = guard.withGuard { _sender }
- protected[akka] def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
- protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
- protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
-
+  /**
+   * The reference sender future of the last received message.
+   * Is defined if the message was sent with sent with '!!' or '!!!', else None.
+   */
+  def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
+ 
   /**
    * Is the actor being restarted?
    */
@@ -353,14 +353,10 @@ trait ActorRef extends TransactionManagement {
    */
   def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
     "\n\tNo sender in scope, can't reply. " +
-    "\n\tYou have probably used the '!' method to either; " +
-    "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
-    "\n\t\t2. Send a message from an instance that is *not* an actor" +
-    "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
-    "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-    "\n\tthat will be bound by the argument passed to 'reply'." +
-    "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
-
+    "\n\tYou have probably: " +
+    "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
+    "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object.")
+    
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
@@ -1206,8 +1202,7 @@ sealed class LocalActorRef private[akka](
         !message.getClass.isArray &&
         !message.isInstanceOf[List[_]] &&
         !message.isInstanceOf[scala.collection.immutable.Map[_, _]] &&
-        !message.isInstanceOf[scala.collection.immutable.Set[_]] &&
-        !message.getClass.isAnnotationPresent(Annotations.immutable)) {
+        !message.isInstanceOf[scala.collection.immutable.Set[_]]) {
       Serializer.Java.deepClone(message)
     } else message
   } else message

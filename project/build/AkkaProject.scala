@@ -19,6 +19,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC2-SNAPSHOT"
+  val MULTIVERSE_VERSION = "0.5.2"
 
   // ------------------------------------------------------------
   lazy val deployPath = info.projectPath / "deploy"
@@ -141,7 +142,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val publishLocalMvn = runMvnInstall 
     def runMvnInstall = task {
         for(absPath <- akkaArtifacts.getPaths) {
-          val artifactRE = """(.*)/dist/(.*)_(.*).jar""".r
+          val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
           val artifactRE(path, artifactId, artifactVersion) = absPath  
           val command = "mvn install:install-file" + 
                         " -Dfile=" + absPath +
@@ -174,7 +175,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
     val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
-    val multiverse = "org.multiverse" % "multiverse-alpha" % "0.5" % "compile"
+    val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile"
     val jgroups = "jgroups" % "jgroups" % "2.9.0.GA" % "compile"
     
     // testing

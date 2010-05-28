@@ -175,7 +175,7 @@ trait ChatServer extends Actor {
   
   val storage: ActorRef
 
-  log.info("Chat service is starting up...")
+  log.info("Chat server is starting up...")
 
   // actor message handler
   def receive = sessionManagement orElse chatManagement
