@@ -49,9 +49,9 @@ trait BootableActorLoaderService extends Bootable with Logging {
       val parentClassLoader = classOf[Seq[_]].getClassLoader
       URLClassLoader.newInstance(
         allJars.toArray.asInstanceOf[Array[URL]],
-        ClassLoader.getSystemClassLoader)
+        Thread.currentThread.getContextClassLoader)
         //parentClassLoader)
-    } else getClass.getClassLoader)
+    } else Thread.currentThread.getContextClassLoader)
   }
 
   abstract override def onLoad = {
