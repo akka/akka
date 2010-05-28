@@ -1,7 +1,6 @@
 package se.scalablesolutions.akka.api;
 
 import com.google.inject.Inject;
-import se.scalablesolutions.akka.actor.annotation.oneway;
 
 public class Foo extends se.scalablesolutions.akka.serialization.Serializable.JavaJSON {
   @Inject

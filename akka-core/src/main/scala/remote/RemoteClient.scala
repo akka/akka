@@ -299,11 +299,11 @@ class RemoteClientHandler(val name: String,
         } else {
           if (reply.hasSupervisorUuid()) {
             val supervisorUuid = reply.getSupervisorUuid
-            if (!supervisors.containsKey(supervisorUuid))
-              throw new IllegalStateException("Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
+            if (!supervisors.containsKey(supervisorUuid)) throw new IllegalStateException(
+              "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
-            if (!supervisedActor.supervisor.isDefined)
-              throw new IllegalStateException("Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
+            if (!supervisedActor.supervisor.isDefined) throw new IllegalStateException(
+              "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
             else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply))
           }
           future.completeWithException(null, parseException(reply))
@@ -330,7 +330,8 @@ class RemoteClientHandler(val name: String,
         client.connection = bootstrap.connect(remoteAddress)
         client.connection.awaitUninterruptibly // Wait until the connection attempt succeeds or fails.
         if (!client.connection.isSuccess) {
-          client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(client.connection.getCause))
+          client.listeners.toArray.foreach(l => 
+            l.asInstanceOf[ActorRef] ! RemoteClientError(client.connection.getCause))
           log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)
         }
       }
@@ -338,12 +339,14 @@ class RemoteClientHandler(val name: String,
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
+    client.listeners.toArray.foreach(l => 
+      l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
     log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientDisconnected(client.hostname, client.port))
+    client.listeners.toArray.foreach(l => 
+      l.asInstanceOf[ActorRef] ! RemoteClientDisconnected(client.hostname, client.port))
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
   }
 

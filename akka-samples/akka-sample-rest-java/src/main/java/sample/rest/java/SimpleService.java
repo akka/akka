@@ -8,6 +8,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 
+import se.scalablesolutions.akka.actor.ActiveObject;
+import se.scalablesolutions.akka.actor.ActiveObjectContext;
 import se.scalablesolutions.akka.actor.annotation.transactionrequired;
 import se.scalablesolutions.akka.actor.annotation.prerestart;
 import se.scalablesolutions.akka.actor.annotation.postrestart;
@@ -28,7 +30,8 @@ public class SimpleService {
 
   private boolean hasStartedTicking = false;
   private TransactionalMap<String, Integer> storage;
-
+  private Receiver receiver = ActiveObject.newInstance(Receiver.class);
+  
   @GET
   @Produces({"application/json"})
   public String count() {
@@ -38,6 +41,8 @@ public class SimpleService {
       hasStartedTicking = true;
       return "Tick: 0\n";
     } else {
+      // Grabs the sender address and returns it
+      //SimpleService sender = receiver.receive();
       int counter = (Integer)storage.get(KEY).get() + 1;
       storage.put(KEY, counter);
       return "Tick: " + counter + "\n";
