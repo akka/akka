@@ -47,7 +47,6 @@ class AkkaLoader extends Logging {
   private def printBanner = {
     log.info(
 """
-==================================================
                        t                         
              t       t t                         
             t       t tt   t                     
@@ -70,9 +69,10 @@ class AkkaLoader extends Logging {
   ttt    ttt ttt    ttt  ttt    ttt ttt    ttt   
   ttt    tt  ttt    ttt  ttt    ttt ttt    ttt   
    tttttttt  ttt    ttt  ttt    ttt  tttttttt
+   
 ==================================================
 """)
-    log.info("        Running version %s", Config.VERSION)
+    log.info("            Running version %s", Config.VERSION)
     log.info("==================================================")
   }
 }
