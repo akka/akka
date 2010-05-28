@@ -21,11 +21,9 @@ import java.lang.reflect.{InvocationTargetException, Method}
 
 object Annotations {
   import se.scalablesolutions.akka.actor.annotation._
-  val oneway =                 classOf[oneway]
   val transactionrequired =    classOf[transactionrequired]
   val prerestart =             classOf[prerestart]
   val postrestart =            classOf[postrestart]
-  val immutable =              classOf[immutable]
   val inittransactionalstate = classOf[inittransactionalstate]
 }
 
@@ -470,6 +468,8 @@ private[akka] sealed case class AspectInit(
   def this(target: Class[_], actorRef: ActorRef, timeout: Long) = this(target, actorRef, None, timeout)
 }
 
+// FIXME: add @shutdown callback to ActiveObject in which we get the Aspect through 'Aspects.aspectOf(MyAspect.class, targetInstance)' and shuts down the Dispatcher actor
+
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
  * Is deployed on a 'per-instance' basis.
@@ -477,7 +477,6 @@ private[akka] sealed case class AspectInit(
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @Aspect("perInstance")
-// TODO: add @shutdown callback to ActiveObject in which we get the Aspect through 'Aspects.aspectOf(MyAspect.class, targetInstance)' and shuts down the Dispatcher actor
 private[akka] sealed class ActiveObjectAspect {
   @volatile private var isInitialized = false
   private var target: Class[_] = _
@@ -488,10 +487,8 @@ private[akka] sealed class ActiveObjectAspect {
 
   @Around("execution(* *.*(..))")
   def invoke(joinPoint: JoinPoint): AnyRef = {
-    instance = joinPoint.getThis
-    ActiveObjectContext.sender.value = instance
     if (!isInitialized) {
-      val init = AspectInitRegistry.initFor(instance)
+      val init = AspectInitRegistry.initFor(joinPoint.getThis)
       target = init.target
       actorRef = init.actorRef
       remoteAddress = init.remoteAddress
@@ -509,11 +506,13 @@ private[akka] sealed class ActiveObjectAspect {
 
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    if (isOneWay(rtti)) {
-      actorRef ! Invocation(joinPoint, true, true)
+    val isOneWay = isVoid(rtti)
+    val sender = ActiveObjectContext.sender.value
+    if (isOneWay) {
+      actorRef ! Invocation(joinPoint, true, true, sender)
       null.asInstanceOf[AnyRef]
     } else {
-      val result = actorRef !! (Invocation(joinPoint, false, isVoid(rtti)), timeout)
+      val result = actorRef !! (Invocation(joinPoint, false, isOneWay, sender), timeout)
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }
@@ -521,7 +520,7 @@ private[akka] sealed class ActiveObjectAspect {
 
   private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val oneWay_? = isOneWay(rtti) || isVoid(rtti)
+    val isOneWay = isVoid(rtti)
     val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
     val requestBuilder = RemoteRequestProtocol.newBuilder
       .setId(RemoteRequestProtocolIdFactory.nextId)
@@ -530,14 +529,14 @@ private[akka] sealed class ActiveObjectAspect {
       .setUuid(actorRef.uuid)
       .setTimeout(timeout)
       .setIsActor(false)
-      .setIsOneWay(oneWay_?)
+      .setIsOneWay(isOneWay)
       .setIsEscaped(false)
     RemoteProtocolBuilder.setMessage(message, requestBuilder)
     val id = actorRef.registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
     val remoteMessage = requestBuilder.build
     val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage, None)
-    if (oneWay_?) null // for void methods
+    if (isOneWay) null // for void methods
     else {
       if (future.isDefined) {
         future.get.await
@@ -554,10 +553,8 @@ private[akka] sealed class ActiveObjectAspect {
       throw cause
     } else future.result
 
-  private def isOneWay(rtti: MethodRtti) = rtti.getMethod.isAnnotationPresent(Annotations.oneway)
-
   private def isVoid(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
-
+  
   private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
     var isEscaped = false
     val escapedArgs = for (arg <- args) yield {
@@ -576,10 +573,15 @@ private[akka] sealed class ActiveObjectAspect {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable private[akka] case class Invocation(joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean) {
+@serializable private[akka] case class Invocation(
+  joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean, sender: AnyRef) {
 
   override def toString: String = synchronized {
-    "Invocation [joinPoint: " + joinPoint.toString + ", isOneWay: " + isOneWay + ", isVoid: " + isVoid + "]"
+    "Invocation [joinPoint: " + joinPoint.toString + 
+    ", isOneWay: " + isOneWay + 
+    ", isVoid: " + isVoid +
+    ", sender: " + sender + 
+    "]"
   }
 
   override def hashCode: Int = synchronized {
@@ -587,6 +589,7 @@ private[akka] sealed class ActiveObjectAspect {
     result = HashCode.hash(result, joinPoint)
     result = HashCode.hash(result, isOneWay)
     result = HashCode.hash(result, isVoid)
+    result = HashCode.hash(result, sender)
     result
   }
 
@@ -595,7 +598,8 @@ private[akka] sealed class ActiveObjectAspect {
     that.isInstanceOf[Invocation] &&
     that.asInstanceOf[Invocation].joinPoint == joinPoint &&
     that.asInstanceOf[Invocation].isOneWay == isOneWay &&
-    that.asInstanceOf[Invocation].isVoid == isVoid
+    that.asInstanceOf[Invocation].isVoid == isVoid &&
+    that.asInstanceOf[Invocation].sender == sender
   }
 }
 
@@ -621,7 +625,8 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef, ctx: Option[ActiveObjectContext]) = {
-    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) self.makeTransactionRequired
+    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) 
+      self.makeTransactionRequired
     self.id = targetClass.getName
     target = Some(targetInstance)
     context = ctx
@@ -667,11 +672,9 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   }
 
   def receive = {
-    case Invocation(joinPoint, isOneWay, _) =>
-      context.foreach { ctx => 
-        val sender = ActiveObjectContext.sender.value
-        if (sender ne null) ctx._sender = sender
-      }
+    case Invocation(joinPoint, isOneWay, _, sender) =>
+      context.foreach(ctx => if (sender ne null) ctx._sender = sender)
+      ActiveObjectContext.sender.value = joinPoint.getThis // set next sender
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed
       else self.reply(joinPoint.proceed)
@@ -719,8 +722,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
         !arg.isInstanceOf[java.lang.Float] &&
         !arg.isInstanceOf[java.lang.Double] &&
         !arg.isInstanceOf[java.lang.Boolean] &&
-        !arg.isInstanceOf[java.lang.Character] &&
-        !arg.getClass.isAnnotationPresent(Annotations.immutable)) {
+        !arg.isInstanceOf[java.lang.Character]) {
         hasMutableArgument = true
       }
       if (arg.getClass.getName.contains(ActiveObject.AW_PROXY_PREFIX)) unserializable = true

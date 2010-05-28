@@ -56,6 +56,8 @@ import se.scalablesolutions.akka.actor.ActorRef
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispatchers.THROUGHPUT) extends MessageDispatcher with ThreadPoolBuilder {
+  def this(_name: String) = this(_name, Dispatchers.THROUGHPUT) // Needed for Java API usage
+
   @volatile private var active: Boolean = false
 
   val name: String = "event-driven:executor:dispatcher:" + _name

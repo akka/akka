@@ -60,6 +60,13 @@ object Dispatchers {
   def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int = THROUGHPUT) = new ExecutorBasedEventDrivenDispatcher(name, throughput)
 
   /**
+   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name, THROUGHPUT)
+
+  /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.

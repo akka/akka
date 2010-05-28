@@ -353,14 +353,10 @@ trait ActorRef extends TransactionManagement {
    */
   def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
     "\n\tNo sender in scope, can't reply. " +
-    "\n\tYou have probably used the '!' method to either; " +
-    "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
-    "\n\t\t2. Send a message from an instance that is *not* an actor" +
-    "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
-    "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-    "\n\tthat will be bound by the argument passed to 'reply'." +
-    "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
-
+    "\n\tYou have probably: " +
+    "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
+    "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object.")
+    
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
@@ -1206,8 +1202,7 @@ sealed class LocalActorRef private[akka](
         !message.getClass.isArray &&
         !message.isInstanceOf[List[_]] &&
         !message.isInstanceOf[scala.collection.immutable.Map[_, _]] &&
-        !message.isInstanceOf[scala.collection.immutable.Set[_]] &&
-        !message.getClass.isAnnotationPresent(Annotations.immutable)) {
+        !message.isInstanceOf[scala.collection.immutable.Set[_]]) {
       Serializer.Java.deepClone(message)
     } else message
   } else message
