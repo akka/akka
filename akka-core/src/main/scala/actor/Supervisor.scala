@@ -196,6 +196,7 @@ sealed class Supervisor private[akka] (
       servers.map(server =>
         server match {
           case Supervise(actorRef, lifeCycle, remoteAddress) =>
+            actorRef.start
             val className = actorRef.actor.getClass.getName
             val currentActors = {
               val list = childActors.get(className)
