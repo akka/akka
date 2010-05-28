@@ -106,6 +106,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
     )
 
+  //Exclude slf4j1.5.11 from the classpath, it's conflicting...
+  override def runClasspath = super.runClasspath --- (super.runClasspath ** "slf4j*1.5.11.jar")
+
   // ------------------------------------------------------------
   // publishing
   override def managedStyle = ManagedStyle.Maven
