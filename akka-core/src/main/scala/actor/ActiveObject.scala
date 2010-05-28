@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.actor
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequestProtocol
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestProtocolIdFactory}
-import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future}
+import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
@@ -67,7 +67,7 @@ final class ActiveObjectConfiguration {
 
 /**
  * Holds RTTI (runtime type information) for the Active Object, f.e. current 'sender' 
- * reference etc.
+ * reference, the 'senderFuture' reference etc.
  * <p/>
  * In order to make use of this context you have to create a member field in your 
  * Active Object that has the type 'ActiveObjectContext', then an instance will 
@@ -94,21 +94,49 @@ final class ActiveObjectConfiguration {
  */
 final class ActiveObjectContext {
   private[akka] var _sender: AnyRef = _
+  private[akka] var _senderFuture: CompletableFuture[Any] = _
+
   /**
    * Returns the current sender Active Object reference.
    * Scala style getter.
    */
-  def sender = _sender
+  def sender: AnyRef = { 
+    if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+    else _sender
+  } 
 
   /**
    * Returns the current sender Active Object reference.
    * Java style getter.
    */
-  def getSender = _sender
+   def getSender: AnyRef = { 
+     if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+     else _sender
+   } 
+
+  /**
+   * Returns the current sender future Active Object reference.
+   * Scala style getter.
+   */
+  def senderFuture: Option[CompletableFuture[Any]] = if (_senderFuture eq null) None else Some(_senderFuture)
+
+  /**
+   * Returns the current sender future Active Object reference.
+   * Java style getter.
+   * This method returns 'null' if the sender future is not available.
+   */
+  def getSenderFuture = _senderFuture
 }
 
+/**
+ * Internal helper class to help pass the contextual information between threads.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 private[akka] object ActiveObjectContext {
-  private[actor] val sender = new scala.util.DynamicVariable[AnyRef](null)
+  import scala.util.DynamicVariable
+  private[actor] val sender =       new DynamicVariable[AnyRef](null)
+  private[actor] val senderFuture = new DynamicVariable[CompletableFuture[Any]](null)
 }
 
 /**
@@ -508,11 +536,12 @@ private[akka] sealed class ActiveObjectAspect {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = isVoid(rtti)
     val sender = ActiveObjectContext.sender.value
+    val senderFuture = ActiveObjectContext.senderFuture.value
     if (isOneWay) {
-      actorRef ! Invocation(joinPoint, true, true, sender)
+      actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
       null.asInstanceOf[AnyRef]
     } else {
-      val result = actorRef !! (Invocation(joinPoint, false, isOneWay, sender), timeout)
+      val result = actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }
@@ -574,13 +603,14 @@ private[akka] sealed class ActiveObjectAspect {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable private[akka] case class Invocation(
-  joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean, sender: AnyRef) {
+  joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean, sender: AnyRef, senderFuture: CompletableFuture[Any]) {
 
   override def toString: String = synchronized {
     "Invocation [joinPoint: " + joinPoint.toString + 
     ", isOneWay: " + isOneWay + 
     ", isVoid: " + isVoid +
     ", sender: " + sender + 
+    ", senderFuture: " + senderFuture + 
     "]"
   }
 
@@ -590,6 +620,7 @@ private[akka] sealed class ActiveObjectAspect {
     result = HashCode.hash(result, isOneWay)
     result = HashCode.hash(result, isVoid)
     result = HashCode.hash(result, sender)
+    result = HashCode.hash(result, senderFuture)
     result
   }
 
@@ -599,7 +630,8 @@ private[akka] sealed class ActiveObjectAspect {
     that.asInstanceOf[Invocation].joinPoint == joinPoint &&
     that.asInstanceOf[Invocation].isOneWay == isOneWay &&
     that.asInstanceOf[Invocation].isVoid == isVoid &&
-    that.asInstanceOf[Invocation].sender == sender
+    that.asInstanceOf[Invocation].sender == sender &&
+    that.asInstanceOf[Invocation].senderFuture == senderFuture
   }
 }
 
@@ -672,12 +704,18 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   }
 
   def receive = {
-    case Invocation(joinPoint, isOneWay, _, sender) =>
-      context.foreach(ctx => if (sender ne null) ctx._sender = sender)
+    case Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
+      context.foreach { ctx => 
+        if (sender ne null) ctx._sender = sender
+        if (senderFuture ne null) ctx._senderFuture = senderFuture
+      }
       ActiveObjectContext.sender.value = joinPoint.getThis // set next sender
+      self.senderFuture.foreach(ActiveObjectContext.senderFuture.value = _)
+
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed
       else self.reply(joinPoint.proceed)
+
     // Jan Kronquist: started work on issue 121
     case Link(target)   => self.link(target)
     case Unlink(target) => self.unlink(target)
