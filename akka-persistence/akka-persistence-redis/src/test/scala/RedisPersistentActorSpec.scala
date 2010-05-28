@@ -100,7 +100,7 @@ class AccountActor extends Transactor {
 import org.scalatest.junit.JUnitSuite
 class RedisPersistentActorSpec extends JUnitSuite {
   @Test
-  def testSuccessfulDebit = {
+  def testSuccessfulDebit {
     val bactor = actorOf[AccountActor]
     bactor.start
     val failer = actorOf[PersistentFailerActor]
@@ -108,39 +108,45 @@ class RedisPersistentActorSpec extends JUnitSuite {
 
     val acc = "a-123"
 
-    val a: Option[BigInt] = bactor !! Credit(acc, 5000)
-    println("a = " + a)
+    println("----------- SIZE 0 " + (bactor !! LogSize).get)
+
+    bactor !! Credit(acc, 5000)
+    println("----------- SIZE 1 " + (bactor !! LogSize).get)
+
     println(bactor !! Balance(acc))
-    /**
-    bactor !! Debit("a-123", 3000, failer)
-    val c: Int = (bactor !! LogSize).get
-    println(c)
-    bactor !! Debit("a-123", 3000, failer)
-    assertEquals(BigInt(2000), (bactor !! Balance("a-123")).get)
-    val d: Int = (bactor !! LogSize).get
-    println(d)
+    println("----------- SIZE 2 " + (bactor !! LogSize).get)
 
-    bactor !! Credit("a-123", 7000)
-    assertEquals(BigInt(9000), (bactor !! Balance("a-123")).get)
+    bactor !! Debit(acc, 3000, failer)
+    println("----------- SIZE 3 " + (bactor !! LogSize).get)
+    
+    assertEquals(BigInt(2000), (bactor !! Balance(acc)).get)
+    println("----------- SIZE 4 " + (bactor !! LogSize).get)
 
-    bactor !! Debit("a-123", 8000, failer)
-    assertEquals(BigInt(1000), (bactor !! Balance("a-123")).get)
+    bactor !! Credit(acc, 7000)
+    println("----------- SIZE 5 " + (bactor !! LogSize).get)
 
-    val c: Int = (bactor !! LogSize).get
-    println(c)
-    assertTrue(7 == c)
+    assertEquals(BigInt(9000), (bactor !! Balance(acc)).get)
+    println("----------- SIZE 6 " + (bactor !! LogSize).get)
+ 
+    bactor !! Debit(acc, 8000, failer)
+    println("----------- SIZE 7 " + (bactor !! LogSize).get)
+
+    assertEquals(BigInt(1000), (bactor !! Balance(acc)).get)
+    println("----------- SIZE 8 " + (bactor !! LogSize).get)
+    
+    assert(7 === (bactor !! LogSize).get) // Not counting the failed transaction => 7
+
     import scala.collection.mutable.ArrayBuffer
     assert((bactor !! Log(0, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 7)
     assert((bactor !! Log(0, 0)).get.asInstanceOf[ArrayBuffer[String]].size == 0)
     assert((bactor !! Log(1, 2)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
     assert((bactor !! Log(6, 7)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
     assert((bactor !! Log(0, 1)).get.asInstanceOf[ArrayBuffer[String]].size == 1)
-    **/
   }
 
   /**
   @Test
-  def testUnsuccessfulDebit = {
+  def testUnsuccessfulDebit {
     val bactor = actorOf(new AccountActor)
     bactor.start
     bactor !! Credit("a-123", 5000)
@@ -161,7 +167,7 @@ class RedisPersistentActorSpec extends JUnitSuite {
   }
 
   @Test
-  def testUnsuccessfulMultiDebit = {
+  def testUnsuccessfulMultiDebit {
     val bactor = actorOf(new AccountActor)
     bactor.start
     bactor !! Credit("a-123", 5000)
