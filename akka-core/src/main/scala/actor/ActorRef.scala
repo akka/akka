@@ -216,13 +216,23 @@ trait ActorRef extends TransactionManagement {
 // protected[akka] def replyTo: Option[Either[ActorRef, CompletableFuture[Any]]] = guard.withGuard { _replyTo }
 // protected[akka] def replyTo_=(rt: Option[Either[ActorRef, CompletableFuture[Any]]]) = guard.withGuard { _replyTo = rt }
 
- protected[akka] var _sender: Option[ActorRef] = None
- protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
- protected[akka] def sender: Option[ActorRef] = guard.withGuard { _sender }
- protected[akka] def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
- protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
- protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
+  protected[akka] var _sender: Option[ActorRef] = None
+  protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
+  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
+  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
 
+  /**
+   * The reference sender Actor of the last received message.
+   * Is defined if the message was sent from another Actor, else None.
+   */
+  def sender: Option[ActorRef] = guard.withGuard { _sender }
+
+  /**
+   * The reference sender future of the last received message.
+   * Is defined if the message was sent with sent with '!!' or '!!!', else None.
+   */
+  def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
+ 
   /**
    * Is the actor being restarted?
    */
