@@ -5,17 +5,17 @@
 package se.scalablesolutions.akka.comet
 
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.rest.{AkkaServlet => RestServlet}
 
 import java.util.{List => JList}
 import javax.servlet.ServletConfig
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
+import com.sun.jersey.spi.container.servlet.ServletContainer
 
 import org.atmosphere.container.GrizzlyCometSupport
 import org.atmosphere.cpr.{AtmosphereServlet, AtmosphereServletProcessor, AtmosphereResource, AtmosphereResourceEvent,CometSupport,CometSupportResolver,DefaultCometSupportResolver}
 import org.atmosphere.handler.{ReflectorServletProcessor, AbstractReflectorAtmosphereHandler}
 
-class AtmosphereRestServlet extends RestServlet with AtmosphereServletProcessor {
+class AtmosphereRestServlet extends ServletContainer with AtmosphereServletProcessor {
     //Delegate to implement the behavior for AtmosphereHandler
     private val handler = new AbstractReflectorAtmosphereHandler {
       override def onRequest(event: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
@@ -45,7 +45,9 @@ class AtmosphereRestServlet extends RestServlet with AtmosphereServletProcessor 
 class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
   lazy val servlet = createRestServlet
 
-  protected def createRestServlet : AtmosphereRestServlet = new AtmosphereRestServlet
+  protected def createRestServlet : AtmosphereRestServlet = new AtmosphereRestServlet {
+    override def getInitParameter(key : String) = AkkaServlet.this.getInitParameter(key)
+  }
   /**
    * We override this to avoid Atmosphere looking for it's atmosphere.xml file
    * Instead we specify what semantics we want in code.
