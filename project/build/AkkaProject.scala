@@ -40,20 +40,38 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
 
-  // ------------------------------------------------------------
-  // repositories
-  val embeddedrepo = "embedded repo" at (info.projectPath / "embedded-repo").asURL.toString
-  val sunjdmk = "sunjdmk" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
+  // -------------------------------------------------------------------------------------------------------------------
+  // Repositories
+  // Every dependency that cannot be resolved from the built-in repositories (Maven Central and Scala Tools Releases)
+  // must be resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
+  // Therefore, if repositories are defined, this must happen as def, not as val.
+  // -------------------------------------------------------------------------------------------------------------------
+  val embeddedRepo            = "Embedded Repo" at (info.projectPath / "embedded-repo").asURL.toString  // Fast enough => No need for a module configuration here!
+  val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
+  def guiceyFruitRepo         = "GuiceyFruit Repo" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
+  val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", guiceyFruitRepo)
+  def jbossRepo               = "JBoss Repo" at "https://repository.jboss.org/nexus/content/groups/public/"
+  val jbossModuleConfig       = ModuleConfiguration("org.jboss", jbossRepo)
+  val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", jbossRepo)
+  val jgroupsModuleConfig     = ModuleConfiguration("jgroups", jbossRepo)
+  def sunjdmkRepo             = "Sun JDMK Repo" at "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo"
+  val jmsModuleConfig         = ModuleConfiguration("javax.jms", sunjdmkRepo)
+  val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", sunjdmkRepo)
+  val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", sunjdmkRepo)
+  def javaNetRepo             = "java.net Repo" at "http://download.java.net/maven/2"
+  val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", javaNetRepo)
+  val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", javaNetRepo)
+  val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
+  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", javaNetRepo)
+  val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
+
+  /* These are not needed and can possibly be deleted.
   val databinder = "DataBinder" at "http://databinder.net/repo"
   // val configgy = "Configgy" at "http://www.lag.net/repo"
   val codehaus = "Codehaus" at "http://repository.codehaus.org"
   val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val jboss = "jBoss" at "https://repository.jboss.org/nexus/content/groups/public/"
-  val guiceyfruit = "GuiceyFruit" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val google = "Google" at "http://google-maven-repository.googlecode.com/svn/repository"
-  val java_net = "java.net" at "http://download.java.net/maven/2"
-  val scala_tools_snapshots = "scala-tools snapshots" at "http://scala-tools.org/repo-snapshots"
-  val scala_tools_releases = "scala-tools releases" at "http://scala-tools.org/repo-releases"
+  */
 
   // ------------------------------------------------------------
   // project defintions
