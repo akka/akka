@@ -968,10 +968,12 @@ sealed class LocalActorRef private[akka](
   }
 
   private def joinTransaction(message: Any) = if (isTransactionSetInScope) {
-    // FIXME test to run bench without this trace call
-    Actor.log.trace("Joining transaction set [%s];\n\tactor %s\n\twith message [%s]",
-                    getTransactionSetInScope, toString, message)
-    getTransactionSetInScope.incParties
+    import org.multiverse.api.ThreadLocalTransaction
+    val txSet = getTransactionSetInScope
+    Actor.log.trace("Joining transaction set [%s];\n\tactor %s\n\twith message [%s]", txSet, toString, message) // FIXME test to run bench without this trace call
+    val mtx = ThreadLocalTransaction.getThreadLocalTransaction
+    if ((mtx eq null) || mtx.getStatus.isDead) txSet.incParties
+    else txSet.incParties(mtx, 1)
   }
 
   /**
@@ -1049,7 +1051,9 @@ sealed class LocalActorRef private[akka](
         _isBeingRestarted = true
         // abort transaction set
         if (isTransactionSetInScope) try {
-          getTransactionSetInScope.abort
+          val txSet = getTransactionSetInScope
+          Actor.log.debug("Aborting transaction set [%s]", txSet)
+          txSet.abort
         } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
