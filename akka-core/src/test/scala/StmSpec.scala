@@ -101,6 +101,52 @@ class StmSpec extends
       }
     }
   }
+  /*
+  describe("Multiverse API") {
+    it("should blablabla") {
+      
+      import org.multiverse.api.programmatic._
+//      import org.multiverse.api._
+      import org.multiverse.templates._
+      import java.util.concurrent.atomic._
+      import se.scalablesolutions.akka.stm.Ref
+      import org.multiverse.api.{GlobalStmInstance, ThreadLocalTransaction, Transaction => MultiverseTransaction}
+      import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
+      import org.multiverse.commitbarriers._
+      
+      def createRef[T]: ProgrammaticReference[T] = GlobalStmInstance
+        .getGlobalStmInstance
+        .getProgrammaticReferenceFactoryBuilder
+        .build
+        .atomicCreateReference(null.asInstanceOf[T])
+      
+      val ref1 = Ref(0)//createRef[Int]
+      val ref2 = Ref(0)//createRef[Int]
+
+      val committedCount = new AtomicInteger
+      val abortedCount = new AtomicInteger
+      val barrierHolder = new AtomicReference[CountDownCommitBarrier]
+
+      val template = new TransactionTemplate[Int]() {
+        override def onStart(tx: MultiverseTransaction) = barrierHolder.set(new CountDownCommitBarrier(1))
+        override def execute(tx: MultiverseTransaction): Int = {
+          ref1.swap(ref1.get.get + 1)
+          ref2.swap(ref2.get.get + 1)
+          barrierHolder.get.joinCommit(tx)
+          null.asInstanceOf[Int]
+        }
+        override def onPostCommit = committedCount.incrementAndGet
+        override def onPostAbort = abortedCount.incrementAndGet
+      }
+      template.execute
+
+      ref1.get.get should equal(1)
+      ref2.get.get should equal(1)
+      committedCount.get should equal(1)
+      abortedCount.get should equal(2)
+    }
+  }
+  */
 }
 
 object GlobalTransactionVectorTestActor {
