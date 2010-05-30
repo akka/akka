@@ -101,6 +101,32 @@ class StmSpec extends
       }
     }
   }
+
+  describe("Transactor") {
+    it("should be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multipse times in a row") {
+      import GlobalTransactionVectorTestActor._
+      try {
+        val actor = actorOf[NestedTransactorLevelOneActor].start
+        actor !! Add(2)
+        val size1: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        size1 should equal(2)
+        actor !! Add(7)
+        actor ! "HiLevelOne"
+        val size2: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        size2 should equal(7)
+        actor !! Add(0)
+        actor ! "HiLevelTwo"
+        val size3: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        size3 should equal(0)
+        actor !! Add(3)
+        val size4: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        size4 should equal(3)
+      } catch {
+        case e => 
+          fail(e.toString)
+      }
+    }
+  }
   /*
   describe("Multiverse API") {
     it("should blablabla") {
@@ -158,7 +184,7 @@ class GlobalTransactionVectorTestActor extends Actor {
   import GlobalTransactionVectorTestActor._
   import se.scalablesolutions.akka.stm.Transaction.Global
 
-  private var vector: TransactionalVector[Int] = Global.atomic { TransactionalVector(1) }
+  private val vector: TransactionalVector[Int] = Global.atomic { TransactionalVector(1) }
   
   def receive = {
     case Add(value) => 
@@ -168,5 +194,37 @@ class GlobalTransactionVectorTestActor extends Actor {
     case Size => 
       val size = Global.atomic { vector.size }
       self.reply(size)
+  }
+}
+
+class NestedTransactorLevelOneActor extends Actor {
+  import GlobalTransactionVectorTestActor._
+  private val nested = actorOf[NestedTransactorLevelTwoActor].start
+  
+  def receive = {
+    case add @ Add(_) => 
+      self.reply((nested !! add).get)
+
+    case Size => 
+      self.reply((nested !! Size).get)
+
+    case "HiLevelOne" => println("HiLevelOne")
+    case "HiLevelTwo" => nested ! "HiLevelTwo"
+  }
+}
+
+class NestedTransactorLevelTwoActor extends Actor {
+  import GlobalTransactionVectorTestActor._
+  private val ref = Ref(0)
+  
+  def receive = {
+    case Add(value) => 
+      ref.swap(value)
+      self.reply(Success)
+
+    case Size => 
+      self.reply(ref.getOrElse(-1))
+      
+    case "HiLevelTwo" => println("HiLevelTwo")
   }
 }
