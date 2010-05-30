@@ -20,8 +20,8 @@ class AtmosphereRestServlet extends ServletContainer with AtmosphereServletProce
     private val handler = new AbstractReflectorAtmosphereHandler {
       override def onRequest(event: AtmosphereResource[HttpServletRequest, HttpServletResponse]) {
         if (event ne null) {
-          event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_RESOURCE, event)
-          event.getRequest.setAttribute(ReflectorServletProcessor.ATMOSPHERE_HANDLER, this)
+          event.getRequest.setAttribute(AtmosphereServlet.ATMOSPHERE_RESOURCE, event)
+          event.getRequest.setAttribute(AtmosphereServlet.ATMOSPHERE_HANDLER, this)
           service(event.getRequest, event.getResponse)
         }
       }
@@ -42,7 +42,10 @@ class AtmosphereRestServlet extends ServletContainer with AtmosphereServletProce
  * <p/>
  * Used by the Akka Kernel to bootstrap REST and Comet.
  */
-class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
+class AkkaServlet extends AtmosphereServlet with Logging {
+  addInitParameter(AtmosphereServlet.DISABLE_ONSTATE_EVENT,"true")
+  addInitParameter(AtmosphereServlet.BROADCASTER_CLASS,classOf[AkkaBroadcaster].getName)
+
   lazy val servlet = createRestServlet
 
   protected def createRestServlet : AtmosphereRestServlet = new AtmosphereRestServlet {
@@ -53,9 +56,9 @@ class AkkaServlet extends org.atmosphere.cpr.AtmosphereServlet with Logging {
    * Instead we specify what semantics we want in code.
    */
   override def loadConfiguration(sc: ServletConfig) {
-    config = new AtmosphereConfig { supportSession = false }
-    setDefaultBroadcasterClassName(classOf[AkkaBroadcaster].getName)
-    atmosphereHandlers.put("/*", new AtmosphereServlet.AtmosphereHandlerWrapper(servlet, new AkkaBroadcaster))
+    config.setSupportSession(false)
+    isBroadcasterSpecified = true
+    addAtmosphereHandler("/*", servlet, new AkkaBroadcaster)
   }
 
    /**
