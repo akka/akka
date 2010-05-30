@@ -1,6 +1,6 @@
 package se.scalablesolutions.akka.persistence.redis
 
-import junit.framework.TestCase
+import org.scalatest.junit.JUnitSuite
 
 import org.junit.{Test, Before}
 import org.junit.Assert._
@@ -96,7 +96,7 @@ class AccountActor extends Transactor {
   }
 }
 
-class RedisPersistentActorSpec extends TestCase {
+class RedisPersistentActorSpec extends JUnitSuite {
   @Test
   def testSuccessfulDebit = {
     val bactor = actorOf[AccountActor]
