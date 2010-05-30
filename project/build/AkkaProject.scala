@@ -15,7 +15,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // project versions
   val JERSEY_VERSION = "1.1.5"
-  val ATMO_VERSION = "0.5.4"
+  val ATMO_VERSION = "0.6-SNAPSHOT"
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
@@ -59,10 +59,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", sunjdmkRepo)
   val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", sunjdmkRepo)
   def javaNetRepo             = "java.net Repo" at "http://download.java.net/maven/2"
+  def sonatypeSnapshotRepo    = "Sonatype OSS Repo" at "http://oss.sonatype.org/content/repositories/snapshots"
   val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", javaNetRepo)
   val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", javaNetRepo)
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
-  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", javaNetRepo)
+  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
 
   /* These are not needed and can possibly be deleted.
