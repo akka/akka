@@ -18,7 +18,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val ATMO_VERSION = "0.5.4"
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
-  val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC2-SNAPSHOT"
+  val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
   val MULTIVERSE_VERSION = "0.5.2"
 
   // ------------------------------------------------------------
