@@ -234,7 +234,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val camel_core = "org.apache.camel" % "camel-core" % "2.2.0" % "compile"
+    val camel_core = "org.apache.camel" % "camel-core" % "2.3.0" % "compile"
   }
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
@@ -337,11 +337,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
-    val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
     val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE" % "compile"
-    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.2.0" % "compile"
-    val camel_jms = "org.apache.camel" % "camel-jms" % "2.2.0" % "compile"
-    val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.0" % "compile"
+    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.3.0" % "compile"
+    val camel_jms = "org.apache.camel" % "camel-jms" % "2.3.0" % "compile"
+    val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.2" % "compile"
   }
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
