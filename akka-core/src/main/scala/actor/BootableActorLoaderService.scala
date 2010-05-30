@@ -46,12 +46,11 @@ trait BootableActorLoaderService extends Bootable with Logging {
       log.debug("Loading dependencies [%s]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
 
-      val parentClassLoader = classOf[Seq[_]].getClassLoader
       URLClassLoader.newInstance(
         allJars.toArray.asInstanceOf[Array[URL]],
-        ClassLoader.getSystemClassLoader)
+        Thread.currentThread.getContextClassLoader)
         //parentClassLoader)
-    } else getClass.getClassLoader)
+    } else Thread.currentThread.getContextClassLoader)
   }
 
   abstract override def onLoad = {
@@ -62,5 +61,8 @@ trait BootableActorLoaderService extends Bootable with Logging {
     super.onLoad
   }
 
-  abstract override def onUnload = ActorRegistry.shutdownAll
+  abstract override def onUnload = {
+    super.onUnload
+    ActorRegistry.shutdownAll
+  }
 }
