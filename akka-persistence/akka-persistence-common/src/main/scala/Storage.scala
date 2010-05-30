@@ -81,7 +81,7 @@ trait Storage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
-  with Transactional with Committable with Logging {
+  with Transactional with Committable with Abortable with Logging {
   protected val newAndUpdatedEntries = TransactionalState.newMap[K, V]
   protected val removedEntries = TransactionalState.newVector[K]
   protected val shouldClearOnCommit = TransactionalRef[Boolean]()
@@ -95,6 +95,12 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     storage.insertMapStorageEntriesFor(uuid, newAndUpdatedEntries.toList)
     newAndUpdatedEntries.clear
     removedEntries.clear
+  }
+
+  def abort = {
+    newAndUpdatedEntries.clear
+    removedEntries.clear
+    shouldClearOnCommit.swap(false)
   }
 
   def -=(key: K) = {
@@ -188,7 +194,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable {
+trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable {
   protected val newElems = TransactionalState.newVector[T]
   protected val updatedElems = TransactionalState.newMap[Int, T]
   protected val removedElems = TransactionalState.newVector[T]
@@ -201,6 +207,13 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
     for (entry <- updatedElems) storage.updateVectorStorageEntryFor(uuid, entry._1, entry._2)
     newElems.clear
     updatedElems.clear
+  }
+
+  def abort = {
+    newElems.clear
+    updatedElems.clear
+    removedElems.clear
+    shouldClearOnCommit.swap(false)
   }
 
   def +(elem: T) = add(elem)
@@ -262,7 +275,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentRef[T] extends Transactional with Committable {
+trait PersistentRef[T] extends Transactional with Committable with Abortable {
   protected val ref = new TransactionalRef[T]
   
   val storage: RefStorageBackend[T]
@@ -271,6 +284,8 @@ trait PersistentRef[T] extends Transactional with Committable {
     storage.insertRefStorageFor(uuid, ref.get.get)
     ref.swap(null.asInstanceOf[T]) 
   }
+
+  def abort = ref.swap(null.asInstanceOf[T]) 
 
   def swap(elem: T) = {
     register
@@ -319,7 +334,7 @@ trait PersistentRef[T] extends Transactional with Committable {
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
 trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
-  with Transactional with Committable with Logging {
+  with Transactional with Committable with Abortable with Logging {
 
   sealed trait QueueOp
   case object ENQ extends QueueOp
@@ -356,7 +371,16 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     enqueuedNDequeuedEntries.clear
     localQ.swap(Queue.empty)
     pickMeForDQ.swap(0)
+    shouldClearOnCommit.swap(false)
   }
+
+  def abort = {
+    enqueuedNDequeuedEntries.clear
+    shouldClearOnCommit.swap(false)
+    localQ.swap(Queue.empty)
+    pickMeForDQ.swap(0)
+  }
+
 
   override def enqueue(elems: A*) {
     register
@@ -382,9 +406,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
         val (a, q) = localQ.get.get.dequeue
         localQ.swap(q)
         a
-      }
-      else 
-        throw new NoSuchElementException("trying to dequeue from empty queue")
+      } else throw new NoSuchElementException("trying to dequeue from empty queue")
     }
   }
 
@@ -457,9 +479,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
  *
  * @author <a href="http://debasishg.blogspot.com"</a>
  */
-trait PersistentSortedSet[A] 
-  extends Transactional 
-  with Committable {
+trait PersistentSortedSet[A] extends Transactional with Committable with Abortable {
 
   protected val newElems = TransactionalState.newMap[A, Float]
   protected val removedElems = TransactionalState.newVector[A]
@@ -469,6 +489,11 @@ trait PersistentSortedSet[A]
   def commit = {
     for ((element, score) <- newElems) storage.zadd(uuid, String.valueOf(score), element)
     for (element <- removedElems) storage.zrem(uuid, element)
+    newElems.clear
+    removedElems.clear
+  }
+
+  def abort = {
     newElems.clear
     removedElems.clear
   }
