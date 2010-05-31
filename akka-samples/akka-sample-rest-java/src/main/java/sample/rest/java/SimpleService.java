@@ -4,10 +4,6 @@
 
 package sample.rest.java;
 
-import javax.ws.rs.Path;
-import javax.ws.rs.GET;
-import javax.ws.rs.Produces;
-
 import se.scalablesolutions.akka.actor.ActiveObject;
 import se.scalablesolutions.akka.actor.ActiveObjectContext;
 import se.scalablesolutions.akka.actor.annotation.transactionrequired;
@@ -16,14 +12,6 @@ import se.scalablesolutions.akka.actor.annotation.postrestart;
 import se.scalablesolutions.akka.stm.TransactionalState;
 import se.scalablesolutions.akka.stm.TransactionalMap;
 
-/**                                
- * Try service out by invoking (multiple times):
- * <pre>
- * curl http://localhost:9998/javacount
- * </pre>
- * Or browse to the URL from a web browser.
- */
-@Path("/javacount")
 @transactionrequired
 public class SimpleService {
   private String KEY = "COUNTER";
@@ -32,8 +20,6 @@ public class SimpleService {
   private TransactionalMap<String, Integer> storage;
   private Receiver receiver = ActiveObject.newInstance(Receiver.class);
   
-  @GET
-  @Produces({"application/json"})
   public String count() {
     if (storage == null) storage = TransactionalState.newMap();
     if (!hasStartedTicking) {

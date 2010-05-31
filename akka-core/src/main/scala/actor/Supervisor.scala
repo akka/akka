@@ -126,7 +126,7 @@ sealed class Supervisor private[akka] (
 
   private val childActors = new ConcurrentHashMap[String, List[ActorRef]]
   private val childSupervisors = new CopyOnWriteArrayList[Supervisor]
-  private[akka] val supervisor = SupervisorActor(handler, trapExceptions)
+  private[akka] val supervisor = actorOf(new SupervisorActor(handler, trapExceptions)).start
 
   def uuid = supervisor.uuid
 
