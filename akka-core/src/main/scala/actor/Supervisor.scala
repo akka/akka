@@ -48,46 +48,6 @@ object Supervisor {
 }
 
 /**
- * Factory object for creating supervisors as Actors, it has both a declarative and programatic API.
- * <p/>
- *
- * Here is a sample on how to use the programmatic API (note that the supervisor is automatically started):
- * <pre>
- * val supervisor = SupervisorActor(AllForOneStrategy(maxNrOfRetries, timeRange), Array(classOf[Throwable]))
- *
- * Here is a sample on how to use the declarative API:
- * <pre>
- *  val supervisor = SupervisorActor(
- *    SupervisorConfig(
- *      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception]),
- *      Supervise(
- *        myFirstActor,
- *        LifeCycle(Permanent)) ::
- *      Supervise(
- *        mySecondActor,
- *        LifeCycle(Permanent)) ::
- *      Nil))
- * </pre>
- *
- * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
- * <pre>
- * supervisor.link(child)
- * supervisor.unlink(child)
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object SupervisorActor {
-  def apply(config: SupervisorConfig): ActorRef = {
-    val (handler, trapExits) = SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config)
-    actorOf(new SupervisorActor(handler, trapExits)).start
-  }
-
-  def apply(handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]): ActorRef =
-    actorOf(new SupervisorActor(handler, trapExceptions)).start
-}
-
-/**
  * Use this factory instead of the Supervisor factory object if you want to control
  * instantiation and starting of the Supervisor, if not then it is easier and better
  * to use the Supervisor factory object.
@@ -217,19 +177,7 @@ sealed class Supervisor private[akka] (
 }
 
 /**
- * Use this class when you want to create a supervisor dynamically that should only
- * manage its child children and not have any functionality by itself.
- * <p/>
- * Here is a sample on how to use it:
- * <pre>
- * val supervisor = Supervisor(AllForOneStrategy(maxNrOfRetries, timeRange), Array(classOf[Throwable]))
- * </pre>
- *
- * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
- * <pre>
- * supervisor.link(child)
- * supervisor.unlink(child)
- * </pre>
+ * For internal use only.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
