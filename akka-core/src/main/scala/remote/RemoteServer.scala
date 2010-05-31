@@ -366,7 +366,7 @@ class RemoteServerHandler(
     val message = RemoteProtocolBuilder.getMessage(request)
     if (request.hasSender) {
       val sender = request.getSender
-      if (sender ne null) actorRef.!(message)(Some(ActorRef.fromProtocol(sender, applicationLoader)))
+      if (sender ne null) actorRef.!(message)(Some(ActorRef.fromProtobuf(sender, applicationLoader)))
     } else {
       try {
         val resultOrNone = actorRef !! message
