@@ -33,21 +33,23 @@ object CamelServiceFeatureTest {
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
   import CamelServiceFeatureTest._
 
-  var service: CamelService = CamelService.newInstance
+  var service: CamelService = _
 
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
+    // create new CamelService instance
+    service = CamelService.newInstance
     // register test consumer before starting the CamelService
     actorOf(new TestConsumer("direct:publish-test-1")).start
-    // Consigure a custom camel route
+    // Configure a custom camel route
     CamelContextManager.init
     CamelContextManager.context.addRoutes(new TestRoute)
     // set expectations for testing purposes
-    service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
+    service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishActorCount(1)
     // start the CamelService
     service.load
     // await publication of first test consumer
-    service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
+    service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublishActor
   }
 
   override protected def afterAll = {
@@ -60,9 +62,9 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access registered consumer actors via Camel direct-endpoints") {
 
       given("two consumer actors registered before and after CamelService startup")
-      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishActorCount(1)
       actorOf(new TestConsumer("direct:publish-test-2")).start
-      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublishActor
 
       when("requests are sent to these actors")
       val response1 = CamelContextManager.template.requestBody("direct:publish-test-1", "msg1")
@@ -81,14 +83,14 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("a consumer actor that has been stopped")
       assert(CamelContextManager.context.hasEndpoint(endpointUri) eq null)
-      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishCount(1)
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectPublishActorCount(1)
       val consumer = actorOf(new TestConsumer(endpointUri)).start
-      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublish
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitPublishActor
       assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
 
-      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectUnpublishCount(1)
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].expectUnpublishActorCount(1)
       consumer.stop
-      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitUnpublish
+      service.consumerPublisher.actor.asInstanceOf[ConsumerPublisher].awaitUnpublishActor
       // endpoint is still there but the route has been stopped
       assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
 

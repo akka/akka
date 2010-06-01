@@ -4,8 +4,8 @@
 
 package se.scalablesolutions.akka.camel.service
 
-import se.scalablesolutions.akka.actor.ActorRegistry
 import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
 import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 
@@ -21,7 +21,13 @@ trait CamelService extends Bootable with Logging {
   import CamelContextManager._
 
   private[camel] val consumerPublisher = actorOf[ConsumerPublisher]
-  private[camel] val publishRequestor =  actorOf(new PublishRequestor(consumerPublisher))
+  private[camel] val publishRequestor =  actorOf[PublishRequestor]
+
+  // add listener for actor registration events
+  ActorRegistry.addListener(publishRequestor)
+
+  // add listener for AspectInit registration events
+  AspectInitRegistry.addListener(publishRequestor)
 
   /**
    * Starts the CamelService. Any started actor that is a consumer actor will be (asynchronously)
@@ -38,19 +44,16 @@ trait CamelService extends Bootable with Logging {
     // start actor that exposes consumer actors via Camel endpoints
     consumerPublisher.start
 
-    // add listener for actor registration events
-    ActorRegistry.addRegistrationListener(publishRequestor.start)
-
-    // publish already registered consumer actors
-    for (actor <- ActorRegistry.actors; event <- ConsumerRegistered.forConsumer(actor)) consumerPublisher ! event
+    // init publishRequestor so that buffered and future events are delivered to consumerPublisher
+    publishRequestor ! PublishRequestorInit(consumerPublisher)
   }
 
   /**
    * Stops the CamelService.
    */
   abstract override def onUnload = {
-    ActorRegistry.removeRegistrationListener(publishRequestor)
-    publishRequestor.stop
+    ActorRegistry.removeListener(publishRequestor)
+    AspectInitRegistry.removeListener(publishRequestor)
     consumerPublisher.stop
     stop
     super.onUnload
@@ -82,5 +85,14 @@ object CamelService {
   /**
    * Creates a new CamelService instance.
    */
-  def newInstance: CamelService = new CamelService {}
+  def newInstance: CamelService = new DefaultCamelService
+}
+
+/**
+ * Default CamelService implementation to be created in Java applications with
+ * <pre>
+ * CamelService service = new DefaultCamelService()
+ * </pre>
+ */
+class DefaultCamelService extends CamelService {
 }
