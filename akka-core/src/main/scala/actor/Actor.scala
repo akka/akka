@@ -440,11 +440,3 @@ trait Actor extends Logging {
 
   override def toString = self.toString
 }
-
-// FIXME remove the ActorMessageInvoker class
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class ActorMessageInvoker private[akka] (val actorRef: ActorRef) extends MessageInvoker {
-  def invoke(handle: MessageInvocation) = actorRef.invoke(handle)
-}
