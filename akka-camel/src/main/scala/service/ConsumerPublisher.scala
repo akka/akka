@@ -4,14 +4,17 @@
 package se.scalablesolutions.akka.camel.service
 
 import java.io.InputStream
+import java.lang.reflect.Method
 import java.util.concurrent.CountDownLatch
 
 import org.apache.camel.builder.RouteBuilder
 
-import se.scalablesolutions.akka.actor.{ActorUnregistered, ActorRegistered, Actor, ActorRef}
+import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.{Consumer, CamelContextManager}
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.camel.component.ActiveObjectComponent
+import collection.mutable.ListBuffer
 
 /**
  * Actor that publishes consumer actors as Camel endpoints at the CamelContext managed
@@ -22,20 +25,29 @@ import se.scalablesolutions.akka.util.Logging
  * @author Martin Krasser
  */
 class ConsumerPublisher extends Actor with Logging {
-  @volatile private var publishLatch = new CountDownLatch(0)
-  @volatile private var unpublishLatch = new CountDownLatch(0)
+
+  // TODO: redesign waiting (actor testing) mechanism
+  //       - do not use custom methods on actor
+  //       - only interact by passing messages
+  // TODO: factor out code that is needed for testing
+
+  @volatile private var publishActorLatch = new CountDownLatch(0)
+  @volatile private var unpublishActorLatch = new CountDownLatch(0)
 
   /**
-   * Adds a route to the actor identified by a Publish message to the global CamelContext.
+   *  Adds a route to the actor identified by a Publish message to the global CamelContext.
    */
   protected def receive = {
     case r: ConsumerRegistered => {
       handleConsumerRegistered(r)
-      publishLatch.countDown // needed for testing only.
+      publishActorLatch.countDown // needed for testing only.
     }
     case u: ConsumerUnregistered => {
       handleConsumerUnregistered(u)
-      unpublishLatch.countDown // needed for testing only.
+      unpublishActorLatch.countDown // needed for testing only.
+    }
+    case d: ConsumerMethodRegistered => {
+      handleConsumerMethodDetected(d)
     }
     case _ => { /* ignore */}
   }
@@ -43,24 +55,24 @@ class ConsumerPublisher extends Actor with Logging {
   /**
    * Sets the expected number of actors to be published. Used for testing only.
    */
-  private[camel] def expectPublishCount(count: Int): Unit =
-    publishLatch = new CountDownLatch(count)
+  private[camel] def expectPublishActorCount(count: Int): Unit =
+    publishActorLatch = new CountDownLatch(count)
 
   /**
    * Sets the expected number of actors to be unpublished. Used for testing only.
    */
-  private[camel] def expectUnpublishCount(count: Int): Unit =
-    unpublishLatch = new CountDownLatch(count)
+  private[camel] def expectUnpublishActorCount(count: Int): Unit =
+    unpublishActorLatch = new CountDownLatch(count)
 
   /**
    * Waits for the expected number of actors to be published. Used for testing only.
    */
-  private[camel] def awaitPublish = publishLatch.await
+  private[camel] def awaitPublishActor = publishActorLatch.await
 
   /**
    * Waits for the expected number of actors to be unpublished. Used for testing only.
    */
-  private[camel] def awaitUnpublish = unpublishLatch.await
+  private[camel] def awaitUnpublishActor = unpublishActorLatch.await
 
   /**
    * Creates a route to the registered consumer actor.
@@ -77,6 +89,17 @@ class ConsumerPublisher extends Actor with Logging {
     CamelContextManager.context.stopRoute(event.id)
     log.info("unpublished actor %s (%s) from endpoint %s" format (event.clazz, event.id, event.uri))
   }
+
+  private def handleConsumerMethodDetected(event: ConsumerMethodRegistered) {
+    // using the actor uuid is highly experimental
+    val objectId = event.init.actorRef.uuid
+    val targetClass = event.init.target.getName
+    val targetMethod = event.method.getName
+
+    CamelContextManager.activeObjectRegistry.put(objectId, event.activeObject)
+    CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
+    log.info("published method %s.%s (%s) at endpoint %s" format (targetClass, targetMethod, objectId, event.uri))
+  }
 }
 
 /**
@@ -90,6 +113,12 @@ class ConsumerPublisher extends Actor with Logging {
  * @author Martin Krasser
  */
 class ConsumerRoute(val endpointUri: String, id: String, uuid: Boolean) extends RouteBuilder {
+  //
+  //
+  // TODO: factor out duplicated code from ConsumerRoute and ConsumerMethodRoute
+  //
+  //
+
   // TODO: make conversions configurable
   private val bodyConversions = Map(
     "file" -> classOf[InputStream]
@@ -106,20 +135,69 @@ class ConsumerRoute(val endpointUri: String, id: String, uuid: Boolean) extends 
   private def actorUri = (if (uuid) "actor:uuid:%s" else "actor:id:%s") format id
 }
 
+class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends RouteBuilder {
+  //
+  //
+  // TODO: factor out duplicated code from ConsumerRoute and ConsumerMethodRoute
+  //
+  //
+  
+  // TODO: make conversions configurable
+  private val bodyConversions = Map(
+    "file" -> classOf[InputStream]
+  )
+
+  def configure = {
+    val schema = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
+    bodyConversions.get(schema) match {
+      case Some(clazz) => from(endpointUri).convertBodyTo(clazz).to(activeObjectUri)
+      case None        => from(endpointUri).to(activeObjectUri)
+    }
+  }
+
+  private def activeObjectUri = "%s:%s?method=%s" format (ActiveObjectComponent.DEFAULT_SCHEMA, id, method)
+}
+
 /**
  * A registration listener that triggers publication and un-publication of consumer actors.
  *
  * @author Martin Krasser
  */
-class PublishRequestor(consumerPublisher: ActorRef) extends Actor {
+class PublishRequestor extends Actor {
+  private val events = ListBuffer[ConsumerEvent]()
+  private var publisher: Option[ActorRef] = None
+
   protected def receive = {
-    case ActorRegistered(actor)   => for (event <- ConsumerRegistered.forConsumer(actor)) consumerPublisher ! event
-    case ActorUnregistered(actor) => for (event <- ConsumerUnregistered.forConsumer(actor)) consumerPublisher ! event
+    case ActorRegistered(actor) =>
+      for (event <- ConsumerRegistered.forConsumer(actor)) deliverCurrentEvent(event)
+    case ActorUnregistered(actor) => 
+      for (event <- ConsumerUnregistered.forConsumer(actor)) deliverCurrentEvent(event)
+    case AspectInitRegistered(proxy, init) =>
+      for (event <- ConsumerMethodRegistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
+    case PublishRequestorInit(pub) => {
+      publisher = Some(pub)
+      deliverBufferedEvents
+    }
+    case _ => { /* ignore */ }
+  }
+
+  private def deliverCurrentEvent(event: ConsumerEvent) = {
+    publisher match {
+      case Some(pub) => pub ! event
+      case None      => events += event
+    }
+  }
+
+  private def deliverBufferedEvents = {
+    for (event <- events) deliverCurrentEvent(event)
+    events.clear
   }
 }
 
+case class PublishRequestorInit(consumerPublisher: ActorRef)
+
 /**
- * Consumer actor lifecycle event.
+ * A consumer event.
  *
  * @author Martin Krasser
  */
@@ -151,6 +229,8 @@ case class ConsumerRegistered(clazz: String, uri: String, id: String, uuid: Bool
  */
 case class ConsumerUnregistered(clazz: String, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
 
+case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
+
 /**
  * @author Martin Krasser
  */
@@ -176,6 +256,17 @@ private[camel] object ConsumerUnregistered {
   def forConsumer(actorRef: ActorRef): Option[ConsumerUnregistered] = actorRef match {
     case ConsumerDescriptor(clazz, uri, id, uuid) => Some(ConsumerUnregistered(clazz, uri, id, uuid))
     case _                                        => None
+  }
+}
+
+private[camel] object ConsumerMethodRegistered {
+  def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodRegistered] = {
+    // TODO: support/test annotations on interface methods
+    // TODO: support/test annotations on superclass methods
+    // TODO: document that overloaded methods are not supported
+    if (init.remoteAddress.isDefined) Nil // let remote node publish active object methods on endpoints
+    else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
+    yield ConsumerMethodRegistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
   }
 }
 

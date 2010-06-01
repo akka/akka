@@ -37,7 +37,7 @@ class Producer1 extends Actor with Producer {
 }
 
 class Consumer1 extends Actor with Consumer with Logging {
-  def endpointUri = "file:data/input"
+  def endpointUri = "file:data/input1"
 
   def receive = {
     case msg: Message => log.info("received %s" format msg.bodyAs[String])

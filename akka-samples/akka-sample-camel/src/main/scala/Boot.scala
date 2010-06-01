@@ -6,10 +6,10 @@ import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import se.scalablesolutions.akka.actor.SupervisorFactory
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.actor.{ActiveObject, SupervisorFactory}
 
 /**
  * @author Martin Krasser
@@ -62,6 +62,9 @@ class Boot {
 
   actorOf[Consumer4].start // POSTing "stop" to http://0.0.0.0:8877/camel/stop stops and unpublishes this actor
   actorOf[Consumer5].start // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
+
+  // Publish active object methods on endpoints
+  ActiveObject.newInstance(classOf[Consumer10])
 }
 
 class CustomRouteBuilder extends RouteBuilder {

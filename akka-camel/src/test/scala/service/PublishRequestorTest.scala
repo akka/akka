@@ -3,10 +3,11 @@ package se.scalablesolutions.akka.camel.service
 import _root_.org.junit.{Before, After, Test}
 import org.scalatest.junit.JUnitSuite
 
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorRegistry, ActorRegistered, ActorUnregistered}
+import se.scalablesolutions.akka.actor.Actor._
+
 import se.scalablesolutions.akka.camel.Consumer
 import se.scalablesolutions.akka.camel.support.{Receive, Countdown}
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorRegistry, ActorRegistered, ActorUnregistered}
-import Actor._
 
 object PublishRequestorTest {
   class PublisherMock extends Actor with Receive[ConsumerEvent] {
@@ -28,11 +29,13 @@ class PublishRequestorTest extends JUnitSuite {
 
   @Before def setUp = {
     publisher = actorOf(new PublisherMock with Countdown[ConsumerEvent]).start
-    requestor = actorOf(new PublishRequestor(publisher)).start
+    requestor = actorOf(new PublishRequestor).start
+    requestor ! PublishRequestorInit(publisher)
     consumer = actorOf(new Actor with Consumer {
       def endpointUri = "mock:test"
       protected def receive = null
     }).start
+
   }
 
   @After def tearDown = {
