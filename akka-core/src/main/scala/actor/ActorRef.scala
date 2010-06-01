@@ -595,7 +595,7 @@ sealed class LocalActorRef private[akka](
   @volatile private[akka] var _supervisor: Option[ActorRef] = None
 
   protected[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
-  protected[this] val actorInstance = new AtomicReference[Actor](newActor)
+  protected[this] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
