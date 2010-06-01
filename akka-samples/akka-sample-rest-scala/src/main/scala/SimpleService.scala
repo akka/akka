@@ -158,7 +158,7 @@ class Chat {
 }
 
 object ChatActor {
-  case class ChatMsg(val who: String, val what: String, val msg: String)        
+  case class ChatMsg(val who: String, val what: String, val msg: String)
 }
 
 class ChatActor extends Actor with Logging {

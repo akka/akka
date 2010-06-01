@@ -222,7 +222,7 @@ trait ActorRef extends TransactionManagement {
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
   def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
- 
+
   /**
    * Is the actor being restarted?
    */
@@ -356,7 +356,7 @@ trait ActorRef extends TransactionManagement {
     "\n\tYou have probably: " +
     "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
     "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object.")
-    
+
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
@@ -1224,7 +1224,7 @@ private[akka] case class RemoteActorRef private[akka] (
   extends ActorRef {
   _uuid = uuuid
   timeout = _timeout
-  
+
   start
   lazy val remoteClient = RemoteClient.clientFor(hostname, port, loader)
 

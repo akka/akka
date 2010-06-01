@@ -23,7 +23,7 @@ class Boot extends Logging {
   def boot {
     // where to search snippet
     LiftRules.addToPackages("sample.lift")
-    
+
     LiftRules.httpAuthProtectedResource.prepend {
       case (Req("liftcount" :: Nil, _, _)) => Full(AuthRole("admin"))
     }
@@ -35,9 +35,9 @@ class Boot extends Logging {
         true
       }
     }
-    
+
     LiftRules.passNotFoundToChain = true
-    
+
     val factory = SupervisorFactory(
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
@@ -49,7 +49,7 @@ class Boot extends Logging {
           LifeCycle(Permanent)) ::
         Nil))
     factory.newInstance.start
-    
+
     // Build SiteMap
     // val entries = Menu(Loc("Home", List("index"), "Home")) :: Nil
     // LiftRules.setSiteMap(SiteMap(entries:_*))

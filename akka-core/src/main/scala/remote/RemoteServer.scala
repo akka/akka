@@ -184,7 +184,7 @@ class RemoteServer extends Logging {
   def start(_hostname: String, _port: Int): RemoteServer =
     start(_hostname, _port, None)
 
-  private def start(_hostname: String, _port: Int, loader: ClassLoader): RemoteServer = 
+  private def start(_hostname: String, _port: Int, loader: ClassLoader): RemoteServer =
     start(_hostname, _port, Some(loader))
 
   private def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): RemoteServer = synchronized {
