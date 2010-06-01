@@ -7,19 +7,19 @@ package se.scalablesolutions.akka.dispatch
 import java.util.{LinkedList, Queue, List}
 import java.util.HashMap
 
-import se.scalablesolutions.akka.actor.{ActorMessageInvoker, Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) extends MessageDispatcher {
   @volatile protected var active: Boolean = false
   protected val queue = new ReactiveMessageQueue(name)
-  protected val messageInvokers = new HashMap[AnyRef, MessageInvoker]
+  protected val messageInvokers = new HashMap[ActorRef, ActorRef]
   protected var selectorThread: Thread = _
   protected val guard = new Object
 
   def dispatch(invocation: MessageInvocation) = queue.append(invocation)
 
   override def register(actorRef: ActorRef) = synchronized {
-    messageInvokers.put(actorRef, new ActorMessageInvoker(actorRef))
+    messageInvokers.put(actorRef, actorRef)
     super.register(actorRef)
   }
 
