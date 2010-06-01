@@ -66,14 +66,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
 
-  /* These are not needed and can possibly be deleted.
-  val databinder = "DataBinder" at "http://databinder.net/repo"
-  // val configgy = "Configgy" at "http://www.lag.net/repo"
-  val codehaus = "Codehaus" at "http://repository.codehaus.org"
-  val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val google = "Google" at "http://google-maven-repository.googlecode.com/svn/repository"
-  */
-
   // ------------------------------------------------------------
   // project defintions
   lazy val akka_core = project("akka-core", "akka-core", new AkkaCoreProject(_))
@@ -108,6 +100,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // create a manifest with all akka jars and dependency jars on classpath
   override def manifestClassPath = Some(allArtifacts.getFiles
     .filter(_.getName.endsWith(".jar"))
+    .filter(!_.getName.contains("servlet_2.4"))
     .filter(!_.getName.contains("scala-library"))
     .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") +

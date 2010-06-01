@@ -88,7 +88,8 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 * </pre>
 * <p/>
 *
-* IMPORTANT:
+* <b>IMPORTANT</b>:
+* <p/>
 * You can *not* call 'agent.get', 'agent()' or use the monadic 'foreach',
 * 'map' and 'flatMap' within an enclosing transaction since that would block
 * the transaction indefinitely. But all other operations are fine. The system
@@ -101,7 +102,6 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 sealed class Agent[T] private (initialValue: T) {
   import Agent._
   import Actor._
-  if (initialValue eq null) throw new AgentException("Initial value to Agent can't be NULL")
 
   private val dispatcher = actorOf(new AgentDispatcher[T](initialValue)).start
 
@@ -233,6 +233,5 @@ final class AgentDispatcher[T] private[akka] (initialValue: T) extends Transacto
    * Performs a CAS operation, atomically swapping the internal state with the value
    * provided as a by-name parameter.
    */
-  private final def swap(newData: => T): Unit = value.swap(newData)
+  private def swap(newData: => T): Unit = value.swap(newData)
 }
-
