@@ -295,8 +295,10 @@ trait Actor extends Logging {
   type Receive = Actor.Receive
 
    /*
-    * For internal use only, functions as the implicit sender references when invoking
-    * one of the message send functions (!, !! and !!!).
+    * Option[ActorRef] representation of the 'self' ActorRef reference.
+    * <p/>
+    * Mainly for internal use, functions as the implicit sender references when invoking
+    * one of the message send functions ('!', '!!' and '!!!').
     */
   implicit val optionSelf: Option[ActorRef] = {
     val ref = Actor.actorRefInCreation.value
@@ -313,8 +315,10 @@ trait Actor extends Logging {
   }
 
   /*
-   * For internal use only, functions as the implicit sender references when invoking
-   * the forward function.
+   * Some[ActorRef] representation of the 'self' ActorRef reference.
+   * <p/>
+   * Mainly for internal use, functions as the implicit sender references when invoking
+   * the 'forward' function.
    */
   implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
 
@@ -325,9 +329,31 @@ trait Actor extends Logging {
    * <pre>
    * self ! message
    * </pre>
+   * Here you also find most of the Actor API. 
+   * <p/>
+   * For example fields like:
+   * <pre>
+   * self.dispactcher = ...
+   * self.trapExit = ...
+   * self.faultHandler = ...
+   * self.lifeCycle = ...
+   * self.sender
+   * </pre>
+   * <p/>
+   * Here you also find methods like:
+   * <pre>
+   * self.reply(..)
+   * self.link(..)
+   * self.unlink(..)
+   * self.start(..)
+   * self.stop(..)
+   * </pre>
    */
-  val self: ActorRef = optionSelf.get
-  self.id = getClass.getName
+  val self: ActorRef = {
+    val zelf = optionSelf.get
+    zelf.id = getClass.getName
+    zelf
+  }
 
   /**
    * User overridable callback/setting.
@@ -339,64 +365,64 @@ trait Actor extends Logging {
    * <pre>
    *   def receive = {
    *     case Ping =&gt;
-   *       println("got a ping")
+   *       log.info("got a 'Ping' message")
    *       self.reply("pong")
    *
    *     case OneWay =&gt;
-   *       println("got a oneway")
+   *       log.info("got a 'OneWay' message")
    *
-   *     case _ =&gt;
-   *       println("unknown message, ignoring")
+   *     case unknown =&gt;
+   *       log.warning("unknown message [%s], ignoring", unknown)
    * }
    * </pre>
    */
   protected def receive: Receive
 
   /**
-   * User overridable callback/setting.
+   * User overridable callback.
    * <p/>
-   * Optional callback method that is called during initialization.
-   * To be implemented by subclassing actor.
+   * Is called when an Actor is started by invoking 'actor.start'.
    */
   def init {}
+  
+  /**
+   * User overridable callback.
+   * <p/>
+   * Is called when 'actor.stop' is invoked.
+   */
+  def shutdown {}
 
   /**
-   * User overridable callback/setting.
+   * User overridable callback.
    * <p/>
-   * Mandatory callback method that is called during restart and reinitialization after a server crash.
-   * To be implemented by subclassing actor.
+   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
    */
   def preRestart(reason: Throwable) {}
 
   /**
-   * User overridable callback/setting.
+   * User overridable callback.
    * <p/>
-   * Mandatory callback method that is called during restart and reinitialization after a server crash.
-   * To be implemented by subclassing actor.
+   * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
   def postRestart(reason: Throwable) {}
 
   /**
-   * User overridable callback/setting.
+   * User overridable callback.
    * <p/>
-   * Optional callback method that is called during termination.
-   * To be implemented by subclassing actor.
+   * Is called during initialization. Can be used to initialize transactional state. Will be invoked within a transaction.
    */
   def initTransactionalState {}
-
-  /**
-   * User overridable callback/setting.
-   * <p/>
-   * Optional callback method that is called during termination.
-   * To be implemented by subclassing actor.
-   */
-  def shutdown {}
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
-  private[akka] def base: Receive = lifeCycles orElse (self.hotswap getOrElse receive)
+  private[akka] def base: Receive = try {
+    lifeCycles orElse (self.hotswap getOrElse receive)
+  } catch {
+    case e: NullPointerException => throw new IllegalStateException(
+      "The 'self' ActorRef reference for [" + getClass.getName + "] is NULL, error in the ActorRef initialization process.")
+  }
 
   private val lifeCycles: Receive = {
     case HotSwap(code) =>        self.hotswap = code
@@ -415,36 +441,8 @@ trait Actor extends Logging {
   override def toString = self.toString
 }
 
+// FIXME remove the ActorMessageInvoker class
 /**
- * Base class for the different dispatcher types.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-sealed abstract class DispatcherType
-
-/**
- * Module that holds the different dispatcher types.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object DispatcherType {
-  case object EventBasedThreadPooledProxyInvokingDispatcher extends DispatcherType
-  case object EventBasedSingleThreadDispatcher extends DispatcherType
-  case object EventBasedThreadPoolDispatcher extends DispatcherType
-  case object ThreadBasedDispatcher extends DispatcherType
-}
-
-/**
- * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
- * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
- * <p/>
- * An actor has a well-defined (non-cyclic) life-cycle.
- * <pre>
- * => NEW (newly created actor) - can't receive messages (yet)
- *     => STARTED (when 'start' is invoked) - can receive messages
- *         => SHUT DOWN (when 'exit' is invoked) - can't do anything
- * </pre>
- *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActorMessageInvoker private[akka] (val actorRef: ActorRef) extends MessageInvoker {

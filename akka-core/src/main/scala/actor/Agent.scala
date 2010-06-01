@@ -103,7 +103,6 @@ sealed class Agent[T] private (initialValue: T) {
   import Actor._
 
   private val dispatcher = actorOf(new AgentDispatcher[T](initialValue)).start
-  dispatcher ! Value(initialValue)
 
   /**
   * Submits a request to read the internal state.
@@ -215,7 +214,7 @@ final class AgentDispatcher[T] private[akka] (initialValue: T) extends Transacto
   import Actor._
   log.debug("Starting up Agent [%s]", self.uuid)
 
-  private lazy val value = Ref[T]()
+  private val value = Ref[T](initialValue)
 
   /**
    * Periodically handles incoming messages.
