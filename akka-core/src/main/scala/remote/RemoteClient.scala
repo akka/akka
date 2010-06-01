@@ -82,19 +82,19 @@ object RemoteClient extends Logging {
   private[akka] def actorFor(uuid: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef =
     RemoteActorRef(uuid, className, hostname, port, timeout, loader)
 
-  def clientFor(hostname: String, port: Int): RemoteClient = 
+  def clientFor(hostname: String, port: Int): RemoteClient =
     clientFor(new InetSocketAddress(hostname, port), None)
 
-  def clientFor(hostname: String, port: Int, loader: ClassLoader): RemoteClient = 
+  def clientFor(hostname: String, port: Int, loader: ClassLoader): RemoteClient =
     clientFor(new InetSocketAddress(hostname, port), Some(loader))
 
-  def clientFor(address: InetSocketAddress): RemoteClient = 
+  def clientFor(address: InetSocketAddress): RemoteClient =
     clientFor(address, None)
 
-  def clientFor(address: InetSocketAddress, loader: ClassLoader): RemoteClient = 
+  def clientFor(address: InetSocketAddress, loader: ClassLoader): RemoteClient =
     clientFor(address, Some(loader))
 
-  private[akka] def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient = 
+  private[akka] def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient =
     clientFor(new InetSocketAddress(hostname, port), loader)
 
   private[akka] def clientFor(address: InetSocketAddress, loader: Option[ClassLoader]): RemoteClient = synchronized {
@@ -330,7 +330,7 @@ class RemoteClientHandler(val name: String,
         client.connection = bootstrap.connect(remoteAddress)
         client.connection.awaitUninterruptibly // Wait until the connection attempt succeeds or fails.
         if (!client.connection.isSuccess) {
-          client.listeners.toArray.foreach(l => 
+          client.listeners.toArray.foreach(l =>
             l.asInstanceOf[ActorRef] ! RemoteClientError(client.connection.getCause))
           log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)
         }
@@ -339,13 +339,13 @@ class RemoteClientHandler(val name: String,
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.foreach(l => 
+    client.listeners.toArray.foreach(l =>
       l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
     log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.foreach(l => 
+    client.listeners.toArray.foreach(l =>
       l.asInstanceOf[ActorRef] ! RemoteClientDisconnected(client.hostname, client.port))
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
   }

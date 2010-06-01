@@ -1,2 +1,2 @@
 #!/bin/sh
-sed -i '' 's/[[:space:]]*$//g' **/*.*
+sed -i '' 's/[[:space:]]*$//g' **/*.scala

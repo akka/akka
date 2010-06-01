@@ -329,7 +329,7 @@ trait Actor extends Logging {
    * <pre>
    * self ! message
    * </pre>
-   * Here you also find most of the Actor API. 
+   * Here you also find most of the Actor API.
    * <p/>
    * For example fields like:
    * <pre>
@@ -384,7 +384,7 @@ trait Actor extends Logging {
    * Is called when an Actor is started by invoking 'actor.start'.
    */
   def init {}
-  
+
   /**
    * User overridable callback.
    * <p/>

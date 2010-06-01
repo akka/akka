@@ -282,10 +282,10 @@ object Transaction {
           setTransaction(Some(tx))
           mtx.registerLifecycleListener(new TransactionLifecycleListener() {
             def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event.name match {
-              case "postCommit" => 
+              case "postCommit" =>
                 log.trace("Committing transaction [%s]", mtx)
                 tx.commit
-              case "postAbort" => 
+              case "postAbort" =>
                 log.trace("Aborting transaction [%s]", mtx)
                 tx.abort
               case _ => {}

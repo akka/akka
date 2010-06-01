@@ -5,7 +5,7 @@
 import sbt._
 import sbt.CompileOrder._
 import spde._
- 
+
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
@@ -26,11 +26,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val distPath = info.projectPath / "dist"
 
   override def compileOptions = super.compileOptions ++
-    Seq("-deprecation", 
-        "-Xmigration", 
-        "-Xcheckinit", 
-        "-Xstrict-warnings", 
-        "-Xwarninit", 
+    Seq("-deprecation",
+        "-Xmigration",
+        "-Xcheckinit",
+        "-Xstrict-warnings",
+        "-Xwarninit",
         "-encoding", "utf8")
         .map(x => CompileOption(x))
 
@@ -151,21 +151,21 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
         <distribution>repo</distribution>
       </license>
     </licenses>
-    
+
     // publish to local mvn
     import Process._
-    lazy val publishLocalMvn = runMvnInstall 
+    lazy val publishLocalMvn = runMvnInstall
     def runMvnInstall = task {
         for (absPath <- akkaArtifacts.getPaths) {
           val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
-          val artifactRE(path, artifactId, artifactVersion) = absPath  
-          val command = "mvn install:install-file" + 
+          val artifactRE(path, artifactId, artifactVersion) = absPath
+          val command = "mvn install:install-file" +
                         " -Dfile=" + absPath +
-                        " -DgroupId=se.scalablesolutions.akka" + 
-                        " -DartifactId=" + artifactId + 
+                        " -DgroupId=se.scalablesolutions.akka" +
+                        " -DartifactId=" + artifactId +
                         " -Dversion=" + version +
                         " -Dpackaging=jar -DgeneratePom=true"
-          command ! log  
+          command ! log
         }
         None
     } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
@@ -192,7 +192,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile"
     val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile"
     val jgroups = "jgroups" % "jgroups" % "2.9.0.GA" % "compile"
-    
+
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
@@ -220,7 +220,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
     val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
     val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
-    
+
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
@@ -302,7 +302,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val junit = "junit" % "junit" % "4.5" % "test"
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
   }
-  
+
   // ================= EXAMPLES ==================
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
     val scalaToolsSnapshots = ScalaToolsSnapshots
@@ -389,9 +389,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       !jar.toString.endsWith("scala-library-2.7.7.jar")
     )
   }
-  
-  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar") 
-  
+
+  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
+
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject
 
@@ -402,7 +402,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dist = distAction
     def distAction = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
       `package`, packageDocs, packageSrc) describedAs("Deploying")
-    def deployTask(jar: Path, docs: Path, src: Path, toDir: Path, 
+    def deployTask(jar: Path, docs: Path, src: Path, toDir: Path,
                    genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
       gen(jar, toDir, genJar, "Deploying bits") orElse
       gen(docs, toDir, genDocs, "Deploying docs") orElse
