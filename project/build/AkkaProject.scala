@@ -156,7 +156,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     import Process._
     lazy val publishLocalMvn = runMvnInstall 
     def runMvnInstall = task {
-        for(absPath <- akkaArtifacts.getPaths) {
+        for (absPath <- akkaArtifacts.getPaths) {
           val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
           val artifactRE(path, artifactId, artifactVersion) = absPath  
           val command = "mvn install:install-file" + 
@@ -390,12 +390,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     )
   }
   
-  def akkaArtifacts = {
-    descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar") 
-  }
+  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar") 
+  
   // ------------------------------------------------------------
-
-
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject
 
   trait DeployProject extends DefaultProject {

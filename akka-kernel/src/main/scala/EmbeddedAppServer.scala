@@ -65,7 +65,7 @@ trait EmbeddedAppServer extends Bootable with Logging {
         config.getList("akka.rest.resource_packages").mkString(";")
       )
       adapter.addInitParameter("com.sun.jersey.spi.container.ResourceFilters",
-	    config.getList("akka.rest.filters").mkString(",")
+            config.getList("akka.rest.filters").mkString(",")
       )
 
       if (HOME.isDefined) adapter.addRootFolder(HOME.get + "/deploy/root")

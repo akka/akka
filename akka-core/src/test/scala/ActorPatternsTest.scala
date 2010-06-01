@@ -21,14 +21,14 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
     val targetOk = new AtomicInteger(0)
     val t1 = actorOf( new Actor() {
-	  def receive = {
+          def receive = {
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
     } ).start
 
     val t2 = actorOf( new Actor() {
-	  def receive = {
+          def receive = {
         case `testMsg3` => self.reply(11)
       }
     }).start
@@ -45,7 +45,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     } yield a + b + c
       
     result.get must be(21)
-	for(a <- List(t1,t2,d)) a.stop
+        for(a <- List(t1,t2,d)) a.stop
   }
 
   @Test def testLogger = {
