@@ -13,13 +13,15 @@ import java.util.concurrent.ConcurrentHashMap
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 final class MessageInvocation(val receiver: ActorRef,
                               val message: Any,
                               val sender: Option[ActorRef],
                               val senderFuture: Option[CompletableFuture[Any]],
                               val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
-  if (message eq null) throw new IllegalArgumentException("message is null")
 
   def invoke = receiver.invoke(this)
 
@@ -50,10 +52,16 @@ final class MessageInvocation(val receiver: ActorRef,
   }
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 trait MessageQueue {
   def append(handle: MessageInvocation)
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 trait MessageDispatcher extends Logging {
   protected val references = new ConcurrentHashMap[String, ActorRef]
   def dispatch(invocation: MessageInvocation)
@@ -69,6 +77,9 @@ trait MessageDispatcher extends Logging {
   def usesActorMailbox : Boolean
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 trait MessageDemultiplexer {
   def select
   def wakeUp
