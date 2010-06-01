@@ -120,12 +120,12 @@ class SecureTickService {
   def paranoiaTick = tick
 
   def tick = {
-	//Fetch the first actor of type PersistentSimpleServiceActor
-	//Send it the "Tick" message and expect a NdeSeq back
-	val result = for{a <- actorsFor(classOf[SecureTickActor]).headOption
-	                 r <- a.!![Integer]("Tick")} yield r
-	//Return either the resulting NodeSeq or a default one
-	result match {
+        //Fetch the first actor of type PersistentSimpleServiceActor
+        //Send it the "Tick" message and expect a NdeSeq back
+        val result = for{a <- actorsFor(classOf[SecureTickActor]).headOption
+                         r <- a.!![Integer]("Tick")} yield r
+        //Return either the resulting NodeSeq or a default one
+        result match {
       case (Some(counter)) => (<success>Tick: {counter}</success>)
       case _ => (<error>Error in counter</error>)
     }
