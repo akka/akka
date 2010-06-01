@@ -53,10 +53,6 @@ trait MessageQueue {
   def append(handle: MessageInvocation)
 }
 
-trait MessageInvoker {
-  def invoke(message: MessageInvocation)
-}
-
 trait MessageDispatcher extends Logging {
   protected val references = new ConcurrentHashMap[String, ActorRef]
   def dispatch(invocation: MessageInvocation)
@@ -65,8 +61,7 @@ trait MessageDispatcher extends Logging {
   def register(actorRef: ActorRef) = references.put(actorRef.uuid, actorRef)
   def unregister(actorRef: ActorRef) = {
     references.remove(actorRef.uuid)
-    if (canBeShutDown)
-      shutdown // shut down in the dispatcher's references is zero
+    if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
   }
   def canBeShutDown: Boolean = references.isEmpty
   def isShutdown: Boolean
