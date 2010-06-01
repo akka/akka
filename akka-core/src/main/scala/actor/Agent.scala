@@ -101,6 +101,7 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 sealed class Agent[T] private (initialValue: T) {
   import Agent._
   import Actor._
+  if (initialValue eq null) throw new AgentException("Initial value to Agent can't be NULL")
 
   private val dispatcher = actorOf(new AgentDispatcher[T](initialValue)).start
 
