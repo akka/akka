@@ -14,7 +14,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // project versions
-  val JERSEY_VERSION = "1.1.5"
+  val JERSEY_VERSION = "1.2"
   val ATMO_VERSION = "0.6-SNAPSHOT"
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
