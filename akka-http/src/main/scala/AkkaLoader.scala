@@ -47,29 +47,29 @@ class AkkaLoader extends Logging {
   private def printBanner = {
     log.info(
 """
-                       t                         
-             t       t t                         
-            t       t tt   t                     
-        tt  t   t  tt       t                    
-       t ttttttt  t      ttt t                   
-      t   tt ttt t       ttt  t                  
-     t     t ttt    t    ttt   t      t          
-    tt    t  ttt         ttt    ttt    t         
-   t     t   ttt         ttt     t tt  t         
-   t         ttt         ttt      t     t        
- tt          ttt         ttt              t      
-             ttt         ttt                     
-   tttttttt  ttt    ttt  ttt    ttt  tttttttt    
-  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt   
-  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt   
-  ttt    ttt ttt    ttt  ttt    tt  ttt    ttt   
-        tttt ttttttttt   tttttttt         tttt   
-   ttttttttt ttt    ttt  ttt   ttt   ttttttttt   
-  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt   
-  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt   
-  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt   
+                       t
+             t       t t
+            t       t tt   t
+        tt  t   t  tt       t
+       t ttttttt  t      ttt t
+      t   tt ttt t       ttt  t
+     t     t ttt    t    ttt   t      t
+    tt    t  ttt         ttt    ttt    t
+   t     t   ttt         ttt     t tt  t
+   t         ttt         ttt      t     t
+ tt          ttt         ttt              t
+             ttt         ttt
    tttttttt  ttt    ttt  ttt    ttt  tttttttt
-   
+  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt
+  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt
+  ttt    ttt ttt    ttt  ttt    tt  ttt    ttt
+        tttt ttttttttt   tttttttt         tttt
+   ttttttttt ttt    ttt  ttt   ttt   ttttttttt
+  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt
+  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt
+  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt
+   tttttttt  ttt    ttt  ttt    ttt  tttttttt
+
 ==================================================
 """)
     log.info("            Running version %s", Config.VERSION)
