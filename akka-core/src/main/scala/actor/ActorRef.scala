@@ -40,7 +40,7 @@ import java.lang.reflect.Field
  * <p/>
  * Protobuf Message -> ActorRef:
  * <pre>
- *   val actorRef = ActorRef.fromProtocol(protobufMessage)
+ *   val actorRef = ActorRef.fromProtobuf(protobufMessage)
  *   actorRef ! message // send message to remote actor through its reference
  * </pre>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -51,15 +51,15 @@ object ActorRef {
    * Deserializes the ActorRef instance from a byte array (Array[Byte]) into an ActorRef instance.
    */
   def fromBinary(bytes: Array[Byte]): ActorRef =
-    fromProtocol(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
+    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
 
   def fromBinary(bytes: Array[Byte], loader: ClassLoader): ActorRef =
-    fromProtocol(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
+    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
 
   /**
    * Deserializes the ActorRef instance from a Protocol Buffers (protobuf) Message into an ActorRef instance.
    */
-  private[akka] def fromProtocol(protocol: ActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
+  private[akka] def fromProtobuf(protocol: ActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
     RemoteActorRef(
       protocol.getUuid,
       protocol.getActorClassName,
@@ -222,7 +222,7 @@ trait ActorRef extends TransactionManagement {
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
   def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
- 
+
   /**
    * Is the actor being restarted?
    */
@@ -356,7 +356,7 @@ trait ActorRef extends TransactionManagement {
     "\n\tYou have probably: " +
     "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
     "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object.")
-    
+
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
@@ -527,7 +527,7 @@ trait ActorRef extends TransactionManagement {
    */
   def shutdownLinkedActors: Unit
 
-  protected[akka] def toProtocol: ActorRefProtocol
+  protected[akka] def toProtobuf: ActorRefProtocol
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -572,7 +572,7 @@ trait ActorRef extends TransactionManagement {
   protected def processSender(senderOption: Option[ActorRef], requestBuilder: RemoteRequestProtocol.Builder) = {
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-      requestBuilder.setSender(sender.toProtocol)
+      requestBuilder.setSender(sender.toProtobuf)
     }
   }
 }
@@ -595,7 +595,7 @@ sealed class LocalActorRef private[akka](
   @volatile private[akka] var _supervisor: Option[ActorRef] = None
 
   protected[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
-  protected[this] val actorInstance = new AtomicReference[Actor](newActor)
+  protected[this] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
@@ -609,7 +609,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
-  protected[akka] def toProtocol: ActorRefProtocol = guard.withGuard {
+  protected[akka] def toProtobuf: ActorRefProtocol = guard.withGuard {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
@@ -637,7 +637,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Serializes the ActorRef instance into a byte array (Array[Byte]).
    */
-  def toBinary: Array[Byte] = toProtocol.toByteArray
+  def toBinary: Array[Byte] = toProtobuf.toByteArray
 
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
@@ -947,7 +947,7 @@ sealed class LocalActorRef private[akka](
           .setIsOneWay(false)
           .setIsEscaped(false)
 
-      //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
+      //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtobuf))
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
 
       val id = registerSupervisorAsRemoteActor
@@ -1224,7 +1224,7 @@ private[akka] case class RemoteActorRef private[akka] (
   extends ActorRef {
   _uuid = uuuid
   timeout = _timeout
-  
+
   start
   lazy val remoteClient = RemoteClient.clientFor(hostname, port, loader)
 
@@ -1292,7 +1292,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
-  protected[akka] def toProtocol: ActorRefProtocol = unsupported
+  protected[akka] def toProtobuf: ActorRefProtocol = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
   protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported

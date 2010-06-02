@@ -7,17 +7,16 @@ package se.scalablesolutions.akka.dispatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.Queue
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorMessageInvoker}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher(actor: ActorRef) extends MessageDispatcher {
+class ThreadBasedDispatcher(private val actor: ActorRef) extends MessageDispatcher {
   private val name = actor.getClass.getName + ":" + actor.uuid
   private val threadName = "thread-based:dispatcher:" + name
-  private val messageHandler = new ActorMessageInvoker(actor)
   private val queue = new BlockingMessageQueue(name)
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
@@ -30,7 +29,7 @@ class ThreadBasedDispatcher(actor: ActorRef) extends MessageDispatcher {
       override def run = {
         while (active) {
           try {
-            messageHandler.invoke(queue.take)
+            actor.invoke(queue.take)
           } catch { case e: InterruptedException => active = false }
         }
       }

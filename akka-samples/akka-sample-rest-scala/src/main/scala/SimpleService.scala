@@ -51,12 +51,12 @@ class SimpleService {
   @GET
   @Produces(Array("text/html"))
   def count = {
-	//Fetch the first actor of type SimpleServiceActor
-	//Send it the "Tick" message and expect a NdeSeq back
-	val result = for{a <- actorsFor(classOf[SimpleServiceActor]).headOption
-	                 r <- a.!![NodeSeq]("Tick")} yield r
-	//Return either the resulting NodeSeq or a default one
-	result getOrElse <error>Error in counter</error>
+        //Fetch the first actor of type SimpleServiceActor
+        //Send it the "Tick" message and expect a NdeSeq back
+        val result = for{a <- actorsFor(classOf[SimpleServiceActor]).headOption
+                         r <- a.!![NodeSeq]("Tick")} yield r
+        //Return either the resulting NodeSeq or a default one
+        result getOrElse <error>Error in counter</error>
   }
 }
 class SimpleServiceActor extends Transactor {
@@ -105,12 +105,12 @@ class PersistentSimpleService {
   @GET
   @Produces(Array("text/html"))
   def count = {
-	//Fetch the first actor of type PersistentSimpleServiceActor
-	//Send it the "Tick" message and expect a NdeSeq back
-	val result = for{a <- actorsFor(classOf[PersistentSimpleServiceActor]).headOption
-	                 r <- a.!![NodeSeq]("Tick")} yield r
-	//Return either the resulting NodeSeq or a default one
-	result getOrElse <error>Error in counter</error>
+        //Fetch the first actor of type PersistentSimpleServiceActor
+        //Send it the "Tick" message and expect a NdeSeq back
+        val result = for{a <- actorsFor(classOf[PersistentSimpleServiceActor]).headOption
+                         r <- a.!![NodeSeq]("Tick")} yield r
+        //Return either the resulting NodeSeq or a default one
+        result getOrElse <error>Error in counter</error>
   }
 }
 
@@ -147,18 +147,18 @@ class Chat {
   @Consumes(Array("application/x-www-form-urlencoded"))
   @Produces(Array("text/html"))
   def publishMessage(form: MultivaluedMap[String, String]) = {
-	val msg = ChatMsg(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))
+        val msg = ChatMsg(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))
     //Fetch the first actor of type ChatActor
-	//Send it the "Tick" message and expect a NdeSeq back
-	val result = for{a <- actorsFor(classOf[ChatActor]).headOption
-	                 r <- a.!![String](msg)} yield r
-	//Return either the resulting String or a default one
-	result getOrElse "System__error"
+        //Send it the "Tick" message and expect a NdeSeq back
+        val result = for{a <- actorsFor(classOf[ChatActor]).headOption
+                         r <- a.!![String](msg)} yield r
+        //Return either the resulting String or a default one
+        result getOrElse "System__error"
   }
 }
 
 object ChatActor {
-  case class ChatMsg(val who: String, val what: String, val msg: String)	
+  case class ChatMsg(val who: String, val what: String, val msg: String)
 }
 
 class ChatActor extends Actor with Logging {

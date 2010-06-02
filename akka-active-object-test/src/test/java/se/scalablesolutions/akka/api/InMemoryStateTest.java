@@ -13,7 +13,6 @@ import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 import se.scalablesolutions.akka.actor.*;
-import se.scalablesolutions.akka.kernel.Kernel;
 
 public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
