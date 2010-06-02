@@ -64,6 +64,12 @@ object ActorRegistry extends ListenerManagement {
   }
 
   /**
+   * Finds any actor that matches T.
+   */
+  def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
+    actorsFor[T](manifest).headOption
+
+  /**
    * Finds all actors of the exact type specified by the class passed in as the Class argument.
    */
   def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] = {

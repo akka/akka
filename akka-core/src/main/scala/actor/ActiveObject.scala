@@ -66,23 +66,23 @@ final class ActiveObjectConfiguration {
 }
 
 /**
- * Holds RTTI (runtime type information) for the Active Object, f.e. current 'sender' 
+ * Holds RTTI (runtime type information) for the Active Object, f.e. current 'sender'
  * reference, the 'senderFuture' reference etc.
  * <p/>
- * In order to make use of this context you have to create a member field in your 
- * Active Object that has the type 'ActiveObjectContext', then an instance will 
- * be injected for you to use. 
+ * In order to make use of this context you have to create a member field in your
+ * Active Object that has the type 'ActiveObjectContext', then an instance will
+ * be injected for you to use.
  * <p/>
- * This class does not contain static information but is updated by the runtime system 
- * at runtime. 
+ * This class does not contain static information but is updated by the runtime system
+ * at runtime.
  * <p/>
- * Here is an example of usage: 
+ * Here is an example of usage:
  * <pre>
  * class Ping {
- *   // This context will be injected, holds RTTI (runtime type information) 
- *   // for the current message send 
+ *   // This context will be injected, holds RTTI (runtime type information)
+ *   // for the current message send
  *   private ActiveObjectContext context = null;
- *   
+ *
  *   public void hit(int count) {
  *     Pong pong = (Pong) context.getSender();
  *     pong.hit(count++)
@@ -100,19 +100,19 @@ final class ActiveObjectContext {
    * Returns the current sender Active Object reference.
    * Scala style getter.
    */
-  def sender: AnyRef = { 
+  def sender: AnyRef = {
     if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
     else _sender
-  } 
+  }
 
   /**
    * Returns the current sender Active Object reference.
    * Java style getter.
    */
-   def getSender: AnyRef = { 
+   def getSender: AnyRef = {
      if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
      else _sender
-   } 
+   }
 
   /**
    * Returns the current sender future Active Object reference.
@@ -364,7 +364,7 @@ object ActiveObject extends Logging {
     proxy.asInstanceOf[T]
   }
 
-  private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actorRef: ActorRef, 
+  private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actorRef: ActorRef,
                                    remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val context = injectActiveObjectContext(target)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, false)
@@ -462,7 +462,7 @@ object ActiveObject extends Logging {
         if (parent != null) injectActiveObjectContext0(activeObject, parent)
         else {
           log.warning(
-          "Can't set 'ActiveObjectContext' for ActiveObject [%s] since no field of this type could be found.", 
+          "Can't set 'ActiveObjectContext' for ActiveObject [%s] since no field of this type could be found.",
           activeObject.getClass.getName)
           None
         }
@@ -529,7 +529,7 @@ private[akka] sealed class ActiveObjectAspect {
       remoteAddress = init.remoteAddress
       timeout = init.timeout
       isInitialized = true
-      
+
     }
     dispatch(joinPoint)
   }
@@ -590,7 +590,7 @@ private[akka] sealed class ActiveObjectAspect {
     } else future.result
 
   private def isVoid(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
-  
+
   private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
     var isEscaped = false
     val escapedArgs = for (arg <- args) yield {
@@ -613,11 +613,11 @@ private[akka] sealed class ActiveObjectAspect {
   joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean, sender: AnyRef, senderFuture: CompletableFuture[Any]) {
 
   override def toString: String = synchronized {
-    "Invocation [joinPoint: " + joinPoint.toString + 
-    ", isOneWay: " + isOneWay + 
+    "Invocation [joinPoint: " + joinPoint.toString +
+    ", isOneWay: " + isOneWay +
     ", isVoid: " + isVoid +
-    ", sender: " + sender + 
-    ", senderFuture: " + senderFuture + 
+    ", sender: " + sender +
+    ", senderFuture: " + senderFuture +
     "]"
   }
 
@@ -660,11 +660,11 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   private var postRestart: Option[Method] = None
   private var initTxState: Option[Method] = None
   private var context: Option[ActiveObjectContext] = None
-  
+
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef, ctx: Option[ActiveObjectContext]) = {
-    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) 
+    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired))
       self.makeTransactionRequired
     self.id = targetClass.getName
     target = Some(targetInstance)
@@ -712,7 +712,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
 
   def receive = {
     case Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
-      context.foreach { ctx => 
+      context.foreach { ctx =>
         if (sender ne null) ctx._sender = sender
         if (senderFuture ne null) ctx._senderFuture = senderFuture
       }

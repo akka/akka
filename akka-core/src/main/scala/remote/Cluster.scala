@@ -261,11 +261,11 @@ object Cluster extends Cluster with Logging {
         sup <- createSupervisor(actorRef)
       } {
         val serializer = Class.forName(config.getString(
-	      "akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
-	      .newInstance.asInstanceOf[Serializer]
+              "akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
+              .newInstance.asInstanceOf[Serializer]
 
-	    classLoader = serializerClassLoader orElse classLoader
-	    serializer.classLoader = classLoader
+            classLoader = serializerClassLoader orElse classLoader
+            serializer.classLoader = classLoader
         actorRef.start
         sup.start
         actorRef ! InitClusterActor(serializer)

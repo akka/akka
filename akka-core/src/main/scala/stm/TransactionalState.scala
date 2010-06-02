@@ -56,6 +56,13 @@ trait Committable {
   def commit: Unit
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait Abortable {
+  def abort: Unit
+}
+
 object RefFactory {
   private val factory = getGlobalStmInstance.getProgrammaticReferenceFactoryBuilder.build
 

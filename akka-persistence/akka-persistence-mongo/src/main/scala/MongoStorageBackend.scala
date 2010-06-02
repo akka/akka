@@ -280,7 +280,7 @@ private[akka] object MongoStorageBackend extends
       }
     val currentList = dbobj.get(VALUE).asInstanceOf[JArrayList[AnyRef]]
     currentList.set(index, serializer.out(elem))
-    coll.update(q, 
+    coll.update(q,
       new BasicDBObject().append(KEY, name).append(VALUE, currentList))
   }
 

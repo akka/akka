@@ -87,7 +87,7 @@ object World {
     pingEvery(evaporator, EvapMillis)
   }
 
-  private def pingEvery(actor: ActorRef, millis: Long) = 
+  private def pingEvery(actor: ActorRef, millis: Long) =
     Scheduler.schedule(actor, "ping", Config.StartDelay, millis, TimeUnit.MILLISECONDS)
 }
 

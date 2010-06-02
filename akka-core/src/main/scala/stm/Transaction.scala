@@ -282,10 +282,10 @@ object Transaction {
           setTransaction(Some(tx))
           mtx.registerLifecycleListener(new TransactionLifecycleListener() {
             def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event.name match {
-              case "postCommit" => 
+              case "postCommit" =>
                 log.trace("Committing transaction [%s]", mtx)
                 tx.commit
-              case "postAbort" => 
+              case "postAbort" =>
                 log.trace("Aborting transaction [%s]", mtx)
                 tx.abort
               case _ => {}
@@ -309,7 +309,7 @@ object Transaction {
   val id = Transaction.idFactory.incrementAndGet
   @volatile private[this] var status: TransactionStatus = TransactionStatus.New
   private[akka] var transaction: Option[MultiverseTransaction] = None
-  private[this] val persistentStateMap = new HashMap[String, Committable]
+  private[this] val persistentStateMap = new HashMap[String, Committable with Abortable]
   private[akka] val depth = new AtomicInteger(0)
 
   val jta: Option[TransactionContainer] =
@@ -329,9 +329,7 @@ object Transaction {
 
   def commit = synchronized {
     log.trace("Committing transaction %s", toString)
-    Transaction.atomic0 {
-      persistentStateMap.valuesIterator.foreach(_.commit)
-    }
+    persistentStateMap.valuesIterator.foreach(_.commit)
     status = TransactionStatus.Completed
     jta.foreach(_.commit)
   }
@@ -339,6 +337,8 @@ object Transaction {
   def abort = synchronized {
     log.trace("Aborting transaction %s", toString)
     jta.foreach(_.rollback)
+    persistentStateMap.valuesIterator.foreach(_.abort)
+    persistentStateMap.clear
   }
 
   def isNew = synchronized { status == TransactionStatus.New }
@@ -361,7 +361,7 @@ object Transaction {
 
   private[akka] def isTopLevel = depth.get == 0
 
-  private[akka] def register(uuid: String, storage: Committable) = persistentStateMap.put(uuid, storage)
+  private[akka] def register(uuid: String, storage: Committable with Abortable) = persistentStateMap.put(uuid, storage)
 
   private def ensureIsActive = if (status != TransactionStatus.Active)
     throw new StmConfigurationException(

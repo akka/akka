@@ -184,7 +184,7 @@ class RemoteServer extends Logging {
   def start(_hostname: String, _port: Int): RemoteServer =
     start(_hostname, _port, None)
 
-  private def start(_hostname: String, _port: Int, loader: ClassLoader): RemoteServer = 
+  private def start(_hostname: String, _port: Int, loader: ClassLoader): RemoteServer =
     start(_hostname, _port, Some(loader))
 
   private def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): RemoteServer = synchronized {
@@ -366,7 +366,7 @@ class RemoteServerHandler(
     val message = RemoteProtocolBuilder.getMessage(request)
     if (request.hasSender) {
       val sender = request.getSender
-      if (sender ne null) actorRef.!(message)(Some(ActorRef.fromProtocol(sender, applicationLoader)))
+      if (sender ne null) actorRef.!(message)(Some(ActorRef.fromProtobuf(sender, applicationLoader)))
     } else {
       try {
         val resultOrNone = actorRef !! message
