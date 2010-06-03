@@ -14,7 +14,6 @@ object TestSupport {
 trait TestActor extends Actor {
   def receive = {
     case msg => {
-      val x = msg
       handler(msg)
     }
   }
