@@ -3,6 +3,8 @@
  */
 package se.scalablesolutions.akka.camel.service
 
+import collection.mutable.ListBuffer
+
 import java.io.InputStream
 import java.lang.reflect.Method
 import java.util.concurrent.CountDownLatch
@@ -12,9 +14,8 @@ import org.apache.camel.builder.RouteBuilder
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.{Consumer, CamelContextManager}
-import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.camel.component.ActiveObjectComponent
-import collection.mutable.ListBuffer
+import se.scalablesolutions.akka.util.Logging
 
 /**
  * Actor that publishes consumer actors as Camel endpoints at the CamelContext managed
@@ -78,7 +79,7 @@ class ConsumerPublisher extends Actor with Logging {
    * Creates a route to the registered consumer actor.
    */
   private def handleConsumerRegistered(event: ConsumerRegistered) {
-    CamelContextManager.context.addRoutes(new ConsumerRoute(event.uri, event.id, event.uuid))
+    CamelContextManager.context.addRoutes(new ConsumerActorRoute(event.uri, event.id, event.uuid))
     log.info("published actor %s (%s) at endpoint %s" format (event.clazz, event.id, event.uri))
   }
 
@@ -102,6 +103,23 @@ class ConsumerPublisher extends Actor with Logging {
   }
 }
 
+abstract class ConsumerRoute(endpointUri: String, id: String) extends RouteBuilder {
+  // TODO: make conversions configurable
+  private val bodyConversions = Map(
+    "file" -> classOf[InputStream]
+  )
+
+  def configure = {
+    val schema = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
+    bodyConversions.get(schema) match {
+      case Some(clazz) => from(endpointUri).routeId(id).convertBodyTo(clazz).to(targetUri)
+      case None        => from(endpointUri).routeId(id).to(targetUri)
+    }
+  }
+
+  protected def targetUri: String
+}
+
 /**
  * Defines the route to a consumer actor.
  *
@@ -112,50 +130,12 @@ class ConsumerPublisher extends Actor with Logging {
  *
  * @author Martin Krasser
  */
-class ConsumerRoute(val endpointUri: String, id: String, uuid: Boolean) extends RouteBuilder {
-  //
-  //
-  // TODO: factor out duplicated code from ConsumerRoute and ConsumerMethodRoute
-  //
-  //
-
-  // TODO: make conversions configurable
-  private val bodyConversions = Map(
-    "file" -> classOf[InputStream]
-  )
-
-  def configure = {
-    val schema = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
-    bodyConversions.get(schema) match {
-      case Some(clazz) => from(endpointUri).routeId(id).convertBodyTo(clazz).to(actorUri)
-      case None        => from(endpointUri).routeId(id).to(actorUri)
-    }
-  }
-
-  private def actorUri = (if (uuid) "actor:uuid:%s" else "actor:id:%s") format id
+class ConsumerActorRoute(endpointUri: String, id: String, uuid: Boolean) extends ConsumerRoute(endpointUri, id) {
+  protected override def targetUri = (if (uuid) "actor:uuid:%s" else "actor:id:%s") format id
 }
 
-class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends RouteBuilder {
-  //
-  //
-  // TODO: factor out duplicated code from ConsumerRoute and ConsumerMethodRoute
-  //
-  //
-  
-  // TODO: make conversions configurable
-  private val bodyConversions = Map(
-    "file" -> classOf[InputStream]
-  )
-
-  def configure = {
-    val schema = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
-    bodyConversions.get(schema) match {
-      case Some(clazz) => from(endpointUri).convertBodyTo(clazz).to(activeObjectUri)
-      case None        => from(endpointUri).to(activeObjectUri)
-    }
-  }
-
-  private def activeObjectUri = "%s:%s?method=%s" format (ActiveObjectComponent.DEFAULT_SCHEMA, id, method)
+class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends ConsumerRoute(endpointUri, id) {
+  protected override def targetUri = "%s:%s?method=%s" format (ActiveObjectComponent.DefaultSchema, id, method)
 }
 
 /**
