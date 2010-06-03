@@ -27,13 +27,7 @@ import se.scalablesolutions.akka.util.Logging
  */
 class ConsumerPublisher extends Actor with Logging {
 
-  // TODO: redesign waiting (actor testing) mechanism
-  //       - do not use custom methods on actor
-  //       - only interact by passing messages
-  // TODO: factor out code that is needed for testing
-
-  @volatile private var publishActorLatch = new CountDownLatch(0)
-  @volatile private var unpublishActorLatch = new CountDownLatch(0)
+  @volatile private var latch = new CountDownLatch(0)
 
   /**
    *  Adds a route to the actor identified by a Publish message to the global CamelContext.
@@ -41,39 +35,23 @@ class ConsumerPublisher extends Actor with Logging {
   protected def receive = {
     case r: ConsumerRegistered => {
       handleConsumerRegistered(r)
-      publishActorLatch.countDown // needed for testing only.
+      latch.countDown // needed for testing only.
     }
     case u: ConsumerUnregistered => {
       handleConsumerUnregistered(u)
-      unpublishActorLatch.countDown // needed for testing only.
+      latch.countDown // needed for testing only.
     }
     case d: ConsumerMethodRegistered => {
       handleConsumerMethodDetected(d)
+      latch.countDown // needed for testing only.
+    }
+    case SetExpectedMessageCount(num) => {
+      // needed for testing only.
+      latch = new CountDownLatch(num)
+      self.reply(latch)
     }
     case _ => { /* ignore */}
   }
-
-  /**
-   * Sets the expected number of actors to be published. Used for testing only.
-   */
-  private[camel] def expectPublishActorCount(count: Int): Unit =
-    publishActorLatch = new CountDownLatch(count)
-
-  /**
-   * Sets the expected number of actors to be unpublished. Used for testing only.
-   */
-  private[camel] def expectUnpublishActorCount(count: Int): Unit =
-    unpublishActorLatch = new CountDownLatch(count)
-
-  /**
-   * Waits for the expected number of actors to be published. Used for testing only.
-   */
-  private[camel] def awaitPublishActor = publishActorLatch.await
-
-  /**
-   * Waits for the expected number of actors to be unpublished. Used for testing only.
-   */
-  private[camel] def awaitUnpublishActor = unpublishActorLatch.await
 
   /**
    * Creates a route to the registered consumer actor.
@@ -102,6 +80,8 @@ class ConsumerPublisher extends Actor with Logging {
     log.info("published method %s.%s (%s) at endpoint %s" format (targetClass, targetMethod, objectId, event.uri))
   }
 }
+
+private[camel] case class SetExpectedMessageCount(num: Int)
 
 abstract class ConsumerRoute(endpointUri: String, id: String) extends RouteBuilder {
   // TODO: make conversions configurable
@@ -163,7 +143,10 @@ class PublishRequestor extends Actor {
 
   private def deliverCurrentEvent(event: ConsumerEvent) = {
     publisher match {
-      case Some(pub) => pub ! event
+      case Some(pub) => {
+        val x = pub
+        pub ! event
+      }
       case None      => events += event
     }
   }
