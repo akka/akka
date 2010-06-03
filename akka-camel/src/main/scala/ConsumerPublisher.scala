@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package se.scalablesolutions.akka.camel.service
+package se.scalablesolutions.akka.camel
 
 import collection.mutable.ListBuffer
 
@@ -13,7 +13,6 @@ import org.apache.camel.builder.RouteBuilder
 
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.annotation.consume
-import se.scalablesolutions.akka.camel.{Consumer, CamelContextManager}
 import se.scalablesolutions.akka.camel.component.ActiveObjectComponent
 import se.scalablesolutions.akka.util.Logging
 
@@ -42,7 +41,7 @@ class ConsumerPublisher extends Actor with Logging {
       latch.countDown // needed for testing only.
     }
     case d: ConsumerMethodRegistered => {
-      handleConsumerMethodDetected(d)
+      handleConsumerMethodRegistered(d)
       latch.countDown // needed for testing only.
     }
     case SetExpectedMessageCount(num) => {
@@ -69,11 +68,11 @@ class ConsumerPublisher extends Actor with Logging {
     log.info("unpublished actor %s (%s) from endpoint %s" format (event.clazz, event.id, event.uri))
   }
 
-  private def handleConsumerMethodDetected(event: ConsumerMethodRegistered) {
+  private def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
     // using the actor uuid is highly experimental
-    val objectId = event.init.actorRef.uuid
     val targetClass = event.init.target.getName
     val targetMethod = event.method.getName
+    val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
 
     CamelContextManager.activeObjectRegistry.put(objectId, event.activeObject)
     CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))

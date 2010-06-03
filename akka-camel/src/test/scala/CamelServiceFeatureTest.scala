@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.camel.service
+package se.scalablesolutions.akka.camel
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
@@ -7,7 +7,6 @@ import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
-import se.scalablesolutions.akka.camel.{CamelContextManager, Message, Consumer}
 
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
   import CamelServiceFeatureTest._
