@@ -57,7 +57,7 @@ class ConsumerPublisher extends Actor with Logging {
    */
   private def handleConsumerRegistered(event: ConsumerRegistered) {
     CamelContextManager.context.addRoutes(new ConsumerActorRoute(event.uri, event.id, event.uuid))
-    log.info("published actor %s (%s) at endpoint %s" format (event.clazz, event.id, event.uri))
+    log.info("published actor %s at endpoint %s" format (event.actorRef, event.uri))
   }
 
   /**
@@ -65,18 +65,16 @@ class ConsumerPublisher extends Actor with Logging {
    */
   private def handleConsumerUnregistered(event: ConsumerUnregistered) {
     CamelContextManager.context.stopRoute(event.id)
-    log.info("unpublished actor %s (%s) from endpoint %s" format (event.clazz, event.id, event.uri))
+    log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
   }
 
   private def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
-    // using the actor uuid is highly experimental
-    val targetClass = event.init.target.getName
     val targetMethod = event.method.getName
     val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
 
     CamelContextManager.activeObjectRegistry.put(objectId, event.activeObject)
     CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
-    log.info("published method %s.%s (%s) at endpoint %s" format (targetClass, targetMethod, objectId, event.uri))
+    log.info("published method %s of %s at endpoint %s" format (targetMethod, event.activeObject, event.uri))
   }
 }
 
@@ -142,10 +140,7 @@ class PublishRequestor extends Actor {
 
   private def deliverCurrentEvent(event: ConsumerEvent) = {
     publisher match {
-      case Some(pub) => {
-        val x = pub
-        pub ! event
-      }
+      case Some(pub) => pub ! event
       case None      => events += event
     }
   }
@@ -168,7 +163,7 @@ sealed trait ConsumerEvent
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
  *
- * @param clazz clazz name of the referenced actor
+ * @param actorRef actor reference
  * @param uri endpoint URI of the consumer actor
  * @param id actor identifier
  * @param uuid <code>true</code> if <code>id</code> is the actor's uuid, <code>false</code> if
@@ -176,12 +171,12 @@ sealed trait ConsumerEvent
  *
  * @author Martin Krasser
  */
-case class ConsumerRegistered(clazz: String, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
+case class ConsumerRegistered(actorRef: ActorRef, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  *
- * @param clazz clazz name of the referenced actor
+ * @param actorRef actor reference
  * @param uri endpoint URI of the consumer actor
  * @param id actor identifier
  * @param uuid <code>true</code> if <code>id</code> is the actor's uuid, <code>false</code> if
@@ -189,7 +184,7 @@ case class ConsumerRegistered(clazz: String, uri: String, id: String, uuid: Bool
  *
  * @author Martin Krasser
  */
-case class ConsumerUnregistered(clazz: String, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
+case class ConsumerUnregistered(actorRef: ActorRef, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
 
 case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
@@ -202,8 +197,8 @@ private[camel] object ConsumerRegistered {
    * <code>actorRef</code> is not a consumer actor.
    */
   def forConsumer(actorRef: ActorRef): Option[ConsumerRegistered] = actorRef match {
-    case ConsumerDescriptor(clazz, uri, id, uuid) => Some(ConsumerRegistered(clazz, uri, id, uuid))
-    case _                                        => None
+    case ConsumerDescriptor(ref, uri, id, uuid) => Some(ConsumerRegistered(ref, uri, id, uuid))
+    case _                                      => None
   }
 }
 
@@ -216,8 +211,8 @@ private[camel] object ConsumerUnregistered {
    * <code>actorRef</code> is not a consumer actor.
    */
   def forConsumer(actorRef: ActorRef): Option[ConsumerUnregistered] = actorRef match {
-    case ConsumerDescriptor(clazz, uri, id, uuid) => Some(ConsumerUnregistered(clazz, uri, id, uuid))
-    case _                                        => None
+    case ConsumerDescriptor(ref, uri, id, uuid) => Some(ConsumerUnregistered(ref, uri, id, uuid))
+    case _                                      => None
   }
 }
 
@@ -242,22 +237,22 @@ private[camel] object ConsumerDescriptor {
 
   /**
    * An extractor that optionally creates a 4-tuple from a consumer actor reference containing
-   * the target actor's class name, endpoint URI, identifier and a hint whether the identifier
+   * the actor reference itself, endpoint URI, identifier and a hint whether the identifier
    * is the actor uuid or actor id. If <code>actorRef</code> doesn't reference a consumer actor,
    * None is returned.
    */
-  def unapply(actorRef: ActorRef): Option[(String, String, String, Boolean)] =
+  def unapply(actorRef: ActorRef): Option[(ActorRef, String, String, Boolean)] =
     unapplyConsumerInstance(actorRef) orElse unapplyConsumeAnnotated(actorRef)
 
-  private def unapplyConsumeAnnotated(actorRef: ActorRef): Option[(String, String, String, Boolean)] = {
+  private def unapplyConsumeAnnotated(actorRef: ActorRef): Option[(ActorRef, String, String, Boolean)] = {
     val annotation = actorRef.actorClass.getAnnotation(classOf[consume])
     if (annotation eq null) None
     else if (actorRef.remoteAddress.isDefined) None
-    else Some((actorRef.actor.getClass.getName, annotation.value, actorRef.id, false))
+    else Some((actorRef, annotation.value, actorRef.id, false))
   }
 
-  private def unapplyConsumerInstance(actorRef: ActorRef): Option[(String, String, String, Boolean)] =
+  private def unapplyConsumerInstance(actorRef: ActorRef): Option[(ActorRef, String, String, Boolean)] =
     if (!actorRef.actor.isInstanceOf[Consumer]) None
     else if (actorRef.remoteAddress.isDefined) None
-    else Some((actorRef.actor.getClass.getName, actorRef.actor.asInstanceOf[Consumer].endpointUri, actorRef.uuid, true))
+    else Some((actorRef, actorRef.actor.asInstanceOf[Consumer].endpointUri, actorRef.uuid, true))
 }
