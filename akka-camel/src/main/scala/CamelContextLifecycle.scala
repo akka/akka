@@ -107,7 +107,7 @@ trait CamelContextLifecycle extends Logging {
 
 /**
  * Makes a global CamelContext and ProducerTemplate accessible to applications. The lifecycle
- * of these objects is managed by se.scalablesolutions.akka.camel.service.CamelService.
+ * of these objects is managed by se.scalablesolutions.akka.camel.CamelService.
  */
 object CamelContextManager extends CamelContextLifecycle {
   override def context: CamelContext = super.context

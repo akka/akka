@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.camel.service
+package se.scalablesolutions.akka.camel
 
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
@@ -6,7 +6,6 @@ import org.scalatest.junit.JUnitSuite
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.annotation.consume
-import se.scalablesolutions.akka.camel.Consumer
 
 object ConsumerRegisteredTest {
   @consume("mock:test1")

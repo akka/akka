@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.servlet
 
 import se.scalablesolutions.akka.remote.BootableRemoteActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.camel.service.CamelService
+import se.scalablesolutions.akka.camel.CamelService
 import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.util.{Logging, Bootable}
 

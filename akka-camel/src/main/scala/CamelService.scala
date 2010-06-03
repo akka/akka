@@ -2,11 +2,10 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.camel.service
+package se.scalablesolutions.akka.camel
 
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
-import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 
 /**

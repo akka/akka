@@ -1,6 +1,6 @@
 package sample.camel
 
-import se.scalablesolutions.akka.camel.service.CamelService
+import se.scalablesolutions.akka.camel.CamelService
 import se.scalablesolutions.akka.remote.RemoteNode
 import se.scalablesolutions.akka.actor.Actor._
 

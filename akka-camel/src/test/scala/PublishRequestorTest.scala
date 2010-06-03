@@ -1,14 +1,12 @@
-package se.scalablesolutions.akka.camel.service
+package se.scalablesolutions.akka.camel
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.{Before, After, Test}
 import org.scalatest.junit.JUnitSuite
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorRegistry, ActorRegistered, ActorUnregistered}
 import se.scalablesolutions.akka.actor.Actor._
-
-import se.scalablesolutions.akka.camel.Consumer
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorRegistry, ActorRegistered, ActorUnregistered}
 import se.scalablesolutions.akka.camel.support.{SetExpectedMessageCount => SetExpectedTestMessageCount, _}
 
 class PublishRequestorTest extends JUnitSuite {
