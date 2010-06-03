@@ -4,6 +4,8 @@
 
 package se.scalablesolutions.akka.camel
 
+import java.util.Map
+
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
@@ -35,7 +37,7 @@ trait CamelContextLifecycle extends Logging {
    * Registry in which active objects are TEMPORARILY registered during
    * creation of Camel routes to active objects.
    */
-  private[camel] var activeObjectRegistry: java.util.Map[String, AnyRef] = _
+  private[camel] var activeObjectRegistry: Map[String, AnyRef] = _
 
   /**
    *  Returns the managed CamelContext.
@@ -93,10 +95,10 @@ trait CamelContextLifecycle extends Logging {
    */
   def init(context: CamelContext) {
     this.activeObjectComponent = new ActiveObjectComponent
-    this.activeObjectRegistry = activeObjectComponent.getActiveObjectRegistry
+    this.activeObjectRegistry = activeObjectComponent.activeObjectRegistry
     this.context = context
     this.context.setStreamCaching(true)
-    this.context.addComponent(ActiveObjectComponent.DEFAULT_SCHEMA, activeObjectComponent)
+    this.context.addComponent(ActiveObjectComponent.DefaultSchema, activeObjectComponent)
     this.template = context.createProducerTemplate
     _initialized = true
     log.info("Camel context initialized")
