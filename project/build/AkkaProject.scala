@@ -15,7 +15,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // project versions
   val JERSEY_VERSION = "1.2"
-  val ATMO_VERSION = "0.6-SNAPSHOT"
+  val ATMO_VERSION = "0.6-20100604"
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
@@ -63,7 +63,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", javaNetRepo)
   val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", javaNetRepo)
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
-  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
+ // val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
 
   // ------------------------------------------------------------
@@ -216,6 +216,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atmo = "org.atmosphere" % "atmosphere-annotations" % ATMO_VERSION % "compile"
     val atmo_jersey = "org.atmosphere" % "atmosphere-jersey" % ATMO_VERSION % "compile"
     val atmo_runtime = "org.atmosphere" % "atmosphere-runtime" % ATMO_VERSION % "compile"
+    val atmo_tomcat = "org.atmosphere" % "atmosphere-compat-tomcat" % ATMO_VERSION % "compile"
+    val atmo_weblogic = "org.atmosphere" % "atmosphere-compat-weblogic" % ATMO_VERSION % "compile"
+    val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile"
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
     val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
