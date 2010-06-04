@@ -24,7 +24,7 @@ import se.scalablesolutions.akka.util.Logging
  *
  * @author Martin Krasser
  */
-class ConsumerPublisher extends Actor with Logging {
+private[camel] class ConsumerPublisher extends Actor with Logging {
 
   @volatile private var latch = new CountDownLatch(0)
 
@@ -55,7 +55,7 @@ class ConsumerPublisher extends Actor with Logging {
   /**
    * Creates a route to the registered consumer actor.
    */
-  private def handleConsumerRegistered(event: ConsumerRegistered) {
+  def handleConsumerRegistered(event: ConsumerRegistered) {
     CamelContextManager.context.addRoutes(new ConsumerActorRoute(event.uri, event.id, event.uuid))
     log.info("published actor %s at endpoint %s" format (event.actorRef, event.uri))
   }
@@ -63,12 +63,12 @@ class ConsumerPublisher extends Actor with Logging {
   /**
    * Stops route to the already un-registered consumer actor.
    */
-  private def handleConsumerUnregistered(event: ConsumerUnregistered) {
+  def handleConsumerUnregistered(event: ConsumerUnregistered) {
     CamelContextManager.context.stopRoute(event.id)
     log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
   }
 
-  private def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
+  def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
     val targetMethod = event.method.getName
     val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
 
@@ -80,7 +80,7 @@ class ConsumerPublisher extends Actor with Logging {
 
 private[camel] case class SetExpectedMessageCount(num: Int)
 
-abstract class ConsumerRoute(endpointUri: String, id: String) extends RouteBuilder {
+private[camel] abstract class ConsumerRoute(endpointUri: String, id: String) extends RouteBuilder {
   // TODO: make conversions configurable
   private val bodyConversions = Map(
     "file" -> classOf[InputStream]
@@ -107,11 +107,11 @@ abstract class ConsumerRoute(endpointUri: String, id: String) extends RouteBuild
  *
  * @author Martin Krasser
  */
-class ConsumerActorRoute(endpointUri: String, id: String, uuid: Boolean) extends ConsumerRoute(endpointUri, id) {
+private[camel] class ConsumerActorRoute(endpointUri: String, id: String, uuid: Boolean) extends ConsumerRoute(endpointUri, id) {
   protected override def targetUri = (if (uuid) "actor:uuid:%s" else "actor:id:%s") format id
 }
 
-class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends ConsumerRoute(endpointUri, id) {
+private[camel] class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends ConsumerRoute(endpointUri, id) {
   protected override def targetUri = "%s:%s?method=%s" format (ActiveObjectComponent.DefaultSchema, id, method)
 }
 
@@ -120,7 +120,7 @@ class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) e
  *
  * @author Martin Krasser
  */
-class PublishRequestor extends Actor {
+private[camel] class PublishRequestor extends Actor {
   private val events = ListBuffer[ConsumerEvent]()
   private var publisher: Option[ActorRef] = None
 
@@ -151,14 +151,14 @@ class PublishRequestor extends Actor {
   }
 }
 
-case class PublishRequestorInit(consumerPublisher: ActorRef)
+private[camel] case class PublishRequestorInit(consumerPublisher: ActorRef)
 
 /**
  * A consumer event.
  *
  * @author Martin Krasser
  */
-sealed trait ConsumerEvent
+private[camel] sealed trait ConsumerEvent
 
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
@@ -171,7 +171,7 @@ sealed trait ConsumerEvent
  *
  * @author Martin Krasser
  */
-case class ConsumerRegistered(actorRef: ActorRef, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
+private[camel] case class ConsumerRegistered(actorRef: ActorRef, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
@@ -184,9 +184,9 @@ case class ConsumerRegistered(actorRef: ActorRef, uri: String, id: String, uuid:
  *
  * @author Martin Krasser
  */
-case class ConsumerUnregistered(actorRef: ActorRef, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
+private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
 
-case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
+private[camel] case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
 /**
  * @author Martin Krasser
@@ -218,9 +218,9 @@ private[camel] object ConsumerUnregistered {
 
 private[camel] object ConsumerMethodRegistered {
   def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodRegistered] = {
-    // TODO: support/test annotations on interface methods
-    // TODO: support/test annotations on superclass methods
-    // TODO: document that overloaded methods are not supported
+    // TODO: support consumer annotation inheritance
+    // - visit overridden methods in superclasses
+    // - visit implemented method declarations in interfaces
     if (init.remoteAddress.isDefined) Nil // let remote node publish active object methods on endpoints
     else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
     yield ConsumerMethodRegistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
