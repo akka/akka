@@ -18,7 +18,7 @@ public class Consumer10 {
 
     @consume("jetty:http://0.0.0.0:8877/camel/active")
     public String bar(@Body String body, @Header("name") String header) {
-        return String.format("%s %s", body, header);
+        return String.format("body=%s header=%s", body, header);
     }
 
 }

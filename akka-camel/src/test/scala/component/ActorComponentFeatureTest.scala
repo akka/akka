@@ -7,8 +7,8 @@ import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
-import se.scalablesolutions.akka.camel.support._
 import se.scalablesolutions.akka.camel.{Message, CamelContextManager}
+import se.scalablesolutions.akka.camel.support._
 
 class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   override protected def beforeAll = {
