@@ -155,7 +155,7 @@ object RemoteClient extends Logging {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteClient(val hostname: String, val port: Int, loader: Option[ClassLoader]) extends Logging {
+class RemoteClient private[akka] (val hostname: String, val port: Int, loader: Option[ClassLoader]) extends Logging {
   val name = "RemoteClient@" + hostname + "::" + port
 
   @volatile private[remote] var isRunning = false
@@ -203,6 +203,10 @@ class RemoteClient(val hostname: String, val port: Int, loader: Option[ClassLoad
     }
   }
 
+  def registerListener(actorRef: ActorRef) = listeners.add(actorRef)
+
+  def deregisterListener(actorRef: ActorRef) = listeners.remove(actorRef)
+
   def send[T](request: RemoteRequestProtocol, senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = if (isRunning) {
     if (request.getIsOneWay) {
       connection.getChannel.write(request)
@@ -222,17 +226,13 @@ class RemoteClient(val hostname: String, val port: Int, loader: Option[ClassLoad
     throw exception
   }
 
-  def registerSupervisorForActor(actorRef: ActorRef) =
+  private[akka] def registerSupervisorForActor(actorRef: ActorRef) =
     if (!actorRef.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.putIfAbsent(actorRef.supervisor.get.uuid, actorRef)
 
-  def deregisterSupervisorForActor(actorRef: ActorRef) =
+  private[akka] def deregisterSupervisorForActor(actorRef: ActorRef) =
     if (!actorRef.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.remove(actorRef.supervisor.get.uuid)
-
-  def registerListener(actorRef: ActorRef) = listeners.add(actorRef)
-
-  def deregisterListener(actorRef: ActorRef) = listeners.remove(actorRef)
 }
 
 /**

@@ -164,7 +164,7 @@ object Transaction {
     }
 
     /**
-    * See ScalaDoc on Transaction.Local class.
+     * See ScalaDoc on Transaction.Local class.
      */
     def atomically[A](firstBody: => A) = elseBody(firstBody)
 
