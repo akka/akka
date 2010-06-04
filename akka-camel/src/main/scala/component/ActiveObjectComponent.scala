@@ -54,6 +54,13 @@ class ActiveObjectInfo(context: CamelContext, clazz: Class[_], strategy: Paramet
     extends BeanInfo(context, clazz, strategy) {
 
   protected override def introspect(clazz: Class[_]): Unit = {
+
+    // TODO: fix target class detection in BeanInfo.introspect(Class)
+    // Camel assumes that classes containing a '$$' in the class name
+    // are classes generated with CGLIB. This conflicts with proxies
+    // created from interfaces with AspectWerkz. Once the fix is in
+    // place this method can be removed.
+
     for (method <- clazz.getDeclaredMethods) {
       if (isValidMethod(clazz, method)) {
         introspect(clazz, method)

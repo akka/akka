@@ -16,6 +16,33 @@ import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.component.ActiveObjectComponent
 import se.scalablesolutions.akka.util.Logging
 
+private[camel] object ConsumerPublisher extends Logging {
+  /**
+   * Creates a route to the registered consumer actor.
+   */
+  def handleConsumerRegistered(event: ConsumerRegistered) {
+    CamelContextManager.context.addRoutes(new ConsumerActorRoute(event.uri, event.id, event.uuid))
+    log.info("published actor %s at endpoint %s" format (event.actorRef, event.uri))
+  }
+
+  /**
+   * Stops route to the already un-registered consumer actor.
+   */
+  def handleConsumerUnregistered(event: ConsumerUnregistered) {
+    CamelContextManager.context.stopRoute(event.id)
+    log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
+  }
+
+  def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
+    val targetMethod = event.method.getName
+    val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
+
+    CamelContextManager.activeObjectRegistry.put(objectId, event.activeObject)
+    CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
+    log.info("published method %s of %s at endpoint %s" format (targetMethod, event.activeObject, event.uri))
+  }
+}
+
 /**
  * Actor that publishes consumer actors as Camel endpoints at the CamelContext managed
  * by se.scalablesolutions.akka.camel.CamelContextManager. It accepts messages of type
@@ -24,7 +51,8 @@ import se.scalablesolutions.akka.util.Logging
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerPublisher extends Actor with Logging {
+private[camel] class ConsumerPublisher extends Actor {
+  import ConsumerPublisher._
 
   @volatile private var latch = new CountDownLatch(0)
 
@@ -50,31 +78,6 @@ private[camel] class ConsumerPublisher extends Actor with Logging {
       self.reply(latch)
     }
     case _ => { /* ignore */}
-  }
-
-  /**
-   * Creates a route to the registered consumer actor.
-   */
-  def handleConsumerRegistered(event: ConsumerRegistered) {
-    CamelContextManager.context.addRoutes(new ConsumerActorRoute(event.uri, event.id, event.uuid))
-    log.info("published actor %s at endpoint %s" format (event.actorRef, event.uri))
-  }
-
-  /**
-   * Stops route to the already un-registered consumer actor.
-   */
-  def handleConsumerUnregistered(event: ConsumerUnregistered) {
-    CamelContextManager.context.stopRoute(event.id)
-    log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
-  }
-
-  def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
-    val targetMethod = event.method.getName
-    val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
-
-    CamelContextManager.activeObjectRegistry.put(objectId, event.activeObject)
-    CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
-    log.info("published method %s of %s at endpoint %s" format (targetMethod, event.activeObject, event.uri))
   }
 }
 

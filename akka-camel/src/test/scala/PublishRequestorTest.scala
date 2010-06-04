@@ -5,8 +5,8 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.{Before, After, Test}
 import org.scalatest.junit.JUnitSuite
 
+import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorRegistry, ActorRegistered, ActorUnregistered}
 import se.scalablesolutions.akka.camel.support.{SetExpectedMessageCount => SetExpectedTestMessageCount, _}
 
 class PublishRequestorTest extends JUnitSuite {
@@ -31,6 +31,19 @@ class PublishRequestorTest extends JUnitSuite {
     ActorRegistry.shutdownAll
   }
 
+  @Test def shouldReceiveConsumerMethodRegisteredEvent = {
+    val obj = ActiveObject.newInstance(classOf[PojoSingle])
+    val init = AspectInit(classOf[PojoSingle], null, None, 1000)
+    val latch = publisher.!![CountDownLatch](SetExpectedTestMessageCount(1)).get
+    requestor ! AspectInitRegistered(obj, init)
+    assert(latch.await(5000, TimeUnit.MILLISECONDS))
+    val event = (publisher !! GetRetainedMessage).get.asInstanceOf[ConsumerMethodRegistered]
+    assert(event.init === init)
+    assert(event.uri === "direct:foo")
+    assert(event.activeObject === obj)
+    assert(event.method.getName === "foo")
+  }
+
   @Test def shouldReceiveConsumerRegisteredEvent = {
     val latch = publisher.!![CountDownLatch](SetExpectedTestMessageCount(1)).get
     requestor ! ActorRegistered(consumer)
@@ -46,9 +59,6 @@ class PublishRequestorTest extends JUnitSuite {
     assert((publisher !! GetRetainedMessage) ===
       Some(ConsumerUnregistered(consumer, "mock:test", consumer.uuid, true)))
   }
-
-  // TODO: test active object method registration
-  
 }
 
 object PublishRequestorTest {
