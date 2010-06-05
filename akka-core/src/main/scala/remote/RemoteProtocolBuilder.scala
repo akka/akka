@@ -97,7 +97,6 @@ object RemoteProtocolBuilder {
   }
 
   def setMessage(message: Any, builder: RemoteReplyProtocol.Builder) = {
-    (new Exception).printStackTrace
     if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
       builder.setProtocol(SerializationProtocol.SBINARY)
