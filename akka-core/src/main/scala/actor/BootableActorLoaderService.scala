@@ -12,7 +12,7 @@ import java.util.Enumeration
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 import se.scalablesolutions.akka.config.Config._
 
-class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLClassLoader(urls.toArray.asInstanceOf[Array[URL]],parent) with Logging
+class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLClassLoader(urls.toArray.asInstanceOf[Array[URL]],parent)
 {
   override def findResources(resource : String) = {
     val normalResult = super.findResources(resource)
@@ -20,9 +20,7 @@ class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLC
   }
   
   def findDeployed(resource : String) = new Enumeration[URL]{
-	private val classes = getURLs.flatMap( listClassesInPackage(_,resource) )
-	log.debug("When looking for %s we found %s",resource,classes.mkString(", "))
-    private val it = classes.iterator
+    private val it =  getURLs.flatMap( listClassesInPackage(_,resource) ).iterator
     def hasMoreElements = it.hasNext
     def nextElement = it.next
   }
