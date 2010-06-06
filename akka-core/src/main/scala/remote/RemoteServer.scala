@@ -364,12 +364,12 @@ class RemoteServerHandler(
     val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actorRef.start
     val message = RemoteProtocolBuilder.getMessage(request)
-    if (request.hasSender) {
-      val sender = request.getSender
-      if (sender ne null) actorRef.!(message)(Some(ActorRef.fromProtobuf(sender, applicationLoader)))
-    } else {
+    val sender = if (request.hasSender) Some(ActorRef.fromProtobuf(request.getSender, applicationLoader))
+                 else None
+    if (request.getIsOneWay) actorRef.!(message)(sender)
+    else {
       try {
-        val resultOrNone = actorRef !! message
+        val resultOrNone = actorRef.!!(message)(sender)
         val result: AnyRef = if (resultOrNone.isDefined) resultOrNone.get else null
         log.debug("Returning result from actor invocation [%s]", result)
         val replyBuilder = RemoteReplyProtocol.newBuilder

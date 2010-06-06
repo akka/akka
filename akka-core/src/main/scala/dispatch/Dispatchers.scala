@@ -40,7 +40,7 @@ import se.scalablesolutions.akka.config.Config.config
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers {
-  val THROUGHPUT = config.getInt("akka.dispatcher.throughput", 5)
+  val THROUGHPUT = config.getInt("akka.actor.throughput", 5)
 
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global") {
     override def register(actor: ActorRef) = {
