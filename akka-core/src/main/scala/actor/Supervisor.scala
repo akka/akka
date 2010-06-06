@@ -124,8 +124,9 @@ sealed class Supervisor private[akka] (
   extends Configurator {
   import Supervisor._
 
-  private val childActors = new ConcurrentHashMap[String, List[ActorRef]]
-  private val childSupervisors = new CopyOnWriteArrayList[Supervisor]
+  private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
+  private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
+
   private[akka] val supervisor = actorOf(new SupervisorActor(handler, trapExceptions)).start
 
   def uuid = supervisor.uuid
@@ -141,15 +142,21 @@ sealed class Supervisor private[akka] (
 
   def unlink(child: ActorRef) = supervisor.unlink(child)
 
-  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
-  def getInstance[T](clazz: Class[T]): List[T] = childActors.get(clazz.getName).asInstanceOf[List[T]]
+  // FIXME is this method needed? 
+  def getInstance[T](clazz: Class[T]): List[T] = _childActors.get(clazz.getName).asInstanceOf[List[T]]
 
-  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
+  // FIXME is this method needed? 
   def getComponentInterfaces: List[Class[_]] =
-    childActors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
+    _childActors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
+
+  def children: List[ActorRef] =
+    _childActors.values.toArray.toList.asInstanceOf[List[List[ActorRef]]].flatten
+
+  def childSupervisors: List[Supervisor] =
+    _childActors.values.toArray.toList.asInstanceOf[List[Supervisor]]
 
   // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
-  def isDefined(clazz: Class[_]): Boolean = childActors.containsKey(clazz.getName)
+  def isDefined(clazz: Class[_]): Boolean = _childActors.containsKey(clazz.getName)
 
   def configure(config: SupervisorConfig): Unit = config match {
     case SupervisorConfig(_, servers) =>
@@ -159,11 +166,11 @@ sealed class Supervisor private[akka] (
             actorRef.start
             val className = actorRef.actor.getClass.getName
             val currentActors = {
-              val list = childActors.get(className)
+              val list = _childActors.get(className)
               if (list eq null) List[ActorRef]()
               else list
             }
-            childActors.put(className, actorRef :: currentActors)
+            _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
             supervisor.link(actorRef)
             remoteAddress.foreach(address =>
@@ -171,7 +178,7 @@ sealed class Supervisor private[akka] (
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
-            childSupervisors.add(childSupervisor)
+            _childSupervisors.add(childSupervisor)
         })
   }
 }
