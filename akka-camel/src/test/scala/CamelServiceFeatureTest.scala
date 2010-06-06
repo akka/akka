@@ -102,7 +102,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
     scenario("access active object methods via Camel direct-endpoints") {
 
-      given("two consumer actors registered before and after CamelService startup")
+      given("an active object registered after CamelService startup")
       val latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(3)).get
       ActiveObject.newInstance(classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
