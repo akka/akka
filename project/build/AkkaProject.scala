@@ -10,6 +10,8 @@ import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
 
+import com.weiglewilczek.bnd4sbt._
+
 class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
@@ -25,6 +27,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
 
+  val artifactQualifier = buildScalaVersion + "_osgi"
+
   override def compileOptions = super.compileOptions ++
     Seq("-deprecation", 
         "-Xmigration", 
@@ -36,7 +40,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
-  def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
+  def distName = "%s_%s-%s.zip".format(name, artifactQualifier, version)
 
   lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
 
@@ -109,20 +113,20 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   override def manifestClassPath = Some(allArtifacts.getFiles
     .filter(_.getName.endsWith(".jar"))
     .filter(!_.getName.contains("scala-library"))
-    .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
+    .map("lib_managed/scala_%s/compile/".format(artifactQualifier) + _.getName)
     .mkString(" ") +
     " scala-library.jar" +
-    " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-common_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
-    " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
+    " dist/akka-core_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-http_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-camel_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-amqp_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-persistence-common_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-persistence-redis_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-persistence-mongo_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-persistence-cassandra_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-kernel_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-spring_%s-%s.jar".format(artifactQualifier, version) +
+    " dist/akka-jta_%s-%s.jar".format(artifactQualifier, version)
     )
 
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
@@ -398,12 +402,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
   
   def akkaArtifacts = {
-    descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar") 
+    descendents(info.projectPath / "dist", "*" + artifactQualifier  + "-" + version + ".jar") 
   }
   // ------------------------------------------------------------
 
 
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject
+  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject
+   
+  
 
   trait DeployProject extends DefaultProject {
     // defines where the deployTask copies jars to
@@ -424,4 +430,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
         FileUtilities.copyFile(jar, toDir / jar.name, log)
       } else None
   }
+
+  trait OSGiProject extends DefaultProject with BNDPlugin {
+    override def bndExportPackage = Set("*")    
+  }
+
+
 }
