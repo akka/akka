@@ -13,7 +13,7 @@ case class Listen(listener: ActorRef) extends ListenerMessage
 case class Deafen(listener: ActorRef) extends ListenerMessage
 case class WithListeners(f: List[ActorRef] => Unit) extends ListenerMessage
 
-/** 
+/**
  * Listeners is a generic trait to implement listening capability on an Actor.
  * <p/>
  * Use the <code>gossip(msg)</code> method to have it sent to the listeners.
@@ -34,6 +34,6 @@ trait Listeners { self: Actor =>
   }
 
   protected def gossip(msg: Any) = listenersAsList foreach (_ ! msg)
-  
+
   private def listenersAsList: List[ActorRef] = listeners.toArray.toList.asInstanceOf[List[ActorRef]]
 }
