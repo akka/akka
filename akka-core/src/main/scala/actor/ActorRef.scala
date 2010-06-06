@@ -222,7 +222,7 @@ trait ActorRef extends TransactionManagement {
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
   def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
- 
+
   /**
    * Is the actor being restarted?
    */
@@ -301,22 +301,6 @@ trait ActorRef extends TransactionManagement {
   }
 
   /**
-   * Sends a message asynchronously and waits on a future for a reply message.
-   * Uses the time-out defined in the Actor.
-   * <p/>
-   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
-   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
-   * implement request/response message exchanges.
-   * <p/>
-   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-//  def !![T](message: Any)(implicit sender: Option[ActorRef] = None): Option[T] = !![T](message, timeout)
-
-  /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
@@ -349,14 +333,15 @@ trait ActorRef extends TransactionManagement {
    * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
    * <p/>
-   * Throws an IllegalStateException if unable to determine what to reply to
+   * Throws an IllegalStateException if unable to determine what to reply to.
    */
   def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
     "\n\tNo sender in scope, can't reply. " +
     "\n\tYou have probably: " +
     "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
-    "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object.")
-    
+    "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object." +
+    "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if succes and Boolean(false) if no sender in scope")
+
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
@@ -595,7 +580,7 @@ sealed class LocalActorRef private[akka](
   @volatile private[akka] var _supervisor: Option[ActorRef] = None
 
   protected[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
-  protected[this] val actorInstance = new AtomicReference[Actor](newActor)
+  protected[this] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
@@ -1224,7 +1209,7 @@ private[akka] case class RemoteActorRef private[akka] (
   extends ActorRef {
   _uuid = uuuid
   timeout = _timeout
-  
+
   start
   lazy val remoteClient = RemoteClient.clientFor(hostname, port, loader)
 

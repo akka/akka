@@ -5,7 +5,7 @@
 import sbt._
 import sbt.CompileOrder._
 import spde._
- 
+
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
@@ -16,8 +16,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // project versions
-  val JERSEY_VERSION = "1.1.5"
-  val ATMO_VERSION = "0.6-SNAPSHOT"
+  val JERSEY_VERSION = "1.2"
+  val ATMO_VERSION = "0.6-20100604"
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
@@ -27,20 +27,18 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
 
-  val artifactQualifier = buildScalaVersion + "_osgi"
-
   override def compileOptions = super.compileOptions ++
-    Seq("-deprecation", 
-        "-Xmigration", 
-        "-Xcheckinit", 
-        "-Xstrict-warnings", 
-        "-Xwarninit", 
+    Seq("-deprecation",
+        "-Xmigration",
+        "-Xcheckinit",
+        "-Xstrict-warnings",
+        "-Xwarninit",
         "-encoding", "utf8")
         .map(x => CompileOption(x))
 
   override def javaCompileOptions = JavaCompileOption("-Xlint:unchecked") :: super.javaCompileOptions.toList
 
-  def distName = "%s_%s-%s.zip".format(name, artifactQualifier, version)
+  def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
 
   lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
 
@@ -67,16 +65,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", javaNetRepo)
   val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", javaNetRepo)
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
-  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
+ // val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
-
-  /* These are not needed and can possibly be deleted.
-  val databinder = "DataBinder" at "http://databinder.net/repo"
-  // val configgy = "Configgy" at "http://www.lag.net/repo"
-  val codehaus = "Codehaus" at "http://repository.codehaus.org"
-  val codehaus_snapshots = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val google = "Google" at "http://google-maven-repository.googlecode.com/svn/repository"
-  */
 
   // ------------------------------------------------------------
   // project defintions
@@ -90,8 +80,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
     akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
 
-  // functional tests in java
-  lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
+  // active object tests in java
+  lazy val akka_active_object_test = project("akka-active-object-test", "akka-active-object-test", new AkkaActiveObjectTestProject(_), akka_kernel)
 
   // examples
   lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
@@ -112,21 +102,22 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // create a manifest with all akka jars and dependency jars on classpath
   override def manifestClassPath = Some(allArtifacts.getFiles
     .filter(_.getName.endsWith(".jar"))
+    .filter(!_.getName.contains("servlet_2.4"))
     .filter(!_.getName.contains("scala-library"))
-    .map("lib_managed/scala_%s/compile/".format(artifactQualifier) + _.getName)
+    .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") +
     " scala-library.jar" +
-    " dist/akka-core_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-http_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-camel_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-amqp_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-persistence-common_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-persistence-redis_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-persistence-mongo_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-persistence-cassandra_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-kernel_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-spring_%s-%s.jar".format(artifactQualifier, version) +
-    " dist/akka-jta_%s-%s.jar".format(artifactQualifier, version)
+    " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-common_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
     )
 
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
@@ -162,21 +153,21 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
         <distribution>repo</distribution>
       </license>
     </licenses>
-    
+
     // publish to local mvn
     import Process._
-    lazy val publishLocalMvn = runMvnInstall 
+    lazy val publishLocalMvn = runMvnInstall
     def runMvnInstall = task {
-        for(absPath <- akkaArtifacts.getPaths) {
+        for (absPath <- akkaArtifacts.getPaths) {
           val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
-          val artifactRE(path, artifactId, artifactVersion) = absPath  
-          val command = "mvn install:install-file" + 
+          val artifactRE(path, artifactId, artifactVersion) = absPath
+          val command = "mvn install:install-file" +
                         " -Dfile=" + absPath +
-                        " -DgroupId=se.scalablesolutions.akka" + 
-                        " -DartifactId=" + artifactId + 
+                        " -DgroupId=se.scalablesolutions.akka" +
+                        " -DartifactId=" + artifactId +
                         " -Dversion=" + version +
                         " -Dpackaging=jar -DgeneratePom=true"
-          command ! log  
+          command ! log
         }
         None
     } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
@@ -203,7 +194,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile"
     val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile"
     val jgroups = "jgroups" % "jgroups" % "2.9.0.GA" % "compile"
-    
+
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
@@ -227,11 +218,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atmo = "org.atmosphere" % "atmosphere-annotations" % ATMO_VERSION % "compile"
     val atmo_jersey = "org.atmosphere" % "atmosphere-jersey" % ATMO_VERSION % "compile"
     val atmo_runtime = "org.atmosphere" % "atmosphere-runtime" % ATMO_VERSION % "compile"
+    val atmo_tomcat = "org.atmosphere" % "atmosphere-compat-tomcat" % ATMO_VERSION % "compile"
+    val atmo_weblogic = "org.atmosphere" % "atmosphere-compat-weblogic" % ATMO_VERSION % "compile"
+    val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile"
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
     val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
     val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
-    
+
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
@@ -301,19 +295,12 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // ================= TEST ==================
-  class AkkaFunTestProject(info: ProjectInfo) extends DefaultProject(info) {
-    val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
-    val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
-    val protobuf = "com.google.protobuf" % "protobuf-java" % "2.2.0" % "compile"
-    val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
-    val jersey_server = "com.sun.jersey" % "jersey-server" % JERSEY_VERSION % "compile"
-    val jersey_json = "com.sun.jersey" % "jersey-json" % JERSEY_VERSION % "compile"
-    val jersey_atom = "com.sun.jersey" % "jersey-atom" % JERSEY_VERSION % "compile"
+  class AkkaActiveObjectTestProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit = "junit" % "junit" % "4.5" % "test"
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
   }
-  
+
   // ================= EXAMPLES ==================
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
     val scalaToolsSnapshots = ScalaToolsSnapshots
@@ -401,15 +388,10 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     )
   }
   
-  def akkaArtifacts = {
-    descendents(info.projectPath / "dist", "*" + artifactQualifier  + "-" + version + ".jar") 
-  }
+  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "_osgi-" + version + ".jar")
+
   // ------------------------------------------------------------
-
-
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject
-   
-  
 
   trait DeployProject extends DefaultProject {
     // defines where the deployTask copies jars to
@@ -418,7 +400,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dist = distAction
     def distAction = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
       `package`, packageDocs, packageSrc) describedAs("Deploying")
-    def deployTask(jar: Path, docs: Path, src: Path, toDir: Path, 
+    def deployTask(jar: Path, docs: Path, src: Path, toDir: Path,
                    genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
       gen(jar, toDir, genJar, "Deploying bits") orElse
       gen(docs, toDir, genDocs, "Deploying docs") orElse
@@ -432,7 +414,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   trait OSGiProject extends DefaultProject with BNDPlugin {
+    override def artifactID = moduleID + "_osgi"
     override def bndExportPackage = Set("*")    
+
   }
 
 

@@ -42,7 +42,7 @@ private[akka] object CassandraStorageBackend extends
       case "ALL"          => ConsistencyLevel.ALL
       case "ANY"          => ConsistencyLevel.ANY
       case unknown        => throw new IllegalArgumentException(
-        "Cassandra consistency level [" + unknown + "] is not supported." + 
+        "Cassandra consistency level [" + unknown + "] is not supported." +
         "\n\tExpected one of [ZERO, ONE, QUORUM, DCQUORUM, DCQUORUMSYNC, ALL, ANY] in the akka.conf configuration file.")
     }
   }
@@ -105,9 +105,9 @@ private[akka] object CassandraStorageBackend extends
     }
   }
 
-  def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = 
+  def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) =
     elements.foreach(insertVectorStorageEntryFor(name, _))
-  
+
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
     val columnPath = new ColumnPath(VECTOR_COLUMN_PARENT.getColumn_family)
     columnPath.setColumn(intToBytes(index))

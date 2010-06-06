@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.actor.Actor._
 
 /**
  * Sample Akka application for Redis PubSub
- * 
+ *
  * Prerequisite: Need Redis Server running (the version that supports pubsub)
  * <pre>
  * 1. Download redis from http://github.com/antirez/redis
@@ -65,7 +65,7 @@ object Sub {
   val r = new RedisClient("localhost", 6379)
   val s = actorOf(new Subscriber(r))
   s.start
-  s ! Register(callback) 
+  s ! Register(callback)
 
   def sub(channels: String*) = {
     s ! Subscribe(channels.toArray)
@@ -78,29 +78,29 @@ object Sub {
   def callback(pubsub: PubSubMessage) = pubsub match {
     case S(channel, no) => println("subscribed to " + channel + " and count = " + no)
     case U(channel, no) => println("unsubscribed from " + channel + " and count = " + no)
-    case M(channel, msg) => 
+    case M(channel, msg) =>
       msg match {
         // exit will unsubscribe from all channels and stop subscription service
-        case "exit" => 
+        case "exit" =>
           println("unsubscribe all ..")
           r.unsubscribe
 
         // message "+x" will subscribe to channel x
-        case x if x startsWith "+" => 
+        case x if x startsWith "+" =>
           val s: Seq[Char] = x
           s match {
             case Seq('+', rest @ _*) => r.subscribe(rest.toString){ m => }
           }
 
         // message "-x" will unsubscribe from channel x
-        case x if x startsWith "-" => 
+        case x if x startsWith "-" =>
           val s: Seq[Char] = x
           s match {
             case Seq('-', rest @ _*) => r.unsubscribe(rest.toString)
           }
 
         // other message receive
-        case x => 
+        case x =>
           println("received message on channel " + channel + " as : " + x)
       }
   }
