@@ -40,7 +40,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
    * @param clazz the class for the active object
    * @return the active objects for the class
    */
-  override def getInstance[T](clazz: Class[T]): List[T] = synchronized {
+  def getInstance[T](clazz: Class[T]): List[T] = synchronized {
     log.debug("Retrieving active object [%s]", clazz.getName)
     if (injector eq null) throw new IllegalStateException(
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
@@ -52,7 +52,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     List(proxy.asInstanceOf[T])
   }
 
-  override def isDefined(clazz: Class[_]): Boolean = synchronized {
+  def isDefined(clazz: Class[_]): Boolean = synchronized {
     activeObjectRegistry.get(clazz).isDefined
   }
 
@@ -60,7 +60,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     injector.getInstance(clazz).asInstanceOf[T]
   }
 
-  override def getComponentInterfaces: List[Class[_]] =
+  def getComponentInterfaces: List[Class[_]] =
     for (c <- components) yield {
       if (c.intf.isDefined) c.intf.get
       else c.target
@@ -122,7 +122,6 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
   override def supervise: ActiveObjectConfiguratorBase = synchronized {
     if (injector eq null) inject
     supervisor = Some(ActiveObject.supervise(restartStrategy, supervised))
-    ConfiguratorRepository.registerConfigurator(this)
     this
   }
 
