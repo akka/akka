@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<features name="akka 0.9">
+  <feature name="akka-core" version="0.9-SNAPSHOT">
+    <bundle>mvn:se.scalablesolutions.akka.akka-wrap/jgroups-wrapper_2.8.0.RC3_osgi/2.9.0.GA</bundle>
+    <bundle>mvn:se.scalablesolutions.akka/akka-core_2.8.0.RC3_osgi/0.9</bundle>
+  </feature>
+</features>
