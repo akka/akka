@@ -92,6 +92,9 @@ trait CamelContextLifecycle extends Logging {
    * Initializes this lifecycle object with the given CamelContext. For the passed
    * CamelContext stream-caching is enabled. If applications want to disable stream-
    * caching they can do so after this method returned and prior to calling start.
+   * This method also registers a new
+   * {@link se.scalablesolutions.akka.camel.component.ActiveObjectComponent} at
+   * <code>context</code> under the name actobj.
    */
   def init(context: CamelContext) {
     this.activeObjectComponent = new ActiveObjectComponent

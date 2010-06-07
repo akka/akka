@@ -16,6 +16,9 @@ import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.component.ActiveObjectComponent
 import se.scalablesolutions.akka.util.Logging
 
+/**
+ * @author Martin Krasser
+ */
 private[camel] object ConsumerPublisher extends Logging {
   /**
    * Creates a route to the registered consumer actor.
@@ -33,6 +36,9 @@ private[camel] object ConsumerPublisher extends Logging {
     log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
   }
 
+  /**
+   * Creates a route to an active object method.
+   */
   def handleConsumerMethodRegistered(event: ConsumerMethodRegistered) {
     val targetMethod = event.method.getName
     val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
@@ -44,9 +50,11 @@ private[camel] object ConsumerPublisher extends Logging {
 }
 
 /**
- * Actor that publishes consumer actors as Camel endpoints at the CamelContext managed
- * by se.scalablesolutions.akka.camel.CamelContextManager. It accepts messages of type
- * se.scalablesolutions.akka.camel.service.ConsumerRegistered and
+ * Actor that publishes consumer actors and active object methods at Camel endpoints.
+ * The Camel context used for publishing is CamelContextManager.context. This actor
+ * accepts messages of type
+ * se.scalablesolutions.akka.camel.service.ConsumerRegistered,
+ * se.scalablesolutions.akka.camel.service.ConsumerMethodRegistered and
  * se.scalablesolutions.akka.camel.service.ConsumerUnregistered.
  *
  * @author Martin Krasser
@@ -81,8 +89,20 @@ private[camel] class ConsumerPublisher extends Actor {
   }
 }
 
+/**
+ * Command message used For testing-purposes only.
+ */
 private[camel] case class SetExpectedMessageCount(num: Int)
 
+
+/**
+ * Defines an abstract route to a target which is either an actor or an active object method..
+ *
+ * @param endpointUri endpoint URI of the consumer actor or active object method.
+ * @param id actor identifier or active object identifier (registry key).
+ *
+ * @author Martin Krasser
+ */
 private[camel] abstract class ConsumerRoute(endpointUri: String, id: String) extends RouteBuilder {
   // TODO: make conversions configurable
   private val bodyConversions = Map(
@@ -114,12 +134,29 @@ private[camel] class ConsumerActorRoute(endpointUri: String, id: String, uuid: B
   protected override def targetUri = (if (uuid) "actor:uuid:%s" else "actor:id:%s") format id
 }
 
+/**
+ * Defines the route to an active object method..
+ *
+ * @param endpointUri endpoint URI of the consumer actor method
+ * @param id active object identifier
+ * @param method name of the method to invoke.
+ *
+ * @author Martin Krasser
+ */
 private[camel] class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends ConsumerRoute(endpointUri, id) {
   protected override def targetUri = "%s:%s?method=%s" format (ActiveObjectComponent.DefaultSchema, id, method)
 }
 
 /**
- * A registration listener that triggers publication and un-publication of consumer actors.
+ * A registration listener that triggers publication of consumer actors and active object
+ * methods as well as un-publication of consumer actors. This actor needs to be initialized
+ * with a <code>PublishRequestorInit</code> command message for obtaining a reference to
+ * a <code>publisher</code> actor. Before initialization it buffers all outbound messages
+ * and delivers them to the <code>publisher</code> when receiving a
+ * <code>PublishRequestorInit</code> message. After initialization, outbound messages are
+ * delivered directly without buffering.
+ *
+ * @see PublishRequestorInit
  *
  * @author Martin Krasser
  */
@@ -154,10 +191,14 @@ private[camel] class PublishRequestor extends Actor {
   }
 }
 
+/**
+ * Command message to initialize a PublishRequestor to use <code>consumerPublisher</code>
+ * for publishing actors or active object methods.
+ */
 private[camel] case class PublishRequestorInit(consumerPublisher: ActorRef)
 
 /**
- * A consumer event.
+ * A consumer (un)registration event.
  *
  * @author Martin Krasser
  */
@@ -189,6 +230,18 @@ private[camel] case class ConsumerRegistered(actorRef: ActorRef, uri: String, id
  */
 private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, id: String, uuid: Boolean) extends ConsumerEvent
 
+/**
+ * Event indicating that an active object proxy has been created for a POJO. For each
+ * <code>@consume</code> annotated POJO method a separate instance of this class is
+ * created.
+ *
+ * @param activeObject active object (proxy).
+ * @param init
+ * @param uri endpoint URI of the active object method
+ * @param method method to be published.
+ *
+ * @author Martin Krasser
+ */
 private[camel] case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
 /**
@@ -219,7 +272,15 @@ private[camel] object ConsumerUnregistered {
   }
 }
 
+/**
+ * @author Martin Krasser
+ */
 private[camel] object ConsumerMethodRegistered {
+  /**
+   * Creates a list of ConsumerMethodRegistered event messages for an active object or an empty
+   * list if the active object is a proxy for an remote active object or the active object doesn't
+   * have any <code>@consume</code> annotated methods.
+   */
   def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodRegistered] = {
     // TODO: support consumer annotation inheritance
     // - visit overridden methods in superclasses
