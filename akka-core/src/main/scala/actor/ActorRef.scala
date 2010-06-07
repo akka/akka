@@ -839,6 +839,11 @@ sealed class LocalActorRef private[akka](
   def mailboxSize: Int = _mailbox.size
 
   /**
+   * Returns a copy of all the messages, put into a List[MessageInvocation].
+   */
+  def messagesInMailbox: List[MessageInvocation] = _mailbox.toArray.toList.asInstanceOf[List[MessageInvocation]]
+
+  /**
    * Shuts down and removes all linked actors.
    */
   def shutdownLinkedActors: Unit = guard.withGuard {
