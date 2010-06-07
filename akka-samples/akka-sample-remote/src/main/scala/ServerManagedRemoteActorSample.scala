@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.util.Logging
 
 class HelloWorldActor extends Actor {
   def receive = {
-    case "Hello" => 
+    case "Hello" =>
       log.info("Received 'Hello'")
       self.reply("World")
   }
@@ -30,7 +30,7 @@ object ServerManagedRemoteActorServer extends Logging {
 }
 
 object ServerManagedRemoteActorClient extends Logging {
-  
+
   def run = {
     val actor = RemoteClient.actorFor("hello-service", "localhost", 9999)
     log.info("Remote client created")

@@ -4,10 +4,6 @@
 
 package sample.rest.java;
 
-import javax.ws.rs.Path;
-import javax.ws.rs.GET;
-import javax.ws.rs.Produces;
-
 import se.scalablesolutions.akka.actor.annotation.transactionrequired;
 import se.scalablesolutions.akka.actor.annotation.prerestart;
 import se.scalablesolutions.akka.actor.annotation.postrestart;
@@ -16,14 +12,6 @@ import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage;
 
 import java.nio.ByteBuffer;
 
-/**
- * Try service out by invoking (multiple times):
- * <pre>
- * curl http://localhost:9998/persistentjavacount
- * </pre>
- * Or browse to the URL from a web browser.
- */
-@Path("/persistentjavacount")
 @transactionrequired
 public class PersistentSimpleService {
   private String KEY = "COUNTER";
@@ -31,8 +19,6 @@ public class PersistentSimpleService {
   private boolean hasStartedTicking = false;
   private PersistentMap<byte[], byte[]> storage;
 
-  @GET
-  @Produces({"application/html"})
   public String count() {
     if (storage == null) storage = CassandraStorage.newMap();
     if (!hasStartedTicking) {

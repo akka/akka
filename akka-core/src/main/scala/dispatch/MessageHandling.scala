@@ -7,12 +7,15 @@ package se.scalablesolutions.akka.dispatch
 import java.util.List
 
 import se.scalablesolutions.akka.util.{HashCode, Logging}
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
 
 import java.util.concurrent.ConcurrentHashMap
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 final class MessageInvocation(val receiver: ActorRef,
                               val message: Any,
                               val sender: Option[ActorRef],
@@ -20,7 +23,12 @@ final class MessageInvocation(val receiver: ActorRef,
                               val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 
-  def invoke = receiver.invoke(this)
+  def invoke = try { 
+    receiver.invoke(this)
+  } catch {
+    case e: NullPointerException => throw new ActorInitializationException(
+      "Don't call 'self ! message' in the Actor's constructor (e.g. body of the class).")
+  }
 
   def send = receiver.dispatcher.dispatch(this)
 
@@ -49,14 +57,16 @@ final class MessageInvocation(val receiver: ActorRef,
   }
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 trait MessageQueue {
   def append(handle: MessageInvocation)
 }
 
-trait MessageInvoker {
-  def invoke(message: MessageInvocation)
-}
-
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 trait MessageDispatcher extends Logging {
   protected val references = new ConcurrentHashMap[String, ActorRef]
   def dispatch(invocation: MessageInvocation)
@@ -65,14 +75,16 @@ trait MessageDispatcher extends Logging {
   def register(actorRef: ActorRef) = references.put(actorRef.uuid, actorRef)
   def unregister(actorRef: ActorRef) = {
     references.remove(actorRef.uuid)
-    if (canBeShutDown)
-      shutdown // shut down in the dispatcher's references is zero
+    if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
   }
   def canBeShutDown: Boolean = references.isEmpty
   def isShutdown: Boolean
   def usesActorMailbox : Boolean
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 trait MessageDemultiplexer {
   def select
   def wakeUp

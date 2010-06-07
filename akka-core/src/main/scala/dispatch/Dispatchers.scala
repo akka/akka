@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.dispatch
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.config.Config.config
 
 /**
  * Scala API. Dispatcher factory.
@@ -39,6 +40,8 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers {
+  val THROUGHPUT = config.getInt("akka.actor.throughput", 5)
+
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global") {
     override def register(actor: ActorRef) = {
       if (isShutdown) init
@@ -54,7 +57,14 @@ object Dispatchers {
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int = THROUGHPUT) = new ExecutorBasedEventDrivenDispatcher(name, throughput)
+
+  /**
+   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name, THROUGHPUT)
 
   /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.

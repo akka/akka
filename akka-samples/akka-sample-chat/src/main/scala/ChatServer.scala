@@ -27,17 +27,17 @@ First we need to download, build and start up Redis:
 4. Run: ‘./redis-server’.
 For details on how to set up Redis server have a look at http://code.google.com/p/redis/wiki/QuickStart.
 
-Then to run the sample: 
+Then to run the sample:
 
 1. Fire up two shells. For each of them:
   - Step down into to the root of the Akka distribution.
   - Set 'export AKKA_HOME=<root of distribution>.
   - Run 'sbt console' to start up a REPL (interpreter).
-2. In the first REPL you get execute: 
+2. In the first REPL you get execute:
   - scala> import sample.chat._
   - scala> import se.scalablesolutions.akka.actor.Actor._
   - scala> val chatService = actorOf[ChatService].start
-3. In the second REPL you get execute: 
+3. In the second REPL you get execute:
     - scala> import sample.chat._
     - scala> Runner.run
 4. See the chat simulation run.
@@ -60,12 +60,12 @@ case class ChatMessage(from: String, message: String) extends Event
 /**
  * Chat client.
  */
-class ChatClient(val name: String) { 
+class ChatClient(val name: String) {
   val chat = RemoteClient.actorFor("chat:service", "localhost", 9999)
 
-  def login =                 chat ! Login(name) 
-  def logout =                chat ! Logout(name)  
-  def post(message: String) = chat ! ChatMessage(name, name + ": " + message)  
+  def login =                 chat ! Login(name)
+  def logout =                chat ! Logout(name)
+  def post(message: String) = chat ! ChatMessage(name, name + ": " + message)
   def chatLog: ChatLog =     (chat !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
 }
 
@@ -75,15 +75,15 @@ class ChatClient(val name: String) {
 class Session(user: String, storage: ActorRef) extends Actor {
   private val loginTime = System.currentTimeMillis
   private var userLog: List[String] = Nil
-  
+
   log.info("New session for user [%s] has been created at [%s]", user, loginTime)
 
   def receive = {
-    case msg @ ChatMessage(from, message) => 
+    case msg @ ChatMessage(from, message) =>
       userLog ::= message
       storage ! msg
-      
-    case msg @ GetChatLog(_) => 
+
+    case msg @ GetChatLog(_) =>
       storage forward msg
   }
 }
@@ -97,24 +97,24 @@ trait ChatStorage extends Actor
  * Redis-backed chat storage implementation.
  */
 class RedisChatStorage extends ChatStorage {
-  self.lifeCycle = Some(LifeCycle(Permanent))    
+  self.lifeCycle = Some(LifeCycle(Permanent))
   val CHAT_LOG = "akka.chat.log"
-  
+
   private var chatLog = atomic { RedisStorage.getVector(CHAT_LOG) }
 
   log.info("Redis-based chat storage is starting up...")
 
   def receive = {
-    case msg @ ChatMessage(from, message) => 
+    case msg @ ChatMessage(from, message) =>
       log.debug("New chat message [%s]", message)
       atomic { chatLog + message.getBytes("UTF-8") }
 
-    case GetChatLog(_) => 
+    case GetChatLog(_) =>
       val messageList = atomic { chatLog.map(bytes => new String(bytes, "UTF-8")).toList }
       self.reply(ChatLog(messageList))
   }
-  
-  override def postRestart(reason: Throwable) = chatLog = RedisStorage.getVector(CHAT_LOG)  
+
+  override def postRestart(reason: Throwable) = chatLog = RedisStorage.getVector(CHAT_LOG)
 }
 
 /**
@@ -122,27 +122,27 @@ class RedisChatStorage extends ChatStorage {
  * <p/>
  * Uses self-type annotation (this: Actor =>) to declare that it needs to be mixed in with an Actor.
  */
-trait SessionManagement { this: Actor => 
-  
+trait SessionManagement { this: Actor =>
+
   val storage: ActorRef // needs someone to provide the ChatStorage
   val sessions = new HashMap[String, ActorRef]
-  
+
   protected def sessionManagement: Receive = {
-    case Login(username) => 
+    case Login(username) =>
       log.info("User [%s] has logged in", username)
       val session = actorOf(new Session(username, storage))
       session.start
       sessions += (username -> session)
-      
-    case Logout(username) =>        
+
+    case Logout(username) =>
       log.info("User [%s] has logged out", username)
       val session = sessions(username)
       session.stop
-      sessions -= username 
-  }  
-  
-  protected def shutdownSessions = 
-    sessions.foreach { case (_, session) => session.stop }  
+      sessions -= username
+  }
+
+  protected def shutdownSessions =
+    sessions.foreach { case (_, session) => session.stop }
 }
 
 /**
@@ -152,7 +152,7 @@ trait SessionManagement { this: Actor =>
  */
 trait ChatManagement { this: Actor =>
   val sessions: HashMap[String, ActorRef] // needs someone to provide the Session map
-  
+
   protected def chatManagement: Receive = {
     case msg @ ChatMessage(from, _) => sessions(from) ! msg
     case msg @ GetChatLog(from) =>     sessions(from) forward msg
@@ -172,20 +172,20 @@ trait RedisChatStorageFactory { this: Actor =>
 trait ChatServer extends Actor {
   self.faultHandler = Some(OneForOneStrategy(5, 5000))
   self.trapExit = List(classOf[Exception])
-  
+
   val storage: ActorRef
 
-  log.info("Chat service is starting up...")
+  log.info("Chat server is starting up...")
 
   // actor message handler
   def receive = sessionManagement orElse chatManagement
-  
+
   // abstract methods to be defined somewhere else
   protected def chatManagement: Receive
-  protected def sessionManagement: Receive   
+  protected def sessionManagement: Receive
   protected def shutdownSessions: Unit
 
-  override def shutdown = { 
+  override def shutdown = {
     log.info("Chat server is shutting down...")
     shutdownSessions
     self.unlink(storage)
@@ -200,10 +200,10 @@ trait ChatServer extends Actor {
  * val chatService = Actor.actorOf[ChatService].start
  * </pre>
  */
-class ChatService extends 
-  ChatServer with 
-  SessionManagement with 
-  ChatManagement with 
+class ChatService extends
+  ChatServer with
+  SessionManagement with
+  ChatManagement with
   RedisChatStorageFactory {
   override def init = {
     RemoteNode.start("localhost", 9999)
@@ -217,7 +217,7 @@ class ChatService extends
 object Runner {
   def run = {
     val client = new ChatClient("jonas")
-  
+
     client.login
 
     client.post("Hi there")

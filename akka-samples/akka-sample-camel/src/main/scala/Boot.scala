@@ -45,21 +45,19 @@ class Boot {
   // Publish subscribe example
 
   //
-  // Cometd example is disabled because of unresolved sbt/ivy dependency resolution issues.
-  // If you want to run this example, make sure to replace all jetty-*-6.1.22.jar files
-  //  on the classpath with corresponding jetty-*-6.1.11.jar files.
+  // Cometd example commented out because camel-cometd is broken in Camel 2.3
   //
 
-  //val cometdUri = "cometd://localhost:8111/test/abc?resourceBase=target"
-  //val cometdSubscriber = new Subscriber("cometd-subscriber", cometdUri).start
-  //val cometdPublisher = new Publisher("cometd-publisher", cometdUri).start
+  //val cometdUri = "cometd://localhost:8111/test/abc?baseResource=file:target"
+  //val cometdSubscriber = actorOf(new Subscriber("cometd-subscriber", cometdUri)).start
+  //val cometdPublisher = actorOf(new Publisher("cometd-publisher", cometdUri)).start
 
   val jmsUri = "jms:topic:test"
   val jmsSubscriber1 = actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
   val jmsSubscriber2 = actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
   val jmsPublisher =   actorOf(new Publisher("jms-publisher", jmsUri)).start
 
-  //val cometdPublisherBridge = new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher).start
+  //val cometdPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher)).start
   val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start
 
   actorOf[Consumer4].start // POSTing "stop" to http://0.0.0.0:8877/camel/stop stops and unpublishes this actor

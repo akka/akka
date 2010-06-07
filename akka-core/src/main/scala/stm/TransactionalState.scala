@@ -56,6 +56,13 @@ trait Committable {
   def commit: Unit
 }
 
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait Abortable {
+  def abort: Unit
+}
+
 object RefFactory {
   private val factory = getGlobalStmInstance.getProgrammaticReferenceFactoryBuilder.build
 
@@ -205,7 +212,7 @@ class TransactionalRef[T](initialOpt: Option[T] = None) extends Transactional {
   }
 
   private def ensureIsInTransaction =
-    if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
+   ()// if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
 
   private def ensureNotNull =
     if (ref.isNull) throw new RuntimeException("Cannot alter Ref's value when it is null")
