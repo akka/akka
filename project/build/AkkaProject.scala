@@ -302,6 +302,13 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     override def bndExportPackage = Set("se.scalablesolutions.akka.*;version=0.9")
   }
 
+  class AkkaOSGiDependenciesBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
+    override def bndClasspath = compileClasspath
+    override def bndPrivatePackage = Set("")
+    override def bndImportPackage = Set("*;resolution:=optional")
+    override def bndExportPackage = Set("!se.scalablesolutions.akka.*", "*")
+  }
+
   class AkkaOSGiAssemblyProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     // FIXME: Find out how to replace mvn-assembly within SBT
 
@@ -314,6 +321,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_osgi_bundle = project("akka-osgi-bundle", "akka-osgi-bundle",
       new AkkaOSGiBundleProject(_), akka_kernel)
+    lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
+      new AkkaOSGiDependenciesBundleProject(_), akka_kernel)
     lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
       new AkkaOSGiAssemblyProject(_), akka_osgi_bundle)
   }
