@@ -1,7 +1,8 @@
 *~
 *#
 src_managed
-project/plugins/project/
+activemq-data
+project/plugins/project
 project/boot/*
 */project/build/target
 */project/boot

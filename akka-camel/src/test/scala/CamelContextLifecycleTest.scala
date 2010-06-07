@@ -13,7 +13,9 @@ class CamelContextLifecycleTest extends JUnitSuite with CamelContextLifecycle {
     init(ctx)
     assert(context.isStreamCaching === true)
     assert(!context.asInstanceOf[TestCamelContext].isStarted)
-    assert(!template.asInstanceOf[DefaultProducerTemplate].isStarted)
+    // In Camel 2.3 CamelComtext.createProducerTemplate starts
+    // the template before returning it (wasn't started in 2.2)
+    assert(template.asInstanceOf[DefaultProducerTemplate].isStarted)
     start
     assert(context.asInstanceOf[TestCamelContext].isStarted)
     assert(template.asInstanceOf[DefaultProducerTemplate].isStarted)

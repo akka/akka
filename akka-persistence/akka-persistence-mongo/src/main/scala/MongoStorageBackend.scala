@@ -159,7 +159,7 @@ private[akka] object MongoStorageBackend extends
     val cnt =
       if (finish.isDefined) {
         val f = finish.get.asInstanceOf[Int]
-        if (f >= s) Math.min(count, (f - s)) else count
+        if (f >= s) math.min(count, (f - s)) else count
       }
       else count
 
@@ -280,7 +280,7 @@ private[akka] object MongoStorageBackend extends
       }
     val currentList = dbobj.get(VALUE).asInstanceOf[JArrayList[AnyRef]]
     currentList.set(index, serializer.out(elem))
-    coll.update(q, 
+    coll.update(q,
       new BasicDBObject().append(KEY, name).append(VALUE, currentList))
   }
 

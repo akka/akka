@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.actor
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequestProtocol
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestProtocolIdFactory}
-import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future}
+import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
@@ -21,11 +21,9 @@ import java.lang.reflect.{InvocationTargetException, Method}
 
 object Annotations {
   import se.scalablesolutions.akka.actor.annotation._
-  val oneway =                 classOf[oneway]
   val transactionrequired =    classOf[transactionrequired]
   val prerestart =             classOf[prerestart]
   val postrestart =            classOf[postrestart]
-  val immutable =              classOf[immutable]
   val inittransactionalstate = classOf[inittransactionalstate]
 }
 
@@ -68,23 +66,23 @@ final class ActiveObjectConfiguration {
 }
 
 /**
- * Holds RTTI (runtime type information) for the Active Object, f.e. current 'sender' 
- * reference etc.
+ * Holds RTTI (runtime type information) for the Active Object, f.e. current 'sender'
+ * reference, the 'senderFuture' reference etc.
  * <p/>
- * In order to make use of this context you have to create a member field in your 
- * Active Object that has the type 'ActiveObjectContext', then an instance will 
- * be injected for you to use. 
+ * In order to make use of this context you have to create a member field in your
+ * Active Object that has the type 'ActiveObjectContext', then an instance will
+ * be injected for you to use.
  * <p/>
- * This class does not contain static information but is updated by the runtime system 
- * at runtime. 
+ * This class does not contain static information but is updated by the runtime system
+ * at runtime.
  * <p/>
- * Here is an example of usage: 
+ * Here is an example of usage:
  * <pre>
  * class Ping {
- *   // This context will be injected, holds RTTI (runtime type information) 
- *   // for the current message send 
+ *   // This context will be injected, holds RTTI (runtime type information)
+ *   // for the current message send
  *   private ActiveObjectContext context = null;
- *   
+ *
  *   public void hit(int count) {
  *     Pong pong = (Pong) context.getSender();
  *     pong.hit(count++)
@@ -96,21 +94,49 @@ final class ActiveObjectConfiguration {
  */
 final class ActiveObjectContext {
   private[akka] var _sender: AnyRef = _
+  private[akka] var _senderFuture: CompletableFuture[Any] = _
+
   /**
    * Returns the current sender Active Object reference.
    * Scala style getter.
    */
-  def sender = _sender
+  def sender: AnyRef = {
+    if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+    else _sender
+  }
 
   /**
    * Returns the current sender Active Object reference.
    * Java style getter.
    */
-  def getSender = _sender
+   def getSender: AnyRef = {
+     if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+     else _sender
+   }
+
+  /**
+   * Returns the current sender future Active Object reference.
+   * Scala style getter.
+   */
+  def senderFuture: Option[CompletableFuture[Any]] = if (_senderFuture eq null) None else Some(_senderFuture)
+
+  /**
+   * Returns the current sender future Active Object reference.
+   * Java style getter.
+   * This method returns 'null' if the sender future is not available.
+   */
+  def getSenderFuture = _senderFuture
 }
 
+/**
+ * Internal helper class to help pass the contextual information between threads.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
 private[akka] object ActiveObjectContext {
-  private[actor] val sender = new scala.util.DynamicVariable[AnyRef](null)
+  import scala.util.DynamicVariable
+  private[actor] val sender =       new DynamicVariable[AnyRef](null)
+  private[actor] val senderFuture = new DynamicVariable[CompletableFuture[Any]](null)
 }
 
 /**
@@ -338,7 +364,7 @@ object ActiveObject extends Logging {
     proxy.asInstanceOf[T]
   }
 
-  private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actorRef: ActorRef, 
+  private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actorRef: ActorRef,
                                    remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val context = injectActiveObjectContext(target)
     val proxy = Proxy.newInstance(Array(intf), Array(target), false, false)
@@ -436,7 +462,7 @@ object ActiveObject extends Logging {
         if (parent != null) injectActiveObjectContext0(activeObject, parent)
         else {
           log.warning(
-          "Can't set 'ActiveObjectContext' for ActiveObject [%s] since no field of this type could be found.", 
+          "Can't set 'ActiveObjectContext' for ActiveObject [%s] since no field of this type could be found.",
           activeObject.getClass.getName)
           None
         }
@@ -470,6 +496,8 @@ private[akka] sealed case class AspectInit(
   def this(target: Class[_], actorRef: ActorRef, timeout: Long) = this(target, actorRef, None, timeout)
 }
 
+// FIXME: add @shutdown callback to ActiveObject in which we get the Aspect through 'Aspects.aspectOf(MyAspect.class, targetInstance)' and shuts down the Dispatcher actor
+
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
  * Is deployed on a 'per-instance' basis.
@@ -477,7 +505,6 @@ private[akka] sealed case class AspectInit(
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @Aspect("perInstance")
-// TODO: add @shutdown callback to ActiveObject in which we get the Aspect through 'Aspects.aspectOf(MyAspect.class, targetInstance)' and shuts down the Dispatcher actor
 private[akka] sealed class ActiveObjectAspect {
   @volatile private var isInitialized = false
   private var target: Class[_] = _
@@ -488,16 +515,14 @@ private[akka] sealed class ActiveObjectAspect {
 
   @Around("execution(* *.*(..))")
   def invoke(joinPoint: JoinPoint): AnyRef = {
-    instance = joinPoint.getThis
-    ActiveObjectContext.sender.value = instance
     if (!isInitialized) {
-      val init = AspectInitRegistry.initFor(instance)
+      val init = AspectInitRegistry.initFor(joinPoint.getThis)
       target = init.target
       actorRef = init.actorRef
       remoteAddress = init.remoteAddress
       timeout = init.timeout
       isInitialized = true
-      
+
     }
     dispatch(joinPoint)
   }
@@ -509,11 +534,14 @@ private[akka] sealed class ActiveObjectAspect {
 
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    if (isOneWay(rtti)) {
-      actorRef ! Invocation(joinPoint, true, true)
+    val isOneWay = isVoid(rtti)
+    val sender = ActiveObjectContext.sender.value
+    val senderFuture = ActiveObjectContext.senderFuture.value
+    if (isOneWay) {
+      actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
       null.asInstanceOf[AnyRef]
     } else {
-      val result = actorRef !! (Invocation(joinPoint, false, isVoid(rtti)), timeout)
+      val result = actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }
@@ -521,7 +549,7 @@ private[akka] sealed class ActiveObjectAspect {
 
   private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val rtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val oneWay_? = isOneWay(rtti) || isVoid(rtti)
+    val isOneWay = isVoid(rtti)
     val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
     val requestBuilder = RemoteRequestProtocol.newBuilder
       .setId(RemoteRequestProtocolIdFactory.nextId)
@@ -530,14 +558,14 @@ private[akka] sealed class ActiveObjectAspect {
       .setUuid(actorRef.uuid)
       .setTimeout(timeout)
       .setIsActor(false)
-      .setIsOneWay(oneWay_?)
+      .setIsOneWay(isOneWay)
       .setIsEscaped(false)
     RemoteProtocolBuilder.setMessage(message, requestBuilder)
     val id = actorRef.registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
     val remoteMessage = requestBuilder.build
     val future = RemoteClient.clientFor(remoteAddress.get).send(remoteMessage, None)
-    if (oneWay_?) null // for void methods
+    if (isOneWay) null // for void methods
     else {
       if (future.isDefined) {
         future.get.await
@@ -553,8 +581,6 @@ private[akka] sealed class ActiveObjectAspect {
       val (_, cause) = future.exception.get
       throw cause
     } else future.result
-
-  private def isOneWay(rtti: MethodRtti) = rtti.getMethod.isAnnotationPresent(Annotations.oneway)
 
   private def isVoid(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
 
@@ -576,10 +602,16 @@ private[akka] sealed class ActiveObjectAspect {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable private[akka] case class Invocation(joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean) {
+@serializable private[akka] case class Invocation(
+  joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean, sender: AnyRef, senderFuture: CompletableFuture[Any]) {
 
   override def toString: String = synchronized {
-    "Invocation [joinPoint: " + joinPoint.toString + ", isOneWay: " + isOneWay + ", isVoid: " + isVoid + "]"
+    "Invocation [joinPoint: " + joinPoint.toString +
+    ", isOneWay: " + isOneWay +
+    ", isVoid: " + isVoid +
+    ", sender: " + sender +
+    ", senderFuture: " + senderFuture +
+    "]"
   }
 
   override def hashCode: Int = synchronized {
@@ -587,6 +619,8 @@ private[akka] sealed class ActiveObjectAspect {
     result = HashCode.hash(result, joinPoint)
     result = HashCode.hash(result, isOneWay)
     result = HashCode.hash(result, isVoid)
+    result = HashCode.hash(result, sender)
+    result = HashCode.hash(result, senderFuture)
     result
   }
 
@@ -595,7 +629,9 @@ private[akka] sealed class ActiveObjectAspect {
     that.isInstanceOf[Invocation] &&
     that.asInstanceOf[Invocation].joinPoint == joinPoint &&
     that.asInstanceOf[Invocation].isOneWay == isOneWay &&
-    that.asInstanceOf[Invocation].isVoid == isVoid
+    that.asInstanceOf[Invocation].isVoid == isVoid &&
+    that.asInstanceOf[Invocation].sender == sender &&
+    that.asInstanceOf[Invocation].senderFuture == senderFuture
   }
 }
 
@@ -617,11 +653,12 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   private var postRestart: Option[Method] = None
   private var initTxState: Option[Method] = None
   private var context: Option[ActiveObjectContext] = None
-  
+
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef, ctx: Option[ActiveObjectContext]) = {
-    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired)) self.makeTransactionRequired
+    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired))
+      self.makeTransactionRequired
     self.id = targetClass.getName
     target = Some(targetInstance)
     context = ctx
@@ -667,14 +704,18 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   }
 
   def receive = {
-    case Invocation(joinPoint, isOneWay, _) =>
-      context.foreach { ctx => 
-        val sender = ActiveObjectContext.sender.value
+    case Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
+      context.foreach { ctx =>
         if (sender ne null) ctx._sender = sender
+        if (senderFuture ne null) ctx._senderFuture = senderFuture
       }
+      ActiveObjectContext.sender.value = joinPoint.getThis // set next sender
+      self.senderFuture.foreach(ActiveObjectContext.senderFuture.value = _)
+
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed
       else self.reply(joinPoint.proceed)
+
     // Jan Kronquist: started work on issue 121
     case Link(target)   => self.link(target)
     case Unlink(target) => self.unlink(target)
@@ -719,8 +760,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
         !arg.isInstanceOf[java.lang.Float] &&
         !arg.isInstanceOf[java.lang.Double] &&
         !arg.isInstanceOf[java.lang.Boolean] &&
-        !arg.isInstanceOf[java.lang.Character] &&
-        !arg.getClass.isAnnotationPresent(Annotations.immutable)) {
+        !arg.isInstanceOf[java.lang.Character]) {
         hasMutableArgument = true
       }
       if (arg.getClass.getName.contains(ActiveObject.AW_PROXY_PREFIX)) unserializable = true

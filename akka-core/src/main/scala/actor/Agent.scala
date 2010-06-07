@@ -88,7 +88,8 @@ class AgentException private[akka](message: String) extends RuntimeException(mes
 * </pre>
 * <p/>
 *
-* IMPORTANT:
+* <b>IMPORTANT</b>:
+* <p/>
 * You can *not* call 'agent.get', 'agent()' or use the monadic 'foreach',
 * 'map' and 'flatMap' within an enclosing transaction since that would block
 * the transaction indefinitely. But all other operations are fine. The system
@@ -103,7 +104,6 @@ sealed class Agent[T] private (initialValue: T) {
   import Actor._
 
   private val dispatcher = actorOf(new AgentDispatcher[T](initialValue)).start
-  dispatcher ! Value(initialValue)
 
   /**
   * Submits a request to read the internal state.
@@ -215,7 +215,7 @@ final class AgentDispatcher[T] private[akka] (initialValue: T) extends Transacto
   import Actor._
   log.debug("Starting up Agent [%s]", self.uuid)
 
-  private lazy val value = Ref[T]()
+  private val value = Ref[T](initialValue)
 
   /**
    * Periodically handles incoming messages.
@@ -233,6 +233,5 @@ final class AgentDispatcher[T] private[akka] (initialValue: T) extends Transacto
    * Performs a CAS operation, atomically swapping the internal state with the value
    * provided as a by-name parameter.
    */
-  private final def swap(newData: => T): Unit = value.swap(newData)
+  private def swap(newData: => T): Unit = value.swap(newData)
 }
-

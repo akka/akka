@@ -16,11 +16,11 @@ case class ClusterCometBroadcast(name: String, msg: AnyRef) extends ClusterComet
  * Enables explicit clustering of Atmosphere (Comet) resources
  * Annotate the endpoint which has the @Broadcast annotation with
  * @org.atmosphere.annotation.Cluster(Array(classOf[AkkClusterBroadcastFilter])){ name = "someUniqueName" }
- * that's all folks!
+ * thats all folks!
  * Note: In the future, clustering comet will be transparent
  */
 
-class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter[AnyRef] {
+class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter {
   @BeanProperty var clusterName = ""
   @BeanProperty var broadcaster : Broadcaster = null
 

@@ -21,15 +21,15 @@
   <!-- Basic Configuration                                                  -->
   <!--======================================================================-->
 
-  <!-- 
+  <!--
    ~ The name of this cluster.  This is mainly used to prevent machines in
    ~ one logical cluster from joining another.
   -->
   <ClusterName>akka</ClusterName>
 
   <!--
-   ~ Turn on to make new [non-seed] nodes automatically migrate the right data 
-   ~ to themselves.  (If no InitialToken is specified, they will pick one 
+   ~ Turn on to make new [non-seed] nodes automatically migrate the right data
+   ~ to themselves.  (If no InitialToken is specified, they will pick one
    ~ such that they will get half the range of the most-loaded node.)
    ~ If a node starts up without bootstrapping, it will mark itself bootstrapped
    ~ so that you can't subsequently accidently bootstrap a node with
@@ -66,11 +66,11 @@
        ~ and LongType.  You can also specify the fully-qualified class
        ~ name to a class of your choice extending
        ~ org.apache.cassandra.db.marshal.AbstractType.
-       ~ 
+       ~
        ~ SuperColumns have a similar CompareSubcolumnsWith attribute.
-       ~ 
+       ~
        ~ BytesType: Simple sort by byte value.  No validation is performed.
-       ~ AsciiType: Like BytesType, but validates that the input can be 
+       ~ AsciiType: Like BytesType, but validates that the input can be
        ~            parsed as US-ASCII.
        ~ UTF8Type: A string encoded as UTF8
        ~ LongType: A 64bit long
@@ -82,7 +82,7 @@
        ~
        ~ An optional `Comment` attribute may be used to attach additional
        ~ human-readable information about the column family to its definition.
-       ~ 
+       ~
        ~ The optional KeysCached attribute specifies
        ~ the number of keys per sstable whose locations we keep in
        ~ memory in "mostly LRU" order.  (JUST the key locations, NOT any
@@ -94,25 +94,25 @@
        ~ whose entire contents we cache in memory. Do not use this on
        ~ ColumnFamilies with large rows, or ColumnFamilies with high write:read
        ~ ratios. Specify a fraction (value less than 1), a percentage (ending in
-       ~ a % sign) or an absolute number of rows to cache. 
+       ~ a % sign) or an absolute number of rows to cache.
        ~ RowsCached defaults to 0, i.e., row cache is off by default.
        ~
        ~ Remember, when using caches as a percentage, they WILL grow with
        ~ your data set!
       -->
-      <ColumnFamily Name="map" 
-                    CompareWith="UTF8Type" 
+      <ColumnFamily Name="map"
+                    CompareWith="UTF8Type"
                     KeysCached="100%" />
       <!-- FIXME: change vector to a super column -->
-      <ColumnFamily Name="vector" 
-                    CompareWith="UTF8Type" 
+      <ColumnFamily Name="vector"
+                    CompareWith="UTF8Type"
                     KeysCached="100%" />
-      <ColumnFamily Name="ref" 
-                    CompareWith="UTF8Type" 
+      <ColumnFamily Name="ref"
+                    CompareWith="UTF8Type"
                     KeysCached="100%" />
 
       <!--ColumnFamily Name="Standard1" CompareWith="BytesType"/>
-      <ColumnFamily Name="Standard2" 
+      <ColumnFamily Name="Standard2"
                     CompareWith="UTF8Type"
                     KeysCached="100%"/>
       <ColumnFamily Name="StandardByUUID1" CompareWith="TimeUUIDType" />
@@ -150,7 +150,7 @@
        ~ and PropertyFileEndPointSnitch is available in contrib/.
       -->
       <EndPointSnitch>org.apache.cassandra.locator.EndPointSnitch</EndPointSnitch>
-        
+
     </Keyspace>
   </Keyspaces>
 
@@ -158,7 +158,7 @@
    ~ Authenticator: any IAuthenticator may be used, including your own as long
    ~ as it is on the classpath.  Out of the box, Cassandra provides
    ~ org.apache.cassandra.auth.AllowAllAuthenticator and,
-   ~ org.apache.cassandra.auth.SimpleAuthenticator 
+   ~ org.apache.cassandra.auth.SimpleAuthenticator
    ~ (SimpleAuthenticator uses access.properties and passwd.properties by
    ~ default).
    ~
@@ -188,7 +188,7 @@
    ~ are sent to the node with the "closest" token, so distributing your
    ~ tokens equally along the key distribution space will spread keys
    ~ evenly across your cluster.)  This setting is only checked the first
-   ~ time a node is started. 
+   ~ time a node is started.
 
    ~ This can also be useful with RandomPartitioner to force equal spacing
    ~ of tokens around the hash space, especially for clusters with a small
@@ -227,9 +227,9 @@
 
   <!-- Local hosts and ports -->
 
-  <!-- 
+  <!--
    ~ Address to bind to and tell other nodes to connect to.  You _must_
-   ~ change this if you want multiple nodes to be able to communicate!  
+   ~ change this if you want multiple nodes to be able to communicate!
    ~
    ~ Leaving it blank leaves it up to InetAddress.getLocalHost(). This
    ~ will always do the Right Thing *if* the node is properly configured
@@ -251,9 +251,9 @@
   <ThriftAddress>localhost</ThriftAddress>
   <!-- Thrift RPC port (the port clients connect to). -->
   <ThriftPort>9160</ThriftPort>
-  <!-- 
+  <!--
    ~ Whether or not to use a framed transport for Thrift. If this option
-   ~ is set to true then you must also use a framed transport on the 
+   ~ is set to true then you must also use a framed transport on the
    ~ client-side, (framed and non-framed transports are not compatible).
   -->
   <ThriftFramedTransport>false</ThriftFramedTransport>
@@ -285,16 +285,16 @@
 
   <!--
    ~ Buffer size to use when performing contiguous column slices. Increase
-   ~ this to the size of the column slices you typically perform. 
-   ~ (Name-based queries are performed with a buffer size of 
+   ~ this to the size of the column slices you typically perform.
+   ~ (Name-based queries are performed with a buffer size of
    ~ ColumnIndexSizeInKB.)
   -->
   <SlicedBufferSizeInKB>64</SlicedBufferSizeInKB>
 
   <!--
-   ~ Buffer size to use when flushing memtables to disk. (Only one 
+   ~ Buffer size to use when flushing memtables to disk. (Only one
    ~ memtable is ever flushed at a time.) Increase (decrease) the index
-   ~ buffer size relative to the data buffer if you have few (many) 
+   ~ buffer size relative to the data buffer if you have few (many)
    ~ columns per key.  Bigger is only better _if_ your memtables get large
    ~ enough to use the space. (Check in your data directory after your
    ~ app has been running long enough.) -->
@@ -314,7 +314,7 @@
 
   <!--
    ~ Flush memtable after this much data has been inserted, including
-   ~ overwritten data.  There is one memtable per column family, and 
+   ~ overwritten data.  There is one memtable per column family, and
    ~ this threshold is based solely on the amount of data stored, not
    ~ actual heap memory usage (there is some overhead in indexing the
    ~ columns).
@@ -379,7 +379,7 @@
    ~ individually).  Reasonable values range from a minimal 0.1 to 10 or
    ~ even more if throughput matters more than latency.
   -->
-  <!-- <CommitLogSyncBatchWindowInMS>1</CommitLogSyncBatchWindowInMS> --> 
+  <!-- <CommitLogSyncBatchWindowInMS>1</CommitLogSyncBatchWindowInMS> -->
 
   <!--
    ~ Time to wait before garbage-collection deletion markers.  Set this to

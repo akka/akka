@@ -1,13 +1,16 @@
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package sample.rest.java;
 
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 public class Boot {
-  final private ActiveObjectConfigurator manager = new ActiveObjectConfigurator();
-
-  public Boot() throws Exception  {
-    manager.configure(
+  public final static ActiveObjectConfigurator configurator = new ActiveObjectConfigurator();
+  static {
+    configurator.configure(
       new RestartStrategy(new OneForOne(), 3, 5000, new Class[]{Exception.class}),
         new Component[] {
           new Component(
@@ -19,5 +22,5 @@ public class Boot {
             new LifeCycle(new Permanent()),
             1000)
         }).supervise();
-    }
+  }
 }

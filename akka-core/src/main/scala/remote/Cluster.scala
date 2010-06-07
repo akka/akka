@@ -24,25 +24,6 @@ trait Cluster {
   def name: String
 
   /**
-   * Adds the specified hostname + port as a local node
-   * This information will be propagated to other nodes in the cluster
-   * and will be available at the other nodes through lookup and foreach
-   */
-  def registerLocalNode(hostname: String, port: Int): Unit
-
-  /**
-   * Removes the specified hostname + port from the local node
-   * This information will be propagated to other nodes in the cluster
-   * and will no longer be available at the other nodes through lookup and foreach
-   */
-  def deregisterLocalNode(hostname: String, port: Int): Unit
-
-  /**
-   * Sends the message to all Actors of the specified type on all other nodes in the cluster
-   */
-  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit
-
-  /**
    * Traverses all known remote addresses avaiable at all other nodes in the cluster
    * and applies the given PartialFunction on the first address that it's defined at
    * The order of application is undefined and may vary
@@ -65,8 +46,6 @@ trait ClusterActor extends Actor with Cluster {
   val name = config.getString("akka.remote.cluster.name", "default")
 
   @volatile protected var serializer : Serializer = _
-
-  private[remote] def setSerializer(s : Serializer) : Unit = serializer = s
 }
 
 /**
@@ -87,6 +66,7 @@ private[akka] object ClusterActor {
   private[akka] case class RegisterLocalNode(server: RemoteAddress) extends ClusterMessage
   private[akka] case class DeregisterLocalNode(server: RemoteAddress) extends ClusterMessage
   private[akka] case class Node(endpoints: List[RemoteAddress])
+  private[akka] case class InitClusterActor(serializer : Serializer)
 }
 
 /**
@@ -168,6 +148,10 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
       local = Node(local.endpoints.filterNot(_ == s))
       broadcast(Papers(local.endpoints))
     }
+
+    case InitClusterActor(s) => {
+      serializer = s
+    }
   }
 
   /**
@@ -206,24 +190,6 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
    * Applies the given function to all remote addresses known
    */
   def foreach(f: (RemoteAddress) => Unit): Unit = remotes.valuesIterator.toList.flatMap(_.endpoints).foreach(f)
-
-  /**
-   * Registers a local endpoint
-   */
-  def registerLocalNode(hostname: String, port: Int): Unit =
-    self ! RegisterLocalNode(RemoteAddress(hostname, port))
-
-  /**
-   * Deregisters a local endpoint
-   */
-  def deregisterLocalNode(hostname: String, port: Int): Unit =
-    self ! DeregisterLocalNode(RemoteAddress(hostname, port))
-
-  /**
-   * Broadcasts the specified message to all Actors of type Class on all known Nodes
-   */
-  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit =
-    self ! RelayedMessage(to.getName, msg)
 }
 
 /**
@@ -232,28 +198,22 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
  * Loads a specified ClusterActor and delegates to that instance.
  */
 object Cluster extends Cluster with Logging {
+  //Import messages
+  import ClusterActor._
+
   lazy val DEFAULT_SERIALIZER_CLASS_NAME = Serializer.Java.getClass.getName
   lazy val DEFAULT_CLUSTER_ACTOR_CLASS_NAME = classOf[JGroupsClusterActor].getName
 
-  @volatile private[remote] var clusterActor: Option[ClusterActor] = None
   @volatile private[remote] var clusterActorRef: Option[ActorRef] = None
+  @volatile private[akka]   var classLoader : Option[ClassLoader] = Some(getClass.getClassLoader)
 
-  private[remote] def createClusterActor(loader: ClassLoader): Option[ActorRef] = {
+  private[remote] def createClusterActor(): Option[ActorRef] = {
     val name = config.getString("akka.remote.cluster.actor", DEFAULT_CLUSTER_ACTOR_CLASS_NAME)
     if (name.isEmpty) throw new IllegalArgumentException(
       "Can't start cluster since the 'akka.remote.cluster.actor' configuration option is not defined")
 
-    val serializer = Class.forName(config.getString(
-      "akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
-      .newInstance.asInstanceOf[Serializer]
-    serializer.classLoader = Some(loader)
-
     try {
-      Some(Actor.actorOf {
-        val a = Class.forName(name).newInstance.asInstanceOf[ClusterActor]
-        a setSerializer serializer
-        a
-      })
+      Some(Actor.actorOf(Class.forName(name).newInstance.asInstanceOf[ClusterActor]))
     } catch {
       case e =>
         log.error(e, "Couldn't load Cluster provider: [%s]", name)
@@ -267,15 +227,27 @@ object Cluster extends Cluster with Logging {
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
         Supervise(actor, LifeCycle(Permanent)) :: Nil)))
 
+  private[this] def clusterActor = if(clusterActorRef.isEmpty) None else Some(clusterActorRef.get.actor.asInstanceOf[ClusterActor])
+
   def name = clusterActor.map(_.name).getOrElse("No cluster")
 
   def lookup[T](pf: PartialFunction[RemoteAddress, T]): Option[T] = clusterActor.flatMap(_.lookup(pf))
 
-  def registerLocalNode(hostname: String, port: Int): Unit = clusterActor.foreach(_.registerLocalNode(hostname, port))
+  /**Adds the specified hostname + port as a local node
+   * This information will be propagated to other nodes in the cluster
+   * and will be available at the other nodes through lookup and foreach
+   */
+  def registerLocalNode(hostname: String, port: Int): Unit = clusterActorRef.foreach(_ ! RegisterLocalNode(RemoteAddress(hostname, port)))
 
-  def deregisterLocalNode(hostname: String, port: Int): Unit = clusterActor.foreach(_.deregisterLocalNode(hostname, port))
+  /**Removes the specified hostname + port from the local node
+   * This information will be propagated to other nodes in the cluster
+   * and will no longer be available at the other nodes through lookup and foreach
+   */
+  def deregisterLocalNode(hostname: String, port: Int): Unit = clusterActorRef.foreach(_ ! DeregisterLocalNode(RemoteAddress(hostname, port)))
 
-  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = clusterActor.foreach(_.relayMessage(to, msg))
+  /**Sends the message to all Actors of the specified type on all other nodes in the cluster
+   */
+  def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = clusterActorRef.foreach(_ ! RelayedMessage(to.getName, msg))
 
   def foreach(f: (RemoteAddress) => Unit): Unit = clusterActor.foreach(_.foreach(f))
 
@@ -283,14 +255,21 @@ object Cluster extends Cluster with Logging {
 
   def start(serializerClassLoader: Option[ClassLoader]): Unit = synchronized {
     log.info("Starting up Cluster Service...")
-    if (clusterActor.isEmpty) {
+    if (clusterActorRef.isEmpty) {
       for {
-        actorRef <- createClusterActor(serializerClassLoader getOrElse getClass.getClassLoader)
+        actorRef <- createClusterActor()
         sup <- createSupervisor(actorRef)
       } {
-        clusterActorRef = Some(actorRef.start)
-        clusterActor = Some(actorRef.actor.asInstanceOf[ClusterActor])
+        val serializer = Class.forName(config.getString(
+              "akka.remote.cluster.serializer", DEFAULT_SERIALIZER_CLASS_NAME))
+              .newInstance.asInstanceOf[Serializer]
+
+            classLoader = serializerClassLoader orElse classLoader
+            serializer.classLoader = classLoader
+        actorRef.start
         sup.start
+        actorRef ! InitClusterActor(serializer)
+        clusterActorRef = Some(actorRef)
       }
     }
   }
@@ -301,6 +280,6 @@ object Cluster extends Cluster with Logging {
       c <- clusterActorRef
       s <- c.supervisor
     } s.stop
-    clusterActor = None
+    classLoader  = Some(getClass.getClassLoader)
   }
 }

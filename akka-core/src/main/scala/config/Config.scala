@@ -74,7 +74,7 @@ object Config extends Logging {
         "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
         "\nI have no way of finding the 'akka.conf' configuration file." +
         "\nUsing default values everywhere.")
-      CConfig.fromString("<akka></akka>")
+      CConfig.fromString("<akka></akka>") // default empty config
     }
   }
 

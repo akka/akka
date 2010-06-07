@@ -40,7 +40,7 @@ import java.lang.reflect.Field
  * <p/>
  * Protobuf Message -> ActorRef:
  * <pre>
- *   val actorRef = ActorRef.fromProtocol(protobufMessage)
+ *   val actorRef = ActorRef.fromProtobuf(protobufMessage)
  *   actorRef ! message // send message to remote actor through its reference
  * </pre>
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -51,18 +51,22 @@ object ActorRef {
    * Deserializes the ActorRef instance from a byte array (Array[Byte]) into an ActorRef instance.
    */
   def fromBinary(bytes: Array[Byte]): ActorRef =
-    fromProtocol(ActorRefProtocol.newBuilder.mergeFrom(bytes).build)
+    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
+
+  def fromBinary(bytes: Array[Byte], loader: ClassLoader): ActorRef =
+    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
 
   /**
    * Deserializes the ActorRef instance from a Protocol Buffers (protobuf) Message into an ActorRef instance.
    */
-  private[akka] def fromProtocol(protocol: ActorRefProtocol): ActorRef =
+  private[akka] def fromProtobuf(protocol: ActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
     RemoteActorRef(
       protocol.getUuid,
       protocol.getActorClassName,
       protocol.getSourceHostname,
       protocol.getSourcePort,
-      protocol.getTimeout)
+      protocol.getTimeout,
+      loader)
 }
 
 /**
@@ -202,22 +206,22 @@ trait ActorRef extends TransactionManagement {
    */
   protected[akka] val dispatcherLock = new ReentrantLock
 
-  /**
-   * Holds the reference to the sender of the currently processed message.
-   * - Is None if no sender was specified
-   * - Is Some(Left(Actor)) if sender is an actor
-   * - Is Some(Right(CompletableFuture)) if sender is holding on to a Future for the result
-   */
-// protected[this] var _replyTo: Option[Either[ActorRef, CompletableFuture[Any]]] = None
-// protected[akka] def replyTo: Option[Either[ActorRef, CompletableFuture[Any]]] = guard.withGuard { _replyTo }
-// protected[akka] def replyTo_=(rt: Option[Either[ActorRef, CompletableFuture[Any]]]) = guard.withGuard { _replyTo = rt }
+  protected[akka] var _sender: Option[ActorRef] = None
+  protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
+  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
+  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
 
- protected[akka] var _sender: Option[ActorRef] = None
- protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
- protected[akka] def sender: Option[ActorRef] = guard.withGuard { _sender }
- protected[akka] def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
- protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
- protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
+  /**
+   * The reference sender Actor of the last received message.
+   * Is defined if the message was sent from another Actor, else None.
+   */
+  def sender: Option[ActorRef] = guard.withGuard { _sender }
+
+  /**
+   * The reference sender future of the last received message.
+   * Is defined if the message was sent with sent with '!!' or '!!!', else None.
+   */
+  def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
 
   /**
    * Is the actor being restarted?
@@ -297,22 +301,6 @@ trait ActorRef extends TransactionManagement {
   }
 
   /**
-   * Sends a message asynchronously and waits on a future for a reply message.
-   * Uses the time-out defined in the Actor.
-   * <p/>
-   * It waits on the reply either until it receives it (in the form of <code>Some(replyMessage)</code>)
-   * or until the timeout expires (which will return None). E.g. send-and-receive-eventually semantics.
-   * <p/>
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with the 'sender' member field to
-   * implement request/response message exchanges.
-   * <p/>
-   * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
-   */
-//  def !![T](message: Any)(implicit sender: Option[ActorRef] = None): Option[T] = !![T](message, timeout)
-
-  /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
@@ -345,17 +333,14 @@ trait ActorRef extends TransactionManagement {
    * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
    * <p/>
-   * Throws an IllegalStateException if unable to determine what to reply to
+   * Throws an IllegalStateException if unable to determine what to reply to.
    */
   def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
     "\n\tNo sender in scope, can't reply. " +
-    "\n\tYou have probably used the '!' method to either; " +
-    "\n\t\t1. Send a message to a remote actor which does not have a contact address." +
-    "\n\t\t2. Send a message from an instance that is *not* an actor" +
-    "\n\t\t3. Send a message to an Active Object annotated with the '@oneway' annotation? " +
-    "\n\tIf so, switch to '!!' (or remove '@oneway') which passes on an implicit future" +
-    "\n\tthat will be bound by the argument passed to 'reply'." +
-    "\n\tAlternatively, you can use setReplyToAddress to make sure the actor can be contacted over the network.")
+    "\n\tYou have probably: " +
+    "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
+    "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object." +
+    "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if succes and Boolean(false) if no sender in scope")
 
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
@@ -527,7 +512,7 @@ trait ActorRef extends TransactionManagement {
    */
   def shutdownLinkedActors: Unit
 
-  protected[akka] def toProtocol: ActorRefProtocol
+  protected[akka] def toProtobuf: ActorRefProtocol
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -572,7 +557,7 @@ trait ActorRef extends TransactionManagement {
   protected def processSender(senderOption: Option[ActorRef], requestBuilder: RemoteRequestProtocol.Builder) = {
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-      requestBuilder.setSender(sender.toProtocol)
+      requestBuilder.setSender(sender.toProtobuf)
     }
   }
 }
@@ -595,7 +580,7 @@ sealed class LocalActorRef private[akka](
   @volatile private[akka] var _supervisor: Option[ActorRef] = None
 
   protected[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
-  protected[this] val actorInstance = new AtomicReference[Actor](newActor)
+  protected[this] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
@@ -609,7 +594,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
-  protected[akka] def toProtocol: ActorRefProtocol = guard.withGuard {
+  protected[akka] def toProtobuf: ActorRefProtocol = guard.withGuard {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
@@ -637,7 +622,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Serializes the ActorRef instance into a byte array (Array[Byte]).
    */
-  def toBinary: Array[Byte] = toProtocol.toByteArray
+  def toBinary: Array[Byte] = toProtobuf.toByteArray
 
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
@@ -947,7 +932,7 @@ sealed class LocalActorRef private[akka](
           .setIsOneWay(false)
           .setIsEscaped(false)
 
-      //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtocol))
+      //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtobuf))
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
 
       val id = registerSupervisorAsRemoteActor
@@ -968,10 +953,12 @@ sealed class LocalActorRef private[akka](
   }
 
   private def joinTransaction(message: Any) = if (isTransactionSetInScope) {
-    // FIXME test to run bench without this trace call
-    Actor.log.trace("Joining transaction set [%s];\n\tactor %s\n\twith message [%s]",
-                    getTransactionSetInScope, toString, message)
-    getTransactionSetInScope.incParties
+    import org.multiverse.api.ThreadLocalTransaction
+    val txSet = getTransactionSetInScope
+    Actor.log.trace("Joining transaction set [%s];\n\tactor %s\n\twith message [%s]", txSet, toString, message) // FIXME test to run bench without this trace call
+    val mtx = ThreadLocalTransaction.getThreadLocalTransaction
+    if ((mtx eq null) || mtx.getStatus.isDead) txSet.incParties
+    else txSet.incParties(mtx, 1)
   }
 
   /**
@@ -1049,7 +1036,9 @@ sealed class LocalActorRef private[akka](
         _isBeingRestarted = true
         // abort transaction set
         if (isTransactionSetInScope) try {
-          getTransactionSetInScope.abort
+          val txSet = getTransactionSetInScope
+          Actor.log.debug("Aborting transaction set [%s]", txSet)
+          txSet.abort
         } catch { case e: IllegalStateException => {} }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
@@ -1202,8 +1191,7 @@ sealed class LocalActorRef private[akka](
         !message.getClass.isArray &&
         !message.isInstanceOf[List[_]] &&
         !message.isInstanceOf[scala.collection.immutable.Map[_, _]] &&
-        !message.isInstanceOf[scala.collection.immutable.Set[_]] &&
-        !message.getClass.isAnnotationPresent(Annotations.immutable)) {
+        !message.isInstanceOf[scala.collection.immutable.Set[_]]) {
       Serializer.Java.deepClone(message)
     } else message
   } else message
@@ -1217,13 +1205,13 @@ sealed class LocalActorRef private[akka](
  */
 private[akka] case class RemoteActorRef private[akka] (
 //  uuid: String, className: String, hostname: String, port: Int, timeOut: Long, isOnRemoteHost: Boolean) extends ActorRef {
-  uuuid: String, val className: String, val hostname: String, val port: Int, _timeout: Long)
+  uuuid: String, val className: String, val hostname: String, val port: Int, _timeout: Long, loader: Option[ClassLoader])
   extends ActorRef {
   _uuid = uuuid
   timeout = _timeout
 
   start
-  lazy val remoteClient = RemoteClient.clientFor(hostname, port)
+  lazy val remoteClient = RemoteClient.clientFor(hostname, port, loader)
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
     val requestBuilder = RemoteRequestProtocol.newBuilder
@@ -1289,7 +1277,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
-  protected[akka] def toProtocol: ActorRefProtocol = unsupported
+  protected[akka] def toProtobuf: ActorRefProtocol = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
   protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported

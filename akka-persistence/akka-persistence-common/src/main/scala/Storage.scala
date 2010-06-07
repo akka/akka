@@ -30,7 +30,7 @@ class StorageException(message: String) extends RuntimeException(message)
  * <pre>
  * val myMap = CassandraStorage.getMap(id)
  * </pre>
- * 
+ *
  * Example Java usage:
  * <pre>
  * PersistentMap<Object, Object> myMap = MongoStorage.newMap();
@@ -72,7 +72,7 @@ trait Storage {
 }
 
 /**
- * Implementation of <tt>PersistentMap</tt> for every concrete 
+ * Implementation of <tt>PersistentMap</tt> for every concrete
  * storage will have the same workflow. This abstracts the workflow.
  *
  * Subclasses just need to provide the actual concrete instance for the
@@ -81,7 +81,7 @@ trait Storage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
-  with Transactional with Committable with Logging {
+  with Transactional with Committable with Abortable with Logging {
   protected val newAndUpdatedEntries = TransactionalState.newMap[K, V]
   protected val removedEntries = TransactionalState.newVector[K]
   protected val shouldClearOnCommit = TransactionalRef[Boolean]()
@@ -95,6 +95,12 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     storage.insertMapStorageEntriesFor(uuid, newAndUpdatedEntries.toList)
     newAndUpdatedEntries.clear
     removedEntries.clear
+  }
+
+  def abort = {
+    newAndUpdatedEntries.clear
+    removedEntries.clear
+    shouldClearOnCommit.swap(false)
   }
 
   def -=(key: K) = {
@@ -111,23 +117,23 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     put(key, value)
     this
   }
-  
+
   override def put(key: K, value: V): Option[V] = {
     register
     newAndUpdatedEntries.put(key, value)
   }
- 
-  override def update(key: K, value: V) = { 
+
+  override def update(key: K, value: V) = {
     register
     newAndUpdatedEntries.update(key, value)
   }
-  
+
   override def remove(key: K) = {
     register
     removedEntries.add(key)
     newAndUpdatedEntries.get(key)
   }
-  
+
   def slice(start: Option[K], count: Int): List[Tuple2[K, V]] =
     slice(start, None, count)
 
@@ -135,11 +141,11 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     storage.getMapStorageRangeFor(uuid, start, finish, count)
   } catch { case e: Exception => Nil }
 
-  override def clear = { 
+  override def clear = {
     register
     shouldClearOnCommit.swap(true)
   }
-  
+
   override def contains(key: K): Boolean = try {
     newAndUpdatedEntries.contains(key) ||
     storage.getMapStorageEntryFor(uuid, key).isDefined
@@ -157,9 +163,9 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
       storage.getMapStorageEntryFor(uuid, key)
     } catch { case e: Exception => None }
   }
-  
+
   def iterator = elements
-  
+
   override def elements: Iterator[Tuple2[K, V]]  = {
     new Iterator[Tuple2[K, V]] {
       private val originalList: List[Tuple2[K, V]] = try {
@@ -167,10 +173,10 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
       } catch {
         case e: Throwable => Nil
       }
-      private var elements = newAndUpdatedEntries.toList union originalList.reverse 
+      private var elements = newAndUpdatedEntries.toList union originalList.reverse
       override def next: Tuple2[K, V]= synchronized {
         val element = elements.head
-        elements = elements.tail        
+        elements = elements.tail
         element
       }
       override def hasNext: Boolean = synchronized { !elements.isEmpty }
@@ -188,7 +194,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable {
+trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable {
   protected val newElems = TransactionalState.newVector[T]
   protected val updatedElems = TransactionalState.newMap[Int, T]
   protected val removedElems = TransactionalState.newVector[T]
@@ -203,13 +209,20 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
     updatedElems.clear
   }
 
+  def abort = {
+    newElems.clear
+    updatedElems.clear
+    removedElems.clear
+    shouldClearOnCommit.swap(false)
+  }
+
   def +(elem: T) = add(elem)
-  
+
   def add(elem: T) = {
     register
     newElems + elem
   }
- 
+
   def apply(index: Int): T = get(index)
 
   def get(index: Int): T = {
@@ -218,7 +231,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
   }
 
   override def slice(start: Int, finish: Int): IndexedSeq[T] = slice(Some(start), Some(finish))
-  
+
   def slice(start: Option[Int], finish: Option[Int], count: Int = 0): IndexedSeq[T] = {
     val buffer = new scala.collection.mutable.ArrayBuffer[T]
     storage.getVectorStorageRangeFor(uuid, start, finish, count).foreach(buffer.append(_))
@@ -262,21 +275,23 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait PersistentRef[T] extends Transactional with Committable {
+trait PersistentRef[T] extends Transactional with Committable with Abortable {
   protected val ref = new TransactionalRef[T]
-  
+
   val storage: RefStorageBackend[T]
 
   def commit = if (ref.isDefined) {
     storage.insertRefStorageFor(uuid, ref.get.get)
-    ref.swap(null.asInstanceOf[T]) 
+    ref.swap(null.asInstanceOf[T])
   }
+
+  def abort = ref.swap(null.asInstanceOf[T])
 
   def swap(elem: T) = {
     register
     ref.swap(elem)
   }
-  
+
   def get: Option[T] = if (ref.isDefined) ref.get else storage.getRefStorageFor(uuid)
 
   def isDefined: Boolean = ref.isDefined || storage.getRefStorageFor(uuid).isDefined
@@ -294,7 +309,7 @@ trait PersistentRef[T] extends Transactional with Committable {
 }
 
 /**
- * Implementation of <tt>PersistentQueue</tt> for every concrete 
+ * Implementation of <tt>PersistentQueue</tt> for every concrete
  * storage will have the same workflow. This abstracts the workflow.
  * <p/>
  * Enqueue is simpler, we just have to record the operation in a local
@@ -319,7 +334,7 @@ trait PersistentRef[T] extends Transactional with Committable {
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
 trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
-  with Transactional with Committable with Logging {
+  with Transactional with Committable with Abortable with Logging {
 
   sealed trait QueueOp
   case object ENQ extends QueueOp
@@ -356,7 +371,16 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     enqueuedNDequeuedEntries.clear
     localQ.swap(Queue.empty)
     pickMeForDQ.swap(0)
+    shouldClearOnCommit.swap(false)
   }
+
+  def abort = {
+    enqueuedNDequeuedEntries.clear
+    shouldClearOnCommit.swap(false)
+    localQ.swap(Queue.empty)
+    pickMeForDQ.swap(0)
+  }
+
 
   override def enqueue(elems: A*) {
     register
@@ -382,19 +406,17 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
         val (a, q) = localQ.get.get.dequeue
         localQ.swap(q)
         a
-      }
-      else 
-        throw new NoSuchElementException("trying to dequeue from empty queue")
+      } else throw new NoSuchElementException("trying to dequeue from empty queue")
     }
   }
 
-  override def clear = { 
+  override def clear = {
     register
     shouldClearOnCommit.swap(true)
     localQ.swap(Queue.empty)
     pickMeForDQ.swap(0)
   }
-  
+
   override def size: Int = try {
     storage.size(uuid) + localQ.get.get.length
   } catch { case e: Exception => 0 }
@@ -402,11 +424,11 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   override def isEmpty: Boolean =
     size == 0
 
-  override def +=(elem: A) = { 
+  override def +=(elem: A) = {
     enqueue(elem)
     this
   }
-  def ++=(elems: Iterator[A]) = { 
+  def ++=(elems: Iterator[A]) = {
     enqueue(elems.toList: _*)
     this
   }
@@ -428,7 +450,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
  * Implements a template for a concrete persistent transactional sorted set based storage.
  * <p/>
  * Sorting is done based on a <i>zscore</i>. But the computation of zscore has been kept
- * outside the abstraction. 
+ * outside the abstraction.
  * <p/>
  * zscore can be implemented in a variety of ways by the calling class:
  * <pre>
@@ -445,7 +467,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
  * class Foo {
  *   //..
  * }
- * 
+ *
  * implicit def Foo2Scorable(foo: Foo): ZScorable = new ZScorable {
  *   def toZScore = {
  *     //..
@@ -457,9 +479,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
  *
  * @author <a href="http://debasishg.blogspot.com"</a>
  */
-trait PersistentSortedSet[A] 
-  extends Transactional 
-  with Committable {
+trait PersistentSortedSet[A] extends Transactional with Committable with Abortable {
 
   protected val newElems = TransactionalState.newMap[A, Float]
   protected val removedElems = TransactionalState.newVector[A]
@@ -469,6 +489,11 @@ trait PersistentSortedSet[A]
   def commit = {
     for ((element, score) <- newElems) storage.zadd(uuid, String.valueOf(score), element)
     for (element <- removedElems) storage.zrem(uuid, element)
+    newElems.clear
+    removedElems.clear
+  }
+
+  def abort = {
     newElems.clear
     removedElems.clear
   }
@@ -501,7 +526,7 @@ trait PersistentSortedSet[A]
       }
     }
   }
- 
+
   def size: Int = newElems.size + storage.zcard(uuid) - removedElems.size
 
   def zscore(elem: A): Float = {
@@ -516,9 +541,9 @@ trait PersistentSortedSet[A]
   implicit def order(x: (A, Float)) = new Ordered[(A, Float)] {
     def compare(that: (A, Float)) = x._2 compare that._2
   }
-  
+
   implicit def ordering = new scala.math.Ordering[(A,Float)] {
-    def compare(x: (A, Float),y : (A,Float)) = x._2 compare y._2   
+    def compare(x: (A, Float),y : (A,Float)) = x._2 compare y._2
   }
 
 
@@ -531,7 +556,7 @@ trait PersistentSortedSet[A]
 
     // -1 means the last element, -2 means the second last
     val s = if (start < 0) start + l else start
-    val e = 
+    val e =
       if (end < 0) end + l
       else if (end >= l) (l - 1)
       else end

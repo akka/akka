@@ -10,6 +10,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
 import se.scalablesolutions.akka.stm.TransactionalState
+import se.scalablesolutions.akka.actor.ActorRegistry.actorsFor
 
 class Boot {
   val factory = SupervisorFactory(
@@ -90,12 +91,7 @@ import javax.annotation.security.{RolesAllowed, DenyAll, PermitAll}
 import javax.ws.rs.{GET, Path, Produces}
 
 @Path("/secureticker")
-class SecureTickActor extends Transactor with Logging {
-
-  case object Tick
-  private val KEY = "COUNTER"
-  private var hasStartedTicking = false
-  private lazy val storage = TransactionalState.newMap[String, Integer]
+class SecureTickService {
 
   /**
    * allow access for any user to "/secureticker/public"
@@ -123,15 +119,25 @@ class SecureTickActor extends Transactor with Logging {
   @DenyAll
   def paranoiaTick = tick
 
-  def tick = (self !! Tick) match {
-    case (Some(counter)) => (<success>Tick:
-      {counter}
-    </success>)
-    case _ => (<error>Error in counter</error>)
+  def tick = {
+        //Fetch the first actor of type PersistentSimpleServiceActor
+        //Send it the "Tick" message and expect a NdeSeq back
+        val result = for{a <- actorsFor(classOf[SecureTickActor]).headOption
+                         r <- a.!![Integer]("Tick")} yield r
+        //Return either the resulting NodeSeq or a default one
+        result match {
+      case (Some(counter)) => (<success>Tick: {counter}</success>)
+      case _ => (<error>Error in counter</error>)
+    }
   }
+}
 
+class SecureTickActor extends Transactor with Logging {
+  private val KEY = "COUNTER"
+  private var hasStartedTicking = false
+  private lazy val storage = TransactionalState.newMap[String, Integer]
   def receive = {
-    case Tick => if (hasStartedTicking) {
+    case "Tick" => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.intValue
       storage.put(KEY, counter + 1)
       self.reply(new Integer(counter + 1))

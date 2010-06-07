@@ -169,6 +169,8 @@ object Serializer {
     import sbinary.Operations._
     import sbinary.DefaultProtocol._
 
+    var classLoader: Option[ClassLoader] = None
+
     def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = in[T](out[T](obj), None)
 
     def out[T](t : T)(implicit bin : Writes[T]): Array[Byte] = toByteArray[T](t)

@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy, ConfiguratorRepository, Configurator}
+import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.remote.RemoteServer
 import Actor._
@@ -45,46 +45,6 @@ class SupervisorException private[akka](message: String) extends RuntimeExceptio
  */
 object Supervisor {
   def apply(config: SupervisorConfig): Supervisor = SupervisorFactory(config).newInstance.start
-}
-
-/**
- * Factory object for creating supervisors as Actors, it has both a declarative and programatic API.
- * <p/>
- *
- * Here is a sample on how to use the programmatic API (note that the supervisor is automatically started):
- * <pre>
- * val supervisor = SupervisorActor(AllForOneStrategy(maxNrOfRetries, timeRange), Array(classOf[Throwable]))
- *
- * Here is a sample on how to use the declarative API:
- * <pre>
- *  val supervisor = SupervisorActor(
- *    SupervisorConfig(
- *      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception]),
- *      Supervise(
- *        myFirstActor,
- *        LifeCycle(Permanent)) ::
- *      Supervise(
- *        mySecondActor,
- *        LifeCycle(Permanent)) ::
- *      Nil))
- * </pre>
- *
- * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
- * <pre>
- * supervisor.link(child)
- * supervisor.unlink(child)
- * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object SupervisorActor {
-  def apply(config: SupervisorConfig): ActorRef = {
-    val (handler, trapExits) = SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config)
-    actorOf(new SupervisorActor(handler, trapExits)).start
-  }
-
-  def apply(handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]): ActorRef =
-    actorOf(new SupervisorActor(handler, trapExceptions)).start
 }
 
 /**
@@ -160,18 +120,17 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed class Supervisor private[akka] (
-  handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
-  extends Configurator {
+  handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]) {
   import Supervisor._
 
-  private val childActors = new ConcurrentHashMap[String, List[ActorRef]]
-  private val childSupervisors = new CopyOnWriteArrayList[Supervisor]
-  private[akka] val supervisor = SupervisorActor(handler, trapExceptions)
+  private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
+  private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
+
+  private[akka] val supervisor = actorOf(new SupervisorActor(handler, trapExceptions)).start
 
   def uuid = supervisor.uuid
 
   def start: Supervisor = {
-    ConfiguratorRepository.registerConfigurator(this)
     this
   }
 
@@ -181,28 +140,25 @@ sealed class Supervisor private[akka] (
 
   def unlink(child: ActorRef) = supervisor.unlink(child)
 
-  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
-  def getInstance[T](clazz: Class[T]): List[T] = childActors.get(clazz.getName).asInstanceOf[List[T]]
+  def children: List[ActorRef] =
+    _childActors.values.toArray.toList.asInstanceOf[List[List[ActorRef]]].flatten
 
-  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
-  def getComponentInterfaces: List[Class[_]] =
-    childActors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
-
-  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
-  def isDefined(clazz: Class[_]): Boolean = childActors.containsKey(clazz.getName)
+  def childSupervisors: List[Supervisor] =
+    _childActors.values.toArray.toList.asInstanceOf[List[Supervisor]]
 
   def configure(config: SupervisorConfig): Unit = config match {
     case SupervisorConfig(_, servers) =>
       servers.map(server =>
         server match {
           case Supervise(actorRef, lifeCycle, remoteAddress) =>
+            actorRef.start
             val className = actorRef.actor.getClass.getName
             val currentActors = {
-              val list = childActors.get(className)
+              val list = _childActors.get(className)
               if (list eq null) List[ActorRef]()
               else list
             }
-            childActors.put(className, actorRef :: currentActors)
+            _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
             supervisor.link(actorRef)
             remoteAddress.foreach(address =>
@@ -210,25 +166,13 @@ sealed class Supervisor private[akka] (
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
-            childSupervisors.add(childSupervisor)
+            _childSupervisors.add(childSupervisor)
         })
   }
 }
 
 /**
- * Use this class when you want to create a supervisor dynamically that should only
- * manage its child children and not have any functionality by itself.
- * <p/>
- * Here is a sample on how to use it:
- * <pre>
- * val supervisor = Supervisor(AllForOneStrategy(maxNrOfRetries, timeRange), Array(classOf[Throwable]))
- * </pre>
- *
- * You dynamically link and unlink child children using the 'link' and 'unlink' methods.
- * <pre>
- * supervisor.link(child)
- * supervisor.unlink(child)
- * </pre>
+ * For internal use only.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

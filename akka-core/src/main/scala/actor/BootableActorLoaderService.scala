@@ -7,9 +7,42 @@ package se.scalablesolutions.akka.actor
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
+import java.util.Enumeration
 
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 import se.scalablesolutions.akka.config.Config._
+
+class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLClassLoader(urls.toArray.asInstanceOf[Array[URL]],parent)
+{
+  override def findResources(resource : String) = {
+    val normalResult = super.findResources(resource)
+    if(normalResult.hasMoreElements) normalResult else findDeployed(resource)
+  }
+  
+  def findDeployed(resource : String) = new Enumeration[URL]{
+    private val it =  getURLs.flatMap( listClassesInPackage(_,resource) ).iterator
+    def hasMoreElements = it.hasNext
+    def nextElement = it.next
+  }
+
+  def listClassesInPackage(jar : URL, pkg : String) = {
+	val f  = new File(jar.getFile)
+    val jf = new JarFile(f)
+    try {
+      val es = jf.entries
+      var result = List[URL]()
+      while(es.hasMoreElements)
+      {
+        val e = es.nextElement
+        if(!e.isDirectory && e.getName.startsWith(pkg) && e.getName.endsWith(".class"))
+        result ::= new URL("jar:" + f.toURI.toURL + "!/" + e)
+      }
+    result
+    } finally {
+      jf.close
+    }
+  }
+}
 
 /**
  * Handles all modules in the deploy directory (load and unload)
@@ -46,12 +79,8 @@ trait BootableActorLoaderService extends Bootable with Logging {
       log.debug("Loading dependencies [%s]", dependencyJars)
       val allJars = toDeploy ::: dependencyJars
 
-      val parentClassLoader = classOf[Seq[_]].getClassLoader
-      URLClassLoader.newInstance(
-        allJars.toArray.asInstanceOf[Array[URL]],
-        ClassLoader.getSystemClassLoader)
-        //parentClassLoader)
-    } else getClass.getClassLoader)
+      new AkkaDeployClassLoader(allJars,Thread.currentThread.getContextClassLoader)
+    } else Thread.currentThread.getContextClassLoader)
   }
 
   abstract override def onLoad = {
@@ -62,5 +91,8 @@ trait BootableActorLoaderService extends Bootable with Logging {
     super.onLoad
   }
 
-  abstract override def onUnload = ActorRegistry.shutdownAll
+  abstract override def onUnload = {
+    super.onUnload
+    ActorRegistry.shutdownAll
+  }
 }

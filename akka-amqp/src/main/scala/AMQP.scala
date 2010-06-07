@@ -93,7 +93,7 @@ object AMQP {
 
     import scala.collection.JavaConversions._
 
-    private val supervisor = actorOf[AMQPSupervisorActor].start
+    private val supervisor = actorOf(new AMQPSupervisorActor).start
     private val connections = new ConcurrentHashMap[ActorRef, ActorRef]
 
     def newProducer(

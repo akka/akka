@@ -4,6 +4,8 @@
 
 package se.scalablesolutions.akka.dispatch
 
+import se.scalablesolutions.akka.actor.ActorRef
+
 /**
  * Default settings are:
  * <pre/>
@@ -52,41 +54,74 @@ package se.scalablesolutions.akka.dispatch
  * the {@link se.scalablesolutions.akka.dispatch.Dispatchers} factory object.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * @param throughput positive integer indicates the dispatcher will only process so much messages at a time from the
+ *                   mailbox, without checking the mailboxes of other actors. Zero or negative means the dispatcher
+ *                   always continues until the mailbox is empty.
+ *                   Larger values (or zero or negative) increase througput, smaller values increase fairness 
  */
-class ExecutorBasedEventDrivenDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
+class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispatchers.THROUGHPUT) extends MessageDispatcher with ThreadPoolBuilder {
+  def this(_name: String) = this(_name, Dispatchers.THROUGHPUT) // Needed for Java API usage
+
   @volatile private var active: Boolean = false
 
   val name: String = "event-driven:executor:dispatcher:" + _name
   init
 
-  def dispatch(invocation: MessageInvocation) = if (active) {
+  def dispatch(invocation: MessageInvocation) = dispatch(invocation.receiver)
+
+  def dispatch(receiver: ActorRef): Unit = if (active) {
     executor.execute(new Runnable() {
       def run = {
         var lockAcquiredOnce = false
-        // this do-wile loop is required to prevent missing new messages between the end of the inner while
+        var finishedBeforeMailboxEmpty = false
+        val lock = receiver.dispatcherLock
+        val mailbox = receiver.mailbox
+        // this do-while loop is required to prevent missing new messages between the end of the inner while
         // loop and releasing the lock
-        val lock = invocation.receiver.dispatcherLock
-        val mailbox = invocation.receiver.mailbox
         do {
           if (lock.tryLock) {
+            // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
             lockAcquiredOnce = true
             try {
-              // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
-              var messageInvocation = mailbox.poll
-              while (messageInvocation != null) {
-                messageInvocation.invoke
-                messageInvocation = mailbox.poll
-              }
+              finishedBeforeMailboxEmpty = processMailbox(receiver)
             } finally {
               lock.unlock
+              if (finishedBeforeMailboxEmpty)
+                dispatch(receiver)
             }
           }
-        } while ((lockAcquiredOnce && !mailbox.isEmpty))
+        } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !mailbox.isEmpty))
       }
     })
   } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
 
+
+  /**
+   * Process the messages in the mailbox of the given actor.
+   *
+   * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
+   */
+  def processMailbox(receiver: ActorRef): Boolean = {
+    var processedMessages = 0
+    var messageInvocation = receiver.mailbox.poll
+    while (messageInvocation != null) {
+      messageInvocation.invoke
+      processedMessages += 1
+      // check if we simply continue with other messages, or reached the throughput limit
+      if (throughput <= 0 || processedMessages < throughput)
+        messageInvocation = receiver.mailbox.poll
+      else {
+        return !receiver.mailbox.isEmpty
+        messageInvocation = null
+      }
+    }
+
+    return false
+  }
+
   def start = if (!active) {
+    log.debug("Starting ExecutorBasedEventDrivenDispatcher [%s]", name)
+    log.debug("Throughput for %s = %d", name, throughput)
     active = true
   }
 
