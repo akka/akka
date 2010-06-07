@@ -306,7 +306,18 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     override def bndClasspath = compileClasspath
     override def bndPrivatePackage = Set("")
     override def bndImportPackage = Set("*;resolution:=optional")
-    override def bndExportPackage = Set("!se.scalablesolutions.akka.*", "*")
+    override def bndExportPackage = Set(
+      // Provided by Akka bundle
+      "!se.scalablesolutions.akka.*", 
+
+      // Provided by other bundles
+      "!org.apache.commons.io.*",
+      "!org.codehaus.jackson.*",
+      "!org.codehaus.jettison.*",
+      "!org.jboss.netty.*",
+
+      // Export the rest
+      "*")
   }
 
   class AkkaOSGiAssemblyProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
