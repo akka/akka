@@ -10,6 +10,8 @@ import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
 
+import com.weiglewilczek.bnd4sbt.BNDPlugin
+
 class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
@@ -65,6 +67,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
     akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
+  lazy val akka_osgi = project("akka-osgi", "akka-osgi", new AkkaOSGiParentProject(_))
 
   // functional tests in java
   lazy val akka_fun_test = project("akka-fun-test-java", "akka-fun-test-java", new AkkaFunTestProject(_), akka_kernel)
@@ -271,6 +274,29 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile"
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
     val jta_spec = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
+  }
+
+  // ================= OSGi Packaging ==================
+  class AkkaOSGiBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
+    override def bndClasspath = compileClasspath
+    override def bndPrivatePackage = Set("")
+    override def bndExportPackage = Set("se.scalablesolutions.akka.*;version=0.9")
+  }
+
+  class AkkaOSGiAssemblyProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    // FIXME: Find out how to replace mvn-assembly within SBT
+
+    //override def packageAction = task {
+      //FileUtilities.copy(info.dependencies.map(_.outputPath), "XXX", true, true, log)
+      //None
+    //} dependsOn(compile) describedAs("Creates the OSGi distribution.")
+  }
+
+  class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akka_osgi_bundle = project("akka-osgi-bundle", "akka-osgi-bundle",
+      new AkkaOSGiBundleProject(_), akka_kernel)
+    lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
+      new AkkaOSGiAssemblyProject(_), akka_osgi_bundle)
   }
 
   // ================= TEST ==================
