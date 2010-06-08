@@ -891,7 +891,6 @@ sealed class LocalActorRef private[akka](
   }
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    sender = senderOption
     joinTransaction(message)
 
     if (remoteAddress.isDefined) {
@@ -924,7 +923,6 @@ sealed class LocalActorRef private[akka](
       timeout: Long,
       senderOption: Option[ActorRef],
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    sender = senderOption
     joinTransaction(message)
 
     if (remoteAddress.isDefined) {
@@ -974,9 +972,9 @@ sealed class LocalActorRef private[akka](
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return
     }
+    sender = messageHandle.sender
+    senderFuture = messageHandle.senderFuture
     try {
-      sender = messageHandle.sender
-      senderFuture = messageHandle.senderFuture
       if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
       else dispatch(messageHandle)
     } catch {
@@ -990,9 +988,7 @@ sealed class LocalActorRef private[akka](
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     setTransactionSet(messageHandle.transactionSet)
     try {
-      if (actor.base.isDefinedAt(message)) actor.base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException(
-        "No handler matching message [" + message + "] in " + toString)
+      actor.base(message)
     } catch {
       case e =>
         _isBeingRestarted = true
@@ -1021,20 +1017,16 @@ sealed class LocalActorRef private[akka](
       }
     setTransactionSet(txSet)
 
-    def proceed = {
-      if (actor.base.isDefinedAt(message)) actor.base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException(
-        toString + " could not process message [" + message + "]" +
-        "\n\tsince no matching 'case' clause in its 'receive' method could be found")
-      setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
-    }
-
     try {
       if (isTransactor) {
         atomic {
-          proceed
+          actor.base(message)
+          setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
         }
-      } else proceed
+      } else {
+        actor.base(message)
+        setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
+      }
     } catch {
       case e: IllegalStateException => {}
       case e =>
