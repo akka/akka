@@ -476,7 +476,7 @@ object ActiveObject extends Logging {
 
 }
 
-private[akka] object AspectInitRegistry {
+private[akka] object AspectInitRegistry extends ListenerManagement {
   private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
 
   def initFor(target: AnyRef) = {
@@ -485,8 +485,15 @@ private[akka] object AspectInitRegistry {
     init
   }
 
-  def register(target: AnyRef, init: AspectInit) = initializations.put(target, init)
+  def register(target: AnyRef, init: AspectInit) = {
+    val res = initializations.put(target, init)
+    foreachListener(_ ! AspectInitRegistered(target, init))
+    res
+  }
 }
+
+private[akka] sealed trait AspectInitRegistryEvent
+private[akka] case class AspectInitRegistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],

@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.kernel
 import se.scalablesolutions.akka.servlet.AkkaLoader
 import se.scalablesolutions.akka.remote.BootableRemoteActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
-import se.scalablesolutions.akka.camel.service.CamelService
+import se.scalablesolutions.akka.camel.CamelService
 import se.scalablesolutions.akka.config.Config
 
 object Main {

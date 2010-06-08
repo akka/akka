@@ -160,7 +160,7 @@ trait Producer { this: Actor =>
  *
  * @author Martin Krasser
  */
-class ProducerResponseSender(
+private[camel] class ProducerResponseSender(
     headers: Map[String, Any],
     sender: Option[ActorRef],
     senderFuture: Option[CompletableFuture[Any]],
