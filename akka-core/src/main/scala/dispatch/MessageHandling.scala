@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.dispatch
 import java.util.List
 
 import se.scalablesolutions.akka.util.{HashCode, Logging}
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -23,7 +23,12 @@ final class MessageInvocation(val receiver: ActorRef,
                               val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 
-  def invoke = receiver.invoke(this)
+  def invoke = try { 
+    receiver.invoke(this)
+  } catch {
+    case e: NullPointerException => throw new ActorInitializationException(
+      "Don't call 'self ! message' in the Actor's constructor (e.g. body of the class).")
+  }
 
   def send = receiver.dispatcher.dispatch(this)
 

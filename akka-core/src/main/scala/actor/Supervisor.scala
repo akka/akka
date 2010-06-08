@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy, ConfiguratorRepository, Configurator}
+import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.remote.RemoteServer
 import Actor._
@@ -120,8 +120,7 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed class Supervisor private[akka] (
-  handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]])
-  extends Configurator {
+  handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]) {
   import Supervisor._
 
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
@@ -132,7 +131,6 @@ sealed class Supervisor private[akka] (
   def uuid = supervisor.uuid
 
   def start: Supervisor = {
-    ConfiguratorRepository.registerConfigurator(this)
     this
   }
 
@@ -142,21 +140,11 @@ sealed class Supervisor private[akka] (
 
   def unlink(child: ActorRef) = supervisor.unlink(child)
 
-  // FIXME is this method needed? 
-  def getInstance[T](clazz: Class[T]): List[T] = _childActors.get(clazz.getName).asInstanceOf[List[T]]
-
-  // FIXME is this method needed? 
-  def getComponentInterfaces: List[Class[_]] =
-    _childActors.values.toArray.toList.asInstanceOf[List[List[AnyRef]]].flatten.map(_.getClass)
-
   def children: List[ActorRef] =
     _childActors.values.toArray.toList.asInstanceOf[List[List[ActorRef]]].flatten
 
   def childSupervisors: List[Supervisor] =
     _childActors.values.toArray.toList.asInstanceOf[List[Supervisor]]
-
-  // FIXME recursive search + do not fix if we remove feature that Actors can be RESTful usin Jersey annotations
-  def isDefined(clazz: Class[_]): Boolean = _childActors.containsKey(clazz.getName)
 
   def configure(config: SupervisorConfig): Unit = config match {
     case SupervisorConfig(_, servers) =>
