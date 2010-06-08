@@ -16,7 +16,7 @@ class ConfigurationException(message: String) extends RuntimeException(message)
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Config extends Logging {
-  val VERSION = "0.9"
+  val VERSION = "0.10-SNAPSHOT"
 
   // Set Multiverse options for max speed
   System.setProperty("org.multiverse.MuliverseConstants.sanityChecks", "false")
