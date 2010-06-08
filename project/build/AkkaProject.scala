@@ -323,15 +323,17 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaOSGiAssemblyProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     // FIXME: Find out how to replace mvn-assembly within SBT
 
-    override def packageAction = task {
+    lazy val assemblyAction = task {
       
       println("----------------------------")
       println("2" + unmanagedClasspath)
 
-
       //FileUtilities.copy(info.dependencies.map(_.outputPath), "bundles", true, true, log)
       None
-    } //dependsOn(compile) describedAs("Creates the OSGi distribution.")
+    }
+
+    override def packageAction = super.packageAction dependsOn(assemblyAction)
+    
   }
 
   class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
