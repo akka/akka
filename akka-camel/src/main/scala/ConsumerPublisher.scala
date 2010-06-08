@@ -144,7 +144,7 @@ private[camel] class ConsumerActorRoute(endpointUri: String, id: String, uuid: B
  * @author Martin Krasser
  */
 private[camel] class ConsumerMethodRoute(val endpointUri: String, id: String, method: String) extends ConsumerRoute(endpointUri, id) {
-  protected override def targetUri = "%s:%s?method=%s" format (ActiveObjectComponent.DefaultSchema, id, method)
+  protected override def targetUri = "%s:%s?method=%s" format (ActiveObjectComponent.InternalSchema, id, method)
 }
 
 /**
