@@ -4,11 +4,10 @@
 
 package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.util.Logging
-
 import scala.collection.mutable.ListBuffer
 import scala.reflect.Manifest
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
+import se.scalablesolutions.akka.util.ListenerManagement
 
 sealed trait ActorRegistryEvent
 case class ActorRegistered(actor: ActorRef) extends ActorRegistryEvent
@@ -26,11 +25,10 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ActorRegistry extends Logging {
+object ActorRegistry extends ListenerManagement {
   private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
   private val actorsById =            new ConcurrentHashMap[String, List[ActorRef]]
   private val actorsByClassName =     new ConcurrentHashMap[String, List[ActorRef]]
-  private val registrationListeners = new CopyOnWriteArrayList[ActorRef]
 
   /**
    * Returns all actors in the system.
@@ -140,30 +138,5 @@ object ActorRegistry extends Logging {
     actorsById.clear
     actorsByClassName.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
-  }
-
-  /**
-   * Adds the registration <code>listener</code> this this registry's listener list.
-   */
-  def addRegistrationListener(listener: ActorRef) = {
-    listener.start
-    registrationListeners.add(listener)
-  }
-
-  /**
-   * Removes the registration <code>listener</code> this this registry's listener list.
-   */
-  def removeRegistrationListener(listener: ActorRef) = {
-    listener.stop
-    registrationListeners.remove(listener)
-  }
-
-  private def foreachListener(f: (ActorRef) => Unit) {
-    val iterator = registrationListeners.iterator
-    while (iterator.hasNext) {
-      val listener = iterator.next
-      if (listener.isRunning) f(listener)
-      else log.warning("Can't send ActorRegistryEvent to [%s] since it is not running.", listener)
-    }
   }
 }
