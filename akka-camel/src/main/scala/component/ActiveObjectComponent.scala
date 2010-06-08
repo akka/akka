@@ -16,15 +16,14 @@ object ActiveObjectComponent {
   /**
    * Default schema name for active object endpoint URIs.
    */
-  val DefaultSchema = "actobj"
+  val InternalSchema = "active-object-internal"
 }
 
 /**
  * Camel component for exchanging messages with active objects. This component
- * requires that active objects are added to <code>activeObjectRegistry</code>
- * before creating routes that access these objects. The registry key is the bean
- * name of the active object used in the endpoint URI.
- * 
+ * tries to obtain the active object from the <code>activeObjectRegistry</code>
+ * first. If it's not there it tries to obtain it from the CamelContext's registry.
+ *
  * @see org.apache.camel.component.bean.BeanComponent
  *
  * @author Martin Krasser
@@ -69,8 +68,10 @@ class ActiveObjectHolder(activeObjectRegistry: Map[String, AnyRef], context: Cam
   /**
    * Obtains an active object from <code>activeObjectRegistry</code>.
    */
-  override def getBean: AnyRef =
-    activeObjectRegistry.get(getName)
+  override def getBean: AnyRef = {
+    val bean = activeObjectRegistry.get(getName)
+    if (bean eq null) super.getBean else bean
+  }
 }
 
 /**

@@ -94,14 +94,14 @@ trait CamelContextLifecycle extends Logging {
    * caching they can do so after this method returned and prior to calling start.
    * This method also registers a new
    * {@link se.scalablesolutions.akka.camel.component.ActiveObjectComponent} at
-   * <code>context</code> under the name actobj.
+   * <code>context</code> under a name defined by ActiveObjectComponent.InternalSchema.
    */
   def init(context: CamelContext) {
     this.activeObjectComponent = new ActiveObjectComponent
     this.activeObjectRegistry = activeObjectComponent.activeObjectRegistry
     this.context = context
     this.context.setStreamCaching(true)
-    this.context.addComponent(ActiveObjectComponent.DefaultSchema, activeObjectComponent)
+    this.context.addComponent(ActiveObjectComponent.InternalSchema, activeObjectComponent)
     this.template = context.createProducerTemplate
     _initialized = true
     log.info("Camel context initialized")

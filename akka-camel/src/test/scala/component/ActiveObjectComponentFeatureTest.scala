@@ -28,27 +28,27 @@ class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAl
   }
 
   feature("Communicate with an active object from a Camel application using active object endpoint URIs") {
-    import ActiveObjectComponent.DefaultSchema
+    import ActiveObjectComponent.InternalSchema
     import CamelContextManager.template
     import ExchangePattern._
 
     scenario("in-out exchange with proxy created from interface and method returning String") {
-      val result = template.requestBodyAndHeader("%s:intf?method=m2" format DefaultSchema, "x", "test", "y")
+      val result = template.requestBodyAndHeader("%s:intf?method=m2" format InternalSchema, "x", "test", "y")
       assert(result === "m2impl: x y")
     }
 
     scenario("in-out exchange with proxy created from class and method returning String") {
-      val result = template.requestBodyAndHeader("%s:base?method=m2" format DefaultSchema, "x", "test", "y")
+      val result = template.requestBodyAndHeader("%s:base?method=m2" format InternalSchema, "x", "test", "y")
       assert(result === "m2base: x y")
     }
 
     scenario("in-out exchange with proxy created from class and method returning void") {
-      val result = template.requestBodyAndHeader("%s:base?method=m5" format DefaultSchema, "x", "test", "y")
+      val result = template.requestBodyAndHeader("%s:base?method=m5" format InternalSchema, "x", "test", "y")
       assert(result === "x") // returns initial body
     }
 
     scenario("in-only exchange with proxy created from class and method returning String") {
-      val result = template.send("%s:base?method=m2" format DefaultSchema, InOnly, new Processor {
+      val result = template.send("%s:base?method=m2" format InternalSchema, InOnly, new Processor {
         def process(exchange: Exchange) = {
           exchange.getIn.setBody("x")
           exchange.getIn.setHeader("test", "y")
@@ -60,7 +60,7 @@ class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAl
     }
 
     scenario("in-only exchange with proxy created from class and method returning void") {
-      val result = template.send("%s:base?method=m5" format DefaultSchema, InOnly, new Processor {
+      val result = template.send("%s:base?method=m5" format InternalSchema, InOnly, new Processor {
         def process(exchange: Exchange) = {
           exchange.getIn.setBody("x")
           exchange.getIn.setHeader("test", "y")
