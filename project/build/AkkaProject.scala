@@ -12,7 +12,7 @@ import java.io.File
 
 import com.weiglewilczek.bnd4sbt._
 
-class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
+class AkkaParent(info: ProjectInfo) extends DefaultProject(info) with AkkaWrappersProject {
 
   // ------------------------------------------------------------
   // project versions
@@ -85,9 +85,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // examples
   lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
-
-  // OSGi wrappers
-  lazy val akka_wrappers = project("akka-wrap", "akka-wrap", new AkkaWrappersParentProject(_))
 
   // ------------------------------------------------------------
   // Run Akka microkernel using 'sbt run' + use for packaging executable JAR
@@ -174,25 +171,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
         }
        None
     } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
-
-    lazy val publishLocalMvnWrapped = runMvnInstallWrapped
-    def runMvnInstallWrapped = task {
-        for (absPath <- wrappedArtifacts.getPaths) {
-          val artifactRE = """.*/([^/]+)-([^-]+).jar""".r
-          val artifactRE(artifactId, artifactVersion) = absPath
-          val command = "mvn install:install-file" +
-                        " -Dfile=" + absPath +
-                        " -DgroupId=se.scalablesolutions.akka.akka-wrap" +
-                        " -DartifactId=" + artifactId +
-                        " -Dversion=" + artifactVersion +
-                        " -Dpackaging=jar -DgeneratePom=true"
-          command ! log
-        }
-       None
-    } dependsOn(`package`) describedAs("Run mvn install for wrapped artifacts in akka-wrap.")
-
-
-
 
   // ------------------------------------------------------------
   // subprojects
@@ -384,23 +362,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleRemoteProject(_), akka_kernel)
   }
 
-
-  // ================= OSGi Wrappers ==================
-  class JgroupsWrapperProject(info: ProjectInfo) extends OSGiWrapperProject(info) {
-    override def wrappedVersion = "2.9.0.GA"
-    override def bndImportPackage = Set("org.testng.*;resolution:=optional",
-      "org.bouncycastle.jce.provider;resolution:=optional",
-      "bsh;resolution:=optional",
-      "*")
-    
-    val jgroups = "jgroups" % "jgroups" % wrappedVersion % "compile"
-  }
-
-  class AkkaWrappersParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val jgroups_wrapper = project("jgroups-wrapper", "jgroups-wrapper",
-      new JgroupsWrapperProject(_))
-  }
-
   // ------------------------------------------------------------
   // helper functions
   def removeDupEntries(paths: PathFinder) =
@@ -428,8 +389,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
   
   def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "_osgi-" + version + ".jar")
-
-  def wrappedArtifacts = descendents(info.projectPath / "akka-wrap", "*" + buildScalaVersion  + "_osgi-" + "*.jar")
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject
@@ -459,14 +418,5 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     override def bndExportPackage = Set("*")    
 
   }
-
-  abstract class OSGiWrapperProject(info: ProjectInfo) extends DefaultProject(info) with BNDPlugin {
-    def wrappedVersion:String 
-    override def version = OpaqueVersion(wrappedVersion)
-    override def artifactID = moduleID + "_osgi"
-    override def bndEmbedDependencies = true
-    override def bndExportPackage = Set("*")
-  }
-
 
 }
