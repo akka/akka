@@ -46,7 +46,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // must be resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
   // Therefore, if repositories are defined, this must happen as def, not as val.
   // -------------------------------------------------------------------------------------------------------------------
-  val embeddedRepo            = "Embedded Repo" at (info.projectPath / "embedded-repo").asURL.toString  // Fast enough => No need for a module configuration here!
+  val embeddedRepo            = "Embedded Repo" at (info.projectPath / "embedded-repo").asURL.toString
   val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   def guiceyFruitRepo         = "GuiceyFruit Repo" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
   val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", guiceyFruitRepo)
@@ -365,8 +365,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   def removeDupEntries(paths: PathFinder) =
    Path.lazyPathFinder {
      val mapped = paths.get map { p => (p.relativePath, p) }
-    (Map() ++ mapped).values.toList
-  }
+     (Map() ++ mapped).values.toList
+   }
 
   def allArtifacts = {
     Path.fromFile(buildScalaInstance.libraryJar) +++
