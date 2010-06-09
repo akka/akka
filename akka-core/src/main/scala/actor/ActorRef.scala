@@ -119,7 +119,7 @@ trait ActorRef extends TransactionManagement {
    * <p/>
    * Identifier for actor, does not have to be a unique one. Default is the 'uuid'.
    * <p/>
-   * This field is used for logging, AspectRegistry.actorsFor, identifier for remote
+   * This field is used for logging, AspectRegistry.actorsFor(id), identifier for remote
    * actor in RemoteServer etc.But also as the identifier for persistence, which means
    * that you can use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
@@ -208,8 +208,8 @@ trait ActorRef extends TransactionManagement {
 
   protected[akka] var _sender: Option[ActorRef] = None
   protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
-  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
-  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
+  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s }
+  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf }
 
   /**
    * The reference sender Actor of the last received message.
