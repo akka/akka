@@ -119,7 +119,7 @@ trait ActorRef extends TransactionManagement {
    * <p/>
    * Identifier for actor, does not have to be a unique one. Default is the 'uuid'.
    * <p/>
-   * This field is used for logging, AspectRegistry.actorsFor, identifier for remote
+   * This field is used for logging, AspectRegistry.actorsFor(id), identifier for remote
    * actor in RemoteServer etc.But also as the identifier for persistence, which means
    * that you can use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
@@ -208,8 +208,8 @@ trait ActorRef extends TransactionManagement {
 
   protected[akka] var _sender: Option[ActorRef] = None
   protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
-  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s}
-  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf}
+  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s }
+  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf }
 
   /**
    * The reference sender Actor of the last received message.
@@ -243,6 +243,11 @@ trait ActorRef extends TransactionManagement {
    */
   def uuid = _uuid
 
+  /**
+   * Tests if the actor is able to handle the message passed in as arguments.
+   */
+  def isDefinedAt(message: Any): Boolean = actor.base.isDefinedAt(message)
+  
   /**
    * Only for internal use. UUID is effectively final.
    */
@@ -891,7 +896,6 @@ sealed class LocalActorRef private[akka](
   }
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    sender = senderOption
     joinTransaction(message)
 
     if (remoteAddress.isDefined) {
@@ -924,7 +928,6 @@ sealed class LocalActorRef private[akka](
       timeout: Long,
       senderOption: Option[ActorRef],
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    sender = senderOption
     joinTransaction(message)
 
     if (remoteAddress.isDefined) {
@@ -974,9 +977,9 @@ sealed class LocalActorRef private[akka](
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return
     }
+    sender = messageHandle.sender
+    senderFuture = messageHandle.senderFuture
     try {
-      sender = messageHandle.sender
-      senderFuture = messageHandle.senderFuture
       if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
       else dispatch(messageHandle)
     } catch {
@@ -990,9 +993,7 @@ sealed class LocalActorRef private[akka](
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     setTransactionSet(messageHandle.transactionSet)
     try {
-      if (actor.base.isDefinedAt(message)) actor.base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException(
-        "No handler matching message [" + message + "] in " + toString)
+      actor.base(message)
     } catch {
       case e =>
         _isBeingRestarted = true
@@ -1021,20 +1022,16 @@ sealed class LocalActorRef private[akka](
       }
     setTransactionSet(txSet)
 
-    def proceed = {
-      if (actor.base.isDefinedAt(message)) actor.base(message) // invoke user actor's receive partial function
-      else throw new IllegalArgumentException(
-        toString + " could not process message [" + message + "]" +
-        "\n\tsince no matching 'case' clause in its 'receive' method could be found")
-      setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
-    }
-
     try {
       if (isTransactor) {
         atomic {
-          proceed
+          actor.base(message)
+          setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
         }
-      } else proceed
+      } else {
+        actor.base(message)
+        setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
+      }
     } catch {
       case e: IllegalStateException => {}
       case e =>
