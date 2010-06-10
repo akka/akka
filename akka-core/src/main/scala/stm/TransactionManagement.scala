@@ -22,10 +22,7 @@ object TransactionManagement extends TransactionManagement {
 
   val TRANSACTION_ENABLED =      new AtomicBoolean(config.getBool("akka.stm.service", true))
   val FAIR_TRANSACTIONS =        config.getBool("akka.stm.fair", true)
-  val INTERRUPTIBLE =            config.getBool("akka.stm.interruptible", true)
-  val MAX_NR_OF_RETRIES =        config.getInt("akka.stm.max-nr-of-retries", 1000)
-  val TRANSACTION_TIMEOUT =      config.getInt("akka.stm.timeout", 10000)
-  val SMART_TX_LENGTH_SELECTOR = config.getBool("akka.stm.smart-tx-length-selector", true)
+
   def isTransactionalityEnabled = TRANSACTION_ENABLED.get
 
   def disableTransactions = TRANSACTION_ENABLED.set(false)
