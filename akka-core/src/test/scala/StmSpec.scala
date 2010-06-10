@@ -21,7 +21,7 @@ class StmSpec extends
     it("should be able to do multiple consecutive atomic {..} statements") {
       import Transaction.Local._
 
-      lazy val ref = TransactionalState.newRef[Int]
+      lazy val ref = Ref[Int]()
 
       def increment = atomic {
         ref.swap(ref.get.getOrElse(0) + 1)
@@ -40,7 +40,7 @@ class StmSpec extends
     it("should be able to do nested atomic {..} statements") {
       import Transaction.Local._
 
-      lazy val ref = TransactionalState.newRef[Int]
+      lazy val ref = Ref[Int]()
 
       def increment = atomic {
         ref.swap(ref.get.getOrElse(0) + 1)
@@ -62,7 +62,7 @@ class StmSpec extends
     it("should roll back failing nested atomic {..} statements") {
       import Transaction.Local._
 
-      lazy val ref = TransactionalState.newRef[Int]
+      lazy val ref = Ref[Int]()
 
       def increment = atomic {
         ref.swap(ref.get.getOrElse(0) + 1)
@@ -213,7 +213,7 @@ class NestedTransactorLevelOneActor extends Actor {
   }
 }
 
-class NestedTransactorLevelTwoActor extends Actor {
+class NestedTransactorLevelTwoActor extends Transactor {
   import GlobalTransactionVectorTestActor._
   private val ref = Ref(0)
 

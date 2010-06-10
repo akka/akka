@@ -9,7 +9,7 @@ import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
-import se.scalablesolutions.akka.stm.TransactionalState
+import se.scalablesolutions.akka.stm.TransactionalMap
 import se.scalablesolutions.akka.actor.ActorRegistry.actorsFor
 
 class Boot {
@@ -135,7 +135,7 @@ class SecureTickService {
 class SecureTickActor extends Transactor with Logging {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private lazy val storage = TransactionalState.newMap[String, Integer]
+  private lazy val storage = TransactionalMap[String, Integer]()
   def receive = {
     case "Tick" => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.intValue

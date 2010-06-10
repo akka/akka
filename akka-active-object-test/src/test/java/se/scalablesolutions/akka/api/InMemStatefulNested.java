@@ -8,14 +8,14 @@ import se.scalablesolutions.akka.stm.*;
 public class InMemStatefulNested {
   private TransactionalMap<String, String> mapState;
   private TransactionalVector<String> vectorState;
-  private TransactionalRef<String> refState;
+  private Ref<String> refState;
   private boolean isInitialized = false;
 
   public void init() {
     if (!isInitialized) {
-      mapState = TransactionalState.newMap();
-      vectorState = TransactionalState.newVector();
-      refState = TransactionalState.newRef();
+      mapState = new TransactionalMap();
+      vectorState = new TransactionalVector();
+      refState = new Ref();
       isInitialized = true;
     }
   }

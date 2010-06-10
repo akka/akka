@@ -10,7 +10,6 @@ import se.scalablesolutions.akka
 import akka.actor.{ActorRef, Transactor, Scheduler}
 import akka.actor.Actor.actorOf
 import akka.stm.{Vector => _, _}
-import akka.stm.Ref.Ref
 import akka.stm.Transaction.Local._
 
 object Config {
