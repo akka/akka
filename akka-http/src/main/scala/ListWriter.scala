@@ -10,17 +10,24 @@ import javax.ws.rs.ext.{MessageBodyWriter, Provider}
 import javax.ws.rs.Produces
 
 /**
- * writes Lists of JSON serializable objects
+ * Writes Lists of JSON serializable objects.
  */
 @Provider
 @Produces(Array("application/json"))
 class ListWriter extends MessageBodyWriter[List[_]] {
 
-  def isWriteable(aClass: Class[_], aType: java.lang.reflect.Type, annotations: Array[java.lang.annotation.Annotation], mediaType: MediaType) = {
+  def isWriteable(aClass: Class[_], 
+                  aType: java.lang.reflect.Type, 
+                  annotations: Array[java.lang.annotation.Annotation], 
+                  mediaType: MediaType) =
     classOf[List[_]].isAssignableFrom(aClass) || aClass == ::.getClass
-  }
 
-  def getSize(list: List[_], aClass: Class[_], aType: java.lang.reflect.Type, annotations: Array[java.lang.annotation.Annotation], mediaType: MediaType) = -1L
+  def getSize(list: List[_], 
+              aClass: Class[_], 
+              aType: java.lang.reflect.Type, 
+              annotations: Array[java.lang.annotation.Annotation], 
+              mediaType: MediaType) = 
+    -1L
 
   def writeTo(list: List[_],
               aClass: Class[_],
@@ -28,11 +35,7 @@ class ListWriter extends MessageBodyWriter[List[_]] {
               annotations: Array[java.lang.annotation.Annotation],
               mediaType: MediaType,
               stringObjectMultivaluedMap: MultivaluedMap[String, Object],
-              outputStream: OutputStream) : Unit = {
-      if (list.isEmpty)
-        outputStream.write(" ".getBytes)
-      else
-        outputStream.write(Serializer.ScalaJSON.out(list))
-  }
-
+              outputStream: OutputStream): Unit =
+    if (list.isEmpty) outputStream.write(" ".getBytes)
+    else outputStream.write(Serializer.ScalaJSON.toBinary(list))
 }
