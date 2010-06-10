@@ -4,29 +4,29 @@
 
 package se.scalablesolutions.akka.stm
 
+import scala.collection.immutable.HashMap
+
 import se.scalablesolutions.akka.util.UUID
 
-import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
+import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 
 object TransactionalMap {
   def apply[K, V]() = new TransactionalMap[K, V]
 
-  def apply[K, V](pairs: (K, V)*) = new TransactionalMap(Some(HashTrie(pairs: _*)))
+  def apply[K, V](pairs: (K, V)*) = new TransactionalMap(Some(HashMap(pairs: _*)))
 }
 
 /**
- * Implements an in-memory transactional Map based on Clojure's PersistentMap.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
+ * TODO: documentation
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends Transactional with scala.collection.mutable.Map[K, V] {
+class TransactionalMap[K, V](initialOpt: Option[HashMap[K, V]] = None) extends Transactional with scala.collection.mutable.Map[K, V] {
   def this() = this(None) // Java compatibility
 
   val uuid = UUID.newUuid.toString
 
-  protected[this] val ref = new Ref(initialOpt.orElse(Some(new HashTrie[K, V])))
+  protected[this] val ref = new Ref(initialOpt.orElse(Some(HashMap[K, V]())))
 
   def -=(key: K) = {
     remove(key)
@@ -52,14 +52,14 @@ class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends 
   override def put(key: K, value: V): Option[V] = {
     val map = ref.get.get
     val oldValue = map.get(key)
-    ref.swap(map.update(key, value))
+    ref.swap(map.updated(key, value))
     oldValue
   }
 
   override def update(key: K, value: V) = {
     val map = ref.get.get
     val oldValue = map.get(key)
-    ref.swap(map.update(key, value))
+    ref.swap(map.updated(key, value))
   }
 
   def iterator = ref.get.get.iterator
@@ -68,7 +68,7 @@ class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends 
 
   override def contains(key: K): Boolean = ref.get.get.contains(key)
 
-  override def clear = ref.swap(new HashTrie[K, V])
+  override def clear = ref.swap(HashMap[K, V]())
 
   override def size: Int = ref.get.get.size
 
@@ -80,6 +80,5 @@ class TransactionalMap[K, V](initialOpt: Option[HashTrie[K, V]] = None) extends 
 
   override def toString = if (outsideTransaction) "<TransactionalMap>" else super.toString
 
-  def outsideTransaction =
-    org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
+  def outsideTransaction = getThreadLocalTransaction eq null
 }
