@@ -8,24 +8,9 @@ import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.serialization.Serializer
 
-/*
-// FIXME add support for ActorWithNestedReceive
-trait ActorWithNestedReceive extends Actor {
-  import Actor.actor
-  private var nestedReactsProcessors: List[ActorRef] = Nil
-  private val processNestedReacts: Receive = {
-    case message if !nestedReactsProcessors.isEmpty =>
-      val processors = nestedReactsProcessors.reverse
-      processors.head forward message
-      nestedReactsProcessors = processors.tail.reverse
-  }
-
-  protected def react: Receive
-  protected def reactAgain(pf: Receive) = nestedReactsProcessors ::= actor(pf)
-  protected def receive = processNestedReacts orElse react
-}
-*/
+import com.google.protobuf.Message
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -49,7 +34,65 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
   self.makeRemote(hostname, port)
 }
 
-// Life-cycle messages for the Actors
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * a custom serialization protocol.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait SerializableActor[T] extends Actor {
+  val serializer: Serializer
+  def toBinary: Array[Byte]
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * Protobuf. This trait needs to be mixed in with a Protobuf 
+ * 'com.google.protobuf.Message' generated class holding the state.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait ProtobufSerializableActor[T] extends SerializableActor[T] { this: Message => 
+  val serializer = Serializer.Protobuf
+  def toBinary: Array[Byte] = this.toByteArray
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * Java serialization.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait JavaSerializableActor[T] extends SerializableActor[T] {
+  val serializer = Serializer.Java
+  def toBinary: Array[Byte] = serializer.toBinary(this)
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * a Java JSON parser (Jackson).
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait JavaJSONSerializableActor[T] extends SerializableActor[T] {
+  val serializer = Serializer.JavaJSON
+  def toBinary: Array[Byte] = serializer.toBinary(this)
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * a Scala JSON parser (SJSON).
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait ScalaJSONSerializableActor[T] extends SerializableActor[T] {
+  val serializer = Serializer.ScalaJSON
+  def toBinary: Array[Byte] = serializer.toBinary(this)
+}
+
+/**
+ * Life-cycle messages for the Actors
+ */
 @serializable sealed trait LifeCycleMessage
 case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
 case class Restart(reason: Throwable) extends LifeCycleMessage
