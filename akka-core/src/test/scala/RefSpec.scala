@@ -29,7 +29,7 @@ class RefSpec extends Spec with ShouldMatchers {
       val ref = Ref(3)
 
       try {
-        atomic {
+        atomic(DefaultLocalTransactionFactory) {
           ref.swap(5)
           throw new Exception
         }

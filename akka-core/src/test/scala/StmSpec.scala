@@ -70,7 +70,7 @@ class StmSpec extends
         ref.get.getOrElse(0)
       }
       try {
-        atomic {
+        atomic(DefaultLocalTransactionFactory) {
           increment
           increment
           throw new Exception
