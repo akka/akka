@@ -9,7 +9,6 @@ import se.scalablesolutions.akka.actor.ActiveObjectContext;
 import se.scalablesolutions.akka.actor.annotation.transactionrequired;
 import se.scalablesolutions.akka.actor.annotation.prerestart;
 import se.scalablesolutions.akka.actor.annotation.postrestart;
-import se.scalablesolutions.akka.stm.TransactionalState;
 import se.scalablesolutions.akka.stm.TransactionalMap;
 
 @transactionrequired
@@ -21,7 +20,7 @@ public class SimpleService {
   private Receiver receiver = ActiveObject.newInstance(Receiver.class);
   
   public String count() {
-    if (storage == null) storage = TransactionalState.newMap();
+    if (storage == null) storage = new TransactionalMap<String, Integer>();
     if (!hasStartedTicking) {
       storage.put(KEY, 0);
       hasStartedTicking = true;
