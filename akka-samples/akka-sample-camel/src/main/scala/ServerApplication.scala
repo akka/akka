@@ -7,7 +7,7 @@ import se.scalablesolutions.akka.actor.Actor._
 /**
  * @author Martin Krasser
  */
-object Application2 {
+object ServerApplication {
 
   //
   // TODO: completion of example

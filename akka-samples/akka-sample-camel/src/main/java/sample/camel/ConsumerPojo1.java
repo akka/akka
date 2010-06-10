@@ -8,15 +8,15 @@ import se.scalablesolutions.akka.actor.annotation.consume;
 /**
  * @author Martin Krasser
  */
-public class Consumer10 {
+public class ConsumerPojo1 {
 
-    @consume("file:data/input2")
+    @consume("file:data/input/pojo")
     public void foo(String body) {
         System.out.println("Received message:");
         System.out.println(body);
     }
 
-    @consume("jetty:http://0.0.0.0:8877/camel/active")
+    @consume("jetty:http://0.0.0.0:8877/camel/pojo")
     public String bar(@Body String body, @Header("name") String header) {
         return String.format("body=%s header=%s", body, header);
     }
