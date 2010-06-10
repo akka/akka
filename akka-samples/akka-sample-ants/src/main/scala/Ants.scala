@@ -9,7 +9,7 @@ import scala.util.Random.{nextInt => randomInt}
 import se.scalablesolutions.akka
 import akka.actor.{ActorRef, Transactor, Scheduler}
 import akka.actor.Actor.actorOf
-import akka.stm.{Vector => _, _}
+import akka.stm._
 import akka.stm.Transaction.Local._
 
 object Config {
