@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.stm
 
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.TimeUnit
 
 import javax.transaction.{TransactionManager, UserTransaction, Status, TransactionSynchronizationRegistry}
 
@@ -19,9 +18,8 @@ import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.api.ThreadLocalTransaction._
-import org.multiverse.templates.{TransactionTemplate, OrElseTemplate}
-import org.multiverse.api.backoff.ExponentialBackoffPolicy
-import org.multiverse.stms.alpha.AlphaStm
+import org.multiverse.templates.{TransactionalCallable, OrElseTemplate}
+import org.multiverse.api.{TraceLevel => MultiverseTraceLevel}
 import org.multiverse.api.StmUtils
 
 class NoTransactionInScopeException extends RuntimeException
@@ -50,16 +48,18 @@ object Transaction {
    */
   object Local extends TransactionManagement with Logging {
 
-    /**
-    * See ScalaDoc on Transaction.Local class.
-     */
-    def atomic[T](body: => T): T = {
-      new TransactionTemplate[T]() {
-        def execute(mtx: MultiverseTransaction): T = {
-          Transaction.attach
+    object DefaultLocalTransactionConfig extends TransactionConfig
+    object DefaultLocalTransactionFactory extends TransactionFactory(DefaultLocalTransactionConfig, "DefaultLocalTransaction")
+
+    def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultLocalTransactionFactory): T = atomic(factory)(body)
+    
+    def atomic[T](factory: TransactionFactory)(body: => T): T = {
+      factory.boilerplate.execute(new TransactionalCallable[T]() {
+        def call(mtx: MultiverseTransaction): T = {
+          factory.addHooks
           body
         }
-      }.execute()
+       })
     }
   }
 
@@ -68,8 +68,7 @@ object Transaction {
    * You have to use these if you do need to have one transaction span multiple threads (or Actors).
    * <p/>
    * Example of atomic transaction management using the atomic block.
-   * <p/>
-   * Here are some examples (assuming implicit transaction family name in scope):
+   * <p/>:
    * <pre>
    * import se.scalablesolutions.akka.stm.Transaction.Global._
    *
@@ -82,15 +81,16 @@ object Transaction {
    */
   object Global extends TransactionManagement with Logging {
 
-    /**
-     * See ScalaDoc on Transaction.Global class.
-     */
-    def atomic[T](body: => T): T = {
-      var isTopLevelTransaction = false
-      new TransactionTemplate[T]() {
-        def execute(mtx: MultiverseTransaction): T = {
+    object DefaultGlobalTransactionConfig extends TransactionConfig
+    object DefaultGlobalTransactionFactory extends TransactionFactory(DefaultGlobalTransactionConfig, "DefaultGlobalTransaction")
+
+    def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultGlobalTransactionFactory): T = atomic(factory)(body)
+    
+    def atomic[T](factory: TransactionFactory)(body: => T): T = {
+      factory.boilerplate.execute(new TransactionalCallable[T]() {
+        def call(mtx: MultiverseTransaction): T = {
           if (!isTransactionSetInScope) createNewTransactionSet
-          Transaction.attach
+          factory.addHooks
           val result = body
           val txSet = getTransactionSetInScope
           log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
@@ -99,7 +99,7 @@ object Transaction {
           clearTransaction
           result
         }
-      }.execute()
+      })
     }
   }
 
@@ -124,7 +124,7 @@ object Transaction {
 
   /**
    * Attach an Akka-specific Transaction to the current Multiverse transaction.
-   * Must be called within a Multiverse transaction.
+   * Must be called within a Multiverse transaction. Used by TransactionFactory.addHooks
    */ 
   private[akka] def attach = {
     val mtx = getRequiredThreadLocalTransaction
@@ -139,6 +139,16 @@ object Transaction {
         case _ => {}
       }
     })
+  }
+
+  /**
+   * Mapping to Multiverse TraceLevel.
+   */ 
+  object TraceLevel {
+    val None = MultiverseTraceLevel.none
+    val Coarse = MultiverseTraceLevel.course // mispelling?
+    val Course = MultiverseTraceLevel.course
+    val Fine = MultiverseTraceLevel.fine    
   }
 }
 
@@ -278,3 +288,4 @@ trait Committable {
 trait Abortable {
   def abort: Unit
 }
+
