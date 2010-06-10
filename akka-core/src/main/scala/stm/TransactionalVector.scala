@@ -4,9 +4,11 @@
 
 package se.scalablesolutions.akka.stm
 
+import scala.collection.immutable.Vector
+
 import se.scalablesolutions.akka.util.UUID
 
-import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
+import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 
 object TransactionalVector {
   def apply[T]() = new TransactionalVector[T]
@@ -15,10 +17,8 @@ object TransactionalVector {
 }
 
 /**
- * Implements an in-memory transactional Vector based on Clojure's PersistentVector.
- *
- * Not thread-safe, but should only be using from within an Actor, e.g. one single thread at a time.
- *
+ * TODO: documentation
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Transactional with IndexedSeq[T] {
@@ -26,22 +26,22 @@ class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Trans
 
   val uuid = UUID.newUuid.toString
 
-  private[this] val ref = new Ref(initialOpt.orElse(Some(EmptyVector)))
+  private[this] val ref = new Ref(initialOpt.orElse(Some(Vector[T]())))
 
-  def clear = ref.swap(EmptyVector)
+  def clear = ref.swap(Vector[T]())
 
   def +(elem: T) = add(elem)
 
-  def add(elem: T) = ref.swap(ref.get.get + elem)
+  def add(elem: T) = ref.swap(ref.get.get :+ elem)
 
   def get(index: Int): T = ref.get.get.apply(index)
 
   /**
    * Removes the <i>tail</i> element of this vector.
    */
-  def pop = ref.swap(ref.get.get.pop)
+  def pop = ref.swap(ref.get.get.dropRight(1))
 
-  def update(index: Int, elem: T) = ref.swap(ref.get.get.update(index, elem))
+  def update(index: Int, elem: T) = ref.swap(ref.get.get.updated(index, elem))
 
   def length: Int = ref.get.get.length
 
@@ -58,3 +58,4 @@ class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Trans
   def outsideTransaction =
     org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction eq null
 }
+
