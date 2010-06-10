@@ -241,6 +241,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val redis = "com.redis" % "redisclient" % "2.8.0.RC3-1.4-SNAPSHOT" % "compile"
+    val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
