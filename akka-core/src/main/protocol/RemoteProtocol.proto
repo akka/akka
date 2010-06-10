@@ -1,0 +1,118 @@
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
+option java_package = "se.scalablesolutions.akka.remote.protocol";
+option optimize_for = SPEED;
+
+/******************************************
+  Compile with:
+  cd ./akka-core/src/main/protocol
+  protoc RemoteProtocol.proto --java_out ../java
+*******************************************/
+
+/**
+ * Defines the serialization scheme used to serialize the message and/or Actor instance.
+ */
+enum SerializationSchemeProtocol {
+  JAVA = 1;
+  SBINARY = 2;
+  SCALA_JSON = 3;
+  JAVA_JSON = 4;
+  PROTOBUF = 5;
+}
+
+/**
+ * Defines a the life-cycle of a supervised Actor.
+ */
+enum LifeCycleProtocol {
+  PERMANENT = 1;
+  TEMPORARY = 2;
+}
+
+/*
+enum DispatcherProtocol {
+  GLOBAL_EVENT_EXECUTOR_BASED = 1;
+  GLOBAL_REACTOR_SINGLE_THREAD_BASED = 2;
+  GLOBAL_REACTOR_THREAD_POOL_BASED = 3;
+  EVENT_EXECUTOR_BASED = 4;
+  THREAD_BASED = 5;
+}
+*/
+
+/**
+ * Defines a remote address.
+ */
+message AddressProtocol {
+  required string hostname  = 1;
+  required uint32 port = 2;
+}
+
+/**
+ * Defines an exception.
+ */
+message ExceptionProtocol {
+  required string classname  = 1;
+  required string message = 2;
+}
+
+/**
+ * Defines a remote ActorRef that "remembers" and uses its original Actor instance.
+ */
+message RemoteActorRefProtocol {
+  required string uuid = 1;
+  required string actorClassName = 2;
+  required AddressProtocol homeAddress  = 3;
+  optional uint64 timeout = 4;
+}
+
+/**
+ * Defines a fully serialized remote ActorRef that is about to be instantiated on 
+ * the remote node. It is fully disconnected from its original host.
+ */
+message SerializedActorRefProtocol {
+  required string uuid = 1;
+  required string id = 2;
+  required string actorClassName = 3;
+  required bytes actorInstance = 4;
+  required SerializationSchemeProtocol serializationScheme = 5;
+  required AddressProtocol originalAddress  = 6;
+  optional bool isTransactor = 7;
+  optional uint64 timeout = 8;
+  optional LifeCycleProtocol lifeCycle = 9;
+  optional RemoteActorRefProtocol supervisor = 10;
+  optional bytes hotswapStack = 11;
+}
+
+/**
+ * Defines a remote message request.
+ */
+message RemoteRequestProtocol {
+  required uint64 id = 1;
+  required SerializationSchemeProtocol serializationScheme = 2;
+  required bytes message = 3;
+  optional bytes messageManifest = 4;
+  optional string method = 5;
+  required string target = 6;
+  required string uuid = 7;
+  required uint64 timeout = 8;
+  optional string supervisorUuid = 9;
+  required bool isActor = 10;
+  required bool isOneWay = 11;
+  required bool isEscaped = 12;
+  optional RemoteActorRefProtocol sender = 13;
+}
+
+/**
+ * Defines a remote message reply.
+ */
+message RemoteReplyProtocol {
+  required uint64 id = 1;
+  optional SerializationSchemeProtocol serializationScheme = 2;
+  optional bytes message = 3;
+  optional bytes messageManifest = 4;
+  optional ExceptionProtocol exception = 5;
+  optional string supervisorUuid = 6;
+  required bool isActor = 7;
+  required bool isSuccessful = 8;
+}

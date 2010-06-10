@@ -11,7 +11,7 @@ import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.util._
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol._
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.config.Config.config
 
 import org.jboss.netty.bootstrap.ServerBootstrap
@@ -385,7 +385,7 @@ class RemoteServerHandler(
           log.error(e, "Could not invoke remote actor [%s]", request.getTarget)
           val replyBuilder = RemoteReplyProtocol.newBuilder
               .setId(request.getId)
-              .setException(e.getClass.getName + "$" + e.getMessage)
+              .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
               .setIsSuccessful(false)
               .setIsActor(true)
           if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
@@ -425,7 +425,7 @@ class RemoteServerHandler(
         log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
-            .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
+            .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
             .setIsSuccessful(false)
             .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
@@ -435,7 +435,7 @@ class RemoteServerHandler(
         log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
-            .setException(e.getClass.getName + "$" + e.getMessage)
+            .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
             .setIsSuccessful(false)
             .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)

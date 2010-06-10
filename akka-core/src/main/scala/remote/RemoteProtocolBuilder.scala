@@ -4,18 +4,17 @@
 
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.serialization.Serializable.SBinary
-import se.scalablesolutions.akka.serialization.{Serializer, Serializable, SerializationProtocol}
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol}
+import se.scalablesolutions.akka.serialization.{Serializer, Serializable}
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 
 import com.google.protobuf.{Message, ByteString}
 
 object RemoteProtocolBuilder {
-  private var SERIALIZER_JAVA: Serializer.Java = Serializer.Java
-  private var SERIALIZER_JAVA_JSON: Serializer.JavaJSON = Serializer.JavaJSON
+  private var SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
+  private var SERIALIZER_JAVA_JSON:  Serializer.JavaJSON  = Serializer.JavaJSON
   private var SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
-  private var SERIALIZER_SBINARY: Serializer.SBinary = Serializer.SBinary
-  private var SERIALIZER_PROTOBUF: Serializer.Protobuf = Serializer.Protobuf
+  private var SERIALIZER_SBINARY:    Serializer.SBinary   = Serializer.SBinary
+  private var SERIALIZER_PROTOBUF:   Serializer.Protobuf  = Serializer.Protobuf
 
   def setClassLoader(cl: ClassLoader) = {
     SERIALIZER_JAVA.classLoader       = Some(cl)
@@ -25,44 +24,44 @@ object RemoteProtocolBuilder {
   }
 
   def getMessage(request: RemoteRequestProtocol): Any = {
-    request.getProtocol match {
-      case SerializationProtocol.JAVA =>
+    request.getSerializationScheme match {
+      case SerializationSchemeProtocol.JAVA =>
         unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
-      case SerializationProtocol.SBINARY =>
+      case SerializationSchemeProtocol.SBINARY =>
         val classToLoad = new String(request.getMessageManifest.toByteArray)
         val clazz = if (SERIALIZER_SBINARY.classLoader.isDefined) SERIALIZER_SBINARY.classLoader.get.loadClass(classToLoad)
                     else Class.forName(classToLoad)
-        val renderer = clazz.newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+        val renderer = clazz.newInstance.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
         renderer.fromBytes(request.getMessage.toByteArray)
-      case SerializationProtocol.SCALA_JSON =>
+      case SerializationSchemeProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
         SERIALIZER_SCALA_JSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
-      case SerializationProtocol.JAVA_JSON =>
+      case SerializationSchemeProtocol.JAVA_JSON =>
         val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
         SERIALIZER_JAVA_JSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
-      case SerializationProtocol.PROTOBUF =>
+      case SerializationSchemeProtocol.PROTOBUF =>
         val messageClass = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
         SERIALIZER_PROTOBUF.in(request.getMessage.toByteArray, Some(messageClass))
     }
   }
 
   def getMessage(reply: RemoteReplyProtocol): Any = {
-    reply.getProtocol match {
-      case SerializationProtocol.JAVA =>
+    reply.getSerializationScheme match {
+      case SerializationSchemeProtocol.JAVA =>
         unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
-      case SerializationProtocol.SBINARY =>
+      case SerializationSchemeProtocol.SBINARY =>
         val classToLoad = new String(reply.getMessageManifest.toByteArray)
         val clazz = if (SERIALIZER_SBINARY.classLoader.isDefined) SERIALIZER_SBINARY.classLoader.get.loadClass(classToLoad)
                     else Class.forName(classToLoad)
-        val renderer = clazz.newInstance.asInstanceOf[SBinary[_ <: AnyRef]]
+        val renderer = clazz.newInstance.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
         renderer.fromBytes(reply.getMessage.toByteArray)
-      case SerializationProtocol.SCALA_JSON =>
+      case SerializationSchemeProtocol.SCALA_JSON =>
         val manifest = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
         SERIALIZER_SCALA_JSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
-      case SerializationProtocol.JAVA_JSON =>
+      case SerializationSchemeProtocol.JAVA_JSON =>
         val manifest = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
         SERIALIZER_JAVA_JSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
-      case SerializationProtocol.PROTOBUF =>
+      case SerializationSchemeProtocol.PROTOBUF =>
         val messageClass = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
         SERIALIZER_PROTOBUF.in(reply.getMessage.toByteArray, Some(messageClass))
     }
@@ -71,27 +70,27 @@ object RemoteProtocolBuilder {
   def setMessage(message: Any, builder: RemoteRequestProtocol.Builder) = {
     if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
-      builder.setProtocol(SerializationProtocol.SBINARY)
+      builder.setSerializationScheme(SerializationSchemeProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
     } else if (message.isInstanceOf[Message]) {
       val serializable = message.asInstanceOf[Message]
-      builder.setProtocol(SerializationProtocol.PROTOBUF)
+      builder.setSerializationScheme(SerializationSchemeProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
       builder.setMessageManifest(ByteString.copyFrom(SERIALIZER_JAVA.out(serializable.getClass)))
     } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
       val serializable = message.asInstanceOf[Serializable.ScalaJSON]
-      builder.setProtocol(SerializationProtocol.SCALA_JSON)
+      builder.setSerializationScheme(SerializationSchemeProtocol.SCALA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
     } else if (message.isInstanceOf[Serializable.JavaJSON]) {
       val serializable = message.asInstanceOf[Serializable.JavaJSON]
-      builder.setProtocol(SerializationProtocol.JAVA_JSON)
+      builder.setSerializationScheme(SerializationSchemeProtocol.JAVA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
     } else {
       // default, e.g. if no protocol used explicitly then use Java serialization
-      builder.setProtocol(SerializationProtocol.JAVA)
+      builder.setSerializationScheme(SerializationSchemeProtocol.JAVA)
       builder.setMessage(ByteString.copyFrom(SERIALIZER_JAVA.out(box(message))))
     }
   }
@@ -99,27 +98,27 @@ object RemoteProtocolBuilder {
   def setMessage(message: Any, builder: RemoteReplyProtocol.Builder) = {
     if (message.isInstanceOf[Serializable.SBinary[_]]) {
       val serializable = message.asInstanceOf[Serializable.SBinary[_ <: Any]]
-      builder.setProtocol(SerializationProtocol.SBINARY)
+      builder.setSerializationScheme(SerializationSchemeProtocol.SBINARY)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
     } else if (message.isInstanceOf[Message]) {
       val serializable = message.asInstanceOf[Message]
-      builder.setProtocol(SerializationProtocol.PROTOBUF)
+      builder.setSerializationScheme(SerializationSchemeProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
       builder.setMessageManifest(ByteString.copyFrom(SERIALIZER_JAVA.out(serializable.getClass)))
     } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
       val serializable = message.asInstanceOf[Serializable.ScalaJSON]
-      builder.setProtocol(SerializationProtocol.SCALA_JSON)
+      builder.setSerializationScheme(SerializationSchemeProtocol.SCALA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
     } else if (message.isInstanceOf[Serializable.JavaJSON]) {
       val serializable = message.asInstanceOf[Serializable.JavaJSON]
-      builder.setProtocol(SerializationProtocol.JAVA_JSON)
+      builder.setSerializationScheme(SerializationSchemeProtocol.JAVA_JSON)
       builder.setMessage(ByteString.copyFrom(serializable.toBytes))
       builder.setMessageManifest(ByteString.copyFrom(serializable.getClass.getName.getBytes))
     } else {
       // default, e.g. if no protocol used explicitly then use Java serialization
-      builder.setProtocol(SerializationProtocol.JAVA)
+      builder.setSerializationScheme(SerializationSchemeProtocol.JAVA)
       builder.setMessage(ByteString.copyFrom(SERIALIZER_JAVA.out(box(message))))
     }
   }
