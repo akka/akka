@@ -57,60 +57,9 @@ object Transaction {
    * }
    * </pre>
    *
-   * Example of atomic transaction management using for comprehensions (monadic):
-   *
-   * <pre>
-   * import se.scalablesolutions.akka.stm.Transaction.Local._
-   * for (tx <- Transaction.Local)  {
-   *   ... // do transactional stuff
-   * }
-   *
-   * val result = for (tx <- Transaction.Local) yield  {
-   *   ... // do transactional stuff yielding a result
-   * }
-   * </pre>
-   *
-   * Example of using Transaction and TransactionalRef in for comprehensions (monadic):
-   *
-   * <pre>
-   * // For example, if you have a List with TransactionalRef
-   * val refs: List[TransactionalRef] = ...
-   *
-   * // You can use them together with Transaction in a for comprehension since
-   * // TransactionalRef is also monadic
-   * for  {
-   *   tx <- Transaction.Local
-   *   ref <- refs
-   * } {
-   *   ... // use the ref inside a transaction
-   * }
-   *
-   * val result = for  {
-   *   tx <- Transaction.Local
-   *   ref <- refs
-   * } yield  {
-   *   ... // use the ref inside a transaction, yield a result
-   * }
-   * </pre>
-   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object Local extends TransactionManagement with Logging {
-
-    /**
-     * See ScalaDoc on Transaction.Local class.
-     */
-    def map[T](f: => T): T = atomic {f}
-
-    /**
-    * See ScalaDoc on Transaction.Local class.
-     */
-    def flatMap[T](f: => T): T = atomic {f}
-
-    /**
-    * See ScalaDoc on Transaction.Local class.
-     */
-    def foreach(f: => Unit): Unit = atomic {f}
 
     /**
     * See ScalaDoc on Transaction.Local class.
@@ -156,64 +105,9 @@ object Transaction {
    * }
    * </pre>
    *
-   * Example of atomic transaction management using for comprehensions (monadic):
-   *
-   * <pre>
-   * import se.scalablesolutions.akka.stm.Transaction
-   * for (tx <- Transaction.Global)  {
-   *   ... // do transactional stuff
-   * }
-   *
-   * val result = for (tx <- Transaction.Global) yield  {
-   *   ... // do transactional stuff yielding a result
-   * }
-   * </pre>
-   *
-   * Example of using Transaction and TransactionalRef in for comprehensions (monadic):
-   *
-   * <pre>
-   * // For example, if you have a List with TransactionalRef
-   * val refs: List[TransactionalRef] = ...
-   *
-   * // You can use them together with Transaction in a for comprehension since
-   * // TransactionalRef is also monadic
-   * for  {
-   *   tx <- Transaction.Global
-   *   ref <- refs
-   * } {
-   *   ... // use the ref inside a transaction
-   * }
-   *
-   * val result = for  {
-   *   tx <- Transaction.Global
-   *   ref <- refs
-   * } yield  {
-   *   ... // use the ref inside a transaction, yield a result
-   * }
-   * </pre>
-   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object Global extends TransactionManagement with Logging {
-
-    /**
-     * See ScalaDoc on Transaction.Global class.
-     */
-    def map[T](f: => T): T = atomic {f}
-
-    /**
-    * See ScalaDoc on Transaction.Global class.
-     */
-    def flatMap[T](f: => T): T = atomic {f}
-
-    /**
-    * See ScalaDoc on Transaction.Global class.
-     */
-    def foreach(f: => Unit): Unit = atomic {f}
-
-
-// FIXME tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
-//getTransactionSetInScope.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
 
     /**
      * See ScalaDoc on Transaction.Global class.
