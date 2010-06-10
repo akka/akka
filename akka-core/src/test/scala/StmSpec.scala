@@ -1,7 +1,6 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.stm
 
-import se.scalablesolutions.akka.stm._
-
+import se.scalablesolutions.akka.actor.{Actor, Transactor}
 import Actor._
 
 import org.scalatest.Spec

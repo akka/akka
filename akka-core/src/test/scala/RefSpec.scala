@@ -8,9 +8,9 @@ import org.junit.runner.RunWith
 import se.scalablesolutions.akka.actor.Actor._
 
 @RunWith(classOf[JUnitRunner])
-class TransactionalRefSpec extends Spec with ShouldMatchers {
+class RefSpec extends Spec with ShouldMatchers {
 
-  describe("A TransactionalRef") {
+  describe("A Ref") {
     import Transaction.Local._
 
     it("should optionally accept an initial value") {
