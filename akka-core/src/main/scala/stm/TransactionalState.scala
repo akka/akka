@@ -64,11 +64,11 @@ trait Abortable {
 }
 
 object RefFactory {
-  private val factory = getGlobalStmInstance.getProgrammaticReferenceFactoryBuilder.build
+  private val factory = getGlobalStmInstance.getProgrammaticRefFactoryBuilder.build
 
-  def createRef[T] = factory.atomicCreateReference[T]()
+  def createRef[T] = factory.atomicCreateRef[T]()
 
-  def createRef[T](value: T) = factory.atomicCreateReference(value)
+  def createRef[T](value: T) = factory.atomicCreateRef(value)
 }
 
 /**

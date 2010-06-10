@@ -146,19 +146,9 @@ object Transaction {
      */
     def atomic[T](body: => T): T = {
       new TransactionTemplate[T]() {
-        def execute(mtx: MultiverseTransaction): T = body
-
-        override def onStart(mtx: MultiverseTransaction) = {
-          val tx = new Transaction
-          tx.transaction = Some(mtx)
-          setTransaction(Some(tx))
-          mtx.registerLifecycleListener(new TransactionLifecycleListener() {
-            def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event.name match {
-              case "postCommit" => tx.commit
-              case "postAbort" => tx.abort
-              case _ => {}
-            }
-          })
+        def execute(mtx: MultiverseTransaction): T = {
+          Transaction.attach
+          body
         }
       }.execute()
     }
@@ -174,8 +164,8 @@ object Transaction {
      */
     def elseBody[A](firstBody: => A) = new {
       def orElse(secondBody: => A) = new OrElseTemplate[A] {
-        def run(t: MultiverseTransaction) = firstBody
-        def orelserun(t: MultiverseTransaction) = secondBody
+        def either(t: MultiverseTransaction) = firstBody
+        def orelse(t: MultiverseTransaction) = secondBody
       }.execute()
     }
   }
@@ -261,39 +251,37 @@ object Transaction {
       var isTopLevelTransaction = false
       new TransactionTemplate[T]() {
         def execute(mtx: MultiverseTransaction): T = {
+          if (!isTransactionSetInScope) createNewTransactionSet
+          Transaction.attach
           val result = body
-
           val txSet = getTransactionSetInScope
           log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
+          // FIXME ? txSet.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
           txSet.joinCommit(mtx)
           clearTransaction
           result
         }
-
-        override def onStart(mtx: MultiverseTransaction) = {
-          val txSet =
-            if (!isTransactionSetInScope) {
-              isTopLevelTransaction = true
-              createNewTransactionSet
-            } else getTransactionSetInScope
-          val tx = new Transaction
-          tx.begin
-          tx.transaction = Some(mtx)
-          setTransaction(Some(tx))
-          mtx.registerLifecycleListener(new TransactionLifecycleListener() {
-            def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event.name match {
-              case "postCommit" =>
-                log.trace("Committing transaction [%s]", mtx)
-                tx.commit
-              case "postAbort" =>
-                log.trace("Aborting transaction [%s]", mtx)
-                tx.abort
-              case _ => {}
-            }
-          })
-        }
       }.execute()
     }
+  }
+
+  /**
+   * Attach an Akka-specific Transaction to the current Multiverse transaction.
+   * Must be called within a Multiverse transaction.
+   */ 
+  private[akka] def attach = {
+    val mtx = getRequiredThreadLocalTransaction
+    val tx = new Transaction
+    tx.begin
+    tx.transaction = Some(mtx)
+    TransactionManagement.transaction.set(Some(tx))
+    mtx.registerLifecycleListener(new TransactionLifecycleListener() {
+      def notify(mtx: MultiverseTransaction, event: TransactionLifecycleEvent) = event match {
+        case TransactionLifecycleEvent.PostCommit => tx.commit
+        case TransactionLifecycleEvent.PostAbort => tx.abort
+        case _ => {}
+      }
+    })
   }
 }
 
