@@ -11,20 +11,45 @@ import se.scalablesolutions.akka.config.Config.config
 
 import com.redis._
 
-trait Encoder {
+trait Base64Encoder {
   def encode(bytes: Array[Byte]): Array[Byte]
   def decode(bytes: Array[Byte]): Array[Byte]
 }
 
-trait CommonsCodecBase64 {
-  import org.apache.commons.codec.binary.Base64._
-
-  def encode(bytes: Array[Byte]): Array[Byte] = encodeBase64(bytes)
-  def decode(bytes: Array[Byte]): Array[Byte] = decodeBase64(bytes)
+trait Base64StringEncoder {
+  def byteArrayToString(bytes: Array[Byte]): String
+  def stringToByteArray(str: String): Array[Byte]
 }
 
-object Base64Encoder extends Encoder with CommonsCodecBase64
-import Base64Encoder._
+trait NullBase64 {
+  def encode(bytes: Array[Byte]): Array[Byte] = bytes
+  def decode(bytes: Array[Byte]): Array[Byte] = bytes
+}
+
+object CommonsCodec {
+  import org.apache.commons.codec.binary.Base64
+  import org.apache.commons.codec.binary.Base64._
+
+  val b64 = new Base64(true)
+
+  trait CommonsCodecBase64 {
+    def encode(bytes: Array[Byte]): Array[Byte] = encodeBase64(bytes)
+    def decode(bytes: Array[Byte]): Array[Byte] = decodeBase64(bytes)
+  }
+
+  object Base64Encoder extends Base64Encoder with CommonsCodecBase64
+
+  trait CommonsCodecBase64StringEncoder {
+    def byteArrayToString(bytes: Array[Byte]) = encodeBase64URLSafeString(bytes)
+    def stringToByteArray(str: String) = b64.decode(str)
+  }
+
+  object Base64StringEncoder extends Base64StringEncoder with CommonsCodecBase64StringEncoder
+}
+
+import CommonsCodec._
+import CommonsCodec.Base64Encoder._
+import CommonsCodec.Base64StringEncoder._
 
 /**
  * A module for supporting Redis based persistence.
@@ -95,7 +120,7 @@ private [akka] object RedisStorageBackend extends
 
   def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[Array[Byte], Array[Byte]]]): Unit = withErrorHandling {
     mset(entries.map(e =>
-          (makeRedisKey(name, e._1), new String(e._2))))
+          (makeRedisKey(name, e._1), byteArrayToString(e._2))))
   }
 
   /**
@@ -138,7 +163,7 @@ private [akka] object RedisStorageBackend extends
     db.get(makeRedisKey(name, key)) match {
       case None =>
         throw new NoSuchElementException(new String(key) + " not present")
-      case Some(s) => Some(s.getBytes)
+      case Some(s) => Some(stringToByteArray(s))
     }
   }
 
@@ -155,7 +180,7 @@ private [akka] object RedisStorageBackend extends
       case None =>
         throw new NoSuchElementException(name + " not present")
       case Some(keys) =>
-        keys.map(key => (makeKeyFromRedisKey(key)._2, db.get(key).get.getBytes)).toList
+        keys.map(key => (makeKeyFromRedisKey(key)._2, stringToByteArray(db.get(key).get))).toList
     }
   }
 
@@ -207,7 +232,7 @@ private [akka] object RedisStorageBackend extends
   }
 
   def insertVectorStorageEntryFor(name: String, element: Array[Byte]): Unit = withErrorHandling {
-    db.lpush(new String(encode(name.getBytes)), new String(element))
+    db.lpush(new String(encode(name.getBytes)), byteArrayToString(element))
   }
 
   def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]): Unit = withErrorHandling {
@@ -215,14 +240,15 @@ private [akka] object RedisStorageBackend extends
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]): Unit = withErrorHandling {
-    db.lset(new String(encode(name.getBytes)), index, new String(elem))
+    db.lset(new String(encode(name.getBytes)), index, byteArrayToString(elem))
   }
 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = withErrorHandling {
     db.lindex(new String(encode(name.getBytes)), index) match {
       case None =>
         throw new NoSuchElementException(name + " does not have element at " + index)
-      case Some(e) => e.getBytes
+      case Some(e) => 
+        stringToByteArray(e)
     }
   }
 
@@ -246,75 +272,46 @@ private [akka] object RedisStorageBackend extends
       case None =>
         throw new NoSuchElementException(name + " does not have elements in the range specified")
       case Some(l) =>
-        l map (_.get.getBytes)
+        l map ( e => stringToByteArray(e.get))
     }
   }
 
-  def getVectorStorageSizeFor(name: String): Int = {
+  def getVectorStorageSizeFor(name: String): Int = withErrorHandling {
     db.llen(new String(encode(name.getBytes))) match {
       case None =>
         throw new NoSuchElementException(name + " not present")
-      case Some(l) => l
+      case Some(l) => 
+        l
     }
   }
 
   def insertRefStorageFor(name: String, element: Array[Byte]): Unit = withErrorHandling {
-    db.set(new String(encode(name.getBytes)), new String(element))
+    db.set(new String(encode(name.getBytes)), byteArrayToString(element))
+  }
+
+  def insertRefStorageFor(name: String, element: String): Unit = withErrorHandling {
+    db.set(new String(encode(name.getBytes)), element)
   }
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = withErrorHandling {
     db.get(new String(encode(name.getBytes))) match {
       case None =>
         throw new NoSuchElementException(name + " not present")
-      case Some(s) => Some(s.getBytes)
-    }
-  }
-
-  override def incrementAtomically(name: String): Option[Int] = withErrorHandling {
-    db.incr(new String(encode(name.getBytes))) match {
-      case Some(i) => Some(i)
-      case None =>
-        throw new IllegalArgumentException(name + " exception in incr")
-    }
-  }
-
-  override def incrementByAtomically(name: String, by: Int): Option[Int] = withErrorHandling {
-    db.incrby(new String(encode(name.getBytes)), by) match {
-      case Some(i) => Some(i)
-      case None =>
-        throw new IllegalArgumentException(name + " exception in incrby")
-    }
-  }
-
-  override def decrementAtomically(name: String): Option[Int] = withErrorHandling {
-    db.decr(new String(encode(name.getBytes))) match {
-      case Some(i) => Some(i)
-      case None =>
-        throw new IllegalArgumentException(name + " exception in decr")
-    }
-  }
-
-  override def decrementByAtomically(name: String, by: Int): Option[Int] = withErrorHandling {
-    db.decrby(new String(encode(name.getBytes)), by) match {
-      case Some(i) => Some(i)
-      case None =>
-        throw new IllegalArgumentException(name + " exception in decrby")
+      case Some(s) => Some(stringToByteArray(s))
     }
   }
 
   // add to the end of the queue
   def enqueue(name: String, item: Array[Byte]): Boolean = withErrorHandling {
-    db.rpush(new String(encode(name.getBytes)), new String(item))
+    db.rpush(new String(encode(name.getBytes)), byteArrayToString(item))
   }
-
 
   // pop from the front of the queue
   def dequeue(name: String): Option[Array[Byte]] = withErrorHandling {
     db.lpop(new String(encode(name.getBytes))) match {
       case None =>
         throw new NoSuchElementException(name + " not present")
-      case Some(s) =>
-        Some(s.getBytes)
+      case Some(s) => Some(stringToByteArray(s))
     }
   }
 
@@ -336,7 +333,7 @@ private [akka] object RedisStorageBackend extends
           case None =>
             throw new NoSuchElementException("No element at " + start)
           case Some(s) =>
-            List(s.getBytes)
+            List(stringToByteArray(s))
         }
       case n =>
         db.lrange(new String(encode(name.getBytes)), start, start + count - 1) match {
@@ -344,7 +341,7 @@ private [akka] object RedisStorageBackend extends
             throw new NoSuchElementException(
               "No element found between " + start + " and " + (start + count - 1))
           case Some(es) =>
-            es.map(_.get.getBytes)
+            es.map(e => stringToByteArray(e.get))
         }
      }
   }
@@ -359,7 +356,7 @@ private [akka] object RedisStorageBackend extends
 
   // add item to sorted set identified by name
   def zadd(name: String, zscore: String, item: Array[Byte]): Boolean = withErrorHandling {
-    db.zadd(new String(encode(name.getBytes)), zscore, new String(item)) match {
+    db.zadd(new String(encode(name.getBytes)), zscore, byteArrayToString(item)) match {
       case Some(1) => true
       case _ => false
     }
@@ -367,7 +364,7 @@ private [akka] object RedisStorageBackend extends
 
   // remove item from sorted set identified by name
   def zrem(name: String, item: Array[Byte]): Boolean = withErrorHandling {
-    db.zrem(new String(encode(name.getBytes)), new String(item)) match {
+    db.zrem(new String(encode(name.getBytes)), byteArrayToString(item)) match {
       case Some(1) => true
       case _ => false
     }
@@ -383,7 +380,7 @@ private [akka] object RedisStorageBackend extends
   }
 
   def zscore(name: String, item: Array[Byte]): Option[Float] = withErrorHandling {
-    db.zscore(new String(encode(name.getBytes)), new String(item)) match {
+    db.zscore(new String(encode(name.getBytes)), byteArrayToString(item)) match {
       case Some(s) => Some(s.toFloat)
       case None => None
     }
@@ -394,7 +391,7 @@ private [akka] object RedisStorageBackend extends
       case None =>
         throw new NoSuchElementException(name + " not present")
       case Some(s) =>
-        s.map(_.get.getBytes)
+        s.map(e => stringToByteArray(e.get))
     }
   }
 
@@ -404,7 +401,7 @@ private [akka] object RedisStorageBackend extends
         case None =>
           throw new NoSuchElementException(name + " not present")
         case Some(l) =>
-          l.map{ case (elem, score) => (elem.get.getBytes, score.get.toFloat) }
+          l.map{ case (elem, score) => (stringToByteArray(elem.get), score.get.toFloat) }
     }
   }
 
