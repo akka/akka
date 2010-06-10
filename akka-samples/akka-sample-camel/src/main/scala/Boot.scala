@@ -7,7 +7,7 @@ import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActiveObject, SupervisorFactory}
+import se.scalablesolutions.akka.actor.{ActiveObject, Supervisor}
 import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.config.ScalaConfig._
 
@@ -16,23 +16,29 @@ import se.scalablesolutions.akka.config.ScalaConfig._
  */
 class Boot {
 
+  // -----------------------------------------------------------------------
   // Create CamelContext with Spring-based registry and custom route builder
+  // -----------------------------------------------------------------------
 
-  val context = new ClassPathXmlApplicationContext("/sample-camel-context.xml", getClass)
+  val context = new ClassPathXmlApplicationContext("/context-boot.xml", getClass)
   val registry = new ApplicationContextRegistry(context)
+
   CamelContextManager.init(new DefaultCamelContext(registry))
   CamelContextManager.context.addRoutes(new CustomRouteBuilder)
 
-  // Basic example
+  // -----------------------------------------------------------------------
+  // Basic example (using a supervisor for consumer actors)
+  // -----------------------------------------------------------------------
 
-  val factory = SupervisorFactory(
+  val supervisor = Supervisor(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
       Supervise(actorOf[Consumer1], LifeCycle(Permanent)) ::
       Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
-  factory.newInstance.start
 
+  // -----------------------------------------------------------------------
   // Routing example
+  // -----------------------------------------------------------------------
 
   val producer = actorOf[Producer1]
   val mediator = actorOf(new Transformer(producer))
@@ -42,7 +48,9 @@ class Boot {
   mediator.start
   consumer.start
 
-  // Publish subscribe example
+  // -----------------------------------------------------------------------
+  // Publish subscribe examples
+  // -----------------------------------------------------------------------
 
   //
   // Cometd example commented out because camel-cometd is broken in Camel 2.3
@@ -60,18 +68,27 @@ class Boot {
   //val cometdPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/cometd", cometdPublisher)).start
   val jmsPublisherBridge = actorOf(new PublisherBridge("jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher)).start
 
+  // -----------------------------------------------------------------------
+  // Actor un-publishing and re-publishing example
+  // -----------------------------------------------------------------------
+
   actorOf[Consumer4].start // POSTing "stop" to http://0.0.0.0:8877/camel/stop stops and unpublishes this actor
   actorOf[Consumer5].start // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
 
+  // -----------------------------------------------------------------------
   // Active object example
-  
-  ActiveObject.newInstance(classOf[Consumer10])
+  // -----------------------------------------------------------------------
+
+  ActiveObject.newInstance(classOf[ConsumerPojo1])
 }
 
+/**
+ * @author Martin Krasser
+ */
 class CustomRouteBuilder extends RouteBuilder {
   def configure {
     val actorUri = "actor:%s" format classOf[Consumer2].getName
-    from("jetty:http://0.0.0.0:8877/camel/test2").to(actorUri)
+    from("jetty:http://0.0.0.0:8877/camel/custom").to(actorUri)
     from("direct:welcome").process(new Processor() {
       def process(exchange: Exchange) {
         exchange.getOut.setBody("Welcome %s" format exchange.getIn.getBody)

@@ -1,8 +1,8 @@
 package sample.camel
 
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.camel.CamelService
 import se.scalablesolutions.akka.remote.RemoteNode
-import se.scalablesolutions.akka.actor.Actor._
 
 /**
  * @author Martin Krasser
