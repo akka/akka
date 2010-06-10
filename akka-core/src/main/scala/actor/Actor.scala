@@ -64,7 +64,7 @@ trait ProtobufSerializableActor[T] extends SerializableActor[T] { this: Message 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait JavaSerializableActor[T] extends SerializableActor[T] {
-  val serializer = Serializer.Java
+  @transient val serializer = Serializer.Java
   def toBinary: Array[Byte] = serializer.toBinary(this)
 }
 
@@ -342,7 +342,7 @@ trait Actor extends Logging {
     * Mainly for internal use, functions as the implicit sender references when invoking
     * one of the message send functions ('!', '!!' and '!!!').
     */
-  implicit val optionSelf: Option[ActorRef] = {
+  @transient implicit val optionSelf: Option[ActorRef] = {
     val ref = Actor.actorRefInCreation.value
     Actor.actorRefInCreation.value = None
     if (ref.isEmpty) throw new ActorInitializationException(
@@ -351,7 +351,7 @@ trait Actor extends Logging {
        "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
        "\n\tEither use:" +
        "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
-       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'" +
+       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
        "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
     else ref
   }
@@ -362,7 +362,7 @@ trait Actor extends Logging {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
+  @transient implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -391,7 +391,7 @@ trait Actor extends Logging {
    * self.stop(..)
    * </pre>
    */
-  val self: ActorRef = {
+  @transient val self: ActorRef = {
     val zelf = optionSelf.get
     zelf.id = getClass.getName
     zelf
