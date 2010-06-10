@@ -26,7 +26,7 @@ object RemoteProtocolBuilder {
   def getMessage(request: RemoteRequestProtocol): Any = {
     request.getSerializationScheme match {
       case SerializationSchemeProtocol.JAVA =>
-        unbox(SERIALIZER_JAVA.in(request.getMessage.toByteArray, None))
+        unbox(SERIALIZER_JAVA.fromBinary(request.getMessage.toByteArray, None))
       case SerializationSchemeProtocol.SBINARY =>
         val classToLoad = new String(request.getMessageManifest.toByteArray)
         val clazz = if (SERIALIZER_SBINARY.classLoader.isDefined) SERIALIZER_SBINARY.classLoader.get.loadClass(classToLoad)
@@ -34,21 +34,21 @@ object RemoteProtocolBuilder {
         val renderer = clazz.newInstance.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
         renderer.fromBytes(request.getMessage.toByteArray)
       case SerializationSchemeProtocol.SCALA_JSON =>
-        val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
-        SERIALIZER_SCALA_JSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
+        val manifest = SERIALIZER_JAVA.fromBinary(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        SERIALIZER_SCALA_JSON.fromBinary(request.getMessage.toByteArray, Some(Class.forName(manifest)))
       case SerializationSchemeProtocol.JAVA_JSON =>
-        val manifest = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
-        SERIALIZER_JAVA_JSON.in(request.getMessage.toByteArray, Some(Class.forName(manifest)))
+        val manifest = SERIALIZER_JAVA.fromBinary(request.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        SERIALIZER_JAVA_JSON.fromBinary(request.getMessage.toByteArray, Some(Class.forName(manifest)))
       case SerializationSchemeProtocol.PROTOBUF =>
-        val messageClass = SERIALIZER_JAVA.in(request.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
-        SERIALIZER_PROTOBUF.in(request.getMessage.toByteArray, Some(messageClass))
+        val messageClass = SERIALIZER_JAVA.fromBinary(request.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
+        SERIALIZER_PROTOBUF.fromBinary(request.getMessage.toByteArray, Some(messageClass))
     }
   }
 
   def getMessage(reply: RemoteReplyProtocol): Any = {
     reply.getSerializationScheme match {
       case SerializationSchemeProtocol.JAVA =>
-        unbox(SERIALIZER_JAVA.in(reply.getMessage.toByteArray, None))
+        unbox(SERIALIZER_JAVA.fromBinary(reply.getMessage.toByteArray, None))
       case SerializationSchemeProtocol.SBINARY =>
         val classToLoad = new String(reply.getMessageManifest.toByteArray)
         val clazz = if (SERIALIZER_SBINARY.classLoader.isDefined) SERIALIZER_SBINARY.classLoader.get.loadClass(classToLoad)
@@ -56,14 +56,14 @@ object RemoteProtocolBuilder {
         val renderer = clazz.newInstance.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
         renderer.fromBytes(reply.getMessage.toByteArray)
       case SerializationSchemeProtocol.SCALA_JSON =>
-        val manifest = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
-        SERIALIZER_SCALA_JSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
+        val manifest = SERIALIZER_JAVA.fromBinary(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        SERIALIZER_SCALA_JSON.fromBinary(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
       case SerializationSchemeProtocol.JAVA_JSON =>
-        val manifest = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
-        SERIALIZER_JAVA_JSON.in(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
+        val manifest = SERIALIZER_JAVA.fromBinary(reply.getMessageManifest.toByteArray, None).asInstanceOf[String]
+        SERIALIZER_JAVA_JSON.fromBinary(reply.getMessage.toByteArray, Some(Class.forName(manifest)))
       case SerializationSchemeProtocol.PROTOBUF =>
-        val messageClass = SERIALIZER_JAVA.in(reply.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
-        SERIALIZER_PROTOBUF.in(reply.getMessage.toByteArray, Some(messageClass))
+        val messageClass = SERIALIZER_JAVA.fromBinary(reply.getMessageManifest.toByteArray, None).asInstanceOf[Class[_]]
+        SERIALIZER_PROTOBUF.fromBinary(reply.getMessage.toByteArray, Some(messageClass))
     }
   }
 
@@ -77,7 +77,7 @@ object RemoteProtocolBuilder {
       val serializable = message.asInstanceOf[Message]
       builder.setSerializationScheme(SerializationSchemeProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
-      builder.setMessageManifest(ByteString.copyFrom(SERIALIZER_JAVA.out(serializable.getClass)))
+      builder.setMessageManifest(ByteString.copyFrom(SERIALIZER_JAVA.toBinary(serializable.getClass)))
     } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
       val serializable = message.asInstanceOf[Serializable.ScalaJSON]
       builder.setSerializationScheme(SerializationSchemeProtocol.SCALA_JSON)
@@ -91,7 +91,7 @@ object RemoteProtocolBuilder {
     } else {
       // default, e.g. if no protocol used explicitly then use Java serialization
       builder.setSerializationScheme(SerializationSchemeProtocol.JAVA)
-      builder.setMessage(ByteString.copyFrom(SERIALIZER_JAVA.out(box(message))))
+      builder.setMessage(ByteString.copyFrom(SERIALIZER_JAVA.toBinary(box(message))))
     }
   }
 
@@ -105,7 +105,7 @@ object RemoteProtocolBuilder {
       val serializable = message.asInstanceOf[Message]
       builder.setSerializationScheme(SerializationSchemeProtocol.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
-      builder.setMessageManifest(ByteString.copyFrom(SERIALIZER_JAVA.out(serializable.getClass)))
+      builder.setMessageManifest(ByteString.copyFrom(SERIALIZER_JAVA.toBinary(serializable.getClass)))
     } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
       val serializable = message.asInstanceOf[Serializable.ScalaJSON]
       builder.setSerializationScheme(SerializationSchemeProtocol.SCALA_JSON)
@@ -119,7 +119,7 @@ object RemoteProtocolBuilder {
     } else {
       // default, e.g. if no protocol used explicitly then use Java serialization
       builder.setSerializationScheme(SerializationSchemeProtocol.JAVA)
-      builder.setMessage(ByteString.copyFrom(SERIALIZER_JAVA.out(box(message))))
+      builder.setMessage(ByteString.copyFrom(SERIALIZER_JAVA.toBinary(box(message))))
     }
   }
 

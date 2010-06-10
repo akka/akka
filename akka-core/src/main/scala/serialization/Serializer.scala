@@ -19,12 +19,10 @@ import sjson.json.{Serializer => SJSONSerializer}
  */
 trait Serializer {
   var classLoader: Option[ClassLoader] = None
+  def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
 
-  def deepClone(obj: AnyRef): AnyRef
-
-  def out(obj: AnyRef): Array[Byte]
-
-  def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
+  def toBinary(obj: AnyRef): Array[Byte]
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef
 }
 
 // For Java API
@@ -46,9 +44,8 @@ object Serializer {
 
   object NOOP extends NOOP
   class NOOP extends Serializer {
-    def deepClone(obj: AnyRef): AnyRef = obj
-    def out(obj: AnyRef): Array[Byte] = obj.asInstanceOf[Array[Byte]]
-    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = bytes
+    def toBinary(obj: AnyRef): Array[Byte] = Array[Byte]()
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null.asInstanceOf[AnyRef]
   }
 
   /**
@@ -56,9 +53,7 @@ object Serializer {
    */
   object Java extends Java
   trait Java extends Serializer {
-    def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
-
-    def out(obj: AnyRef): Array[Byte] = {
+    def toBinary(obj: AnyRef): Array[Byte] = {
       val bos = new ByteArrayOutputStream
       val out = new ObjectOutputStream(bos)
       out.writeObject(obj)
@@ -66,7 +61,7 @@ object Serializer {
       bos.toByteArray
     }
 
-    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       val in =
         if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes))
         else new ObjectInputStream(new ByteArrayInputStream(bytes))
@@ -81,15 +76,13 @@ object Serializer {
    */
   object Protobuf extends Protobuf
   trait Protobuf extends Serializer {
-    def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
-
-    def out(obj: AnyRef): Array[Byte] = {
+    def toBinary(obj: AnyRef): Array[Byte] = {
       if (!obj.isInstanceOf[Message]) throw new IllegalArgumentException(
         "Can't serialize a non-protobuf message using protobuf [" + obj + "]")
       obj.asInstanceOf[Message].toByteArray
     }
 
-    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       if (!clazz.isDefined) throw new IllegalArgumentException(
         "Need a protobuf message class to be able to serialize bytes using protobuf")
       // TODO: should we cache this method lookup?
@@ -98,9 +91,9 @@ object Serializer {
       message.toBuilder().mergeFrom(bytes).build
     }
 
-    def in(bytes: Array[Byte], clazz: Class[_]): AnyRef = {
+    def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = {
       if (clazz eq null) throw new IllegalArgumentException("Protobuf message can't be null")
-      in(bytes, Some(clazz))
+      fromBinary(bytes, Some(clazz))
     }
   }
 
@@ -111,9 +104,7 @@ object Serializer {
   trait JavaJSON extends Serializer {
     private val mapper = new ObjectMapper
 
-    def deepClone(obj: AnyRef): AnyRef = in(out(obj), Some(obj.getClass))
-
-    def out(obj: AnyRef): Array[Byte] = {
+    def toBinary(obj: AnyRef): Array[Byte] = {
       val bos = new ByteArrayOutputStream
       val out = new ObjectOutputStream(bos)
       mapper.writeValue(out, obj)
@@ -121,7 +112,7 @@ object Serializer {
       bos.toByteArray
     }
 
-    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       if (!clazz.isDefined) throw new IllegalArgumentException(
         "Can't deserialize JSON to instance if no class is provided")
       val in =
@@ -132,7 +123,7 @@ object Serializer {
       obj
     }
 
-    def in(json: String, clazz: Class[_]): AnyRef = {
+    def fromBinary(json: String, clazz: Class[_]): AnyRef = {
       if (clazz eq null) throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
       mapper.readValue(json, clazz).asInstanceOf[AnyRef]
     }
@@ -143,19 +134,17 @@ object Serializer {
    */
   object ScalaJSON extends ScalaJSON
   trait ScalaJSON extends Serializer {
-    def deepClone(obj: AnyRef): AnyRef = in(out(obj), None)
-
-    def out(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
+    def toBinary(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
 
     // FIXME set ClassLoader on SJSONSerializer.SJSON
-    def in(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
 
     import scala.reflect.Manifest
-    def in[T](json: String)(implicit m: Manifest[T]): AnyRef = {
+    def fromBinary[T](json: String)(implicit m: Manifest[T]): AnyRef = {
       SJSONSerializer.SJSON.in(json)(m)
     }
 
-    def in[T](bytes: Array[Byte])(implicit m: Manifest[T]): AnyRef = {
+    def fromBinary[T](bytes: Array[Byte])(implicit m: Manifest[T]): AnyRef = {
       SJSONSerializer.SJSON.in(bytes)(m)
     }
   }
@@ -171,11 +160,11 @@ object Serializer {
 
     var classLoader: Option[ClassLoader] = None
 
-    def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = in[T](out[T](obj), None)
+    def deepClone[T <: AnyRef](obj: T)(implicit w : Writes[T], r : Reads[T]): T = fromBinary[T](toBinary[T](obj), None)
 
-    def out[T](t : T)(implicit bin : Writes[T]): Array[Byte] = toByteArray[T](t)
+    def toBinary[T](t : T)(implicit bin : Writes[T]): Array[Byte] = toByteArray[T](t)
 
-    def in[T](array : Array[Byte], clazz: Option[Class[T]])(implicit bin : Reads[T]): T = fromByteArray[T](array)
+    def fromBinary[T](array : Array[Byte], clazz: Option[Class[T]])(implicit bin : Reads[T]): T = fromByteArray[T](array)
   }
 }
 
