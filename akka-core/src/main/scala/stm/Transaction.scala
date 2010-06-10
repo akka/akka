@@ -22,6 +22,7 @@ import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.templates.{TransactionTemplate, OrElseTemplate}
 import org.multiverse.api.backoff.ExponentialBackoffPolicy
 import org.multiverse.stms.alpha.AlphaStm
+import org.multiverse.api.StmUtils
 
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
@@ -45,18 +46,6 @@ object Transaction {
    * }
    * </pre>
    *
-   * Example of atomically-orElse transaction management.
-   * Which is a good way to reduce contention and transaction collisions.
-   * <pre>
-   * import se.scalablesolutions.akka.stm.Transaction.Local._
-   *
-   * atomically  {
-   *   .. // try to do something
-   * } orElse  {
-   *   .. // if transaction clashes try do do something else to minimize contention
-   * }
-   * </pre>
-   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object Local extends TransactionManagement with Logging {
@@ -70,22 +59,6 @@ object Transaction {
           Transaction.attach
           body
         }
-      }.execute()
-    }
-
-    /**
-     * See ScalaDoc on Transaction.Local class.
-     */
-    def atomically[A](firstBody: => A) = elseBody(firstBody)
-
-    /**
-     * Should only be used together with <code>atomically</code> to form atomically-orElse constructs.
-     * See ScalaDoc on class.
-     */
-    def elseBody[A](firstBody: => A) = new {
-      def orElse(secondBody: => A) = new OrElseTemplate[A] {
-        def either(t: MultiverseTransaction) = firstBody
-        def orelse(t: MultiverseTransaction) = secondBody
       }.execute()
     }
   }
@@ -126,6 +99,25 @@ object Transaction {
           clearTransaction
           result
         }
+      }.execute()
+    }
+  }
+
+  /**
+   * TODO: document
+   */ 
+  object Util {
+    
+    def deferred[T](body: => T): Unit = StmUtils.scheduleDeferredTask(new Runnable { def run = body })
+
+    def compensating[T](body: => T): Unit = StmUtils.scheduleCompensatingTask(new Runnable { def run = body })
+
+    def retry = StmUtils.retry
+
+    def either[A](firstBody: => A) = new {
+      def orElse(secondBody: => A) = new OrElseTemplate[A] {
+        def either(t: MultiverseTransaction) = firstBody
+        def orelse(t: MultiverseTransaction) = secondBody
       }.execute()
     }
   }
