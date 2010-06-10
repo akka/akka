@@ -50,16 +50,6 @@ object Transaction {
   val idFactory = new AtomicLong(-1L)
 
   /**
-   * Creates a STM atomic transaction and by-passes all transactions hooks
-   * such as persistence etc.
-   *
-   * Only for internal usage.
-   */
-  private[akka] def atomic0[T](body: => T): T = new TransactionTemplate[T]() {
-    def execute(mtx: MultiverseTransaction): T = body
-  }.execute()
-
-  /**
    * Module for "local" transaction management, local in the context of threads.
    * You should only use these if you do <b>not</b> need to have one transaction span
    * multiple threads (or Actors).
