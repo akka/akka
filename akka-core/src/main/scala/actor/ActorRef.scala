@@ -244,6 +244,11 @@ trait ActorRef extends TransactionManagement {
   def uuid = _uuid
 
   /**
+   * Tests if the actor is able to handle the message passed in as arguments.
+   */
+  def isDefinedAt(message: Any): Boolean = actor.base.isDefinedAt(message)
+  
+  /**
    * Only for internal use. UUID is effectively final.
    */
   protected[akka] def uuid_=(uid: String) = _uuid = uid
