@@ -14,7 +14,7 @@ option optimize_for = SPEED;
 /**
  * Defines the serialization scheme used to serialize the message and/or Actor instance.
  */
-enum SerializationSchemeProtocol {
+enum SerializationSchemeType {
   JAVA = 1;
   SBINARY = 2;
   SCALA_JSON = 3;
@@ -23,15 +23,15 @@ enum SerializationSchemeProtocol {
 }
 
 /**
- * Defines a the life-cycle of a supervised Actor.
+ * Defines the type of the life-cycle of a supervised Actor.
  */
-enum LifeCycleProtocol {
+enum LifeCycleType {
   PERMANENT = 1;
   TEMPORARY = 2;
 }
 
 /*
-enum DispatcherProtocol {
+enum DispatcherType {
   GLOBAL_EVENT_EXECUTOR_BASED = 1;
   GLOBAL_REACTOR_SINGLE_THREAD_BASED = 2;
   GLOBAL_REACTOR_THREAD_POOL_BASED = 3;
@@ -41,10 +41,19 @@ enum DispatcherProtocol {
 */
 
 /**
+ * Defines the life-cycle of a supervised Actor.
+ */
+message LifeCycleProtocol {
+  required LifeCycleType lifeCycle = 1;
+  optional string preRestart = 2;
+  optional string postRestart = 3;
+}
+
+/**
  * Defines a remote address.
  */
 message AddressProtocol {
-  required string hostname  = 1;
+  required string hostname = 1;
   required uint32 port = 2;
 }
 
@@ -61,7 +70,7 @@ message ExceptionProtocol {
  */
 message RemoteActorRefProtocol {
   required string uuid = 1;
-  required string actorClassName = 2;
+  required string actorClassname = 2;
   required AddressProtocol homeAddress  = 3;
   optional uint64 timeout = 4;
 }
@@ -73,9 +82,9 @@ message RemoteActorRefProtocol {
 message SerializedActorRefProtocol {
   required string uuid = 1;
   required string id = 2;
-  required string actorClassName = 3;
+  required string actorClassname = 3;
   required bytes actorInstance = 4;
-  required SerializationSchemeProtocol serializationScheme = 5;
+  required string serializerClassname = 5;
   required AddressProtocol originalAddress  = 6;
   optional bool isTransactor = 7;
   optional uint64 timeout = 8;
@@ -89,7 +98,7 @@ message SerializedActorRefProtocol {
  */
 message RemoteRequestProtocol {
   required uint64 id = 1;
-  required SerializationSchemeProtocol serializationScheme = 2;
+  required SerializationSchemeType serializationScheme = 2;
   required bytes message = 3;
   optional bytes messageManifest = 4;
   optional string method = 5;
@@ -108,7 +117,7 @@ message RemoteRequestProtocol {
  */
 message RemoteReplyProtocol {
   required uint64 id = 1;
-  optional SerializationSchemeProtocol serializationScheme = 2;
+  optional SerializationSchemeType serializationScheme = 2;
   optional bytes message = 3;
   optional bytes messageManifest = 4;
   optional ExceptionProtocol exception = 5;

@@ -123,7 +123,7 @@ object Serializer {
       obj
     }
 
-    def fromBinary(json: String, clazz: Class[_]): AnyRef = {
+    def fromJSON(json: String, clazz: Class[_]): AnyRef = {
       if (clazz eq null) throw new IllegalArgumentException("Can't deserialize JSON to instance if no class is provided")
       mapper.readValue(json, clazz).asInstanceOf[AnyRef]
     }
@@ -140,7 +140,7 @@ object Serializer {
     def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
 
     import scala.reflect.Manifest
-    def fromBinary[T](json: String)(implicit m: Manifest[T]): AnyRef = {
+    def fromJSON[T](json: String)(implicit m: Manifest[T]): AnyRef = {
       SJSONSerializer.SJSON.in(json)(m)
     }
 
