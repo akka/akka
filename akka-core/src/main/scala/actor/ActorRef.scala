@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol, ActorRefProtocol}
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteProtocolBuilder, RemoteRequestProtocolIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID, ReentrantGuard}
@@ -51,20 +51,20 @@ object ActorRef {
    * Deserializes the ActorRef instance from a byte array (Array[Byte]) into an ActorRef instance.
    */
   def fromBinary(bytes: Array[Byte]): ActorRef =
-    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
+    fromProtobuf(RemoteActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
 
   def fromBinary(bytes: Array[Byte], loader: ClassLoader): ActorRef =
-    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
+    fromProtobuf(RemoteActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
 
   /**
    * Deserializes the ActorRef instance from a Protocol Buffers (protobuf) Message into an ActorRef instance.
    */
-  private[akka] def fromProtobuf(protocol: ActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
+  private[akka] def fromProtobuf(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
     RemoteActorRef(
       protocol.getUuid,
       protocol.getActorClassName,
-      protocol.getSourceHostname,
-      protocol.getSourcePort,
+      protocol.getHomeAddress.getHostname,
+      protocol.getHomeAddress.getPort,
       protocol.getTimeout,
       loader)
 }
@@ -517,7 +517,7 @@ trait ActorRef extends TransactionManagement {
    */
   def shutdownLinkedActors: Unit
 
-  protected[akka] def toProtobuf: ActorRefProtocol
+  protected[akka] def toProtobuf: RemoteActorRefProtocol
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -599,7 +599,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
-  protected[akka] def toProtobuf: ActorRefProtocol = guard.withGuard {
+  protected[akka] def toProtobuf: RemoteActorRefProtocol = guard.withGuard {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
@@ -609,12 +609,10 @@ sealed class LocalActorRef private[akka](
       RemoteServer.registerActor(homeAddress, uuid, this)
       registeredInRemoteNodeDuringSerialization = true
     }
-
-    ActorRefProtocol.newBuilder
+    RemoteActorRefProtocol.newBuilder
       .setUuid(uuid)
       .setActorClassName(actorClass.getName)
-      .setSourceHostname(host)
-      .setSourcePort(port)
+      .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
       .setTimeout(timeout)
       .build
   }
@@ -1279,7 +1277,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
-  protected[akka] def toProtobuf: ActorRefProtocol = unsupported
+  protected[akka] def toProtobuf: RemoteActorRefProtocol = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
   protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
