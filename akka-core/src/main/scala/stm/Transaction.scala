@@ -16,11 +16,8 @@ import se.scalablesolutions.akka.config.Config._
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
-import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.api.ThreadLocalTransaction._
-import org.multiverse.templates.{TransactionalCallable, OrElseTemplate}
 import org.multiverse.api.{TraceLevel => MultiverseTraceLevel}
-import org.multiverse.api.StmUtils
 
 class NoTransactionInScopeException extends RuntimeException
 class TransactionRetryException(message: String) extends RuntimeException(message)
@@ -46,22 +43,8 @@ object Transaction {
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object Local extends TransactionManagement with Logging {
-
-    object DefaultLocalTransactionConfig extends TransactionConfig
-    object DefaultLocalTransactionFactory extends TransactionFactory(DefaultLocalTransactionConfig, "DefaultLocalTransaction")
-
-    def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultLocalTransactionFactory): T = atomic(factory)(body)
-
-    def atomic[T](factory: TransactionFactory)(body: => T): T = {
-      factory.boilerplate.execute(new TransactionalCallable[T]() {
-        def call(mtx: MultiverseTransaction): T = {
-          factory.addHooks
-          body
-        }
-       })
-    }
-  }
+  @deprecated("Use the akka.stm.local package object instead.")
+  object Local extends LocalStm
 
   /**
    * Module for "global" transaction management, global in the context of multiple threads.
@@ -79,48 +62,13 @@ object Transaction {
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object Global extends TransactionManagement with Logging {
-
-    object DefaultGlobalTransactionConfig extends TransactionConfig
-    object DefaultGlobalTransactionFactory extends TransactionFactory(DefaultGlobalTransactionConfig, "DefaultGlobalTransaction")
-
-    def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultGlobalTransactionFactory): T = atomic(factory)(body)
-
-    def atomic[T](factory: TransactionFactory)(body: => T): T = {
-      factory.boilerplate.execute(new TransactionalCallable[T]() {
-        def call(mtx: MultiverseTransaction): T = {
-          if (!isTransactionSetInScope) createNewTransactionSet
-          factory.addHooks
-          val result = body
-          val txSet = getTransactionSetInScope
-          log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
-          // FIXME ? txSet.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
-          txSet.joinCommit(mtx)
-          clearTransaction
-          result
-        }
-      })
-    }
-  }
+  @deprecated("Use the akka.stm.global package object instead.")
+  object Global extends GlobalStm
 
   /**
    * TODO: document
    */
-  object Util {
-
-    def deferred[T](body: => T): Unit = StmUtils.scheduleDeferredTask(new Runnable { def run = body })
-
-    def compensating[T](body: => T): Unit = StmUtils.scheduleCompensatingTask(new Runnable { def run = body })
-
-    def retry = StmUtils.retry
-
-    def either[T](firstBody: => T) = new {
-      def orElse(secondBody: => T) = new OrElseTemplate[T] {
-        def either(mtx: MultiverseTransaction) = firstBody
-        def orelse(mtx: MultiverseTransaction) = secondBody
-      }.execute()
-    }
-  }
+  object Util extends StmUtil
 
   /**
    * Attach an Akka-specific Transaction to the current Multiverse transaction.
