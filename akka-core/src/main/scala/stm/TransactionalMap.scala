@@ -18,7 +18,7 @@ object TransactionalMap {
 
 /**
  * TODO: documentation
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalMap[K, V](initialOpt: Option[HashMap[K, V]] = None) extends Transactional with scala.collection.mutable.Map[K, V] {

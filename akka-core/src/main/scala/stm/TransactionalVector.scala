@@ -18,7 +18,7 @@ object TransactionalVector {
 
 /**
  * TODO: documentation
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionalVector[T](initialOpt: Option[Vector[T]] = None) extends Transactional with IndexedSeq[T] {

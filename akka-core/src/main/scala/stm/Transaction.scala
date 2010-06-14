@@ -52,7 +52,7 @@ object Transaction {
     object DefaultLocalTransactionFactory extends TransactionFactory(DefaultLocalTransactionConfig, "DefaultLocalTransaction")
 
     def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultLocalTransactionFactory): T = atomic(factory)(body)
-    
+
     def atomic[T](factory: TransactionFactory)(body: => T): T = {
       factory.boilerplate.execute(new TransactionalCallable[T]() {
         def call(mtx: MultiverseTransaction): T = {
@@ -85,7 +85,7 @@ object Transaction {
     object DefaultGlobalTransactionFactory extends TransactionFactory(DefaultGlobalTransactionConfig, "DefaultGlobalTransaction")
 
     def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultGlobalTransactionFactory): T = atomic(factory)(body)
-    
+
     def atomic[T](factory: TransactionFactory)(body: => T): T = {
       factory.boilerplate.execute(new TransactionalCallable[T]() {
         def call(mtx: MultiverseTransaction): T = {
@@ -105,19 +105,19 @@ object Transaction {
 
   /**
    * TODO: document
-   */ 
+   */
   object Util {
-    
+
     def deferred[T](body: => T): Unit = StmUtils.scheduleDeferredTask(new Runnable { def run = body })
 
     def compensating[T](body: => T): Unit = StmUtils.scheduleCompensatingTask(new Runnable { def run = body })
 
     def retry = StmUtils.retry
 
-    def either[A](firstBody: => A) = new {
-      def orElse(secondBody: => A) = new OrElseTemplate[A] {
-        def either(t: MultiverseTransaction) = firstBody
-        def orelse(t: MultiverseTransaction) = secondBody
+    def either[T](firstBody: => T) = new {
+      def orElse(secondBody: => T) = new OrElseTemplate[T] {
+        def either(mtx: MultiverseTransaction) = firstBody
+        def orelse(mtx: MultiverseTransaction) = secondBody
       }.execute()
     }
   }
@@ -125,7 +125,7 @@ object Transaction {
   /**
    * Attach an Akka-specific Transaction to the current Multiverse transaction.
    * Must be called within a Multiverse transaction. Used by TransactionFactory.addHooks
-   */ 
+   */
   private[akka] def attach = {
     val mtx = getRequiredThreadLocalTransaction
     val tx = new Transaction
@@ -143,12 +143,12 @@ object Transaction {
 
   /**
    * Mapping to Multiverse TraceLevel.
-   */ 
+   */
   object TraceLevel {
     val None = MultiverseTraceLevel.none
     val Coarse = MultiverseTraceLevel.course // mispelling?
     val Course = MultiverseTraceLevel.course
-    val Fine = MultiverseTraceLevel.fine    
+    val Fine = MultiverseTraceLevel.fine
   }
 }
 
