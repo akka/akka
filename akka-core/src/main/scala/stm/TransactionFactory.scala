@@ -14,7 +14,7 @@ import org.multiverse.api.TraceLevel
 
 /**
  * For configuring multiverse transactions.
- */ 
+ */
 object TransactionConfig {
   val FAMILY_NAME      = "DefaultTransaction"
   val READONLY         = false
@@ -69,13 +69,13 @@ class TransactionConfig(val familyName: String       = TransactionConfig.FAMILY_
                         val speculative: Boolean     = TransactionConfig.SPECULATIVE,
                         val quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
                         val traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
-                        val hooks: Boolean           = TransactionConfig.HOOKS) 
+                        val hooks: Boolean           = TransactionConfig.HOOKS)
 
 object DefaultTransactionConfig extends TransactionConfig
 
 /**
  * Wrapper for transaction config, factory, and boilerplate. Used by atomic.
- */ 
+ */
 object TransactionFactory {
   def apply(config: TransactionConfig) = new TransactionFactory(config)
 
@@ -101,7 +101,7 @@ object TransactionFactory {
 
 /**
  * Wrapper for transaction config, factory, and boilerplate. Used by atomic.
- */ 
+ */
 class TransactionFactory(val config: TransactionConfig = DefaultTransactionConfig, defaultName: String = TransactionConfig.FAMILY_NAME) {
   self =>
 
