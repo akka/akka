@@ -2,20 +2,30 @@ package se.scalablesolutions.akka.camel.component
 
 import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
+import org.apache.camel.builder.RouteBuilder
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.camel._
 import se.scalablesolutions.akka.actor.{ActorRegistry, ActiveObject}
-import org.apache.camel.{ExchangePattern, Exchange, Processor}
+import se.scalablesolutions.akka.camel._
+import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
+import org.apache.camel.{ResolveEndpointFailedException, ExchangePattern, Exchange, Processor}
 
 /**
  * @author Martin Krasser
  */
 class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+  import ActiveObjectComponentFeatureTest._
+  import CamelContextManager.template
+
   override protected def beforeAll = {
+    val activePojo     = ActiveObject.newInstance(classOf[Pojo]) // not a consumer
     val activePojoBase = ActiveObject.newInstance(classOf[PojoBase])
     val activePojoIntf = ActiveObject.newInstance(classOf[PojoIntf], new PojoImpl)
 
-    CamelContextManager.init
+    val registry = new SimpleRegistry
+    registry.put("pojo", activePojo)
+
+    CamelContextManager.init(new DefaultCamelContext(registry))
+    CamelContextManager.context.addRoutes(new CustomRouteBuilder)
     CamelContextManager.start
 
     CamelContextManager.activeObjectRegistry.put("base", activePojoBase)
@@ -29,7 +39,6 @@ class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAl
 
   feature("Communicate with an active object from a Camel application using active object endpoint URIs") {
     import ActiveObjectComponent.InternalSchema
-    import CamelContextManager.template
     import ExchangePattern._
 
     scenario("in-out exchange with proxy created from interface and method returning String") {
@@ -69,6 +78,28 @@ class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAl
       assert(result.getPattern === InOnly)
       assert(result.getIn.getBody === "x")
       assert(result.getOut.getBody === null)
+    }
+  }
+
+  feature("Communicate with an active object from a Camel application from a custom Camel route") {
+
+    scenario("in-out exchange with externally registered active object") {
+      val result = template.requestBody("direct:test", "test")
+      assert(result === "foo: test")
+    }
+
+    scenario("in-out exchange with internally registered active object not possible") {
+      intercept[ResolveEndpointFailedException] {
+        template.requestBodyAndHeader("active-object:intf?method=m2", "x", "test", "y")
+      }
+    }
+  }
+}
+
+object ActiveObjectComponentFeatureTest {
+  class CustomRouteBuilder extends RouteBuilder {
+    def configure = {
+      from("direct:test").to("active-object:pojo?method=foo")
     }
   }
 }
