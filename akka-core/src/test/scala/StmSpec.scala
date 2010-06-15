@@ -103,7 +103,7 @@ class StmSpec extends
   }
 
   describe("Transactor") {
-    it("should be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multipse times in a row") {
+    it("should be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multiple times in a row") {
       import GlobalTransactionVectorTestActor._
       try {
         val actor = actorOf[NestedTransactorLevelOneActor].start

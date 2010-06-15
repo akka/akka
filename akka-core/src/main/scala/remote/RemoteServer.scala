@@ -323,9 +323,8 @@ class RemoteServerHandler(
   applicationLoader.foreach(RemoteProtocolBuilder.setClassLoader(_))
 
   /**
-   * ChannelOpen overridden to store open channels for a clean shutdown
-   * of a RemoteServer. If a channel is closed before, it is
-   * automatically removed from the open channels group.
+   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer. 
+   * If a channel is closed before, it is automatically removed from the open channels group.
    */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
     openChannels.add(ctx.getChannel)
@@ -364,8 +363,9 @@ class RemoteServerHandler(
     val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actorRef.start
     val message = RemoteProtocolBuilder.getMessage(request)
-    val sender = if (request.hasSender) Some(ActorRef.fromProtobuf(request.getSender, applicationLoader))
-                 else None
+    val sender = 
+      if (request.hasSender) Some(ActorRef.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
+      else None
     if (request.getIsOneWay) actorRef.!(message)(sender)
     else {
       try {
@@ -403,7 +403,6 @@ class RemoteServerHandler(
     val argClasses = args.map(_.getClass)
     val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.getTimeout)
 
-    //continueTransaction(request)
     try {
       val messageReceiver = activeObject.getClass.getDeclaredMethod(
         request.getMethod, unescapedArgClasses: _*)
