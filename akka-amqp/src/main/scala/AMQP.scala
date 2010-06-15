@@ -259,7 +259,7 @@ object AMQP {
 
   case object Stop extends AMQPMessage
 
-  private[akka] case class UnregisterMessageConsumerListener(consumer: MessageConsumerListener) extends InternalAMQPMessage
+  case class UnregisterMessageConsumerListener(consumer: MessageConsumerListener) extends InternalAMQPMessage
 
   private[akka] case class Reconnect(delay: Long) extends InternalAMQPMessage
 
