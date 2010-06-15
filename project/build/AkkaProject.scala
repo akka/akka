@@ -311,29 +311,46 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       "!se.scalablesolutions.akka.*", 
 
       // Provided by other bundles
+      "!com.google.inject.*",
+      "!javax.transaction.*",
+      "!javax.ws.rs.*",
+      "!net.liftweb.common.*",
+      "!net.liftweb.util.*",
+      "!org.apache.camel.*",
       "!org.apache.commons.io.*",
+      "!org.apache.commons.pool.*",
       "!org.codehaus.jackson.*",
-      "!org.codehaus.jettison.*",
       "!org.jboss.netty.*",
+      "!org.springframework.*",
 
       // Export the rest
       "*")
   }
 
-  class AkkaOSGiAssemblyProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    // FIXME: Find out how to replace mvn-assembly within SBT
+  class AkkaOSGiAssemblyProject(info: ProjectInfo) extends DefaultProject(info) {
 
-    lazy val assemblyAction = task {
-      
-      println("----------------------------")
-      println("2" + unmanagedClasspath)
+    // FIXME: Transitive dependencies should not be included, we should list every bundle individually
 
-      //FileUtilities.copy(info.dependencies.map(_.outputPath), "bundles", true, true, log)
+    val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
+    val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
+    val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
+    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
+    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
+    val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
+    val camel_core = "org.apache.camel" % "camel-core" % "2.3.0" % "compile"
+    val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile"
+    val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
+    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
+    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE" % "compile"
+    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile"
+
+    override def packageAction = task {
+      val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
+      val prjs: Seq[Path] = info.dependencies.toSeq.asInstanceOf[Seq[DefaultProject]].map(_.jarPath)
+      val all = libs ++ prjs
+      FileUtilities.copyFlat(all, outputPath / "bundles", log)
       None
     }
-
-    override def packageAction = super.packageAction dependsOn(assemblyAction)
-    
   }
 
   class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
