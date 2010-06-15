@@ -9,6 +9,11 @@ import org.junit.runner.RunWith
 import se.scalablesolutions.akka.serialization.Serializable
 import se.scalablesolutions.akka.serialization.Serializer._
 
+import sbinary._
+import sbinary.Operations._
+import sbinary.DefaultProtocol._
+import java.util.{Calendar, Date}
+
 import RedisStorageBackend._
 
 @RunWith(classOf[JUnitRunner])
@@ -39,15 +44,6 @@ class RedisStorageBackendSpec extends
         "T-1", "debasish.language".getBytes).get) should equal("java")
     }
 
-    /**
-    it("should enter a custom object for transaction T-1") {
-      val n = Name(100, "debasish", "kolkata")
-      // insertMapStorageEntryFor("T-1", "debasish.identity".getBytes, Java.out(n))
-      // insertMapStorageEntryFor("T-1", "debasish.identity".getBytes, n.toBytes)
-      getMapStorageSizeFor("T-1") should equal(5)
-    }
-    **/
-
     it("should enter key/values for another transaction T-2") {
       insertMapStorageEntryFor("T-2", "debasish.age".getBytes, "49".getBytes)
       insertMapStorageEntryFor("T-2", "debasish.spouse".getBytes, "paramita".getBytes)
@@ -58,6 +54,21 @@ class RedisStorageBackendSpec extends
     it("should remove map storage for T-1 and T2") {
       removeMapStorageFor("T-1")
       removeMapStorageFor("T-2")
+    }
+  }
+
+  describe("Store and query long value in maps") {
+    it("should enter 4 entries in redis for transaction T-1") {
+    val d = Calendar.getInstance.getTime.getTime
+      insertMapStorageEntryFor("T-11", "debasish".getBytes, 
+        toByteArray[Long](d))
+
+      getMapStorageSizeFor("T-11") should equal(1)
+      fromByteArray[Long](getMapStorageEntryFor("T-11", "debasish".getBytes).get) should equal(d)
+    }
+
+    it("should remove map storage for T-1 and T2") {
+      removeMapStorageFor("T-11")
     }
   }
 
@@ -93,73 +104,61 @@ class RedisStorageBackendSpec extends
     }
   }
 
+  describe("Store and query objects in maps") {
+    import NameSerialization._
+    it("should write a Name object and fetch it properly") {
+      val dtb = Calendar.getInstance.getTime
+      val n = Name(100, "debasish ghosh", "kolkata", dtb, Some(dtb))
+
+      insertMapStorageEntryFor("T-31", "debasish".getBytes, toByteArray[Name](n))
+      getMapStorageSizeFor("T-31") should equal(1)
+      fromByteArray[Name](getMapStorageEntryFor("T-31", "debasish".getBytes).get) should equal(n)
+    }
+    it("should remove map storage for T31") {
+      removeMapStorageFor("T-31")
+    }
+  }
+
   describe("Store and query in vectors") {
     it("should write 4 entries in a vector for transaction T-3") {
       insertVectorStorageEntryFor("T-3", "debasish".getBytes)
       insertVectorStorageEntryFor("T-3", "maulindu".getBytes)
-      val n = Name(100, "debasish", "kolkata")
-      // insertVectorStorageEntryFor("T-3", Java.out(n))
-      // insertVectorStorageEntryFor("T-3", n.toBytes)
       insertVectorStorageEntryFor("T-3", "1200".getBytes)
-      getVectorStorageSizeFor("T-3") should equal(3)
+
+      val dt = Calendar.getInstance.getTime.getTime
+      insertVectorStorageEntryFor("T-3", toByteArray[Long](dt))
+      getVectorStorageSizeFor("T-3") should equal(4)
+      fromByteArray[Long](getVectorStorageEntryFor("T-3", 0)) should equal(dt)
+      getVectorStorageSizeFor("T-3") should equal(4)
+    }
+  }
+
+  describe("Store and query objects in vectors") {
+    import NameSerialization._
+    it("should write a Name object and fetch it properly") {
+      val dtb = Calendar.getInstance.getTime
+      val n = Name(100, "debasish ghosh", "kolkata", dtb, Some(dtb))
+
+      insertVectorStorageEntryFor("T-31", toByteArray[Name](n))
+      getVectorStorageSizeFor("T-31") should equal(1)
+      fromByteArray[Name](getVectorStorageEntryFor("T-31", 0)) should equal(n)
     }
   }
 
   describe("Store and query in ref") {
+    import NameSerialization._
     it("should write 4 entries in 4 refs for transaction T-4") {
       insertRefStorageFor("T-4", "debasish".getBytes)
       insertRefStorageFor("T-4", "maulindu".getBytes)
 
       insertRefStorageFor("T-4", "1200".getBytes)
       new String(getRefStorageFor("T-4").get) should equal("1200")
-
-      // val n = Name(100, "debasish", "kolkata")
-      // insertRefStorageFor("T-4", Java.out(n))
-      // insertRefStorageFor("T-4", n.toBytes)
-      // Java.in(getRefStorageFor("T-4").get, Some(classOf[Name])).asInstanceOf[Name] should equal(n)
-      // n.fromBytes(getRefStorageFor("T-4").get) should equal(n)
     }
-  }
-
-  describe("atomic increment in ref") {
-    it("should increment an existing key value by 1") {
-      insertRefStorageFor("T-4-1", "1200".getBytes)
-      new String(getRefStorageFor("T-4-1").get) should equal("1200")
-      incrementAtomically("T-4-1").get should equal(1201)
-    }
-    it("should create and increment a non-existing key value by 1") {
-      incrementAtomically("T-4-2").get should equal(1)
-      new String(getRefStorageFor("T-4-2").get) should equal("1")
-    }
-    it("should increment an existing key value by the amount specified") {
-      insertRefStorageFor("T-4-3", "1200".getBytes)
-      new String(getRefStorageFor("T-4-3").get) should equal("1200")
-      incrementByAtomically("T-4-3", 50).get should equal(1250)
-    }
-    it("should create and increment a non-existing key value by the amount specified") {
-      incrementByAtomically("T-4-4", 20).get should equal(20)
-      new String(getRefStorageFor("T-4-4").get) should equal("20")
-    }
-  }
-
-  describe("atomic decrement in ref") {
-    it("should decrement an existing key value by 1") {
-      insertRefStorageFor("T-4-5", "1200".getBytes)
-      new String(getRefStorageFor("T-4-5").get) should equal("1200")
-      decrementAtomically("T-4-5").get should equal(1199)
-    }
-    it("should create and decrement a non-existing key value by 1") {
-      decrementAtomically("T-4-6").get should equal(-1)
-      new String(getRefStorageFor("T-4-6").get) should equal("-1")
-    }
-    it("should decrement an existing key value by the amount specified") {
-      insertRefStorageFor("T-4-7", "1200".getBytes)
-      new String(getRefStorageFor("T-4-7").get) should equal("1200")
-      decrementByAtomically("T-4-7", 50).get should equal(1150)
-    }
-    it("should create and decrement a non-existing key value by the amount specified") {
-      decrementByAtomically("T-4-8", 20).get should equal(-20)
-      new String(getRefStorageFor("T-4-8").get) should equal("-20")
+    it("should write a Name object and fetch it properly") {
+      val dtb = Calendar.getInstance.getTime
+      val n = Name(100, "debasish ghosh", "kolkata", dtb, Some(dtb))
+      insertRefStorageFor("T-4", toByteArray[Name](n))
+      fromByteArray[Name](getRefStorageFor("T-4").get) should equal(n)
     }
   }
 
@@ -184,6 +183,14 @@ class RedisStorageBackendSpec extends
       new String(l(0)) should equal("richard stallman")
       new String(l(1)) should equal("yukihiro matsumoto")
       new String(l(2)) should equal("claude shannon")
+    }
+    it("should write a Name object and fetch it properly") {
+      import NameSerialization._
+      val dtb = Calendar.getInstance.getTime
+      val n = Name(100, "debasish ghosh", "kolkata", dtb, Some(dtb))
+      enqueue("T-5-1", toByteArray[Name](n))
+      fromByteArray[Name](peek("T-5-1", 0, 1).head) should equal(n)
+      fromByteArray[Name](dequeue("T-5-1").get) should equal(n)
     }
   }
 
@@ -221,27 +228,18 @@ class RedisStorageBackendSpec extends
   }
 }
 
-case class Name(id: Int, name: String, address: String)
-  extends Serializable.SBinary[Name] {
-  import sbinary._
-  import sbinary.Operations._
-  import sbinary.DefaultProtocol._
+object NameSerialization {
+  implicit object DateFormat extends Format[Date] {
+    def reads(in : Input) = 
+      new Date(read[Long](in))
 
-  def this() = this(0, null, null)
-
-  implicit object NameFormat extends Format[Name] {
-    def reads(in : Input) = Name(
-      read[Int](in),
-      read[String](in),
-      read[String](in))
-    def writes(out: Output, value: Name) = {
-      write[Int](out, value.id)
-      write[String](out, value.name)
-      write[String](out, value.address)
-    }
+    def writes(out: Output, value: Date) =
+      write[Long](out, value.getTime)
   }
 
-  def fromBytes(bytes: Array[Byte]) = fromByteArray[Name](bytes)
+  case class Name(id: Int, name: String, 
+    address: String, dateOfBirth: Date, dateDied: Option[Date])
 
-  def toBytes: Array[Byte] = toByteArray(this)
+  implicit val NameFormat: Format[Name] =
+    asProduct5(Name)(Name.unapply(_).get)
 }
