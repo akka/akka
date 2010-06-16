@@ -6,8 +6,8 @@ package se.scalablesolutions.akka.actor;
 
 /*
   Compile with:
-  cd ./akka-core/src/test/java
-  protoc ProtobufProtocol.proto --java_out .
+  cd ./akka-core/src/test/protocol
+  protoc ProtobufProtocol.proto --java_out ../java
 */
 
 message ProtobufPOJO {
