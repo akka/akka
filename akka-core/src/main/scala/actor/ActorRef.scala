@@ -706,6 +706,9 @@ sealed class LocalActorRef private[akka](
       lifeCycle = __lifeCycle
       _supervisor = __supervisor
       hotswap = __hotswap
+      actorSelfFields._1.set(actor, this)
+      actorSelfFields._2.set(actor, Some(this))
+      actorSelfFields._3.set(actor, Some(this))
       ActorRegistry.register(this)
     }
 
@@ -1149,7 +1152,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {    
     if (isShutdown) {
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return

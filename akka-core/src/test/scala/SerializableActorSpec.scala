@@ -22,10 +22,10 @@ class SerializableActorSpec extends
       (actor1 !! "hello").getOrElse("_") should equal("world")
 
       val bytes = actor1.toBinary
-      
-//      val actor2 = serializer.fromBinary(bytes, Some(classOf[JavaSerializableTestActor])).asInstanceOf[Actor]
-//      (actor2 !! "hello").getOrElse("_") should equal("world")
-      true should equal(true)
+      val actor2 = ActorRef.fromBinaryToLocalActorRef(bytes)
+
+      actor2.start
+      (actor2 !! "hello").getOrElse("_") should equal("world")
     }
   }
 }

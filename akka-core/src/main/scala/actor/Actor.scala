@@ -491,10 +491,4 @@ trait Actor extends Logging {
     case UnlinkAndStop(child) => self.unlink(child); child.stop
     case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
-
-  override def hashCode: Int = self.hashCode
-
-  override def equals(that: Any): Boolean = self.equals(that)
-
-  override def toString = self.toString
 }
