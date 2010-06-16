@@ -67,12 +67,11 @@ class SimpleServiceActor extends Transactor {
 
   def receive = {
     case "Tick" => if (hasStartedTicking) {
-      val bytes = storage.get(KEY.getBytes).get
-      val counter = Integer.parseInt(new String(bytes, "UTF8"))
-      storage.put(KEY.getBytes, (counter + 1).toString.getBytes )      
+      val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
+      storage.put(KEY, new Integer(counter + 1))
       self.reply(<success>Tick:{counter + 1}</success>)
     } else {
-      storage.put(KEY.getBytes, "0".getBytes)
+      storage.put(KEY, new Integer(0))
       hasStartedTicking = true
       self.reply(<success>Tick: 0</success>)
     }
@@ -124,11 +123,15 @@ class PersistentSimpleServiceActor extends Transactor {
   def receive = {
     case "Tick" => if (hasStartedTicking) {
       val bytes = storage.get(KEY.getBytes).get
-      val counter = ByteBuffer.wrap(bytes).getInt
-      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
+      val counter = Integer.parseInt(new String(bytes, "UTF8"))
+      storage.put(KEY.getBytes, (counter + 1).toString.getBytes )      
+//      val bytes = storage.get(KEY.getBytes).get
+//      val counter = ByteBuffer.wrap(bytes).getInt
+//      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
       self.reply(<success>Tick:{counter + 1}</success>)
     } else {
-      storage.put(KEY.getBytes, Array(0.toByte))
+      storage.put(KEY.getBytes, "0".getBytes)
+//      storage.put(KEY.getBytes, Array(0.toByte))
       hasStartedTicking = true
       self.reply(<success>Tick: 0</success>)
     }
