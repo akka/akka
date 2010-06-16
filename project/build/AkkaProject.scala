@@ -67,6 +67,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
  // val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
+  val scalaBundleConfig       = ModuleConfiguration("com.weiglewilczek.scala-lang-osgi", ScalaToolsReleases)
 
   // ------------------------------------------------------------
   // project defintions
@@ -308,42 +309,51 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     override def bndPrivatePackage = Set("")
     override def bndImportPackage = Set("*;resolution:=optional")
     override def bndExportPackage = Set(
-      // Provided by Akka bundle
-      "!se.scalablesolutions.akka.*", 
+      "org.aopalliance.*;version=1.0.0",
 
       // Provided by other bundles
+      "!se.scalablesolutions.akka.*", 
       "!com.google.inject.*",
       "!javax.transaction.*",
       "!javax.ws.rs.*",
-      "!net.liftweb.common.*",
-      "!net.liftweb.util.*",
-      "!org.apache.camel.*",
       "!org.apache.commons.io.*",
       "!org.apache.commons.pool.*",
       "!org.codehaus.jackson.*",
       "!org.jboss.netty.*",
       "!org.springframework.*",
+      "!org.apache.camel.*",
+      "!org.fusesource.commons.management.*",
 
-      // Export the rest
-      "*")
+      "*;version=0.0.0")
   }
 
   class AkkaOSGiAssemblyProject(info: ProjectInfo) extends DefaultProject(info) {
 
-    // FIXME: Transitive dependencies should not be included, we should list every bundle individually
+    // Scala bundle
+    val scala_bundle = "com.weiglewilczek.scala-lang-osgi" % "scala-library_2.8.0.RC3" % "1.0" % "compile" intransitive()
 
-    val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
-    val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
-    val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
-    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
-    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
-    val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
-    val camel_core = "org.apache.camel" % "camel-core" % "2.3.0" % "compile"
-    val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile"
-    val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
-    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
-    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE" % "compile"
-    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile"
+    // Camel bundles
+    val camel_core = "org.apache.camel" % "camel-core" % "2.3.0" % "compile" intransitive()
+    val fusesource_commonman = "org.fusesource.commonman" % "commons-management" % "1.0" intransitive()
+
+    // Spring bundles
+    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE" % "compile" intransitive()
+    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile" intransitive()
+    val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE" % "compile" intransitive()
+    val spring_aop = "org.springframework" % "spring-aop" % "3.0.1.RELEASE" % "compile" intransitive()
+    val spring_asm = "org.springframework" % "spring-asm" % "3.0.1.RELEASE" % "compile" intransitive()
+    val spring_core = "org.springframework" % "spring-core" % "3.0.1.RELEASE" % "compile" intransitive()
+    val spring_expression = "org.springframework" % "spring-expression" % "3.0.1.RELEASE" % "compile" intransitive()
+    val spring_tx = "org.springframework" % "spring-tx" % "3.0.1.RELEASE" % "compile" intransitive()
+
+    val commons_io = "commons-io" % "commons-io" % "1.4" % "compile" intransitive()
+    val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile" intransitive()
+    val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile" intransitive()
+    val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile" intransitive()
+    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile" intransitive()
+    val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile" intransitive()
+    val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive()
+    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" intransitive()
 
     override def packageAction = task {
       val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
