@@ -40,7 +40,7 @@ class SupervisionFactoryBean extends AbstractFactoryBean[ActiveObjectConfigurato
    */
   private[akka] def createComponent(props: ActiveObjectProperties): Component = {
     import StringReflect._
-    val lifeCycle = if (!props.lifecyclye.isEmpty && props.lifecyclye.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) new LifeCycle(new Temporary()) else new LifeCycle(new Permanent())
+    val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) new LifeCycle(new Temporary()) else new LifeCycle(new Permanent())
     val isRemote = (props.host != null) && (!props.host.isEmpty)
     val withInterface = (props.interface != null) && (!props.interface.isEmpty)
     if (isRemote) {

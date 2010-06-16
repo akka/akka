@@ -17,6 +17,11 @@
   </properties>
 
    <repositories>
+	<repository>
+	      <id>akka</id>
+	      <name>Akka Repo</name>
+	      <url>http://www.scalablesolutions.se/akka/repository/</url>
+	    </repository>
     <repository>
       <id>project.embedded.module</id>
       <name>Project Embedded Repository</name>
@@ -146,23 +151,23 @@
     <!-- akka -->
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
-      <artifactId>akka-core_2.8.0.Beta1</artifactId>
-      <version>0.9</version>
+      <artifactId>akka-core_2.8.0.RC3</artifactId>
+      <version>0.9.1</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-util_2.8.0.Beta1</artifactId>
-      <version>0.9</version>
+      <version>0.8.1</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-util-java_2.8.0.Beta1</artifactId>
-      <version>0.9</version>
+      <version>0.8.1</version>
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
-      <artifactId>akka-spring_2.8.0.Beta1</artifactId>
-      <version>0.9</version>
+      <artifactId>akka-spring_2.8.0.RC3</artifactId>
+      <version>0.9.1</version>
       <exclusions>
         <exclusion>
           <groupId>org.springframework</groupId>

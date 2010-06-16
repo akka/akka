@@ -4,19 +4,31 @@
 
 package se.scalablesolutions.akka.spring
 
+import java.beans.PropertyDescriptor
+
+import java.lang.reflect.Method
+import org.springframework.beans.BeanWrapperImpl 
+import org.springframework.beans.BeanWrapper 
+import org.springframework.beans.BeanUtils
+import org.springframework.util.ReflectionUtils
+import org.springframework.util.StringUtils
+import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import se.scalablesolutions.akka.actor.ActiveObject
 import reflect.BeanProperty
 import se.scalablesolutions.akka.config.ScalaConfig.RestartCallbacks
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
-
+import se.scalablesolutions.akka.util.Logging
 
 /**
  * Factory bean for active objects.
+ *
  * @author michaelkober
+ * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  */
-class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] {
+class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
   import StringReflect._
+  import AkkaSpringConfigurationTags._
 
   @BeanProperty var target: String = ""
   @BeanProperty var timeout: Long = _
@@ -28,6 +40,8 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] {
   @BeanProperty var port: Int = _
   @BeanProperty var lifecycle: String = ""
   @BeanProperty var dispatcher: DispatcherProperties = _
+  @BeanProperty var scope:String = VAL_SCOPE_SINGLETON
+  @BeanProperty var property:PropertyEntries = _
 
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
@@ -39,11 +53,44 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] {
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
    */
   def createInstance: AnyRef = {
+	if(scope.equals(VAL_SCOPE_SINGLETON)) {
+		setSingleton(true)
+	} else {
+		setSingleton(false)
+	}
     var argumentList = ""
     if (isRemote) argumentList += "r"
     if (hasInterface) argumentList += "i"
     if (hasDispatcher) argumentList += "d"
-    create(argumentList)
+   
+    setProperties(
+		create(argumentList))
+}
+
+ /**
+   * This method manages <property/> element by injecting either
+   * values (<property value="value"/>) and bean references (<property ref="beanId"/>)	
+   */
+   private def setProperties(ref:AnyRef) : AnyRef = {
+	log.debug("Processing properties and dependencies for target class %s",target)
+	val beanWrapper = new BeanWrapperImpl(ref);
+	for(entry <- property.entryList) {
+		val propertyDescriptor = BeanUtils.getPropertyDescriptor(ref.getClass,entry.name)
+		val method = propertyDescriptor.getWriteMethod();
+		
+		if(StringUtils.hasText(entry.ref)) {
+			log.debug("Setting property %s with bean ref %s using method %s",
+				entry.name,entry.ref,method.getName)
+			method.invoke(ref,getBeanFactory().getBean(entry.ref))
+		} else if(StringUtils.hasText(entry.value)) {
+			log.debug("Setting property %s with value %s using method %s",
+				entry.name,entry.value,method.getName)
+			beanWrapper.setPropertyValue(entry.name,entry.value)
+		} else {
+			throw new AkkaBeansException("Either property@ref or property@value must be set on property element")
+		}
+	}
+	ref
   }
 
 // TODO: check if this works in 2.8 (type inferred to Nothing instead of AnyRef here)
