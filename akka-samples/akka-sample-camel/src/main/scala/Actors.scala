@@ -9,10 +9,10 @@ import se.scalablesolutions.akka.util.Logging
  * Client-initiated remote actor.
  */
 class RemoteActor1 extends RemoteActor("localhost", 7777) with Consumer {
-  def endpointUri = "jetty:http://localhost:6644/remote1"
+  def endpointUri = "jetty:http://localhost:6644/camel/remote-actor-1"
 
   protected def receive = {
-    case msg: Message => self.reply(Message("hello %s" format msg.body, Map("sender" -> "remote1")))
+    case msg: Message => self.reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote1")))
   }
 }
 
@@ -20,10 +20,10 @@ class RemoteActor1 extends RemoteActor("localhost", 7777) with Consumer {
  * Server-initiated remote actor.
  */
 class RemoteActor2 extends Actor with Consumer {
-  def endpointUri = "jetty:http://localhost:6644/remote2"
+  def endpointUri = "jetty:http://localhost:6644/camel/remote-actor-2"
 
   protected def receive = {
-    case msg: Message => self.reply(Message("hello %s" format msg.body, Map("sender" -> "remote2")))
+    case msg: Message => self.reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote2")))
   }
 }
 
@@ -37,14 +37,14 @@ class Producer1 extends Actor with Producer {
 }
 
 class Consumer1 extends Actor with Consumer with Logging {
-  def endpointUri = "file:data/input"
+  def endpointUri = "file:data/input/actor"
 
   def receive = {
     case msg: Message => log.info("received %s" format msg.bodyAs[String])
   }
 }
 
-@consume("jetty:http://0.0.0.0:8877/camel/test1")
+@consume("jetty:http://0.0.0.0:8877/camel/default")
 class Consumer2 extends Actor {
   def receive = {
     case msg: Message => self.reply("Hello %s" format msg.bodyAs[String])

@@ -228,12 +228,11 @@ object Actor extends Logging {
   def spawn(body: => Unit): Unit = {
     case object Spawn
     actorOf(new Actor() {
-      self.start
-      self ! Spawn
       def receive = {
         case Spawn => body; self.stop
       }
-    })
+    }).start ! Spawn
+    
   }
 }
 
@@ -412,6 +411,22 @@ trait Actor extends Logging {
    * Is called during initialization. Can be used to initialize transactional state. Will be invoked within a transaction.
    */
   def initTransactionalState {}
+
+  /**
+   * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * <p/>
+   * Throws an IllegalStateException if unable to determine what to reply to.
+   */
+  def reply(message: Any) = self.reply(message)
+
+  /**
+   * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
+   * being processed.
+   * <p/>
+   * Returns true if reply was sent, and false if unable to determine what to reply to.
+   */
+  def reply_?(message: Any): Boolean = self.reply_?(message)
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
