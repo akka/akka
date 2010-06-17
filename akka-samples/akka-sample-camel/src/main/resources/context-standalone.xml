@@ -1,0 +1,12 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:akka="http://www.akkasource.org/schema/akka"
+       xsi:schemaLocation="
+http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+http://www.akkasource.org/schema/akka
+http://scalablesolutions.se/akka/akka.xsd">
+
+  <akka:active-object id="blah2" target="sample.camel.BeanImpl" timeout="1000" />
+
+</beans>

@@ -1,13 +1,13 @@
 package sample.camel
 
-import se.scalablesolutions.akka.camel.service.CamelService
-import se.scalablesolutions.akka.remote.RemoteNode
 import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.camel.CamelService
+import se.scalablesolutions.akka.remote.RemoteNode
 
 /**
  * @author Martin Krasser
  */
-object Application2 {
+object ServerApplication {
 
   //
   // TODO: completion of example

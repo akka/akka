@@ -2,41 +2,41 @@ package se.scalablesolutions.akka.camel.component
 
 import ActorComponentTest._
 
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.{CountDownLatch, TimeoutException, TimeUnit}
 
 import org.apache.camel.ExchangePattern
 import org.junit.{After, Test}
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 
-import se.scalablesolutions.akka.actor.ActorRegistry
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.camel.support.{Countdown, Retain, Tester, Respond}
+import se.scalablesolutions.akka.actor.ActorRegistry
 import se.scalablesolutions.akka.camel.{Failure, Message}
+import se.scalablesolutions.akka.camel.support._
 
 class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   @After def tearDown = ActorRegistry.shutdownAll
 
   @Test def shouldSendMessageToActor = {
-    val actor = actorOf(new Tester with Retain with Countdown[Message])
+    val actor = actorOf[Tester1].start
+    val latch = actor.!![CountDownLatch](SetExpectedMessageCount(1)).get
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
-    actor.start
     exchange.getIn.setBody("Martin")
     exchange.getIn.setHeader("k1", "v1")
     endpoint.createProducer.process(exchange)
-    actor.actor.asInstanceOf[Countdown[Message]].waitFor
-    assert(actor.actor.asInstanceOf[Retain].body === "Martin")
-    assert(actor.actor.asInstanceOf[Retain].headers === Map(Message.MessageExchangeId -> exchange.getExchangeId, "k1" -> "v1"))
+    assert(latch.await(5000, TimeUnit.MILLISECONDS))
+    val reply = (actor !! GetRetainedMessage).get.asInstanceOf[Message]
+    assert(reply.body === "Martin")
+    assert(reply.headers === Map(Message.MessageExchangeId -> exchange.getExchangeId, "k1" -> "v1"))
   }
 
   @Test def shouldSendMessageToActorAndReceiveResponse = {
-    val actor = actorOf(new Tester with Respond {
+    val actor = actorOf(new Tester2 {
       override def response(msg: Message) = Message(super.response(msg), Map("k2" -> "v2"))
-    })
+    }).start
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
-    actor.start
     exchange.getIn.setBody("Martin")
     exchange.getIn.setHeader("k1", "v1")
     endpoint.createProducer.process(exchange)
@@ -45,12 +45,11 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   }
 
   @Test def shouldSendMessageToActorAndReceiveFailure = {
-    val actor = actorOf(new Tester with Respond {
+    val actor = actorOf(new Tester2 {
       override def response(msg: Message) = Failure(new Exception("testmsg"), Map("k3" -> "v3"))
-    })
+    }).start
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
-    actor.start
     exchange.getIn.setBody("Martin")
     exchange.getIn.setHeader("k1", "v1")
     endpoint.createProducer.process(exchange)
@@ -60,12 +59,9 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   }
 
   @Test def shouldSendMessageToActorAndTimeout: Unit = {
-    val actor = actorOf(new Tester {
-      self.timeout = 1
-    })
+    val actor = actorOf[Tester3].start
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)
-    actor.start
     exchange.getIn.setBody("Martin")
     intercept[TimeoutException] {
       endpoint.createProducer.process(exchange)

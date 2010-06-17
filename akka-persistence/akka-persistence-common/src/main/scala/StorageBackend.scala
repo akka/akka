@@ -33,14 +33,6 @@ trait VectorStorageBackend[T] extends StorageBackend {
 trait RefStorageBackend[T] extends StorageBackend {
   def insertRefStorageFor(name: String, element: T)
   def getRefStorageFor(name: String): Option[T]
-  def incrementAtomically(name: String): Option[Int] =
-    throw new UnsupportedOperationException // only for redis
-  def incrementByAtomically(name: String, by: Int): Option[Int] =
-    throw new UnsupportedOperationException // only for redis
-  def decrementAtomically(name: String): Option[Int] =
-    throw new UnsupportedOperationException // only for redis
-  def decrementByAtomically(name: String, by: Int): Option[Int] =
-    throw new UnsupportedOperationException // only for redis
 }
 
 // for Queue
