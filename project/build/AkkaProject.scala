@@ -436,6 +436,16 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
   }
 
+  class AkkaSampleOSGiProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
+    override def bndClasspath = compileClasspath
+
+    val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0"
+
+    override def bndBundleActivator = Some("sample.osgi.Activator")
+    override def bndPrivatePackage = Nil
+    override def bndExportPackage = Seq("sample.osgi.*;version=0.9")
+  }
+
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
       new AkkaSampleAntsProject(_), akka_core)
@@ -455,6 +465,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleSecurityProject(_), akka_kernel)
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
       new AkkaSampleRemoteProject(_), akka_kernel)
+    lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
+      new AkkaSampleOSGiProject(_), akka_core)
   }
 
   // ------------------------------------------------------------
