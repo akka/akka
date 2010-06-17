@@ -46,7 +46,7 @@ trait AkkaWrappersProject extends DefaultProject {
   // ================= OSGi Wrappers ==================
   class JgroupsWrapperProject(info: ProjectInfo) extends OSGiWrapperProject(info) {
     override def wrappedVersion = "2.9.0.GA"
-    override def bndImportPackage = Set("org.testng.*;resolution:=optional",
+    override def bndImportPackage = Seq("org.testng.*;resolution:=optional",
       "org.bouncycastle.jce.provider;resolution:=optional",
       "bsh;resolution:=optional",
       "*")
@@ -60,11 +60,19 @@ trait AkkaWrappersProject extends DefaultProject {
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.RC3" % wrappedVersion % "compile"
   }
 
+  class MultiverseWrapperProject(info: ProjectInfo) extends OSGiWrapperProject(info) {
+    override def wrappedVersion = "0.5.2"
+
+    val multiverse = "org.multiverse" % "multiverse-alpha" % wrappedVersion % "compile"
+  }
+
   class AkkaWrappersParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val jgroups_wrapper = project("jgroups-wrapper", "jgroups-wrapper",
       new JgroupsWrapperProject(_))
     lazy val dispath_json = project("dispatch-json", "dispatch-json",
       new DispatchJsonWrapperProject(_))
+    lazy val multiverse_wrapper = project("multiverse-wrapper", "multiverse-wrapper",
+      new MultiverseWrapperProject(_))
   }
 
   def wrappedArtifacts = descendents(info.projectPath / "akka-wrap", "*" + buildScalaVersion  + "_osgi-" + "*.jar")
@@ -73,8 +81,7 @@ trait AkkaWrappersProject extends DefaultProject {
     def wrappedVersion:String 
     override def version = OpaqueVersion(wrappedVersion)
     override def artifactID = moduleID + "_osgi"
-    override def bndEmbedDependencies = true
-    override def bndExportPackage = Set("*")
+    override def bndExportPackage = Seq("*")
   }
 
 

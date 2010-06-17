@@ -12,7 +12,7 @@ import java.io.File
 
 import com.weiglewilczek.bnd4sbt._
 
-class AkkaParent(info: ProjectInfo) extends DefaultProject(info) with AkkaWrappersProject {
+class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // project versions
@@ -22,6 +22,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) with AkkaWrappe
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
   val MULTIVERSE_VERSION = "0.5.2"
+  val COMMONS_CODEC_VERSION = "1.4"
 
   // ------------------------------------------------------------
   lazy val deployPath = info.projectPath / "deploy"
@@ -243,7 +244,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) with AkkaWrappe
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val redis = "com.redis" % "redisclient" % "2.8.0.RC3-1.4-SNAPSHOT" % "compile"
-    val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
+    val commons_codec = "commons-codec" % "commons-codec" % COMMONS_CODEC_VERSION % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
@@ -339,7 +340,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) with AkkaWrappe
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
-    val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
+    val commons_codec = "commons-codec" % "commons-codec" % COMMONS_CODEC_VERSION % "compile"
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
@@ -416,7 +417,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) with AkkaWrappe
 
   trait OSGiProject extends DefaultProject with BNDPlugin {
     override def artifactID = moduleID + "_osgi"
-    override def bndExportPackage = Set("*")    
+    override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=0.9")    
 
   }
 
