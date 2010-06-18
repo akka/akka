@@ -74,7 +74,8 @@ object ActorRef {
   /**
    * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
-  private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
+  private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
+    Actor.log.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n" + protocol)
     RemoteActorRef(
       protocol.getUuid,
       protocol.getActorClassname,
@@ -82,6 +83,7 @@ object ActorRef {
       protocol.getHomeAddress.getPort,
       protocol.getTimeout,
       loader)
+  }
 
   /**
    * Deserializes a byte array (Array[Byte]) into an LocalActorRef instance.
@@ -99,11 +101,15 @@ object ActorRef {
    * Deserializes a SerializedActorRefProtocol Protocol Buffers (protobuf) Message into an LocalActorRef instance.
    */
   private[akka] def fromProtobufToLocalActorRef(protocol: SerializedActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    val serializerClass =
-      if (loader.isDefined) loader.get.loadClass(protocol.getSerializerClassname)
-      else Class.forName(protocol.getSerializerClassname)
-    val serializer = serializerClass.newInstance.asInstanceOf[Serializer]
-
+    Actor.log.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n" + protocol)
+  
+    val serializer = if (protocol.hasSerializerClassname) { 
+      val serializerClass =
+        if (loader.isDefined) loader.get.loadClass(protocol.getSerializerClassname)
+        else Class.forName(protocol.getSerializerClassname)
+      Some(serializerClass.newInstance.asInstanceOf[Serializer])
+    } else None
+    
     val lifeCycle =
       if (protocol.hasLifeCycle) {
         val lifeCycleProtocol = protocol.getLifeCycle
@@ -120,8 +126,9 @@ object ActorRef {
       if (protocol.hasSupervisor)
         Some(fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
+      
     val hotswap =
-      if (protocol.hasHotswapStack) Some(serializer
+      if (serializer.isDefined && protocol.hasHotswapStack) Some(serializer.get
         .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[PartialFunction[Any, Unit]]))
         .asInstanceOf[PartialFunction[Any, Unit]])
       else None
@@ -339,10 +346,12 @@ trait ActorRef extends TransactionManagement {
   /**
    * Returns the 'Serializer' instance for the Actor as an Option.
    * <p/>
-   * It returns 'Some(serializer)' if the Actor is serializable and 'None' if not.
+   * It returns 'Some(serializer)' if the Actor is extending the StatefulSerializerSerializableActor
+   * trait (which has a Serializer defined) and 'None' if not.
    */
   def serializer: Option[Serializer] = 
-    if (isSerializable) Some(actor.asInstanceOf[SerializableActor].serializer)
+    if (actor.isInstanceOf[StatefulSerializerSerializableActor]) 
+      Some(actor.asInstanceOf[StatefulSerializerSerializableActor].serializer)
     else None
   
   /**
@@ -694,15 +703,25 @@ sealed class LocalActorRef private[akka](
                          __supervisor: Option[ActorRef],
                          __hotswap: Option[PartialFunction[Any, Unit]],
                          __loader: ClassLoader,
-                         __serializer: Serializer) = {
+                         __serializer: Option[Serializer]) = {
       this(() => {
         val actorClass = __loader.loadClass(__actorClassName)
         val actorInstance = actorClass.newInstance
-        if (actorInstance.isInstanceOf[ProtobufSerializableActor[_]]) {
-          val instance = actorInstance.asInstanceOf[ProtobufSerializableActor[_]]
+        if (actorInstance.isInstanceOf[StatelessSerializableActor]) {
+          actorInstance.asInstanceOf[Actor]
+        } else if (actorInstance.isInstanceOf[StatefulSerializerSerializableActor]) {
+          __serializer
+            .getOrElse(throw new IllegalStateException("No serializer defined for SerializableActor [" + actorClass.getName + "]"))
+            .fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
+        } else if (actorInstance.isInstanceOf[StatefulWrappedSerializableActor]) {
+          val instance = actorInstance.asInstanceOf[StatefulWrappedSerializableActor]
           instance.fromBinary(__actorBytes)
           instance
-        } else __serializer.fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
+        } else throw new IllegalStateException(
+          "Can't deserialize Actor that is not an instance of one of:\n" +
+          "\n\t- StatelessSerializableActor" + 
+          "\n\t- StatefulSerializerSerializableActor" + 
+          "\n\t- StatefulWrappedSerializableActor")
       })
       loader = Some(__loader)
       isDeserialized = true
@@ -761,7 +780,8 @@ sealed class LocalActorRef private[akka](
 
   protected[akka] def toSerializedActorRefProtocol: SerializedActorRefProtocol = guard.withGuard {
     if (!isSerializable) throw new IllegalStateException(
-      "Can't serialize an ActorRef using SerializedActorRefProtocol\nthat is wrapping an Actor that is not mixing in the SerializableActor trait")
+      "Can't serialize an ActorRef using SerializedActorRefProtocol" +
+      "\nthat is wrapping an Actor that is not mixing in the SerializableActor trait")
 
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
       def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
@@ -782,23 +802,19 @@ sealed class LocalActorRef private[akka](
       }
     }
 
-    val serializerClassname = serializer
-      .getOrElse(throw new IllegalStateException("Can't serialize Actor [" + toString + "] - no 'Serializer' defined"))
-      .getClass.getName
     val originalAddress = AddressProtocol.newBuilder.setHostname(homeAddress.getHostName).setPort(homeAddress.getPort).build
 
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(uuid)
       .setId(id)
       .setActorClassname(actorClass.getName)
-      .setActorInstance(ByteString.copyFrom(actor.asInstanceOf[SerializableActor].toBinary))
-      .setSerializerClassname(serializerClassname)
+      .setActorInstance(ByteString.copyFrom(actor.asInstanceOf[StatefulSerializableActor].toBinary))
       .setOriginalAddress(originalAddress)
       .setIsTransactor(isTransactor)
       .setTimeout(timeout)
-
+    serializer.foreach(s => builder.setSerializerClassname(s.getClass.getName))
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
-    supervisor.foreach(sup => builder.setSupervisor(sup.toRemoteActorRefProtocol))
+    supervisor.foreach(s => builder.setSupervisor(s.toRemoteActorRefProtocol))
     // FIXME: how to serialize the hotswap PartialFunction ??
     // hotswap.foreach(builder.setHotswapStack(_))
     builder.build
@@ -813,8 +829,10 @@ sealed class LocalActorRef private[akka](
    * Serializes the ActorRef instance into a byte array (Array[Byte]).
    */
   def toBinary: Array[Byte] = { 
-    if (isSerializable) toSerializedActorRefProtocol.toByteArray
-    else toRemoteActorRefProtocol.toByteArray
+    val protocol = if (isSerializable) toSerializedActorRefProtocol
+                   else toRemoteActorRefProtocol
+    Actor.log.debug("Serializing ActorRef to binary:\n" + protocol)
+    protocol.toByteArray
   }
   
   /**
