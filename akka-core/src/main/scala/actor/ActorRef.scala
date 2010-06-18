@@ -9,7 +9,6 @@ import se.scalablesolutions.akka.config.Config.config
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.global._
-import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
@@ -927,7 +926,7 @@ sealed class LocalActorRef private[akka](
       dispatcher.register(this)
       dispatcher.start
       if (isTransactor) {
-        _transactionFactory = Some(TransactionFactory(_transactionConfig, actorClass.getName))
+        _transactionFactory = Some(TransactionFactory(_transactionConfig, id))
       }
       _isRunning = true
       if (!isInInitialization) initializeActorInstance
