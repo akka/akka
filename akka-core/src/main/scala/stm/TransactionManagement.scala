@@ -20,7 +20,7 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
 object TransactionManagement extends TransactionManagement {
   import se.scalablesolutions.akka.config.Config._
 
-  val TRANSACTION_ENABLED =      new AtomicBoolean(config.getBool("akka.stm.service", false))
+  val TRANSACTION_ENABLED =      new AtomicBoolean(config.getBool("akka.stm.service", true))
   val FAIR_TRANSACTIONS =        config.getBool("akka.stm.fair", true)
   val INTERRUPTIBLE =            config.getBool("akka.stm.interruptible", true)
   val MAX_NR_OF_RETRIES =        config.getInt("akka.stm.max-nr-of-retries", 1000)
