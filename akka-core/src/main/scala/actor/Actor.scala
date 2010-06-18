@@ -40,52 +40,56 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait SerializableActor[T] extends Actor {
+trait SerializableActor extends Actor {
   val serializer: Serializer
   def toBinary: Array[Byte]
 }
 
 /**
- * Mix in this trait to create a serializable actor, serializable through 
- * Protobuf. This trait needs to be mixed in with a Protobuf 
- * 'com.google.protobuf.Message' generated class holding the state.
+ * Mix in this trait to create a serializable actor, serializable through
+ * Protobuf.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ProtobufSerializableActor[T] extends SerializableActor[T] { this: Message => 
+trait ProtobufSerializableActor[T <: Message] extends SerializableActor {
   val serializer = Serializer.Protobuf
-  def toBinary: Array[Byte] = this.toByteArray
+  def toBinary: Array[Byte] = toProtobuf.toByteArray
+  def fromBinary(bytes: Array[Byte]) = fromProtobuf(serializer.fromBinary(bytes, Some(clazz)).asInstanceOf[T])
+
+  val clazz: Class[T]
+  def toProtobuf: T
+  def fromProtobuf(message: T): Unit
 }
 
 /**
- * Mix in this trait to create a serializable actor, serializable through 
+ * Mix in this trait to create a serializable actor, serializable through
  * Java serialization.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait JavaSerializableActor[T] extends SerializableActor[T] {
+trait JavaSerializableActor extends SerializableActor {
   @transient val serializer = Serializer.Java
   def toBinary: Array[Byte] = serializer.toBinary(this)
 }
 
 /**
- * Mix in this trait to create a serializable actor, serializable through 
+ * Mix in this trait to create a serializable actor, serializable through
  * a Java JSON parser (Jackson).
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait JavaJSONSerializableActor[T] extends SerializableActor[T] {
+trait JavaJSONSerializableActor extends SerializableActor {
   val serializer = Serializer.JavaJSON
   def toBinary: Array[Byte] = serializer.toBinary(this)
 }
 
 /**
- * Mix in this trait to create a serializable actor, serializable through 
+ * Mix in this trait to create a serializable actor, serializable through
  * a Scala JSON parser (SJSON).
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ScalaJSONSerializableActor[T] extends SerializableActor[T] {
+trait ScalaJSONSerializableActor extends SerializableActor {
   val serializer = Serializer.ScalaJSON
   def toBinary: Array[Byte] = serializer.toBinary(this)
 }

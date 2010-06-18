@@ -15,3 +15,7 @@ message ProtobufPOJO {
   required string name = 2;
   required bool status = 3;
 }
+
+message Counter {
+  required uint32 count = 1;
+}
