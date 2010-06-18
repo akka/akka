@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.Transaction.Global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol, ActorRefProtocol}
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteProtocolBuilder, RemoteRequestProtocolIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID, ReentrantGuard}
@@ -28,45 +28,119 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
 
+import com.google.protobuf.ByteString
+
 /**
  * The ActorRef object can be used to deserialize ActorRef instances from of its binary representation
  * or its Protocol Buffers (protobuf) Message representation to a Actor.actorOf instance.
+ * 
  * <p/>
  * Binary -> ActorRef:
  * <pre>
  *   val actorRef = ActorRef.fromBinary(bytes)
  *   actorRef ! message // send message to remote actor through its reference
  * </pre>
+ * 
  * <p/>
- * Protobuf Message -> ActorRef:
+ * Protobuf Message -> RemoteActorRef:
  * <pre>
- *   val actorRef = ActorRef.fromProtobuf(protobufMessage)
+ *   val actorRef = ActorRef.fromBinaryToRemoteActorRef(protobufMessage)
  *   actorRef ! message // send message to remote actor through its reference
  * </pre>
+ * 
+ * <p/>
+ * Protobuf Message -> LocalActorRef:
+ * <pre>
+ *   val actorRef = ActorRef.fromBinaryToLocalActorRef(protobufMessage)
+ *   actorRef ! message // send message to local actor through its reference
+ * </pre>
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRef {
 
   /**
-   * Deserializes the ActorRef instance from a byte array (Array[Byte]) into an ActorRef instance.
+   * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
    */
-  def fromBinary(bytes: Array[Byte]): ActorRef =
-    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
+  def fromBinaryToRemoteActorRef(bytes: Array[Byte]): ActorRef =
+    fromProtobufToRemoteActorRef(RemoteActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
 
-  def fromBinary(bytes: Array[Byte], loader: ClassLoader): ActorRef =
-    fromProtobuf(ActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
+    /**
+     * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
+     */
+  def fromBinaryToRemoteActorRef(bytes: Array[Byte], loader: ClassLoader): ActorRef =
+    fromProtobufToRemoteActorRef(RemoteActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
 
   /**
-   * Deserializes the ActorRef instance from a Protocol Buffers (protobuf) Message into an ActorRef instance.
+   * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
-  private[akka] def fromProtobuf(protocol: ActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
+  private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef =
     RemoteActorRef(
       protocol.getUuid,
-      protocol.getActorClassName,
-      protocol.getSourceHostname,
-      protocol.getSourcePort,
+      protocol.getActorClassname,
+      protocol.getHomeAddress.getHostname,
+      protocol.getHomeAddress.getPort,
       protocol.getTimeout,
       loader)
+
+  /**
+   * Deserializes a byte array (Array[Byte]) into an LocalActorRef instance.
+   */
+  def fromBinaryToLocalActorRef(bytes: Array[Byte]): ActorRef =
+    fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
+
+  /**
+   * Deserializes a byte array (Array[Byte]) into an LocalActorRef instance.
+   */
+  def fromBinaryToLocalActorRef(bytes: Array[Byte], loader: ClassLoader): ActorRef =
+    fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
+
+  /**
+   * Deserializes a SerializedActorRefProtocol Protocol Buffers (protobuf) Message into an LocalActorRef instance.
+   */
+  private[akka] def fromProtobufToLocalActorRef(protocol: SerializedActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
+    val serializerClass =
+      if (loader.isDefined) loader.get.loadClass(protocol.getSerializerClassname)
+      else Class.forName(protocol.getSerializerClassname)
+    val serializer = serializerClass.newInstance.asInstanceOf[Serializer]
+
+    val lifeCycle =
+      if (protocol.hasLifeCycle) {
+        val lifeCycleProtocol = protocol.getLifeCycle
+        val restartCallbacks =
+          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart) 
+            Some(RestartCallbacks(lifeCycleProtocol.getPreRestart, lifeCycleProtocol.getPostRestart))
+          else None
+        Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent, restartCallbacks)
+             else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary, restartCallbacks)
+             else throw new IllegalStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
+      } else None
+
+    val supervisor =
+      if (protocol.hasSupervisor)
+        Some(fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
+      else None
+    val hotswap =
+      if (protocol.hasHotswapStack) Some(serializer
+        .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[PartialFunction[Any, Unit]]))
+        .asInstanceOf[PartialFunction[Any, Unit]])
+      else None
+
+    new LocalActorRef(
+      protocol.getUuid,
+      protocol.getId,
+      protocol.getActorClassname,
+      protocol.getActorInstance.toByteArray,
+      protocol.getOriginalAddress.getHostname,
+      protocol.getOriginalAddress.getPort,
+      if (protocol.hasIsTransactor) protocol.getIsTransactor else false,
+      if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
+      lifeCycle,
+      supervisor,
+      hotswap,
+      loader.getOrElse(getClass.getClassLoader), // TODO: should we fall back to getClass.getClassLoader?
+      serializer)
+  }
 }
 
 /**
@@ -136,19 +210,25 @@ trait ActorRef extends TransactionManagement {
 
   /**
    * User overridable callback/setting.
+   * 
    * <p/>
    * Set trapExit to the list of exception classes that the actor should be able to trap
    * from the actor it is supervising. When the supervising actor throws these exceptions
    * then they will trigger a restart.
    * <p/>
+   * 
+   * Trap no exceptions:
    * <pre>
-   * // trap no exceptions
    * trapExit = Nil
+   * </pre>
    *
-   * // trap all exceptions
+   * Trap all exceptions:
+   * <pre>
    * trapExit = List(classOf[Throwable])
+   * </pre>
    *
-   * // trap specific exceptions only
+   * Trap specific exceptions only:
+   * <pre>
    * trapExit = List(classOf[MyApplicationException], classOf[MyApplicationError])
    * </pre>
    */
@@ -158,10 +238,13 @@ trait ActorRef extends TransactionManagement {
    * User overridable callback/setting.
    * <p/>
    * If 'trapExit' is set for the actor to act as supervisor, then a faultHandler must be defined.
+   * <p/>
    * Can be one of:
-   * <pre/>
+   * <pre>
    *  faultHandler = Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange))
-   *
+   * </pre>
+   * Or:
+   * <pre>
    *  faultHandler = Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange))
    * </pre>
    */
@@ -212,6 +295,11 @@ trait ActorRef extends TransactionManagement {
   protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf }
 
   /**
+   * Returns the uuid for the actor.
+   */
+  def uuid = _uuid
+
+  /**
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
@@ -221,7 +309,7 @@ trait ActorRef extends TransactionManagement {
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def senderFuture: Option[CompletableFuture[Any]] =  guard.withGuard { _senderFuture }
+  def senderFuture: Option[CompletableFuture[Any]] = guard.withGuard { _senderFuture }
 
   /**
    * Is the actor being restarted?
@@ -239,14 +327,23 @@ trait ActorRef extends TransactionManagement {
   def isShutdown: Boolean = _isShutDown
 
   /**
-   * Returns the uuid for the actor.
-   */
-  def uuid = _uuid
-
-  /**
-   * Tests if the actor is able to handle the message passed in as arguments.
+   * Is the actor able to handle the message passed in as arguments?
    */
   def isDefinedAt(message: Any): Boolean = actor.base.isDefinedAt(message)
+  
+  /**
+   * Is the actor is serializable?
+   */
+  def isSerializable: Boolean = actor.isInstanceOf[SerializableActor]  
+  
+  /**
+   * Returns the 'Serializer' instance for the Actor as an Option.
+   * <p/>
+   * It returns 'Some(serializer)' if the Actor is serializable and 'None' if not.
+   */
+  def serializer: Option[Serializer] = 
+    if (isSerializable) Some(actor.asInstanceOf[SerializableActor].serializer)
+    else None
   
   /**
    * Only for internal use. UUID is effectively final.
@@ -517,7 +614,9 @@ trait ActorRef extends TransactionManagement {
    */
   def shutdownLinkedActors: Unit
 
-  protected[akka] def toProtobuf: ActorRefProtocol
+  protected[akka] def toRemoteActorRefProtocol: RemoteActorRefProtocol
+
+  protected[akka] def toSerializedActorRefProtocol: SerializedActorRefProtocol
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -562,22 +661,64 @@ trait ActorRef extends TransactionManagement {
   protected def processSender(senderOption: Option[ActorRef], requestBuilder: RemoteRequestProtocol.Builder) = {
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-      requestBuilder.setSender(sender.toProtobuf)
+      requestBuilder.setSender(sender.toRemoteActorRefProtocol)
     }
   }
 }
 
 /**
- * Local ActorRef that is used when referencing the Actor on its "home" node.
+ * Local (serializable) ActorRef that is used when referencing the Actor on its "home" node.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed class LocalActorRef private[akka](
   private[this] var actorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None))
   extends ActorRef {
+    
+  private var isDeserialized = false
+  private var loader: Option[ClassLoader] = None
 
   private[akka] def this(clazz: Class[_ <: Actor]) = this(Left(Some(clazz)))
   private[akka] def this(factory: () => Actor) =     this(Right(Some(factory)))
+  
+  // used only for deserialization
+  private[akka] def this(__uuid: String,
+                         __id: String,
+                         __actorClassName: String,
+                         __actorBytes: Array[Byte],
+                         __hostname: String,
+                         __port: Int,
+                         __isTransactor: Boolean,
+                         __timeout: Long,
+                         __lifeCycle: Option[LifeCycle],
+                         __supervisor: Option[ActorRef],
+                         __hotswap: Option[PartialFunction[Any, Unit]],
+                         __loader: ClassLoader,
+                         __serializer: Serializer) = {
+      this(() => {
+        val actorClass = __loader.loadClass(__actorClassName)
+        val actorInstance = actorClass.newInstance
+        if (actorInstance.isInstanceOf[ProtobufSerializableActor[_]]) {
+          val instance = actorInstance.asInstanceOf[ProtobufSerializableActor[_]]
+          instance.fromBinary(__actorBytes)
+          instance
+        } else __serializer.fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
+      })
+      loader = Some(__loader)
+      isDeserialized = true
+      _uuid = __uuid
+      id = __id
+      homeAddress = (__hostname, __port)
+      isTransactor = __isTransactor
+      timeout = __timeout
+      lifeCycle = __lifeCycle
+      _supervisor = __supervisor
+      hotswap = __hotswap
+      actorSelfFields._1.set(actor, this)
+      actorSelfFields._2.set(actor, Some(this))
+      actorSelfFields._3.set(actor, Some(this))
+      ActorRegistry.register(this)
+    }
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile private[akka] var _remoteAddress: Option[InetSocketAddress] = None
@@ -594,12 +735,12 @@ sealed class LocalActorRef private[akka](
   // instance elegible for garbage collection
   private val actorSelfFields = findActorSelfField(actor.getClass)
 
-  if (runActorInitialization) initializeActorInstance
+  if (runActorInitialization && !isDeserialized) initializeActorInstance
 
   /**
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
-  protected[akka] def toProtobuf: ActorRefProtocol = guard.withGuard {
+  protected[akka] def toRemoteActorRefProtocol: RemoteActorRefProtocol = guard.withGuard {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
@@ -609,14 +750,58 @@ sealed class LocalActorRef private[akka](
       RemoteServer.registerActor(homeAddress, uuid, this)
       registeredInRemoteNodeDuringSerialization = true
     }
-
-    ActorRefProtocol.newBuilder
+    
+    RemoteActorRefProtocol.newBuilder
       .setUuid(uuid)
-      .setActorClassName(actorClass.getName)
-      .setSourceHostname(host)
-      .setSourcePort(port)
+      .setActorClassname(actorClass.getName)
+      .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
       .setTimeout(timeout)
       .build
+  }
+
+  protected[akka] def toSerializedActorRefProtocol: SerializedActorRefProtocol = guard.withGuard {
+    if (!isSerializable) throw new IllegalStateException(
+      "Can't serialize an ActorRef using SerializedActorRefProtocol\nthat is wrapping an Actor that is not mixing in the SerializableActor trait")
+
+    val lifeCycleProtocol: Option[LifeCycleProtocol] = {
+      def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
+        case Permanent => builder.setLifeCycle(LifeCycleType.PERMANENT)
+        case Temporary => builder.setLifeCycle(LifeCycleType.TEMPORARY)
+      }
+      val builder = LifeCycleProtocol.newBuilder
+      lifeCycle match {
+        case Some(LifeCycle(scope, None)) => 
+          setScope(builder, scope)
+          Some(builder.build)
+        case Some(LifeCycle(scope, Some(callbacks))) =>
+          setScope(builder, scope)
+          builder.setPreRestart(callbacks.preRestart)
+          builder.setPostRestart(callbacks.postRestart)
+          Some(builder.build)
+        case None => None
+      }
+    }
+
+    val serializerClassname = serializer
+      .getOrElse(throw new IllegalStateException("Can't serialize Actor [" + toString + "] - no 'Serializer' defined"))
+      .getClass.getName
+    val originalAddress = AddressProtocol.newBuilder.setHostname(homeAddress.getHostName).setPort(homeAddress.getPort).build
+
+    val builder = SerializedActorRefProtocol.newBuilder
+      .setUuid(uuid)
+      .setId(id)
+      .setActorClassname(actorClass.getName)
+      .setActorInstance(ByteString.copyFrom(actor.asInstanceOf[SerializableActor].toBinary))
+      .setSerializerClassname(serializerClassname)
+      .setOriginalAddress(originalAddress)
+      .setIsTransactor(isTransactor)
+      .setTimeout(timeout)
+
+    lifeCycleProtocol.foreach(builder.setLifeCycle(_))
+    supervisor.foreach(sup => builder.setSupervisor(sup.toRemoteActorRefProtocol))
+    // FIXME: how to serialize the hotswap PartialFunction ??
+    // hotswap.foreach(builder.setHotswapStack(_))
+    builder.build
   }
 
   /**
@@ -627,8 +812,11 @@ sealed class LocalActorRef private[akka](
   /**
    * Serializes the ActorRef instance into a byte array (Array[Byte]).
    */
-  def toBinary: Array[Byte] = toProtobuf.toByteArray
-
+  def toBinary: Array[Byte] = { 
+    if (isSerializable) toSerializedActorRefProtocol.toByteArray
+    else toRemoteActorRefProtocol.toByteArray
+  }
+  
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
@@ -940,7 +1128,7 @@ sealed class LocalActorRef private[akka](
           .setIsOneWay(false)
           .setIsEscaped(false)
 
-      //senderOption.foreach(sender => requestBuilder.setSender(sender.toProtobuf))
+      //senderOption.foreach(sender => requestBuilder.setSender(sender.toRemoteActorRefProtocol))
       RemoteProtocolBuilder.setMessage(message, requestBuilder)
 
       val id = registerSupervisorAsRemoteActor
@@ -972,7 +1160,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {    
     if (isShutdown) {
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return
@@ -1279,7 +1467,8 @@ private[akka] case class RemoteActorRef private[akka] (
   def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
-  protected[akka] def toProtobuf: ActorRefProtocol = unsupported
+  protected[akka] def toRemoteActorRefProtocol: RemoteActorRefProtocol = unsupported
+  protected[akka] def toSerializedActorRefProtocol: SerializedActorRefProtocol = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
   protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported

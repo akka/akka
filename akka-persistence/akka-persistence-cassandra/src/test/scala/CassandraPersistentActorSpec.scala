@@ -150,7 +150,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
 }
 /*
 import org.apache.cassandra.service.CassandraDaemon
-object EmbeddedCassandraService {
+object // EmbeddedCassandraService {
 
   System.setProperty("storage-config", "src/test/resources");
 

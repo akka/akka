@@ -432,7 +432,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
-    val commons_codec = "commons-codec" % "commons-codec" % COMMONS_CODEC_VERSION % "compile"
+    val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
   }
 
   class AkkaSampleOSGiProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {

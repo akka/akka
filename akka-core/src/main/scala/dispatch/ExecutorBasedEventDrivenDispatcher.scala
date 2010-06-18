@@ -86,8 +86,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
               finishedBeforeMailboxEmpty = processMailbox(receiver)
             } finally {
               lock.unlock
-              if (finishedBeforeMailboxEmpty)
-                dispatch(receiver)
+              if (finishedBeforeMailboxEmpty) dispatch(receiver)
             }
           }
         } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !mailbox.isEmpty))

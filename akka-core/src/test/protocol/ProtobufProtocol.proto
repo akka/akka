@@ -6,12 +6,16 @@ package se.scalablesolutions.akka.actor;
 
 /*
   Compile with:
-  cd ./akka-core/src/test/java
-  protoc ProtobufProtocol.proto --java_out .
+  cd ./akka-core/src/test/protocol
+  protoc ProtobufProtocol.proto --java_out ../java
 */
 
 message ProtobufPOJO {
   required uint64 id = 1;
   required string name = 2;
   required bool status = 3;
+}
+
+message Counter {
+  required uint32 count = 1;
 }
