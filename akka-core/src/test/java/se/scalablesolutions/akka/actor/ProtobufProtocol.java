@@ -376,11 +376,301 @@ public final class ProtobufProtocol {
     // @@protoc_insertion_point(class_scope:se.scalablesolutions.akka.actor.ProtobufPOJO)
   }
   
+  public static final class Counter extends
+      com.google.protobuf.GeneratedMessage {
+    // Use Counter.newBuilder() to construct.
+    private Counter() {
+      initFields();
+    }
+    private Counter(boolean noInit) {}
+    
+    private static final Counter defaultInstance;
+    public static Counter getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public Counter getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return se.scalablesolutions.akka.actor.ProtobufProtocol.internal_static_se_scalablesolutions_akka_actor_Counter_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return se.scalablesolutions.akka.actor.ProtobufProtocol.internal_static_se_scalablesolutions_akka_actor_Counter_fieldAccessorTable;
+    }
+    
+    // required uint32 count = 1;
+    public static final int COUNT_FIELD_NUMBER = 1;
+    private boolean hasCount;
+    private int count_ = 0;
+    public boolean hasCount() { return hasCount; }
+    public int getCount() { return count_; }
+    
+    private void initFields() {
+    }
+    public final boolean isInitialized() {
+      if (!hasCount) return false;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (hasCount()) {
+        output.writeUInt32(1, getCount());
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (hasCount()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(1, getCount());
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.Counter parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(se.scalablesolutions.akka.actor.ProtobufProtocol.Counter prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> {
+      private se.scalablesolutions.akka.actor.ProtobufProtocol.Counter result;
+      
+      // Construct using se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.newBuilder()
+      private Builder() {}
+      
+      private static Builder create() {
+        Builder builder = new Builder();
+        builder.result = new se.scalablesolutions.akka.actor.ProtobufProtocol.Counter();
+        return builder;
+      }
+      
+      protected se.scalablesolutions.akka.actor.ProtobufProtocol.Counter internalGetResult() {
+        return result;
+      }
+      
+      public Builder clear() {
+        if (result == null) {
+          throw new IllegalStateException(
+            "Cannot call clear() after build().");
+        }
+        result = new se.scalablesolutions.akka.actor.ProtobufProtocol.Counter();
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(result);
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.getDescriptor();
+      }
+      
+      public se.scalablesolutions.akka.actor.ProtobufProtocol.Counter getDefaultInstanceForType() {
+        return se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.getDefaultInstance();
+      }
+      
+      public boolean isInitialized() {
+        return result.isInitialized();
+      }
+      public se.scalablesolutions.akka.actor.ProtobufProtocol.Counter build() {
+        if (result != null && !isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return buildPartial();
+      }
+      
+      private se.scalablesolutions.akka.actor.ProtobufProtocol.Counter buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        if (!isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return buildPartial();
+      }
+      
+      public se.scalablesolutions.akka.actor.ProtobufProtocol.Counter buildPartial() {
+        if (result == null) {
+          throw new IllegalStateException(
+            "build() has already been called on this Builder.");
+        }
+        se.scalablesolutions.akka.actor.ProtobufProtocol.Counter returnMe = result;
+        result = null;
+        return returnMe;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof se.scalablesolutions.akka.actor.ProtobufProtocol.Counter) {
+          return mergeFrom((se.scalablesolutions.akka.actor.ProtobufProtocol.Counter)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(se.scalablesolutions.akka.actor.ProtobufProtocol.Counter other) {
+        if (other == se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.getDefaultInstance()) return this;
+        if (other.hasCount()) {
+          setCount(other.getCount());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                return this;
+              }
+              break;
+            }
+            case 8: {
+              setCount(input.readUInt32());
+              break;
+            }
+          }
+        }
+      }
+      
+      
+      // required uint32 count = 1;
+      public boolean hasCount() {
+        return result.hasCount();
+      }
+      public int getCount() {
+        return result.getCount();
+      }
+      public Builder setCount(int value) {
+        result.hasCount = true;
+        result.count_ = value;
+        return this;
+      }
+      public Builder clearCount() {
+        result.hasCount = false;
+        result.count_ = 0;
+        return this;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:se.scalablesolutions.akka.actor.Counter)
+    }
+    
+    static {
+      defaultInstance = new Counter(true);
+      se.scalablesolutions.akka.actor.ProtobufProtocol.internalForceInit();
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:se.scalablesolutions.akka.actor.Counter)
+  }
+  
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_se_scalablesolutions_akka_actor_ProtobufPOJO_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_se_scalablesolutions_akka_actor_ProtobufPOJO_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_se_scalablesolutions_akka_actor_Counter_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_se_scalablesolutions_akka_actor_Counter_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -392,7 +682,8 @@ public final class ProtobufProtocol {
     java.lang.String[] descriptorData = {
       "\n\026ProtobufProtocol.proto\022\037se.scalablesol" +
       "utions.akka.actor\"8\n\014ProtobufPOJO\022\n\n\002id\030" +
-      "\001 \002(\004\022\014\n\004name\030\002 \002(\t\022\016\n\006status\030\003 \002(\010"
+      "\001 \002(\004\022\014\n\004name\030\002 \002(\t\022\016\n\006status\030\003 \002(\010\"\030\n\007C" +
+      "ounter\022\r\n\005count\030\001 \002(\r"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -407,6 +698,14 @@ public final class ProtobufProtocol {
               new java.lang.String[] { "Id", "Name", "Status", },
               se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO.class,
               se.scalablesolutions.akka.actor.ProtobufProtocol.ProtobufPOJO.Builder.class);
+          internal_static_se_scalablesolutions_akka_actor_Counter_descriptor =
+            getDescriptor().getMessageTypes().get(1);
+          internal_static_se_scalablesolutions_akka_actor_Counter_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_se_scalablesolutions_akka_actor_Counter_descriptor,
+              new java.lang.String[] { "Count", },
+              se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.class,
+              se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.Builder.class);
           return null;
         }
       };
