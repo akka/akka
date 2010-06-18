@@ -5,6 +5,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.Helpers.narrow
 
 import org.scalatest.Suite
 import org.junit.runner.RunWith
@@ -39,9 +40,9 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     }.start
 
     val result = for {
-      a <- (d.!![Int](testMsg1,5000))
-      b <- (d.!![Int](testMsg2,5000))
-      c <- (d.!![Int](testMsg3,5000))
+      a <- narrow[Int](d !! (testMsg1,5000))
+      b <- narrow[Int](d !! (testMsg2,5000))
+      c <- narrow[Int](d !! (testMsg3,5000))
     } yield a + b + c
 
     result.get must be(21)

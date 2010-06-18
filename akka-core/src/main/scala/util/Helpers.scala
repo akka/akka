@@ -37,5 +37,26 @@ object Helpers extends Logging {
     })
     sb.toString
   }
-}
 
+  /**
+   * Convenience helper to cast the given Option of Any to an Option of the given type. Will throw a ClassCastException
+   * if the actual type is not assignable from the given one.
+   */
+  def narrow[T](o: Option[Any]): Option[T] = {
+    require(o != null, "Option to be narrowed must not be null!")
+    o.asInstanceOf[Option[T]]
+  }
+
+  /**
+   * Convenience helper to cast the given Option of Any to an Option of the given type. Will swallow a possible
+   * ClassCastException and return None in that case.
+   */
+  def narrowSilently[T: Manifest](o: Option[Any]): Option[T] =
+    try {
+      narrow(o)
+    } catch {
+      case e: ClassCastException =>
+        log.warning(e, "Cannot narrow %s to expected type %s!", o, implicitly[Manifest[T]].erasure.getName)
+        None
+    }
+}
