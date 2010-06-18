@@ -8,8 +8,8 @@ import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config.config
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.stm.Transaction.Global._
-import se.scalablesolutions.akka.stm.{TransactionConfig, TransactionFactory, TransactionManagement}
+import se.scalablesolutions.akka.stm.global._
+import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._

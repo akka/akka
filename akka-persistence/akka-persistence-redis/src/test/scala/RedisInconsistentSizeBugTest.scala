@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import Actor._
 import se.scalablesolutions.akka.persistence.common.PersistentVector
-import se.scalablesolutions.akka.stm.Transaction.Global._
+import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 

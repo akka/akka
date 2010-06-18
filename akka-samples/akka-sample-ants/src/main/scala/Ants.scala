@@ -9,8 +9,7 @@ import scala.util.Random.{nextInt => randomInt}
 import se.scalablesolutions.akka
 import akka.actor.{ActorRef, Transactor, Scheduler}
 import akka.actor.Actor.actorOf
-import akka.stm._
-import akka.stm.Transaction.Local._
+import akka.stm.local._
 
 object Config {
   val Dim = 80               // dimensions of square world

@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.actor.Actor._
 class RefSpec extends Spec with ShouldMatchers {
 
   describe("A Ref") {
-    import Transaction.Local._
+    import local._
 
     it("should optionally accept an initial value") {
       val emptyRef = Ref[Int]
