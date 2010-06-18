@@ -10,6 +10,7 @@ import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.CompletableFuture
+import se.scalablesolutions.akka.util.Helpers.narrow
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.
@@ -102,10 +103,10 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       else {
         val out = actorOf(new Out(this)).start
         blockedReaders.offer(out)
-        val result = out !! Get
+        val result = narrow[T](out !! Get)
         out ! Exit
-        result.getOrElse(throw new DataFlowVariableException(
-          "Timed out (after " + TIME_OUT + " milliseconds) while waiting for result"))
+        if (result.isDefined) result.get
+        else throw new DataFlowVariableException("Timed out (after " + TIME_OUT + " milliseconds) while waiting for result")
       }
     }
 

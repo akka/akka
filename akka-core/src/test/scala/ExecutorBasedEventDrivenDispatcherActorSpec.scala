@@ -4,6 +4,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.util.Helpers.narrow
 import Actor._
 
 object ExecutorBasedEventDrivenDispatcherActorSpec {
@@ -41,8 +42,8 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
 
   @Test def shouldSendReplySync = {
     val actor = actorOf[TestActor].start
-    val result: String = (actor !! ("Hello", 10000)).get
-    assert("World" === result)
+    val result = narrow[String](actor !! ("Hello", 10000))
+    assert("World" === result.get)
     actor.stop
   }
 

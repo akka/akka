@@ -11,6 +11,7 @@ import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, Completabl
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
+import se.scalablesolutions.akka.util.Helpers.narrow
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
@@ -548,7 +549,7 @@ private[akka] sealed class ActiveObjectAspect {
       actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
       null.asInstanceOf[AnyRef]
     } else {
-      val result = actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)
+      val result = narrow[AnyRef](actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout))
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }
