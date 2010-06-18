@@ -12,10 +12,8 @@ class Activator extends BundleActivator {
   def start(context: BundleContext) {
     println("Start")
     val osgiActor = new OSGiActor
-    osgiActor ! "Hello"
-
-
-
+    //osgiActor ! "Hello"
+    Unit
   }
 
   def stop(context: BundleContext) {

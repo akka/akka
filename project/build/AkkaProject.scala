@@ -10,7 +10,7 @@ import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
 import java.io.File
 
-import com.weiglewilczek.bnd4sbt.BNDPlugin
+import com.weiglewilczek.bnd4sbt._
 
 class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
@@ -22,6 +22,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
   val MULTIVERSE_VERSION = "0.5.2"
+  val COMMONS_CODEC_VERSION = "1.4"
 
   // ------------------------------------------------------------
   lazy val deployPath = info.projectPath / "deploy"
@@ -171,7 +172,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
                         " -Dpackaging=jar -DgeneratePom=true"
           command ! log
         }
-        None
+       None
     } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
 
   // ------------------------------------------------------------
@@ -245,7 +246,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val redis = "com.redis" % "redisclient" % "2.8.0.RC3-1.4-SNAPSHOT" % "compile"
-    val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
+    val commons_codec = "commons-codec" % "commons-codec" % COMMONS_CODEC_VERSION % "compile"
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
@@ -298,11 +299,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // ================= OSGi Packaging ==================
-  class AkkaOSGiBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
-    override def bndClasspath = compileClasspath
-    override def bndPrivatePackage = Seq("")
-    override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=0.9")
-  }
 
   class AkkaOSGiDependenciesBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
     override def bndClasspath = compileClasspath
@@ -381,12 +377,15 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_osgi_bundle = project("akka-osgi-bundle", "akka-osgi-bundle",
-      new AkkaOSGiBundleProject(_), akka_kernel)
     lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
-      new AkkaOSGiDependenciesBundleProject(_), akka_osgi_bundle)
+      new AkkaOSGiDependenciesBundleProject(_), akka_kernel,
+      akka_jta // akka_kernel does not depend on akka_jta (why?) therefore we list akka_jta here
+      )
     lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
-      new AkkaOSGiAssemblyProject(_), akka_osgi_bundle, akka_osgi_dependencies_bundle)
+      new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_core, akka_amqp, akka_http,
+        akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
+        akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
+        akka_persistence.akka_persistence_cassandra)
   }
 
   // ================= TEST ==================
@@ -433,7 +432,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
-    val commons_codec = "commons-codec" % "commons-codec" % "1.3" % "compile"
+    val commons_codec = "commons-codec" % "commons-codec" % COMMONS_CODEC_VERSION % "compile"
   }
 
   class AkkaSampleOSGiProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
@@ -494,11 +493,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
       !jar.toString.endsWith("scala-library-2.7.7.jar")
     )
   }
-
-  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
+  
+  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "_osgi-" + version + ".jar")
 
   // ------------------------------------------------------------
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject
+  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject
 
   trait DeployProject extends DefaultProject {
     // defines where the deployTask copies jars to
@@ -519,4 +518,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
         FileUtilities.copyFile(jar, toDir / jar.name, log)
       } else None
   }
+
+  trait OSGiProject extends DefaultProject with BNDPlugin {
+    override def artifactID = moduleID + "_osgi"
+    override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=0.9")    
+
+  }
+
 }
