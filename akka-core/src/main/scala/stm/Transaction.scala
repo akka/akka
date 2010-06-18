@@ -26,48 +26,12 @@ class StmConfigurationException(message: String) extends RuntimeException(messag
 object Transaction {
   val idFactory = new AtomicLong(-1L)
 
-  /**
-   * Module for "local" transaction management, local in the context of threads.
-   * You should only use these if you do <b>not</b> need to have one transaction span
-   * multiple threads (or Actors).
-   * <p/>
-   * Example of atomic transaction management using the atomic block.
-   * <p/>
-   * <pre>
-   * import se.scalablesolutions.akka.stm.Transaction.Local._
-   *
-   * atomic  {
-   *   .. // do something within a transaction
-   * }
-   * </pre>
-   *
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  @deprecated("Use the akka.stm.local package object instead.")
+  @deprecated("Use the se.scalablesolutions.akka.stm.local package object instead.")
   object Local extends LocalStm
 
-  /**
-   * Module for "global" transaction management, global in the context of multiple threads.
-   * You have to use these if you do need to have one transaction span multiple threads (or Actors).
-   * <p/>
-   * Example of atomic transaction management using the atomic block.
-   * <p/>:
-   * <pre>
-   * import se.scalablesolutions.akka.stm.Transaction.Global._
-   *
-   * atomic  {
-   *   .. // do something within a transaction
-   * }
-   * </pre>
-   *
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  @deprecated("Use the akka.stm.global package object instead.")
+  @deprecated("Use the se.scalablesolutions.akka.stm.global package object instead.")
   object Global extends GlobalStm
 
-  /**
-   * TODO: document
-   */
   object Util extends StmUtil
 
   /**
