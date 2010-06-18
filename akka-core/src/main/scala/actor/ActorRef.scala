@@ -89,9 +89,9 @@ object ActorRef {
   def fromBinaryToLocalActorRef(bytes: Array[Byte]): ActorRef =
     fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
 
-    /**
-     * Deserializes a byte array (Array[Byte]) into an LocalActorRef instance.
-     */
+  /**
+   * Deserializes a byte array (Array[Byte]) into an LocalActorRef instance.
+   */
   def fromBinaryToLocalActorRef(bytes: Array[Byte], loader: ClassLoader): ActorRef =
     fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
 
@@ -334,7 +334,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Is the actor is serializable?
    */
-  def isSerializable: Boolean = actor.isInstanceOf[SerializableActor[_]]  
+  def isSerializable: Boolean = actor.isInstanceOf[SerializableActor]  
   
   /**
    * Returns the 'Serializer' instance for the Actor as an Option.
@@ -342,7 +342,7 @@ trait ActorRef extends TransactionManagement {
    * It returns 'Some(serializer)' if the Actor is serializable and 'None' if not.
    */
   def serializer: Option[Serializer] = 
-    if (isSerializable) Some(actor.asInstanceOf[SerializableActor[_]].serializer)
+    if (isSerializable) Some(actor.asInstanceOf[SerializableActor].serializer)
     else None
   
   /**
@@ -695,7 +695,15 @@ sealed class LocalActorRef private[akka](
                          __hotswap: Option[PartialFunction[Any, Unit]],
                          __loader: ClassLoader,
                          __serializer: Serializer) = {
-      this(() => __serializer.fromBinary(__actorBytes, Some(__loader.loadClass(__actorClassName))).asInstanceOf[Actor])
+      this(() => {
+        val actorClass = __loader.loadClass(__actorClassName)
+        val actorInstance = actorClass.newInstance
+        if (actorInstance.isInstanceOf[ProtobufSerializableActor[_]]) {
+          val instance = actorInstance.asInstanceOf[ProtobufSerializableActor[_]]
+          instance.fromBinary(__actorBytes)
+          instance
+        } else __serializer.fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
+      })
       loader = Some(__loader)
       isDeserialized = true
       _uuid = __uuid
@@ -783,7 +791,7 @@ sealed class LocalActorRef private[akka](
       .setUuid(uuid)
       .setId(id)
       .setActorClassname(actorClass.getName)
-      .setActorInstance(ByteString.copyFrom(actor.asInstanceOf[SerializableActor[_]].toBinary))
+      .setActorInstance(ByteString.copyFrom(actor.asInstanceOf[SerializableActor].toBinary))
       .setSerializerClassname(serializerClassname)
       .setOriginalAddress(originalAddress)
       .setIsTransactor(isTransactor)
