@@ -35,14 +35,47 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
 }
 
 /**
+ * Base trait defining a serializable actor.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait SerializableActor extends Actor
+
+/**
+ * Base trait defining a stateless serializable actor.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait StatelessSerializableActor extends SerializableActor
+
+/**
  * Mix in this trait to create a serializable actor, serializable through 
  * a custom serialization protocol.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait SerializableActor extends Actor {
-  val serializer: Serializer
+trait StatefulSerializableActor extends SerializableActor {
   def toBinary: Array[Byte]
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * a custom serialization protocol. This actor <b>is</b> the serialized state.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait StatefulSerializerSerializableActor extends StatefulSerializableActor {
+  val serializer: Serializer
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * a custom serialization protocol. This actor <b>is wrapping</b> serializable state.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait StatefulWrappedSerializableActor extends StatefulSerializableActor {
+  def fromBinary(bytes: Array[Byte])
 }
 
 /**
@@ -51,10 +84,9 @@ trait SerializableActor extends Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ProtobufSerializableActor[T <: Message] extends SerializableActor {
-  val serializer = Serializer.Protobuf
+trait ProtobufSerializableActor[T <: Message] extends StatefulWrappedSerializableActor {
   def toBinary: Array[Byte] = toProtobuf.toByteArray
-  def fromBinary(bytes: Array[Byte]) = fromProtobuf(serializer.fromBinary(bytes, Some(clazz)).asInstanceOf[T])
+  def fromBinary(bytes: Array[Byte]) = fromProtobuf(Serializer.Protobuf.fromBinary(bytes, Some(clazz)).asInstanceOf[T])
 
   val clazz: Class[T]
   def toProtobuf: T
@@ -67,7 +99,7 @@ trait ProtobufSerializableActor[T <: Message] extends SerializableActor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait JavaSerializableActor extends SerializableActor {
+trait JavaSerializableActor extends StatefulSerializerSerializableActor {
   @transient val serializer = Serializer.Java
   def toBinary: Array[Byte] = serializer.toBinary(this)
 }
@@ -78,7 +110,7 @@ trait JavaSerializableActor extends SerializableActor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait JavaJSONSerializableActor extends SerializableActor {
+trait JavaJSONSerializableActor extends StatefulSerializerSerializableActor {
   val serializer = Serializer.JavaJSON
   def toBinary: Array[Byte] = serializer.toBinary(this)
 }
@@ -89,7 +121,7 @@ trait JavaJSONSerializableActor extends SerializableActor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ScalaJSONSerializableActor extends SerializableActor {
+trait ScalaJSONSerializableActor extends StatefulSerializerSerializableActor {
   val serializer = Serializer.ScalaJSON
   def toBinary: Array[Byte] = serializer.toBinary(this)
 }
