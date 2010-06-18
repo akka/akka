@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.util.Logging
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import org.multiverse.api.StmUtils
+import org.multiverse.api.{StmUtils => MultiverseStmUtils}
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier
@@ -91,6 +91,21 @@ trait TransactionManagement {
   }
 }
 
+/**
+ * Local transaction management, local in the context of threads.
+ * Use this if you do <b>not</b> need to have one transaction span
+ * multiple threads (or Actors).
+ * <p/>
+ * Example of atomic transaction management using the atomic block.
+ * <p/>
+ * <pre>
+ * import se.scalablesolutions.akka.stm.local._
+ *
+ * atomic  {
+ *   // do something within a transaction
+ * }
+ * </pre>
+ */
 class LocalStm extends TransactionManagement with Logging {
 
   val DefaultLocalTransactionConfig = TransactionConfig()
@@ -108,6 +123,20 @@ class LocalStm extends TransactionManagement with Logging {
   }
 }
 
+/**
+ * Global transaction management, global in the context of multiple threads.
+ * You this if you need to have one transaction span multiple threads (or Actors).
+ * <p/>
+ * Example of atomic transaction management using the atomic block:
+ * <p/>
+ * <pre>
+ * import se.scalablesolutions.akka.stm.global._
+ *
+ * atomic  {
+ *   // do something within a transaction
+ * }
+ * </pre>
+ */
 class GlobalStm extends TransactionManagement with Logging {
 
   val DefaultGlobalTransactionConfig = TransactionConfig()
@@ -133,13 +162,27 @@ class GlobalStm extends TransactionManagement with Logging {
 }
 
 trait StmUtil {
+  /**
+   * Schedule a deferred task on the thread local transaction (use within an atomic).
+   * This is executed when the transaction commits.
+   */
+  def deferred[T](body: => T): Unit = MultiverseStmUtils.scheduleDeferredTask(new Runnable { def run = body })
 
-  def deferred[T](body: => T): Unit = StmUtils.scheduleDeferredTask(new Runnable { def run = body })
+  /**
+   * Schedule a compensating task on the thread local transaction (use within an atomic).
+   * This is executed when the transaction aborts.
+   */
+  def compensating[T](body: => T): Unit = MultiverseStmUtils.scheduleCompensatingTask(new Runnable { def run = body })
 
-  def compensating[T](body: => T): Unit = StmUtils.scheduleCompensatingTask(new Runnable { def run = body })
+  /**
+   * STM retry. Use within an atomic.
+   * Blocks the current transaction. Can be used to wait for a condition.
+   */
+  def retry = MultiverseStmUtils.retry
 
-  def retry = StmUtils.retry
-
+  /**
+   * Use either-orElse to combine two blocking transactions.
+   */
   def either[T](firstBody: => T) = new {
     def orElse(secondBody: => T) = new OrElseTemplate[T] {
       def either(mtx: MultiverseTransaction) = firstBody
@@ -148,14 +191,4 @@ trait StmUtil {
   }
 }
 
-trait StmCommon {
-  type TransactionConfig = se.scalablesolutions.akka.stm.TransactionConfig
-  val TransactionConfig = se.scalablesolutions.akka.stm.TransactionConfig
-
-  type TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
-  val TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
-
-  type Ref[T] = se.scalablesolutions.akka.stm.Ref[T]
-  val Ref = se.scalablesolutions.akka.stm.Ref
-}
 
