@@ -8,13 +8,13 @@ size(Dim * scale, Dim * scale)
 smooth()
 
 override def setup() {
-  background(255) 
+  background(255)
   World.start
 }
 
 def draw() {
-  for (x <- 0 until Dim; y <- 0 until Dim) {
-    val cell = atomic { World.place(x, y).cell } 
+  val world = World.snapshot
+  for (x <- 0 until Dim; y <- 0 until Dim; cell <- world(x)(y)) {
     val (rx, ry, rw, rh) = (x * scale, y * scale, scale, scale)
     noStroke()
     fill(255)
@@ -39,7 +39,7 @@ val s = scale - 1
 val m = s / 2
 
 def antLine(dir: Int) = dir match {
-  case 0|4 => (m, 0, m, s)       
+  case 0|4 => (m, 0, m, s)
   case 1|5 => (s, 0, 0, s)
   case 2|6 => (s, m, 0, m)
   case _   => (s, s, 0, 0)
