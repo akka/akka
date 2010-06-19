@@ -119,7 +119,7 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
 
     case m: Message[ADDR_T] => {
       val (src, msg) = (m.sender, m.msg)
-      (serializer in (msg, None)) match {
+      (serializer fromBinary (msg, None)) match {
 
         case PapersPlease => {
           log debug ("Asked for papers by %s", src)
@@ -169,7 +169,7 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
    * that's been set in the akka-conf
    */
   protected def broadcast[T <: AnyRef](recipients: Iterable[ADDR_T], msg: T): Unit = {
-    lazy val m = serializer out msg
+    lazy val m = serializer toBinary msg
     for (r <- recipients) toOneNode(r, m)
   }
 
@@ -178,7 +178,7 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
    * that's been set in the akka-conf
    */
   protected def broadcast[T <: AnyRef](msg: T): Unit =
-    if (!remotes.isEmpty) toAllNodes(serializer out msg)
+    if (!remotes.isEmpty) toAllNodes(serializer toBinary msg)
 
   /**
    * Applies the given PartialFunction to all known RemoteAddresses

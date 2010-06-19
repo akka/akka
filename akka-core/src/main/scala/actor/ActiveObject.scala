@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.RemoteRequestProtocol
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestProtocolIdFactory}
 import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture}
 import se.scalablesolutions.akka.config.ScalaConfig._

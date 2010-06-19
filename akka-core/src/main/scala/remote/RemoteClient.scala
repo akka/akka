@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol.{RemoteRequestProtocol, RemoteReplyProtocol}
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, RemoteActorRef}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.util.{UUID, Logging}
@@ -359,12 +359,11 @@ class RemoteClientHandler(val name: String,
     event.getChannel.close
   }
 
-  private def parseException(reply: RemoteReplyProtocol) = {
+  private def parseException(reply: RemoteReplyProtocol): Throwable = {
     val exception = reply.getException
-    val exceptionType = Class.forName(exception.substring(0, exception.indexOf('$')))
-    val exceptionMessage = exception.substring(exception.indexOf('$') + 1, exception.length)
-    exceptionType
+    val exceptionClass = Class.forName(exception.getClassname)
+    exceptionClass
         .getConstructor(Array[Class[_]](classOf[String]): _*)
-        .newInstance(exceptionMessage).asInstanceOf[Throwable]
+        .newInstance(exception.getMessage).asInstanceOf[Throwable]
   }
 }

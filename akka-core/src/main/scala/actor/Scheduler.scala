@@ -30,21 +30,22 @@ object Scheduler {
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
   private val schedulers = new ConcurrentHashMap[ActorRef, ActorRef]
 
-  def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit) = {
+  def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ActorRef = {
     try {
       val future = service.scheduleAtFixedRate(
         new Runnable { def run = receiver ! message },
         initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
       val scheduler = actorOf(new ScheduleActor(future)).start
       schedulers.put(scheduler, scheduler)
+      scheduler
     } catch {
       case e => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
   }
 
-  def unschedule(actorRef: ActorRef) = {
-    actorRef ! UnSchedule
-    schedulers.remove(actorRef)
+  def unschedule(scheduleActor: ActorRef) = {
+    scheduleActor ! UnSchedule
+    schedulers.remove(scheduleActor)
   }
 
   def shutdown = {
@@ -79,5 +80,3 @@ private object SchedulerThreadFactory extends ThreadFactory {
     thread
   }
 }
-
-

@@ -12,7 +12,7 @@ import java.util.{Map => JMap}
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.util.Helpers.narrow
-import se.scalablesolutions.akka.remote.protobuf.RemoteProtocol._
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.config.Config.config
 
 import org.jboss.netty.bootstrap.ServerBootstrap
@@ -324,9 +324,8 @@ class RemoteServerHandler(
   applicationLoader.foreach(RemoteProtocolBuilder.setClassLoader(_))
 
   /**
-   * ChannelOpen overridden to store open channels for a clean shutdown
-   * of a RemoteServer. If a channel is closed before, it is
-   * automatically removed from the open channels group.
+   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer. 
+   * If a channel is closed before, it is automatically removed from the open channels group.
    */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
     openChannels.add(ctx.getChannel)
@@ -365,8 +364,9 @@ class RemoteServerHandler(
     val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actorRef.start
     val message = RemoteProtocolBuilder.getMessage(request)
-    val sender = if (request.hasSender) Some(ActorRef.fromProtobuf(request.getSender, applicationLoader))
-                 else None
+    val sender = 
+      if (request.hasSender) Some(ActorRef.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
+      else None
     if (request.getIsOneWay) actorRef.!(message)(sender)
     else {
       try {
@@ -386,7 +386,7 @@ class RemoteServerHandler(
           log.error(e, "Could not invoke remote actor [%s]", request.getTarget)
           val replyBuilder = RemoteReplyProtocol.newBuilder
               .setId(request.getId)
-              .setException(e.getClass.getName + "$" + e.getMessage)
+              .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
               .setIsSuccessful(false)
               .setIsActor(true)
           if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
@@ -404,7 +404,6 @@ class RemoteServerHandler(
     val argClasses = args.map(_.getClass)
     val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.getTimeout)
 
-    //continueTransaction(request)
     try {
       val messageReceiver = activeObject.getClass.getDeclaredMethod(
         request.getMethod, unescapedArgClasses: _*)
@@ -426,7 +425,7 @@ class RemoteServerHandler(
         log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
-            .setException(e.getCause.getClass.getName + "$" + e.getCause.getMessage)
+            .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
             .setIsSuccessful(false)
             .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
@@ -436,7 +435,7 @@ class RemoteServerHandler(
         log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
-            .setException(e.getClass.getName + "$" + e.getMessage)
+            .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
             .setIsSuccessful(false)
             .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)

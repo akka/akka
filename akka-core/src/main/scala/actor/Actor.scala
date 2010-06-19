@@ -8,24 +8,9 @@ import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.serialization.Serializer
 
-/*
-// FIXME add support for ActorWithNestedReceive
-trait ActorWithNestedReceive extends Actor {
-  import Actor.actor
-  private var nestedReactsProcessors: List[ActorRef] = Nil
-  private val processNestedReacts: Receive = {
-    case message if !nestedReactsProcessors.isEmpty =>
-      val processors = nestedReactsProcessors.reverse
-      processors.head forward message
-      nestedReactsProcessors = processors.tail.reverse
-  }
-
-  protected def react: Receive
-  protected def reactAgain(pf: Receive) = nestedReactsProcessors ::= actor(pf)
-  protected def receive = processNestedReacts orElse react
-}
-*/
+import com.google.protobuf.Message
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -49,7 +34,69 @@ abstract class RemoteActor(hostname: String, port: Int) extends Actor {
   self.makeRemote(hostname, port)
 }
 
-// Life-cycle messages for the Actors
+/**
+ * Mix in this trait to create a serializable actor, serializable through 
+ * a custom serialization protocol.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait SerializableActor extends Actor {
+  val serializer: Serializer
+  def toBinary: Array[Byte]
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through
+ * Protobuf.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait ProtobufSerializableActor[T <: Message] extends SerializableActor {
+  val serializer = Serializer.Protobuf
+  def toBinary: Array[Byte] = toProtobuf.toByteArray
+  def fromBinary(bytes: Array[Byte]) = fromProtobuf(serializer.fromBinary(bytes, Some(clazz)).asInstanceOf[T])
+
+  val clazz: Class[T]
+  def toProtobuf: T
+  def fromProtobuf(message: T): Unit
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through
+ * Java serialization.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait JavaSerializableActor extends SerializableActor {
+  @transient val serializer = Serializer.Java
+  def toBinary: Array[Byte] = serializer.toBinary(this)
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through
+ * a Java JSON parser (Jackson).
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait JavaJSONSerializableActor extends SerializableActor {
+  val serializer = Serializer.JavaJSON
+  def toBinary: Array[Byte] = serializer.toBinary(this)
+}
+
+/**
+ * Mix in this trait to create a serializable actor, serializable through
+ * a Scala JSON parser (SJSON).
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait ScalaJSONSerializableActor extends SerializableActor {
+  val serializer = Serializer.ScalaJSON
+  def toBinary: Array[Byte] = serializer.toBinary(this)
+}
+
+/**
+ * Life-cycle messages for the Actors
+ */
 @serializable sealed trait LifeCycleMessage
 case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
 case class Restart(reason: Throwable) extends LifeCycleMessage
@@ -299,7 +346,7 @@ trait Actor extends Logging {
     * Mainly for internal use, functions as the implicit sender references when invoking
     * one of the message send functions ('!', '!!' and '!!!').
     */
-  implicit val optionSelf: Option[ActorRef] = {
+  @transient implicit val optionSelf: Option[ActorRef] = {
     val ref = Actor.actorRefInCreation.value
     Actor.actorRefInCreation.value = None
     if (ref.isEmpty) throw new ActorInitializationException(
@@ -308,7 +355,7 @@ trait Actor extends Logging {
        "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
        "\n\tEither use:" +
        "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
-       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'" +
+       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
        "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
     else ref
   }
@@ -319,7 +366,7 @@ trait Actor extends Logging {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
+  @transient implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -348,7 +395,7 @@ trait Actor extends Logging {
    * self.stop(..)
    * </pre>
    */
-  val self: ActorRef = {
+  @transient val self: ActorRef = {
     val zelf = optionSelf.get
     zelf.id = getClass.getName
     zelf
@@ -448,10 +495,4 @@ trait Actor extends Logging {
     case UnlinkAndStop(child) => self.unlink(child); child.stop
     case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
-
-  override def hashCode: Int = self.hashCode
-
-  override def equals(that: Any): Boolean = self.equals(that)
-
-  override def toString = self.toString
 }
