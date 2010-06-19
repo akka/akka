@@ -23,14 +23,8 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
 object TransactionManagement extends TransactionManagement {
   import se.scalablesolutions.akka.config.Config._
 
-  // is this needed?
-  val TRANSACTION_ENABLED = new AtomicBoolean(config.getBool("akka.stm.service", true))
   // move to stm.global.fair?
   val FAIR_TRANSACTIONS = config.getBool("akka.stm.fair", true)
-
-  def isTransactionalityEnabled = TRANSACTION_ENABLED.get
-
-  def disableTransactions = TRANSACTION_ENABLED.set(false)
 
   private[akka] val transactionSet = new ThreadLocal[Option[CountDownCommitBarrier]]() {
     override protected def initialValue: Option[CountDownCommitBarrier] = None
