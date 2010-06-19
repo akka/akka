@@ -1198,7 +1198,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {    
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {
     if (isShutdown) {
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return
@@ -1206,8 +1206,7 @@ sealed class LocalActorRef private[akka](
     sender = messageHandle.sender
     senderFuture = messageHandle.senderFuture
     try {
-      if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
-      else dispatch(messageHandle)
+      dispatch(messageHandle)
     } catch {
       case e =>
         Actor.log.error(e, "Could not invoke actor [%s]", this)
@@ -1216,23 +1215,6 @@ sealed class LocalActorRef private[akka](
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    val message = messageHandle.message //serializeMessage(messageHandle.message)
-    setTransactionSet(messageHandle.transactionSet)
-    try {
-      actor.base(message)
-    } catch {
-      case e =>
-        _isBeingRestarted = true
-        Actor.log.error(e, "Could not invoke actor [%s]", toString)
-        // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-        if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
-        senderFuture.foreach(_.completeWithException(this, e))
-    } finally {
-      clearTransaction
-    }
-  }
-
-  private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     var topLevelTransaction = false
     val txSet: Option[CountDownCommitBarrier] =
