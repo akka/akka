@@ -15,14 +15,6 @@ import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
 
 import sjson.json.{Serializer=>SJSONSerializer}
 
-object SerializationProtocol {
-  val JAVA = 0
-  val SBINARY = 1
-  val SCALA_JSON = 2
-  val JAVA_JSON = 3
-  val PROTOBUF = 4
-}
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
