@@ -503,10 +503,6 @@ trait ActorRef extends TransactionManagement {
   /**
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
-   * If transactionality want to be completely turned off then do it by invoking:
-   * <pre/>
-   *  TransactionManagement.disableTransactions
-   * </pre>
    */
   def makeTransactionRequired: Unit
 
@@ -879,10 +875,6 @@ sealed class LocalActorRef private[akka](
   /**
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
-   * If transactionality want to be completely turned off then do it by invoking:
-   * <pre/>
-   *  TransactionManagement.disableTransactions
-   * </pre>
    */
   def makeTransactionRequired = guard.withGuard {
     if (!isRunning || isBeingRestarted) isTransactor = true

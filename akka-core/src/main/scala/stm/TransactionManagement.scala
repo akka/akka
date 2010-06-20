@@ -119,7 +119,7 @@ class LocalStm extends TransactionManagement with Logging {
 
 /**
  * Global transaction management, global in the context of multiple threads.
- * You this if you need to have one transaction span multiple threads (or Actors).
+ * Use this if you need to have one transaction span multiple threads (or Actors).
  * <p/>
  * Example of atomic transaction management using the atomic block:
  * <p/>
@@ -169,8 +169,8 @@ trait StmUtil {
   def compensating[T](body: => T): Unit = MultiverseStmUtils.scheduleCompensatingTask(new Runnable { def run = body })
 
   /**
-   * STM retry. Use within an atomic.
-   * Blocks the current transaction. Can be used to wait for a condition.
+   * STM retry for blocking transactions (use within an atomic).
+   * Can be used to wait for a condition.
    */
   def retry = MultiverseStmUtils.retry
 

@@ -15,7 +15,7 @@ import org.multiverse.templates.TransactionBoilerplate
 import org.multiverse.api.TraceLevel
 
 /**
- * For configuring multiverse transactions. See TransactionConfig class for options.
+ * For configuring multiverse transactions.
  */
 object TransactionConfig {
   // note: null values are so that we can default to Multiverse inference when not set
@@ -41,6 +41,22 @@ object TransactionConfig {
     case _ => Transaction.TraceLevel.None
   }
 
+  /**
+   * For configuring multiverse transactions.
+   *
+   * @param familyName       Family name for transactions. Useful for debugging.
+   * @param readonly         Sets transaction as readonly. Readonly transactions are cheaper.
+   * @param maxRetries       The maximum number of times a transaction will retry.
+   * @param timeout          The maximum time a transaction will block for.
+   * @param trackReads       Whether all reads should be tracked. Needed for blocking operations.
+   * @param writeSkew        Whether writeskew is allowed. Disable with care.
+   * @param explicitRetries  Whether explicit retries are allowed.
+   * @param interruptible    Whether a blocking transaction can be interrupted.
+   * @param speculative      Whether speculative configuration should be enabled.
+   * @param quickRelease     Whether locks should be released as quickly as possible (before whole commit).
+   * @param traceLevel       Transaction trace level.
+   * @param hooks            Whether hooks for persistence modules and JTA should be added to the transaction.
+   */
   def apply(familyName: String       = FAMILY_NAME,
             readonly: JBoolean       = READONLY,
             maxRetries: Int          = MAX_RETRIES,
@@ -60,19 +76,19 @@ object TransactionConfig {
 
 /**
  * For configuring multiverse transactions.
- *
- * @param familyName       Family name for transactions. Useful for debugging.
- * @param readonly         Sets transaction as readonly. Readonly transactions are cheaper.
- * @param maxRetries       The maximum number of times a transaction will retry.
- * @param timeout          The maximum time a transaction will block for.
- * @param trackReads       Whether all reads should be tracked. Needed for blocking operations.
- * @param writeSkew        Whether writeskew is allowed. Disable with care.
- * @param explicitRetries  Whether explicit retries are allowed.
- * @param interruptible    Whether a blocking transaction can be interrupted.
- * @param speculative      Whether speculative configuration should be enabled.
- * @param quickRelease     Whether locks should be released as quickly as possible (before whole commit).
- * @param traceLevel       Transaction trace level.
- * @param hooks            Whether hooks for persistence modules and JTA should be added to the transaction.
+ * 
+ * <p>familyName      - Family name for transactions. Useful for debugging.
+ * <p>readonly        - Sets transaction as readonly. Readonly transactions are cheaper.
+ * <p>maxRetries      - The maximum number of times a transaction will retry.
+ * <p>timeout         - The maximum time a transaction will block for.
+ * <p>trackReads      - Whether all reads should be tracked. Needed for blocking operations.
+ * <p>writeSkew       - Whether writeskew is allowed. Disable with care.
+ * <p>explicitRetries - Whether explicit retries are allowed.
+ * <p>interruptible   - Whether a blocking transaction can be interrupted.
+ * <p>speculative     - Whether speculative configuration should be enabled.
+ * <p>quickRelease    - Whether locks should be released as quickly as possible (before whole commit).
+ * <p>traceLevel      - Transaction trace level.
+ * <p>hooks           - Whether hooks for persistence modules and JTA should be added to the transaction.
  */
 class TransactionConfig(val familyName: String       = TransactionConfig.FAMILY_NAME,
                         val readonly: JBoolean       = TransactionConfig.READONLY,
@@ -91,24 +107,6 @@ object DefaultTransactionConfig extends TransactionConfig
 
 /**
  * Wrapper for transaction config, factory, and boilerplate. Used by atomic.
- * Can be passed to atomic implicitly or explicitly.
- * <p/>
- * <pre>
- * implicit val txFactory = TransactionFactory(readonly = true)
- * ...
- * atomic {
- *   // do something within a readonly transaction
- * }
- * </pre>
- * <p/>
- * Can be created at different levels as needed. For example: as an implicit object
- * used throughout a package, as a static implicit val within a singleton object and
- * imported where needed, or as an implicit val within each instance of a class.
- * <p/>
- * See TransactionConfig for configuration options.
- * <p/>
- * If no explicit transactin factory is passed to atomic and there is no implicit
- * transaction factory in scope, then a default transaction factory is used.
  */
 object TransactionFactory {
   def apply(config: TransactionConfig) = new TransactionFactory(config)
@@ -135,6 +133,24 @@ object TransactionFactory {
 
 /**
  * Wrapper for transaction config, factory, and boilerplate. Used by atomic.
+ * Can be passed to atomic implicitly or explicitly.
+ * <p/>
+ * <pre>
+ * implicit val txFactory = TransactionFactory(readonly = true)
+ * ...
+ * atomic {
+ *   // do something within a readonly transaction
+ * }
+ * </pre>
+ * <p/>
+ * Can be created at different levels as needed. For example: as an implicit object
+ * used throughout a package, as a static implicit val within a singleton object and
+ * imported where needed, or as an implicit val within each instance of a class.
+ * <p/>
+ * If no explicit transaction factory is passed to atomic and there is no implicit
+ * transaction factory in scope, then a default transaction factory is used.
+ *
+ * @see TransactionConfig for configuration options.
  */
 class TransactionFactory(val config: TransactionConfig = DefaultTransactionConfig, defaultName: String = TransactionConfig.FAMILY_NAME) {
   self =>
