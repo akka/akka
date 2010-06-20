@@ -17,7 +17,7 @@ object TransactionalVector {
 }
 
 /**
- * TODO: documentation
+ * Transactional vector that implements the indexed seq interface with an underlying ref and vector.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

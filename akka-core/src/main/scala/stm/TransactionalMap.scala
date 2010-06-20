@@ -17,7 +17,7 @@ object TransactionalMap {
 }
 
 /**
- * TODO: documentation
+ * Transactional map that implements the mutable map interface with an underlying ref and hash map.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

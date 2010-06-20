@@ -6,27 +6,6 @@ package se.scalablesolutions.akka.util
 
 import java.util.concurrent.TimeUnit
 
-/**
- * Utility for working with java.util.concurrent.TimeUnit durations.
- * <p/>
- * Example:
- * <pre>
- * import se.scalablesolutions.akka.util.Duration
- * import java.util.concurrent.TimeUnit
- * 
- * val duration = Duration(100, TimeUnit.MILLISECONDS)
- * val duration = Duration(100, "millis")
- * 
- * duration.toNanos
- * </pre>
- * <p/>
- * Implicits are also provided for Int and Long. Example usage:
- * <pre>
- * import se.scalablesolutions.akka.util.duration._
- *
- * val duration = 100.millis
- * </pre>
- */ 
 object Duration {
   def apply(length: Long, unit: TimeUnit) = new Duration(length, unit)
   def apply(length: Long, unit: String) = new Duration(length, timeUnit(unit))
@@ -39,6 +18,27 @@ object Duration {
   }
 }
 
+/**
+ * Utility for working with java.util.concurrent.TimeUnit durations.
+ * <p/>
+ * Example:
+ * <pre>
+ * import se.scalablesolutions.akka.util.Duration
+ * import java.util.concurrent.TimeUnit
+ *
+ * val duration = Duration(100, TimeUnit.MILLISECONDS)
+ * val duration = Duration(100, "millis")
+ *
+ * duration.toNanos
+ * </pre>
+ * <p/>
+ * Implicits are also provided for Int and Long. Example usage:
+ * <pre>
+ * import se.scalablesolutions.akka.util.duration._
+ *
+ * val duration = 100.millis
+ * </pre>
+ */
 class Duration(val length: Long, val unit: TimeUnit) {
   def toNanos = unit.toNanos(length)
   def toMicros = unit.toMicros(length)
@@ -57,7 +57,7 @@ class DurationInt(n: Int) {
   def nanos = Duration(n, TimeUnit.NANOSECONDS)
   def nanosecond = Duration(n, TimeUnit.NANOSECONDS)
   def nano = Duration(n, TimeUnit.NANOSECONDS)
-  
+
   def microseconds = Duration(n, TimeUnit.MICROSECONDS)
   def micros =  Duration(n, TimeUnit.MICROSECONDS)
   def microsecond = Duration(n, TimeUnit.MICROSECONDS)
@@ -77,7 +77,7 @@ class DurationLong(n: Long) {
   def nanos = Duration(n, TimeUnit.NANOSECONDS)
   def nanosecond = Duration(n, TimeUnit.NANOSECONDS)
   def nano = Duration(n, TimeUnit.NANOSECONDS)
-  
+
   def microseconds = Duration(n, TimeUnit.MICROSECONDS)
   def micros =  Duration(n, TimeUnit.MICROSECONDS)
   def microsecond = Duration(n, TimeUnit.MICROSECONDS)
