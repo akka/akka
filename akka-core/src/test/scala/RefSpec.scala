@@ -8,10 +8,10 @@ import org.junit.runner.RunWith
 import se.scalablesolutions.akka.actor.Actor._
 
 @RunWith(classOf[JUnitRunner])
-class TransactionalRefSpec extends Spec with ShouldMatchers {
+class RefSpec extends Spec with ShouldMatchers {
 
-  describe("A TransactionalRef") {
-    import Transaction.Local._
+  describe("A Ref") {
+    import local._
 
     it("should optionally accept an initial value") {
       val emptyRef = Ref[Int]
@@ -29,7 +29,7 @@ class TransactionalRefSpec extends Spec with ShouldMatchers {
       val ref = Ref(3)
 
       try {
-        atomic {
+        atomic(DefaultLocalTransactionFactory) {
           ref.swap(5)
           throw new Exception
         }

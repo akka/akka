@@ -3,21 +3,20 @@ package se.scalablesolutions.akka.spring.foo;
 import se.scalablesolutions.akka.actor.annotation.inittransactionalstate;
 import se.scalablesolutions.akka.stm.TransactionalMap;
 import se.scalablesolutions.akka.stm.TransactionalVector;
-import se.scalablesolutions.akka.stm.TransactionalRef;
-import se.scalablesolutions.akka.stm.TransactionalState;
+import se.scalablesolutions.akka.stm.Ref;
 
 public class StatefulPojo {
     private TransactionalMap<String, String> mapState;
     private TransactionalVector<String> vectorState;
-    private TransactionalRef<String> refState;
+    private Ref<String> refState;
     private boolean isInitialized = false;
 
   @inittransactionalstate
   public void init() {
       if (!isInitialized) {
-        mapState = TransactionalState.newMap();
-        vectorState = TransactionalState.newVector();
-        refState = TransactionalState.newRef();
+        mapState = new TransactionalMap();
+        vectorState = new TransactionalVector();
+        refState = new Ref();
         isInitialized = true;
       }
     }
