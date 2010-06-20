@@ -27,14 +27,18 @@ class Boot {
   CamelContextManager.context.addRoutes(new CustomRouteBuilder)
 
   // -----------------------------------------------------------------------
-  // Basic example (using a supervisor for consumer actors)
+  // Basic example
   // -----------------------------------------------------------------------
 
-  val supervisor = Supervisor(
-    SupervisorConfig(
-      RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-      Supervise(actorOf[Consumer1], LifeCycle(Permanent)) ::
-      Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
+  actorOf[Consumer1].start
+  actorOf[Consumer2].start
+
+  // Alternatively, use a supervisor for these actors
+  //val supervisor = Supervisor(
+  //  SupervisorConfig(
+  //    RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+  //    Supervise(actorOf[Consumer1], LifeCycle(Permanent)) ::
+  //    Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
 
   // -----------------------------------------------------------------------
   // Routing example
