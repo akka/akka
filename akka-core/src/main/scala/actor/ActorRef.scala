@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config.config
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.stm.Transaction.Global._
+import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
@@ -283,7 +283,17 @@ trait ActorRef extends TransactionManagement {
    */
   @volatile protected[akka] var isTransactor = false
 
-  /**v
+  /**
+   * Configuration for TransactionFactory. User overridable.
+   */
+  protected[akka] var _transactionConfig: TransactionConfig = DefaultGlobalTransactionConfig
+
+  /**
+   * TransactionFactory to be used for atomic when isTransactor. Configuration is overridable.
+   */
+  private[akka] var _transactionFactory: Option[TransactionFactory] = None
+
+  /**
    * This lock ensures thread safety in the dispatching: only one message can
    * be dispatched at once on the actor.
    */
@@ -493,12 +503,18 @@ trait ActorRef extends TransactionManagement {
   /**
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
-   * If transactionality want to be completely turned off then do it by invoking:
-   * <pre/>
-   *  TransactionManagement.disableTransactions
-   * </pre>
    */
   def makeTransactionRequired: Unit
+
+  /**
+   * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
+   */
+  def transactionConfig_=(config: TransactionConfig): Unit
+
+  /**
+   * Get the transaction configuration for this actor.
+   */
+  def transactionConfig: TransactionConfig
 
   /**
    * Returns the home address and port for this actor.
@@ -859,16 +875,26 @@ sealed class LocalActorRef private[akka](
   /**
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
-   * If transactionality want to be completely turned off then do it by invoking:
-   * <pre/>
-   *  TransactionManagement.disableTransactions
-   * </pre>
    */
   def makeTransactionRequired = guard.withGuard {
     if (!isRunning || isBeingRestarted) isTransactor = true
     else throw new ActorInitializationException(
       "Can not make actor transaction required after it has been started")
   }
+
+  /**
+   * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
+   */
+  def transactionConfig_=(config: TransactionConfig) = guard.withGuard {
+    if (!isRunning || isBeingRestarted) _transactionConfig = config
+    else throw new ActorInitializationException(
+      "Cannot set transaction configuration for actor after it has been started")
+  }
+
+  /**
+   * Get the transaction configuration for this actor.
+   */
+  def transactionConfig: TransactionConfig = guard.withGuard { _transactionConfig }
 
   /**
    * Set the contact address for this actor. This is used for replying to messages
@@ -891,6 +917,9 @@ sealed class LocalActorRef private[akka](
     if (!isRunning) {
       dispatcher.register(this)
       dispatcher.start
+      if (isTransactor) {
+        _transactionFactory = Some(TransactionFactory(_transactionConfig, id))
+      }
       _isRunning = true
       if (!isInInitialization) initializeActorInstance
       else runActorInitialization = true
@@ -904,6 +933,7 @@ sealed class LocalActorRef private[akka](
   def stop = guard.withGuard {
     if (isRunning) {
       dispatcher.unregister(this)
+      _transactionFactory = None
       _isRunning = false
       _isShutDown = true
       actor.shutdown
@@ -1160,7 +1190,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {    
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {
     if (isShutdown) {
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return
@@ -1168,8 +1198,7 @@ sealed class LocalActorRef private[akka](
     sender = messageHandle.sender
     senderFuture = messageHandle.senderFuture
     try {
-      if (TransactionManagement.isTransactionalityEnabled) transactionalDispatch(messageHandle)
-      else dispatch(messageHandle)
+      dispatch(messageHandle)
     } catch {
       case e =>
         Actor.log.error(e, "Could not invoke actor [%s]", this)
@@ -1178,23 +1207,6 @@ sealed class LocalActorRef private[akka](
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    val message = messageHandle.message //serializeMessage(messageHandle.message)
-    setTransactionSet(messageHandle.transactionSet)
-    try {
-      actor.base(message)
-    } catch {
-      case e =>
-        _isBeingRestarted = true
-        Actor.log.error(e, "Could not invoke actor [%s]", toString)
-        // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-        if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
-        senderFuture.foreach(_.completeWithException(this, e))
-    } finally {
-      clearTransaction
-    }
-  }
-
-  private def transactionalDispatch[T](messageHandle: MessageInvocation) = {
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     var topLevelTransaction = false
     val txSet: Option[CountDownCommitBarrier] =
@@ -1212,7 +1224,8 @@ sealed class LocalActorRef private[akka](
 
     try {
       if (isTransactor) {
-        atomic {
+        val txFactory = _transactionFactory.getOrElse(DefaultGlobalTransactionFactory)
+        atomic(txFactory) {
           actor.base(message)
           setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
         }
@@ -1452,6 +1465,8 @@ private[akka] case class RemoteActorRef private[akka] (
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
   def makeTransactionRequired: Unit = unsupported
+  def transactionConfig_=(config: TransactionConfig): Unit = unsupported
+  def transactionConfig: TransactionConfig = unsupported
   def makeRemote(hostname: String, port: Int): Unit = unsupported
   def makeRemote(address: InetSocketAddress): Unit = unsupported
   def homeAddress_=(address: InetSocketAddress): Unit = unsupported

@@ -4,7 +4,7 @@ import java.util.concurrent.{TimeUnit, CountDownLatch}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import se.scalablesolutions.akka.stm.{TransactionalState, TransactionalMap, TransactionalRef, TransactionalVector}
+import se.scalablesolutions.akka.stm.{Ref, TransactionalMap, TransactionalVector}
 import Actor._
 
 object InMemoryActorSpec {
@@ -35,9 +35,9 @@ class InMemStatefulActor(expectedInvocationCount: Int) extends Transactor {
 
   val notifier = new CountDownLatch(expectedInvocationCount)
 
-  private lazy val mapState = TransactionalState.newMap[String, String]
-  private lazy val vectorState = TransactionalState.newVector[String]
-  private lazy val refState = TransactionalState.newRef[String]
+  private lazy val mapState = TransactionalMap[String, String]()
+  private lazy val vectorState = TransactionalVector[String]()
+  private lazy val refState = Ref[String]()
 
   def receive = {
     case GetNotifier =>
