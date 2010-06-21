@@ -8,8 +8,11 @@ import se.scalablesolutions.akka.util.Logging
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import org.multiverse.api.{StmUtils => MultiverseStmUtils}
 import org.multiverse.api.ThreadLocalTransaction._
+import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier
+import org.multiverse.templates.{TransactionalCallable, OrElseTemplate}
 
 class StmException(msg: String) extends RuntimeException(msg)
 
@@ -20,15 +23,8 @@ class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Tran
 object TransactionManagement extends TransactionManagement {
   import se.scalablesolutions.akka.config.Config._
 
-  val TRANSACTION_ENABLED =      new AtomicBoolean(config.getBool("akka.stm.service", true))
-  val FAIR_TRANSACTIONS =        config.getBool("akka.stm.fair", true)
-  val INTERRUPTIBLE =            config.getBool("akka.stm.interruptible", true)
-  val MAX_NR_OF_RETRIES =        config.getInt("akka.stm.max-nr-of-retries", 1000)
-  val TRANSACTION_TIMEOUT =      config.getInt("akka.stm.timeout", 10000)
-  val SMART_TX_LENGTH_SELECTOR = config.getBool("akka.stm.smart-tx-length-selector", true)
-  def isTransactionalityEnabled = TRANSACTION_ENABLED.get
-
-  def disableTransactions = TRANSACTION_ENABLED.set(false)
+  // move to stm.global.fair?
+  val FAIR_TRANSACTIONS = config.getBool("akka.stm.fair", true)
 
   private[akka] val transactionSet = new ThreadLocal[Option[CountDownCommitBarrier]]() {
     override protected def initialValue: Option[CountDownCommitBarrier] = None
@@ -86,5 +82,105 @@ trait TransactionManagement {
   private[akka] def isTransactionInScope = {
     val option = TransactionManagement.transaction.get
     (option ne null) && option.isDefined
+  }
+}
+
+/**
+ * Local transaction management, local in the context of threads.
+ * Use this if you do <b>not</b> need to have one transaction span
+ * multiple threads (or Actors).
+ * <p/>
+ * Example of atomic transaction management using the atomic block.
+ * <p/>
+ * <pre>
+ * import se.scalablesolutions.akka.stm.local._
+ *
+ * atomic  {
+ *   // do something within a transaction
+ * }
+ * </pre>
+ */
+class LocalStm extends TransactionManagement with Logging {
+
+  val DefaultLocalTransactionConfig = TransactionConfig()
+  val DefaultLocalTransactionFactory = TransactionFactory(DefaultLocalTransactionConfig, "DefaultLocalTransaction")
+
+  def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultLocalTransactionFactory): T = atomic(factory)(body)
+
+  def atomic[T](factory: TransactionFactory)(body: => T): T = {
+    factory.boilerplate.execute(new TransactionalCallable[T]() {
+      def call(mtx: MultiverseTransaction): T = {
+        factory.addHooks
+        body
+      }
+    })
+  }
+}
+
+/**
+ * Global transaction management, global in the context of multiple threads.
+ * Use this if you need to have one transaction span multiple threads (or Actors).
+ * <p/>
+ * Example of atomic transaction management using the atomic block:
+ * <p/>
+ * <pre>
+ * import se.scalablesolutions.akka.stm.global._
+ *
+ * atomic  {
+ *   // do something within a transaction
+ * }
+ * </pre>
+ */
+class GlobalStm extends TransactionManagement with Logging {
+
+  val DefaultGlobalTransactionConfig = TransactionConfig()
+  val DefaultGlobalTransactionFactory = TransactionFactory(DefaultGlobalTransactionConfig, "DefaultGlobalTransaction")
+
+  def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultGlobalTransactionFactory): T = atomic(factory)(body)
+
+  def atomic[T](factory: TransactionFactory)(body: => T): T = {
+    factory.boilerplate.execute(new TransactionalCallable[T]() {
+      def call(mtx: MultiverseTransaction): T = {
+        if (!isTransactionSetInScope) createNewTransactionSet
+        factory.addHooks
+        val result = body
+        val txSet = getTransactionSetInScope
+        log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
+        // FIXME ? txSet.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
+        txSet.joinCommit(mtx)
+        clearTransaction
+        result
+      }
+    })
+  }
+}
+
+trait StmUtil {
+  /**
+   * Schedule a deferred task on the thread local transaction (use within an atomic).
+   * This is executed when the transaction commits.
+   */
+  def deferred[T](body: => T): Unit = MultiverseStmUtils.scheduleDeferredTask(new Runnable { def run = body })
+
+  /**
+   * Schedule a compensating task on the thread local transaction (use within an atomic).
+   * This is executed when the transaction aborts.
+   */
+  def compensating[T](body: => T): Unit = MultiverseStmUtils.scheduleCompensatingTask(new Runnable { def run = body })
+
+  /**
+   * STM retry for blocking transactions (use within an atomic).
+   * Can be used to wait for a condition.
+   */
+  def retry = MultiverseStmUtils.retry
+
+  /**
+   * Use either-orElse to combine two blocking transactions.
+   */
+  def either[T](firstBody: => T) = new {
+    def orElse(secondBody: => T) = new OrElseTemplate[T] {
+      def either(mtx: MultiverseTransaction) = firstBody
+      def orelse(mtx: MultiverseTransaction) = secondBody
+    }.execute()
   }
 }

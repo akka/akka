@@ -26,7 +26,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     // count expectations in the next step (needed for testing only).
     service.consumerPublisher.start
     // set expectations on publish count
-    val latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(1)).get
+    val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
     // start the CamelService
     service.load
     // await publication of first test consumer
@@ -43,7 +43,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access registered consumer actors via Camel direct-endpoints") {
 
       given("two consumer actors registered before and after CamelService startup")
-      val latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(1)).get
+      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       actorOf(new TestConsumer("direct:publish-test-2")).start
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -64,12 +64,12 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("a consumer actor that has been stopped")
       assert(CamelContextManager.context.hasEndpoint(endpointUri) eq null)
-      var latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(1)).get
+      var latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       val consumer = actorOf(new TestConsumer(endpointUri)).start
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
 
-      latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(1)).get
+      latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       consumer.stop
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       // endpoint is still there but the route has been stopped
@@ -103,7 +103,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access active object methods via Camel direct-endpoints") {
 
       given("an active object registered after CamelService startup")
-      val latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(3)).get
+      val latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
       ActiveObject.newInstance(classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 

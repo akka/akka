@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
+import Actor._
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestProtocolIdFactory}
@@ -548,7 +549,7 @@ private[akka] sealed class ActiveObjectAspect {
       actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
       null.asInstanceOf[AnyRef]
     } else {
-      val result = actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)
+      val result = (actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)).as[AnyRef]
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }

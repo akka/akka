@@ -1,7 +1,6 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.stm
 
-import se.scalablesolutions.akka.stm._
-
+import se.scalablesolutions.akka.actor.{Actor, Transactor}
 import Actor._
 
 import org.scalatest.Spec
@@ -17,11 +16,11 @@ class StmSpec extends
   ShouldMatchers with
   BeforeAndAfterAll {
 
-  describe("Transaction.Local") {
+  describe("Local STM") {
     it("should be able to do multiple consecutive atomic {..} statements") {
-      import Transaction.Local._
+      import local._
 
-      lazy val ref = TransactionalState.newRef[Int]
+      lazy val ref = Ref[Int]()
 
       def increment = atomic {
         ref.swap(ref.get.getOrElse(0) + 1)
@@ -38,9 +37,9 @@ class StmSpec extends
     }
 
     it("should be able to do nested atomic {..} statements") {
-      import Transaction.Local._
+      import local._
 
-      lazy val ref = TransactionalState.newRef[Int]
+      lazy val ref = Ref[Int]()
 
       def increment = atomic {
         ref.swap(ref.get.getOrElse(0) + 1)
@@ -60,9 +59,9 @@ class StmSpec extends
     }
 
     it("should roll back failing nested atomic {..} statements") {
-      import Transaction.Local._
+      import local._
 
-      lazy val ref = TransactionalState.newRef[Int]
+      lazy val ref = Ref[Int]()
 
       def increment = atomic {
         ref.swap(ref.get.getOrElse(0) + 1)
@@ -71,7 +70,7 @@ class StmSpec extends
         ref.get.getOrElse(0)
       }
       try {
-        atomic {
+        atomic(DefaultLocalTransactionFactory) {
           increment
           increment
           throw new Exception
@@ -83,16 +82,16 @@ class StmSpec extends
     }
   }
 
-  describe("Transaction.Global") {
+  describe("Global STM") {
     it("should be able to initialize with atomic {..} block inside actor constructor") {
       import GlobalTransactionVectorTestActor._
       try {
         val actor = actorOf[GlobalTransactionVectorTestActor].start
         actor !! Add(5)
-        val size1: Int = (actor !! Size).getOrElse(fail("Could not get Vector::size"))
+        val size1 = (actor !! Size).as[Int].getOrElse(fail("Could not get Vector::size"))
         size1 should equal(2)
         actor !! Add(2)
-        val size2: Int = (actor !! Size).getOrElse(fail("Could not get Vector::size"))
+        val size2 = (actor !! Size).as[Int].getOrElse(fail("Could not get Vector::size"))
         size2 should equal(3)
       } catch {
         case e =>
@@ -108,18 +107,18 @@ class StmSpec extends
       try {
         val actor = actorOf[NestedTransactorLevelOneActor].start
         actor !! Add(2)
-        val size1: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        val size1 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size1 should equal(2)
         actor !! Add(7)
         actor ! "HiLevelOne"
-        val size2: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        val size2 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size2 should equal(7)
         actor !! Add(0)
         actor ! "HiLevelTwo"
-        val size3: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        val size3 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size3 should equal(0)
         actor !! Add(3)
-        val size4: Int = (actor !! Size).getOrElse(fail("Could not get size"))
+        val size4 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size4 should equal(3)
       } catch {
         case e =>
@@ -182,17 +181,17 @@ object GlobalTransactionVectorTestActor {
 }
 class GlobalTransactionVectorTestActor extends Actor {
   import GlobalTransactionVectorTestActor._
-  import se.scalablesolutions.akka.stm.Transaction.Global
+  import se.scalablesolutions.akka.stm.global._
 
-  private val vector: TransactionalVector[Int] = Global.atomic { TransactionalVector(1) }
+  private val vector: TransactionalVector[Int] = atomic { TransactionalVector(1) }
 
   def receive = {
     case Add(value) =>
-      Global.atomic { vector + value}
+      atomic { vector + value}
       self.reply(Success)
 
     case Size =>
-      val size = Global.atomic { vector.size }
+      val size = atomic { vector.size }
       self.reply(size)
   }
 }
@@ -213,7 +212,7 @@ class NestedTransactorLevelOneActor extends Actor {
   }
 }
 
-class NestedTransactorLevelTwoActor extends Actor {
+class NestedTransactorLevelTwoActor extends Transactor {
   import GlobalTransactionVectorTestActor._
   private val ref = Ref(0)
 

@@ -2,10 +2,11 @@
 <xsd:schema xmlns="http://www.akkasource.org/schema/akka"
             targetNamespace="http://www.akkasource.org/schema/akka"
             elementFormDefault="qualified" attributeFormDefault="unqualified"
-            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:beans="http://www.springframework.org/schema/beans">
 
   <xsd:import namespace="http://www.springframework.org/schema/beans"
-              schemaLocation="http://www.springframework.org/schema/beans/spring-beans-3.0.xsd"/>
+              schemaLocation="http://www.springframework.org/schema/beans/spring-beans-3.0.xsd" />
 
   <!-- base types -->
 
@@ -124,12 +125,13 @@
 
   <!-- active object -->
   <xsd:complexType name="active-object-type">
-    <xsd:all minOccurs="0">
+   <xsd:sequence>
       <xsd:element name="remote" type="remote-type" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="restart-callbacks" type="restart-callbacks-type" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="dispatcher" type="dispatcher-type" minOccurs="0" maxOccurs="1"/>
-      <xsd:element ref="dispatcher" minOccurs="0"/>
-    </xsd:all>
+      <xsd:element ref="dispatcher" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="beans:property" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
     <xsd:attribute name="id" type="xsd:ID"/>
     <xsd:attribute name="target" type="xsd:string" use="required">
       <xsd:annotation>

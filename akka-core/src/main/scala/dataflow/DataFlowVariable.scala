@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package se.scalablesolutions.akka.dataflow
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
@@ -102,10 +102,10 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
       else {
         val out = actorOf(new Out(this)).start
         blockedReaders.offer(out)
-        val result = out !! Get
+        val result = (out !! Get).as[T]
         out ! Exit
-        result.getOrElse(throw new DataFlowVariableException(
-          "Timed out (after " + TIME_OUT + " milliseconds) while waiting for result"))
+        if (result.isDefined) result.get
+        else throw new DataFlowVariableException("Timed out (after " + TIME_OUT + " milliseconds) while waiting for result")
       }
     }
 
