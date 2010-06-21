@@ -45,7 +45,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       val consumer = actorOf[RemoteConsumer].start
 
       when("remote consumer publication is triggered")
-      val latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(1)).get
+      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       consumer !! "init"
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
