@@ -21,7 +21,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
-  val MULTIVERSE_VERSION = "0.5.2"
   val COMMONS_CODEC_VERSION = "1.4"
   val MULTIVERSE_VERSION = "0.6-SNAPSHOT"
 
@@ -69,12 +68,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
  // val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
-<<<<<<< HEAD
-  val scalaBundleConfig       = ModuleConfiguration("com.weiglewilczek.scala-lang-osgi", ScalaToolsReleases)
-=======
+//  val scalaBundleConfig       = ModuleConfiguration("com.weiglewilczek.scala-lang-osgi", ScalaToolsReleases)
   def codehausSnapshotRepo    = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", codehausSnapshotRepo)
->>>>>>> master
 
   // ------------------------------------------------------------
   // project defintions
@@ -528,8 +524,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   trait OSGiProject extends DefaultProject with BNDPlugin {
     override def artifactID = moduleID + "_osgi"
-    override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=0.9")    
-
+    override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=%s".format(projectVersion.value))
   }
-
 }
