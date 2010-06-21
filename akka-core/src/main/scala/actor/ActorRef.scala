@@ -392,9 +392,9 @@ trait ActorRef extends TransactionManagement {
    * If you are sending messages using <code>!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !![T](message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Option[T] = {
+  def !!(message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Option[Any] = {
     if (isRunning) {
-      val future = postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, sender, None)
+      val future = postMessageToMailboxAndCreateFutureResultWithTimeout[Any](message, timeout, sender, None)
       val isActiveObject = message.isInstanceOf[Invocation]
       if (isActiveObject && message.asInstanceOf[Invocation].isVoid) {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)

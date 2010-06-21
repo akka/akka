@@ -66,9 +66,9 @@ object Runner {
   def run {
     val proc = actorOf[RedisSampleStorage]
     proc.start
-    val i: Option[String] = proc !! SETFOO("debasish")
+    val i = (proc !! SETFOO("debasish")).as[String]
     println("i = " + i)
-    val ev: Option[Int] = proc !! GETFOO("debasish")
+    val ev = (proc !! GETFOO("debasish")).as[Int]
     println(ev)
   }
 }

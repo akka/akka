@@ -54,7 +54,7 @@ class SimpleService {
     //Fetch the first actor of type SimpleServiceActor
     //Send it the "Tick" message and expect a NodeSeq back
     val result = for{a <- actorsFor(classOf[SimpleServiceActor]).headOption
-                     r <- a.!![NodeSeq]("Tick")} yield r
+                     r <- (a !! "Tick").as[NodeSeq]} yield r
     //Return either the resulting NodeSeq or a default one
     result getOrElse <error>Error in counter</error>
   }
@@ -109,7 +109,7 @@ class PersistentSimpleService {
     //Fetch the first actor of type PersistentSimpleServiceActor
     //Send it the "Tick" message and expect a NodeSeq back
     val result = for{a <- actorsFor(classOf[PersistentSimpleServiceActor]).headOption
-                     r <- a.!![NodeSeq]("Tick")} yield r
+                     r <- (a !! "Tick").as[NodeSeq]} yield r
     //Return either the resulting NodeSeq or a default one
     result getOrElse <error>Error in counter</error>
   }
@@ -156,7 +156,7 @@ class Chat {
     //Fetch the first actor of type ChatActor
     //Send it the "Tick" message and expect a NodeSeq back
     val result = for{a <- actorsFor(classOf[ChatActor]).headOption
-                     r <- a.!![String](msg)} yield r
+                     r <- (a !! msg).as[String]} yield r
     //Return either the resulting String or a default one
     result getOrElse "System__error"
   }
