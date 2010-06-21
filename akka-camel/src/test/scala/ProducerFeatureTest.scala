@@ -68,7 +68,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a fail message is sent to the producer")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = producer.!![Failure](message)
+      val result = (producer !! message).as[Failure]
 
       then("the expected failure message should be returned including a correlation identifier")
       val expectedFailureText = result.get.cause.getMessage
@@ -84,7 +84,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a fail message is sent to the producer")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = producer.!![Failure](message)
+      val result = (producer !! message).as[Failure]
 
       then("the expected failure message should be returned including a correlation identifier")
       val expectedFailureText = result.get.cause.getMessage

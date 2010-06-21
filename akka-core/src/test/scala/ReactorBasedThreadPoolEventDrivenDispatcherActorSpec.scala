@@ -39,7 +39,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
 
   @Test def shouldSendReplySync = {
     val actor = actorOf[TestActor].start
-    val result: String = (actor !! ("Hello", 10000)).get
+    val result = (actor !! ("Hello", 10000)).as[String].get
     assert("World" === result)
     actor.stop
   }

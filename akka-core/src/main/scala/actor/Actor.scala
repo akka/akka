@@ -7,8 +7,9 @@ package se.scalablesolutions.akka.actor
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.util.Helpers.{ narrow, narrowSilently }
+import se.scalablesolutions.akka.util.Logging
 
 import com.google.protobuf.Message
 
@@ -279,8 +280,13 @@ object Actor extends Logging {
         case Spawn => body; self.stop
       }
     }).start ! Spawn
-    
   }
+
+  /**
+   * Implicitly converts the given Option[Any] to a AnyOptionAsTypedOption which offers the method <code>as[T]</code>
+   * to convert an Option[Any] to an Option[T].
+   */
+  implicit def toAnyOptionAsTypedOption(anyOption: Option[Any]) = new AnyOptionAsTypedOption(anyOption)
 }
 
 /**
@@ -495,4 +501,19 @@ trait Actor extends Logging {
     case UnlinkAndStop(child) => self.unlink(child); child.stop
     case Kill =>                 throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
   }
+}
+
+private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
+
+  /**
+   * Convenience helper to cast the given Option of Any to an Option of the given type. Will throw a ClassCastException
+   * if the actual type is not assignable from the given one.
+   */
+  def as[T]: Option[T] = narrow[T](anyOption)
+
+  /**
+   * Convenience helper to cast the given Option of Any to an Option of the given type. Will swallow a possible
+   * ClassCastException and return None in that case.
+   */
+  def asSilently[T: Manifest]: Option[T] = narrowSilently[T](anyOption)
 }

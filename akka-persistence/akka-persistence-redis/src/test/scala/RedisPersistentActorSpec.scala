@@ -113,7 +113,7 @@ class RedisPersistentActorSpec extends JUnitSuite {
     bactor !! Debit("a-123", 8000, failer)
     assertEquals(BigInt(1000), (bactor !! Balance("a-123")).get)
 
-    val c: Int = (bactor !! LogSize).get
+    val c = (bactor !! LogSize).as[Int].get
     assertTrue(7 == c)
   }
 
@@ -134,7 +134,7 @@ class RedisPersistentActorSpec extends JUnitSuite {
     assertEquals(BigInt(5000), (bactor !! Balance("a-123")).get)
 
     // should not count the failed one
-    val c: Int = (bactor !! LogSize).get
+    val c = (bactor !! LogSize).as[Int].get
     assertTrue(3 == c)
   }
 
@@ -156,7 +156,7 @@ class RedisPersistentActorSpec extends JUnitSuite {
     assertEquals(BigInt(5000), (bactor !! (Balance("a-123"), 5000)).get)
 
     // should not count the failed one
-    val c: Int = (bactor !! LogSize).get
+    val c = (bactor !! LogSize).as[Int].get
     assertTrue(3 == c)
   }
 }
