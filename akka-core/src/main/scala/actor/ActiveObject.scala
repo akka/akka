@@ -4,6 +4,7 @@
 
 package se.scalablesolutions.akka.actor
 
+import Actor._
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol
 import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestProtocolIdFactory}
@@ -11,7 +12,6 @@ import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, Completabl
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
-import se.scalablesolutions.akka.util.Helpers.narrow
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
@@ -549,7 +549,7 @@ private[akka] sealed class ActiveObjectAspect {
       actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
       null.asInstanceOf[AnyRef]
     } else {
-      val result = narrow[AnyRef](actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout))
+      val result = (actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)).as[AnyRef]
       if (result.isDefined) result.get
       else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
     }

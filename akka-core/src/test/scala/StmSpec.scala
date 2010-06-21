@@ -1,7 +1,6 @@
 package se.scalablesolutions.akka.stm
 
 import se.scalablesolutions.akka.actor.{Actor, Transactor}
-import se.scalablesolutions.akka.util.Helpers.narrow
 import Actor._
 
 import org.scalatest.Spec
@@ -89,10 +88,10 @@ class StmSpec extends
       try {
         val actor = actorOf[GlobalTransactionVectorTestActor].start
         actor !! Add(5)
-        val size1: Int = narrow(actor !! Size).getOrElse(fail("Could not get Vector::size"))
+        val size1 = (actor !! Size).as[Int].getOrElse(fail("Could not get Vector::size"))
         size1 should equal(2)
         actor !! Add(2)
-        val size2 = narrow[Int](actor !! Size).getOrElse(fail("Could not get Vector::size"))
+        val size2 = (actor !! Size).as[Int].getOrElse(fail("Could not get Vector::size"))
         size2 should equal(3)
       } catch {
         case e =>
@@ -108,18 +107,18 @@ class StmSpec extends
       try {
         val actor = actorOf[NestedTransactorLevelOneActor].start
         actor !! Add(2)
-        val size1: Int = narrow(actor !! Size).getOrElse(fail("Could not get size"))
+        val size1 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size1 should equal(2)
         actor !! Add(7)
         actor ! "HiLevelOne"
-        val size2: Int = narrow(actor !! Size).getOrElse(fail("Could not get size"))
+        val size2 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size2 should equal(7)
         actor !! Add(0)
         actor ! "HiLevelTwo"
-        val size3: Int = narrow(actor !! Size).getOrElse(fail("Could not get size"))
+        val size3 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size3 should equal(0)
         actor !! Add(3)
-        val size4: Int = narrow(actor !! Size).getOrElse(fail("Could not get size"))
+        val size4 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
         size4 should equal(3)
       } catch {
         case e =>

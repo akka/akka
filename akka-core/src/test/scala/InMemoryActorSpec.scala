@@ -5,7 +5,6 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import se.scalablesolutions.akka.stm.{Ref, TransactionalMap, TransactionalVector}
-import se.scalablesolutions.akka.util.Helpers.narrow
 import Actor._
 
 object InMemoryActorSpec {
@@ -117,7 +116,7 @@ class InMemoryActorSpec extends JUnitSuite {
     stateful.start
     stateful ! SetMapStateOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    val notifier = narrow[CountDownLatch](stateful !! GetNotifier)
+    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
     assert(notifier.get.await(1, TimeUnit.SECONDS))
     assert("new state" === (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get)
   }
@@ -139,7 +138,7 @@ class InMemoryActorSpec extends JUnitSuite {
     failer.start
     stateful ! SetMapStateOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
-    val notifier = narrow[CountDownLatch](stateful !! GetNotifier)
+    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
     assert(notifier.get.await(1, TimeUnit.SECONDS))
     assert("init" === (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
   }
@@ -164,7 +163,7 @@ class InMemoryActorSpec extends JUnitSuite {
     stateful.start
     stateful ! SetVectorStateOneWay("init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    val notifier = narrow[CountDownLatch](stateful !! GetNotifier)
+    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
     assert(notifier.get.await(1, TimeUnit.SECONDS))
     assert(2 === (stateful !! GetVectorSize).get)
   }
@@ -187,7 +186,7 @@ class InMemoryActorSpec extends JUnitSuite {
     val failer = actorOf[InMemFailerActor]
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
-    val notifier = narrow[CountDownLatch](stateful !! GetNotifier)
+    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
     assert(notifier.get.await(1, TimeUnit.SECONDS))
     assert(1 === (stateful !! GetVectorSize).get)
   }
@@ -212,7 +211,7 @@ class InMemoryActorSpec extends JUnitSuite {
     stateful.start
     stateful ! SetRefStateOneWay("init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    val notifier = narrow[CountDownLatch](stateful !! GetNotifier)
+    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
     assert(notifier.get.await(1, TimeUnit.SECONDS))
     assert("new state" === (stateful !! GetRefState).get)
   }
@@ -235,7 +234,7 @@ class InMemoryActorSpec extends JUnitSuite {
     val failer = actorOf[InMemFailerActor]
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
-    val notifier = narrow[CountDownLatch](stateful !! GetNotifier)
+    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
     assert(notifier.get.await(1, TimeUnit.SECONDS))
     assert("init" === (stateful !! (GetRefState, 1000000)).get) // check that state is == init state
   }
