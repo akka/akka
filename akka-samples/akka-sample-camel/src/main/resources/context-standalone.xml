@@ -7,6 +7,6 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
 http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka.xsd">
 
-  <akka:active-object id="blah2" target="sample.camel.BeanImpl" timeout="1000" />
+  <akka:active-object id="pojo3" target="sample.camel.BeanImpl" timeout="1000" />
 
 </beans>

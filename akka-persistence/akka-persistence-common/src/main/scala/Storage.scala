@@ -82,9 +82,9 @@ trait Storage {
  */
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
   with Transactional with Committable with Abortable with Logging {
-  protected val newAndUpdatedEntries = TransactionalState.newMap[K, V]
-  protected val removedEntries = TransactionalState.newVector[K]
-  protected val shouldClearOnCommit = TransactionalRef[Boolean]()
+  protected val newAndUpdatedEntries = TransactionalMap[K, V]()
+  protected val removedEntries = TransactionalVector[K]()
+  protected val shouldClearOnCommit = Ref[Boolean]()
 
   // to be concretized in subclasses
   val storage: MapStorageBackend[K, V]
@@ -195,10 +195,10 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable {
-  protected val newElems = TransactionalState.newVector[T]
-  protected val updatedElems = TransactionalState.newMap[Int, T]
-  protected val removedElems = TransactionalState.newVector[T]
-  protected val shouldClearOnCommit = TransactionalRef[Boolean]()
+  protected val newElems = TransactionalVector[T]()
+  protected val updatedElems = TransactionalMap[Int, T]()
+  protected val removedElems = TransactionalVector[T]()
+  protected val shouldClearOnCommit = Ref[Boolean]()
 
   val storage: VectorStorageBackend[T]
 
@@ -276,7 +276,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait PersistentRef[T] extends Transactional with Committable with Abortable {
-  protected val ref = new TransactionalRef[T]
+  protected val ref = Ref[T]()
 
   val storage: RefStorageBackend[T]
 
@@ -343,14 +343,14 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   import scala.collection.immutable.Queue
 
   // current trail that will be played on commit to the underlying store
-  protected val enqueuedNDequeuedEntries = TransactionalState.newVector[(Option[A], QueueOp)]
-  protected val shouldClearOnCommit = TransactionalRef[Boolean]()
+  protected val enqueuedNDequeuedEntries = TransactionalVector[(Option[A], QueueOp)]()
+  protected val shouldClearOnCommit = Ref[Boolean]()
 
   // local queue that will record all enqueues and dequeues in the current txn
-  protected val localQ = TransactionalRef[Queue[A]]()
+  protected val localQ = Ref[Queue[A]]()
 
   // keeps a pointer to the underlying storage for the enxt candidate to be dequeued
-  protected val pickMeForDQ = TransactionalRef[Int]()
+  protected val pickMeForDQ = Ref[Int]()
 
   localQ.swap(Queue.empty)
   pickMeForDQ.swap(0)
@@ -481,8 +481,8 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
  */
 trait PersistentSortedSet[A] extends Transactional with Committable with Abortable {
 
-  protected val newElems = TransactionalState.newMap[A, Float]
-  protected val removedElems = TransactionalState.newVector[A]
+  protected val newElems = TransactionalMap[A, Float]()
+  protected val removedElems = TransactionalVector[A]()
 
   val storage: SortedSetStorageBackend[A]
 

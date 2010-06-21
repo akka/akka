@@ -32,8 +32,6 @@ class Producer1 extends Actor with Producer {
 
   override def oneway = false // default
   override def async = true   // default
-
-  protected def receive = produce
 }
 
 class Consumer1 extends Actor with Consumer with Logging {
@@ -102,7 +100,6 @@ class Publisher(name: String, uri: String) extends Actor with Producer {
   self.id = name
   def endpointUri = uri
   override def oneway = true
-  protected def receive = produce
 }
 
 class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consumer {

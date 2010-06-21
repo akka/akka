@@ -6,7 +6,7 @@ package sample.rest.scala
 
 import se.scalablesolutions.akka.actor.{Transactor, SupervisorFactory, Actor}
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.stm.TransactionalState
+import se.scalablesolutions.akka.stm.TransactionalMap
 import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
@@ -63,7 +63,7 @@ class SimpleService {
 class SimpleServiceActor extends Transactor {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
-  private lazy val storage = TransactionalState.newMap[String, Integer]
+  private lazy val storage = TransactionalMap[String, Integer]()
 
   def receive = {
     case "Tick" => if (hasStartedTicking) {
