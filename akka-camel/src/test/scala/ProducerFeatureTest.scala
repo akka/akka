@@ -11,7 +11,6 @@ import se.scalablesolutions.akka.actor.Actor._
 object ProducerFeatureTest {
   class TestProducer(uri: String) extends Actor with Producer {
     def endpointUri = uri
-    def receive = produce
   }
 }
 
