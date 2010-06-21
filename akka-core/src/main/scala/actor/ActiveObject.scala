@@ -355,7 +355,7 @@ object ActiveObject extends Logging {
   }
 
   private[akka] def newInstance[T](target: Class[T], actorRef: ActorRef, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    val proxy = Proxy.newInstance(target, false, false)
+    val proxy = Proxy.newInstance(target, true, false)
     val context = injectActiveObjectContext(proxy)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target, proxy, context)
     actorRef.timeout = timeout
@@ -368,7 +368,7 @@ object ActiveObject extends Logging {
   private[akka] def newInstance[T](intf: Class[T], target: AnyRef, actorRef: ActorRef,
                                    remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val context = injectActiveObjectContext(target)
-    val proxy = Proxy.newInstance(Array(intf), Array(target), false, false)
+    val proxy = Proxy.newInstance(Array(intf), Array(target), true, false)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target.getClass, target, context)
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
@@ -462,7 +462,7 @@ object ActiveObject extends Logging {
         val parent = clazz.getSuperclass
         if (parent != null) injectActiveObjectContext0(activeObject, parent)
         else {
-          log.warning(
+          log.trace(
           "Can't set 'ActiveObjectContext' for ActiveObject [%s] since no field of this type could be found.",
           activeObject.getClass.getName)
           None
