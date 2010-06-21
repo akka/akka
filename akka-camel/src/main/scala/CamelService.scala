@@ -66,7 +66,10 @@ trait CamelService extends Bootable with Logging {
    *
    * @see onLoad
    */
-  def load = onLoad
+  def load: CamelService = {
+    onLoad
+    this
+  }
 
   /**
    * Stops the CamelService.

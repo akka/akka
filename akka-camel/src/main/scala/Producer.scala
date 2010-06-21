@@ -134,6 +134,11 @@ trait Producer { this: Actor =>
   }
 
   /**
+   * Default implementation of Actor.receive
+   */
+  protected def receive = produce
+
+  /**
    * Creates a new in-only Exchange.
    */
   protected def createInOnlyExchange: Exchange = createExchange(ExchangePattern.InOnly)

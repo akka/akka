@@ -7,15 +7,13 @@ package sample.ants
 import java.util.concurrent.TimeUnit
 import scala.util.Random.{nextInt => randomInt}
 import se.scalablesolutions.akka
-import akka.actor.{ActorRef, Transactor, Scheduler}
+import akka.actor.{Actor, ActorRef, Scheduler}
 import akka.actor.Actor.actorOf
-import akka.stm.{Vector => _, _}
-import akka.stm.Ref.Ref
-import akka.stm.Transaction.Local._
+import akka.stm.local._
 
 object Config {
   val Dim = 80               // dimensions of square world
-  val AntsSqrt = 7           // number of ants = AntsSqrt^2
+  val AntsSqrt = 20          // number of ants = AntsSqrt^2
   val FoodPlaces = 35        // number of places with food
   val FoodRange = 100        // range of amount of food at a place
   val PherScale = 10         // scale factor for pheromone drawing
@@ -43,7 +41,7 @@ case class Cell(food: Int = 0, pher: Float = 0, ant: Option[Ant] = None, home: B
 object EmptyCell extends Cell
 
 class Place(initCell: Cell = EmptyCell) extends Ref(Some(initCell)) {
-  def cell: Cell = get.get
+  def cell: Cell = getOrElse(EmptyCell)
   def food: Int = cell.food
   def food(i: Int) = alter(_.addFood(i))
   def hasFood = food > 0
@@ -60,6 +58,8 @@ class Place(initCell: Cell = EmptyCell) extends Ref(Some(initCell)) {
   def home: Boolean = cell.home
 }
 
+case object Ping
+
 object World {
   import Config._
 
@@ -67,6 +67,10 @@ object World {
   lazy val places = Vector.fill(Dim, Dim)(new Place)
   lazy val ants = setup
   lazy val evaporator = actorOf[Evaporator].start
+
+  private val snapshotFactory = TransactionFactory(readonly = true, familyName = "snapshot")
+
+  def snapshot = atomic(snapshotFactory) { Array.tabulate(Dim, Dim)(place(_, _).get) }
 
   def place(loc: (Int, Int)) = places(loc._1)(loc._2)
 
@@ -83,12 +87,12 @@ object World {
   }
 
   def start = {
-    ants foreach (pingEvery(_, AntMillis))
-    pingEvery(evaporator, EvapMillis)
+    ants foreach pingEvery(AntMillis)
+    pingEvery(EvapMillis)(evaporator)
   }
 
-  private def pingEvery(actor: ActorRef, millis: Long) =
-    Scheduler.schedule(actor, "ping", Config.StartDelay, millis, TimeUnit.MILLISECONDS)
+  private def pingEvery(millis: Long)(actor: ActorRef) =
+    Scheduler.schedule(actor, Ping, Config.StartDelay, millis, TimeUnit.MILLISECONDS)
 }
 
 object Util {
@@ -123,9 +127,9 @@ object Util {
   }
 }
 
-trait WorldActor extends Transactor {
+trait WorldActor extends Actor {
   def act
-  def receive = { case "ping" => act }
+  def receive = { case Ping => act }
 }
 
 class AntActor(initLoc: (Int, Int)) extends WorldActor {
@@ -133,13 +137,17 @@ class AntActor(initLoc: (Int, Int)) extends WorldActor {
   import Util._
 
   val locRef = Ref(initLoc)
+
+  val name = "ant-from-" + initLoc._1 + "-" + initLoc._2
+  implicit val txFactory = TransactionFactory(familyName = name)
+
   val homing = (p: Place) => p.pher + (100 * (if (p.home) 0 else 1))
   val foraging = (p: Place) => p.pher + p.food
 
-  def loc = locRef.get.getOrElse(initLoc)
+  def loc = locRef.getOrElse(initLoc)
   def newLoc(l: (Int, Int)) = locRef swap l
 
-  def act = {
+  def act = atomic {
     val (x, y) = loc
     val current = place(x, y)
     for (ant <- current.ant) {
@@ -202,6 +210,11 @@ class AntActor(initLoc: (Int, Int)) extends WorldActor {
 class Evaporator extends WorldActor {
   import Config._
   import World._
+
+  implicit val txFactory = TransactionFactory(familyName = "evaporator")
   val evaporate = (pher: Float) => pher * EvapRate
-  def act = for (x <- 0 until Dim; y <- 0 until Dim) place(x, y) pher evaporate
+
+  def act = for (x <- 0 until Dim; y <- 0 until Dim) {
+    atomic { place(x, y) pher evaporate }
+  }
 }
