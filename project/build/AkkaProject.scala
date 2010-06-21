@@ -23,6 +23,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
   val MULTIVERSE_VERSION = "0.5.2"
   val COMMONS_CODEC_VERSION = "1.4"
+  val MULTIVERSE_VERSION = "0.6-SNAPSHOT"
 
   // ------------------------------------------------------------
   lazy val deployPath = info.projectPath / "deploy"
@@ -68,7 +69,12 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
  // val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
+<<<<<<< HEAD
   val scalaBundleConfig       = ModuleConfiguration("com.weiglewilczek.scala-lang-osgi", ScalaToolsReleases)
+=======
+  def codehausSnapshotRepo    = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
+  val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", codehausSnapshotRepo)
+>>>>>>> master
 
   // ------------------------------------------------------------
   // project defintions
@@ -179,6 +185,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
+    val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.RC3" % "0.7.4" % "compile"
     val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.8.0.RC3" % "0.7.4" % "compile"

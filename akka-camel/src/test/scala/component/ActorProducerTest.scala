@@ -19,7 +19,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test def shouldSendMessageToActor = {
     val actor = actorOf[Tester1].start
-    val latch = actor.!![CountDownLatch](SetExpectedMessageCount(1)).get
+    val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
     exchange.getIn.setBody("Martin")
