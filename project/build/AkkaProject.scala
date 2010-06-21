@@ -370,12 +370,12 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val jms_1_1 = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive()
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" intransitive()
 
-    override def packageAction = task {
+    override def packageAction = {
       val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
       val prjs: Seq[Path] = info.dependencies.toSeq.asInstanceOf[Seq[DefaultProject]].map(_.jarPath)
       val all = libs ++ prjs
       FileUtilities.copyFlat(all, outputPath / "bundles", log)
-      None
+      super.packageAction
     }
   }
 
@@ -523,7 +523,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   trait OSGiProject extends DefaultProject with BNDPlugin {
-    override def artifactID = moduleID + "_osgi"
     override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=%s".format(projectVersion.value))
   }
 }
