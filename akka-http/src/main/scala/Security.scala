@@ -23,8 +23,9 @@
 package se.scalablesolutions.akka.security
 
 import se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry}
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.Config
+import se.scalablesolutions.akka.util.Logging
 
 import com.sun.jersey.api.model.AbstractMethod
 import com.sun.jersey.spi.container.{ResourceFilterFactory, ContainerRequest, ContainerRequestFilter, ContainerResponse, ContainerResponseFilter, ResourceFilter}
@@ -87,7 +88,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
     override def filter(request: ContainerRequest): ContainerRequest =
       rolesAllowed match {
         case Some(roles) => {
-          val result : Option[AnyRef] = authenticator !! Authenticate(request, roles)
+          val result = (authenticator !! Authenticate(request, roles)).as[AnyRef]
           result match {
             case Some(OK) => request
             case Some(r) if r.isInstanceOf[Response] =>
