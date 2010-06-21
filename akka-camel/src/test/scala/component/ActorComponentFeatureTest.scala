@@ -26,7 +26,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
 
     scenario("one-way communication using actor id") {
       val actor = actorOf[Tester1].start
-      val latch = actor.!![CountDownLatch](SetExpectedMessageCount(1)).get
+      val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       template.sendBody("actor:%s" format actor.id, "Martin")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       val reply = (actor !! GetRetainedMessage).get.asInstanceOf[Message]
@@ -35,7 +35,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
 
     scenario("one-way communication using actor uuid") {
       val actor = actorOf[Tester1].start
-      val latch = actor.!![CountDownLatch](SetExpectedMessageCount(1)).get
+      val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       template.sendBody("actor:uuid:%s" format actor.uuid, "Martin")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       val reply = (actor !! GetRetainedMessage).get.asInstanceOf[Message]

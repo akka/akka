@@ -80,7 +80,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
     stateful.start
     stateful !! SetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    val result: Array[Byte] = (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get
+    val result = (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).as[Array[Byte]].get
     assertEquals("new state", new String(result, 0, result.length, "UTF-8"))
   }
 
@@ -95,7 +95,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    val result: Array[Byte] = (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get
+    val result = (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).as[Array[Byte]].get
     assertEquals("init", new String(result, 0, result.length, "UTF-8")) // check that state is == init state
   }
 
@@ -128,7 +128,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
     stateful.start
     stateful !! SetRefState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
-    val result: Array[Byte] = (stateful !! GetRefState).get
+    val result = (stateful !! GetRefState).as[Array[Byte]].get
     assertEquals("new state", new String(result, 0, result.length, "UTF-8"))
   }
 
@@ -143,7 +143,7 @@ class CassandraPersistentActorSpec extends JUnitSuite {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
       fail("should have thrown an exception")
     } catch {case e: RuntimeException => {}}
-    val result: Array[Byte] = (stateful !! GetRefState).get
+    val result = (stateful !! GetRefState).as[Array[Byte]].get
     assertEquals("init",  new String(result, 0, result.length, "UTF-8")) // check that state is == init state
   }
 

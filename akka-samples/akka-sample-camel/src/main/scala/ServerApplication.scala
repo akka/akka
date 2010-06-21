@@ -14,8 +14,7 @@ object ServerApplication {
   //
 
   def main(args: Array[String]) {
-    val camelService = CamelService.newInstance
-    camelService.load
+    val camelService = CamelService.newInstance.load
     RemoteNode.start("localhost", 7777)
     RemoteNode.register("remote2", actorOf[RemoteActor2].start)
   }

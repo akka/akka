@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor, ActorRef, Remo
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteClient}
 import se.scalablesolutions.akka.persistence.common.PersistentVector
 import se.scalablesolutions.akka.persistence.redis.RedisStorage
-import se.scalablesolutions.akka.stm.Transaction.Global._
+import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.util.Logging
@@ -63,10 +63,10 @@ case class ChatMessage(from: String, message: String) extends Event
 class ChatClient(val name: String) {
   val chat = RemoteClient.actorFor("chat:service", "localhost", 9999)
 
-  def login =                 chat ! Login(name)
-  def logout =                chat ! Logout(name)
+  def login                 = chat ! Login(name)
+  def logout                = chat ! Logout(name)
   def post(message: String) = chat ! ChatMessage(name, name + ": " + message)
-  def chatLog: ChatLog =     (chat !! GetChatLog(name)).getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
+  def chatLog               = (chat !! GetChatLog(name)).as[ChatLog].getOrElse(throw new Exception("Couldn't get the chat log from ChatServer"))
 }
 
 /**
