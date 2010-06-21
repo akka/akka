@@ -110,21 +110,25 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
     if (argList == "r") {
       ActiveObject.newRemoteInstance(target.toClass, timeout, transactional, host, port, callbacks)
     } else if (argList == "ri" ) {
-      ActiveObject.newRemoteInstance(interface.toClass, target.toClass, timeout, transactional, host, port, callbacks)
+      ActiveObject.newRemoteInstance(interface.toClass, aNewInstance(target.toClass), timeout, transactional, host, port, callbacks)
     } else if (argList == "rd") {
       ActiveObject.newRemoteInstance(target.toClass, timeout, transactional, dispatcherInstance, host, port, callbacks)
     } else if (argList == "rid") {
-      ActiveObject.newRemoteInstance(interface.toClass, target.toClass, timeout, transactional, dispatcherInstance, host, port, callbacks)
+      ActiveObject.newRemoteInstance(interface.toClass, aNewInstance(target.toClass), timeout, transactional, dispatcherInstance, host, port, callbacks)
     } else if (argList == "i") {
-      ActiveObject.newInstance(interface.toClass, target.toClass, timeout, transactional, callbacks)
+      ActiveObject.newInstance(interface.toClass, aNewInstance(target.toClass), timeout, transactional, callbacks)
     } else if (argList == "id") {
-      ActiveObject.newInstance(interface.toClass, target.toClass, timeout, transactional, dispatcherInstance, callbacks)
+      ActiveObject.newInstance(interface.toClass, aNewInstance(target.toClass), timeout, transactional, dispatcherInstance, callbacks)
     } else if (argList == "d") {
       ActiveObject.newInstance(target.toClass, timeout, transactional, dispatcherInstance, callbacks)
     } else {
       ActiveObject.newInstance(target.toClass, timeout, transactional, callbacks)
     }
   }
+
+  def aNewInstance[T <: AnyRef](clazz: Class[T]) : T = {         
+      clazz.newInstance().asInstanceOf[T]                             
+      }
 
   /**
    * create Option[RestartCallback]
