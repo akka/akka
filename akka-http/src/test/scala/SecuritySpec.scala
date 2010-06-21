@@ -39,7 +39,7 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
   @Test def testChallenge = {
     val req = mock[ContainerRequest]
 
-    val result: Response = (authenticator !! (Authenticate(req, List("foo")), 10000)).get
+    val result = (authenticator !! (Authenticate(req, List("foo")), 10000)).as[Response].get
 
     // the actor replies with a challenge for the browser
     result.getStatus must equal(Response.Status.UNAUTHORIZED.getStatusCode)
@@ -54,7 +54,7 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
     // fake a request authorization -> this will authorize the user
     when(req.isUserInRole("chef")).thenReturn(true)
 
-    val result: AnyRef = (authenticator !! (Authenticate(req, List("chef")), 10000)).get
+    val result = (authenticator !! (Authenticate(req, List("chef")), 10000)).as[AnyRef].get
 
     result must be(OK)
     // the authenticator must have set a security context
@@ -68,7 +68,7 @@ class BasicAuthenticatorSpec extends junit.framework.TestCase
     when(req.getHeaderValue("Authorization")).thenReturn("Basic " + new String(Base64.encode("foo:bar")))
     when(req.isUserInRole("chef")).thenReturn(false) // this will deny access
 
-    val result: Response = (authenticator !! (Authenticate(req, List("chef")), 10000)).get
+    val result = (authenticator !! (Authenticate(req, List("chef")), 10000)).as[Response].get
 
     result.getStatus must equal(Response.Status.FORBIDDEN.getStatusCode)
 
