@@ -39,9 +39,9 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     }.start
 
     val result = for {
-      a <- (d.!![Int](testMsg1,5000))
-      b <- (d.!![Int](testMsg2,5000))
-      c <- (d.!![Int](testMsg3,5000))
+      a <- (d !! (testMsg1,5000)).as[Int]
+      b <- (d !! (testMsg2,5000)).as[Int]
+      c <- (d !! (testMsg3,5000)).as[Int]
     } yield a + b + c
 
     result.get must be(21)
