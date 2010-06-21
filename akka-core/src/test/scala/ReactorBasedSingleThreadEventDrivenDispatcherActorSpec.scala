@@ -6,7 +6,6 @@ import org.junit.Test
 import Actor._
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
-import se.scalablesolutions.akka.util.Helpers.narrow
 
 object ReactorBasedSingleThreadEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
@@ -45,7 +44,7 @@ class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite 
 
   @Test def shouldSendReplySync = {
     val actor = actorOf[TestActor].start
-    val result = narrow[String](actor !! ("Hello", 10000)).get
+    val result = (actor !! ("Hello", 10000)).as[String].get
     assert("World" === result)
     actor.stop
   }

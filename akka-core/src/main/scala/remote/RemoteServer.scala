@@ -10,8 +10,8 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
-import se.scalablesolutions.akka.util.Helpers.narrow
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.config.Config.config
 
@@ -370,7 +370,7 @@ class RemoteServerHandler(
     if (request.getIsOneWay) actorRef.!(message)(sender)
     else {
       try {
-        val resultOrNone = narrow[AnyRef](actorRef.!!(message)(sender))
+        val resultOrNone = (actorRef.!!(message)(sender)).as[AnyRef]
         val result = if (resultOrNone.isDefined) resultOrNone.get else null
         log.debug("Returning result from actor invocation [%s]", result)
         val replyBuilder = RemoteReplyProtocol.newBuilder
