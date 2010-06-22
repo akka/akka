@@ -32,8 +32,8 @@ message SerializedActorRefProtocol {
   required string id = 2;
   required string actorClassname = 3;
   required bytes actorInstance = 4;
-  required string serializerClassname = 5;
-  required AddressProtocol originalAddress  = 6;
+  required AddressProtocol originalAddress  = 5;
+  optional string serializerClassname = 6;
   optional bool isTransactor = 7;
   optional uint64 timeout = 8;
   optional LifeCycleProtocol lifeCycle = 9;

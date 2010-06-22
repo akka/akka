@@ -29,7 +29,6 @@ class SerializableActorSpec extends
       (actor2 !! "hello").getOrElse("_") should equal("world 2")
     }
     
-    /*
     it("should be able to serialize and deserialize a ProtobufSerializableActor") {
       val actor1 = actorOf[ProtobufSerializableTestActor].start
       (actor1 !! "hello").getOrElse("_") should equal("world 1")
@@ -42,6 +41,7 @@ class SerializableActorSpec extends
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
     }
 
+    /*
     it("should be able to serialize and deserialize a JavaJSONSerializableActor") {
       val actor1 = actorOf[JavaJSONSerializableTestActor].start
       val serializer = actor1.serializer.getOrElse(fail("Serializer not defined"))
