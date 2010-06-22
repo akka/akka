@@ -726,8 +726,8 @@ sealed class LocalActorRef private[akka](
         if (actorInstance.isInstanceOf[StatelessSerializableActor]) {
           actorInstance.asInstanceOf[Actor]
         } else if (actorInstance.isInstanceOf[StatefulSerializerSerializableActor]) {
-          __serializer
-            .getOrElse(throw new IllegalStateException("No serializer defined for SerializableActor [" + actorClass.getName + "]"))
+          __serializer.getOrElse(throw new IllegalStateException(
+              "No serializer defined for SerializableActor [" + actorClass.getName + "]"))
             .fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
         } else if (actorInstance.isInstanceOf[StatefulWrappedSerializableActor]) {
           val instance = actorInstance.asInstanceOf[StatefulWrappedSerializableActor]
@@ -818,28 +818,32 @@ sealed class LocalActorRef private[akka](
       }
     }
 
-    val originalAddress = AddressProtocol.newBuilder.setHostname(homeAddress.getHostName).setPort(homeAddress.getPort).build
+    val originalAddress = AddressProtocol.newBuilder
+      .setHostname(homeAddress.getHostName)
+      .setPort(homeAddress.getPort)
+      .build
 
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(uuid)
       .setId(id)
       .setActorClassname(actorClass.getName)
-      .setActorInstance(ByteString.copyFrom(actor.asInstanceOf[StatefulSerializableActor].toBinary))
       .setOriginalAddress(originalAddress)
       .setIsTransactor(isTransactor)
       .setTimeout(timeout)
+    if (actor.isInstanceOf[StatefulSerializableActor]) builder.setActorInstance(
+      ByteString.copyFrom(actor.asInstanceOf[StatefulSerializableActor].toBinary))
     serializer.foreach(s => builder.setSerializerClassname(s.getClass.getName))
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
     supervisor.foreach(s => builder.setSupervisor(s.toRemoteActorRefProtocol))
     // FIXME: how to serialize the hotswap PartialFunction ??
-    // hotswap.foreach(builder.setHotswapStack(_))
+    //hotswap.foreach(builder.setHotswapStack(_))
     builder.build
   }
 
   /**
    * Returns the mailbox.
    */
-  protected[akka] def mailbox: Deque[MessageInvocation] = _mailbox
+  def mailbox: Deque[MessageInvocation] = _mailbox
 
   /**
    * Serializes the ActorRef instance into a byte array (Array[Byte]).

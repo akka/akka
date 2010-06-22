@@ -41,32 +41,16 @@ class SerializableActorSpec extends
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
     }
 
-    /*
-    it("should be able to serialize and deserialize a JavaJSONSerializableActor") {
-      val actor1 = actorOf[JavaJSONSerializableTestActor].start
-      val serializer = actor1.serializer.getOrElse(fail("Serializer not defined"))
-      (actor1 !! "hello").getOrElse("_") should equal("world 1")
-      (actor1 !! "hello").getOrElse("_") should equal("world 2")
+    it("should be able to serialize and deserialize a StatelessSerializableActor") {
+      val actor1 = actorOf[StatelessSerializableTestActor].start
+      (actor1 !! "hello").getOrElse("_") should equal("world")
 
       val bytes = actor1.toBinary
       val actor2 = ActorRef.fromBinaryToLocalActorRef(bytes)
 
       actor2.start
-      (actor2 !! "hello").getOrElse("_") should equal("world 3")
+      (actor2 !! "hello").getOrElse("_") should equal("world")
     }
-
-    it("should be able to serialize and deserialize a ScalaJSONSerializableActor") {
-      val actor1 = actorOf[ScalaJSONSerializableTestActor].start
-      val serializer = actor1.serializer.getOrElse(fail("Serializer not defined"))
-      (actor1 !! "hello").getOrElse("_") should equal("world 1")
-
-      val bytes = actor1.toBinary
-      val actor2 = ActorRef.fromBinaryToLocalActorRef(bytes)
-
-      actor2.start
-      (actor2 !! "hello").getOrElse("_") should equal("world 2")
-    }
-*/
   }
 }
 
@@ -79,6 +63,13 @@ class SerializableActorSpec extends
   }
 }
 
+class StatelessSerializableTestActor extends StatelessSerializableActor {
+  def receive = {
+    case "hello" =>
+      self.reply("world")
+  }
+}
+
 class ProtobufSerializableTestActor extends ProtobufSerializableActor[ProtobufProtocol.Counter] {
   val clazz = classOf[ProtobufProtocol.Counter]
   private var count = 0
@@ -86,24 +77,6 @@ class ProtobufSerializableTestActor extends ProtobufSerializableActor[ProtobufPr
   def toProtobuf = ProtobufProtocol.Counter.newBuilder.setCount(count).build
   def fromProtobuf(message: ProtobufProtocol.Counter) = count = message.getCount
 
-  def receive = {
-    case "hello" =>
-      count = count + 1
-      self.reply("world " + count)
-  }
-}
-
-class JavaJSONSerializableTestActor extends JavaJSONSerializableActor {
-  private var count = 0
-  def receive = {
-    case "hello" =>
-      count = count + 1
-      self.reply("world " + count)
-  }
-}
-
-@scala.reflect.BeanInfo class ScalaJSONSerializableTestActor extends ScalaJSONSerializableActor {
-  private var count = 0
   def receive = {
     case "hello" =>
       count = count + 1

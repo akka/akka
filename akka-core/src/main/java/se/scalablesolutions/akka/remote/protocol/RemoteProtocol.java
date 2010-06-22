@@ -632,19 +632,19 @@ public final class RemoteProtocol {
     public boolean hasActorClassname() { return hasActorClassname; }
     public java.lang.String getActorClassname() { return actorClassname_; }
     
-    // required bytes actorInstance = 4;
-    public static final int ACTORINSTANCE_FIELD_NUMBER = 4;
-    private boolean hasActorInstance;
-    private com.google.protobuf.ByteString actorInstance_ = com.google.protobuf.ByteString.EMPTY;
-    public boolean hasActorInstance() { return hasActorInstance; }
-    public com.google.protobuf.ByteString getActorInstance() { return actorInstance_; }
-    
-    // required .AddressProtocol originalAddress = 5;
-    public static final int ORIGINALADDRESS_FIELD_NUMBER = 5;
+    // required .AddressProtocol originalAddress = 4;
+    public static final int ORIGINALADDRESS_FIELD_NUMBER = 4;
     private boolean hasOriginalAddress;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol originalAddress_;
     public boolean hasOriginalAddress() { return hasOriginalAddress; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol getOriginalAddress() { return originalAddress_; }
+    
+    // optional bytes actorInstance = 5;
+    public static final int ACTORINSTANCE_FIELD_NUMBER = 5;
+    private boolean hasActorInstance;
+    private com.google.protobuf.ByteString actorInstance_ = com.google.protobuf.ByteString.EMPTY;
+    public boolean hasActorInstance() { return hasActorInstance; }
+    public com.google.protobuf.ByteString getActorInstance() { return actorInstance_; }
     
     // optional string serializerClassname = 6;
     public static final int SERIALIZERCLASSNAME_FIELD_NUMBER = 6;
@@ -697,7 +697,6 @@ public final class RemoteProtocol {
       if (!hasUuid) return false;
       if (!hasId) return false;
       if (!hasActorClassname) return false;
-      if (!hasActorInstance) return false;
       if (!hasOriginalAddress) return false;
       if (!getOriginalAddress().isInitialized()) return false;
       if (hasLifeCycle()) {
@@ -721,11 +720,11 @@ public final class RemoteProtocol {
       if (hasActorClassname()) {
         output.writeString(3, getActorClassname());
       }
-      if (hasActorInstance()) {
-        output.writeBytes(4, getActorInstance());
-      }
       if (hasOriginalAddress()) {
-        output.writeMessage(5, getOriginalAddress());
+        output.writeMessage(4, getOriginalAddress());
+      }
+      if (hasActorInstance()) {
+        output.writeBytes(5, getActorInstance());
       }
       if (hasSerializerClassname()) {
         output.writeString(6, getSerializerClassname());
@@ -766,13 +765,13 @@ public final class RemoteProtocol {
         size += com.google.protobuf.CodedOutputStream
           .computeStringSize(3, getActorClassname());
       }
-      if (hasActorInstance()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getActorInstance());
-      }
       if (hasOriginalAddress()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(5, getOriginalAddress());
+          .computeMessageSize(4, getOriginalAddress());
+      }
+      if (hasActorInstance()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getActorInstance());
       }
       if (hasSerializerClassname()) {
         size += com.google.protobuf.CodedOutputStream
@@ -965,11 +964,11 @@ public final class RemoteProtocol {
         if (other.hasActorClassname()) {
           setActorClassname(other.getActorClassname());
         }
-        if (other.hasActorInstance()) {
-          setActorInstance(other.getActorInstance());
-        }
         if (other.hasOriginalAddress()) {
           mergeOriginalAddress(other.getOriginalAddress());
+        }
+        if (other.hasActorInstance()) {
+          setActorInstance(other.getActorInstance());
         }
         if (other.hasSerializerClassname()) {
           setSerializerClassname(other.getSerializerClassname());
@@ -1027,16 +1026,16 @@ public final class RemoteProtocol {
               break;
             }
             case 34: {
-              setActorInstance(input.readBytes());
-              break;
-            }
-            case 42: {
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.Builder subBuilder = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.newBuilder();
               if (hasOriginalAddress()) {
                 subBuilder.mergeFrom(getOriginalAddress());
               }
               input.readMessage(subBuilder, extensionRegistry);
               setOriginalAddress(subBuilder.buildPartial());
+              break;
+            }
+            case 42: {
+              setActorInstance(input.readBytes());
               break;
             }
             case 50: {
@@ -1141,28 +1140,7 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // required bytes actorInstance = 4;
-      public boolean hasActorInstance() {
-        return result.hasActorInstance();
-      }
-      public com.google.protobuf.ByteString getActorInstance() {
-        return result.getActorInstance();
-      }
-      public Builder setActorInstance(com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasActorInstance = true;
-        result.actorInstance_ = value;
-        return this;
-      }
-      public Builder clearActorInstance() {
-        result.hasActorInstance = false;
-        result.actorInstance_ = getDefaultInstance().getActorInstance();
-        return this;
-      }
-      
-      // required .AddressProtocol originalAddress = 5;
+      // required .AddressProtocol originalAddress = 4;
       public boolean hasOriginalAddress() {
         return result.hasOriginalAddress();
       }
@@ -1196,6 +1174,27 @@ public final class RemoteProtocol {
       public Builder clearOriginalAddress() {
         result.hasOriginalAddress = false;
         result.originalAddress_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
+        return this;
+      }
+      
+      // optional bytes actorInstance = 5;
+      public boolean hasActorInstance() {
+        return result.hasActorInstance();
+      }
+      public com.google.protobuf.ByteString getActorInstance() {
+        return result.getActorInstance();
+      }
+      public Builder setActorInstance(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasActorInstance = true;
+        result.actorInstance_ = value;
+        return this;
+      }
+      public Builder clearActorInstance() {
+        result.hasActorInstance = false;
+        result.actorInstance_ = getDefaultInstance().getActorInstance();
         return this;
       }
       
@@ -3874,9 +3873,9 @@ public final class RemoteProtocol {
       "\030\002 \002(\t\022%\n\013homeAddress\030\003 \002(\0132\020.AddressPro" +
       "tocol\022\017\n\007timeout\030\004 \001(\004\"\276\002\n\032SerializedAct" +
       "orRefProtocol\022\014\n\004uuid\030\001 \002(\t\022\n\n\002id\030\002 \002(\t\022" +
-      "\026\n\016actorClassname\030\003 \002(\t\022\025\n\ractorInstance" +
-      "\030\004 \002(\014\022)\n\017originalAddress\030\005 \002(\0132\020.Addres" +
-      "sProtocol\022\033\n\023serializerClassname\030\006 \001(\t\022\024" +
+      "\026\n\016actorClassname\030\003 \002(\t\022)\n\017originalAddre" +
+      "ss\030\004 \002(\0132\020.AddressProtocol\022\025\n\ractorInsta" +
+      "nce\030\005 \001(\014\022\033\n\023serializerClassname\030\006 \001(\t\022\024" +
       "\n\014isTransactor\030\007 \001(\010\022\017\n\007timeout\030\010 \001(\004\022%\n" +
       "\tlifeCycle\030\t \001(\0132\022.LifeCycleProtocol\022+\n\n",
       "supervisor\030\n \001(\0132\027.RemoteActorRefProtoco" +
@@ -3924,7 +3923,7 @@ public final class RemoteProtocol {
           internal_static_SerializedActorRefProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SerializedActorRefProtocol_descriptor,
-              new java.lang.String[] { "Uuid", "Id", "ActorClassname", "ActorInstance", "OriginalAddress", "SerializerClassname", "IsTransactor", "Timeout", "LifeCycle", "Supervisor", "HotswapStack", },
+              new java.lang.String[] { "Uuid", "Id", "ActorClassname", "OriginalAddress", "ActorInstance", "SerializerClassname", "IsTransactor", "Timeout", "LifeCycle", "Supervisor", "HotswapStack", },
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.class,
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.Builder.class);
           internal_static_RemoteRequestProtocol_descriptor =
