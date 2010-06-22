@@ -61,12 +61,6 @@ trait EmbeddedAppServer extends Bootable with Logging {
          "org.atmosphere.container.GrizzlyCometSupport")
       adapter.addInitParameter("com.sun.jersey.config.property.resourceConfigClass",
         "com.sun.jersey.api.core.PackagesResourceConfig")
-      adapter.addInitParameter("com.sun.jersey.config.property.packages",
-        config.getList("akka.rest.resource_packages").mkString(";")
-      )
-      adapter.addInitParameter("com.sun.jersey.spi.container.ResourceFilters",
-            config.getList("akka.rest.filters").mkString(",")
-      )
 
       if (HOME.isDefined) adapter.addRootFolder(HOME.get + "/deploy/root")
       log.info("REST service root path [%s] and context path [%s]", adapter.getRootFolders, adapter.getContextPath)
