@@ -224,8 +224,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile"
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
-    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
-    val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
 
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
