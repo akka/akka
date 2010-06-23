@@ -646,6 +646,7 @@ private[akka] sealed class ActiveObjectAspect {
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
   val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
+  var crashedActorTl:ThreadLocal[Dispatcher] = new ThreadLocal();
 }
 
 /**
@@ -653,7 +654,7 @@ object Dispatcher {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Option[RestartCallbacks]) extends Actor {
+private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Option[RestartCallbacks]) extends Actor {
   import Dispatcher._
 
   private[actor] var target: Option[AnyRef] = None
@@ -661,13 +662,18 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
   private var postRestart: Option[Method] = None
   private var initTxState: Option[Method] = None
   private var context: Option[ActiveObjectContext] = None
+  private var targetClass:Class[_] = _
+
+  
 
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef, ctx: Option[ActiveObjectContext]) = {
-    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired))
+  
+   if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired))
       self.makeTransactionRequired
     self.id = targetClass.getName
+    this.targetClass = targetClass
     target = Some(targetInstance)
     context = ctx
     val methods = targetInstance.getClass.getDeclaredMethods.toList
@@ -733,21 +739,42 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, val callbacks: Op
 
   override def preRestart(reason: Throwable) {
     try {
+	   // Since preRestart is called we know that this dispatcher
+	   // is about to be restarted. Put the instance in a thread
+	   // local so the new dispatcher can be initialized with the contents of the
+	   // old.
+	   //FIXME - This should be considered as a workaround.
+	   crashedActorTl.set(this)
       if (preRestart.isDefined) preRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
   override def postRestart(reason: Throwable) {
     try {
-      if (postRestart.isDefined) postRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
+	 
+      if (postRestart.isDefined) {
+		postRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
+	  } 
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
+  override def init = {
+	// Get the crashed dispatcher from thread local and intitialize this actor with the
+	 // contents of the old dispatcher
+	  val oldActor = crashedActorTl.get();
+	  if(oldActor != null) {
+	  	initialize(oldActor.targetClass,oldActor.target.get,oldActor.context)
+	  	crashedActorTl.set(null)
+	}
+  }
+
   override def initTransactionalState = {
-    try {
+ try {
       if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
+
+
 
   private def serializeArguments(joinPoint: JoinPoint) = {
     val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
