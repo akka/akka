@@ -51,22 +51,13 @@ trait StatelessSerializableActor extends SerializableActor
 
 /**
  * Mix in this trait to create a serializable actor, serializable through 
- * a custom serialization protocol.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait StatefulSerializableActor extends SerializableActor {
-  def toBinary: Array[Byte]
-}
-
-/**
- * Mix in this trait to create a serializable actor, serializable through 
  * a custom serialization protocol. This actor <b>is</b> the serialized state.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait StatefulSerializerSerializableActor extends StatefulSerializableActor {
+trait StatefulSerializerSerializableActor extends SerializableActor {
   val serializer: Serializer
+  def toBinary: Array[Byte]
 }
 
 /**
@@ -75,7 +66,8 @@ trait StatefulSerializerSerializableActor extends StatefulSerializableActor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait StatefulWrappedSerializableActor extends StatefulSerializableActor {
+trait StatefulWrappedSerializableActor extends SerializableActor {
+  def toBinary: Array[Byte]
   def fromBinary(bytes: Array[Byte])
 }
 

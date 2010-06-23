@@ -358,6 +358,7 @@ object ActiveObject extends Logging {
     val proxy = Proxy.newInstance(target, true, false)
     val context = injectActiveObjectContext(proxy)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target, proxy, context)
+    ActorRegistry.unregister(actorRef) // do not store the dispatcher in the ActorRegistry since it will prevent GC
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(target, actorRef, remoteAddress, timeout))
@@ -370,6 +371,7 @@ object ActiveObject extends Logging {
     val context = injectActiveObjectContext(target)
     val proxy = Proxy.newInstance(Array(intf), Array(target), true, false)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target.getClass, target, context)
+    ActorRegistry.unregister(actorRef) // do not store the dispatcher in the ActorRegistry since it will prevent GC
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(intf, actorRef, remoteAddress, timeout))
