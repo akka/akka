@@ -37,10 +37,6 @@ import javax.annotation.security.{DenyAll, PermitAll, RolesAllowed}
 import java.security.Principal
 import java.util.concurrent.TimeUnit
 
-import net.liftweb.util.{SecurityHelpers, StringHelpers, IoHelpers}
-
-object Enc extends SecurityHelpers with StringHelpers with IoHelpers
-
 case object OK
 
 /**
@@ -249,7 +245,7 @@ trait BasicAuthenticationActor extends AuthenticationActor[BasicCredentials] {
  * rest-part of the akka config
  */
 trait DigestAuthenticationActor extends AuthenticationActor[DigestCredentials] with Logging {
-  import Enc._
+  import LiftUtils._
 
   private object InvalidateNonces
 
@@ -482,4 +478,88 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
     }
   }
 
+}
+
+/*
+* Copyright 2006-2010 WorldWide Conferencing, LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+object LiftUtils {
+  import java.security.{MessageDigest,SecureRandom}
+  val random = new SecureRandom()
+
+  def md5(in: Array[Byte]): Array[Byte] = (MessageDigest.getInstance("MD5")).digest(in)
+
+  /**
+  * Create a random string of a given size
+  * @param size size of the string to create. Must be a positive or nul integer
+  * @return the generated string
+  */
+  def randomString(size: Int): String = {
+    def addChar(pos: Int, lastRand: Int, sb: StringBuilder): StringBuilder = {
+      if (pos >= size) sb
+      else {
+        val randNum = if ((pos % 6) == 0) random.nextInt else lastRand
+        sb.append((randNum & 0x1f) match {
+          case n if n < 26 => ('A' + n).toChar
+          case n => ('0' + (n - 26)).toChar
+        })
+        addChar(pos + 1, randNum >> 5, sb)
+      }
+    }
+    addChar(0, 0, new StringBuilder(size)).toString
+  }
+
+/** encode a Byte array as hexadecimal characters */
+  def hexEncode(in: Array[Byte]): String = {
+    val sb = new StringBuilder
+    val len = in.length
+    def addDigit(in: Array[Byte], pos: Int, len: Int, sb: StringBuilder) {
+      if (pos < len) {
+        val b: Int = in(pos)
+        val msb = (b & 0xf0) >> 4
+        val lsb = (b & 0x0f)
+        sb.append((if (msb < 10) ('0' + msb).asInstanceOf[Char] else ('a' + (msb - 10)).asInstanceOf[Char]))
+        sb.append((if (lsb < 10) ('0' + lsb).asInstanceOf[Char] else ('a' + (lsb - 10)).asInstanceOf[Char]))
+        addDigit(in, pos + 1, len, sb)
+      }
+    }
+    addDigit(in, 0, len, sb)
+    sb.toString
+  }
+
+
+ /**
+  * Splits a string of the form &lt;name1=value1, name2=value2, ... &gt; and unquotes the quoted values.
+  * The result is a Map[String, String]
+  */
+  def splitNameValuePairs(props: String): Map[String, String] = {
+   /**
+    * If str is surrounded by quotes it return the content between the quotes
+    */
+    def unquote(str: String) = {
+      if ((str ne null) && str.length >= 2 && str.charAt(0) == '\"' && str.charAt(str.length - 1) == '\"')
+        str.substring(1, str.length - 1)
+      else
+        str
+    }
+
+    val list = props.split(",").toList.map(in => {
+      val pair = in match { case null => Nil case s => s.split("=").toList.map(_.trim).filter(_.length > 0) }
+       (pair(0), unquote(pair(1)))
+    })
+    val map: Map[String, String] = Map.empty
+	    (map /: list)((m, next) => m + (next))
+  }
 }
