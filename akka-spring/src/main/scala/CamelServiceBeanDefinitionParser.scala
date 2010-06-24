@@ -16,15 +16,11 @@ import se.scalablesolutions.akka.spring.AkkaSpringConfigurationTags._
  */
 class CamelServiceBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
   override def doParse(element: Element, parserContext: ParserContext, builder: BeanDefinitionBuilder) {
-
-    // TODO: make camel-context element optional
-
     val camelContextElement = DomUtils.getChildElementByTagName(element, CAMEL_CONTEXT_TAG);
-    if (camelContextElement eq null) return
-    val camelContextReference = camelContextElement.getAttribute("ref")
-    builder.addPropertyReference("camelContext", camelContextReference)
-
-    // ...
+    if (camelContextElement ne null) {
+      val camelContextReference = camelContextElement.getAttribute("ref")
+      builder.addPropertyReference("camelContext", camelContextReference)
+    }
   }
   
   override def getBeanClass(element: Element): Class[_] = classOf[CamelServiceFactoryBean]
