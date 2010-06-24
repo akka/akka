@@ -321,7 +321,7 @@ class RemoteServerHandler(
     val activeObjects: JMap[String, AnyRef]) extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
-  applicationLoader.foreach(RemoteProtocolBuilder.setClassLoader(_))
+  applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
   /**
    * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer. 
@@ -363,7 +363,7 @@ class RemoteServerHandler(
     log.debug("Dispatching to remote actor [%s:%s]", request.getTarget, request.getUuid)
     val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actorRef.start
-    val message = RemoteProtocolBuilder.getMessage(request)
+    val message = MessageSerializer.deserialize(request.getMessage)
     val sender = 
       if (request.hasSender) Some(ActorRef.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
       else None
@@ -375,9 +375,9 @@ class RemoteServerHandler(
         log.debug("Returning result from actor invocation [%s]", result)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
+            .setMessage(MessageSerializer.serialize(result))
             .setIsSuccessful(true)
             .setIsActor(true)
-        RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
@@ -400,7 +400,7 @@ class RemoteServerHandler(
     log.debug("Dispatching to remote active object [%s :: %s]", request.getMethod, request.getTarget)
     val activeObject = createActiveObject(request.getTarget, request.getTimeout)
 
-    val args = RemoteProtocolBuilder.getMessage(request).asInstanceOf[Array[AnyRef]].toList
+    val args = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Array[AnyRef]].toList
     val argClasses = args.map(_.getClass)
     val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.getTimeout)
 
@@ -413,9 +413,9 @@ class RemoteServerHandler(
         log.debug("Returning result from remote active object invocation [%s]", result)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
+            .setMessage(MessageSerializer.serialize(result))
             .setIsSuccessful(true)
             .setIsActor(false)
-        RemoteProtocolBuilder.setMessage(result, replyBuilder)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)

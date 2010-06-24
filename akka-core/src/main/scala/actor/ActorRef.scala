@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, RemoteProtocolBuilder, RemoteRequestProtocolIdFactory}
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, MessageSerializer, RemoteRequestProtocolIdFactory}
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID, ReentrantGuard}
 
@@ -146,7 +146,8 @@ object ActorRef {
       supervisor,
       hotswap,
       loader.getOrElse(getClass.getClassLoader), // TODO: should we fall back to getClass.getClassLoader?
-      serializer)
+      serializer,
+      protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteRequestProtocol]])
   }
 }
 
@@ -490,6 +491,11 @@ trait ActorRef extends TransactionManagement {
   def actorClass: Class[_ <: Actor]
 
   /**
+   * Returns the class name for the Actor instance that is managed by the ActorRef.
+   */
+  def actorClassName: String
+
+  /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
   def dispatcher_=(md: MessageDispatcher): Unit
@@ -639,6 +645,28 @@ trait ActorRef extends TransactionManagement {
    */
   def shutdownLinkedActors: Unit
 
+  protected def createRemoteRequestProtocolBuilder(
+    message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]): RemoteRequestProtocol.Builder = {
+    val protocol = RemoteRequestProtocol.newBuilder
+        .setId(RemoteRequestProtocolIdFactory.nextId)
+        .setMessage(MessageSerializer.serialize(message))
+        .setTarget(actorClassName)
+        .setTimeout(timeout)
+        .setUuid(uuid)
+        .setIsActor(true)
+        .setIsOneWay(isOneWay)
+        .setIsEscaped(false)
+
+    val id = registerSupervisorAsRemoteActor
+    if (id.isDefined) protocol.setSupervisorUuid(id.get)
+
+    senderOption.foreach { sender =>
+      RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
+      protocol.setSender(sender.toRemoteActorRefProtocol)
+    }
+    protocol
+  }
+
   protected[akka] def toRemoteActorRefProtocol: RemoteActorRefProtocol
 
   protected[akka] def toSerializedActorRefProtocol: SerializedActorRefProtocol
@@ -682,13 +710,6 @@ trait ActorRef extends TransactionManagement {
   }
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
-
-  protected def processSender(senderOption: Option[ActorRef], requestBuilder: RemoteRequestProtocol.Builder) = {
-    senderOption.foreach { sender =>
-      RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-      requestBuilder.setSender(sender.toRemoteActorRefProtocol)
-    }
-  }
 }
 
 /**
@@ -719,7 +740,8 @@ sealed class LocalActorRef private[akka](
                          __supervisor: Option[ActorRef],
                          __hotswap: Option[PartialFunction[Any, Unit]],
                          __loader: ClassLoader,
-                         __serializer: Option[Serializer]) = {
+                         __serializer: Option[Serializer],
+                         __messages: List[RemoteRequestProtocol]) = {
       this(() => {
         val actorClass = __loader.loadClass(__actorClassName)
         val actorInstance = actorClass.newInstance
@@ -752,6 +774,8 @@ sealed class LocalActorRef private[akka](
       actorSelfFields._1.set(actor, this)
       actorSelfFields._2.set(actor, Some(this))
       actorSelfFields._3.set(actor, Some(this))
+      start
+      __messages.foreach(message => this ! MessageSerializer.deserialize(message.getMessage))
       ActorRegistry.register(this)
     }
 
@@ -799,6 +823,7 @@ sealed class LocalActorRef private[akka](
       "Can't serialize an ActorRef using SerializedActorRefProtocol" +
       "\nthat is wrapping an Actor that is not mixing in the SerializableActor trait")
 
+    stop // stop actor since it can not be used any more since we have serialized it and taken all messagess with us
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
       def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
         case Permanent => builder.setLifeCycle(LifeCycleType.PERMANENT)
@@ -839,6 +864,12 @@ sealed class LocalActorRef private[akka](
     supervisor.foreach(s => builder.setSupervisor(s.toRemoteActorRefProtocol))
     // FIXME: how to serialize the hotswap PartialFunction ??
     //hotswap.foreach(builder.setHotswapStack(_))
+    var message = mailbox.poll
+    while (message != null) {
+      builder.addMessages(createRemoteRequestProtocolBuilder(
+        message.message, message.senderFuture.isEmpty, message.sender))
+      message = mailbox.poll
+    }    
     builder.build
   }
 
@@ -862,6 +893,11 @@ sealed class LocalActorRef private[akka](
    */
   def actorClass: Class[_ <: Actor] = actor.getClass.asInstanceOf[Class[_ <: Actor]]
 
+  /**
+   * Returns the class name for the Actor instance that is managed by the ActorRef.
+   */
+  def actorClassName: String = actorClass.getName
+  
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
@@ -1141,21 +1177,8 @@ sealed class LocalActorRef private[akka](
     joinTransaction(message)
 
     if (remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequestProtocol.newBuilder
-          .setId(RemoteRequestProtocolIdFactory.nextId)
-          .setTarget(actorClass.getName)
-          .setTimeout(timeout)
-          .setUuid(uuid)
-          .setIsActor(true)
-          .setIsOneWay(true)
-          .setIsEscaped(false)
-
-      val id = registerSupervisorAsRemoteActor
-      if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
-      processSender(senderOption, requestBuilder)
-
-      RemoteProtocolBuilder.setMessage(message, requestBuilder)
-      RemoteClient.clientFor(remoteAddress.get).send[Any](requestBuilder.build, None)
+      RemoteClient.clientFor(remoteAddress.get).send[Any](
+        createRemoteRequestProtocolBuilder(message, true, senderOption).build, None)
     } else {
       val invocation = new MessageInvocation(this, message, senderOption, None, transactionSet.get)
       if (dispatcher.usesActorMailbox) {
@@ -1173,22 +1196,8 @@ sealed class LocalActorRef private[akka](
     joinTransaction(message)
 
     if (remoteAddress.isDefined) {
-      val requestBuilder = RemoteRequestProtocol.newBuilder
-          .setId(RemoteRequestProtocolIdFactory.nextId)
-          .setTarget(actorClass.getName)
-          .setTimeout(timeout)
-          .setUuid(uuid)
-          .setIsActor(true)
-          .setIsOneWay(false)
-          .setIsEscaped(false)
-
-      //senderOption.foreach(sender => requestBuilder.setSender(sender.toRemoteActorRefProtocol))
-      RemoteProtocolBuilder.setMessage(message, requestBuilder)
-
-      val id = registerSupervisorAsRemoteActor
-      if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
-
-      val future = RemoteClient.clientFor(remoteAddress.get).send(requestBuilder.build, senderFuture)
+      val future = RemoteClient.clientFor(remoteAddress.get).send(
+        createRemoteRequestProtocolBuilder(message, false, senderOption).build, senderFuture)
       if (future.isDefined) future.get
       else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
     } else {
@@ -1441,17 +1450,7 @@ private[akka] case class RemoteActorRef private[akka] (
   lazy val remoteClient = RemoteClient.clientFor(hostname, port, loader)
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
-    val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
-        .setTarget(className)
-        .setTimeout(timeout)
-        .setUuid(uuid)
-        .setIsActor(true)
-        .setIsOneWay(true)
-        .setIsEscaped(false)
-    processSender(senderOption, requestBuilder)
-    RemoteProtocolBuilder.setMessage(message, requestBuilder)
-    remoteClient.send[Any](requestBuilder.build, None)
+    remoteClient.send[Any](createRemoteRequestProtocolBuilder(message, true, senderOption).build, None)
   }
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
@@ -1459,16 +1458,7 @@ private[akka] case class RemoteActorRef private[akka] (
       timeout: Long,
       senderOption: Option[ActorRef],
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
-    val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
-        .setTarget(className)
-        .setTimeout(timeout)
-        .setUuid(uuid)
-        .setIsActor(true)
-        .setIsOneWay(false)
-        .setIsEscaped(false)
-    RemoteProtocolBuilder.setMessage(message, requestBuilder)
-    val future = remoteClient.send(requestBuilder.build, senderFuture)
+    val future = remoteClient.send(createRemoteRequestProtocolBuilder(message, false, senderOption).build, senderFuture)
     if (future.isDefined) future.get
     else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
   }
@@ -1483,9 +1473,16 @@ private[akka] case class RemoteActorRef private[akka] (
     _isShutDown = true
   }
 
+  /**
+   * Returns the class name for the Actor instance that is managed by the ActorRef.
+   */
+  def actorClassName: String = className
+
+  protected[akka] def registerSupervisorAsRemoteActor: Option[String] = None
+
   // ==== NOT SUPPORTED ====
-  def toBinary: Array[Byte] = unsupported
   def actorClass: Class[_ <: Actor] = unsupported
+  def toBinary: Array[Byte] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
   def makeTransactionRequired: Unit = unsupported
@@ -1512,7 +1509,6 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable): Unit = unsupported
-  protected[akka] def registerSupervisorAsRemoteActor: Option[String] = unsupported
   protected[akka] def linkedActors: JMap[String, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
