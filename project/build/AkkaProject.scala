@@ -75,7 +75,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_http = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
   lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
+  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core, akka_camel)
   lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
     akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
