@@ -20,8 +20,10 @@ class ActiveObjectProperties {
   var postRestart: String = ""
   var host: String = ""
   var port: Int = _
-  var lifecyclye: String = ""
+  var lifecycle: String = ""
+  var scope:String = ""
   var dispatcher: DispatcherProperties = _
+  var propertyEntries = new PropertyEntries()
 
 
   /**
@@ -37,8 +39,10 @@ class ActiveObjectProperties {
     builder.addPropertyValue(TARGET, target)
     builder.addPropertyValue(INTERFACE, interface)
     builder.addPropertyValue(TRANSACTIONAL, transactional)
-    builder.addPropertyValue(LIFECYCLE, lifecyclye)
+    builder.addPropertyValue(LIFECYCLE, lifecycle)
+    builder.addPropertyValue(SCOPE, scope)
     builder.addPropertyValue(DISPATCHER_TAG, dispatcher)
-  }
+    builder.addPropertyValue(PROPERTYENTRY_TAG,propertyEntries)
+}
 
 }

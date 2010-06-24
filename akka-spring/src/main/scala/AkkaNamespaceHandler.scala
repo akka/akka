@@ -15,5 +15,6 @@ class AkkaNamespaceHandler extends NamespaceHandlerSupport {
     registerBeanDefinitionParser(ACTIVE_OBJECT_TAG, new ActiveObjectBeanDefinitionParser());
     registerBeanDefinitionParser(SUPERVISION_TAG, new SupervisionBeanDefinitionParser());
     registerBeanDefinitionParser(DISPATCHER_TAG, new DispatcherBeanDefinitionParser());
+    registerBeanDefinitionParser(CAMEL_SERVICE_TAG, new CamelServiceBeanDefinitionParser);
   }
 }

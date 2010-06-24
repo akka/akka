@@ -5,10 +5,12 @@ package se.scalablesolutions.akka.spring
 
 import org.springframework.util.xml.DomUtils
 import org.w3c.dom.Element
+import scala.collection.JavaConversions._
 
 /**
  * Parser trait for custom namespace configuration for active-object.
  * @author michaelkober
+ * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  */
 trait ActiveObjectParser extends BeanParser with DispatcherParser {
   import AkkaSpringConfigurationTags._
@@ -23,6 +25,7 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
     val remoteElement = DomUtils.getChildElementByTagName(element, REMOTE_TAG);
     val callbacksElement = DomUtils.getChildElementByTagName(element, RESTART_CALLBACKS_TAG);
     val dispatcherElement = DomUtils.getChildElementByTagName(element, DISPATCHER_TAG)
+    val propertyEntries = DomUtils.getChildElementsByTagName(element,PROPERTYENTRY_TAG)
 
     if (remoteElement != null) {
       objectProperties.host = mandatory(remoteElement, HOST)
@@ -42,6 +45,14 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
       objectProperties.dispatcher = dispatcherProperties
     }
 
+    for(element <- propertyEntries) {
+	    val entry = new PropertyEntry()
+	    entry.name = element.getAttribute("name");
+        entry.value = element.getAttribute("value")
+		entry.ref   = element.getAttribute("ref")
+		objectProperties.propertyEntries.add(entry)
+    }
+
     try {
       objectProperties.timeout = mandatory(element, TIMEOUT).toLong
     } catch {
@@ -58,8 +69,13 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
     }
 
     if (!element.getAttribute(LIFECYCLE).isEmpty) {
-      objectProperties.lifecyclye = element.getAttribute(LIFECYCLE)
+      objectProperties.lifecycle = element.getAttribute(LIFECYCLE)
     }
+
+    if (!element.getAttribute(SCOPE).isEmpty) {
+      objectProperties.scope = element.getAttribute(SCOPE)
+    }
+
     objectProperties
   }
 
