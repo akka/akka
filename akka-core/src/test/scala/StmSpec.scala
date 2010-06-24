@@ -100,28 +100,27 @@ class StmSpec extends
       }
     }
   }
-/*
+
   describe("Transactor") {
     it("should be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multiple times in a row") {
       import GlobalTransactionVectorTestActor._
       val actor = actorOf[NestedTransactorLevelOneActor].start
-      actor !! Add(2)
-      val size1 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      actor !! (Add(2), 10000)
+      val size1 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size1 should equal(2)
-      actor !! Add(7)
+      actor !! (Add(7), 10000)
       actor ! "HiLevelOne"
-      val size2 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      val size2 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size2 should equal(7)
-      actor !! Add(0)
+      actor !! (Add(0), 10000)
       actor ! "HiLevelTwo"
-      val size3 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      val size3 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size3 should equal(0)
-      actor !! Add(3)
-      val size4 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      actor !! (Add(3), 10000)
+      val size4 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size4 should equal(3)
     }
   }
-  */
 }
 
 object GlobalTransactionVectorTestActor {
