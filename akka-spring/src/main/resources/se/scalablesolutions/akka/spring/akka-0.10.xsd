@@ -229,6 +229,16 @@
     <xsd:attribute name="id" type="xsd:ID"/>
   </xsd:complexType>
 
+  <xsd:complexType name="camel-service-type">
+    <xsd:sequence>
+      <xsd:element name="camel-context" type="camel-context-type" minOccurs="0" maxOccurs="1"/>
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:ID"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="camel-context-type">
+    <xsd:attribute name="ref" type="xsd:string"/>
+  </xsd:complexType>
 
   <!-- ActiveObject -->
   <xsd:element name="active-object" type="active-object-type"/>
@@ -238,5 +248,8 @@
 
   <!-- Supervision -->
   <xsd:element name="supervision" type="supervision-type"/>
+
+  <!-- CamelService -->
+  <xsd:element name="camel-service" type="camel-service-type"/>
 
 </xsd:schema>
