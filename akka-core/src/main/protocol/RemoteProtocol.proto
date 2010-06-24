@@ -39,6 +39,16 @@ message SerializedActorRefProtocol {
   optional LifeCycleProtocol lifeCycle = 9;
   optional RemoteActorRefProtocol supervisor = 10;
   optional bytes hotswapStack = 11;
+  repeated RemoteRequestProtocol messages = 12;
+}
+
+/**
+ * Defines a message.
+ */
+message MessageProtocol {
+  required SerializationSchemeType serializationScheme = 1;
+  required bytes message = 2;
+  optional bytes messageManifest = 3;
 }
 
 /**
@@ -46,18 +56,16 @@ message SerializedActorRefProtocol {
  */
 message RemoteRequestProtocol {
   required uint64 id = 1;
-  required SerializationSchemeType serializationScheme = 2;
-  required bytes message = 3;
-  optional bytes messageManifest = 4;
-  optional string method = 5;
-  required string target = 6;
-  required string uuid = 7;
-  required uint64 timeout = 8;
-  optional string supervisorUuid = 9;
-  required bool isActor = 10;
-  required bool isOneWay = 11;
-  required bool isEscaped = 12;
-  optional RemoteActorRefProtocol sender = 13;
+  required MessageProtocol message = 2;
+  optional string method = 3;
+  required string target = 4;
+  required string uuid = 5;
+  required uint64 timeout = 6;
+  optional string supervisorUuid = 7;
+  required bool isActor = 8;
+  required bool isOneWay = 9;
+  required bool isEscaped = 10;
+  optional RemoteActorRefProtocol sender = 11;
 }
 
 /**
@@ -65,13 +73,11 @@ message RemoteRequestProtocol {
  */
 message RemoteReplyProtocol {
   required uint64 id = 1;
-  optional SerializationSchemeType serializationScheme = 2;
-  optional bytes message = 3;
-  optional bytes messageManifest = 4;
-  optional ExceptionProtocol exception = 5;
-  optional string supervisorUuid = 6;
-  required bool isActor = 7;
-  required bool isSuccessful = 8;
+  optional MessageProtocol message = 2;
+  optional ExceptionProtocol exception = 3;
+  optional string supervisorUuid = 4;
+  required bool isActor = 5;
+  required bool isSuccessful = 6;
 }
 
 /**
