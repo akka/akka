@@ -282,6 +282,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile"
 
     // testing
+    val camel_spring = "org.apache.camel" % "camel-spring" % "2.3.0" % "test"
+    // enforce version 3.0.1.RELEASE otherwise version 2.5.6 is pulled via camel-spring
+    val spring_tx = "org.springframework" % "spring-tx" % "3.0.1.RELEASE" % "test"
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
   }
