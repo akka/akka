@@ -40,7 +40,13 @@
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-core_2.8.0.RC3</artifactId>
-      <version>0.9</version>
+      <version>0.9.1</version>
+      <exclusions>
+				<exclusion>
+					 <groupId>org.multiverse</groupId>
+            		<artifactId>multiverse-alpha</artifactId>
+				</exclusion>
+			</exclusions>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -54,6 +60,12 @@
       <version>2.4.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+            <groupId>org.multiverse</groupId>
+            <artifactId>multiverse-alpha</artifactId>
+            <version>0.6-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
   </dependencies>
 
   <build>

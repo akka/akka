@@ -37,7 +37,7 @@ import com.google.protobuf.ByteString
  * <p/>
  * Binary -> ActorRef:
  * <pre>
- *   val actorRef = ActorRef.fromBinary(bytes)
+ *   val actorRef = ActorRef.fromBinaryToRemoteActorRef(bytes)
  *   actorRef ! message // send message to remote actor through its reference
  * </pre>
  * 
@@ -830,8 +830,10 @@ sealed class LocalActorRef private[akka](
       .setOriginalAddress(originalAddress)
       .setIsTransactor(isTransactor)
       .setTimeout(timeout)
-    if (actor.isInstanceOf[StatefulSerializableActor]) builder.setActorInstance(
-      ByteString.copyFrom(actor.asInstanceOf[StatefulSerializableActor].toBinary))
+    if (actor.isInstanceOf[StatefulSerializerSerializableActor]) builder.setActorInstance(
+      ByteString.copyFrom(actor.asInstanceOf[StatefulSerializerSerializableActor].toBinary))
+    else if (actor.isInstanceOf[StatefulWrappedSerializableActor]) builder.setActorInstance(
+      ByteString.copyFrom(actor.asInstanceOf[StatefulWrappedSerializableActor].toBinary))
     serializer.foreach(s => builder.setSerializerClassname(s.getClass.getName))
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
     supervisor.foreach(s => builder.setSupervisor(s.toRemoteActorRefProtocol))
