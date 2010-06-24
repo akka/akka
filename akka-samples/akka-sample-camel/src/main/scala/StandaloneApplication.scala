@@ -59,24 +59,16 @@ class StandaloneApplicationRoute extends RouteBuilder {
 
 object StandaloneSpringApplication {
   def main(args: Array[String]) {
-    import CamelContextManager.context
+    import CamelContextManager._
 
-    // use Spring application context as active object registry
-    val springctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
-    val registry = new ApplicationContextRegistry(springctx)
-
-    // customize CamelContext
-    CamelContextManager.init(new DefaultCamelContext(registry))
-    CamelContextManager.context.addRoutes(new StandaloneSpringApplicationRoute)
-
-    // start CamelService
-    val camelService = CamelService.newInstance.load
+    // load Spring application context
+    val appctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
 
     // access 'externally' registered active objects with active-object component
-    assert("hello msg3" == context.createProducerTemplate.requestBody("direct:test3", "msg3"))
+    assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
 
-    // shutdown CamelService
-    camelService.unload
+    // destroy Spring application context
+    appctx.close
 
     // shutdown all (internally) created actors
     ActorRegistry.shutdownAll
