@@ -16,6 +16,7 @@ object AkkaSpringConfigurationTags {
   val SUPERVISION_TAG = "supervision"
   val DISPATCHER_TAG = "dispatcher"
   val PROPERTYENTRY_TAG = "property"
+  val CAMEL_SERVICE_TAG = "camel-service"
 
   // active-object sub tags
   val RESTART_CALLBACKS_TAG = "restart-callbacks"
@@ -29,6 +30,9 @@ object AkkaSpringConfigurationTags {
 
   // dispatcher sub tags
   val THREAD_POOL_TAG = "thread-pool"
+
+  // camel-service sub tags
+  val CAMEL_CONTEXT_TAG = "camel-context"
 
   // --- ATTRIBUTES
   //

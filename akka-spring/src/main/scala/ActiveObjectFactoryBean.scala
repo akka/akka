@@ -46,8 +46,12 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
    */
-  def getObjectType: Class[AnyRef] = target.toClass
-
+  def getObjectType: Class[AnyRef] = try {
+    target.toClass
+  } catch {
+    // required by contract to return null
+    case e: ClassNotFoundException => null
+  }
 
   /*
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
