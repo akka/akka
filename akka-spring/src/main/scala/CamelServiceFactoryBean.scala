@@ -8,6 +8,8 @@ import org.springframework.beans.factory.{DisposableBean, InitializingBean, Fact
 import se.scalablesolutions.akka.camel.{CamelContextManager, CamelService}
 
 /**
+ * Factory bean for a {@link CamelService}.
+ *
  * @author Martin Krasser
  */
 class CamelServiceFactoryBean extends FactoryBean[CamelService] with InitializingBean with DisposableBean {
@@ -21,6 +23,10 @@ class CamelServiceFactoryBean extends FactoryBean[CamelService] with Initializin
 
   def getObject = instance
 
+  /**
+   * Initializes the {@link CamelContextManager} with <code>camelService</code> if defined, then
+   * creates and starts the {@link CamelService} singleton.
+   */
   def afterPropertiesSet = {
     if (camelContext ne null) {
       CamelContextManager.init(camelContext)
@@ -29,6 +35,9 @@ class CamelServiceFactoryBean extends FactoryBean[CamelService] with Initializin
     instance.load
   }
 
+  /**
+   * Stops the {@link CamelService} singleton.
+   */
   def destroy = {
     instance.unload
   }
