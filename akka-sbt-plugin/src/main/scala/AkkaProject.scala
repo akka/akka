@@ -1,11 +1,12 @@
 import sbt._
 
 object AkkaRepositories {
-  val AkkaRepo        = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-  val GuiceyFruitRepo = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-  val JBossRepo       = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
-  val SunJDMKRepo     = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-  val JavaNetRepo     = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+  val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+  val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
+  val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+  val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
+  val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+  val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
 }
 
 trait AkkaBaseProject extends BasicScalaProject {
@@ -14,7 +15,8 @@ trait AkkaBaseProject extends BasicScalaProject {
   // Every dependency that cannot be resolved from the built-in repositories (Maven Central and Scala Tools Releases)
   // is resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
 
-  val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
+  // for development version resolve to .ivy2/local
+  // val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
   val netLagModuleConfig      = ModuleConfiguration("net.lag", AkkaRepo)
   val sbinaryModuleConfig     = ModuleConfiguration("sbinary", AkkaRepo)
   val redisModuleConfig       = ModuleConfiguration("com.redis", AkkaRepo)
@@ -34,11 +36,12 @@ trait AkkaBaseProject extends BasicScalaProject {
   val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
+  val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausSnapshotRepo) // only while snapshot version
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
 }
 
 trait AkkaProject extends AkkaBaseProject {
-  val akkaVersion = "0.9.1"
+  val akkaVersion = "0.10"
 
   // convenience method
   def akkaModule(module: String) = "se.scalablesolutions.akka" %% ("akka-" + module) % akkaVersion

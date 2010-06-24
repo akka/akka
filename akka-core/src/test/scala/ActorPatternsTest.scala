@@ -1,6 +1,5 @@
 package se.scalablesolutions.akka.patterns
 
-import java.util.concurrent.atomic.AtomicInteger
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.actor.Actor._
@@ -11,8 +10,11 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.junit.{Before, After, Test}
+
 import scala.collection.mutable.HashSet
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 @RunWith(classOf[JUnitRunner])
 class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMatchers with Logging {

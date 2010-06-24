@@ -79,7 +79,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_http = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
   lazy val akka_camel = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core)
+  lazy val akka_spring = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core, akka_camel)
   lazy val akka_jta = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
     akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
@@ -229,8 +229,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atmo_jbossweb = "org.atmosphere" % "atmosphere-compat-jbossweb" % ATMO_VERSION % "compile"
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
-    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile"
-    val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
 
     // testing
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"

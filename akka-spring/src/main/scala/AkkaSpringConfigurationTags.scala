@@ -15,6 +15,8 @@ object AkkaSpringConfigurationTags {
   val ACTIVE_OBJECT_TAG = "active-object"
   val SUPERVISION_TAG = "supervision"
   val DISPATCHER_TAG = "dispatcher"
+  val PROPERTYENTRY_TAG = "property"
+  val CAMEL_SERVICE_TAG = "camel-service"
 
   // active-object sub tags
   val RESTART_CALLBACKS_TAG = "restart-callbacks"
@@ -29,6 +31,9 @@ object AkkaSpringConfigurationTags {
   // dispatcher sub tags
   val THREAD_POOL_TAG = "thread-pool"
 
+  // camel-service sub tags
+  val CAMEL_CONTEXT_TAG = "camel-context"
+
   // --- ATTRIBUTES
   //
   // active object attributes
@@ -41,6 +46,7 @@ object AkkaSpringConfigurationTags {
   val PRE_RESTART = "pre"
   val POST_RESTART = "post"
   val LIFECYCLE = "lifecycle"
+  val SCOPE = "scope"
 
   // supervision attributes
   val FAILOVER = "failover"
@@ -67,6 +73,9 @@ object AkkaSpringConfigurationTags {
   // Lifecycle
   val VAL_LIFECYCYLE_TEMPORARY = "temporary"
   val VAL_LIFECYCYLE_PERMANENT = "permanent"
+
+  val VAL_SCOPE_SINGLETON = "singleton"
+  val VAL_SCOPE_PROTOTYPE = "prototype"
 
   // Failover
   val VAL_ALL_FOR_ONE = "AllForOne"

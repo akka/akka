@@ -41,7 +41,7 @@ class Boot {
   //    Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
 
   // -----------------------------------------------------------------------
-  // Routing example
+  // Tranformer example
   // -----------------------------------------------------------------------
 
   val producer = actorOf[Producer1]

@@ -6,7 +6,10 @@ package se.scalablesolutions.akka.actor
 
 import scala.collection.mutable.ListBuffer
 import scala.reflect.Manifest
-import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
+
+import java.util.concurrent.{CopyOnWriteArraySet, ConcurrentHashMap}
+import java.util.{Set=>JSet}
+
 import se.scalablesolutions.akka.util.ListenerManagement
 
 sealed trait ActorRegistryEvent
@@ -27,8 +30,8 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  */
 object ActorRegistry extends ListenerManagement {
   private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
-  private val actorsById =            new ConcurrentHashMap[String, List[ActorRef]]
-  private val actorsByClassName =     new ConcurrentHashMap[String, List[ActorRef]]
+  private val actorsById =            new ConcurrentHashMap[String, JSet[ActorRef]]
+  private val actorsByClassName =     new ConcurrentHashMap[String, JSet[ActorRef]]
 
   /**
    * Returns all actors in the system.
@@ -73,16 +76,18 @@ object ActorRegistry extends ListenerManagement {
    * Finds all actors of the exact type specified by the class passed in as the Class argument.
    */
   def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] = {
-    if (actorsByClassName.containsKey(clazz.getName)) actorsByClassName.get(clazz.getName)
-    else Nil
+    if (actorsByClassName.containsKey(clazz.getName)) {
+      actorsByClassName.get(clazz.getName).toArray.toList.asInstanceOf[List[ActorRef]]
+    } else Nil
   }
 
   /**
    * Finds all actors that has a specific id.
    */
   def actorsFor(id: String): List[ActorRef] = {
-    if (actorsById.containsKey(id)) actorsById.get(id)
-    else Nil
+    if (actorsById.containsKey(id)) {
+      actorsById.get(id).toArray.toList.asInstanceOf[List[ActorRef]]
+    } else Nil
   }
 
    /**
@@ -103,27 +108,38 @@ object ActorRegistry extends ListenerManagement {
     // ID
     val id = actor.id
     if (id eq null) throw new IllegalStateException("Actor.id is null " + actor)
-    if (actorsById.containsKey(id)) actorsById.put(id, actor :: actorsById.get(id))
-    else actorsById.put(id, actor :: Nil)
+    if (actorsById.containsKey(id)) actorsById.get(id).add(actor)
+    else {
+      val set = new CopyOnWriteArraySet[ActorRef]
+      set.add(actor)
+      actorsById.put(id, set)
+    }
 
     // Class name
     val className = actor.actor.getClass.getName
-    if (actorsByClassName.containsKey(className)) {
-      actorsByClassName.put(className, actor :: actorsByClassName.get(className))
-    } else actorsByClassName.put(className, actor :: Nil)
+    if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).add(actor)
+    else {
+      val set = new CopyOnWriteArraySet[ActorRef]
+      set.add(actor)
+      actorsByClassName.put(className, set)
+    }
 
     // notify listeners
     foreachListener(_ ! ActorRegistered(actor))
   }
 
   /**
-   * FIXME: WRONG - unregisters all actors with the same id and class name, should remove the right one in each list
    * Unregisters an actor in the ActorRegistry.
    */
   def unregister(actor: ActorRef) = {
     actorsByUUID remove actor.uuid
-    actorsById remove actor.id
-    actorsByClassName remove actor.getClass.getName
+
+    val id = actor.id
+    if (actorsById.containsKey(id)) actorsById.get(id).remove(actor)
+
+    val className = actor.getClass.getName
+    if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).remove(actor)
+
     // notify listeners
     foreachListener(_ ! ActorUnregistered(actor))
   }
