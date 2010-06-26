@@ -175,11 +175,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
+    val netty = "org.jboss.netty" % "netty" % "3.2.1.Final" % "compile"
     val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.RC3" % "0.7.4" % "compile"
-    val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.8.0.RC3" % "0.7.4" % "compile"
+    val dispatch_http = "net.databinder" % "dispatch-http_2.8.0.RC3" % "0.7.4" % "compile"
     val sjson = "sjson.json" % "sjson" % "0.6-SNAPSHOT-2.8.RC3" % "compile"
     val sbinary = "sbinary" % "sbinary" % "2.8.0.RC3-0.3.1-SNAPSHOT" % "compile"
     val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
