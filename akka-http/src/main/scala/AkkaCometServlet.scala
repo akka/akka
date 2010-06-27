@@ -47,7 +47,7 @@ class AkkaServlet extends AtmosphereServlet with Logging {
 
   addInitParameter(AtmosphereServlet.DISABLE_ONSTATE_EVENT,"true")
   addInitParameter(AtmosphereServlet.BROADCASTER_CLASS,classOf[AkkaBroadcaster].getName)
-  addInitParameter("org.atmosphere.useStream","true")
+  addInitParameter(AtmosphereServlet.PROPERTY_USE_STREAM,"true")
   addInitParameter("com.sun.jersey.config.property.packages",c.getList("akka.rest.resource_packages").mkString(";"))
   addInitParameter("com.sun.jersey.spi.container.ResourceFilters",c.getList("akka.rest.filters").mkString(","))
 
