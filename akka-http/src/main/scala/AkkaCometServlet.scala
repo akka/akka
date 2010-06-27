@@ -59,15 +59,8 @@ class AkkaServlet extends AtmosphereServlet with Logging {
   override def getInitParameter(key : String) = Option(super.getInitParameter(key)).getOrElse(initParams.get(key))
 
   override def getInitParameterNames() = {
-    val names = new java.util.Vector[String]()
-
-    val i = initParams.keySet.iterator
-    while(i.hasNext) names.add(i.next.toString)
-
-    val e = super.getInitParameterNames
-    while(e.hasMoreElements) names.add(e.nextElement.toString)
-
-    names.elements
+    import scala.collection.JavaConversions._
+    initParams.keySet.iterator ++ super.getInitParameterNames
   }
 
   /**
