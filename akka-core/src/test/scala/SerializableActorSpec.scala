@@ -51,6 +51,23 @@ class SerializableActorSpec extends
       actor2.start
       (actor2 !! "hello").getOrElse("_") should equal("world")
     }
+    
+    it("should be able to serialize and deserialize a StatelessSerializableTestActorWithMessagesInMailbox") {
+      val actor1 = actorOf[StatelessSerializableTestActorWithMessagesInMailbox].start
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      (actor1 ! "hello")
+      val actor2 = ActorRef.fromBinaryToLocalActorRef(actor1.toBinary)
+      Thread.sleep(1000)
+      (actor2 !! "hello-reply").getOrElse("_") should equal("world")
+    }
   }
 }
 
@@ -83,3 +100,13 @@ class ProtobufSerializableTestActor extends ProtobufSerializableActor[ProtobufPr
       self.reply("world " + count)
   }
 }
+
+class StatelessSerializableTestActorWithMessagesInMailbox extends StatelessSerializableActor {
+  def receive = {
+    case "hello" =>
+      println("# messages in mailbox " + self.mailbox.size)
+      Thread.sleep(500)
+    case "hello-reply" => self.reply("world")
+  }
+}
+
