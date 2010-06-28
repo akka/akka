@@ -1,0 +1,7 @@
+<aspectwerkz>
+  <system id="akka">
+    <package name="se.scalablesolutions.akka.actor">
+      <aspect class="ActiveObjectAspect" />
+    </package>
+  </system>
+</aspectwerkz>
