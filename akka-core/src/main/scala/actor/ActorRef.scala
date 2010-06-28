@@ -347,7 +347,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  def isDefinedAt(message: Any): Boolean = actor.base.isDefinedAt(message)
+  def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
   
   /**
    * Is the actor is serializable?

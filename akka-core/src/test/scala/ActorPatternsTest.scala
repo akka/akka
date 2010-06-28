@@ -116,4 +116,53 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     num.get must be (2)
     for(a <- List(i,a1,a2,a3)) a.stop
   }
+
+  @Test def testIsDefinedAt = {
+	import se.scalablesolutions.akka.actor.ActorRef  
+	  
+	val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
+
+    val t1 = actorOf( new Actor() {
+      def receive = {
+        case `testMsg1` => self.reply(3)
+        case `testMsg2` => self.reply(7)
+      }
+    } ).start
+    
+    val t2 = actorOf( new Actor() {
+      def receive = {
+        case `testMsg1` => self.reply(3)
+        case `testMsg2` => self.reply(7)
+      }
+    } ).start
+    
+    val t3 = actorOf( new Actor() {
+      def receive = {
+        case `testMsg1` => self.reply(3)
+        case `testMsg2` => self.reply(7)
+      }
+    } ).start
+    
+    val t4 = actorOf( new Actor() {
+      def receive = {
+        case `testMsg1` => self.reply(3)
+        case `testMsg2` => self.reply(7)
+      }
+    } ).start
+
+    val d1 = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
+    val d2 = loadBalancerActor(new CyclicIterator[ActorRef](t3 :: t4 :: Nil))
+    
+    t1.isDefinedAt(testMsg1) must be (true)
+    t1.isDefinedAt(testMsg3) must be (false)
+    t2.isDefinedAt(testMsg1) must be (true)
+    t2.isDefinedAt(testMsg3) must be (false)
+    d1.isDefinedAt(testMsg1) must be (true)
+    d1.isDefinedAt(testMsg3) must be (false)
+    d2.isDefinedAt(testMsg1) must be (true)
+    d2.isDefinedAt(testMsg3) must be (false)
+	
+    for(a <- List(t1,t2,d1,d2)) a.stop
+  }
+
 }

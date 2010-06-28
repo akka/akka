@@ -34,4 +34,7 @@ trait LoadBalancer extends Dispatcher { self: Actor =>
   protected def seq: InfiniteIterator[ActorRef]
 
   protected def routes = { case x if seq.hasNext => seq.next }
+
+  override def isDefinedAt(msg: Any) = seq.exists( _.isDefinedAt(msg) ) 
+
 }
