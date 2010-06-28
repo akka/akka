@@ -505,6 +505,11 @@ trait Actor extends Logging {
    */
   def reply_?(message: Any): Boolean = self.reply_?(message)
 
+  /**
+  * Is the actor able to handle the message passed in as arguments?
+  */
+  def isDefinedAt(message: Any): Boolean = base.isDefinedAt(message)
+
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================

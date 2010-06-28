@@ -22,6 +22,9 @@ class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
     current = nc.tail
     nc.head
   }
+
+  override def exists(f: T => Boolean): Boolean = items.exists(f)
+
 }
 
 /**
@@ -32,4 +35,7 @@ class SmallestMailboxFirstIterator(items : List[ActorRef]) extends InfiniteItera
   def hasNext = items != Nil
 
   def next = items.reduceLeft((a1, a2) => if (a1.mailboxSize < a2.mailboxSize) a1 else a2)
+
+  override def exists(f: ActorRef => Boolean): Boolean = items.exists(f)
+
 }
