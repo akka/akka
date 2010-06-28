@@ -17,7 +17,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // project versions
   val JERSEY_VERSION = "1.2"
-  val ATMO_VERSION = "0.6-20100604"
+  val ATMO_VERSION = "0.6"
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
@@ -62,11 +62,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", sunjdmkRepo)
   val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", sunjdmkRepo)
   def javaNetRepo             = "java.net Repo" at "http://download.java.net/maven/2"
-  def sonatypeSnapshotRepo    = "Sonatype OSS Repo" at "http://oss.sonatype.org/content/repositories/snapshots"
+  def sonatypeSnapshotRepo    = "Sonatype OSS Repo" at "http://oss.sonatype.org/content/repositories/releases"
   val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", javaNetRepo)
   val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", javaNetRepo)
   val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", javaNetRepo)
- // val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
+  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
 //  val scalaBundleConfig       = ModuleConfiguration("com.weiglewilczek.scala-lang-osgi", ScalaToolsReleases)
   def codehausSnapshotRepo    = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
@@ -180,18 +180,18 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   // subprojects
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile"
+    val netty = "org.jboss.netty" % "netty" % "3.2.1.Final" % "compile"
     val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val dispatch_json = "net.databinder" % "dispatch-json_2.8.0.RC3" % "0.7.4" % "compile"
-    val dispatch_htdisttp = "net.databinder" % "dispatch-http_2.8.0.RC3" % "0.7.4" % "compile"
+    val dispatch_http = "net.databinder" % "dispatch-http_2.8.0.RC3" % "0.7.4" % "compile"
     val sjson = "sjson.json" % "sjson" % "0.6-SNAPSHOT-2.8.RC3" % "compile"
     val sbinary = "sbinary" % "sbinary" % "2.8.0.RC3-0.3.1-SNAPSHOT" % "compile"
     val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile"
     val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
     val jsr166x = "jsr166x" % "jsr166x" % "1.0" % "compile"
-    val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
+    val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive()
     val werkz = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % "2.1" % "compile"
     val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5" % "2.1" % "compile"
     val configgy = "net.lag" % "configgy" % "2.8.0.RC3-1.5.2-SNAPSHOT" % "compile"
@@ -287,6 +287,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile"
 
     // testing
+    val camel_spring = "org.apache.camel" % "camel-spring" % "2.3.0" % "test"
+    // enforce version 3.0.1.RELEASE otherwise version 2.5.6 is pulled via camel-spring
+    val spring_tx = "org.springframework" % "spring-tx" % "3.0.1.RELEASE" % "test"
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
   }
@@ -296,7 +299,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions_jta = "com.atomikos" % "transactions-jta" % "3.2.3" % "compile"
     val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile"
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
-    val jta_spec = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile"
+    val jta_spec = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive()
   }
 
   // ================= OSGi Packaging ==================

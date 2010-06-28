@@ -104,7 +104,7 @@ object RemoteClient extends Logging {
     val hostname = address.getHostName
     val port = address.getPort
     val hash = hostname + ':' + port
-    loader.foreach(RemoteProtocolBuilder.setClassLoader(_))
+    loader.foreach(MessageSerializer.setClassLoader(_))
     if (remoteClients.contains(hash)) remoteClients(hash)
     else {
       val client = new RemoteClient(hostname, port, loader)
@@ -297,7 +297,7 @@ class RemoteClientHandler(val name: String,
         log.debug("Remote client received RemoteReplyProtocol[\n%s]", reply.toString)
         val future = futures.get(reply.getId).asInstanceOf[CompletableFuture[Any]]
         if (reply.getIsSuccessful) {
-          val message = RemoteProtocolBuilder.getMessage(reply)
+          val message = MessageSerializer.deserialize(reply.getMessage)
           future.completeWithResult(message)
         } else {
           if (reply.hasSupervisorUuid()) {

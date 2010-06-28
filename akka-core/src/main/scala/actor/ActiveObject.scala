@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.actor
 import Actor._
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol
-import se.scalablesolutions.akka.remote.{RemoteProtocolBuilder, RemoteClient, RemoteRequestProtocolIdFactory}
+import se.scalablesolutions.akka.remote.{MessageSerializer, RemoteClient, RemoteRequestProtocolIdFactory}
 import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
@@ -563,6 +563,7 @@ private[akka] sealed class ActiveObjectAspect {
     val (message: Array[AnyRef], isEscaped) = escapeArguments(rtti.getParameterValues)
     val requestBuilder = RemoteRequestProtocol.newBuilder
       .setId(RemoteRequestProtocolIdFactory.nextId)
+      .setMessage(MessageSerializer.serialize(message))
       .setMethod(rtti.getMethod.getName)
       .setTarget(target.getName)
       .setUuid(actorRef.uuid)
@@ -570,7 +571,6 @@ private[akka] sealed class ActiveObjectAspect {
       .setIsActor(false)
       .setIsOneWay(isOneWay)
       .setIsEscaped(false)
-    RemoteProtocolBuilder.setMessage(message, requestBuilder)
     val id = actorRef.registerSupervisorAsRemoteActor
     if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
     val remoteMessage = requestBuilder.build

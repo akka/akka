@@ -105,68 +105,22 @@ class StmSpec extends
     it("should be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multiple times in a row") {
       import GlobalTransactionVectorTestActor._
       val actor = actorOf[NestedTransactorLevelOneActor].start
-      actor !! Add(2)
-      val size1 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      actor !! (Add(2), 10000)
+      val size1 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size1 should equal(2)
-      actor !! Add(7)
+      actor !! (Add(7), 10000)
       actor ! "HiLevelOne"
-      val size2 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      val size2 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size2 should equal(7)
-      actor !! Add(0)
+      actor !! (Add(0), 10000)
       actor ! "HiLevelTwo"
-      val size3 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      val size3 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size3 should equal(0)
-      actor !! Add(3)
-      val size4 = (actor !! Size).as[Int].getOrElse(fail("Could not get size"))
+      actor !! (Add(3), 10000)
+      val size4 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
       size4 should equal(3)
     }
   }
-  /*
-  describe("Multiverse API") {
-    it("should blablabla") {
-
-      import org.multiverse.api.programmatic._
-//      import org.multiverse.api._
-      import org.multiverse.templates._
-      import java.util.concurrent.atomic._
-      import se.scalablesolutions.akka.stm.Ref
-      import org.multiverse.api.{GlobalStmInstance, ThreadLocalTransaction, Transaction => MultiverseTransaction}
-      import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
-      import org.multiverse.commitbarriers._
-
-      def createRef[T]: ProgrammaticReference[T] = GlobalStmInstance
-        .getGlobalStmInstance
-        .getProgrammaticReferenceFactoryBuilder
-        .build
-        .atomicCreateReference(null.asInstanceOf[T])
-
-      val ref1 = Ref(0)//createRef[Int]
-      val ref2 = Ref(0)//createRef[Int]
-
-      val committedCount = new AtomicInteger
-      val abortedCount = new AtomicInteger
-      val barrierHolder = new AtomicReference[CountDownCommitBarrier]
-
-      val template = new TransactionTemplate[Int]() {
-        override def onStart(tx: MultiverseTransaction) = barrierHolder.set(new CountDownCommitBarrier(1))
-        override def execute(tx: MultiverseTransaction): Int = {
-          ref1.swap(ref1.get.get + 1)
-          ref2.swap(ref2.get.get + 1)
-          barrierHolder.get.joinCommit(tx)
-          null.asInstanceOf[Int]
-        }
-        override def onPostCommit = committedCount.incrementAndGet
-        override def onPostAbort = abortedCount.incrementAndGet
-      }
-      template.execute
-
-      ref1.get.get should equal(1)
-      ref2.get.get should equal(1)
-      committedCount.get should equal(1)
-      abortedCount.get should equal(2)
-    }
-  }
-  */
 }
 
 object GlobalTransactionVectorTestActor {
@@ -194,6 +148,7 @@ class GlobalTransactionVectorTestActor extends Actor {
 class NestedTransactorLevelOneActor extends Actor {
   import GlobalTransactionVectorTestActor._
   private val nested = actorOf[NestedTransactorLevelTwoActor].start
+  self.timeout = 10000
 
   def receive = {
     case add @ Add(_) =>
@@ -210,6 +165,7 @@ class NestedTransactorLevelOneActor extends Actor {
 class NestedTransactorLevelTwoActor extends Transactor {
   import GlobalTransactionVectorTestActor._
   private val ref = Ref(0)
+  self.timeout = 10000
 
   def receive = {
     case Add(value) =>

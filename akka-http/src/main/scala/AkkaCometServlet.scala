@@ -47,6 +47,7 @@ class AkkaServlet extends AtmosphereServlet with Logging {
 
   addInitParameter(AtmosphereServlet.DISABLE_ONSTATE_EVENT,"true")
   addInitParameter(AtmosphereServlet.BROADCASTER_CLASS,classOf[AkkaBroadcaster].getName)
+  addInitParameter(AtmosphereServlet.PROPERTY_USE_STREAM,"true")
   addInitParameter("com.sun.jersey.config.property.packages",c.getList("akka.rest.resource_packages").mkString(";"))
   addInitParameter("com.sun.jersey.spi.container.ResourceFilters",c.getList("akka.rest.filters").mkString(","))
 
@@ -58,15 +59,8 @@ class AkkaServlet extends AtmosphereServlet with Logging {
   override def getInitParameter(key : String) = Option(super.getInitParameter(key)).getOrElse(initParams.get(key))
 
   override def getInitParameterNames() = {
-    val names = new java.util.Vector[String]()
-
-    val i = initParams.keySet.iterator
-    while(i.hasNext) names.add(i.next.toString)
-
-    val e = super.getInitParameterNames
-    while(e.hasMoreElements) names.add(e.nextElement.toString)
-
-    names.elements
+    import scala.collection.JavaConversions._
+    initParams.keySet.iterator ++ super.getInitParameterNames
   }
 
   /**
