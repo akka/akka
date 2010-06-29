@@ -17,7 +17,7 @@ public class Foo extends se.scalablesolutions.akka.serialization.Serializable.Ja
   }
   public String longRunning() {
     try {
-      Thread.sleep(10000);
+      Thread.sleep(1000);
     } catch (InterruptedException e) {
     }
     return "test";

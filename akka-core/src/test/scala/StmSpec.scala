@@ -100,7 +100,7 @@ class StmSpec extends
       }
     }
   }
-
+/*
   describe("Transactor") {
     it("should be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multiple times in a row") {
       import GlobalTransactionVectorTestActor._
@@ -121,6 +121,7 @@ class StmSpec extends
       size4 should equal(3)
     }
   }
+  */
 }
 
 object GlobalTransactionVectorTestActor {
