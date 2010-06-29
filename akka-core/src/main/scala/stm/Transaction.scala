@@ -87,35 +87,7 @@ object Transaction {
 
   // --- public methods ---------
 
-  def begin = synchronized {
-    jta.foreach { txContainer =>
-      txContainer.begin
-      txContainer.registerSynchronization(new StmSynchronization(txContainer, this))
-    }
-  }
-
-  def commit = synchronized {
-    log.trace("Committing transaction %s", toString)
-    persistentStateMap.valuesIterator.foreach(_.commit)
-    status = TransactionStatus.Completed
-    jta.foreach(_.commit)
-  }
-
-  def abort = synchronized {
-    log.trace("Aborting transaction %s", toString)
-    jta.foreach(_.rollback)
-    persistentStateMap.valuesIterator.foreach(_.abort)
-    persistentStateMap.clear
-  }
-
-  def isNew = synchronized { status == TransactionStatus.New }
-
-  def isActive = synchronized { status == TransactionStatus.Active }
-
-  def isCompleted = synchronized { status == TransactionStatus.Completed }
-
-  def isAborted = synchronized { status == TransactionStatus.Aborted }
-
+ 
   // --- internal methods ---------
 
   private def isJtaTxActive(status: Int) = status == Status.STATUS_ACTIVE

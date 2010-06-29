@@ -18,7 +18,7 @@ import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.actor._
 
 @RunWith(classOf[JUnitRunner])
-class InMemoryStateSpec extends
+class TransactionalActiveObjectSpec extends
   Spec with 
   ShouldMatchers with 
   BeforeAndAfterAll {  
@@ -31,11 +31,11 @@ class InMemoryStateSpec extends
     conf.configure(
         new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
         List(
-            new Component(classOf[InMemStateful],
+            new Component(classOf[TransactionalActiveObject],
                 new LifeCycle(new Permanent),
                 //new RestartCallbacks("preRestart", "postRestart")),
                 10000),
-            new Component(classOf[InMemFailer],
+            new Component(classOf[ActiveObjectFailer],
                 new LifeCycle(new Permanent),
                 10000)).toArray
         ).supervise
@@ -48,7 +48,7 @@ class InMemoryStateSpec extends
   describe("Transactional in-memory Active Object ") {
 
     it("map should not rollback state for stateful server in case of success") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init")
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state")
@@ -56,10 +56,10 @@ class InMemoryStateSpec extends
     }
 
     it("map should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init")
-      val failer = conf.getInstance(classOf[InMemFailer])
+      val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) 
         fail("should have thrown an exception")
@@ -68,10 +68,10 @@ class InMemoryStateSpec extends
     }
 
     it("vector should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setVectorState("init") // set init state
-      val failer = conf.getInstance(classOf[InMemFailer])
+      val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer)                    
         fail("should have thrown an exception")
@@ -80,7 +80,7 @@ class InMemoryStateSpec extends
     }
 
     it("vector should not rollback state for stateful server in case of success") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setVectorState("init") // set init state
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state")
@@ -88,10 +88,10 @@ class InMemoryStateSpec extends
     }
 
     it("ref should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setRefState("init") // set init state
-      val failer = conf.getInstance(classOf[InMemFailer])
+      val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) 
         fail("should have thrown an exception")
@@ -100,7 +100,7 @@ class InMemoryStateSpec extends
     }
 
     it("ref should not rollback state for stateful server in case of success") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setRefState("init") // set init state
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") 
