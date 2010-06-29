@@ -7,7 +7,7 @@ import org.junit.Test
 import se.scalablesolutions.akka.stm.{Ref, TransactionalMap, TransactionalVector}
 import Actor._
 
-object InMemoryActorSpec {
+object TransactorSpec {
   case class GetMapState(key: String)
   case object GetVectorState
   case object GetVectorSize
@@ -27,9 +27,9 @@ object InMemoryActorSpec {
 
   case object GetNotifier
 }
-import InMemoryActorSpec._
+import TransactorSpec._
 
-class InMemStatefulActor(expectedInvocationCount: Int) extends Transactor {
+class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
   def this() = this(0)
   self.timeout = 5000
 
@@ -101,7 +101,7 @@ class InMemStatefulActor(expectedInvocationCount: Int) extends Transactor {
 }
 
 @serializable
-class InMemFailerActor extends Transactor {
+class FailerTransactor extends Transactor {
 
   def receive = {
     case "Failure" =>
@@ -109,10 +109,10 @@ class InMemFailerActor extends Transactor {
   }
 }
 
-class InMemoryActorSpec extends JUnitSuite {
+class TransactorSpec extends JUnitSuite {
   @Test
   def shouldOneWayMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = actorOf(new InMemStatefulActor(2))
+    val stateful = actorOf(new StatefulTransactor(2))
     stateful.start
     stateful ! SetMapStateOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -123,7 +123,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = actorOf[InMemStatefulActor]
+    val stateful = actorOf[StatefulTransactor]
     stateful.start
     stateful !! SetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -132,9 +132,9 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = actorOf(new InMemStatefulActor(2))
+    val stateful = actorOf(new StatefulTransactor(2))
     stateful.start
-    val failer = actorOf[InMemFailerActor]
+    val failer = actorOf[FailerTransactor]
     failer.start
     stateful ! SetMapStateOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
@@ -145,10 +145,10 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = actorOf[InMemStatefulActor]
+    val stateful = actorOf[StatefulTransactor]
     stateful.start
     stateful !! SetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-    val failer = actorOf[InMemFailerActor]
+    val failer = actorOf[FailerTransactor]
     failer.start
     try {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
@@ -159,7 +159,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = actorOf(new InMemStatefulActor(2))
+    val stateful = actorOf(new StatefulTransactor(2))
     stateful.start
     stateful ! SetVectorStateOneWay("init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -170,7 +170,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = actorOf[InMemStatefulActor]
+    val stateful = actorOf[StatefulTransactor]
     stateful.start
     stateful !! SetVectorState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -179,11 +179,11 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayVectorShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = actorOf(new InMemStatefulActor(2))
+    val stateful = actorOf(new StatefulTransactor(2))
     stateful.start
     stateful ! SetVectorStateOneWay("init") // set init state
     Thread.sleep(1000)
-    val failer = actorOf[InMemFailerActor]
+    val failer = actorOf[FailerTransactor]
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
     val notifier = (stateful !! GetNotifier).as[CountDownLatch]
@@ -193,10 +193,10 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldVectorShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = actorOf[InMemStatefulActor]
+    val stateful = actorOf[StatefulTransactor]
     stateful.start
     stateful !! SetVectorState("init") // set init state
-    val failer = actorOf[InMemFailerActor]
+    val failer = actorOf[FailerTransactor]
     failer.start
     try {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
@@ -207,7 +207,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = actorOf(new InMemStatefulActor(2))
+    val stateful = actorOf(new StatefulTransactor(2))
     stateful.start
     stateful ! SetRefStateOneWay("init") // set init state
     stateful ! SuccessOneWay("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -218,7 +218,7 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
-    val stateful = actorOf[InMemStatefulActor]
+    val stateful = actorOf[StatefulTransactor]
     stateful.start
     stateful !! SetRefState("init") // set init state
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
@@ -227,11 +227,11 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = actorOf(new InMemStatefulActor(2))
+    val stateful = actorOf(new StatefulTransactor(2))
     stateful.start
     stateful ! SetRefStateOneWay("init") // set init state
     Thread.sleep(1000)
-    val failer = actorOf[InMemFailerActor]
+    val failer = actorOf[FailerTransactor]
     failer.start
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
     val notifier = (stateful !! GetNotifier).as[CountDownLatch]
@@ -241,10 +241,10 @@ class InMemoryActorSpec extends JUnitSuite {
 
   @Test
   def shouldRefShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = actorOf[InMemStatefulActor]
+    val stateful = actorOf[StatefulTransactor]
     stateful.start
     stateful !! SetRefState("init") // set init state
-    val failer = actorOf[InMemFailerActor]
+    val failer = actorOf[FailerTransactor]
     failer.start
     try {
       stateful !! Failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method

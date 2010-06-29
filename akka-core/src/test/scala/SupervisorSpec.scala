@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.dispatch.Dispatchers
 import se.scalablesolutions.akka.{OneWay, Die, Ping}
 import Actor._
@@ -75,6 +76,33 @@ object SupervisorSpec {
       messageLog.put(reason.getMessage)
     }
   }
+
+  class TemporaryActor extends Actor {
+    import self._
+    lifeCycle = Some(LifeCycle(Temporary))
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
+      case Die =>
+        println("******************** GOT DIE 3")
+        throw new RuntimeException("DIE")
+    }
+
+    override def postRestart(reason: Throwable) {
+      println("******************** restart temporary")
+      messageLog.put(reason.getMessage)
+    }
+  }
+
+  class Master extends Actor {
+    self.trapExit = classOf[Exception] :: Nil
+    self.faultHandler = Some(OneForOneStrategy(5, 1000)) 
+    val temp = self.spawnLink[TemporaryActor]
+    override def receive = {
+      case Die => temp !! (Die, 5000)
+    }
+  }
 }
 
 /**
@@ -86,7 +114,9 @@ class SupervisorSpec extends JUnitSuite {
   var pingpong1: ActorRef = _
   var pingpong2: ActorRef = _
   var pingpong3: ActorRef = _
+  var temporaryActor: ActorRef = _
 
+/*
   @Test def shouldStartServer = {
     clearMessageLogs
     val sup = getSingleActorAllForOneSupervisor
@@ -95,6 +125,30 @@ class SupervisorSpec extends JUnitSuite {
     expect("pong") {
       (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
+  }
+*/
+  @Test def shoulNotRestartProgrammaticallyLinkedTemporaryActor = {
+    clearMessageLogs
+    val master = actorOf[Master].start
+
+    intercept[RuntimeException] {
+      master !! (Die, 5000)
+    }
+
+    Thread.sleep(1000)
+    assert(messageLog.size === 0)
+  }
+
+  @Test def shoulNotRestartTemporaryActor = {
+    clearMessageLogs
+    val sup = getTemporaryActorAllForOneSupervisor
+
+    intercept[RuntimeException] {
+      temporaryActor !! (Die, 5000)
+    }
+
+    Thread.sleep(1000)
+    assert(messageLog.size === 0)
   }
 
   @Test def shouldStartServerForNestedSupervisorHierarchy = {
@@ -444,6 +498,18 @@ class SupervisorSpec extends JUnitSuite {
 
   // =============================================
   // Create some supervisors with different configurations
+
+  def getTemporaryActorAllForOneSupervisor: Supervisor = {
+    temporaryActor = actorOf[TemporaryActor].start
+
+    Supervisor(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
+        Supervise(
+          temporaryActor,
+          LifeCycle(Temporary))
+        :: Nil))
+  }
 
   def getSingleActorAllForOneSupervisor: Supervisor = {
     pingpong1 = actorOf[PingPong1Actor].start

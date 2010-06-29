@@ -18,7 +18,7 @@ import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.actor._
 
 @RunWith(classOf[JUnitRunner])
-class InMemoryNestedStateSpec extends
+class NestedTransactionalActiveObjectSpec extends
   Spec with 
   ShouldMatchers with 
   BeforeAndAfterAll {  
@@ -31,13 +31,13 @@ class InMemoryNestedStateSpec extends
     conf.configure(
       new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
         List(
-          new Component(classOf[InMemStateful],
+          new Component(classOf[TransactionalActiveObject],
               new LifeCycle(new Permanent),
               10000),
-          new Component(classOf[InMemStatefulNested],
+          new Component(classOf[NestedTransactionalActiveObject],
               new LifeCycle(new Permanent),
               10000),
-          new Component(classOf[InMemFailer],
+          new Component(classOf[ActiveObjectFailer],
               new LifeCycle(new Permanent),
               10000)
         ).toArray).supervise
@@ -50,11 +50,11 @@ class InMemoryNestedStateSpec extends
   describe("Transactional nested in-memory Active Object") {
 
     it("map should not rollback state for stateful server in case of success") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
       Thread.sleep(100)
-      val nested = conf.getInstance(classOf[InMemStatefulNested])
+      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
       nested.init
       nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
       Thread.sleep(100)
@@ -65,15 +65,15 @@ class InMemoryNestedStateSpec extends
     }
 
     it("map should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
       Thread.sleep(100)
-      val nested = conf.getInstance(classOf[InMemStatefulNested])
+      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
       nested.init
       nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
       Thread.sleep(100)
-      val failer = conf.getInstance(classOf[InMemFailer])
+      val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         Thread.sleep(100)
@@ -85,11 +85,11 @@ class InMemoryNestedStateSpec extends
     }
 
     it("vector should not rollback state for stateful server in case of success") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setVectorState("init") // set init state
       Thread.sleep(100)
-      val nested = conf.getInstance(classOf[InMemStatefulNested])
+      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
       nested.init
       Thread.sleep(100)
       nested.setVectorState("init") // set init state
@@ -102,15 +102,15 @@ class InMemoryNestedStateSpec extends
     }
 
     it("vector should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setVectorState("init") // set init state
       Thread.sleep(100)
-      val nested = conf.getInstance(classOf[InMemStatefulNested])
+      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
       nested.init
       nested.setVectorState("init") // set init state
       Thread.sleep(100)
-      val failer = conf.getInstance(classOf[InMemFailer])
+      val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         Thread.sleep(100)
@@ -122,9 +122,9 @@ class InMemoryNestedStateSpec extends
     }
 
     it("ref should not rollback state for stateful server in case of success") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
-      val nested = conf.getInstance(classOf[InMemStatefulNested])
+      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
       nested.init
       stateful.setRefState("init") // set init state
       Thread.sleep(100)
@@ -138,15 +138,15 @@ class InMemoryNestedStateSpec extends
     }
 
     it("ref should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[InMemStateful])
+      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
-      val nested = conf.getInstance(classOf[InMemStatefulNested])
+      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
       nested.init
       stateful.setRefState("init") // set init state
       Thread.sleep(100)
       nested.setRefState("init") // set init state
       Thread.sleep(100)
-      val failer = conf.getInstance(classOf[InMemFailer])
+      val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         Thread.sleep(100)

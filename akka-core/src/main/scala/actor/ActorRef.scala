@@ -1311,53 +1311,62 @@ sealed class LocalActorRef private[akka](
   }
 
   protected[akka] def restart(reason: Throwable): Unit = {
-    //_isBeingRestarted = true
-    Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
-    restartLinkedActors(reason)
     val failedActor = actorInstance.get
     failedActor.synchronized {
-      Actor.log.debug("Restarting linked actors for actor [%s].", id)
-      Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
-      failedActor.preRestart(reason)
-      nullOutActorRefReferencesFor(failedActor)
-      val freshActor = newActor
-      freshActor.synchronized {
-        freshActor.init
-        freshActor.initTransactionalState
-        actorInstance.set(freshActor)
-        Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
-        freshActor.postRestart(reason)
+      lifeCycle.get match {
+        case LifeCycle(scope, _) => {
+          scope match {
+            case Permanent => 
+              Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
+              restartLinkedActors(reason)
+              Actor.log.debug("Restarting linked actors for actor [%s].", id)
+              Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
+              failedActor.preRestart(reason)
+              nullOutActorRefReferencesFor(failedActor)
+              val freshActor = newActor
+              freshActor.synchronized {
+                freshActor.init
+                freshActor.initTransactionalState
+                actorInstance.set(freshActor)
+                Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
+                freshActor.postRestart(reason)
+              }
+              _isBeingRestarted = false
+            case Temporary => shutDownTemporaryActor(this)
+          }
+        }
       }
-      _isBeingRestarted = false
     }
   }
-
+  
   protected[akka] def restartLinkedActors(reason: Throwable) = guard.withGuard {
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
       actorRef.lifeCycle.get match {
         case LifeCycle(scope, _) => {
           scope match {
-            case Permanent =>
-              actorRef.restart(reason)
-            case Temporary =>
-              Actor.log.info("Actor [%s] configured as TEMPORARY and will not be restarted.", actorRef.id)
-              actorRef.stop
-              linkedActors.remove(actorRef.uuid) // remove the temporary actor
-              // if last temporary actor is gone, then unlink me from supervisor
-              if (linkedActors.isEmpty) {
-                Actor.log.info(
-                  "All linked actors have died permanently (they were all configured as TEMPORARY)" +
-                  "\n\tshutting down and unlinking supervisor actor as well [%s].",
-                  actorRef.id)
-                _supervisor.foreach(_ ! UnlinkAndStop(this))
-              }
+            case Permanent => actorRef.restart(reason)
+            case Temporary => shutDownTemporaryActor(actorRef)
           }
         }
       }
     }
   }
 
+  private def shutDownTemporaryActor(temporaryActor: ActorRef) = {
+    Actor.log.info("Actor [%s] configured as TEMPORARY and will not be restarted.", temporaryActor.id)
+    temporaryActor.stop
+    linkedActors.remove(temporaryActor.uuid) // remove the temporary actor
+    // if last temporary actor is gone, then unlink me from supervisor
+    if (linkedActors.isEmpty) {
+      Actor.log.info(
+        "All linked actors have died permanently (they were all configured as TEMPORARY)" +
+        "\n\tshutting down and unlinking supervisor actor as well [%s].",
+        temporaryActor.id)
+      _supervisor.foreach(_ ! UnlinkAndStop(this))
+    }
+  }
+  
   protected[akka] def registerSupervisorAsRemoteActor: Option[String] = guard.withGuard {
     if (_supervisor.isDefined) {
       RemoteClient.clientFor(remoteAddress.get).registerSupervisorForActor(this)
