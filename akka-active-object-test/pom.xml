@@ -42,11 +42,11 @@
       <artifactId>akka-core_2.8.0.RC3</artifactId>
       <version>0.9.1</version>
       <exclusions>
-				<exclusion>
-					 <groupId>org.multiverse</groupId>
-            		<artifactId>multiverse-alpha</artifactId>
-				</exclusion>
-			</exclusions>
+                                <exclusion>
+                                         <groupId>org.multiverse</groupId>
+                        <artifactId>multiverse-alpha</artifactId>
+                                </exclusion>
+                        </exclusions>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

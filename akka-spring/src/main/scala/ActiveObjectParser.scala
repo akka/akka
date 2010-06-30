@@ -46,11 +46,11 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
     }
 
     for(element <- propertyEntries) {
-	    val entry = new PropertyEntry()
-	    entry.name = element.getAttribute("name");
+            val entry = new PropertyEntry()
+            entry.name = element.getAttribute("name");
         entry.value = element.getAttribute("value")
-		entry.ref   = element.getAttribute("ref")
-		objectProperties.propertyEntries.add(entry)
+                entry.ref   = element.getAttribute("ref")
+                objectProperties.propertyEntries.add(entry)
     }
 
     try {

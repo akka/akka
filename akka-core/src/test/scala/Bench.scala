@@ -36,12 +36,12 @@ object Chameneos {
          colour = complement(otherColour)
          meetings = meetings +1
          from ! Change(colour)
-         mall ! Meet(self, colour)	
+         mall ! Meet(self, colour)      
 
        case Change(newColour) =>
          colour = newColour
          meetings = meetings +1
-         mall ! Meet(self, colour)	
+         mall ! Meet(self, colour)      
 
        case Exit =>
          colour = FADED

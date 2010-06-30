@@ -122,9 +122,9 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
   }
 
   @Test def testIsDefinedAt = {
-	import se.scalablesolutions.akka.actor.ActorRef  
-	  
-	val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
+        import se.scalablesolutions.akka.actor.ActorRef  
+          
+        val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
 
     val t1 = actorOf( new Actor() {
       def receive = {

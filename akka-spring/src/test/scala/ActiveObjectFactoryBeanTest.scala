@@ -66,7 +66,7 @@ class ActiveObjectFactoryBeanTest extends Spec with ShouldMatchers {
     }
 
     it("should create an application context and inject a string dependency") {
-      var ctx = new ClassPathXmlApplicationContext("appContext.xml");	
+      var ctx = new ClassPathXmlApplicationContext("appContext.xml");   
       val target:ResourceEditor = ctx.getBean("bean").asInstanceOf[ResourceEditor]
       assert(target.getSource === "someString")
     }
