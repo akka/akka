@@ -84,7 +84,7 @@ object RemoteSupervisorSpec {
  */
 class RemoteSupervisorSpec extends JUnitSuite {
   import RemoteSupervisorSpec._
-  
+
   var pingpong1: ActorRef = _
   var pingpong2: ActorRef = _
   var pingpong3: ActorRef = _

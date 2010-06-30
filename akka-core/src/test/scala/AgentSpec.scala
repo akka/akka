@@ -59,9 +59,9 @@ class AgentSpec extends junit.framework.TestCase with Suite with MustMatchers {
     agent.close
     tx.stop
   }
-  
+
 /*
-  // Strange test - do we really need it? 
+  // Strange test - do we really need it?
   @Test def testDoingAgentGetInEnlosingTransactionShouldYieldException = {
     case object Go
     val latch = new CountDownLatch(1)

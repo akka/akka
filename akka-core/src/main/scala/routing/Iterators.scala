@@ -6,12 +6,12 @@ package se.scalablesolutions.akka.routing
 
 import se.scalablesolutions.akka.actor.ActorRef
 
-/** 
+/**
  * An Iterator that is either always empty or yields an infinite number of Ts.
  */
 trait InfiniteIterator[T] extends Iterator[T]
 
-/** 
+/**
  * CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List.
  */
 class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {

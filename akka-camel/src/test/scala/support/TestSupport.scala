@@ -17,7 +17,7 @@ trait TestActor extends Actor {
       handler(msg)
     }
   }
-  
+
   def handler: Handler
 }
 

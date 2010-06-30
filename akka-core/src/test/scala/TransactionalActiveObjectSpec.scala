@@ -19,13 +19,13 @@ import se.scalablesolutions.akka.actor._
 /*
 @RunWith(classOf[JUnitRunner])
 class TransactionalActiveObjectSpec extends
-  Spec with 
-  ShouldMatchers with 
-  BeforeAndAfterAll {  
+  Spec with
+  ShouldMatchers with
+  BeforeAndAfterAll {
 
   private val conf = new ActiveObjectConfigurator
   private var messageLog = ""
-  
+
   override def beforeAll {
     Config.config
     conf.configure(
@@ -40,7 +40,7 @@ class TransactionalActiveObjectSpec extends
                 10000)).toArray
         ).supervise
   }
-  
+
   override def afterAll {
     conf.stop
   }
@@ -61,7 +61,7 @@ class TransactionalActiveObjectSpec extends
       stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init")
       val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
-        stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) 
+        stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer)
         fail("should have thrown an exception")
       } catch { case e => {} }
       stateful.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure") should equal("init")
@@ -73,7 +73,7 @@ class TransactionalActiveObjectSpec extends
       stateful.setVectorState("init") // set init state
       val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
-        stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer)                    
+        stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer)
         fail("should have thrown an exception")
       } catch { case e => {} }
       stateful.getVectorState should equal("init")
@@ -93,7 +93,7 @@ class TransactionalActiveObjectSpec extends
       stateful.setRefState("init") // set init state
       val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
-        stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) 
+        stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer)
         fail("should have thrown an exception")
       } catch { case e => {} }
       stateful.getRefState should equal("init")
@@ -103,7 +103,7 @@ class TransactionalActiveObjectSpec extends
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
       stateful.setRefState("init") // set init state
-      stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") 
+      stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state")
       stateful.getRefState should equal("new state")
     }
   }

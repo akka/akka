@@ -324,7 +324,7 @@ class RemoteServerHandler(
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
   /**
-   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer. 
+   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer.
    * If a channel is closed before, it is automatically removed from the open channels group.
    */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
@@ -364,7 +364,7 @@ class RemoteServerHandler(
     val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actorRef.start
     val message = MessageSerializer.deserialize(request.getMessage)
-    val sender = 
+    val sender =
       if (request.hasSender) Some(ActorRef.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
       else None
     if (request.getIsOneWay) actorRef.!(message)(sender)

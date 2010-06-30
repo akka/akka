@@ -28,7 +28,7 @@ case class SETFOO(s: String)
 
 object SampleStorage {
   class RedisSampleStorage extends Actor {
-    self.lifeCycle = Some(LifeCycle(Permanent))    
+    self.lifeCycle = Some(LifeCycle(Permanent))
     val EVENT_MAP = "akka.sample.map"
 
     private var eventMap = atomic { RedisStorage.getMap(EVENT_MAP) }

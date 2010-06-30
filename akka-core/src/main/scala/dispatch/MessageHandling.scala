@@ -23,7 +23,7 @@ final class MessageInvocation(val receiver: ActorRef,
                               val transactionSet: Option[CountDownCommitBarrier]) {
   if (receiver eq null) throw new IllegalArgumentException("receiver is null")
 
-  def invoke = try { 
+  def invoke = try {
     receiver.invoke(this)
   } catch {
     case e: NullPointerException => throw new ActorInitializationException(

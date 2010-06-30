@@ -7,8 +7,8 @@ package se.scalablesolutions.akka.spring
 import java.beans.PropertyDescriptor
 
 import java.lang.reflect.Method
-import org.springframework.beans.BeanWrapperImpl 
-import org.springframework.beans.BeanWrapper 
+import org.springframework.beans.BeanWrapperImpl
+import org.springframework.beans.BeanWrapper
 import org.springframework.beans.BeanUtils
 import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
@@ -66,14 +66,14 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
     if (isRemote) argumentList += "r"
     if (hasInterface) argumentList += "i"
     if (hasDispatcher) argumentList += "d"
-   
+
     setProperties(
                 create(argumentList))
 }
 
  /**
    * This method manages <property/> element by injecting either
-   * values (<property value="value"/>) and bean references (<property ref="beanId"/>)  
+   * values (<property value="value"/>) and bean references (<property ref="beanId"/>)
    */
    private def setProperties(ref:AnyRef) : AnyRef = {
         log.debug("Processing properties and dependencies for target class %s",target)
@@ -81,7 +81,7 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
         for(entry <- property.entryList) {
                 val propertyDescriptor = BeanUtils.getPropertyDescriptor(ref.getClass,entry.name)
                 val method = propertyDescriptor.getWriteMethod();
-                
+
                 if(StringUtils.hasText(entry.ref)) {
                         log.debug("Setting property %s with bean ref %s using method %s",
                                 entry.name,entry.ref,method.getName)
@@ -130,8 +130,8 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
     }
   }
 
-  def aNewInstance[T <: AnyRef](clazz: Class[T]) : T = {         
-      clazz.newInstance().asInstanceOf[T]                             
+  def aNewInstance[T <: AnyRef](clazz: Class[T]) : T = {
+      clazz.newInstance().asInstanceOf[T]
       }
 
   /**

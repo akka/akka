@@ -16,17 +16,17 @@ import javax.ws.rs.Produces
 @Produces(Array("application/json"))
 class ListWriter extends MessageBodyWriter[List[_]] {
 
-  def isWriteable(aClass: Class[_], 
-                  aType: java.lang.reflect.Type, 
-                  annotations: Array[java.lang.annotation.Annotation], 
+  def isWriteable(aClass: Class[_],
+                  aType: java.lang.reflect.Type,
+                  annotations: Array[java.lang.annotation.Annotation],
                   mediaType: MediaType) =
     classOf[List[_]].isAssignableFrom(aClass) || aClass == ::.getClass
 
-  def getSize(list: List[_], 
-              aClass: Class[_], 
-              aType: java.lang.reflect.Type, 
-              annotations: Array[java.lang.annotation.Annotation], 
-              mediaType: MediaType) = 
+  def getSize(list: List[_],
+              aClass: Class[_],
+              aType: java.lang.reflect.Type,
+              annotations: Array[java.lang.annotation.Annotation],
+              mediaType: MediaType) =
     -1L
 
   def writeTo(list: List[_],
