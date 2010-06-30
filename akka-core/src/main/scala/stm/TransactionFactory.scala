@@ -76,7 +76,7 @@ object TransactionConfig {
 
 /**
  * For configuring multiverse transactions.
- * 
+ *
  * <p>familyName      - Family name for transactions. Useful for debugging.
  * <p>readonly        - Sets transaction as readonly. Readonly transactions are cheaper.
  * <p>maxRetries      - The maximum number of times a transaction will retry.

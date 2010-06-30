@@ -9,7 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import se.scalablesolutions.akka.actor.ActorRef
 
 /**
- * A manager for listener actors. Intended for mixin by observables. 
+ * A manager for listener actors. Intended for mixin by observables.
  *
  * @author Martin Krasser
  */

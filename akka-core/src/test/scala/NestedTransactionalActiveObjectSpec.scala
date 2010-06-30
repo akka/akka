@@ -20,13 +20,13 @@ import se.scalablesolutions.akka.actor._
 /*
 @RunWith(classOf[JUnitRunner])
 class NestedTransactionalActiveObjectSpec extends
-  Spec with 
-  ShouldMatchers with 
-  BeforeAndAfterAll {  
+  Spec with
+  ShouldMatchers with
+  BeforeAndAfterAll {
 
   private val conf = new ActiveObjectConfigurator
   private var messageLog = ""
-  
+
   override def beforeAll {
     Config.config
     conf.configure(
@@ -43,7 +43,7 @@ class NestedTransactionalActiveObjectSpec extends
               10000)
         ).toArray).supervise
   }
-  
+
   override def afterAll {
     conf.stop
   }

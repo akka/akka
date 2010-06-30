@@ -666,12 +666,12 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
   private var context: Option[ActiveObjectContext] = None
   private var targetClass:Class[_] = _
 
-  
+
 
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef, ctx: Option[ActiveObjectContext]) = {
-  
+
    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired))
       self.makeTransactionRequired
     self.id = targetClass.getName
@@ -753,10 +753,10 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
 
   override def postRestart(reason: Throwable) {
     try {
-         
+
       if (postRestart.isDefined) {
                 postRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
-          } 
+          }
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 

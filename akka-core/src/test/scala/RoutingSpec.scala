@@ -49,7 +49,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
     result.isDefined must be (true)
     result.get must be(21)
-    
+
     for(a <- List(t1,t2,d)) a.stop
   }
 
@@ -122,8 +122,8 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
   }
 
   @Test def testIsDefinedAt = {
-        import se.scalablesolutions.akka.actor.ActorRef  
-          
+        import se.scalablesolutions.akka.actor.ActorRef
+
         val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
 
     val t1 = actorOf( new Actor() {
@@ -132,21 +132,21 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
         case `testMsg2` => self.reply(7)
       }
     } ).start
-    
+
     val t2 = actorOf( new Actor() {
       def receive = {
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
     } ).start
-    
+
     val t3 = actorOf( new Actor() {
       def receive = {
         case `testMsg1` => self.reply(3)
         case `testMsg2` => self.reply(7)
       }
     } ).start
-    
+
     val t4 = actorOf( new Actor() {
       def receive = {
         case `testMsg1` => self.reply(3)
@@ -156,7 +156,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
     val d1 = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
     val d2 = loadBalancerActor(new CyclicIterator[ActorRef](t3 :: t4 :: Nil))
-    
+
     t1.isDefinedAt(testMsg1) must be (true)
     t1.isDefinedAt(testMsg3) must be (false)
     t2.isDefinedAt(testMsg1) must be (true)

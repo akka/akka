@@ -33,28 +33,28 @@ import com.google.protobuf.ByteString
 /**
  * The ActorRef object can be used to deserialize ActorRef instances from of its binary representation
  * or its Protocol Buffers (protobuf) Message representation to a Actor.actorOf instance.
- * 
+ *
  * <p/>
  * Binary -> ActorRef:
  * <pre>
  *   val actorRef = ActorRef.fromBinaryToRemoteActorRef(bytes)
  *   actorRef ! message // send message to remote actor through its reference
  * </pre>
- * 
+ *
  * <p/>
  * Protobuf Message -> RemoteActorRef:
  * <pre>
  *   val actorRef = ActorRef.fromBinaryToRemoteActorRef(protobufMessage)
  *   actorRef ! message // send message to remote actor through its reference
  * </pre>
- * 
+ *
  * <p/>
  * Protobuf Message -> LocalActorRef:
  * <pre>
  *   val actorRef = ActorRef.fromBinaryToLocalActorRef(protobufMessage)
  *   actorRef ! message // send message to local actor through its reference
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRef {
@@ -102,19 +102,19 @@ object ActorRef {
    */
   private[akka] def fromProtobufToLocalActorRef(protocol: SerializedActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     Actor.log.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n" + protocol)
-  
-    val serializer = if (protocol.hasSerializerClassname) { 
+
+    val serializer = if (protocol.hasSerializerClassname) {
       val serializerClass =
         if (loader.isDefined) loader.get.loadClass(protocol.getSerializerClassname)
         else Class.forName(protocol.getSerializerClassname)
       Some(serializerClass.newInstance.asInstanceOf[Serializer])
     } else None
-    
+
     val lifeCycle =
       if (protocol.hasLifeCycle) {
         val lifeCycleProtocol = protocol.getLifeCycle
         val restartCallbacks =
-          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart) 
+          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart)
             Some(RestartCallbacks(lifeCycleProtocol.getPreRestart, lifeCycleProtocol.getPostRestart))
           else None
         Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent, restartCallbacks)
@@ -126,7 +126,7 @@ object ActorRef {
       if (protocol.hasSupervisor)
         Some(fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
-      
+
     val hotswap =
       if (serializer.isDefined && protocol.hasHotswapStack) Some(serializer.get
         .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[PartialFunction[Any, Unit]]))
@@ -218,13 +218,13 @@ trait ActorRef extends TransactionManagement {
 
   /**
    * User overridable callback/setting.
-   * 
+   *
    * <p/>
    * Set trapExit to the list of exception classes that the actor should be able to trap
    * from the actor it is supervising. When the supervising actor throws these exceptions
    * then they will trigger a restart.
    * <p/>
-   * 
+   *
    * Trap no exceptions:
    * <pre>
    * trapExit = Nil
@@ -348,23 +348,23 @@ trait ActorRef extends TransactionManagement {
    * Is the actor able to handle the message passed in as arguments?
    */
   def isDefinedAt(message: Any): Boolean = actor.isDefinedAt(message)
-  
+
   /**
    * Is the actor is serializable?
    */
-  def isSerializable: Boolean = actor.isInstanceOf[SerializableActor]  
-  
+  def isSerializable: Boolean = actor.isInstanceOf[SerializableActor]
+
   /**
    * Returns the 'Serializer' instance for the Actor as an Option.
    * <p/>
    * It returns 'Some(serializer)' if the Actor is extending the StatefulSerializerSerializableActor
    * trait (which has a Serializer defined) and 'None' if not.
    */
-  def serializer: Option[Serializer] = 
-    if (actor.isInstanceOf[StatefulSerializerSerializableActor]) 
+  def serializer: Option[Serializer] =
+    if (actor.isInstanceOf[StatefulSerializerSerializableActor])
       Some(actor.asInstanceOf[StatefulSerializerSerializableActor].serializer)
     else None
-  
+
   /**
    * Only for internal use. UUID is effectively final.
    */
@@ -720,13 +720,13 @@ trait ActorRef extends TransactionManagement {
 sealed class LocalActorRef private[akka](
   private[this] var actorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None))
   extends ActorRef {
-    
+
   private var isDeserialized = false
   private var loader: Option[ClassLoader] = None
 
   private[akka] def this(clazz: Class[_ <: Actor]) = this(Left(Some(clazz)))
   private[akka] def this(factory: () => Actor) =     this(Right(Some(factory)))
-  
+
   // used only for deserialization
   private[akka] def this(__uuid: String,
                          __id: String,
@@ -757,8 +757,8 @@ sealed class LocalActorRef private[akka](
           instance
         } else throw new IllegalStateException(
           "Can't deserialize Actor that is not an instance of one of:\n" +
-          "\n\t- StatelessSerializableActor" + 
-          "\n\t- StatefulSerializerSerializableActor" + 
+          "\n\t- StatelessSerializableActor" +
+          "\n\t- StatefulSerializerSerializableActor" +
           "\n\t- StatefulWrappedSerializableActor")
       })
       loader = Some(__loader)
@@ -809,7 +809,7 @@ sealed class LocalActorRef private[akka](
       RemoteServer.registerActor(homeAddress, uuid, this)
       registeredInRemoteNodeDuringSerialization = true
     }
-    
+
     RemoteActorRefProtocol.newBuilder
       .setUuid(uuid)
       .setActorClassname(actorClass.getName)
@@ -831,7 +831,7 @@ sealed class LocalActorRef private[akka](
       }
       val builder = LifeCycleProtocol.newBuilder
       lifeCycle match {
-        case Some(LifeCycle(scope, None)) => 
+        case Some(LifeCycle(scope, None)) =>
           setScope(builder, scope)
           Some(builder.build)
         case Some(LifeCycle(scope, Some(callbacks))) =>
@@ -869,7 +869,7 @@ sealed class LocalActorRef private[akka](
       builder.addMessages(createRemoteRequestProtocolBuilder(
         message.message, message.senderFuture.isEmpty, message.sender))
       message = mailbox.poll
-    }    
+    }
     builder.build
   }
 
@@ -881,13 +881,13 @@ sealed class LocalActorRef private[akka](
   /**
    * Serializes the ActorRef instance into a byte array (Array[Byte]).
    */
-  def toBinary: Array[Byte] = { 
+  def toBinary: Array[Byte] = {
     val protocol = if (isSerializable) toSerializedActorRefProtocol
                    else toRemoteActorRefProtocol
     Actor.log.debug("Serializing ActorRef to binary:\n" + protocol)
     protocol.toByteArray
   }
-  
+
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
@@ -897,7 +897,7 @@ sealed class LocalActorRef private[akka](
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
   def actorClassName: String = actorClass.getName
-  
+
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
@@ -1316,7 +1316,7 @@ sealed class LocalActorRef private[akka](
       lifeCycle.get match {
         case LifeCycle(scope, _) => {
           scope match {
-            case Permanent => 
+            case Permanent =>
               Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
               restartLinkedActors(reason)
               Actor.log.debug("Restarting linked actors for actor [%s].", id)
@@ -1338,7 +1338,7 @@ sealed class LocalActorRef private[akka](
       }
     }
   }
-  
+
   protected[akka] def restartLinkedActors(reason: Throwable) = guard.withGuard {
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
@@ -1366,7 +1366,7 @@ sealed class LocalActorRef private[akka](
       _supervisor.foreach(_ ! UnlinkAndStop(this))
     }
   }
-  
+
   protected[akka] def registerSupervisorAsRemoteActor: Option[String] = guard.withGuard {
     if (_supervisor.isDefined) {
       RemoteClient.clientFor(remoteAddress.get).registerSupervisorForActor(this)

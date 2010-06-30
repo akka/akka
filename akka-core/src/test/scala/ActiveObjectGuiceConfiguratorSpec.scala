@@ -22,13 +22,13 @@ import se.scalablesolutions.akka.dispatch.FutureTimeoutException
 
 @RunWith(classOf[JUnitRunner])
 class ActiveObjectGuiceConfiguratorSpec extends
-  Spec with 
-  ShouldMatchers with 
-  BeforeAndAfterAll {  
+  Spec with
+  ShouldMatchers with
+  BeforeAndAfterAll {
 
   private val conf = new ActiveObjectConfigurator
   private var messageLog = ""
-  
+
   override def beforeAll {
     Config.config
     val dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher("test")
@@ -52,7 +52,7 @@ class ActiveObjectGuiceConfiguratorSpec extends
         ).toArray).inject.supervise
 
   }
-  
+
   override def afterAll = conf.stop
 
   describe("ActiveObjectGuiceConfigurator") {
@@ -76,11 +76,11 @@ class ActiveObjectGuiceConfiguratorSpec extends
         val str = conf.getInstance(classOf[String])
         fail("exception should have been thrown")
       } catch {
-        case e: Exception => 
+        case e: Exception =>
           classOf[IllegalStateException] should equal(e.getClass)
       }
     }
-    
+
     it("should be able to invoke active object") {
       messageLog = ""
       val foo = conf.getInstance(classOf[Foo])
@@ -109,7 +109,7 @@ class ActiveObjectGuiceConfiguratorSpec extends
         foo.longRunning
         fail("exception should have been thrown")
       } catch {
-        case e: FutureTimeoutException => 
+        case e: FutureTimeoutException =>
           classOf[FutureTimeoutException] should equal(e.getClass)
       }
     }
@@ -121,7 +121,7 @@ class ActiveObjectGuiceConfiguratorSpec extends
         foo.throwsException
         fail("exception should have been thrown")
       } catch {
-        case e: RuntimeException => 
+        case e: RuntimeException =>
           classOf[RuntimeException] should equal(e.getClass)
       }
     }

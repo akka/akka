@@ -50,7 +50,7 @@ trait SerializableActor extends Actor
 trait StatelessSerializableActor extends SerializableActor
 
 /**
- * Mix in this trait to create a serializable actor, serializable through 
+ * Mix in this trait to create a serializable actor, serializable through
  * a custom serialization protocol. This actor <b>is</b> the serialized state.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -61,7 +61,7 @@ trait StatefulSerializerSerializableActor extends SerializableActor {
 }
 
 /**
- * Mix in this trait to create a serializable actor, serializable through 
+ * Mix in this trait to create a serializable actor, serializable through
  * a custom serialization protocol. This actor <b>is wrapping</b> serializable state.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

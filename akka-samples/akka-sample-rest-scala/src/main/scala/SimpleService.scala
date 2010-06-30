@@ -124,7 +124,7 @@ class PersistentSimpleServiceActor extends Transactor {
     case "Tick" => if (hasStartedTicking) {
       val bytes = storage.get(KEY.getBytes).get
       val counter = Integer.parseInt(new String(bytes, "UTF8"))
-      storage.put(KEY.getBytes, (counter + 1).toString.getBytes )      
+      storage.put(KEY.getBytes, (counter + 1).toString.getBytes )
 //      val bytes = storage.get(KEY.getBytes).get
 //      val counter = ByteBuffer.wrap(bytes).getInt
 //      storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)

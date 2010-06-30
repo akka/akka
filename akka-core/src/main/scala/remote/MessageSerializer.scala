@@ -77,7 +77,7 @@ object MessageSerializer {
     builder.setMessage(ByteString.copyFrom(serializable.toBytes))
     builder.setMessageManifest(ByteString.copyFromUtf8(serializable.getClass.getName))
   }
- 
+
   private def box(value: Any): AnyRef = value match {
     case value: Boolean => new java.lang.Boolean(value)
     case value: Char    => new java.lang.Character(value)

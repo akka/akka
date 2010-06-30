@@ -57,7 +57,7 @@ import se.scalablesolutions.akka.actor.ActorRef
  * @param throughput positive integer indicates the dispatcher will only process so much messages at a time from the
  *                   mailbox, without checking the mailboxes of other actors. Zero or negative means the dispatcher
  *                   always continues until the mailbox is empty.
- *                   Larger values (or zero or negative) increase througput, smaller values increase fairness 
+ *                   Larger values (or zero or negative) increase througput, smaller values increase fairness
  */
 class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispatchers.THROUGHPUT) extends MessageDispatcher with ThreadPoolBuilder {
   def this(_name: String) = this(_name, Dispatchers.THROUGHPUT) // Needed for Java API usage

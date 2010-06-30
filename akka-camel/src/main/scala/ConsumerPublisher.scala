@@ -167,7 +167,7 @@ private[camel] class PublishRequestor extends Actor {
   protected def receive = {
     case ActorRegistered(actor) =>
       for (event <- ConsumerRegistered.forConsumer(actor)) deliverCurrentEvent(event)
-    case ActorUnregistered(actor) => 
+    case ActorUnregistered(actor) =>
       for (event <- ConsumerUnregistered.forConsumer(actor)) deliverCurrentEvent(event)
     case AspectInitRegistered(proxy, init) =>
       for (event <- ConsumerMethodRegistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
