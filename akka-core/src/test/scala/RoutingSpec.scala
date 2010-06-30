@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.patterns
+package se.scalablesolutions.akka.routing
 
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.Actor
@@ -17,8 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 @RunWith(classOf[JUnitRunner])
-class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMatchers with Logging {
-  import Patterns._
+class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers with Logging {
+  import Routing._
+
   @Test def testDispatcher = {
     val (testMsg1,testMsg2,testMsg3,testMsg4) = ("test1","test2","test3","test4")
     val targetOk = new AtomicInteger(0)
@@ -41,13 +42,15 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     }.start
 
     val result = for {
-      a <- (d !! (testMsg1,5000)).as[Int]
-      b <- (d !! (testMsg2,5000)).as[Int]
-      c <- (d !! (testMsg3,5000)).as[Int]
+      a <- (d !! (testMsg1, 5000)).as[Int]
+      b <- (d !! (testMsg2, 5000)).as[Int]
+      c <- (d !! (testMsg3, 5000)).as[Int]
     } yield a + b + c
 
+    result.isDefined must be (true)
     result.get must be(21)
-        for(a <- List(t1,t2,d)) a.stop
+    
+    for(a <- List(t1,t2,d)) a.stop
   }
 
   @Test def testLogger = {
@@ -60,6 +63,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     val bar : Any = "bar"
     l ! foo
     l ! bar
+    Thread.sleep(100)
     msgs must ( have size (2) and contain (foo) and contain (bar) )
     t1.stop
     l.stop
@@ -79,7 +83,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     }
     val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
     for (i <- 1 to 500) d ! i
-    Thread.sleep(6000)
+    Thread.sleep(5000)
     t1ProcessedCount.get must be < (t2ProcessedCount.get) // because t1 is much slower and thus has a bigger mailbox all the time
     for(a <- List(t1,t2,d)) a.stop
   }
@@ -161,8 +165,7 @@ class ActorPatternsTest extends junit.framework.TestCase with Suite with MustMat
     d1.isDefinedAt(testMsg3) must be (false)
     d2.isDefinedAt(testMsg1) must be (true)
     d2.isDefinedAt(testMsg3) must be (false)
-	
+
     for(a <- List(t1,t2,d1,d2)) a.stop
   }
-
 }

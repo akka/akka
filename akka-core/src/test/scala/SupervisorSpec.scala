@@ -36,7 +36,7 @@ object SupervisorSpec {
 
       case Die =>
         println("******************** GOT DIE 1")
-        throw new RuntimeException("DIE")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
     override def postRestart(reason: Throwable) {
       println("******************** restart 1")
@@ -52,7 +52,7 @@ object SupervisorSpec {
         reply("pong")
       case Die =>
         println("******************** GOT DIE 2")
-        throw new RuntimeException("DIE")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
     override def postRestart(reason: Throwable) {
       println("******************** restart 2")
@@ -68,7 +68,7 @@ object SupervisorSpec {
         reply("pong")
       case Die =>
         println("******************** GOT DIE 3")
-        throw new RuntimeException("DIE")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
 
     override def postRestart(reason: Throwable) {
@@ -86,7 +86,7 @@ object SupervisorSpec {
         reply("pong")
       case Die =>
         println("******************** GOT DIE 3")
-        throw new RuntimeException("DIE")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
 
     override def postRestart(reason: Throwable) {
@@ -169,7 +169,7 @@ class SupervisorSpec extends JUnitSuite {
       pingpong1 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -189,7 +189,7 @@ class SupervisorSpec extends JUnitSuite {
       pingpong1 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -209,7 +209,7 @@ class SupervisorSpec extends JUnitSuite {
       pingpong1 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -229,7 +229,7 @@ class SupervisorSpec extends JUnitSuite {
       pingpong1 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -249,7 +249,7 @@ class SupervisorSpec extends JUnitSuite {
       pingpong1 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -262,7 +262,7 @@ class SupervisorSpec extends JUnitSuite {
       pingpong3 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -296,7 +296,7 @@ class SupervisorSpec extends JUnitSuite {
       pingpong2 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -330,13 +330,13 @@ class SupervisorSpec extends JUnitSuite {
       pingpong2 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -370,13 +370,13 @@ class SupervisorSpec extends JUnitSuite {
       pingpong2 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -408,7 +408,7 @@ class SupervisorSpec extends JUnitSuite {
 
     pingpong1 ! Die
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -424,7 +424,7 @@ class SupervisorSpec extends JUnitSuite {
     }
     pingpong1 ! Die
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     pingpong1 ! OneWay
@@ -464,13 +464,13 @@ class SupervisorSpec extends JUnitSuite {
       pingpong2 !! (Die, 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5 , TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {

@@ -41,13 +41,13 @@ class Foo extends Serializable.JavaJSON {
      "test"
    }
    def throwsException: String = {
-     if (true) throw new RuntimeException("expected")
+     if (true) throw new RuntimeException("Expected exception; to test fault-tolerance")
      "test"
   }
 }
 
 @serializable class InMemFailer { 
-  def fail = throw new RuntimeException("expected")
+  def fail = throw new RuntimeException("Expected exception; to test fault-tolerance")
 }
 
 @transactionrequired
