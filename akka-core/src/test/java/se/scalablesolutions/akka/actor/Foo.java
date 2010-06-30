@@ -23,7 +23,7 @@ public class Foo extends se.scalablesolutions.akka.serialization.Serializable.Ja
     return "test";
   }
   public String throwsException() {
-    if (true) throw new RuntimeException("expected");
+    if (true) throw new RuntimeException("Expected exception; to test fault-tolerance");
     return "test";
   }
   

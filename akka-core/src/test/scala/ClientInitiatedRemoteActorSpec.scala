@@ -29,7 +29,7 @@ class RemoteActorSpecActorBidirectional extends Actor {
     case "Hello" =>
       self.reply("World")
     case "Failure" =>
-      throw new RuntimeException("expected")
+      throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 }
 
@@ -65,6 +65,8 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   val PORT2 = 9991
   var s1: RemoteServer = null
 
+  private val unit = TimeUnit.MILLISECONDS
+
   @Before
   def init() {
     s1 = new RemoteServer()
@@ -72,10 +74,6 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     Thread.sleep(1000)
   }
 
-  private val unit = TimeUnit.MILLISECONDS
-
-  // make sure the servers shutdown cleanly after the test has
-  // finished
   @After
   def finished() {
     s1.shutdown
@@ -131,7 +129,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
       fail("Should have thrown an exception")
     } catch {
       case e =>
-        assert("expected" === e.getMessage())
+        assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
     actor.stop
   }

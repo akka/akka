@@ -2,15 +2,17 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.patterns
+package se.scalablesolutions.akka.routing
 
 import se.scalablesolutions.akka.actor.ActorRef
 
-/** An Iterator that is either always empty or yields an infinite number of Ts
+/** 
+ * An Iterator that is either always empty or yields an infinite number of Ts.
  */
 trait InfiniteIterator[T] extends Iterator[T]
 
-/** CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List
+/** 
+ * CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List.
  */
 class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
   @volatile private[this] var current: List[T] = items
@@ -37,5 +39,4 @@ class SmallestMailboxFirstIterator(items : List[ActorRef]) extends InfiniteItera
   def next = items.reduceLeft((a1, a2) => if (a1.mailboxSize < a2.mailboxSize) a1 else a2)
 
   override def exists(f: ActorRef => Boolean): Boolean = items.exists(f)
-
 }

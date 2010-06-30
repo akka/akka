@@ -104,7 +104,7 @@ class ProtobufSerializableTestActor extends ProtobufSerializableActor[ProtobufPr
 class StatelessSerializableTestActorWithMessagesInMailbox extends StatelessSerializableActor {
   def receive = {
     case "hello" =>
-      println("# messages in mailbox " + self.mailbox.size)
+      if (self ne null) println("# messages in mailbox " + self.mailbox.size)
       Thread.sleep(500)
     case "hello-reply" => self.reply("world")
   }

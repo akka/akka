@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.patterns
+package se.scalablesolutions.akka.routing
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 
@@ -35,6 +35,5 @@ trait LoadBalancer extends Dispatcher { self: Actor =>
 
   protected def routes = { case x if seq.hasNext => seq.next }
 
-  override def isDefinedAt(msg: Any) = seq.exists( _.isDefinedAt(msg) ) 
-
+  override def isDefinedAt(msg: Any) = seq.exists( _.isDefinedAt(msg) )
 }

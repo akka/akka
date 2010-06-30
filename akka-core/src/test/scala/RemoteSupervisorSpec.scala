@@ -8,13 +8,14 @@ import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
 import se.scalablesolutions.akka.serialization.BinaryString
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer}
+import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.OneWay
 import se.scalablesolutions.akka.dispatch.Dispatchers
 import Actor._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import org.junit.{Test, Before, After}
 
 object Log {
   val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
@@ -36,7 +37,7 @@ object Log {
       Log.oneWayLog.put("oneway")
 
     case BinaryString("Die") =>
-      throw new RuntimeException("DIE")
+      throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
   override def postRestart(reason: Throwable) {
@@ -50,7 +51,7 @@ object Log {
       Log.messageLog.put("ping")
       self.reply("pong")
     case BinaryString("Die") =>
-      throw new RuntimeException("DIE")
+      throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
   override def postRestart(reason: Throwable) {
@@ -64,7 +65,7 @@ object Log {
       Log.messageLog.put("ping")
       self.reply("pong")
     case BinaryString("Die") =>
-      throw new RuntimeException("DIE")
+      throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 
   override def postRestart(reason: Throwable) {
@@ -74,7 +75,7 @@ object Log {
 
 object RemoteSupervisorSpec {
   val HOSTNAME = "localhost"
-  val PORT = 9988
+  val PORT = 9990
   var server: RemoteServer = null
 }
 
@@ -83,16 +84,30 @@ object RemoteSupervisorSpec {
  */
 class RemoteSupervisorSpec extends JUnitSuite {
   import RemoteSupervisorSpec._
-  Config.config
-
-  server = new RemoteServer()
-  server.start(HOSTNAME, PORT)
-
+  
   var pingpong1: ActorRef = _
   var pingpong2: ActorRef = _
   var pingpong3: ActorRef = _
 
   import Log._
+
+  @Before
+  def init {
+    server = new RemoteServer()
+    server.start(HOSTNAME, PORT)
+    Thread.sleep(1000)
+  }
+
+  @After
+  def finished {
+    try {
+      server.shutdown
+      RemoteClient.shutdownAll
+      Thread.sleep(1000)
+    } catch {
+      case e => ()
+    }
+  }
 
   @Test def shouldStartServer = {
     Log.messageLog.clear
@@ -120,7 +135,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong1 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -140,7 +155,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong1 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -160,7 +175,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong1 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -180,7 +195,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong1 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -200,7 +215,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong1 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -215,7 +230,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong3 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -249,7 +264,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong2 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -283,13 +298,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong2 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -323,13 +338,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong2 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
@@ -363,7 +378,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
 
     pingpong1 ! BinaryString("Die")
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
@@ -379,7 +394,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
     pingpong1 ! BinaryString("Die")
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     pingpong1 ! OneWay
@@ -419,13 +434,13 @@ class RemoteSupervisorSpec extends JUnitSuite {
       pingpong2 !! (BinaryString("Die"), 5000)
     }
 
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5 , TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
-    expect("DIE") {
+    expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
