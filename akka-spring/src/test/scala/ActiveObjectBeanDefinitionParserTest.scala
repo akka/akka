@@ -26,9 +26,9 @@ class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                     target="foo.bar.MyPojo"
                                     timeout="1000"
                                     transactional="true"
-									scope="prototype">
-						<property name="someProp" value="someValue" ref="someRef"/>
-					</akka:active-object>
+                                                                        scope="prototype">
+                                                <property name="someProp" value="someValue" ref="someRef"/>
+                                        </akka:active-object>
 
       val props = parser.parseActiveObject(dom(xml).getDocumentElement);
       assert(props != null)

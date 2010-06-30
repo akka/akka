@@ -13,6 +13,6 @@ class PropertyEntries {
    var entryList:ListBuffer[PropertyEntry] = ListBuffer[PropertyEntry]()
 
    def add(entry:PropertyEntry) = {
-		entryList.append(entry)
+                entryList.append(entry)
   }
 }

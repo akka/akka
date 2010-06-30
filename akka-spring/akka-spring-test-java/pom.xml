@@ -17,11 +17,11 @@
   </properties>
 
    <repositories>
-	<repository>
-	      <id>akka</id>
-	      <name>Akka Repo</name>
-	      <url>http://www.scalablesolutions.se/akka/repository/</url>
-	    </repository>
+        <repository>
+              <id>akka</id>
+              <name>Akka Repo</name>
+              <url>http://www.scalablesolutions.se/akka/repository/</url>
+            </repository>
     <repository>
       <id>project.embedded.module</id>
       <name>Project Embedded Repository</name>

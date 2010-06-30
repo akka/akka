@@ -12,10 +12,10 @@
                       transactional="true"
                       timeout="1000"
                       scope="prototype">
-             <property name="source" ref="string"/>      	         
+             <property name="source" ref="string"/>                      
         </akka:active-object>
-       	
- 		<bean id="string" class="java.lang.String">
-			<constructor-arg value="someString"/>
-	    </bean>
+        
+                <bean id="string" class="java.lang.String">
+                        <constructor-arg value="someString"/>
+            </bean>
  </beans>

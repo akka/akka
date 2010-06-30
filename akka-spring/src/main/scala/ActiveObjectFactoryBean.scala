@@ -57,44 +57,44 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
    */
   def createInstance: AnyRef = {
-	if(scope.equals(VAL_SCOPE_SINGLETON)) {
-		setSingleton(true)
-	} else {
-		setSingleton(false)
-	}
+        if(scope.equals(VAL_SCOPE_SINGLETON)) {
+                setSingleton(true)
+        } else {
+                setSingleton(false)
+        }
     var argumentList = ""
     if (isRemote) argumentList += "r"
     if (hasInterface) argumentList += "i"
     if (hasDispatcher) argumentList += "d"
    
     setProperties(
-		create(argumentList))
+                create(argumentList))
 }
 
  /**
    * This method manages <property/> element by injecting either
-   * values (<property value="value"/>) and bean references (<property ref="beanId"/>)	
+   * values (<property value="value"/>) and bean references (<property ref="beanId"/>)  
    */
    private def setProperties(ref:AnyRef) : AnyRef = {
-	log.debug("Processing properties and dependencies for target class %s",target)
-	val beanWrapper = new BeanWrapperImpl(ref);
-	for(entry <- property.entryList) {
-		val propertyDescriptor = BeanUtils.getPropertyDescriptor(ref.getClass,entry.name)
-		val method = propertyDescriptor.getWriteMethod();
-		
-		if(StringUtils.hasText(entry.ref)) {
-			log.debug("Setting property %s with bean ref %s using method %s",
-				entry.name,entry.ref,method.getName)
-			method.invoke(ref,getBeanFactory().getBean(entry.ref))
-		} else if(StringUtils.hasText(entry.value)) {
-			log.debug("Setting property %s with value %s using method %s",
-				entry.name,entry.value,method.getName)
-			beanWrapper.setPropertyValue(entry.name,entry.value)
-		} else {
-			throw new AkkaBeansException("Either property@ref or property@value must be set on property element")
-		}
-	}
-	ref
+        log.debug("Processing properties and dependencies for target class %s",target)
+        val beanWrapper = new BeanWrapperImpl(ref);
+        for(entry <- property.entryList) {
+                val propertyDescriptor = BeanUtils.getPropertyDescriptor(ref.getClass,entry.name)
+                val method = propertyDescriptor.getWriteMethod();
+                
+                if(StringUtils.hasText(entry.ref)) {
+                        log.debug("Setting property %s with bean ref %s using method %s",
+                                entry.name,entry.ref,method.getName)
+                        method.invoke(ref,getBeanFactory().getBean(entry.ref))
+                } else if(StringUtils.hasText(entry.value)) {
+                        log.debug("Setting property %s with value %s using method %s",
+                                entry.name,entry.value,method.getName)
+                        beanWrapper.setPropertyValue(entry.name,entry.value)
+                } else {
+                        throw new AkkaBeansException("Either property@ref or property@value must be set on property element")
+                }
+        }
+        ref
   }
 
 // TODO: check if this works in 2.8 (type inferred to Nothing instead of AnyRef here)
