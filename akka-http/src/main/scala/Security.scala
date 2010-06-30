@@ -560,6 +560,6 @@ object LiftUtils {
        (pair(0), unquote(pair(1)))
     })
     val map: Map[String, String] = Map.empty
-	    (map /: list)((m, next) => m + (next))
+            (map /: list)((m, next) => m + (next))
   }
 }
