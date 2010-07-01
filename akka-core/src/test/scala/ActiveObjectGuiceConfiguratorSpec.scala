@@ -56,7 +56,7 @@ class ActiveObjectGuiceConfiguratorSpec extends
   override def afterAll = conf.stop
 
   describe("ActiveObjectGuiceConfigurator") {
-
+/*
     it("should inject active object using guice") {
       messageLog = ""
       val foo = conf.getInstance(classOf[Foo])
@@ -125,5 +125,6 @@ class ActiveObjectGuiceConfiguratorSpec extends
           classOf[RuntimeException] should equal(e.getClass)
       }
     }
+    */
   }
 }
