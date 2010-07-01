@@ -217,6 +217,14 @@ trait ActorRef extends TransactionManagement {
   @volatile var timeout: Long = Actor.TIMEOUT
 
   /**
+     * User overridable callback/setting.
+     * <p/>
+     * Defines the default timeout for an initial receive invocation.
+     * Used if the receive (or HotSwap) contains a case handling ReceiveTimeout.
+     */
+    @volatile var receiveTimeout: Long = Actor.RECEIVE_TIMEOUT
+  
+  /**
    * User overridable callback/setting.
    *
    * <p/>
@@ -1415,6 +1423,7 @@ sealed class LocalActorRef private[akka](
     ActorRegistry.register(this)
     if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
     clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
+    actor.checkReceiveTimeout
   }
 
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
