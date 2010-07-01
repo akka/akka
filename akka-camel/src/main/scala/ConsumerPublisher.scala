@@ -47,6 +47,15 @@ private[camel] object ConsumerPublisher extends Logging {
     CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
     log.info("published method %s of %s at endpoint %s" format (targetMethod, event.activeObject, event.uri))
   }
+
+  def handleConsumerMethodUnregistered(event: ConsumerMethodUnregistered) {
+    val targetMethod = event.method.getName
+    val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
+
+    CamelContextManager.activeObjectRegistry.remove(objectId)
+    CamelContextManager.context.stopRoute(objectId)
+    log.info("unpublished method %s of %s from endpoint %s" format (targetMethod, event.activeObject, event.uri))
+  }
 }
 
 /**
@@ -76,8 +85,12 @@ private[camel] class ConsumerPublisher extends Actor {
       handleConsumerUnregistered(u)
       latch.countDown // needed for testing only.
     }
-    case d: ConsumerMethodRegistered => {
-      handleConsumerMethodRegistered(d)
+    case mr: ConsumerMethodRegistered => {
+      handleConsumerMethodRegistered(mr)
+      latch.countDown // needed for testing only.
+    }
+    case mu: ConsumerMethodUnregistered => {
+      handleConsumerMethodUnregistered(mu)
       latch.countDown // needed for testing only.
     }
     case SetExpectedMessageCount(num) => {
@@ -171,6 +184,8 @@ private[camel] class PublishRequestor extends Actor {
       for (event <- ConsumerUnregistered.forConsumer(actor)) deliverCurrentEvent(event)
     case AspectInitRegistered(proxy, init) =>
       for (event <- ConsumerMethodRegistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
+    case AspectInitUnregistered(proxy, init) =>
+      for (event <- ConsumerMethodUnregistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
     case PublishRequestorInit(pub) => {
       publisher = Some(pub)
       deliverBufferedEvents
@@ -244,6 +259,8 @@ private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, 
  */
 private[camel] case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
+private[camel] case class ConsumerMethodUnregistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
+
 /**
  * @author Martin Krasser
  */
@@ -288,6 +305,14 @@ private[camel] object ConsumerMethodRegistered {
     if (init.remoteAddress.isDefined) Nil // let remote node publish active object methods on endpoints
     else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
     yield ConsumerMethodRegistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+  }
+}
+
+private[camel] object ConsumerMethodUnregistered {
+  def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodUnregistered] = {
+    if (init.remoteAddress.isDefined) Nil
+    else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
+    yield ConsumerMethodUnregistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
   }
 }
 
