@@ -661,6 +661,331 @@ public final class ProtobufProtocol {
     // @@protoc_insertion_point(class_scope:se.scalablesolutions.akka.actor.Counter)
   }
   
+  public static final class DualCounter extends
+      com.google.protobuf.GeneratedMessage {
+    // Use DualCounter.newBuilder() to construct.
+    private DualCounter() {
+      initFields();
+    }
+    private DualCounter(boolean noInit) {}
+    
+    private static final DualCounter defaultInstance;
+    public static DualCounter getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public DualCounter getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return se.scalablesolutions.akka.actor.ProtobufProtocol.internal_static_se_scalablesolutions_akka_actor_DualCounter_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return se.scalablesolutions.akka.actor.ProtobufProtocol.internal_static_se_scalablesolutions_akka_actor_DualCounter_fieldAccessorTable;
+    }
+    
+    // required uint32 count1 = 1;
+    public static final int COUNT1_FIELD_NUMBER = 1;
+    private boolean hasCount1;
+    private int count1_ = 0;
+    public boolean hasCount1() { return hasCount1; }
+    public int getCount1() { return count1_; }
+    
+    // required uint32 count2 = 2;
+    public static final int COUNT2_FIELD_NUMBER = 2;
+    private boolean hasCount2;
+    private int count2_ = 0;
+    public boolean hasCount2() { return hasCount2; }
+    public int getCount2() { return count2_; }
+    
+    private void initFields() {
+    }
+    public final boolean isInitialized() {
+      if (!hasCount1) return false;
+      if (!hasCount2) return false;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (hasCount1()) {
+        output.writeUInt32(1, getCount1());
+      }
+      if (hasCount2()) {
+        output.writeUInt32(2, getCount2());
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (hasCount1()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(1, getCount1());
+      }
+      if (hasCount2()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(2, getCount2());
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> {
+      private se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter result;
+      
+      // Construct using se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter.newBuilder()
+      private Builder() {}
+      
+      private static Builder create() {
+        Builder builder = new Builder();
+        builder.result = new se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter();
+        return builder;
+      }
+      
+      protected se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter internalGetResult() {
+        return result;
+      }
+      
+      public Builder clear() {
+        if (result == null) {
+          throw new IllegalStateException(
+            "Cannot call clear() after build().");
+        }
+        result = new se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter();
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(result);
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter.getDescriptor();
+      }
+      
+      public se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter getDefaultInstanceForType() {
+        return se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter.getDefaultInstance();
+      }
+      
+      public boolean isInitialized() {
+        return result.isInitialized();
+      }
+      public se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter build() {
+        if (result != null && !isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return buildPartial();
+      }
+      
+      private se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        if (!isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return buildPartial();
+      }
+      
+      public se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter buildPartial() {
+        if (result == null) {
+          throw new IllegalStateException(
+            "build() has already been called on this Builder.");
+        }
+        se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter returnMe = result;
+        result = null;
+        return returnMe;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter) {
+          return mergeFrom((se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter other) {
+        if (other == se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter.getDefaultInstance()) return this;
+        if (other.hasCount1()) {
+          setCount1(other.getCount1());
+        }
+        if (other.hasCount2()) {
+          setCount2(other.getCount2());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                return this;
+              }
+              break;
+            }
+            case 8: {
+              setCount1(input.readUInt32());
+              break;
+            }
+            case 16: {
+              setCount2(input.readUInt32());
+              break;
+            }
+          }
+        }
+      }
+      
+      
+      // required uint32 count1 = 1;
+      public boolean hasCount1() {
+        return result.hasCount1();
+      }
+      public int getCount1() {
+        return result.getCount1();
+      }
+      public Builder setCount1(int value) {
+        result.hasCount1 = true;
+        result.count1_ = value;
+        return this;
+      }
+      public Builder clearCount1() {
+        result.hasCount1 = false;
+        result.count1_ = 0;
+        return this;
+      }
+      
+      // required uint32 count2 = 2;
+      public boolean hasCount2() {
+        return result.hasCount2();
+      }
+      public int getCount2() {
+        return result.getCount2();
+      }
+      public Builder setCount2(int value) {
+        result.hasCount2 = true;
+        result.count2_ = value;
+        return this;
+      }
+      public Builder clearCount2() {
+        result.hasCount2 = false;
+        result.count2_ = 0;
+        return this;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:se.scalablesolutions.akka.actor.DualCounter)
+    }
+    
+    static {
+      defaultInstance = new DualCounter(true);
+      se.scalablesolutions.akka.actor.ProtobufProtocol.internalForceInit();
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:se.scalablesolutions.akka.actor.DualCounter)
+  }
+  
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_se_scalablesolutions_akka_actor_ProtobufPOJO_descriptor;
   private static
@@ -671,6 +996,11 @@ public final class ProtobufProtocol {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_se_scalablesolutions_akka_actor_Counter_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_se_scalablesolutions_akka_actor_DualCounter_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_se_scalablesolutions_akka_actor_DualCounter_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -683,7 +1013,8 @@ public final class ProtobufProtocol {
       "\n\026ProtobufProtocol.proto\022\037se.scalablesol" +
       "utions.akka.actor\"8\n\014ProtobufPOJO\022\n\n\002id\030" +
       "\001 \002(\004\022\014\n\004name\030\002 \002(\t\022\016\n\006status\030\003 \002(\010\"\030\n\007C" +
-      "ounter\022\r\n\005count\030\001 \002(\r"
+      "ounter\022\r\n\005count\030\001 \002(\r\"-\n\013DualCounter\022\016\n\006" +
+      "count1\030\001 \002(\r\022\016\n\006count2\030\002 \002(\r"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -706,6 +1037,14 @@ public final class ProtobufProtocol {
               new java.lang.String[] { "Count", },
               se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.class,
               se.scalablesolutions.akka.actor.ProtobufProtocol.Counter.Builder.class);
+          internal_static_se_scalablesolutions_akka_actor_DualCounter_descriptor =
+            getDescriptor().getMessageTypes().get(2);
+          internal_static_se_scalablesolutions_akka_actor_DualCounter_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_se_scalablesolutions_akka_actor_DualCounter_descriptor,
+              new java.lang.String[] { "Count1", "Count2", },
+              se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter.class,
+              se.scalablesolutions.akka.actor.ProtobufProtocol.DualCounter.Builder.class);
           return null;
         }
       };
