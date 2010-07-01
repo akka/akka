@@ -1338,7 +1338,7 @@ sealed class LocalActorRef private[akka](
       }
     }
   }
-
+  
   protected[akka] def restartLinkedActors(reason: Throwable) = guard.withGuard {
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
