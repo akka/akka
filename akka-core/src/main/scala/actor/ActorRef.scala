@@ -831,10 +831,10 @@ sealed class LocalActorRef private[akka](
       }
       val builder = LifeCycleProtocol.newBuilder
       lifeCycle match {
-        case Some(LifeCycle(scope, None)) =>
+        case Some(LifeCycle(scope, None, _)) =>
           setScope(builder, scope)
           Some(builder.build)
-        case Some(LifeCycle(scope, Some(callbacks))) =>
+        case Some(LifeCycle(scope, Some(callbacks), _)) =>
           setScope(builder, scope)
           builder.setPreRestart(callbacks.preRestart)
           builder.setPostRestart(callbacks.postRestart)
@@ -1314,7 +1314,7 @@ sealed class LocalActorRef private[akka](
     val failedActor = actorInstance.get
     failedActor.synchronized {
       lifeCycle.get match {
-        case LifeCycle(scope, _) => {
+        case LifeCycle(scope, _, _) => {
           scope match {
             case Permanent =>
               Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
@@ -1343,7 +1343,7 @@ sealed class LocalActorRef private[akka](
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
       actorRef.lifeCycle.get match {
-        case LifeCycle(scope, _) => {
+        case LifeCycle(scope, _, _) => {
           scope match {
             case Permanent => actorRef.restart(reason)
             case Temporary => shutDownTemporaryActor(actorRef)

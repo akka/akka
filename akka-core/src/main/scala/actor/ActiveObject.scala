@@ -25,6 +25,7 @@ object Annotations {
   val transactionrequired =    classOf[transactionrequired]
   val prerestart =             classOf[prerestart]
   val postrestart =            classOf[postrestart]
+  val shutdown =               classOf[shutdown]
   val inittransactionalstate = classOf[inittransactionalstate]
 }
 
@@ -358,7 +359,6 @@ object ActiveObject extends Logging {
     val proxy = Proxy.newInstance(target, true, false)
     val context = injectActiveObjectContext(proxy)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target, proxy, context)
-    ActorRegistry.unregister(actorRef) // do not store the dispatcher in the ActorRegistry since it will prevent GC
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(target, actorRef, remoteAddress, timeout))
@@ -371,12 +371,16 @@ object ActiveObject extends Logging {
     val context = injectActiveObjectContext(target)
     val proxy = Proxy.newInstance(Array(intf), Array(target), true, false)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target.getClass, target, context)
-    ActorRegistry.unregister(actorRef) // do not store the dispatcher in the ActorRegistry since it will prevent GC
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(intf, actorRef, remoteAddress, timeout))
     actorRef.start
     proxy.asInstanceOf[T]
+  }
+
+  def stop(obj: AnyRef): Unit = {
+    val init = AspectInitRegistry.initFor(obj)
+    init.actorRef.stop
   }
 
   /**
@@ -483,9 +487,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
   private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
 
   def initFor(target: AnyRef) = {
-    val init = initializations.get(target)
-    initializations.remove(target)
-    init
+    initializations.get(target)
   }
 
   def register(target: AnyRef, init: AspectInit) = {
@@ -493,10 +495,17 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
     foreachListener(_ ! AspectInitRegistered(target, init))
     res
   }
+
+  def unregister(target: AnyRef) = {
+    val res = initializations.remove(target)
+    foreachListener(_ ! AspectInitUnregistered(target, res))
+    res
+  }
 }
 
 private[akka] sealed trait AspectInitRegistryEvent
 private[akka] case class AspectInitRegistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
+private[akka] case class AspectInitUnregistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],
@@ -547,7 +556,10 @@ private[akka] sealed class ActiveObjectAspect {
     val isOneWay = isVoid(rtti)
     val sender = ActiveObjectContext.sender.value
     val senderFuture = ActiveObjectContext.senderFuture.value
-    if (isOneWay) {
+
+    if (!actorRef.isRunning) {
+      joinPoint.proceed
+    } else if (isOneWay) {
       actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
       null.asInstanceOf[AnyRef]
     } else {
@@ -656,10 +668,13 @@ object Dispatcher {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Option[RestartCallbacks]) extends Actor {
+private[akka] class Dispatcher(transactionalRequired: Boolean,
+                               var restartCallbacks: Option[RestartCallbacks],
+                               var shutdownCallback: Option[ShutdownCallback] = None) extends Actor {
   import Dispatcher._
 
   private[actor] var target: Option[AnyRef] = None
+  private var zhutdown: Option[Method] = None
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
   private var initTxState: Option[Method] = None
@@ -681,7 +696,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
     val methods = targetInstance.getClass.getDeclaredMethods.toList
 
     // See if we have any config define restart callbacks
-    callbacks match {
+    restartCallbacks match {
       case None => {}
       case Some(RestartCallbacks(pre, post)) =>
         preRestart = Some(try {
@@ -695,10 +710,22 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
           "Could not find post restart method [" + post + "] \nin [" +
           targetClass.getName + "]. \nIt must have a zero argument definition.") })
     }
+    // See if we have any config define a shutdown callback
+    shutdownCallback match {
+      case None => {}
+      case Some(ShutdownCallback(down)) =>
+        zhutdown = Some(try {
+          targetInstance.getClass.getDeclaredMethod(down, ZERO_ITEM_CLASS_ARRAY: _*)
+        } catch { case e => throw new IllegalStateException(
+          "Could not find shutdown method [" + down + "] \nin [" +
+          targetClass.getName + "]. \nIt must have a zero argument definition.") })
+    }
 
     // See if we have any annotation defined restart callbacks
     if (!preRestart.isDefined) preRestart = methods.find(m => m.isAnnotationPresent(Annotations.prerestart))
     if (!postRestart.isDefined) postRestart = methods.find(m => m.isAnnotationPresent(Annotations.postrestart))
+    // See if we have an annotation defined shutdown callback
+    if (!zhutdown.isDefined) zhutdown = methods.find(m => m.isAnnotationPresent(Annotations.shutdown))
 
     if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
       throw new IllegalStateException(
@@ -708,9 +735,14 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
       throw new IllegalStateException(
         "Method annotated with @postrestart or defined as a restart callback in \n[" +
         targetClass.getName + "] must have a zero argument definition")
+    if (zhutdown.isDefined && zhutdown.get.getParameterTypes.length != 0)
+      throw new IllegalStateException(
+        "Method annotated with @shutdown or defined as a shutdown callback in \n[" +
+        targetClass.getName + "] must have a zero argument definition")
 
     if (preRestart.isDefined) preRestart.get.setAccessible(true)
     if (postRestart.isDefined) postRestart.get.setAccessible(true)
+    if (zhutdown.isDefined) zhutdown.get.setAccessible(true)
 
     // see if we have a method annotated with @inittransactionalstate, if so invoke it
     initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
@@ -768,6 +800,15 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
                 initialize(oldActor.targetClass,oldActor.target.get,oldActor.context)
                 crashedActorTl.set(null)
         }
+  }
+
+  override def shutdown = {
+    AspectInitRegistry.unregister(target.get);
+    try {
+      if (zhutdown.isDefined) {
+        zhutdown.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
+      }
+    } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
   override def initTransactionalState = {
