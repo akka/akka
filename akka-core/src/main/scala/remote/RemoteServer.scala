@@ -365,7 +365,7 @@ class RemoteServerHandler(
     actorRef.start
     val message = MessageSerializer.deserialize(request.getMessage)
     val sender =
-      if (request.hasSender) Some(ActorRef.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
+      if (request.hasSender) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
       else None
     if (request.getIsOneWay) actorRef.!(message)(sender)
     else {
