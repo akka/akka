@@ -18,6 +18,7 @@ data
 out
 logs
 storage
+.codefellow
 _dump
 .manager
 manifest.mf
