@@ -464,7 +464,8 @@ trait Actor extends Logging {
   }
 
   private[akka] def checkReceiveTimeout = {
-    if (self.isDefinedAt(ReceiveTimeout)) {
+    //if ((self.hotswap getOrElse receive).isDefinedAt(ReceiveTimeout)) { // FIXME use when 'self' is safe to use, throws NPE sometimes
+    if ((receive ne null) && receive.isDefinedAt(ReceiveTimeout)) {
       log.debug("Scheduling timeout for Actor [" + toString + "]")
       timeoutActor = Some(Scheduler.scheduleOnce(self, ReceiveTimeout, self.receiveTimeout, TimeUnit.MILLISECONDS))
     }

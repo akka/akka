@@ -63,6 +63,6 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     timeoutActor ! Tick
 
     // timeout already after 500 ms, so 1 second wait should be enough
-    assert(timeoutLatch.tryAwait(1, TimeUnit.SECONDS) == false)
+    assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS) == false)
   }
 }
