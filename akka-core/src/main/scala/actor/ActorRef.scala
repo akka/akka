@@ -1271,11 +1271,11 @@ sealed class LocalActorRef private[akka](
       case e =>
         _isBeingRestarted = true
         // abort transaction set
-        if (isTransactionSetInScope) try {
+        if (isTransactionSetInScope) {
           val txSet = getTransactionSetInScope
           Actor.log.debug("Aborting transaction set [%s]", txSet)
           txSet.abort
-        } catch { case e: IllegalStateException => {} }
+        }
         Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
         senderFuture.foreach(_.completeWithException(this, e))
