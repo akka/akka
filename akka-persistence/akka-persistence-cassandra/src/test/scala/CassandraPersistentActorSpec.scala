@@ -168,7 +168,7 @@ object // EmbeddedCassandraService {
   t.setDaemon(true)
   t.start
 
-  def start: Unit = {}
+  def start(): Unit = {}
 
 }
 */
