@@ -54,7 +54,7 @@ class ThreadBasedDispatcherSpec extends JUnitSuite {
     internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder
   }
 
-  private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially: Unit = {
+  private def internalTestMessagesDispatchedToTheSameHandlerAreExecutedSequentially(): Unit = {
     val guardLock = new ReentrantLock
     val handleLatch = new CountDownLatch(100)
     val dispatcher = new ThreadBasedDispatcher("name", new TestMessageHandle(handleLatch))
@@ -66,7 +66,7 @@ class ThreadBasedDispatcherSpec extends JUnitSuite {
     assert(!threadingIssueDetected.get)
   }
 
-  private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder: Unit = {
+  private def internalTestMessagesDispatchedToHandlersAreExecutedInFIFOOrder(): Unit = {
     val handleLatch = new CountDownLatch(100)
     val dispatcher = new ThreadBasedDispatcher("name", new MessageInvoker {
       var currentValue = -1;
