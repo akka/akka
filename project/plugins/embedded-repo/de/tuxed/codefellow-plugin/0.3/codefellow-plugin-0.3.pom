@@ -4,12 +4,12 @@
     <groupId>de.tuxed</groupId>
     <artifactId>codefellow-plugin</artifactId>
     <packaging>jar</packaging>
-    <version>0.2</version>
+    <version>0.3</version>
     <dependencies>
         <dependency>
             <groupId>de.tuxed</groupId>
             <artifactId>codefellow-core_2.8.0.RC5</artifactId>
-            <version>0.2</version>
+            <version>0.3</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
