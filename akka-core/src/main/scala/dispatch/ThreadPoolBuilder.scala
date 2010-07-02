@@ -31,7 +31,7 @@ trait ThreadPoolBuilder {
 
   def isShutdown = executor.isShutdown
 
-  def buildThreadPool: Unit = synchronized {
+  def buildThreadPool(): Unit = synchronized {
     ensureNotActive
     inProcessOfBuilding = false
     if (boundedExecutorBound > 0) {
@@ -152,7 +152,7 @@ trait ThreadPoolBuilder {
       "Is not in the process of building a thread pool, start building one by invoking one of the 'newThreadPool*' methods")
   }
 
-  def ensureNotActive: Unit
+  def ensureNotActive(): Unit
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
