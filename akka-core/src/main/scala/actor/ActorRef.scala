@@ -103,7 +103,7 @@ trait ActorRef extends TransactionManagement {
      * Used if the receive (or HotSwap) contains a case handling ReceiveTimeout.
      */
     @volatile var receiveTimeout: Long = Actor.RECEIVE_TIMEOUT
-  
+
   /**
    * User overridable callback/setting.
    *
@@ -585,7 +585,7 @@ sealed class LocalActorRef private[akka](
                          __format: Format[_ <: Actor]) = {
       this(() => {
         val actorClass = __loader.loadClass(__actorClassName)
-        if (__format.isInstanceOf[SerializerBasedActorFormat[_]]) 
+        if (__format.isInstanceOf[SerializerBasedActorFormat[_]])
           __format.asInstanceOf[SerializerBasedActorFormat[_]]
                   .serializer
                   .fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
@@ -1082,7 +1082,7 @@ sealed class LocalActorRef private[akka](
       }
     }
   }
-  
+
   protected[akka] def restartLinkedActors(reason: Throwable) = guard.withGuard {
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
