@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
-import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, RemoteActorRef}
+import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, RemoteActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.util.{UUID, Logging}
 import se.scalablesolutions.akka.config.Config.config
@@ -230,11 +230,11 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, loader: O
   }
 
   private[akka] def registerSupervisorForActor(actorRef: ActorRef) =
-    if (!actorRef.supervisor.isDefined) throw new IllegalStateException("Can't register supervisor for " + actorRef + " since it is not under supervision")
+    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException("Can't register supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.putIfAbsent(actorRef.supervisor.get.uuid, actorRef)
 
   private[akka] def deregisterSupervisorForActor(actorRef: ActorRef) =
-    if (!actorRef.supervisor.isDefined) throw new IllegalStateException("Can't unregister supervisor for " + actorRef + " since it is not under supervision")
+    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException("Can't unregister supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.remove(actorRef.supervisor.get.uuid)
 }
 
@@ -302,10 +302,10 @@ class RemoteClientHandler(val name: String,
         } else {
           if (reply.hasSupervisorUuid()) {
             val supervisorUuid = reply.getSupervisorUuid
-            if (!supervisors.containsKey(supervisorUuid)) throw new IllegalStateException(
+            if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
               "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
-            if (!supervisedActor.supervisor.isDefined) throw new IllegalStateException(
+            if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
               "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
             else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply))
           }

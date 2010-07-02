@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import se.scalablesolutions.akka.actor.ActorRef
+import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
 
 /**
  * Default settings are:
@@ -92,7 +92,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
         } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !mailbox.isEmpty))
       }
     })
-  } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
+  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
 
   /**
@@ -133,7 +133,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
 
   def usesActorMailbox = true
 
-  def ensureNotActive: Unit = if (active) throw new IllegalStateException(
+  def ensureNotActive: Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool

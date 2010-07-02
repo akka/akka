@@ -438,7 +438,7 @@ trait Actor extends Logging {
     cancelReceiveTimeout
     lifeCycles orElse (self.hotswap getOrElse receive)
   } catch {
-    case e: NullPointerException => throw new IllegalStateException(
+    case e: NullPointerException => throw new IllegalActorStateException(
       "The 'self' ActorRef reference for [" + getClass.getName + "] is NULL, error in the ActorRef initialization process.")
   }
 

@@ -22,7 +22,7 @@
 
 package se.scalablesolutions.akka.security
 
-import se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry}
+import se.scalablesolutions.akka.actor.{Scheduler, Actor, ActorRef, ActorRegistry, IllegalActorStateException}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.util.Logging
@@ -102,7 +102,7 @@ class AkkaSecurityFilterFactory extends ResourceFilterFactory with Logging {
 
   lazy val authenticatorFQN = {
     val auth = Config.config.getString("akka.rest.authenticator", "N/A")
-    if (auth == "N/A") throw new IllegalStateException("The config option 'akka.rest.authenticator' is not defined in 'akka.conf'")
+    if (auth == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.authenticator' is not defined in 'akka.conf'")
     auth
   }
 
@@ -400,7 +400,7 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
    */
   lazy val servicePrincipal = {
     val p = Config.config.getString("akka.rest.kerberos.servicePrincipal", "N/A")
-    if (p == "N/A") throw new IllegalStateException("The config option 'akka.rest.kerberos.servicePrincipal' is not defined in 'akka.conf'")
+    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.kerberos.servicePrincipal' is not defined in 'akka.conf'")
     p
   }
 
@@ -409,13 +409,13 @@ trait SpnegoAuthenticationActor extends AuthenticationActor[SpnegoCredentials] w
    */
   lazy val keyTabLocation = {
     val p = Config.config.getString("akka.rest.kerberos.keyTabLocation", "N/A")
-    if (p == "N/A") throw new IllegalStateException("The config option 'akka.rest.kerberos.keyTabLocation' is not defined in 'akka.conf'")
+    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.kerberos.keyTabLocation' is not defined in 'akka.conf'")
     p
   }
 
   lazy val kerberosDebug = {
     val p = Config.config.getString("akka.rest.kerberos.kerberosDebug", "N/A")
-    if (p == "N/A") throw new IllegalStateException("The config option 'akka.rest.kerberos.kerberosDebug' is not defined in 'akka.conf'")
+    if (p == "N/A") throw new IllegalActorStateException("The config option 'akka.rest.kerberos.kerberosDebug' is not defined in 'akka.conf'")
     p
   }
 

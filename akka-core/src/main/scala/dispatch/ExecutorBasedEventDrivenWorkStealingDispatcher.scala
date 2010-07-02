@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -55,7 +55,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
         }
       }
     })
-  } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
+  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
   /**
    * Try processing the mailbox of the given actor. Fails if the dispatching lock on the actor is already held by
@@ -162,7 +162,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     references.clear
   }
 
-  def ensureNotActive: Unit = if (active) throw new IllegalStateException(
+  def ensureNotActive: Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
@@ -187,7 +187,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
       }
       case Some(aType) => {
         if (aType != actorOfId.actor.getClass)
-          throw new IllegalStateException(
+          throw new IllegalActorStateException(
             String.format("Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
               actorOfId.actor, aType))
       }

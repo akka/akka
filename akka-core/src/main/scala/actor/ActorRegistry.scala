@@ -116,7 +116,7 @@ object ActorRegistry extends ListenerManagement {
 
     // ID
     val id = actor.id
-    if (id eq null) throw new IllegalStateException("Actor.id is null " + actor)
+    if (id eq null) throw new IllegalActorStateException("Actor.id is null " + actor)
     if (actorsById.containsKey(id)) actorsById.get(id).add(actor)
     else {
       val set = new CopyOnWriteArraySet[ActorRef]

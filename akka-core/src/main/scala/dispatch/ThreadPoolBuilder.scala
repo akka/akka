@@ -9,6 +9,7 @@ import java.util.concurrent._
 import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
+import se.scalablesolutions.akka.actor.IllegalActorStateException
 import se.scalablesolutions.akka.util.Logging
 
 trait ThreadPoolBuilder {
@@ -142,12 +143,12 @@ trait ThreadPoolBuilder {
   }
 
   protected def verifyNotInConstructionPhase = {
-    if (inProcessOfBuilding) throw new IllegalStateException("Is already in the process of building a thread pool")
+    if (inProcessOfBuilding) throw new IllegalActorStateException("Is already in the process of building a thread pool")
     inProcessOfBuilding = true
   }
 
   protected def verifyInConstructionPhase = {
-    if (!inProcessOfBuilding) throw new IllegalStateException(
+    if (!inProcessOfBuilding) throw new IllegalActorStateException(
       "Is not in the process of building a thread pool, start building one by invoking one of the 'newThreadPool*' methods")
   }
 
