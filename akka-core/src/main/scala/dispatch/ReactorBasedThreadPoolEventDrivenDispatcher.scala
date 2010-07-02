@@ -8,6 +8,8 @@ import java.util.concurrent.locks.ReentrantLock
 
 import java.util.{HashSet, HashMap, LinkedList, List}
 
+import se.scalablesolutions.akka.actor.IllegalActorStateException
+
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
  * See also this article: [http://today.java.net/cs/user/print/a/350].
@@ -105,10 +107,10 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
     val invocations = selectedInvocations.iterator
     while (invocations.hasNext && totalNrOfActors > totalNrOfBusyActors && passFairnessCheck(nrOfBusyMessages)) {
       val invocation = invocations.next
-      if (invocation eq null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
+      if (invocation eq null) throw new IllegalActorStateException("Message invocation is null [" + invocation + "]")
       if (!busyActors.contains(invocation.receiver)) {
         val invoker = messageInvokers.get(invocation.receiver)
-        if (invoker eq null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
+        if (invoker eq null) throw new IllegalActorStateException("Message invoker for invocation [" + invocation + "] is null")
         resume(invocation.receiver)
         invocations.remove
         executor.execute(new Runnable() {
@@ -137,7 +139,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
 
   def usesActorMailbox = false
 
-  def ensureNotActive: Unit = if (active) throw new IllegalStateException(
+  def ensureNotActive: Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {

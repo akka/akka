@@ -6,7 +6,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.{After, Test}
 
 class SchedulerSpec extends JUnitSuite {
-  
+
   @Test def schedulerShouldScheduleMoreThanOnce = {
 
     case object Tick

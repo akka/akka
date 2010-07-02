@@ -37,10 +37,7 @@ object ActorRegistry extends ListenerManagement {
    * Returns all actors in the system.
    */
   def actors: List[ActorRef] = {
-    val all = new ListBuffer[ActorRef]
-    val elements = actorsByUUID.elements
-    while (elements.hasMoreElements) all += elements.nextElement
-    all.toList
+	filter(_=> true)
   }
 
   /**
@@ -52,19 +49,31 @@ object ActorRegistry extends ListenerManagement {
   }
 
   /**
-   * Finds all actors that are subtypes of the class passed in as the Manifest argument.
+   * Finds all actors that are subtypes of the class passed in as the Manifest argument and supproting passed message.
    */
-  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] = {
-    val all = new ListBuffer[ActorRef]
+  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): List[ActorRef] =
+	 filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
+
+  /**
+   * Finds all actors that satisfy a predicate.
+   */
+  def filter(p: ActorRef => Boolean): List[ActorRef] = {
+   val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val actorId = elements.nextElement
-      if (manifest.erasure.isAssignableFrom(actorId.actor.getClass)) {
+      if (p(actorId))  {
         all += actorId
       }
     }
     all.toList
   }
+
+  /**
+   * Finds all actors that are subtypes of the class passed in as the Manifest argument.
+   */
+  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] =
+	  filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass))
 
   /**
    * Finds any actor that matches T.
@@ -107,7 +116,7 @@ object ActorRegistry extends ListenerManagement {
 
     // ID
     val id = actor.id
-    if (id eq null) throw new IllegalStateException("Actor.id is null " + actor)
+    if (id eq null) throw new IllegalActorStateException("Actor.id is null " + actor)
     if (actorsById.containsKey(id)) actorsById.get(id).add(actor)
     else {
       val set = new CopyOnWriteArraySet[ActorRef]

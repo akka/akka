@@ -24,9 +24,9 @@ object RemoteTransactionalActiveObjectSpec {
 
 @RunWith(classOf[JUnitRunner])
 class RemoteTransactionalActiveObjectSpec extends
-  Spec with 
-  ShouldMatchers with 
-  BeforeAndAfterAll {  
+  Spec with
+  ShouldMatchers with
+  BeforeAndAfterAll {
 
   import RemoteTransactionalActiveObjectSpec._
   Config.config

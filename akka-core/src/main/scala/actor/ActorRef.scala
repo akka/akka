@@ -103,7 +103,7 @@ trait ActorRef extends TransactionManagement {
      * Used if the receive (or HotSwap) contains a case handling ReceiveTimeout.
      */
     @volatile var receiveTimeout: Long = Actor.RECEIVE_TIMEOUT
-  
+
   /**
    * User overridable callback/setting.
    *
@@ -319,7 +319,7 @@ trait ActorRef extends TransactionManagement {
       if (sender.get.senderFuture.isDefined) postMessageToMailboxAndCreateFutureResultWithTimeout(
         message, timeout, sender.get.sender, sender.get.senderFuture)
       else if (sender.get.sender.isDefined) postMessageToMailbox(message, Some(sender.get.sender.get))
-      else throw new IllegalStateException("Can't forward message when initial sender is not an actor")
+      else throw new IllegalActorStateException("Can't forward message when initial sender is not an actor")
     } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
@@ -329,7 +329,7 @@ trait ActorRef extends TransactionManagement {
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
-  def reply(message: Any) = if(!reply_?(message)) throw new IllegalStateException(
+  def reply(message: Any) = if(!reply_?(message)) throw new IllegalActorStateException(
     "\n\tNo sender in scope, can't reply. " +
     "\n\tYou have probably: " +
     "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
@@ -585,7 +585,7 @@ sealed class LocalActorRef private[akka](
                          __format: Format[_ <: Actor]) = {
       this(() => {
         val actorClass = __loader.loadClass(__actorClassName)
-        if (__format.isInstanceOf[SerializerBasedActorFormat[_]]) 
+        if (__format.isInstanceOf[SerializerBasedActorFormat[_]])
           __format.asInstanceOf[SerializerBasedActorFormat[_]]
                   .serializer
                   .fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
@@ -760,7 +760,7 @@ sealed class LocalActorRef private[akka](
    * To be invoked from within the actor itself.
    */
   def link(actorRef: ActorRef) = guard.withGuard {
-    if (actorRef.supervisor.isDefined) throw new IllegalStateException(
+    if (actorRef.supervisor.isDefined) throw new IllegalActorStateException(
       "Actor can only have one supervisor [" + actorRef + "], e.g. link(actor) fails")
     linkedActors.put(actorRef.uuid, actorRef)
     actorRef.supervisor = Some(this)
@@ -773,7 +773,7 @@ sealed class LocalActorRef private[akka](
    * To be invoked from within the actor itself.
    */
   def unlink(actorRef: ActorRef) = guard.withGuard {
-    if (!linkedActors.containsKey(actorRef.uuid)) throw new IllegalStateException(
+    if (!linkedActors.containsKey(actorRef.uuid)) throw new IllegalActorStateException(
       "Actor [" + actorRef + "] is not a linked actor, can't unlink")
     linkedActors.remove(actorRef.uuid)
     actorRef.supervisor = None
@@ -943,7 +943,7 @@ sealed class LocalActorRef private[akka](
       val future = RemoteClient.clientFor(remoteAddress.get).send(
         createRemoteRequestProtocolBuilder(this, message, false, senderOption).build, senderFuture)
       if (future.isDefined) future.get
-      else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
+      else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
     } else {
       val future = if (senderFuture.isDefined) senderFuture.get
                    else new DefaultCompletableFuture[T](timeout)
@@ -1011,7 +1011,6 @@ sealed class LocalActorRef private[akka](
         setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
       }
     } catch {
-      case e: IllegalStateException => {}
       case e =>
         _isBeingRestarted = true
         // abort transaction set
@@ -1046,7 +1045,7 @@ sealed class LocalActorRef private[akka](
           case OneForOneStrategy(maxNrOfRetries, withinTimeRange) =>
             dead.restart(reason)
         }
-      } else throw new IllegalStateException(
+      } else throw new IllegalActorStateException(
         "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
         "\n\tto non-empty list of exception classes - can't proceed " + toString)
     } else {
@@ -1082,7 +1081,7 @@ sealed class LocalActorRef private[akka](
       }
     }
   }
-  
+
   protected[akka] def restartLinkedActors(reason: Throwable) = guard.withGuard {
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
@@ -1148,7 +1147,7 @@ sealed class LocalActorRef private[akka](
       case e: NoSuchFieldException =>
         val parent = clazz.getSuperclass
         if (parent != null) findActorSelfField(parent)
-        else throw new IllegalStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+        else throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
     }
   }
 
@@ -1214,7 +1213,7 @@ private[akka] case class RemoteActorRef private[akka] (
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     val future = remoteClient.send(createRemoteRequestProtocolBuilder(this, message, false, senderOption).build, senderFuture)
     if (future.isDefined) future.get
-    else throw new IllegalStateException("Expected a future from remote call to actor " + toString)
+    else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
   def start: ActorRef = {

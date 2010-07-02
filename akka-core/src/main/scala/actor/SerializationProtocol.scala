@@ -70,10 +70,10 @@ trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
  */
 object ActorSerialization {
 
-  def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Format[T]): ActorRef = 
+  def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Format[T]): ActorRef =
     fromBinaryToLocalActorRef(bytes, format)
 
-  def toBinary[T <: Actor](a: ActorRef)(implicit format: Format[T]): Array[Byte] = { 
+  def toBinary[T <: Actor](a: ActorRef)(implicit format: Format[T]): Array[Byte] = {
     toSerializedActorRefProtocol(a, format).toByteArray
   }
 
@@ -85,7 +85,7 @@ object ActorSerialization {
       }
       val builder = LifeCycleProtocol.newBuilder
       a.lifeCycle match {
-        case Some(LifeCycle(scope, None)) => 
+        case Some(LifeCycle(scope, None)) =>
           setScope(builder, scope)
           Some(builder.build)
         case Some(LifeCycle(scope, Some(callbacks))) =>
@@ -118,14 +118,14 @@ object ActorSerialization {
     builder.build
   }
 
-  private def fromBinaryToLocalActorRef[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef = 
+  private def fromBinaryToLocalActorRef[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
     fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, format, None)
 
   private def fromProtobufToLocalActorRef[T <: Actor](protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
     Actor.log.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n" + protocol)
-  
-    val serializer = 
-      if (format.isInstanceOf[SerializerBasedActorFormat[_]]) 
+
+    val serializer =
+      if (format.isInstanceOf[SerializerBasedActorFormat[_]])
         Some(format.asInstanceOf[SerializerBasedActorFormat[_]].serializer)
       else None
 
@@ -133,19 +133,19 @@ object ActorSerialization {
       if (protocol.hasLifeCycle) {
         val lifeCycleProtocol = protocol.getLifeCycle
         val restartCallbacks =
-          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart) 
+          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart)
             Some(RestartCallbacks(lifeCycleProtocol.getPreRestart, lifeCycleProtocol.getPostRestart))
           else None
         Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent, restartCallbacks)
              else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary, restartCallbacks)
-             else throw new IllegalStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
+             else throw new IllegalActorStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
       } else None
 
     val supervisor =
       if (protocol.hasSupervisor)
         Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
-      
+
     val hotswap =
       if (serializer.isDefined && protocol.hasHotswapStack) Some(serializer.get
         .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[PartialFunction[Any, Unit]]))
@@ -214,7 +214,7 @@ object RemoteActorSerialization {
       RemoteServer.registerActor(homeAddress, uuid, ar)
       registeredInRemoteNodeDuringSerialization = true
     }
-    
+
     RemoteActorRefProtocol.newBuilder
       .setUuid(uuid)
       .setActorClassname(actorClass.getName)

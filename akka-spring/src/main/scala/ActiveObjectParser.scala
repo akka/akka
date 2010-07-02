@@ -7,6 +7,8 @@ import org.springframework.util.xml.DomUtils
 import org.w3c.dom.Element
 import scala.collection.JavaConversions._
 
+import se.scalablesolutions.akka.actor.IllegalActorStateException
+
 /**
  * Parser trait for custom namespace configuration for active-object.
  * @author michaelkober
@@ -36,7 +38,7 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
       objectProperties.preRestart = callbacksElement.getAttribute(PRE_RESTART)
       objectProperties.postRestart = callbacksElement.getAttribute(POST_RESTART)
       if ((objectProperties.preRestart.isEmpty) && (objectProperties.preRestart.isEmpty)) {
-        throw new IllegalStateException("At least one of pre or post must be defined.")
+        throw new IllegalActorStateException("At least one of pre or post must be defined.")
       }
     }
 

@@ -8,11 +8,11 @@ import java.util.concurrent.TimeUnit
 import org.multiverse.api.latches.StandardLatch
 
 class ReceiveTimeoutSpec extends JUnitSuite {
-  
+
   @Test def receiveShouldGetTimeout= {
 
     val timeoutLatch = new StandardLatch
-    
+
     val timeoutActor = actorOf(new Actor {
       self.receiveTimeout = 500
 
@@ -21,8 +21,7 @@ class ReceiveTimeoutSpec extends JUnitSuite {
       }
     }).start
 
-    // after max 1 second the timeout should already been sent
-    assert(timeoutLatch.tryAwait(1, TimeUnit.SECONDS))
+    assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS))
   }
 
   @Test def swappedReceiveShouldAlsoGetTimout = {
@@ -37,15 +36,14 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     }).start
 
     // after max 1 second the timeout should already been sent
-    assert(timeoutLatch.tryAwait(1, TimeUnit.SECONDS))
+    assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS))
 
     val swappedLatch = new StandardLatch
     timeoutActor ! HotSwap(Some{
       case ReceiveTimeout => swappedLatch.open
     })
 
-    // after max 1 second the timeout should already been sent
-    assert(swappedLatch.tryAwait(1, TimeUnit.SECONDS))
+    assert(swappedLatch.tryAwait(3, TimeUnit.SECONDS))
   }
 
   @Test def timeoutShouldBeCancelledAfterRegularReceive = {
@@ -62,7 +60,6 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     }).start
     timeoutActor ! Tick
 
-    // timeout already after 500 ms, so 1 second wait should be enough
     assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS) == false)
   }
 }

@@ -4,7 +4,9 @@
 
 import sbt._
 import sbt.CompileOrder._
+
 import spde._
+import de.tuxed.codefellow.plugin.CodeFellowPlugin
 
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
@@ -174,7 +176,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   // subprojects
-  class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val netty = "org.jboss.netty" % "netty" % "3.2.1.Final" % "compile"
     val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
@@ -201,7 +203,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val junit = "junit" % "junit" % "4.5" % "test"
   }
 
-  class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
     val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.0" % "compile"
 
@@ -211,7 +213,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val junit = "junit" % "junit" % "4.5" % "test"
   }
 
-  class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile"
     val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
@@ -236,7 +238,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val mockito = "org.mockito" % "mockito-all" % "1.8.1" % "test"
   }
 
-  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val camel_core = "org.apache.camel" % "camel-core" % "2.3.0" % "compile"
   }
 
@@ -282,7 +284,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
-  class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE" % "compile"
     val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile"
 
@@ -294,7 +296,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val junit = "junit" % "junit" % "4.5" % "test"
   }
 
-  class AkkaJTAProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaJTAProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val atomikos_transactions = "com.atomikos" % "transactions" % "3.2.3" % "compile"
     val atomikos_transactions_jta = "com.atomikos" % "transactions-jta" % "3.2.3" % "compile"
     val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile"
@@ -303,22 +305,22 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // ================= TEST ==================
-  class AkkaActiveObjectTestProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaActiveObjectTestProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     // testing
     val junit = "junit" % "junit" % "4.5" % "test"
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
   }
 
   // ================= EXAMPLES ==================
-  class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
+  class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) with CodeFellowPlugin {
     val scalaToolsSnapshots = ScalaToolsSnapshots
     override def spdeSourcePath = mainSourcePath / "spde"
   }
 
-  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
-  class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
+  class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
-  class AkkaSampleLiftProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
+  class AkkaSampleLiftProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val lift = "net.liftweb" % "lift-webkit" % LIFT_VERSION % "compile"
     val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
@@ -328,22 +330,22 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val junit = "junit" % "junit" % "4.5" % "test"
   }
 
-  class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
-  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
-  class AkkaSampleRestScalaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
+  class AkkaSampleRestScalaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
   }
 
-  class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
+  class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
     val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE" % "compile"
     val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.3.0" % "compile"
     val camel_jms = "org.apache.camel" % "camel-jms" % "2.3.0" % "compile"
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.2" % "compile"
   }
 
-  class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
+  class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"
     val jsr250 = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
     val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile"

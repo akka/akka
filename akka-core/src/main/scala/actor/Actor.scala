@@ -47,11 +47,11 @@ case class Link(child: ActorRef) extends LifeCycleMessage
 case class Unlink(child: ActorRef) extends LifeCycleMessage
 case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
-
-case object ReceiveTimeout
+case object ReceiveTimeout extends LifeCycleMessage
 
 // Exceptions for Actors
 class ActorStartException private[akka](message: String) extends RuntimeException(message)
+class IllegalActorStateException private[akka](message: String) extends RuntimeException(message)
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
 class ActorInitializationException private[akka](message: String) extends RuntimeException(message)
 
@@ -438,7 +438,7 @@ trait Actor extends Logging {
     cancelReceiveTimeout
     lifeCycles orElse (self.hotswap getOrElse receive)
   } catch {
-    case e: NullPointerException => throw new IllegalStateException(
+    case e: NullPointerException => throw new IllegalActorStateException(
       "The 'self' ActorRef reference for [" + getClass.getName + "] is NULL, error in the ActorRef initialization process.")
   }
 
