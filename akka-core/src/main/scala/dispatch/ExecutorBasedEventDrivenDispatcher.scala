@@ -133,7 +133,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
 
   def usesActorMailbox = true
 
-  def ensureNotActive: Unit = if (active) throw new IllegalActorStateException(
+  def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool

@@ -386,7 +386,7 @@ trait ActorRef extends TransactionManagement {
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    */
-  def makeTransactionRequired: Unit
+  def makeTransactionRequired(): Unit
 
   /**
    * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
@@ -429,12 +429,12 @@ trait ActorRef extends TransactionManagement {
    * Shuts down the actor its dispatcher and message queue.
    * Alias for 'stop'.
    */
-  def exit = stop
+  def exit() = stop()
 
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop: Unit
+  def stop(): Unit
 
   /**
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
@@ -510,7 +510,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors: Unit
+  def shutdownLinkedActors(): Unit
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -680,7 +680,7 @@ sealed class LocalActorRef private[akka](
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    */
-  def makeTransactionRequired = guard.withGuard {
+  def makeTransactionRequired() = guard.withGuard {
     if (!isRunning || isBeingRestarted) isTransactor = true
     else throw new ActorInitializationException(
       "Can not make actor transaction required after it has been started")
@@ -873,7 +873,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors: Unit = guard.withGuard {
+  def shutdownLinkedActors(): Unit = guard.withGuard {
     linkedActorsAsList.foreach(_.stop)
     linkedActors.clear
   }
@@ -1221,7 +1221,7 @@ private[akka] case class RemoteActorRef private[akka] (
     this
   }
 
-  def stop: Unit = {
+  def stop(): Unit = {
     _isRunning = false
     _isShutDown = true
   }
@@ -1237,7 +1237,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
-  def makeTransactionRequired: Unit = unsupported
+  def makeTransactionRequired(): Unit = unsupported
   def transactionConfig_=(config: TransactionConfig): Unit = unsupported
   def transactionConfig: TransactionConfig = unsupported
   def makeRemote(hostname: String, port: Int): Unit = unsupported
@@ -1254,7 +1254,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = unsupported
   def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
-  def shutdownLinkedActors: Unit = unsupported
+  def shutdownLinkedActors(): Unit = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
   protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
