@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package se.scalablesolutions.akka.amqp.test
 
 import se.scalablesolutions.akka.util.Logging
@@ -12,7 +16,7 @@ import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
 import org.scalatest.matchers.MustMatchers
 
 class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers with Logging {
-  
+
 //  @Test
   def connectionAndRecovery = {
     val connectedLatch = new StandardLatch
@@ -43,5 +47,12 @@ class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers with Loggi
       connection.stop
       disconnectedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
     }
+  }
+
+  @Test
+  def dummy {
+    // amqp tests need local rabbitmq server running, so a disabled by default.
+    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
+    assert(true)
   }
 }

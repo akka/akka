@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package se.scalablesolutions.akka.amqp
 
 import java.util.{TimerTask, Timer}
@@ -40,7 +44,6 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
       }
     }
     case ConnectionShutdown(cause) => {
-      disconnect
       if (cause.isHardError) {
         // connection error
         if (cause.isInitiatedByApplication) {

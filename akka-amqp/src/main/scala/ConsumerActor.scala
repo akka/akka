@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package se.scalablesolutions.akka.amqp
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk
@@ -24,10 +28,6 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters) extend
 
   protected def setupChannel(ch: Channel) = {
 
-    // todo make nicer
-    if (!self.linkedActorsAsList.contains(deliveryHandler)) {
-      self.startLink(deliveryHandler)
-    }
     val queueDeclare: DeclareOk = {
       queueName match {
         case Some(name) =>
