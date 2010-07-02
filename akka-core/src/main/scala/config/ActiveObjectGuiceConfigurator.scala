@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.config
 import com.google.inject._
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher, ActorRef, Actor}
+import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher, ActorRef, Actor, IllegalActorStateException}
 import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 
@@ -42,10 +42,10 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
    */
   def getInstance[T](clazz: Class[T]): List[T] = synchronized {
     log.debug("Retrieving active object [%s]", clazz.getName)
-    if (injector eq null) throw new IllegalStateException(
+    if (injector eq null) throw new IllegalActorStateException(
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
-        activeObjectRegistry.getOrElse(clazz, throw new IllegalStateException(
+        activeObjectRegistry.getOrElse(clazz, throw new IllegalActorStateException(
           "Class [" + clazz.getName + "] has not been put under supervision" +
           "\n(by passing in the config to the 'configure' and then invoking 'supervise') method"))
     injector.injectMembers(targetInstance)
@@ -114,7 +114,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
   }
 
   override def inject: ActiveObjectConfiguratorBase = synchronized {
-    if (injector ne null) throw new IllegalStateException("inject() has already been called on this configurator")
+    if (injector ne null) throw new IllegalActorStateException("inject() has already been called on this configurator")
     injector = Guice.createInjector(modules)
     this
   }

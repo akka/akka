@@ -14,6 +14,19 @@ object ActorRegistrySpec {
         self.reply("got ping")
     }
   }
+
+  class TestActor2 extends Actor {
+    self.id = "MyID2"
+    def receive = {
+      case "ping" =>
+        record = "pong" + record
+        self.reply("got ping")
+      case "ping2" =>
+        record = "pong" + record
+        self.reply("got ping")
+    }
+  }
+
 }
 
 class ActorRegistrySpec extends JUnitSuite {
@@ -107,6 +120,34 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(actors.head.id === "MyID")
     assert(actors.last.actor.isInstanceOf[TestActor])
     assert(actors.last.id === "MyID")
+    actor1.stop
+    actor2.stop
+  }
+
+  @Test def shouldGetActorsByMessageFromActorRegistry {
+
+    ActorRegistry.shutdownAll
+    val actor1 = actorOf[TestActor]
+    actor1.start
+    val actor2 = actorOf[TestActor2]
+    actor2.start
+
+    val actorsForAcotrTestActor = ActorRegistry.actorsFor[TestActor]
+    assert(actorsForAcotrTestActor.size === 1)
+
+    val actorsForAcotrTestActor2 = ActorRegistry.actorsFor[TestActor2]
+    assert(actorsForAcotrTestActor2.size === 1)
+
+    val actorsForAcotr = ActorRegistry.actorsFor[Actor]
+    assert(actorsForAcotr.size === 2)
+
+
+    val actorsForMessagePing2 = ActorRegistry.actorsFor[Actor]("ping2")
+    assert(actorsForMessagePing2.size === 1)
+
+    val actorsForMessagePing = ActorRegistry.actorsFor[Actor]("ping")
+    assert(actorsForMessagePing.size === 2)
+
     actor1.stop
     actor2.stop
   }

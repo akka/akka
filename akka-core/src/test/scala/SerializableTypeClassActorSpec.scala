@@ -27,7 +27,7 @@ class SerializableTypeClassActorSpec extends
         act.count = p.getCount
         act
       }
-      def toBinary(ac: MyActor) = 
+      def toBinary(ac: MyActor) =
         ProtobufProtocol.Counter.newBuilder.setCount(ac.count).build.toByteArray
     }
   }
@@ -40,7 +40,7 @@ class SerializableTypeClassActorSpec extends
         act.count2 = p.getCount2
         act
       }
-      def toBinary(ac: MyActorWithDualCounter) = 
+      def toBinary(ac: MyActorWithDualCounter) =
         ProtobufProtocol.DualCounter.newBuilder.setCount1(ac.count1).setCount2(ac.count2).build.toByteArray
     }
   }
