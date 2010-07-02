@@ -55,15 +55,17 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
   @Test def testLogger = {
     val msgs = new java.util.concurrent.ConcurrentSkipListSet[Any]
+    val latch = new CountDownLatch(2)
     val t1 = actor {
       case _ =>
     }
-    val l = loggerActor(t1,(x) => msgs.add(x)).start
+    val l = loggerActor(t1,(x) => { msgs.add(x); latch.countDown }).start
     val foo : Any = "foo"
     val bar : Any = "bar"
     l ! foo
     l ! bar
-    Thread.sleep(100)
+    val done = latch.await(5,TimeUnit.SECONDS)
+    done must be (true)
     msgs must ( have size (2) and contain (foo) and contain (bar) )
     t1.stop
     l.stop
@@ -71,19 +73,23 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
   @Test def testSmallestMailboxFirstDispatcher = {
     val t1ProcessedCount = new AtomicInteger(0)
+    val latch = new CountDownLatch(500)
     val t1 = actor {
       case x =>
         Thread.sleep(50) // slow actor
         t1ProcessedCount.incrementAndGet
+        latch.countDown
     }
 
     val t2ProcessedCount = new AtomicInteger(0)
     val t2 = actor {
       case x => t2ProcessedCount.incrementAndGet
+              latch.countDown
     }
     val d = loadBalancerActor(new SmallestMailboxFirstIterator(t1 :: t2 :: Nil))
     for (i <- 1 to 500) d ! i
-    Thread.sleep(5000)
+    val done = latch.await(10,TimeUnit.SECONDS)
+    done must be (true)
     t1ProcessedCount.get must be < (t2ProcessedCount.get) // because t1 is much slower and thus has a bigger mailbox all the time
     for(a <- List(t1,t2,d)) a.stop
   }
