@@ -38,10 +38,10 @@ class JGroupsClusterActor extends BasicClusterActor {
         def suspect(a: Address): Unit =
           if (isActive) self ! Zombie(a)
 
-        def block: Unit =
+        def block(): Unit =
           log debug "UNSUPPORTED: JGroupsClusterActor::block" //TODO HotSwap to a buffering body
 
-        def unblock: Unit =
+        def unblock(): Unit =
           log debug "UNSUPPORTED: JGroupsClusterActor::unblock" //TODO HotSwap back and flush the buffer
       })
     })
@@ -52,7 +52,7 @@ class JGroupsClusterActor extends BasicClusterActor {
   protected def toOneNode(dest : Address, msg: Array[Byte]): Unit =
     for (c <- channel) c.send(new JG_MSG(dest, null, msg))
 
-  protected def toAllNodes(msg : Array[Byte]) : Unit =
+  protected def toAllNodes(msg : Array[Byte]): Unit =
     for (c <- channel) c.send(new JG_MSG(null, null, msg))
 
   override def shutdown = {
