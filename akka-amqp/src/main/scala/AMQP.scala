@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
@@ -69,6 +73,7 @@ object AMQP {
 
   def newConsumer(connection: ActorRef, consumerParameters: ConsumerParameters): ActorRef = {
     val consumer: ActorRef = actorOf(new ConsumerActor(consumerParameters))
+    consumer.startLink(consumerParameters.deliveryHandler)
     connection.startLink(consumer)
     consumer ! Start
     consumer
