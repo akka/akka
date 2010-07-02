@@ -47,11 +47,11 @@ case class Link(child: ActorRef) extends LifeCycleMessage
 case class Unlink(child: ActorRef) extends LifeCycleMessage
 case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
 case object Kill extends LifeCycleMessage
-
-case object ReceiveTimeout
+case object ReceiveTimeout extends LifeCycleMessage
 
 // Exceptions for Actors
 class ActorStartException private[akka](message: String) extends RuntimeException(message)
+class IllegalActorStateException private[akka](message: String) extends RuntimeException(message)
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
 class ActorInitializationException private[akka](message: String) extends RuntimeException(message)
 

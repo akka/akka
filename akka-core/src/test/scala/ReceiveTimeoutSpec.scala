@@ -8,11 +8,11 @@ import java.util.concurrent.TimeUnit
 import org.multiverse.api.latches.StandardLatch
 
 class ReceiveTimeoutSpec extends JUnitSuite {
-  
+
   @Test def receiveShouldGetTimeout= {
 
     val timeoutLatch = new StandardLatch
-    
+
     val timeoutActor = actorOf(new Actor {
       self.receiveTimeout = 500
 

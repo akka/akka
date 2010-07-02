@@ -325,9 +325,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val junit = "junit" % "junit" % "4.5" % "test"
   }
 
-  class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin 
+  class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
-  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin 
+  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
   class AkkaSampleRestScalaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
     val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1.1" % "compile"

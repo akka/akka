@@ -24,9 +24,9 @@ class TransactionalActiveObjectSpec extends
   ShouldMatchers with
   BeforeAndAfterAll {
 =======
-  Spec with 
-  ShouldMatchers with 
-  BeforeAndAfterAll {  
+  Spec with
+  ShouldMatchers with
+  BeforeAndAfterAll {
 >>>>>>> 38e8bea3fe6a7e9fcc9c5f353124144739bdc234:akka-core/src/test/scala/TransactionalActiveObjectSpec.scala
 
   private val conf = new ActiveObjectConfigurator
