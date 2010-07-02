@@ -40,7 +40,6 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
       }
     }
     case ConnectionShutdown(cause) => {
-      disconnect
       if (cause.isHardError) {
         // connection error
         if (cause.isInitiatedByApplication) {
