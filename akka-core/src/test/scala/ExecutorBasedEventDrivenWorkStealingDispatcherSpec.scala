@@ -89,7 +89,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     val second = actorOf[SecondActor]
 
     first.start
-    intercept[IllegalStateException] {
+    intercept[IllegalActorStateException] {
       second.start
     }
   }
@@ -99,7 +99,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     val child = actorOf[ChildActor]
 
     parent.start
-    intercept[IllegalStateException] {
+    intercept[IllegalActorStateException] {
       child.start
     }
   }

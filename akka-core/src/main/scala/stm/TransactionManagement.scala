@@ -147,7 +147,7 @@ class GlobalStm extends TransactionManagement with Logging {
         val txSet = getTransactionSetInScope
         log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
         // FIXME ? txSet.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
-        txSet.joinCommit(mtx)
+        try { txSet.joinCommit(mtx) } catch { case e: IllegalStateException => {} }
         clearTransaction
         result
       }
@@ -160,13 +160,15 @@ trait StmUtil {
    * Schedule a deferred task on the thread local transaction (use within an atomic).
    * This is executed when the transaction commits.
    */
-  def deferred[T](body: => T): Unit = MultiverseStmUtils.scheduleDeferredTask(new Runnable { def run = body })
+  def deferred[T](body: => T): Unit = 
+    MultiverseStmUtils.scheduleDeferredTask(new Runnable { def run = body })
 
   /**
    * Schedule a compensating task on the thread local transaction (use within an atomic).
    * This is executed when the transaction aborts.
    */
-  def compensating[T](body: => T): Unit = MultiverseStmUtils.scheduleCompensatingTask(new Runnable { def run = body })
+  def compensating[T](body: => T): Unit = 
+    MultiverseStmUtils.scheduleCompensatingTask(new Runnable { def run = body })
 
   /**
    * STM retry for blocking transactions (use within an atomic).

@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client.{AMQP => RabbitMQ, _}
 import com.rabbitmq.client.ConnectionFactory
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import se.scalablesolutions.akka.config.ScalaConfig._
@@ -468,7 +468,7 @@ object AMQP {
 
         override def handleShutdownSignal(listenerTag: String, signal: ShutdownSignalException) = {
           def hasTag(listener: MessageConsumerListener, listenerTag: String): Boolean = {
-            if (listener.tag.isEmpty) throw new IllegalStateException(
+            if (listener.tag.isEmpty) throw new IllegalActorStateException(
               "MessageConsumerListener [" + listener + "] does not have a tag")
             listener.tag.get == listenerTag
           }

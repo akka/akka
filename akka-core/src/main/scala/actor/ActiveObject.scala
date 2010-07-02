@@ -102,7 +102,7 @@ final class ActiveObjectContext {
    * Scala style getter.
    */
   def sender: AnyRef = {
-    if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+    if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
     else _sender
   }
 
@@ -111,7 +111,7 @@ final class ActiveObjectContext {
    * Java style getter.
    */
    def getSender: AnyRef = {
-     if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+     if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
      else _sender
    }
 
@@ -392,9 +392,9 @@ object ActiveObject extends Logging {
    */
   def link(supervisor: AnyRef, supervised: AnyRef) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't link when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalStateException("Can't link when the supervised is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervised is not an active object"))
     supervisorActor.link(supervisedActor)
   }
 
@@ -407,9 +407,9 @@ object ActiveObject extends Logging {
    */
   def link(supervisor: AnyRef, supervised: AnyRef, handler: FaultHandlingStrategy, trapExceptions: Array[Class[_ <: Throwable]]) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't link when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalStateException("Can't link when the supervised is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervised is not an active object"))
     supervisorActor.trapExit = trapExceptions.toList
     supervisorActor.faultHandler = Some(handler)
     supervisorActor.link(supervisedActor)
@@ -422,9 +422,9 @@ object ActiveObject extends Logging {
    */
   def unlink(supervisor: AnyRef, supervised: AnyRef) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't unlink when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't unlink when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalStateException("Can't unlink when the supervised is not an active object"))
+      throw new IllegalActorStateException("Can't unlink when the supervised is not an active object"))
     supervisorActor.unlink(supervisedActor)
   }
 
@@ -435,7 +435,7 @@ object ActiveObject extends Logging {
    */
   def trapExit(supervisor: AnyRef, trapExceptions: Array[Class[_ <: Throwable]]) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't set trap exceptions when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't set trap exceptions when the supervisor is not an active object"))
     supervisorActor.trapExit = trapExceptions.toList
     this
   }
@@ -447,7 +447,7 @@ object ActiveObject extends Logging {
    */
   def faultHandler(supervisor: AnyRef, handler: FaultHandlingStrategy) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't set fault handler when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't set fault handler when the supervisor is not an active object"))
     supervisorActor.faultHandler = Some(handler)
     this
   }
@@ -553,7 +553,7 @@ private[akka] sealed class ActiveObjectAspect {
     } else {
       val result = (actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)).as[AnyRef]
       if (result.isDefined) result.get
-      else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
+      else throw new IllegalActorStateException("No result defined for invocation [" + joinPoint + "]")
     }
   }
 
@@ -581,8 +581,8 @@ private[akka] sealed class ActiveObjectAspect {
         future.get.await
         val result = getResultOrThrowException(future.get)
         if (result.isDefined) result.get
-        else throw new IllegalStateException("No result returned from call to [" + joinPoint + "]")
-      } else throw new IllegalStateException("No future returned from call to [" + joinPoint + "]")
+        else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
+      } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     }
   }
 
@@ -686,12 +686,12 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
       case Some(RestartCallbacks(pre, post)) =>
         preRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(pre, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalStateException(
+        } catch { case e => throw new IllegalActorStateException(
           "Could not find pre restart method [" + pre + "] \nin [" +
           targetClass.getName + "]. \nIt must have a zero argument definition.") })
         postRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(post, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalStateException(
+        } catch { case e => throw new IllegalActorStateException(
           "Could not find post restart method [" + post + "] \nin [" +
           targetClass.getName + "]. \nIt must have a zero argument definition.") })
     }
@@ -701,11 +701,11 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
     if (!postRestart.isDefined) postRestart = methods.find(m => m.isAnnotationPresent(Annotations.postrestart))
 
     if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
-      throw new IllegalStateException(
+      throw new IllegalActorStateException(
         "Method annotated with @prerestart or defined as a restart callback in \n[" +
         targetClass.getName + "] must have a zero argument definition")
     if (postRestart.isDefined && postRestart.get.getParameterTypes.length != 0)
-      throw new IllegalStateException(
+      throw new IllegalActorStateException(
         "Method annotated with @postrestart or defined as a restart callback in \n[" +
         targetClass.getName + "] must have a zero argument definition")
 
@@ -715,7 +715,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
     // see if we have a method annotated with @inittransactionalstate, if so invoke it
     initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
     if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0)
-      throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
+      throw new IllegalActorStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
     if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
@@ -736,7 +736,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
     case Link(target)   => self.link(target)
     case Unlink(target) => self.unlink(target)
     case unexpected =>
-      throw new IllegalStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
+      throw new IllegalActorStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
 
   override def preRestart(reason: Throwable) {

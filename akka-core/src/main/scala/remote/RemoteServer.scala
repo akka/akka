@@ -341,7 +341,7 @@ class RemoteServerHandler(
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
-    if (message eq null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
+    if (message eq null) throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
     if (message.isInstanceOf[RemoteRequestProtocol]) {
       handleRemoteRequestProtocol(message.asInstanceOf[RemoteRequestProtocol], event.getChannel)
     }
