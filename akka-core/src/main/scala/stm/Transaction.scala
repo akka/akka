@@ -191,13 +191,13 @@ trait Transactional {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Committable {
-  def commit: Unit
+  def commit(): Unit
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Abortable {
-  def abort: Unit
+  def abort(): Unit
 }
 
