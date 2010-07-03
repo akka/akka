@@ -526,6 +526,7 @@ private[akka] sealed case class AspectInit(
 @Aspect("perInstance")
 private[akka] sealed class ActiveObjectAspect {
   @volatile private var isInitialized = false
+  @volatile private var isStopped = false
   private var target: Class[_] = _
   private var actorRef: ActorRef = _
   private var remoteAddress: Option[InetSocketAddress] = _
@@ -557,7 +558,8 @@ private[akka] sealed class ActiveObjectAspect {
     val sender = ActiveObjectContext.sender.value
     val senderFuture = ActiveObjectContext.senderFuture.value
 
-    if (!actorRef.isRunning) {
+    if (!actorRef.isRunning && !isStopped) {
+      isStopped = true
       joinPoint.proceed
     } else if (isOneWay) {
       actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
