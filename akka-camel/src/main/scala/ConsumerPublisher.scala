@@ -48,6 +48,9 @@ private[camel] object ConsumerPublisher extends Logging {
     log.info("published method %s of %s at endpoint %s" format (targetMethod, event.activeObject, event.uri))
   }
 
+  /**
+   * Stops route to the already un-registered consumer actor method.
+   */
   def handleConsumerMethodUnregistered(event: ConsumerMethodUnregistered) {
     val targetMethod = event.method.getName
     val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
@@ -106,7 +109,6 @@ private[camel] class ConsumerPublisher extends Actor {
  * Command message used For testing-purposes only.
  */
 private[camel] case class SetExpectedMessageCount(num: Int)
-
 
 /**
  * Defines an abstract route to a target which is either an actor or an active object method..
@@ -259,6 +261,18 @@ private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, 
  */
 private[camel] case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
+/**
+ * Event indicating that an active object has been stopped. For each
+ * <code>@consume</code> annotated POJO method a separate instance of this class is
+ * created.
+ *
+ * @param activeObject active object (proxy).
+ * @param init
+ * @param uri endpoint URI of the active object method
+ * @param method method to be un-published.
+ *
+ * @author Martin Krasser
+ */
 private[camel] case class ConsumerMethodUnregistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
 /**
@@ -309,6 +323,11 @@ private[camel] object ConsumerMethodRegistered {
 }
 
 private[camel] object ConsumerMethodUnregistered {
+  /**
+   * Creates a list of ConsumerMethodUnregistered event messages for an active object or an empty
+   * list if the active object is a proxy for an remote active object or the active object doesn't
+   * have any <code>@consume</code> annotated methods.
+   */
   def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodUnregistered] = {
     if (init.remoteAddress.isDefined) Nil
     else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
