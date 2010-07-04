@@ -17,7 +17,9 @@ deploy/*.jar
 data
 out
 logs
+.codefellow
 storage
+.codefellow
 _dump
 .manager
 manifest.mf

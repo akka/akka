@@ -15,10 +15,9 @@
  */
 package se.scalablesolutions.akka.actor
 
+import _root_.scala.collection.JavaConversions
 import java.util.concurrent._
 
-import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.util.Logging
 
 object Scheduler {
@@ -35,12 +34,29 @@ object Scheduler {
       val future = service.scheduleAtFixedRate(
         new Runnable { def run = receiver ! message },
         initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
+      createAndStoreScheduleActorForFuture(future)
       val scheduler = actorOf(new ScheduleActor(future)).start
       schedulers.put(scheduler, scheduler)
       scheduler
     } catch {
       case e => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
+  }
+
+  def scheduleOnce(receiver: ActorRef, message: AnyRef, delay: Long, timeUnit: TimeUnit): ActorRef = {
+    try {
+      val future = service.schedule(
+        new Runnable { def run = receiver ! message }, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
+      createAndStoreScheduleActorForFuture(future)
+    } catch {
+      case e => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
+    }
+  }
+
+  private def createAndStoreScheduleActorForFuture(future: ScheduledFuture[AnyRef]): ActorRef = {
+    val scheduler = actorOf(new ScheduleActor(future)).start
+    schedulers.put(scheduler, scheduler)
+    scheduler
   }
 
   def unschedule(scheduleActor: ActorRef) = {
@@ -65,7 +81,7 @@ private class ScheduleActor(future: ScheduledFuture[AnyRef]) extends Actor with 
   def receive = {
     case Scheduler.UnSchedule =>
       future.cancel(true)
-      exit
+      self.stop
   }
 }
 
