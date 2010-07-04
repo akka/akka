@@ -37,109 +37,111 @@ class ActiveObjectLifecycleSpec extends Spec with ShouldMatchers with BeforeAndA
     conf4.stop
   }
 
-  it("should restart supervised, annotated active object on failure") {
-    val obj = conf1.getInstance[SamplePojoAnnotated](classOf[SamplePojoAnnotated])
-    val cdl = obj.newCountdownLatch(2)
-    assert(AspectInitRegistry.initFor(obj) ne null)
-    try {
-      obj.fail
-      fail("expected exception not thrown")
-    } catch {
-      case e: RuntimeException => {
-        cdl.await
-        assert(obj._pre)
-        assert(obj._post)
-        assert(!obj._down)
-        assert(AspectInitRegistry.initFor(obj) ne null)
+  describe("ActiveObject lifecycle management") {
+    it("should restart supervised, annotated active object on failure") {
+      val obj = conf1.getInstance[SamplePojoAnnotated](classOf[SamplePojoAnnotated])
+      val cdl = obj.newCountdownLatch(2)
+      assert(AspectInitRegistry.initFor(obj) ne null)
+      try {
+        obj.fail
+        fail("expected exception not thrown")
+      } catch {
+        case e: RuntimeException => {
+          cdl.await
+          assert(obj._pre)
+          assert(obj._post)
+          assert(!obj._down)
+          assert(AspectInitRegistry.initFor(obj) ne null)
+        }
       }
     }
-  }
 
-  it("should shutdown supervised, annotated active object on failure") {
-    val obj = conf2.getInstance[SamplePojoAnnotated](classOf[SamplePojoAnnotated])
-    val cdl = obj.newCountdownLatch(1)
-    assert(AspectInitRegistry.initFor(obj) ne null)
-    try {
-      obj.fail
-      fail("expected exception not thrown")
-    } catch {
-      case e: RuntimeException => {
-        cdl.await
-        assert(!obj._pre)
-        assert(!obj._post)
-        assert(obj._down)
-        assert(AspectInitRegistry.initFor(obj) eq null)
+    it("should shutdown supervised, annotated active object on failure") {
+      val obj = conf2.getInstance[SamplePojoAnnotated](classOf[SamplePojoAnnotated])
+      val cdl = obj.newCountdownLatch(1)
+      assert(AspectInitRegistry.initFor(obj) ne null)
+      try {
+        obj.fail
+        fail("expected exception not thrown")
+      } catch {
+        case e: RuntimeException => {
+          cdl.await
+          assert(!obj._pre)
+          assert(!obj._post)
+          assert(obj._down)
+          assert(AspectInitRegistry.initFor(obj) eq null)
+        }
       }
     }
-  }
 
-  it("should restart supervised, non-annotated active object on failure") {
-    val obj = conf3.getInstance[SamplePojo](classOf[SamplePojo])
-    val cdl = obj.newCountdownLatch(2)
-    assert(AspectInitRegistry.initFor(obj) ne null)
-    try {
-      obj.fail
-      fail("expected exception not thrown")
-    } catch {
-      case e: RuntimeException => {
-        cdl.await
-        assert(obj._pre)
-        assert(obj._post)
-        assert(!obj._down)
-        assert(AspectInitRegistry.initFor(obj) ne null)
+    it("should restart supervised, non-annotated active object on failure") {
+      val obj = conf3.getInstance[SamplePojo](classOf[SamplePojo])
+      val cdl = obj.newCountdownLatch(2)
+      assert(AspectInitRegistry.initFor(obj) ne null)
+      try {
+        obj.fail
+        fail("expected exception not thrown")
+      } catch {
+        case e: RuntimeException => {
+          cdl.await
+          assert(obj._pre)
+          assert(obj._post)
+          assert(!obj._down)
+          assert(AspectInitRegistry.initFor(obj) ne null)
+        }
       }
     }
-  }
 
-  it("should shutdown supervised, non-annotated active object on failure") {
-    val obj = conf4.getInstance[SamplePojo](classOf[SamplePojo])
-    val cdl = obj.newCountdownLatch(1)
-    assert(AspectInitRegistry.initFor(obj) ne null)
-    try {
-      obj.fail
-      fail("expected exception not thrown")
-    } catch {
-      case e: RuntimeException => {
-        cdl.await
-        assert(!obj._pre)
-        assert(!obj._post)
-        assert(obj._down)
-        assert(AspectInitRegistry.initFor(obj) eq null)
+    it("should shutdown supervised, non-annotated active object on failure") {
+      val obj = conf4.getInstance[SamplePojo](classOf[SamplePojo])
+      val cdl = obj.newCountdownLatch(1)
+      assert(AspectInitRegistry.initFor(obj) ne null)
+      try {
+        obj.fail
+        fail("expected exception not thrown")
+      } catch {
+        case e: RuntimeException => {
+          cdl.await
+          assert(!obj._pre)
+          assert(!obj._post)
+          assert(obj._down)
+          assert(AspectInitRegistry.initFor(obj) eq null)
+        }
       }
     }
-  }
 
-  it("should shutdown non-supervised, annotated active object on ActiveObject.stop") {
-    val obj = ActiveObject.newInstance(classOf[SamplePojoAnnotated])
-    assert(AspectInitRegistry.initFor(obj) ne null)
-    assert("hello akka" === obj.greet("akka"))
-    ActiveObject.stop(obj)
-    assert(AspectInitRegistry.initFor(obj) eq null)
-    assert(!obj._pre)
-    assert(!obj._post)
-    assert(obj._down)
-    try {
-      obj.greet("akka")
-      fail("access to stopped active object")
-    } catch {
-      case e: Exception => { /* test passed */ }
+    it("should shutdown non-supervised, annotated active object on ActiveObject.stop") {
+      val obj = ActiveObject.newInstance(classOf[SamplePojoAnnotated])
+      assert(AspectInitRegistry.initFor(obj) ne null)
+      assert("hello akka" === obj.greet("akka"))
+      ActiveObject.stop(obj)
+      assert(AspectInitRegistry.initFor(obj) eq null)
+      assert(!obj._pre)
+      assert(!obj._post)
+      assert(obj._down)
+      try {
+        obj.greet("akka")
+        fail("access to stopped active object")
+      } catch {
+        case e: Exception => { /* test passed */ }
+      }
     }
-  }
 
-  it("should shutdown non-supervised, annotated active object on ActorRegistry.shutdownAll") {
-    val obj = ActiveObject.newInstance(classOf[SamplePojoAnnotated])
-    assert(AspectInitRegistry.initFor(obj) ne null)
-    assert("hello akka" === obj.greet("akka"))
-    ActorRegistry.shutdownAll
-    assert(AspectInitRegistry.initFor(obj) eq null)
-    assert(!obj._pre)
-    assert(!obj._post)
-    assert(obj._down)
-    try {
-      obj.greet("akka")
-      fail("access to stopped active object")
-    } catch {
-      case e: Exception => { /* test passed */ }
+    it("should shutdown non-supervised, annotated active object on ActorRegistry.shutdownAll") {
+      val obj = ActiveObject.newInstance(classOf[SamplePojoAnnotated])
+      assert(AspectInitRegistry.initFor(obj) ne null)
+      assert("hello akka" === obj.greet("akka"))
+      ActorRegistry.shutdownAll
+      assert(AspectInitRegistry.initFor(obj) eq null)
+      assert(!obj._pre)
+      assert(!obj._post)
+      assert(obj._down)
+      try {
+        obj.greet("akka")
+        fail("access to stopped active object")
+      } catch {
+        case e: Exception => { /* test passed */ }
+      }
     }
   }
 }
