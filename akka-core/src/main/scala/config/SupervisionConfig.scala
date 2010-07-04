@@ -24,7 +24,6 @@ object ScalaConfig {
   abstract class Scope extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
-
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }

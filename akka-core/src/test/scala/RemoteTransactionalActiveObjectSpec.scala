@@ -52,7 +52,7 @@ class RemoteTransactionalActiveObjectSpec extends
   }
 
   describe("Remote transactional in-memory Active Object ") {
-
+/*
     it("map should not rollback state for stateful server in case of success") {
       val stateful =  ActiveObject.newRemoteInstance(classOf[TransactionalActiveObject], 1000, HOSTNAME, PORT)
       stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
@@ -106,5 +106,6 @@ class RemoteTransactionalActiveObjectSpec extends
       } catch { case e => {} }
       stateful.getRefState should equal("init")
     }
+    */
   }
 }

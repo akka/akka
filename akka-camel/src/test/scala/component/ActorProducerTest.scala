@@ -58,7 +58,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
     assert(exchange.getOut.getHeader("k3") === null) // headers from failure message are currently ignored
   }
 
-  @Test def shouldSendMessageToActorAndTimeout: Unit = {
+  @Test def shouldSendMessageToActorAndTimeout(): Unit = {
     val actor = actorOf[Tester3].start
     val endpoint = mockEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)

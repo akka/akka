@@ -71,7 +71,7 @@ trait TransactionProtocol extends Logging {
   protected val joinTransactionFuns: JList[() => Unit] = new CopyOnWriteArrayList[() => Unit]
   protected val exceptionsNotToRollbackOn: JList[Class[_ <: Exception]] = new CopyOnWriteArrayList[Class[_ <: Exception]]
 
-  def joinTransaction: Unit = {
+  def joinTransaction(): Unit = {
     val it = joinTransactionFuns.iterator
     while (it.hasNext) {
       val fn = it.next

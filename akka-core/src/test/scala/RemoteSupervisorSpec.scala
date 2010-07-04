@@ -75,7 +75,7 @@ object Log {
 
 object RemoteSupervisorSpec {
   val HOSTNAME = "localhost"
-  val PORT = 9990
+  val PORT = 9988
   var server: RemoteServer = null
 }
 

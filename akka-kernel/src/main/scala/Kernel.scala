@@ -23,13 +23,13 @@ object Kernel extends AkkaLoader {
   /**
    * Boots up the Kernel with default bootables
    */
-  def boot: Unit = boot(true,
+  def boot(): Unit = boot(true,
     new EmbeddedAppServer with BootableActorLoaderService
     with BootableRemoteActorService
     with CamelService)
 
   //For testing purposes only
-  def startRemoteService: Unit = bundles.foreach( _ match {
+  def startRemoteService(): Unit = bundles.foreach( _ match {
     case x: BootableRemoteActorService => x.startRemoteService
     case _ =>
   })

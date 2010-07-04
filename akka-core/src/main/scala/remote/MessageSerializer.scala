@@ -8,8 +8,9 @@ import se.scalablesolutions.akka.serialization.{Serializer, Serializable}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 
 import com.google.protobuf.{Message, ByteString}
+import se.scalablesolutions.akka.util._
 
-object MessageSerializer {
+object MessageSerializer extends Logging {
   private var SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
   private var SERIALIZER_JAVA_JSON:  Serializer.JavaJSON  = Serializer.JavaJSON
   private var SERIALIZER_SCALA_JSON: Serializer.ScalaJSON = Serializer.ScalaJSON
@@ -24,6 +25,7 @@ object MessageSerializer {
   }
 
   def deserialize(messageProtocol: MessageProtocol): Any = {
+    log.debug("scheme = " + messageProtocol.getSerializationScheme)
     messageProtocol.getSerializationScheme match {
       case SerializationSchemeType.JAVA =>
         unbox(SERIALIZER_JAVA.fromBinary(messageProtocol.getMessage.toByteArray, None))
@@ -36,7 +38,8 @@ object MessageSerializer {
         renderer.fromBytes(messageProtocol.getMessage.toByteArray)
       case SerializationSchemeType.SCALA_JSON =>
         val clazz = loadManifest(SERIALIZER_SCALA_JSON.classLoader, messageProtocol)
-        SERIALIZER_SCALA_JSON.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
+        import scala.reflect._
+        SERIALIZER_SCALA_JSON.fromBinary(messageProtocol.getMessage.toByteArray)(Manifest.classType(clazz))
       case SerializationSchemeType.JAVA_JSON =>
         val clazz = loadManifest(SERIALIZER_JAVA_JSON.classLoader, messageProtocol)
         SERIALIZER_JAVA_JSON.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
