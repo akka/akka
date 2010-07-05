@@ -306,6 +306,26 @@ private[camel] object ConsumerUnregistered {
 /**
  * @author Martin Krasser
  */
+private[camel] object ConsumerMethod {
+  /**
+   * Applies a function <code>f</code> to each consumer method of <code>activeObject</code> and
+   * returns the function results as a list. A consumer method is one that is annotated with
+   * <code>@consume</code>. If <code>activeObject</code> is a proxy for a remote active object
+   * <code>f</code> is never called and <code>Nil</code> is returned.
+   */
+  def forConsumer[T](activeObject: AnyRef, init: AspectInit)(f: Method => T): List[T] = {
+    // TODO: support consumer annotation inheritance
+    // - visit overridden methods in superclasses
+    // - visit implemented method declarations in interfaces
+    if (init.remoteAddress.isDefined) Nil // let remote node publish active object methods on endpoints
+    else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
+    yield f(m)
+  }
+}
+
+/**
+ * @author Martin Krasser
+ */
 private[camel] object ConsumerMethodRegistered {
   /**
    * Creates a list of ConsumerMethodRegistered event messages for an active object or an empty
@@ -313,12 +333,9 @@ private[camel] object ConsumerMethodRegistered {
    * have any <code>@consume</code> annotated methods.
    */
   def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodRegistered] = {
-    // TODO: support consumer annotation inheritance
-    // - visit overridden methods in superclasses
-    // - visit implemented method declarations in interfaces
-    if (init.remoteAddress.isDefined) Nil // let remote node publish active object methods on endpoints
-    else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
-    yield ConsumerMethodRegistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+    ConsumerMethod.forConsumer[ConsumerMethodRegistered](activeObject, init) {
+      m => ConsumerMethodRegistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+    }
   }
 }
 
@@ -329,9 +346,9 @@ private[camel] object ConsumerMethodUnregistered {
    * have any <code>@consume</code> annotated methods.
    */
   def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodUnregistered] = {
-    if (init.remoteAddress.isDefined) Nil
-    else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
-    yield ConsumerMethodUnregistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+    ConsumerMethod.forConsumer[ConsumerMethodUnregistered](activeObject, init) {
+      m => ConsumerMethodUnregistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+    }
   }
 }
 
