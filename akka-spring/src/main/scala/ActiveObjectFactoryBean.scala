@@ -12,6 +12,7 @@ import org.springframework.beans.BeanWrapper
 import org.springframework.beans.BeanUtils
 import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
+import org.springframework.context.{ApplicationContext,ApplicationContextAware}
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import se.scalablesolutions.akka.actor.ActiveObject
@@ -26,7 +27,7 @@ import se.scalablesolutions.akka.util.Logging
  * @author michaelkober
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  */
-class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
+class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with ApplicationContextAware {
   import StringReflect._
   import AkkaSpringConfigurationTags._
 
@@ -42,6 +43,7 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
   @BeanProperty var dispatcher: DispatcherProperties = _
   @BeanProperty var scope:String = VAL_SCOPE_SINGLETON
   @BeanProperty var property:PropertyEntries = _
+  @BeanProperty var applicationContext:ApplicationContext = _
 
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
@@ -78,7 +80,11 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging {
    private def setProperties(ref:AnyRef) : AnyRef = {
         log.debug("Processing properties and dependencies for target class %s",target)
         val beanWrapper = new BeanWrapperImpl(ref);
-        for(entry <- property.entryList) {
+        if(ref.isInstanceOf[ApplicationContextAware]) {
+			 log.debug("Setting application context")
+			 beanWrapper.setPropertyValue("applicationContext",applicationContext)
+		}
+		for(entry <- property.entryList) {
                 val propertyDescriptor = BeanUtils.getPropertyDescriptor(ref.getClass,entry.name)
                 val method = propertyDescriptor.getWriteMethod();
 

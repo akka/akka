@@ -15,7 +15,9 @@
              <property name="source" ref="string"/>                      
         </akka:active-object>
         
-                <bean id="string" class="java.lang.String">
+          <bean id="string" class="java.lang.String">
                         <constructor-arg value="someString"/>
             </bean>
+
+	 <akka:active-object id="sample" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000" />
  </beans>

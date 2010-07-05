@@ -69,6 +69,10 @@ class ActiveObjectFactoryBeanTest extends Spec with ShouldMatchers {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val target:ResourceEditor = ctx.getBean("bean").asInstanceOf[ResourceEditor]
       assert(target.getSource === "someString")
+
+	  val sampleBean = ctx.getBean("sample").asInstanceOf[SampleBean];
+	Thread.sleep(300)
+	  assert(sampleBean.gotApplicationContext)
     }
   }
 }
