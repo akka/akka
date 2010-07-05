@@ -388,7 +388,7 @@ trait ActorRef extends TransactionManagement {
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    */
-  def makeTransactionRequired: Unit
+  def makeTransactionRequired(): Unit
 
   /**
    * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
@@ -431,12 +431,12 @@ trait ActorRef extends TransactionManagement {
    * Shuts down the actor its dispatcher and message queue.
    * Alias for 'stop'.
    */
-  def exit = stop
+  def exit() = stop()
 
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop: Unit
+  def stop(): Unit
 
   /**
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
@@ -512,7 +512,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors: Unit
+  def shutdownLinkedActors(): Unit
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -700,7 +700,7 @@ sealed class LocalActorRef private[akka](
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    */
-  def makeTransactionRequired = guard.withGuard {
+  def makeTransactionRequired() = guard.withGuard {
     if (!isRunning || isBeingRestarted) isTransactor = true
     else throw new ActorInitializationException(
       "Can not make actor transaction required after it has been started")
@@ -754,7 +754,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop = guard.withGuard {
+  def stop() = guard.withGuard {
     if (isRunning) {
       cancelReceiveTimeout
       dispatcher.unregister(this)
@@ -894,7 +894,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors: Unit = guard.withGuard {
+  def shutdownLinkedActors(): Unit = guard.withGuard {
     linkedActorsAsList.foreach(_.stop)
     linkedActors.clear
   }
