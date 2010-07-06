@@ -37,6 +37,7 @@ object Annotations {
 final class ActiveObjectConfiguration {
   private[akka] var _timeout: Long = Actor.TIMEOUT
   private[akka] var _restartCallbacks: Option[RestartCallbacks] = None
+  private[akka] var _shutdownCallback: Option[ShutdownCallback] = None
   private[akka] var _transactionRequired = false
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
@@ -48,6 +49,11 @@ final class ActiveObjectConfiguration {
 
   def restartCallbacks(pre: String, post: String) : ActiveObjectConfiguration = {
     _restartCallbacks = Some(new RestartCallbacks(pre, post))
+    this
+  }
+
+  def shutdownCallback(down: String) : ActiveObjectConfiguration = {
+    _shutdownCallback = Some(new ShutdownCallback(down))
     this
   }
 
@@ -153,25 +159,25 @@ object ActiveObject extends Logging {
   private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   def newInstance[T](target: Class[T], timeout: Long): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), None, timeout)
+    newInstance(target, actorOf(new Dispatcher(false)), None, timeout)
 
   def newInstance[T](target: Class[T]): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), None, Actor.TIMEOUT)
+    newInstance(target, actorOf(new Dispatcher(false)), None, Actor.TIMEOUT)
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
-    newInstance(intf, target, actorOf(new Dispatcher(false, None)), None, timeout)
+    newInstance(intf, target, actorOf(new Dispatcher(false)), None, timeout)
 
   def newInstance[T](intf: Class[T], target: AnyRef): T =
-    newInstance(intf, target, actorOf(new Dispatcher(false, None)), None, Actor.TIMEOUT)
+    newInstance(intf, target, actorOf(new Dispatcher(false)), None, Actor.TIMEOUT)
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(target, actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newRemoteInstance[T](target: Class[T], hostname: String, port: Int): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)
+    newInstance(target, actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)
 
   def newInstance[T](target: Class[T], config: ActiveObjectConfiguration): T = {
-    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks))
+    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks, config._shutdownCallback))
      if (config._messageDispatcher.isDefined) {
        actor.dispatcher = config._messageDispatcher.get
      }
@@ -179,7 +185,7 @@ object ActiveObject extends Logging {
   }
 
   def newInstance[T](intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration): T = {
-    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks))
+    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks, config._shutdownCallback))
      if (config._messageDispatcher.isDefined) {
        actor.dispatcher = config._messageDispatcher.get
      }
@@ -515,8 +521,6 @@ private[akka] sealed case class AspectInit(
   def this(target: Class[_], actorRef: ActorRef, timeout: Long) = this(target, actorRef, None, timeout)
 }
 
-// FIXME: add @shutdown callback to ActiveObject in which we get the Aspect through 'Aspects.aspectOf(MyAspect.class, targetInstance)' and shuts down the Dispatcher actor
-
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
  * Is deployed on a 'per-instance' basis.
@@ -671,7 +675,7 @@ object Dispatcher {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class Dispatcher(transactionalRequired: Boolean,
-                               var restartCallbacks: Option[RestartCallbacks],
+                               var restartCallbacks: Option[RestartCallbacks] = None,
                                var shutdownCallback: Option[ShutdownCallback] = None) extends Actor {
   import Dispatcher._
 
@@ -805,12 +809,15 @@ private[akka] class Dispatcher(transactionalRequired: Boolean,
   }
 
   override def shutdown = {
-    AspectInitRegistry.unregister(target.get);
     try {
       if (zhutdown.isDefined) {
         zhutdown.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
       }
-    } catch { case e: InvocationTargetException => throw e.getCause }
+    } catch {
+      case e: InvocationTargetException => throw e.getCause
+    } finally {
+      AspectInitRegistry.unregister(target.get);
+    }
   }
 
   override def initTransactionalState = {

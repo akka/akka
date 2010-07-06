@@ -70,5 +70,21 @@ class ActiveObjectFactoryBeanTest extends Spec with ShouldMatchers {
       val target:ResourceEditor = ctx.getBean("bean").asInstanceOf[ResourceEditor]
       assert(target.getSource === "someString")
     }
+
+    it("should stop the created active object when scope is singleton and the context is closed") {
+      var ctx = new ClassPathXmlApplicationContext("appContext.xml");
+      val target = ctx.getBean("bean-singleton").asInstanceOf[SampleBean]
+      assert(!target.down)
+      ctx.close
+      assert(target.down)
+    }
+
+    it("should not stop the created active object when scope is prototype and the context is closed") {
+      var ctx = new ClassPathXmlApplicationContext("appContext.xml");
+      val target = ctx.getBean("bean-prototype").asInstanceOf[SampleBean]
+      assert(!target.down)
+      ctx.close
+      assert(!target.down)
+    }
   }
 }
