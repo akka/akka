@@ -85,15 +85,12 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
     setProperties(create(argumentList))
   }
 
-  /**
+ /**
    * Stop the active object if it is a singleton.
    */
-  override def destroy = {
-    if(scope.equals(VAL_SCOPE_SINGLETON)) {
-      ActiveObject.stop(getObject)
-    }
-    super.destroy
-  }
+ override def destroyInstance(instance:AnyRef) {
+	ActiveObject.stop(instance)
+ }
 
    private def setProperties(ref:AnyRef) : AnyRef = {
         if(hasSetDependecies) {
