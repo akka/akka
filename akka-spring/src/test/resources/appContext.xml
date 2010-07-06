@@ -7,6 +7,7 @@
        http://www.akkasource.org/schema/akka
        http://scalablesolutions.se/akka/akka-0.10.xsd">
 
+    <akka:active-object id="sample" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000" />
     <akka:active-object id="bean-singleton" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000"/>
     <akka:active-object id="bean-prototype" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000" scope="prototype"/>
     
