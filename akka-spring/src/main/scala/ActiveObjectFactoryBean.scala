@@ -48,6 +48,20 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
   @BeanProperty var scope:String = VAL_SCOPE_SINGLETON
   @BeanProperty var property:PropertyEntries = _
   @BeanProperty var applicationContext:ApplicationContext = _
+  
+  // Holds info about if deps has been set or not. Depends on
+  // if interface is specified or not. We must set deps on
+  // target instance if interface is specified
+  var hasSetDependecies = false
+
+
+  override def isSingleton:Boolean = {
+	 if(scope.equals(VAL_SCOPE_SINGLETON)) {
+      	true
+     } else {
+  		false
+     }
+ }
 
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
@@ -63,11 +77,6 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
    */
   def createInstance: AnyRef = {
-        if(scope.equals(VAL_SCOPE_SINGLETON)) {
-                setSingleton(true)
-        } else {
-                setSingleton(false)
-        }
     var argumentList = ""
     if (isRemote) argumentList += "r"
     if (hasInterface) argumentList += "i"
@@ -86,7 +95,11 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
     super.destroy
   }
 
-  private def setProperties(ref:AnyRef) : AnyRef = {
+   private def setProperties(ref:AnyRef) : AnyRef = {
+        if(hasSetDependecies) {
+			return ref
+		}
+		
         log.debug("Processing properties and dependencies for target class %s",target)
         val beanWrapper = new BeanWrapperImpl(ref);
         if(ref.isInstanceOf[ApplicationContextAware]) {
@@ -109,6 +122,8 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
                         throw new AkkaBeansException("Either property@ref or property@value must be set on property element")
                 }
         }
+        //un-set so next bean can be managed
+		hasSetDependecies = false
         ref
   }
 
@@ -139,10 +154,12 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
     if (transactional) config.makeTransactionRequired
     config
   }
-
-  private[akka] def aNewInstance[T <: AnyRef](clazz: Class[T]) : T = {
-      clazz.newInstance().asInstanceOf[T]
-  }
+  def aNewInstance[T <: AnyRef](clazz: Class[T]) : T = {
+      var ref = clazz.newInstance().asInstanceOf[T]
+  	  setProperties(ref)
+      hasSetDependecies = true
+	  ref
+}
 
   private[akka] def isRemote = (host != null) && (!host.isEmpty)
 
