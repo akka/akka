@@ -143,5 +143,13 @@ class ActiveObjectLifecycleSpec extends Spec with ShouldMatchers with BeforeAndA
         case e: Exception => { /* test passed */ }
       }
     }
+
+    it("should shutdown non-supervised, non-initialized active object on ActiveObject.stop") {
+      val obj = ActiveObject.newInstance(classOf[SamplePojoAnnotated])
+      ActiveObject.stop(obj)
+      assert(!obj._pre)
+      assert(!obj._post)
+      assert(obj._down)
+    }
   }
 }

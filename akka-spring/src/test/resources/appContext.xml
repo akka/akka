@@ -6,16 +6,19 @@
        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
        http://www.akkasource.org/schema/akka
        http://scalablesolutions.se/akka/akka-0.10.xsd">
-       
-        <akka:active-object id="bean"
-                      target="org.springframework.core.io.ResourceEditor"
-                      transactional="true"
-                      timeout="1000"
-                      scope="prototype">
-             <property name="source" ref="string"/>                      
-        </akka:active-object>
-        
-                <bean id="string" class="java.lang.String">
-                        <constructor-arg value="someString"/>
-            </bean>
- </beans>
+
+    <akka:active-object id="bean-singleton" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000"/>
+    <akka:active-object id="bean-prototype" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000" scope="prototype"/>
+    
+    <akka:active-object id="bean"
+                        target="org.springframework.core.io.ResourceEditor"
+                        transactional="true"
+                        timeout="1000"
+                        scope="prototype">
+        <property name="source" ref="string"/>
+    </akka:active-object>
+
+    <bean id="string" class="java.lang.String">
+        <constructor-arg value="someString"/>
+    </bean>
+</beans>
