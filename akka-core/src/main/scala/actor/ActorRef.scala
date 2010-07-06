@@ -24,12 +24,12 @@ import jsr166x.{Deque, ConcurrentLinkedDeque}
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.ConcurrentHashMap
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
 import RemoteActorSerialization._
 
 import com.google.protobuf.ByteString
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -72,6 +72,8 @@ trait ActorRef extends TransactionManagement {
   @volatile protected[akka] var _isBeingRestarted = false
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
+  @volatile protected[akka] var _timeoutActor: Option[ActorRef] = None
+
   @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
   protected[this] val guard = new ReentrantGuard
@@ -100,9 +102,9 @@ trait ActorRef extends TransactionManagement {
      * User overridable callback/setting.
      * <p/>
      * Defines the default timeout for an initial receive invocation.
-     * Used if the receive (or HotSwap) contains a case handling ReceiveTimeout.
+     * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
      */
-    @volatile var receiveTimeout: Long = Actor.RECEIVE_TIMEOUT
+    @volatile var receiveTimeout: Option[Long] = None
 
   /**
    * User overridable callback/setting.
@@ -551,6 +553,24 @@ trait ActorRef extends TransactionManagement {
   }
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
+
+  protected[akka] def cancelReceiveTimeout = {
+    _timeoutActor.foreach {
+      x =>
+        Scheduler.unschedule(x)
+        _timeoutActor = None
+        log.debug("Timeout canceled")
+    }
+  }
+
+  protected [akka] def checkReceiveTimeout = {
+    cancelReceiveTimeout
+    receiveTimeout.foreach { timeout =>
+      log.debug("Scheduling timeout for Actor [" + toString + "]")
+      _timeoutActor = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, timeout, TimeUnit.MILLISECONDS))
+    }
+  }
+
 }
 
 /**
@@ -734,8 +754,9 @@ sealed class LocalActorRef private[akka](
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop = guard.withGuard {
+  def stop() = guard.withGuard {
     if (isRunning) {
+      cancelReceiveTimeout
       dispatcher.unregister(this)
       _transactionFactory = None
       _isRunning = false
@@ -1000,6 +1021,7 @@ sealed class LocalActorRef private[akka](
     setTransactionSet(txSet)
 
     try {
+      cancelReceiveTimeout // FIXME: leave this here?
       if (isTransactor) {
         val txFactory = _transactionFactory.getOrElse(DefaultGlobalTransactionFactory)
         atomic(txFactory) {
@@ -1158,7 +1180,7 @@ sealed class LocalActorRef private[akka](
     ActorRegistry.register(this)
     if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
     clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
-    actor.checkReceiveTimeout
+    checkReceiveTimeout
   }
 
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {
@@ -1221,7 +1243,7 @@ private[akka] case class RemoteActorRef private[akka] (
     this
   }
 
-  def stop(): Unit = {
+  def stop: Unit = {
     _isRunning = false
     _isShutDown = true
   }
@@ -1237,7 +1259,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def actorClass: Class[_ <: Actor] = unsupported
   def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
-  def makeTransactionRequired(): Unit = unsupported
+  def makeTransactionRequired: Unit = unsupported
   def transactionConfig_=(config: TransactionConfig): Unit = unsupported
   def transactionConfig: TransactionConfig = unsupported
   def makeRemote(hostname: String, port: Int): Unit = unsupported
@@ -1254,7 +1276,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = unsupported
   def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
-  def shutdownLinkedActors(): Unit = unsupported
+  def shutdownLinkedActors: Unit = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
   protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
