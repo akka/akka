@@ -7,11 +7,7 @@ public interface PojoInf {
 
     public String getString();
     public boolean gotApplicationContext();
-    public boolean isPreDestroyInvoked();
     public boolean isPostConstructInvoked();
-	
-	@PreDestroy
-	public void destroy();
 	
 	@PostConstruct
 	public void create();
