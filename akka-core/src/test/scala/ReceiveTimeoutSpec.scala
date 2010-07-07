@@ -14,7 +14,7 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     val timeoutLatch = new StandardLatch
 
     val timeoutActor = actorOf(new Actor {
-      self.receiveTimeout = 500
+      self.receiveTimeout = Some(500L)
 
       protected def receive = {
         case ReceiveTimeout => timeoutLatch.open
@@ -28,7 +28,7 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     val timeoutLatch = new StandardLatch
 
     val timeoutActor = actorOf(new Actor {
-      self.receiveTimeout = 500
+      self.receiveTimeout = Some(500L)
 
       protected def receive = {
         case ReceiveTimeout => timeoutLatch.open
@@ -51,7 +51,7 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     val timeoutLatch = new StandardLatch
     case object Tick
     val timeoutActor = actorOf(new Actor {
-      self.receiveTimeout = 500
+      self.receiveTimeout = Some(500L)
 
       protected def receive = {
         case Tick => ()
@@ -60,6 +60,18 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     }).start
     timeoutActor ! Tick
 
-    assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS) == false)
+    assert(timeoutLatch.tryAwait(2, TimeUnit.SECONDS) == false)
+  }
+
+  @Test def timeoutShouldNotBeSentWhenNotSpecified = {
+    val timeoutLatch = new StandardLatch
+    val timeoutActor = actorOf(new Actor {
+
+      protected def receive = {
+        case ReceiveTimeout => timeoutLatch.open
+      }
+    }).start
+
+    assert(timeoutLatch.tryAwait(1, TimeUnit.SECONDS) == false)
   }
 }

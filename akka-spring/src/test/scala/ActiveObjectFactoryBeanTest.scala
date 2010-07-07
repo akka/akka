@@ -65,10 +65,33 @@ class ActiveObjectFactoryBeanTest extends Spec with ShouldMatchers {
       assert(target.getSource === entry.value)
     }
 
-    it("should create an application context and inject a string dependency") {
+    it("should create an application context and verify dependency injection") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val target:ResourceEditor = ctx.getBean("bean").asInstanceOf[ResourceEditor]
       assert(target.getSource === "someString")
+	  
+	  val pojoInf = ctx.getBean("pojoInf").asInstanceOf[PojoInf];
+	  println("pojoInf = " + pojoInf.getString)
+	  Thread.sleep(200)
+	  assert(pojoInf.isPostConstructInvoked)
+	  assert(pojoInf.getString == "akka rocks")
+	  assert(pojoInf.gotApplicationContext)
+    }
+
+    it("should stop the created active object when scope is singleton and the context is closed") {
+      var ctx = new ClassPathXmlApplicationContext("appContext.xml");
+      val target = ctx.getBean("bean-singleton").asInstanceOf[SampleBean]
+      assert(!target.down)
+      ctx.close
+      assert(target.down)
+    }
+
+    it("should not stop the created active object when scope is prototype and the context is closed") {
+      var ctx = new ClassPathXmlApplicationContext("appContext.xml");
+      val target = ctx.getBean("bean-prototype").asInstanceOf[SampleBean]
+      assert(!target.down)
+      ctx.close
+      assert(!target.down)
     }
   }
 }

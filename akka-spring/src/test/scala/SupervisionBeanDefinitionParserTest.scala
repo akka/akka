@@ -49,11 +49,21 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       parser.parseSupervisor(createSupervisorElement, builder);
       val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[ActiveObjectProperties]]
       assert(supervised != null)
-      expect(3) { supervised.length }
+      expect(4) { supervised.length }
       val iterator = supervised.iterator
-      expect("foo.bar.Foo") { iterator.next.target }
-      expect("foo.bar.Bar") { iterator.next.target }
-      expect("foo.bar.MyPojo") { iterator.next.target }
+      val prop1 = iterator.next
+      val prop2 = iterator.next
+      val prop3 = iterator.next
+      val prop4 = iterator.next
+      expect("foo.bar.Foo") { prop1.target }
+      expect("foo.bar.Bar") { prop2.target }
+      expect("foo.bar.MyPojo") { prop3.target }
+      expect("foo.bar.MyPojo") { prop4.target }
+      expect("preRestart") { prop3.preRestart }
+      expect("postRestart") { prop3.postRestart }
+      expect("shutdown") { prop4.shutdown }
+      expect("permanent") { prop1.lifecycle }
+      expect("temporary") { prop4.lifecycle }
     }
 
     it("should throw IllegalArgumentException on missing mandatory attributes") {
@@ -86,6 +96,9 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
                           <akka:active-object interface="foo.bar.IBar" target="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
                           <akka:active-object target="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
                                   <akka:restart-callbacks pre="preRestart" post="postRestart"/>
+                          </akka:active-object>
+                          <akka:active-object target="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
+                                  <akka:shutdown-callback method="shutdown"/>
                           </akka:active-object>
                   </akka:active-objects>
     </akka:supervision>

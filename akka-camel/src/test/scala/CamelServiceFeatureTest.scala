@@ -59,7 +59,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
   feature("Unpublish registered consumer actor from the global CamelContext") {
 
-    scenario("attempt access to unregistered consumer actor via Camel direct-endpoint") {
+    scenario("access to unregistered consumer actor via Camel direct-endpoint fails") {
       val endpointUri = "direct:unpublish-test-1"
 
       given("a consumer actor that has been stopped")
@@ -78,7 +78,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       when("a request is sent to this actor")
       val response1 = CamelContextManager.template.requestBody(endpointUri, "msg1")
 
-      then("the direct endpoint falls back to its default behaviour and returns the original message")
+      then("the direct-endpoint falls back to its default behaviour and returns the original message")
       assert(response1 === "msg1")
     }
   }
@@ -103,8 +103,8 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access active object methods via Camel direct-endpoints") {
 
       given("an active object registered after CamelService startup")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
-      ActiveObject.newInstance(classOf[PojoBase])
+      var latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      val obj = ActiveObject.newInstance(classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       when("requests are sent to published methods")
@@ -116,6 +116,36 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       assert(response1 === "m2base: x y")
       assert(response2 === "m3base: x y")
       assert(response3 === "m4base: x y")
+
+      // cleanup to avoid conflicts with next test (i.e. avoid multiple consumers on direct-endpoints) 
+      latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      ActiveObject.stop(obj)
+      assert(latch.await(5000, TimeUnit.MILLISECONDS))
+    }
+  }
+
+  feature("Unpublish active object method from the global CamelContext") {
+
+    scenario("access to unregistered active object methof via Camel direct-endpoint fails") {
+
+      given("an active object that has been stopped")
+      var latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      val obj = ActiveObject.newInstance(classOf[PojoBase])
+      assert(latch.await(5000, TimeUnit.MILLISECONDS))
+
+      latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      ActiveObject.stop(obj)
+      assert(latch.await(5000, TimeUnit.MILLISECONDS))
+
+      when("requests are sent to published methods")
+      val response1 = CamelContextManager.template.requestBodyAndHeader("direct:m2base", "x", "test", "y")
+      val response2 = CamelContextManager.template.requestBodyAndHeader("direct:m3base", "x", "test", "y")
+      val response3 = CamelContextManager.template.requestBodyAndHeader("direct:m4base", "x", "test", "y")
+
+      then("the direct-endpoints fall back to their default behaviour and return the original message")
+      assert(response1 === "x")
+      assert(response2 === "x")
+      assert(response3 === "x")
     }
   }
 }

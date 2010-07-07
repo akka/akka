@@ -82,7 +82,9 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass = component.target
-    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
+    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired,
+      component.lifeCycle.restartCallbacks,
+      component.lifeCycle.shutdownCallback))
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined)
@@ -99,7 +101,9 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     val targetClass = component.intf.get
     val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
-    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired, component.lifeCycle.callbacks))
+    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired,
+      component.lifeCycle.restartCallbacks,
+      component.lifeCycle.shutdownCallback))
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined)
