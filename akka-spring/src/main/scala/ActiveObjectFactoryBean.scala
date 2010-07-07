@@ -6,7 +6,8 @@ package se.scalablesolutions.akka.spring
 
 import java.beans.PropertyDescriptor
 import java.lang.reflect.Method
-
+import javax.annotation.PreDestroy
+import javax.annotation.PostConstruct
 import reflect.BeanProperty
 
 import org.springframework.beans.BeanWrapperImpl
@@ -82,16 +83,37 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
     if (hasInterface) argumentList += "i"
     if (hasDispatcher) argumentList += "d"
 
-    setProperties(create(argumentList))
+    postConstruct(
+		setProperties(
+			create(argumentList)))
+	
   }
 
  /**
    * Stop the active object if it is a singleton.
+   * It will call the instance destroy method before
+   * stopping the active object.
    */
  override def destroyInstance(instance:AnyRef) {
+	for(method <- instance.getClass.getMethods) {
+		if(method.isAnnotationPresent(classOf[PreDestroy])) {
+			method.invoke(instance)
+		}
+	}
 	ActiveObject.stop(instance)
  }
-
+	
+  private def postConstruct(ref:AnyRef) : AnyRef = {
+	// Invoke postConstruct method if any
+	for(method <- ref.getClass.getMethods) {
+		if(method.isAnnotationPresent(classOf[PostConstruct])) {
+			method.invoke(ref)
+		}
+	}
+	ref
+  }	
+	
+	
    private def setProperties(ref:AnyRef) : AnyRef = {
         if(hasSetDependecies) {
 			return ref
@@ -119,8 +141,6 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
                         throw new AkkaBeansException("Either property@ref or property@value must be set on property element")
                 }
         }
-        //un-set so next bean can be managed
-		hasSetDependecies = false
         ref
   }
 
@@ -144,6 +164,8 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
     }
   }
 
+
+
   private[akka] def createConfig: ActiveObjectConfiguration = {
     val config = new ActiveObjectConfiguration().timeout(timeout)
     if (hasRestartCallbacks) config.restartCallbacks(pre, post)
@@ -153,10 +175,11 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
   }
   def aNewInstance[T <: AnyRef](clazz: Class[T]) : T = {
       var ref = clazz.newInstance().asInstanceOf[T]
-  	  setProperties(ref)
+  	  postConstruct(
+		setProperties(ref))
       hasSetDependecies = true
 	  ref
-}
+  }
 
   private[akka] def isRemote = (host != null) && (!host.isEmpty)
 
