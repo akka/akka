@@ -47,6 +47,18 @@ private[camel] object ConsumerPublisher extends Logging {
     CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
     log.info("published method %s of %s at endpoint %s" format (targetMethod, event.activeObject, event.uri))
   }
+
+  /**
+   * Stops route to the already un-registered consumer actor method.
+   */
+  def handleConsumerMethodUnregistered(event: ConsumerMethodUnregistered) {
+    val targetMethod = event.method.getName
+    val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
+
+    CamelContextManager.activeObjectRegistry.remove(objectId)
+    CamelContextManager.context.stopRoute(objectId)
+    log.info("unpublished method %s of %s from endpoint %s" format (targetMethod, event.activeObject, event.uri))
+  }
 }
 
 /**
@@ -76,8 +88,12 @@ private[camel] class ConsumerPublisher extends Actor {
       handleConsumerUnregistered(u)
       latch.countDown // needed for testing only.
     }
-    case d: ConsumerMethodRegistered => {
-      handleConsumerMethodRegistered(d)
+    case mr: ConsumerMethodRegistered => {
+      handleConsumerMethodRegistered(mr)
+      latch.countDown // needed for testing only.
+    }
+    case mu: ConsumerMethodUnregistered => {
+      handleConsumerMethodUnregistered(mu)
       latch.countDown // needed for testing only.
     }
     case SetExpectedMessageCount(num) => {
@@ -93,7 +109,6 @@ private[camel] class ConsumerPublisher extends Actor {
  * Command message used For testing-purposes only.
  */
 private[camel] case class SetExpectedMessageCount(num: Int)
-
 
 /**
  * Defines an abstract route to a target which is either an actor or an active object method..
@@ -171,6 +186,8 @@ private[camel] class PublishRequestor extends Actor {
       for (event <- ConsumerUnregistered.forConsumer(actor)) deliverCurrentEvent(event)
     case AspectInitRegistered(proxy, init) =>
       for (event <- ConsumerMethodRegistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
+    case AspectInitUnregistered(proxy, init) =>
+      for (event <- ConsumerMethodUnregistered.forConsumer(proxy, init)) deliverCurrentEvent(event)
     case PublishRequestorInit(pub) => {
       publisher = Some(pub)
       deliverBufferedEvents
@@ -245,6 +262,20 @@ private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, 
 private[camel] case class ConsumerMethodRegistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
 /**
+ * Event indicating that an active object has been stopped. For each
+ * <code>@consume</code> annotated POJO method a separate instance of this class is
+ * created.
+ *
+ * @param activeObject active object (proxy).
+ * @param init
+ * @param uri endpoint URI of the active object method
+ * @param method method to be un-published.
+ *
+ * @author Martin Krasser
+ */
+private[camel] case class ConsumerMethodUnregistered(activeObject: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
+
+/**
  * @author Martin Krasser
  */
 private[camel] object ConsumerRegistered {
@@ -275,6 +306,26 @@ private[camel] object ConsumerUnregistered {
 /**
  * @author Martin Krasser
  */
+private[camel] object ConsumerMethod {
+  /**
+   * Applies a function <code>f</code> to each consumer method of <code>activeObject</code> and
+   * returns the function results as a list. A consumer method is one that is annotated with
+   * <code>@consume</code>. If <code>activeObject</code> is a proxy for a remote active object
+   * <code>f</code> is never called and <code>Nil</code> is returned.
+   */
+  def forConsumer[T](activeObject: AnyRef, init: AspectInit)(f: Method => T): List[T] = {
+    // TODO: support consumer annotation inheritance
+    // - visit overridden methods in superclasses
+    // - visit implemented method declarations in interfaces
+    if (init.remoteAddress.isDefined) Nil // let remote node publish active object methods on endpoints
+    else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
+    yield f(m)
+  }
+}
+
+/**
+ * @author Martin Krasser
+ */
 private[camel] object ConsumerMethodRegistered {
   /**
    * Creates a list of ConsumerMethodRegistered event messages for an active object or an empty
@@ -282,12 +333,22 @@ private[camel] object ConsumerMethodRegistered {
    * have any <code>@consume</code> annotated methods.
    */
   def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodRegistered] = {
-    // TODO: support consumer annotation inheritance
-    // - visit overridden methods in superclasses
-    // - visit implemented method declarations in interfaces
-    if (init.remoteAddress.isDefined) Nil // let remote node publish active object methods on endpoints
-    else for (m <- activeObject.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
-    yield ConsumerMethodRegistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+    ConsumerMethod.forConsumer[ConsumerMethodRegistered](activeObject, init) {
+      m => ConsumerMethodRegistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+    }
+  }
+}
+
+private[camel] object ConsumerMethodUnregistered {
+  /**
+   * Creates a list of ConsumerMethodUnregistered event messages for an active object or an empty
+   * list if the active object is a proxy for an remote active object or the active object doesn't
+   * have any <code>@consume</code> annotated methods.
+   */
+  def forConsumer(activeObject: AnyRef, init: AspectInit): List[ConsumerMethodUnregistered] = {
+    ConsumerMethod.forConsumer[ConsumerMethodUnregistered](activeObject, init) {
+      m => ConsumerMethodUnregistered(activeObject, init, m.getAnnotation(classOf[consume]).value, m)
+    }
   }
 }
 

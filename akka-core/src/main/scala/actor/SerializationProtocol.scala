@@ -85,10 +85,10 @@ object ActorSerialization {
       }
       val builder = LifeCycleProtocol.newBuilder
       a.lifeCycle match {
-        case Some(LifeCycle(scope, None)) =>
+        case Some(LifeCycle(scope, None, _)) =>
           setScope(builder, scope)
           Some(builder.build)
-        case Some(LifeCycle(scope, Some(callbacks))) =>
+        case Some(LifeCycle(scope, Some(callbacks), _)) =>
           setScope(builder, scope)
           builder.setPreRestart(callbacks.preRestart)
           builder.setPostRestart(callbacks.postRestart)

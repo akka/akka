@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:akka="http://www.akkasource.org/schema/akka" xmlns:beans="http://www.springframework.org/schema/lang"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
-       http://www.akkasource.org/schema/akka
-       http://scalablesolutions.se/akka/akka.xsd">
+       xmlns:akka="http://www.akkasource.org/schema/akka"
+       xmlns:beans="http://www.springframework.org/schema/lang"
+       xsi:schemaLocation="
+http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+http://www.akkasource.org/schema/akka
+http://scalablesolutions.se/akka/akka-0.10.xsd">
 
   <bean id="wrappedService"
         class="se.scalablesolutions.akka.actor.ActiveObject"
@@ -38,8 +40,8 @@
                       target="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true">
-    <akka:restart-callbacks pre="preRestart" post="postRestart"/>
     <akka:remote host="localhost" port="9999"/>
+    <akka:restart-callbacks pre="preRestart" post="postRestart"/>
   </akka:active-object>
 
   <akka:active-object id="remote-service1" target="se.scalablesolutions.akka.spring.foo.MyPojo" timeout="1000">
