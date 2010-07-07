@@ -91,18 +91,18 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
 
  /**
    * Stop the active object if it is a singleton.
-   * It will call the instance destroy method before
-   * stopping the active object.
    */
  override def destroyInstance(instance:AnyRef) {
-	for(method <- instance.getClass.getMethods) {
-		if(method.isAnnotationPresent(classOf[PreDestroy])) {
-			method.invoke(instance)
-		}
-	}
 	ActiveObject.stop(instance)
  }
-	
+  
+  /**
+   * Invokes any method annotated with @PostConstruct
+   * When interfaces are specified, this method is invoked both on the
+   * target instance and on the active object, so a developer is free do decide
+   * where the annotation should be. If no interface is specified it is only invoked
+   * on the active object
+   */
   private def postConstruct(ref:AnyRef) : AnyRef = {
 	// Invoke postConstruct method if any
 	for(method <- ref.getClass.getMethods) {
