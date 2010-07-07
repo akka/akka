@@ -557,7 +557,7 @@ trait ActorRef extends TransactionManagement {
   protected[akka] def cancelReceiveTimeout = {
     _timeoutActor.foreach {
       x =>
-        Scheduler.unschedule(x)
+        if (x.isRunning) Scheduler.unschedule(x)
         _timeoutActor = None
         log.debug("Timeout canceled for %s", this)
     }
