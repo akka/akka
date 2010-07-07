@@ -72,6 +72,8 @@ class ActiveObjectFactoryBeanTest extends Spec with ShouldMatchers {
 	  
 	  val pojoInf = ctx.getBean("pojoInf").asInstanceOf[PojoInf];
 	  println("pojoInf = " + pojoInf.getString)
+	  Thread.sleep(200)
+	  assert(pojoInf.isPostConstructInvoked)
 	  assert(pojoInf.getString == "akka rocks")
 	  assert(pojoInf.gotApplicationContext)
     }
