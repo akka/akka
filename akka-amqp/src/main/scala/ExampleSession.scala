@@ -8,6 +8,8 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.amqp.AMQP._
+import se.scalablesolutions.akka.serialization.Serializer
+import java.lang.Class
 
 object ExampleSession {
   def main(args: Array[String]) = {
@@ -28,6 +30,11 @@ object ExampleSession {
 
     println("==== CALLBACK  ===")
     callback
+
+    TimeUnit.SECONDS.sleep(2)
+
+    println("==== RPC  ===")
+    rpc
 
     TimeUnit.SECONDS.sleep(2)
 
@@ -119,5 +126,26 @@ object ExampleSession {
     // Wait until both channels (producer & consumer) are started before stopping the connection
     channelCountdown.await(2, TimeUnit.SECONDS)
     connection.stop
+  }
+
+  def rpc = {
+    val connection = AMQP.newConnection()
+
+    val exchangeParameters = ExchangeParameters("my_rpc_exchange", ExchangeType.Topic)
+
+    val stringSerializer = new Serializer {
+      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new String(bytes)
+      def toBinary(obj: AnyRef) = obj.asInstanceOf[String].getBytes
+    }
+
+    val rpcServer = AMQP.newRpcServer(connection, exchangeParameters, "rpc.in.key", stringSerializer, stringSerializer, {
+      case "rpc_request" => "rpc_response"
+      case _ => error("unknown request")
+    })
+
+    val rpcClient = AMQP.newRpcClient(connection, exchangeParameters, "rpc.in.key", stringSerializer, stringSerializer)
+
+    val response = (rpcClient !! "rpc_request")
+    log.info("Response: " + response)
   }
 }

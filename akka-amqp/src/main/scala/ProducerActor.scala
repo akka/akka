@@ -9,6 +9,7 @@ import se.scalablesolutions.akka.amqp.AMQP.ProducerParameters
 
 private[amqp] class ProducerActor(producerParameters: ProducerParameters)
         extends FaultTolerantChannelActor(producerParameters.exchangeParameters, producerParameters.channelParameters) {
+  
   import producerParameters._
   import exchangeParameters._
 
