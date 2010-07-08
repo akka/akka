@@ -17,7 +17,7 @@ import org.scalatest.matchers.MustMatchers
 
 class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
+  @Test
   def connectionAndRecovery = {
     val connectedLatch = new StandardLatch
     val reconnectingLatch = new StandardLatch
