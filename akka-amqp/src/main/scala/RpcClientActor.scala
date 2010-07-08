@@ -4,27 +4,38 @@
 
 package se.scalablesolutions.akka.amqp
 
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
-import com.rabbitmq.client.AMQP.BasicProperties
-import se.scalablesolutions.akka.config.ScalaConfig.{LifeCycle, Permanent}
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
+import com.rabbitmq.client.{Channel, RpcClient}
 
-class RpcClientActor(producer: ActorRef, routingKey: String, replyTo: String) extends Actor {
+class RpcClientActor(exchangeParameters: ExchangeParameters,
+                     routingKey: String,
+                     inSerializer: Serializer,
+                     outSerializer: Serializer,
+                     channelParameters: Option[ChannelParameters] = None) extends FaultTolerantChannelActor(exchangeParameters, channelParameters) {
 
-  self.lifeCycle = Some(LifeCycle(Permanent))
-  
+  import exchangeParameters._
+
+  var rpcClient: Option[RpcClient] = None
+
   log.info("%s started", this)
 
-  protected def receive = {
-    case payload: Array[Byte] => {
-      val props = new BasicProperties
-      props.setReplyTo(replyTo)
-      producer ! new Message(payload, routingKey, properties = Some(props))
+  def specificMessageHandler = {
+    case payload: AnyRef => {
+
+      rpcClient.foreach {client =>
+        val response: Array[Byte] = client.primitiveCall(inSerializer.toBinary(payload))
+        reply(outSerializer.fromBinary(response, None))
+      }
     }
   }
 
+  protected def setupChannel(ch: Channel) = {
+    rpcClient = Some(new RpcClient(ch, exchangeName, routingKey))
+  }
+
   override def toString(): String =
-    "AMQP.RpcClient[producerId=" + producer.id +
-            ", routingKey=" + routingKey+
-            ", replyTo=" + replyTo + "]"
+    "AMQP.RpcClient[exchange=" +exchangeName +
+            ", routingKey=" + routingKey+ "]"
 
 }

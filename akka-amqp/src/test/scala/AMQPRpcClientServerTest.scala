@@ -13,6 +13,7 @@ import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ChannelParameters}
+import se.scalablesolutions.akka.serialization.Serializer
 
 class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging {
 
@@ -21,7 +22,7 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
     val connection = AMQP.newConnection()
     try {
 
-      val countDown = new CountDownLatch(4)
+      val countDown = new CountDownLatch(3)
       val channelCallback = actor {
         case Started => countDown.countDown
         case Restarting => ()
@@ -30,21 +31,22 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
 
       val exchangeParameters = ExchangeParameters("text_exchange",ExchangeType.Topic)
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
-
-      def requestHandler(request: Array[Byte]): Array[Byte] = {
-        "someresult".getBytes
+      val stringSerializer = new Serializer {
+        def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new String(bytes)
+        def toBinary(obj: AnyRef) = obj.asInstanceOf[String].getBytes
       }
-      
-      val rpcServer = AMQP.newRpcServer(connection, exchangeParameters, "rpc.routing", requestHandler, channelParameters = Some(channelParameters))
 
-      val payloadLatch = new StandardLatch
-      val rpcClient = AMQP.newRpcClient(connection, exchangeParameters, "rpc.routing", actor {
-        case Delivery(payload, _, _, _, _) => payloadLatch.open
+      val rpcServer = AMQP.newRpcServer(connection, exchangeParameters, "rpc.routing", stringSerializer, stringSerializer, {
+        case "some_payload" => "some_result"
+        case _ => error("Unhandled message")
       }, channelParameters = Some(channelParameters))
 
+      val rpcClient = AMQP.newRpcClient(connection, exchangeParameters, "rpc.routing", stringSerializer, stringSerializer
+        , channelParameters = Some(channelParameters))
+
       countDown.await(2, TimeUnit.SECONDS) must be (true)
-      rpcClient ! "some_payload".getBytes
-      payloadLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
+      val response = rpcClient !! "some_payload"
+      response must be (Some("some_result"))
     } finally {
       connection.stop
     }

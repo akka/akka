@@ -11,6 +11,7 @@ import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import java.lang.IllegalArgumentException
 import se.scalablesolutions.akka.util.{Logging}
 import java.util.UUID
+import se.scalablesolutions.akka.serialization.Serializer
 
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
@@ -87,22 +88,24 @@ object AMQP {
   def newRpcClient(connection: ActorRef,
                    exchangeParameters: ExchangeParameters,
                    routingKey: String,
-                   deliveryHandler: ActorRef,
+                   inSerializer: Serializer,
+                   outSerializer: Serializer,
                    channelParameters: Option[ChannelParameters] = None): ActorRef = {
-    val replyToRoutingKey = UUID.randomUUID.toString
-    val producer = newProducer(connection, new ProducerParameters(exchangeParameters, channelParameters = channelParameters))
-    val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, replyToRoutingKey, deliveryHandler, channelParameters = channelParameters))
-    val rpcActor: ActorRef = actorOf(new RpcClientActor(producer, routingKey, replyToRoutingKey)).start
+    val rpcActor: ActorRef = actorOf(new RpcClientActor(exchangeParameters, routingKey, inSerializer, outSerializer, channelParameters))
+    connection.startLink(rpcActor)
+    rpcActor ! Start
     rpcActor
   }
 
   def newRpcServer(connection: ActorRef,
           exchangeParameters: ExchangeParameters,
           routingKey: String,
-          requestHandler: Function[Array[Byte], Array[Byte]],
+          inSerializer: Serializer,
+          outSerializer: Serializer,
+          requestHandler: PartialFunction[AnyRef, AnyRef],
           channelParameters: Option[ChannelParameters] = None) = {
-    val producer = newProducer(connection, new ProducerParameters(exchangeParameters, channelParameters = channelParameters))
-    val rpcServer: ActorRef = actorOf(new RpcServerActor(producer, requestHandler)).start
+    val producer = newProducer(connection, new ProducerParameters(new ExchangeParameters("", ExchangeType.Direct), channelParameters = channelParameters))
+    val rpcServer = actorOf(new RpcServerActor(producer, inSerializer, outSerializer, requestHandler))
     val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, routingKey, rpcServer
       , channelParameters = channelParameters
       , selfAcknowledging = false))

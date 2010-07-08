@@ -5,24 +5,30 @@
 package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.{ActorRef, Actor}
-import se.scalablesolutions.akka.config.ScalaConfig.{Permanent, LifeCycle}
+import com.rabbitmq.client.AMQP.BasicProperties
+import se.scalablesolutions.akka.serialization.Serializer
 
-class RpcServerActor(producer: ActorRef, requestHandler: Function[Array[Byte], Array[Byte]]) extends Actor {
-
-  self.lifeCycle = Some(LifeCycle(Permanent))
+class RpcServerActor(producer: ActorRef, inSerializer: Serializer, outSerializer: Serializer, requestHandler: PartialFunction[AnyRef, AnyRef]) extends Actor {
 
   log.info("%s started", this)
 
   protected def receive = {
     case Delivery(payload, _, tag, props, sender) => {
 
-      val response: Array[Byte] =  requestHandler(payload)
+      log.debug("%s handling delivery with tag %d", this, tag)
+      val request = inSerializer.fromBinary(payload, None)
+      val response: Array[Byte] =  outSerializer.toBinary(requestHandler(request))
 
-      log.info("Sending reply to %s", props.getReplyTo)
-      producer ! new Message(response, props.getReplyTo)
+      log.info("%s sending reply to %s", this, props.getReplyTo)
+      val replyProps = new BasicProperties
+      replyProps.setCorrelationId(props.getCorrelationId)
+      producer ! new Message(response, props.getReplyTo, properties = Some(replyProps))
 
       sender.foreach(_ ! Acknowledge(tag))
     }
-    case Acknowledged(tag) => log.debug("todo")
+    case Acknowledged(tag) => log.debug("%s acknowledged delivery with tag %d", this, tag)
   }
+
+  override def toString(): String =
+    "AMQP.RpcServer[producerId=" + producer.id + "]"
 }
