@@ -23,9 +23,11 @@ class RpcClientActor(exchangeParameters: ExchangeParameters,
   def specificMessageHandler = {
     case payload: AnyRef => {
 
-      rpcClient.foreach {client =>
-        val response: Array[Byte] = client.primitiveCall(inSerializer.toBinary(payload))
-        reply(outSerializer.fromBinary(response, None))
+      rpcClient match {
+        case Some(client) =>
+          val response: Array[Byte] = client.primitiveCall(inSerializer.toBinary(payload))
+          reply(outSerializer.fromBinary(response, None))
+        case None => error("%s has no client to send messages with".format(this))
       }
     }
   }
@@ -33,6 +35,12 @@ class RpcClientActor(exchangeParameters: ExchangeParameters,
   protected def setupChannel(ch: Channel) = {
     rpcClient = Some(new RpcClient(ch, exchangeName, routingKey))
   }
+
+  override def preRestart(reason: Throwable) = {
+    rpcClient = None
+    super.preRestart(reason)
+  }
+
 
   override def toString(): String =
     "AMQP.RpcClient[exchange=" +exchangeName +

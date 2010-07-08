@@ -8,7 +8,6 @@ import se.scalablesolutions.akka.util.Logging
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import se.scalablesolutions.akka.amqp._
-import org.multiverse.api.latches.StandardLatch
 import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.{CountDownLatch, TimeUnit}
@@ -17,7 +16,7 @@ import se.scalablesolutions.akka.serialization.Serializer
 
 class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging {
 
-  @Test
+//  @Test
   def consumerMessage = {
     val connection = AMQP.newConnection()
     try {

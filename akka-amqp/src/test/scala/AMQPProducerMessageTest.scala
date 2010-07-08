@@ -19,7 +19,7 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ProducerParamete
 
 class AMQPProducerMessageTest extends JUnitSuite with MustMatchers with Logging {
 
-  @Test
+//  @Test
   def producerMessage = {
     
     val connection: ActorRef = AMQP.newConnection()
