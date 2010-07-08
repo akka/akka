@@ -19,7 +19,7 @@ class RpcServerActor(producer: ActorRef, inSerializer: Serializer, outSerializer
       val request = inSerializer.fromBinary(payload, None)
       val response: Array[Byte] =  outSerializer.toBinary(requestHandler(request))
 
-      log.info("%s sending reply to %s", this, props.getReplyTo)
+      log.debug("%s sending reply to %s", this, props.getReplyTo)
       val replyProps = new BasicProperties
       replyProps.setCorrelationId(props.getCorrelationId)
       producer ! new Message(response, props.getReplyTo, properties = Some(replyProps))
@@ -30,5 +30,5 @@ class RpcServerActor(producer: ActorRef, inSerializer: Serializer, outSerializer
   }
 
   override def toString(): String =
-    "AMQP.RpcServer[producerId=" + producer.id + "]"
+    "AMQP.RpcServer[]"
 }
