@@ -12,12 +12,12 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import org.multiverse.api.latches.StandardLatch
 import com.rabbitmq.client.ShutdownSignalException
 import se.scalablesolutions.akka.amqp._
-import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ProducerParameters, ConnectionParameters}
 import org.scalatest.matchers.MustMatchers
+import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ChannelParameters, ProducerParameters, ConnectionParameters}
 
 class AMQPProducerConnectionRecoveryTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
+  @Test
   def producerConnectionRecovery = {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
@@ -38,8 +38,9 @@ class AMQPProducerConnectionRecoveryTest extends JUnitSuite with MustMatchers wi
         case Stopped => ()
       })
 
+      val channelParameters = ChannelParameters(channelCallback = Some(producerCallback))
       val producerParameters = ProducerParameters(
-        ChannelParameters("text_exchange", ExchangeType.Direct, channelCallback = Some(producerCallback)))
+        ExchangeParameters("text_exchange", ExchangeType.Direct), channelParameters = Some(channelParameters))
 
       val producer = AMQP.newProducer(connection, producerParameters)
       startedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)

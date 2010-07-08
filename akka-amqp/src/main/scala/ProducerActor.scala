@@ -7,9 +7,10 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client._
 import se.scalablesolutions.akka.amqp.AMQP.ProducerParameters
 
-private[amqp] class ProducerActor(producerParameters: ProducerParameters) extends FaultTolerantChannelActor(producerParameters.channelParameters) {
+private[amqp] class ProducerActor(producerParameters: ProducerParameters)
+        extends FaultTolerantChannelActor(producerParameters.exchangeParameters, producerParameters.channelParameters) {
   import producerParameters._
-  import channelParameters._
+  import exchangeParameters._
 
   producerId.foreach(id => self.id = id)
 
