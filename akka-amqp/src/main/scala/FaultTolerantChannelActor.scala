@@ -62,7 +62,6 @@ abstract private[amqp] class FaultTolerantChannelActor(exchangeParameters: Excha
   protected def setupChannel(ch: Channel)
 
   private def setupChannelInternal(ch: Channel) = if (channel.isEmpty) {
-    log.info("Exchange declare")
     if (exchangePassive) {
       ch.exchangeDeclarePassive(exchangeName)
     } else {
@@ -75,7 +74,6 @@ abstract private[amqp] class FaultTolerantChannelActor(exchangeParameters: Excha
     })
     channelParameters.foreach(_.shutdownListener.foreach(sdl => ch.getConnection.addShutdownListener(sdl)))
 
-    log.info("shutdown listener added")
     setupChannel(ch)
     channel = Some(ch)
     notifyCallback(Started)

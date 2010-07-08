@@ -84,13 +84,29 @@ object AMQP {
     consumer
   }
 
-  def newRpcClient(connection: ActorRef, exchangeParameters: ExchangeParameters, routingKey: String, deliveryHandler: ActorRef): ActorRef = {
+  def newRpcClient(connection: ActorRef,
+                   exchangeParameters: ExchangeParameters,
+                   routingKey: String,
+                   deliveryHandler: ActorRef,
+                   channelParameters: Option[ChannelParameters] = None): ActorRef = {
     val replyToRoutingKey = UUID.randomUUID.toString
-    val producer = newProducer(connection, new ProducerParameters(exchangeParameters))
-    val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, replyToRoutingKey, deliveryHandler))
-    val rpcActor: ActorRef = actorOf(new RpcClientActor(producer, routingKey, replyToRoutingKey))
-    connection.startLink(rpcActor)
+    val producer = newProducer(connection, new ProducerParameters(exchangeParameters, channelParameters = channelParameters))
+    val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, replyToRoutingKey, deliveryHandler, channelParameters = channelParameters))
+    val rpcActor: ActorRef = actorOf(new RpcClientActor(producer, routingKey, replyToRoutingKey)).start
     rpcActor
+  }
+
+  def newRpcServer(connection: ActorRef,
+          exchangeParameters: ExchangeParameters,
+          routingKey: String,
+          requestHandler: Function[Array[Byte], Array[Byte]],
+          channelParameters: Option[ChannelParameters] = None) = {
+    val producer = newProducer(connection, new ProducerParameters(exchangeParameters, channelParameters = channelParameters))
+    val rpcServer: ActorRef = actorOf(new RpcServerActor(producer, requestHandler)).start
+    val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, routingKey, rpcServer
+      , channelParameters = channelParameters
+      , selfAcknowledging = false))
+
   }
 
   private val supervisor = new AMQPSupervisor
