@@ -10,6 +10,7 @@ import AkkaSpringConfigurationTags._
 /**
  * Data container for active object configuration data.
  * @author michaelkober
+ * @author Martin Krasser
  */
 class ActiveObjectProperties {
   var target: String = ""
@@ -18,10 +19,11 @@ class ActiveObjectProperties {
   var transactional: Boolean = false
   var preRestart: String = ""
   var postRestart: String = ""
+  var shutdown: String = ""
   var host: String = ""
   var port: Int = _
   var lifecycle: String = ""
-  var scope:String = ""
+  var scope:String = VAL_SCOPE_SINGLETON
   var dispatcher: DispatcherProperties = _
   var propertyEntries = new PropertyEntries()
 
@@ -35,6 +37,7 @@ class ActiveObjectProperties {
     builder.addPropertyValue(PORT, port)
     builder.addPropertyValue(PRE_RESTART, preRestart)
     builder.addPropertyValue(POST_RESTART, postRestart)
+    builder.addPropertyValue(SHUTDOWN, shutdown)
     builder.addPropertyValue(TIMEOUT, timeout)
     builder.addPropertyValue(TARGET, target)
     builder.addPropertyValue(INTERFACE, interface)

@@ -183,7 +183,7 @@ trait ChatServer extends Actor {
   // abstract methods to be defined somewhere else
   protected def chatManagement: Receive
   protected def sessionManagement: Receive
-  protected def shutdownSessions: Unit
+  protected def shutdownSessions(): Unit
 
   override def shutdown = {
     log.info("Chat server is shutting down...")

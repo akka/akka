@@ -13,10 +13,10 @@ trait Pool[T] extends java.io.Closeable {
   def borrowObject: T
   def returnObject(t: T): Unit
   def invalidateObject(t: T): Unit
-  def addObject: Unit
+  def addObject(): Unit
   def getNumIdle: Int
   def getNumActive: Int
-  def clear: Unit
+  def clear(): Unit
   def setFactory(factory: PoolItemFactory[T]): Unit
 }
 
@@ -40,8 +40,8 @@ trait PoolBridge[T, OP <: ObjectPool] extends Pool[T] {
   override def addObject = impl.addObject
   override def getNumIdle: Int = impl.getNumIdle
   override def getNumActive: Int = impl.getNumActive
-  override def clear: Unit = impl.clear
-  override def close: Unit = impl.close
+  override def clear(): Unit = impl.clear()
+  override def close(): Unit = impl.close()
   override def setFactory(factory: PoolItemFactory[T]) = impl.setFactory(toPoolableObjectFactory(factory))
 
   def toPoolableObjectFactory[T](pif: PoolItemFactory[T]) = new PoolableObjectFactory {

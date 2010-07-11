@@ -84,7 +84,7 @@ private[akka] object CassandraStorageBackend extends
       else None
     } catch {
       case e =>
-        log.error(e, "Could not retreive Ref from storage")
+        log.info("Could not retreive Ref from storage")
         None
     }
   }
@@ -196,7 +196,7 @@ private[akka] object CassandraStorageBackend extends
       else None
     } catch {
       case e =>
-        log.error(e, "Could not retreive Map from storage")
+        log.info("Could not retreive Map from storage")
         None
     }
   }

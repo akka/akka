@@ -6,6 +6,7 @@ package se.scalablesolutions.akka.spring
 /**
  * XML configuration tags.
  * @author michaelkober
+ * @author Martin Krasser
  */
 object AkkaSpringConfigurationTags {
 
@@ -20,6 +21,7 @@ object AkkaSpringConfigurationTags {
 
   // active-object sub tags
   val RESTART_CALLBACKS_TAG = "restart-callbacks"
+  val SHUTDOWN_CALLBACK_TAG = "shutdown-callback"
   val REMOTE_TAG = "remote"
 
   // superivision sub tags
@@ -45,6 +47,7 @@ object AkkaSpringConfigurationTags {
   val PORT = "port"
   val PRE_RESTART = "pre"
   val POST_RESTART = "post"
+  val SHUTDOWN = "shutdown"
   val LIFECYCLE = "lifecycle"
   val SCOPE = "scope"
 
