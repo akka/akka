@@ -402,13 +402,13 @@ trait ActorRef extends TransactionManagement {
    * Returns the home address and port for this actor.
    */
   def homeAddress: InetSocketAddress = _homeAddress
-
+  
   /**
    * Set the home address and port for this actor.
    */
   def homeAddress_=(hostnameAndPort: Tuple2[String, Int]): Unit =
     homeAddress_=(new InetSocketAddress(hostnameAndPort._1, hostnameAndPort._2))
-
+    
   /**
    * Set the home address and port for this actor.
    */
@@ -529,7 +529,7 @@ trait ActorRef extends TransactionManagement {
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit
 
   protected[akka] def mailbox: Deque[MessageInvocation]
-
+  
   protected[akka] def restart(reason: Throwable): Unit
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit
@@ -589,8 +589,7 @@ sealed class LocalActorRef private[akka](
           __format.asInstanceOf[SerializerBasedActorFormat[_]]
                   .serializer
                   .fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
-        else
-          actorClass.newInstance.asInstanceOf[Actor]
+        else actorClass.newInstance.asInstanceOf[Actor]
       })
       loader = Some(__loader)
       isDeserialized = true

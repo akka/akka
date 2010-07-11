@@ -36,9 +36,7 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Returns all actors in the system.
    */
-  def actors: List[ActorRef] = {
-	filter(_=> true)
-  }
+  def actors: List[ActorRef] = filter(_ => true)
 
   /**
    * Invokes a function for all actors.
@@ -52,7 +50,7 @@ object ActorRegistry extends ListenerManagement {
    * Finds all actors that are subtypes of the class passed in as the Manifest argument and supproting passed message.
    */
   def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): List[ActorRef] =
-	 filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
+    filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
 
   /**
    * Finds all actors that satisfy a predicate.
@@ -73,7 +71,7 @@ object ActorRegistry extends ListenerManagement {
    * Finds all actors that are subtypes of the class passed in as the Manifest argument.
    */
   def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] =
-	  filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass))
+    filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass))
 
   /**
    * Finds any actor that matches T.
