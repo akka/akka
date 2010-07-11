@@ -24,12 +24,12 @@ import jsr166x.{Deque, ConcurrentLinkedDeque}
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.ConcurrentHashMap
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
 import RemoteActorSerialization._
 
 import com.google.protobuf.ByteString
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -72,6 +72,8 @@ trait ActorRef extends TransactionManagement {
   @volatile protected[akka] var _isBeingRestarted = false
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServer.HOSTNAME, RemoteServer.PORT)
 
+  @volatile protected[akka] var _timeoutActor: Option[ActorRef] = None
+
   @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
   protected[this] val guard = new ReentrantGuard
@@ -100,9 +102,9 @@ trait ActorRef extends TransactionManagement {
      * User overridable callback/setting.
      * <p/>
      * Defines the default timeout for an initial receive invocation.
-     * Used if the receive (or HotSwap) contains a case handling ReceiveTimeout.
+     * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
      */
-    @volatile var receiveTimeout: Long = Actor.RECEIVE_TIMEOUT
+    @volatile var receiveTimeout: Option[Long] = None
 
   /**
    * User overridable callback/setting.
@@ -386,7 +388,7 @@ trait ActorRef extends TransactionManagement {
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    */
-  def makeTransactionRequired: Unit
+  def makeTransactionRequired(): Unit
 
   /**
    * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
@@ -429,12 +431,12 @@ trait ActorRef extends TransactionManagement {
    * Shuts down the actor its dispatcher and message queue.
    * Alias for 'stop'.
    */
-  def exit = stop
+  def exit() = stop()
 
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop: Unit
+  def stop(): Unit
 
   /**
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
@@ -510,7 +512,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors: Unit
+  def shutdownLinkedActors(): Unit
 
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit
 
@@ -551,6 +553,24 @@ trait ActorRef extends TransactionManagement {
   }
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
+
+  protected[akka] def cancelReceiveTimeout = {
+    _timeoutActor.foreach {
+      x =>
+        if (x.isRunning) Scheduler.unschedule(x)
+        _timeoutActor = None
+        log.debug("Timeout canceled for %s", this)
+    }
+  }
+
+  protected [akka] def checkReceiveTimeout = {
+    cancelReceiveTimeout
+    receiveTimeout.foreach { timeout =>
+      log.debug("Scheduling timeout for %s", this)
+      _timeoutActor = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, timeout, TimeUnit.MILLISECONDS))
+    }
+  }
+
 }
 
 /**
@@ -679,7 +699,7 @@ sealed class LocalActorRef private[akka](
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    */
-  def makeTransactionRequired = guard.withGuard {
+  def makeTransactionRequired() = guard.withGuard {
     if (!isRunning || isBeingRestarted) isTransactor = true
     else throw new ActorInitializationException(
       "Can not make actor transaction required after it has been started")
@@ -733,8 +753,9 @@ sealed class LocalActorRef private[akka](
   /**
    * Shuts down the actor its dispatcher and message queue.
    */
-  def stop = guard.withGuard {
+  def stop() = guard.withGuard {
     if (isRunning) {
+      cancelReceiveTimeout
       dispatcher.unregister(this)
       _transactionFactory = None
       _isRunning = false
@@ -872,7 +893,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors: Unit = guard.withGuard {
+  def shutdownLinkedActors(): Unit = guard.withGuard {
     linkedActorsAsList.foreach(_.stop)
     linkedActors.clear
   }
@@ -999,6 +1020,7 @@ sealed class LocalActorRef private[akka](
     setTransactionSet(txSet)
 
     try {
+      cancelReceiveTimeout // FIXME: leave this here?
       if (isTransactor) {
         val txFactory = _transactionFactory.getOrElse(DefaultGlobalTransactionFactory)
         atomic(txFactory) {
@@ -1056,7 +1078,7 @@ sealed class LocalActorRef private[akka](
     val failedActor = actorInstance.get
     failedActor.synchronized {
       lifeCycle.get match {
-        case LifeCycle(scope, _) => {
+        case LifeCycle(scope, _, _) => {
           scope match {
             case Permanent =>
               Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
@@ -1085,7 +1107,7 @@ sealed class LocalActorRef private[akka](
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
       actorRef.lifeCycle.get match {
-        case LifeCycle(scope, _) => {
+        case LifeCycle(scope, _, _) => {
           scope match {
             case Permanent => actorRef.restart(reason)
             case Temporary => shutDownTemporaryActor(actorRef)
@@ -1157,7 +1179,7 @@ sealed class LocalActorRef private[akka](
     ActorRegistry.register(this)
     if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
     clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
-    actor.checkReceiveTimeout
+    checkReceiveTimeout
   }
 
   private def serializeMessage(message: AnyRef): AnyRef = if (Actor.SERIALIZE_MESSAGES) {

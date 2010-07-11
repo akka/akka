@@ -86,7 +86,7 @@ trait CamelContextLifecycle extends Logging {
   /**
    * Initializes this lifecycle object with the a DefaultCamelContext.
    */
-  def init: Unit = init(new DefaultCamelContext)
+  def init(): Unit = init(new DefaultCamelContext)
 
   /**
    * Initializes this lifecycle object with the given CamelContext. For the passed

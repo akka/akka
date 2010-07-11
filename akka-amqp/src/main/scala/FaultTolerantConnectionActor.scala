@@ -6,13 +6,12 @@ package se.scalablesolutions.akka.amqp
 
 import java.util.{TimerTask, Timer}
 import java.io.IOException
-import se.scalablesolutions.akka.util.Logging
 import com.rabbitmq.client._
 import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig.{Permanent, LifeCycle}
 
-private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor with Logging {
+private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor {
   import connectionParameters._
 
   self.id = "amqp-connection-%s".format(host)

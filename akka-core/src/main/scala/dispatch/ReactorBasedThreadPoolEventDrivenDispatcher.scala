@@ -139,7 +139,7 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
 
   def usesActorMailbox = false
 
-  def ensureNotActive: Unit = if (active) throw new IllegalActorStateException(
+  def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {

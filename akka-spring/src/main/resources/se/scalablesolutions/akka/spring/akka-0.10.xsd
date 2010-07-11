@@ -105,7 +105,7 @@
     </xsd:attribute>
   </xsd:complexType>
 
-  <!-- callbacks -->
+  <!-- restart callbacks -->
   <xsd:complexType name="restart-callbacks-type">
     <xsd:attribute name="pre" type="xsd:string">
       <xsd:annotation>
@@ -123,11 +123,23 @@
     </xsd:attribute>
   </xsd:complexType>
 
+  <!-- shutdown callbacks -->
+  <xsd:complexType name="shutdown-callback-type">
+    <xsd:attribute name="method" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          Shutdown callback method that is called during shut down.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
   <!-- active object -->
   <xsd:complexType name="active-object-type">
    <xsd:sequence>
       <xsd:element name="remote" type="remote-type" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="restart-callbacks" type="restart-callbacks-type" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="shutdown-callback" type="shutdown-callback-type" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="dispatcher" type="dispatcher-type" minOccurs="0" maxOccurs="1"/>
       <xsd:element ref="dispatcher" minOccurs="0" maxOccurs="1"/>
       <xsd:element ref="beans:property" minOccurs="0" maxOccurs="unbounded"/>

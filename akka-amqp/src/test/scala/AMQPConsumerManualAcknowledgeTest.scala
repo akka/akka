@@ -6,14 +6,14 @@ package se.scalablesolutions.akka.amqp.test
 
 import se.scalablesolutions.akka.util.Logging
 import org.scalatest.junit.JUnitSuite
-import se.scalablesolutions.akka.amqp.AMQP.{ConsumerParameters, ChannelParameters, ProducerParameters}
 import org.multiverse.api.latches.StandardLatch
 import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import se.scalablesolutions.akka.amqp._
-import org.junit.{After, Test}
-import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef}
+import org.junit.Test
+import se.scalablesolutions.akka.actor.ActorRef
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParameters, ChannelParameters, ProducerParameters}
 
 class AMQPConsumerManualAcknowledgeTest extends JUnitSuite with MustMatchers with Logging {
 
@@ -27,19 +27,22 @@ class AMQPConsumerManualAcknowledgeTest extends JUnitSuite with MustMatchers wit
         case Restarting => ()
         case Stopped => ()
       }
-      val channelParameters = ChannelParameters("text_exchange",ExchangeType.Direct, channelCallback = Some(channelCallback))
+      val exchangeParameters = ExchangeParameters("text_exchange",ExchangeType.Direct)
+      val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
       val acknowledgeLatch = new StandardLatch
       var deliveryTagCheck: Long = -1
-      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters(channelParameters, "manual.ack.this", actor {
+      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "manual.ack.this", actor {
         case Delivery(payload, _, deliveryTag, _, sender) => {
           deliveryTagCheck = deliveryTag
           sender.foreach(_ ! Acknowledge(deliveryTag))
         }
         case Acknowledged(deliveryTag) => if (deliveryTagCheck == deliveryTag) acknowledgeLatch.open
-      }, selfAcknowledging = false))
+      }, selfAcknowledging = false, channelParameters = Some(channelParameters)))
 
-      val producer = AMQP.newProducer(connection, ProducerParameters(channelParameters))
+      val producer = AMQP.newProducer(connection,
+        ProducerParameters(exchangeParameters, channelParameters = Some(channelParameters)))
+
       countDown.await(2, TimeUnit.SECONDS) must be (true)
       producer ! Message("some_payload".getBytes, "manual.ack.this")
 

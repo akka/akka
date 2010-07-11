@@ -62,7 +62,6 @@ class ActorInitializationException private[akka](message: String) extends Runtim
  */
 object Actor extends Logging {
   val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
-  val RECEIVE_TIMEOUT = config.getInt("akka.actor.receive.timeout", 30000)
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
@@ -435,7 +434,6 @@ trait Actor extends Logging {
   // =========================================
 
   private[akka] def base: Receive = try {
-    cancelReceiveTimeout
     lifeCycles orElse (self.hotswap getOrElse receive)
   } catch {
     case e: NullPointerException => throw new IllegalActorStateException(
@@ -443,32 +441,13 @@ trait Actor extends Logging {
   }
 
   private val lifeCycles: Receive = {
-    case HotSwap(code) => self.hotswap = code; checkReceiveTimeout
+    case HotSwap(code) => self.hotswap = code; self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
     case Restart(reason) => self.restart(reason)
     case Exit(dead, reason) => self.handleTrapExit(dead, reason)
     case Link(child) => self.link(child)
     case Unlink(child) => self.unlink(child)
     case UnlinkAndStop(child) => self.unlink(child); child.stop
     case Kill => throw new ActorKilledException("Actor [" + toString + "] was killed by a Kill message")
-  }
-
-  @volatile protected[akka] var timeoutActor: Option[ActorRef] = None
-
-  private[akka] def cancelReceiveTimeout = {
-    timeoutActor.foreach {
-      x =>
-        Scheduler.unschedule(x)
-        timeoutActor = None
-        log.debug("Timeout canceled")
-    }
-  }
-
-  private[akka] def checkReceiveTimeout = {
-    //if ((self.hotswap getOrElse receive).isDefinedAt(ReceiveTimeout)) { // FIXME use when 'self' is safe to use, throws NPE sometimes
-    if ((receive ne null) && receive.isDefinedAt(ReceiveTimeout)) {
-      log.debug("Scheduling timeout for Actor [" + toString + "]")
-      timeoutActor = Some(Scheduler.scheduleOnce(self, ReceiveTimeout, self.receiveTimeout, TimeUnit.MILLISECONDS))
-    }
   }
 }
 
