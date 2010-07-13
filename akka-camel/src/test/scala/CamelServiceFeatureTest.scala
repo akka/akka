@@ -1,6 +1,6 @@
 package se.scalablesolutions.akka.camel
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
 
 import org.apache.camel.CamelExecutionException
 import org.apache.camel.builder.RouteBuilder
@@ -41,7 +41,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
   feature("Publish registered consumer actors in the global CamelContext") {
 
-    scenario("access registered consumer actors via Camel direct-endpoints") {
+    scenario("access non-blocking consumer actors via Camel direct-endpoints") {
 
       given("two consumer actors registered before and after CamelService startup")
       val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
@@ -55,6 +55,25 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       then("both actors should have replied with expected responses")
       assert(response1 === "received msg1")
       assert(response2 === "received msg2")
+    }
+
+    scenario("access blocking, non-responding consumer actor via a Camel direct-endpoint") {
+
+      given("a consumer actor registered after CamelService startup")
+      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      actorOf(new TestBlocker("direct:publish-test-3")).start
+      assert(latch.await(5000, TimeUnit.MILLISECONDS))
+
+      try {
+        when("a request is sent to this actor")
+        CamelContextManager.template.requestBody("direct:publish-test-3", "msg3")
+        fail("expected TimoutException not thrown")
+      } catch {
+        case e => {
+          then("a TimoutException should be thrown")
+          assert(e.getCause.isInstanceOf[TimeoutException])
+        }
+      }
     }
   }
 
@@ -157,6 +176,15 @@ object CamelServiceFeatureTest {
     def endpointUri = uri
     protected def receive = {
       case msg: Message => self.reply("received %s" format msg.body)
+    }
+  }
+
+  class TestBlocker(uri: String) extends Actor with Consumer {
+    self.timeout = 1
+    def endpointUri = uri
+    override def blocking = true
+    protected def receive = {
+      case msg: Message => { /* do not reply */ }
     }
   }
 
