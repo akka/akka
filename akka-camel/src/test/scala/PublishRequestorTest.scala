@@ -62,7 +62,7 @@ class PublishRequestorTest extends JUnitSuite {
     requestor ! ActorRegistered(consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher !! GetRetainedMessage) ===
-      Some(ConsumerRegistered(consumer, "mock:test", consumer.uuid, true)))
+      Some(ConsumerRegistered(consumer, "mock:test", consumer.uuid, false)))
   }
 
   @Test def shouldReceiveConsumerUnregisteredEvent = {
@@ -70,7 +70,7 @@ class PublishRequestorTest extends JUnitSuite {
     requestor ! ActorUnregistered(consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     assert((publisher !! GetRetainedMessage) ===
-      Some(ConsumerUnregistered(consumer, "mock:test", consumer.uuid, true)))
+      Some(ConsumerUnregistered(consumer, "mock:test", consumer.uuid)))
   }
 }
 

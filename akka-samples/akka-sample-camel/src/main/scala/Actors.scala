@@ -1,6 +1,5 @@
 package sample.camel
 
-import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, RemoteActor}
 import se.scalablesolutions.akka.camel.{Producer, Message, Consumer}
 import se.scalablesolutions.akka.util.Logging
@@ -42,8 +41,9 @@ class Consumer1 extends Actor with Consumer with Logging {
   }
 }
 
-@consume("jetty:http://0.0.0.0:8877/camel/default")
 class Consumer2 extends Actor {
+  def endpointUri = "jetty:http://0.0.0.0:8877/camel/default"
+
   def receive = {
     case msg: Message => self.reply("Hello %s" format msg.bodyAs[String])
   }
