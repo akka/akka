@@ -37,8 +37,8 @@ object TransactionConfig {
 
   def traceLevel(level: String) = level.toLowerCase match {
     case "coarse" | "course" => Transaction.TraceLevel.Coarse
-    case "fine" => Transaction.TraceLevel.Fine
-    case _ => Transaction.TraceLevel.None
+    case "fine"              => Transaction.TraceLevel.Fine
+    case _                   => Transaction.TraceLevel.None
   }
 
   /**
@@ -126,7 +126,7 @@ object TransactionFactory {
             traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
             hooks: Boolean           = TransactionConfig.HOOKS) = {
     val config = new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-                                        explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+                                       explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
     new TransactionFactory(config)
   }
 }
