@@ -18,6 +18,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // project versions
   val JERSEY_VERSION = "1.2"
   val ATMO_VERSION = "0.6"
+  val CAMEL_VERSION = "2.4.0"
+  val SPRING_VERSION = "3.0.3.RELEASE"
   val CASSANDRA_VERSION = "0.6.1"
   val LIFT_VERSION = "2.0-scala280-SNAPSHOT"
   val SCALATEST_VERSION = "1.2-for-scala-2.8.0.RC3-SNAPSHOT"
@@ -69,6 +71,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
   def codehausSnapshotRepo    = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", codehausSnapshotRepo)
+  val apacheSnapshotRepo      = "Camel 2.4 Staging" at "https://repository.apache.org/content/repositories/orgapachecamel-053/"
 
   // ------------------------------------------------------------
   // project defintions
@@ -239,7 +242,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
-    val camel_core = "org.apache.camel" % "camel-core" % "2.3.0" % "compile"
+    val camel_core = "org.apache.camel" % "camel-core" % CAMEL_VERSION % "compile" withSources()
   }
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
@@ -285,13 +288,11 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
   class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
-    val spring_beans = "org.springframework" % "spring-beans" % "3.0.1.RELEASE" % "compile"
-    val spring_context = "org.springframework" % "spring-context" % "3.0.1.RELEASE" % "compile"
+    val spring_beans = "org.springframework" % "spring-beans" % SPRING_VERSION % "compile"
+    val spring_context = "org.springframework" % "spring-context" % SPRING_VERSION % "compile"
 
     // testing
-    val camel_spring = "org.apache.camel" % "camel-spring" % "2.3.0" % "test"
-    // enforce version 3.0.1.RELEASE otherwise version 2.5.6 is pulled via camel-spring
-    val spring_tx = "org.springframework" % "spring-tx" % "3.0.1.RELEASE" % "test"
+    val camel_spring = "org.apache.camel" % "camel-spring" % CAMEL_VERSION % "test"
     val scalatest = "org.scalatest" % "scalatest" % SCALATEST_VERSION % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
   }
@@ -339,9 +340,9 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
-    val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE" % "compile"
-    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.3.0" % "compile"
-    val camel_jms = "org.apache.camel" % "camel-jms" % "2.3.0" % "compile"
+    val spring_jms = "org.springframework" % "spring-jms" % SPRING_VERSION % "compile"
+    val camel_jetty = "org.apache.camel" % "camel-jetty" % CAMEL_VERSION % "compile" withSources()
+    val camel_jms = "org.apache.camel" % "camel-jms" % CAMEL_VERSION % "compile" withSources()
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.2" % "compile"
   }
 

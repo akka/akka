@@ -8,12 +8,6 @@ import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, Feat
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import se.scalablesolutions.akka.actor.Actor._
 
-object ProducerFeatureTest {
-  class TestProducer(uri: String) extends Actor with Producer {
-    def endpointUri = uri
-  }
-}
-
 class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
   import ProducerFeatureTest._
 
@@ -121,6 +115,12 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
   }
 
   private def mockEndpoint = CamelContextManager.context.getEndpoint("mock:mock", classOf[MockEndpoint])
+}
+
+object ProducerFeatureTest {
+  class TestProducer(uri: String) extends Actor with Producer {
+    def endpointUri = uri
+  }
 
   class TestRoute extends RouteBuilder {
     def configure {

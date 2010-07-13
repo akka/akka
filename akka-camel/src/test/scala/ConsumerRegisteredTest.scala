@@ -5,17 +5,16 @@ import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.annotation.consume
 
 object ConsumerRegisteredTest {
-  @consume("mock:test1")
-  class ConsumeAnnotatedActor extends Actor {
-    self.id = "test"
+  class ConsumerActor1 extends Actor with Consumer {
+    def endpointUri = "mock:test1"
     protected def receive = null
   }
 
-  class ConsumerActor extends Actor with Consumer {
+  class ConsumerActor2 extends Actor with Consumer {
     def endpointUri = "mock:test2"
+    override def blocking = true
     protected def receive = null
   }
 
@@ -27,21 +26,14 @@ object ConsumerRegisteredTest {
 class ConsumerRegisteredTest extends JUnitSuite {
   import ConsumerRegisteredTest._
 
-  @Test def shouldCreatePublishRequestList = {
-    val a = actorOf[ConsumeAnnotatedActor]
-    val as = List(a)
-    val events = for (a <- as; e <- ConsumerRegistered.forConsumer(a)) yield e
-    assert(events === List(ConsumerRegistered(a, "mock:test1", "test", false)))
+  @Test def shouldCreateSomeNonBlockingPublishRequest = {
+    val ca = actorOf[ConsumerActor1]
+    val event = ConsumerRegistered.forConsumer(ca)
+    assert(event === Some(ConsumerRegistered(ca, "mock:test1", ca.uuid, false)))
   }
 
-  @Test def shouldCreateSomePublishRequestWithActorId = {
-    val a = actorOf[ConsumeAnnotatedActor]
-    val event = ConsumerRegistered.forConsumer(a)
-    assert(event === Some(ConsumerRegistered(a, "mock:test1", "test", false)))
-  }
-
-  @Test def shouldCreateSomePublishRequestWithActorUuid = {
-    val ca = actorOf[ConsumerActor]
+  @Test def shouldCreateSomeBlockingPublishRequest = {
+    val ca = actorOf[ConsumerActor2]
     val event = ConsumerRegistered.forConsumer(ca)
     assert(event === Some(ConsumerRegistered(ca, "mock:test2", ca.uuid, true)))
   }
