@@ -284,6 +284,7 @@ object Actor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor extends Logging {
+
   /**
    * Type alias because traits cannot have companion objects.
    */
@@ -300,12 +301,12 @@ trait Actor extends Logging {
     Actor.actorRefInCreation.value = None
     if (ref.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
-              "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
-              "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
-              "\n\tEither use:" +
-              "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
-              "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
-              "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
+      "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
+      "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
+      "\n\tEither use:" +
+      "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
+      "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
+      "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
     else ref
   }
 
@@ -407,22 +408,6 @@ trait Actor extends Logging {
    * Is called during initialization. Can be used to initialize transactional state. Will be invoked within a transaction.
    */
   def initTransactionalState {}
-
-  /**
-   * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
-   * being processed.
-   * <p/>
-   * Throws an IllegalStateException if unable to determine what to reply to.
-   */
-  def reply(message: Any) = self.reply(message)
-
-  /**
-   * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
-   * being processed.
-   * <p/>
-   * Returns true if reply was sent, and false if unable to determine what to reply to.
-   */
-  def reply_?(message: Any): Boolean = self.reply_?(message)
 
   /**
    * Is the actor able to handle the message passed in as arguments?
