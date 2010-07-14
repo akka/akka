@@ -46,7 +46,6 @@ class TransactionalActiveObjectSpec extends
   }
 
   describe("Transactional in-memory Active Object ") {
-/*
     it("map should not rollback state for stateful server in case of success") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -54,7 +53,7 @@ class TransactionalActiveObjectSpec extends
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state")
       stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess") should equal("new state")
     }
-*/
+
     it("map should rollback state for stateful server in case of failure") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -69,7 +68,6 @@ class TransactionalActiveObjectSpec extends
       stateful.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure") should equal("init")
     }
 
-    /*
     it("vector should rollback state for stateful server in case of failure") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -109,6 +107,5 @@ class TransactionalActiveObjectSpec extends
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state")
       stateful.getRefState should equal("new state")
     }
-    */
   }
 }
