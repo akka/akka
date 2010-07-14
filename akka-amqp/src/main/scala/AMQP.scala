@@ -9,8 +9,7 @@ import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import java.lang.IllegalArgumentException
-import se.scalablesolutions.akka.util.{Logging}
-import java.util.UUID
+import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.serialization.Serializer
 
 /**
