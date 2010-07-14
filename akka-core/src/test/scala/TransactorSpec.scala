@@ -44,7 +44,7 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
       self.reply(notifier)
     case GetMapState(key) =>
       self.reply(mapState.get(key).get)
-//      notifier.countDown
+      notifier.countDown
     case GetVectorSize =>
       self.reply(vectorState.length.asInstanceOf[AnyRef])
       notifier.countDown
@@ -80,7 +80,7 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
     case SetMapStateOneWay(key, msg) =>
       println("------- SetMapStateOneWay")
       mapState.put(key, msg)
-//      notifier.countDown
+      notifier.countDown
     case SetVectorStateOneWay(msg) =>
       vectorState.add(msg)
       notifier.countDown
@@ -97,7 +97,7 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
       mapState.put(key, msg)
       vectorState.add(msg)
       refState.swap(msg)
-//      notifier.countDown
+      notifier.countDown
       failer ! "Failure"
   }
 }
@@ -133,7 +133,7 @@ class TransactorSpec extends JUnitSuite {
     stateful !! Success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state") // transactionrequired
     assert("new state" === (stateful !! GetMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess")).get)
   }
-*/
+
   @Test
   def shouldOneWayMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = actorOf(new StatefulTransactor(4))
@@ -145,11 +145,11 @@ class TransactorSpec extends JUnitSuite {
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
     println("------- sending FailureOneWay")
     Thread.sleep(100)
-//    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
-//    assert(notifier.get.await(5, TimeUnit.SECONDS))
+    val notifier = (stateful !! GetNotifier).as[CountDownLatch]
+    assert(notifier.get.await(5, TimeUnit.SECONDS))
     assert("init" === (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
   }
-/*
+
   @Test
   def shouldMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
     val stateful = actorOf[StatefulTransactor]
