@@ -1071,7 +1071,8 @@ sealed class LocalActorRef private[akka](
               "\n\tto non-empty list of exception classes - can't proceed " + toString)
       }
     } else {
-      _supervisor.foreach(_ ! Exit(dead, reason)) // if 'trapExit' is not defined then pass the Exit on
+      if (lifeCycle.isEmpty) lifeCycle = Some(LifeCycle(Permanent)) // when passing on make sure we have a lifecycle
+      _supervisor.foreach(_ ! Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
     }
   }
 
