@@ -1057,18 +1057,19 @@ sealed class LocalActorRef private[akka](
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
-      if (faultHandler.isDefined) {
-        faultHandler.get match {
-          // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
-          case AllForOneStrategy(maxNrOfRetries, withinTimeRange) =>
-            restartLinkedActors(reason)
+      faultHandler match {
+        // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
+        case Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+          restartLinkedActors(reason)
 
-          case OneForOneStrategy(maxNrOfRetries, withinTimeRange) =>
-            dead.restart(reason)
-        }
-      } else throw new IllegalActorStateException(
-        "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
-        "\n\tto non-empty list of exception classes - can't proceed " + toString)
+        case Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+          dead.restart(reason)
+
+        case None =>
+            throw new IllegalActorStateException(
+              "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
+              "\n\tto non-empty list of exception classes - can't proceed " + toString)
+      }
     } else {
       _supervisor.foreach(_ ! Exit(dead, reason)) // if 'trapExit' is not defined then pass the Exit on
     }
