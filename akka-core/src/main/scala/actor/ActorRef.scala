@@ -72,9 +72,7 @@ trait ActorRef extends TransactionManagement {
   @volatile protected[this] var _isShutDown = false
   @volatile protected[akka] var _isBeingRestarted = false
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServer.HOSTNAME, RemoteServer.PORT)
-
   @volatile protected[akka] var _timeoutActor: Option[ActorRef] = None
-
   @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
   protected[this] val guard = new ReentrantGuard
@@ -555,23 +553,19 @@ trait ActorRef extends TransactionManagement {
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
 
-  protected[akka] def cancelReceiveTimeout = {
-    _timeoutActor.foreach {
-      x =>
-        if (x.isRunning) Scheduler.unschedule(x)
-        _timeoutActor = None
-        log.debug("Timeout canceled for %s", this)
-    }
-  }
-
-  protected [akka] def checkReceiveTimeout = {
+  protected[akka] def checkReceiveTimeout = {
     cancelReceiveTimeout
-    receiveTimeout.foreach { timeout =>
+    receiveTimeout.foreach { time =>
       log.debug("Scheduling timeout for %s", this)
-      _timeoutActor = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, timeout, TimeUnit.MILLISECONDS))
+      _timeoutActor = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, time, TimeUnit.MILLISECONDS))
     }
   }
 
+  protected[akka] def cancelReceiveTimeout = _timeoutActor.foreach { timeoutActor =>
+    if (timeoutActor.isRunning) Scheduler.unschedule(timeoutActor)
+    _timeoutActor = None
+    log.debug("Timeout canceled for %s", this)
+  }
 }
 
 /**
@@ -641,6 +635,7 @@ sealed class LocalActorRef private[akka](
       actorSelfFields._3.set(actor, Some(this))
       start
       __messages.foreach(message => this ! MessageSerializer.deserialize(message.getMessage))
+      checkReceiveTimeout
       ActorRegistry.register(this)
     }
 
