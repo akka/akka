@@ -5,7 +5,9 @@ import org.scalatest.{BeforeAndAfterAll, Spec}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.ShouldMatchers
 
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator
+import se.scalablesolutions.akka.actor.ActiveObject._
+
+import se.scalablesolutions.akka.config.{OneForOneStrategy, ActiveObjectConfigurator}
 import se.scalablesolutions.akka.config.JavaConfig._
 
 /**
@@ -150,6 +152,16 @@ class ActiveObjectLifecycleSpec extends Spec with ShouldMatchers with BeforeAndA
       assert(!obj._pre)
       assert(!obj._post)
       assert(obj._down)
+    }
+
+    it("both preRestart and postRestart methods should be invoked when an actor is restarted") {
+      val pojo = ActiveObject.newInstance(classOf[SimpleJavaPojo])
+      val supervisor = ActiveObject.newInstance(classOf[SimpleJavaPojo])
+      link(supervisor,pojo, new OneForOneStrategy(3, 2000),Array(classOf[Throwable]))
+      pojo.throwException
+      Thread.sleep(500)
+      pojo.pre should be(true)
+      pojo.post should be(true)
     }
   }
 }

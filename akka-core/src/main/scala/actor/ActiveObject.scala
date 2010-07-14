@@ -687,8 +687,6 @@ private[akka] class Dispatcher(transactionalRequired: Boolean,
   private var context: Option[ActiveObjectContext] = None
   private var targetClass:Class[_] = _
 
-
-
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef, ctx: Option[ActiveObjectContext]) = {
@@ -701,6 +699,8 @@ private[akka] class Dispatcher(transactionalRequired: Boolean,
     context = ctx
     val methods = targetInstance.getClass.getDeclaredMethods.toList
 
+    if (self.lifeCycle.isEmpty) self.lifeCycle = Some(LifeCycle(Permanent))
+    
     // See if we have any config define restart callbacks
     restartCallbacks match {
       case None => {}
