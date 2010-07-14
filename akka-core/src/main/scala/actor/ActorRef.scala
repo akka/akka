@@ -1142,6 +1142,8 @@ sealed class LocalActorRef private[akka](
   }
 
   private def handleExceptionInDispatch(e: Throwable, message: Any, topLevelTransaction: Boolean) = {
+    Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
+
     _isBeingRestarted = true
     // abort transaction set
     if (isTransactionSetInScope) {
@@ -1149,7 +1151,6 @@ sealed class LocalActorRef private[akka](
       Actor.log.debug("Aborting transaction set [%s]", txSet)
       txSet.abort
     }
-    Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
     senderFuture.foreach(_.completeWithException(this, e))
 
