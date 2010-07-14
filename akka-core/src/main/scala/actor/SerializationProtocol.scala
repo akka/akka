@@ -77,14 +77,14 @@ object ActorSerialization {
     toSerializedActorRefProtocol(a, format).toByteArray
   }
 
-  private def toSerializedActorRefProtocol[T <: Actor](a: ActorRef, format: Format[T]): SerializedActorRefProtocol = {
+  private def toSerializedActorRefProtocol[T <: Actor](actorRef: ActorRef, format: Format[T]): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
       def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
         case Permanent => builder.setLifeCycle(LifeCycleType.PERMANENT)
         case Temporary => builder.setLifeCycle(LifeCycleType.TEMPORARY)
       }
       val builder = LifeCycleProtocol.newBuilder
-      a.lifeCycle match {
+      actorRef.lifeCycle match {
         case Some(LifeCycle(scope, None, _)) =>
           setScope(builder, scope)
           Some(builder.build)
@@ -98,21 +98,22 @@ object ActorSerialization {
     }
 
     val originalAddress = AddressProtocol.newBuilder
-      .setHostname(a.homeAddress.getHostName)
-      .setPort(a.homeAddress.getPort)
+      .setHostname(actorRef.homeAddress.getHostName)
+      .setPort(actorRef.homeAddress.getPort)
       .build
 
     val builder = SerializedActorRefProtocol.newBuilder
-      .setUuid(a.uuid)
-      .setId(a.id)
-      .setActorClassname(a.actorClass.getName)
+      .setUuid(actorRef.uuid)
+      .setId(actorRef.id)
+      .setActorClassname(actorRef.actorClass.getName)
       .setOriginalAddress(originalAddress)
-      .setIsTransactor(a.isTransactor)
-      .setTimeout(a.timeout)
+      .setIsTransactor(actorRef.isTransactor)
+      .setTimeout(actorRef.timeout)
 
-    builder.setActorInstance(ByteString.copyFrom(format.toBinary(a.actor.asInstanceOf[T])))
+    actorRef.receiveTimeout.foreach(builder.setReceiveTimeout(_))
+    builder.setActorInstance(ByteString.copyFrom(format.toBinary(actorRef.actor.asInstanceOf[T])))
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
-    a.supervisor.foreach(s => builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
+    actorRef.supervisor.foreach(s => builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
     // FIXME: how to serialize the hotswap PartialFunction ??
     //hotswap.foreach(builder.setHotswapStack(_))
     builder.build
@@ -161,6 +162,7 @@ object ActorSerialization {
       protocol.getOriginalAddress.getPort,
       if (protocol.hasIsTransactor) protocol.getIsTransactor else false,
       if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
+      if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
       lifeCycle,
       supervisor,
       hotswap,

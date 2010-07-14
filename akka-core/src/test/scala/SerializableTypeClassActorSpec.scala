@@ -110,6 +110,8 @@ class SerializableTypeClassActorSpec extends
       val actor2 = fromBinary(bytes)
       actor2.start
       (actor2 !! "hello").getOrElse("_") should equal("world 3")
+
+      actor2.receiveTimeout should equal (Some(1000))
     }
 
     it("should be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox") {
@@ -172,7 +174,8 @@ class MyStatelessActorWithMessagesInMailbox extends Actor {
 
 @serializable class MyJavaSerializableActor extends Actor {
   var count = 0
-
+  self.receiveTimeout = Some(1000)
+  
   def receive = {
     case "hello" =>
       count = count + 1

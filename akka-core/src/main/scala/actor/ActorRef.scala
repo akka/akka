@@ -606,6 +606,7 @@ sealed class LocalActorRef private[akka](
                          __port: Int,
                          __isTransactor: Boolean,
                          __timeout: Long,
+                         __receiveTimeout: Option[Long],
                          __lifeCycle: Option[LifeCycle],
                          __supervisor: Option[ActorRef],
                          __hotswap: Option[PartialFunction[Any, Unit]],
@@ -627,6 +628,7 @@ sealed class LocalActorRef private[akka](
       homeAddress = (__hostname, __port)
       isTransactor = __isTransactor
       timeout = __timeout
+      receiveTimeout = __receiveTimeout
       lifeCycle = __lifeCycle
       _supervisor = __supervisor
       hotswap = __hotswap
