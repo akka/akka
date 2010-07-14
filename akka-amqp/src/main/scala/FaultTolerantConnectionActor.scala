@@ -6,17 +6,20 @@ package se.scalablesolutions.akka.amqp
 
 import java.util.{TimerTask, Timer}
 import java.io.IOException
-import se.scalablesolutions.akka.util.Logging
 import com.rabbitmq.client._
 import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
 import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig.{Permanent, LifeCycle}
+import se.scalablesolutions.akka.config.OneForOneStrategy
 
-private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor with Logging {
+private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor {
   import connectionParameters._
 
   self.id = "amqp-connection-%s".format(host)
   self.lifeCycle = Some(LifeCycle(Permanent))
+
+  self.trapExit = List(classOf[Throwable])
+  self.faultHandler = Some(OneForOneStrategy(5, 5000))
 
   val reconnectionTimer = new Timer("%s-timer".format(self.id))
 
@@ -39,7 +42,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
         }
         case None => {
           log.warning("Unable to create new channel - no connection")
-          reply(None)
+          self.reply(None)
         }
       }
     }

@@ -6,11 +6,11 @@ package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.util.Logging
-
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import java.lang.IllegalArgumentException
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.serialization.Serializer
 
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
@@ -31,20 +31,23 @@ object AMQP {
           connectionCallback: Option[ActorRef] = None)
 
   case class ChannelParameters(
+          shutdownListener: Option[ShutdownListener] = None,
+          channelCallback: Option[ActorRef] = None)
+
+  case class ExchangeParameters(
           exchangeName: String,
           exchangeType: ExchangeType,
           exchangeDurable: Boolean = false,
           exchangeAutoDelete: Boolean = true,
           exchangePassive: Boolean = false,
-          shutdownListener: Option[ShutdownListener] = None,
-          configurationArguments: Map[String, AnyRef] = Map(),
-          channelCallback: Option[ActorRef] = None)
+          configurationArguments: Map[String, AnyRef] = Map())
 
-  case class ProducerParameters(channelParameters: ChannelParameters,
-                                producerId: Option[String] = None, 
-                                returnListener: Option[ReturnListener] = None)
+  case class ProducerParameters(exchangeParameters: ExchangeParameters,
+                                producerId: Option[String] = None,
+                                returnListener: Option[ReturnListener] = None,
+                                channelParameters: Option[ChannelParameters] = None)
 
-  case class ConsumerParameters(channelParameters: ChannelParameters,
+  case class ConsumerParameters(exchangeParameters: ExchangeParameters,
                                 routingKey: String,
                                 deliveryHandler: ActorRef,
                                 queueName: Option[String] = None,
@@ -52,7 +55,9 @@ object AMQP {
                                 queueAutoDelete: Boolean = true,
                                 queuePassive: Boolean = false,
                                 queueExclusive: Boolean = false,
-                                selfAcknowledging: Boolean = true) {
+                                selfAcknowledging: Boolean = true,
+                                channelParameters: Option[ChannelParameters] = None) {
+
     if (queueDurable && queueName.isEmpty) {
       throw new IllegalArgumentException("A queue name is required when requesting a durable queue.")
     }
@@ -77,6 +82,33 @@ object AMQP {
     connection.startLink(consumer)
     consumer ! Start
     consumer
+  }
+
+  def newRpcClient(connection: ActorRef,
+                   exchangeParameters: ExchangeParameters,
+                   routingKey: String,
+                   inSerializer: Serializer,
+                   outSerializer: Serializer,
+                   channelParameters: Option[ChannelParameters] = None): ActorRef = {
+    val rpcActor: ActorRef = actorOf(new RpcClientActor(exchangeParameters, routingKey, inSerializer, outSerializer, channelParameters))
+    connection.startLink(rpcActor)
+    rpcActor ! Start
+    rpcActor
+  }
+
+  def newRpcServer(connection: ActorRef,
+          exchangeParameters: ExchangeParameters,
+          routingKey: String,
+          inSerializer: Serializer,
+          outSerializer: Serializer,
+          requestHandler: PartialFunction[AnyRef, AnyRef],
+          channelParameters: Option[ChannelParameters] = None) = {
+    val producer = newProducer(connection, new ProducerParameters(new ExchangeParameters("", ExchangeType.Direct), channelParameters = channelParameters))
+    val rpcServer = actorOf(new RpcServerActor(producer, inSerializer, outSerializer, requestHandler))
+    val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, routingKey, rpcServer
+      , channelParameters = channelParameters
+      , selfAcknowledging = false))
+
   }
 
   private val supervisor = new AMQPSupervisor
