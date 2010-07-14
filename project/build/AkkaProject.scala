@@ -82,9 +82,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_kernel = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
     akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
 
-  // active object tests in java
-  lazy val akka_active_object_test = project("akka-active-object-test", "akka-active-object-test", new AkkaActiveObjectTestProject(_), akka_kernel)
-
   // examples
   lazy val akka_samples = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
@@ -302,13 +299,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions_api = "com.atomikos" % "transactions-api" % "3.2.3" % "compile"
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
     val jta_spec = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive()
-  }
-
-  // ================= TEST ==================
-  class AkkaActiveObjectTestProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
-    // testing
-    val junit = "junit" % "junit" % "4.5" % "test"
-    val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
   }
 
   // ================= EXAMPLES ==================
