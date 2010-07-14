@@ -100,12 +100,12 @@ trait ActorRef extends TransactionManagement {
   @volatile var timeout: Long = Actor.TIMEOUT
 
   /**
-     * User overridable callback/setting.
-     * <p/>
-     * Defines the default timeout for an initial receive invocation.
-     * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
-     */
-    @volatile var receiveTimeout: Option[Long] = None
+   * User overridable callback/setting.
+   * <p/>
+   * Defines the default timeout for an initial receive invocation.
+   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
+   */
+  @volatile var receiveTimeout: Option[Long] = None
 
   /**
    * User overridable callback/setting.
@@ -167,12 +167,12 @@ trait ActorRef extends TransactionManagement {
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  private[akka] var _dispatcher: MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+  @volatile private[akka] var _dispatcher: MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
 
   /**
    * Holds the hot swapped partial function.
    */
-  protected[akka] var hotswap: Option[PartialFunction[Any, Unit]] = None // FIXME: _hotswap should be a stack
+  @volatile protected[akka] var hotswap: Option[PartialFunction[Any, Unit]] = None // FIXME: _hotswap should be a stack
 
   /**
    * User overridable callback/setting.
@@ -185,12 +185,12 @@ trait ActorRef extends TransactionManagement {
   /**
    * Configuration for TransactionFactory. User overridable.
    */
-  protected[akka] var _transactionConfig: TransactionConfig = DefaultGlobalTransactionConfig
+  @volatile protected[akka] var _transactionConfig: TransactionConfig = DefaultGlobalTransactionConfig
 
   /**
    * TransactionFactory to be used for atomic when isTransactor. Configuration is overridable.
    */
-  private[akka] var _transactionFactory: Option[TransactionFactory] = None
+  @volatile private[akka] var _transactionFactory: Option[TransactionFactory] = None
 
   /**
    * This lock ensures thread safety in the dispatching: only one message can
@@ -198,10 +198,10 @@ trait ActorRef extends TransactionManagement {
    */
   protected[akka] val dispatcherLock = new ReentrantLock
 
-  protected[akka] var _sender: Option[ActorRef] = None
-  protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
-  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s }
-  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf }
+  @volatile protected[akka] var _sender: Option[ActorRef] = None
+  @volatile protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
+  protected[akka] def sender_=(s: Option[ActorRef]) = _sender = s
+  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) = _senderFuture = sf
 
   /**
    * Returns the uuid for the actor.
@@ -212,13 +212,13 @@ trait ActorRef extends TransactionManagement {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def sender: Option[ActorRef] = guard.withGuard { _sender }
+  def sender: Option[ActorRef] = _sender
 
   /**
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def senderFuture: Option[CompletableFuture[Any]] = guard.withGuard { _senderFuture }
+  def senderFuture: Option[CompletableFuture[Any]] = _senderFuture
 
   /**
    * Is the actor being restarted?
@@ -664,7 +664,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
-  def dispatcher_=(md: MessageDispatcher): Unit = guard.withGuard {
+  def dispatcher_=(md: MessageDispatcher): Unit = {
     if (!isRunning || isBeingRestarted) _dispatcher = md
     else throw new ActorInitializationException(
       "Can not swap dispatcher for " + toString + " after it has been started")
@@ -673,7 +673,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Get the dispatcher for this actor.
    */
-  def dispatcher: MessageDispatcher = guard.withGuard { _dispatcher }
+  def dispatcher: MessageDispatcher = _dispatcher
 
   /**
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
@@ -717,19 +717,19 @@ sealed class LocalActorRef private[akka](
   /**
    * Get the transaction configuration for this actor.
    */
-  def transactionConfig: TransactionConfig = guard.withGuard { _transactionConfig }
+  def transactionConfig: TransactionConfig = _transactionConfig
 
   /**
    * Set the contact address for this actor. This is used for replying to messages
    * sent asynchronously when no reply channel exists.
    */
-  def homeAddress_=(address: InetSocketAddress): Unit = guard.withGuard { _homeAddress = address }
+  def homeAddress_=(address: InetSocketAddress): Unit = _homeAddress = address
 
   /**
    * Returns the remote address for the actor, if any, else None.
    */
-  def remoteAddress: Option[InetSocketAddress] = guard.withGuard { _remoteAddress }
-  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = guard.withGuard { _remoteAddress = addr }
+  def remoteAddress: Option[InetSocketAddress] = _remoteAddress
+  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = _remoteAddress = addr
 
   /**
    * Starts up the actor and its message queue.
@@ -893,7 +893,7 @@ sealed class LocalActorRef private[akka](
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors(): Unit = guard.withGuard {
+  def shutdownLinkedActors(): Unit = {
     linkedActorsAsList.foreach(_.stop)
     linkedActors.clear
   }
@@ -901,11 +901,11 @@ sealed class LocalActorRef private[akka](
   /**
    * Returns the supervisor, if there is one.
    */
-  def supervisor: Option[ActorRef] = guard.withGuard { _supervisor }
+  def supervisor: Option[ActorRef] = _supervisor
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
-  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = guard.withGuard { _supervisor = sup }
+  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
 
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
     joinTransaction(message)
@@ -948,19 +948,18 @@ sealed class LocalActorRef private[akka](
   /**
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = actor.synchronized {
-    if (isShutdown) {
-      Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
-      return
-    }
-    sender = messageHandle.sender
-    senderFuture = messageHandle.senderFuture
-    try {
-      dispatch(messageHandle)
-    } catch {
-      case e =>
-        Actor.log.error(e, "Could not invoke actor [%s]", this)
-        throw e
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {//actor.synchronized {
+    if (isShutdown) Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
+    else {
+      sender = messageHandle.sender
+      senderFuture = messageHandle.senderFuture
+      try {
+        dispatch(messageHandle)
+      } catch {
+        case e =>
+          Actor.log.error(e, "Could not invoke actor [%s]", this)
+          throw e
+      }
     }
   }
 
@@ -986,7 +985,8 @@ sealed class LocalActorRef private[akka](
   protected[akka] def restart(reason: Throwable): Unit = {
     _isBeingRestarted = true
     val failedActor = actorInstance.get
-    failedActor.synchronized {
+    val lock = guard.lock
+    guard.withGuard {
       lifeCycle.get match {
         case LifeCycle(scope, _, _) => {
           scope match {
@@ -998,13 +998,11 @@ sealed class LocalActorRef private[akka](
               failedActor.preRestart(reason)
               nullOutActorRefReferencesFor(failedActor)
               val freshActor = newActor
-              freshActor.synchronized {
-                freshActor.init
-                freshActor.initTransactionalState
-                actorInstance.set(freshActor)
-                Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
-                freshActor.postRestart(reason)
-              }
+              freshActor.init
+              freshActor.initTransactionalState
+              actorInstance.set(freshActor)
+              Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
+              freshActor.postRestart(reason)
               _isBeingRestarted = false
             case Temporary => shutDownTemporaryActor(this)
           }
@@ -1013,7 +1011,7 @@ sealed class LocalActorRef private[akka](
     }
   }
 
-  protected[akka] def restartLinkedActors(reason: Throwable) = guard.withGuard {
+  protected[akka] def restartLinkedActors(reason: Throwable) = {
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
       actorRef.lifeCycle.get match {
