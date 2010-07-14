@@ -11,20 +11,20 @@ import org.multiverse.api.latches.StandardLatch
 import com.rabbitmq.client.ShutdownSignalException
 import se.scalablesolutions.akka.amqp._
 import org.scalatest.matchers.MustMatchers
-import se.scalablesolutions.akka.amqp.AMQP.{ConsumerParameters, ChannelParameters, ProducerParameters, ConnectionParameters}
 import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.actor.ActorRef
 import org.junit.Test
+import se.scalablesolutions.akka.amqp.AMQP._
 
 class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
-  def consumerChannelRecovery = {
+  @Test
+  def consumerChannelRecovery = if (AMQPTest.enabled) {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
     try {
       val producer = AMQP.newProducer(connection, ProducerParameters(
-        ChannelParameters("text_exchange", ExchangeType.Direct)))
+        ExchangeParameters("text_exchange", ExchangeType.Direct)))
 
       val consumerStartedLatch = new StandardLatch
       val consumerRestartedLatch = new StandardLatch
@@ -41,10 +41,11 @@ class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers with 
       }
 
       val payloadLatch = new StandardLatch
-      val consumerChannelParameters = ChannelParameters("text_exchange", ExchangeType.Direct, channelCallback = Some(consumerChannelCallback))
-      val consumer = AMQP.newConsumer(connection, ConsumerParameters(consumerChannelParameters, "non.interesting.routing.key", actor {
+      val consumerExchangeParameters = ExchangeParameters("text_exchange", ExchangeType.Direct)
+      val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
+      val consumer = AMQP.newConsumer(connection, ConsumerParameters(consumerExchangeParameters, "non.interesting.routing.key", actor {
         case Delivery(payload, _, _, _, _) => payloadLatch.open
-      }))
+      }, channelParameters = Some(consumerChannelParameters)))
       consumerStartedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
 
       val listenerLatch = new StandardLatch

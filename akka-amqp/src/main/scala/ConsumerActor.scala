@@ -12,9 +12,11 @@ import com.rabbitmq.client.{Channel, Envelope, DefaultConsumer}
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.Throwable
 
-private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters) extends FaultTolerantChannelActor(consumerParameters.channelParameters) {
+private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
+        extends FaultTolerantChannelActor(consumerParameters.exchangeParameters, consumerParameters.channelParameters) {
+  
   import consumerParameters._
-  import channelParameters._
+  import exchangeParameters._
 
   var listenerTag: Option[String] = None
 
