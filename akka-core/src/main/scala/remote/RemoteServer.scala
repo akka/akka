@@ -215,11 +215,15 @@ class RemoteServer extends Logging {
 
   def shutdown = synchronized {
     if (_isRunning) {
-      RemoteServer.unregister(hostname, port)
-      openChannels.disconnect
-      openChannels.close.awaitUninterruptibly
-      bootstrap.releaseExternalResources
-      Cluster.deregisterLocalNode(hostname, port)
+      try {
+        RemoteServer.unregister(hostname, port)
+        openChannels.disconnect
+        openChannels.close.awaitUninterruptibly
+        bootstrap.releaseExternalResources
+        Cluster.deregisterLocalNode(hostname, port)
+      } catch {
+        case e: java.nio.channels.ClosedChannelException => log.warning("Could not close remote server channel in a graceful way")
+      }
     }
   }
 
