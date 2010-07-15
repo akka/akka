@@ -8,11 +8,11 @@ import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
 
 import com.rabbitmq.client.{Channel, RpcClient}
+import se.scalablesolutions.akka.amqp.AMQP.{RpcClientSerializer, ChannelParameters, ExchangeParameters}
 
-class RpcClientActor(exchangeParameters: ExchangeParameters,
+class RpcClientActor[I,O](exchangeParameters: ExchangeParameters,
                      routingKey: String,
-                     inSerializer: Serializer,
-                     outSerializer: Serializer,
+                     serializer: RpcClientSerializer[I,O],
                      channelParameters: Option[ChannelParameters] = None) extends FaultTolerantChannelActor(exchangeParameters, channelParameters) {
 
   import exchangeParameters._
@@ -22,13 +22,14 @@ class RpcClientActor(exchangeParameters: ExchangeParameters,
   log.info("%s started", this)
 
   def specificMessageHandler = {
-    case payload: AnyRef =>
+    case payload: I => {
       rpcClient match {
         case Some(client) =>
-          val response: Array[Byte] = client.primitiveCall(inSerializer.toBinary(payload))
-          self.reply(outSerializer.fromBinary(response, None))
+          val response: Array[Byte] = client.primitiveCall(serializer.toBinary.toBinary(payload))
+          self.reply(serializer.fromBinary.fromBinary(response))
         case None => error("%s has no client to send messages with".format(this))
       }
+    }
   }
 
   protected def setupChannel(ch: Channel) = rpcClient = Some(new RpcClient(ch, exchangeName, routingKey))

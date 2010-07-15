@@ -8,10 +8,10 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.amqp.AMQP._
-import se.scalablesolutions.akka.serialization.Serializer
-import java.lang.Class
+import java.lang.String
 
 object ExampleSession {
+
   def main(args: Array[String]) = {
     println("==== DIRECT ===")
     direct
@@ -97,6 +97,7 @@ object ExampleSession {
   }
 
   def callback = {
+
     val channelCountdown = new CountDownLatch(2)
 
     val connectionCallback = actor {
@@ -129,21 +130,36 @@ object ExampleSession {
   }
 
   def rpc = {
+
     val connection = AMQP.newConnection()
 
     val exchangeParameters = ExchangeParameters("my_rpc_exchange", ExchangeType.Topic)
 
-    val stringSerializer = new Serializer {
-      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new String(bytes)
-      def toBinary(obj: AnyRef) = obj.asInstanceOf[String].getBytes
+    /** Server */
+    val serverFromBinary = new FromBinary[String] {
+      def fromBinary(bytes: Array[Byte]) = new String(bytes)
     }
+    val serverToBinary = new ToBinary[Int] {
+      def toBinary(t: Int) = Array(t.toByte)
+    }
+    val rpcServerSerializer = new RpcServerSerializer[String, Int](serverFromBinary, serverToBinary)
 
-    val rpcServer = AMQP.newRpcServer(connection, exchangeParameters, "rpc.in.key", stringSerializer, stringSerializer, {
-      case "rpc_request" => "rpc_response"
+    val rpcServer = AMQP.newRpcServer[String,Int](connection, exchangeParameters, "rpc.in.key", rpcServerSerializer, {
+      case "rpc_request" => 3
       case _ => error("unknown request")
     })
 
-    val rpcClient = AMQP.newRpcClient(connection, exchangeParameters, "rpc.in.key", stringSerializer, stringSerializer)
+
+    /** Client */
+    val clientToBinary = new ToBinary[String] {
+      def toBinary(t: String) = t.getBytes
+    }
+    val clientFromBinary = new FromBinary[Int] {
+      def fromBinary(bytes: Array[Byte]) = bytes.head.toInt
+    }
+    val rpcClientSerializer = new RpcClientSerializer[String, Int](clientToBinary, clientFromBinary)
+
+    val rpcClient = AMQP.newRpcClient[String,Int](connection, exchangeParameters, "rpc.in.key", rpcClientSerializer)
 
     val response = (rpcClient !! "rpc_request")
     log.info("Response: " + response)

@@ -6,9 +6,9 @@ package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.{ActorRef, Actor}
 import com.rabbitmq.client.AMQP.BasicProperties
-import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.amqp.AMQP.RpcServerSerializer
 
-class RpcServerActor(producer: ActorRef, inSerializer: Serializer, outSerializer: Serializer, requestHandler: PartialFunction[AnyRef, AnyRef]) extends Actor {
+class RpcServerActor[I,O](producer: ActorRef, serializer: RpcServerSerializer[I,O], requestHandler: PartialFunction[I, O]) extends Actor {
 
   log.info("%s started", this)
 
@@ -16,8 +16,8 @@ class RpcServerActor(producer: ActorRef, inSerializer: Serializer, outSerializer
     case Delivery(payload, _, tag, props, sender) => {
 
       log.debug("%s handling delivery with tag %d", this, tag)
-      val request = inSerializer.fromBinary(payload, None)
-      val response: Array[Byte] =  outSerializer.toBinary(requestHandler(request))
+      val request = serializer.fromBinary.fromBinary(payload)
+      val response: Array[Byte] =  serializer.toBinary.toBinary(requestHandler(request))
 
       log.debug("%s sending reply to %s", this, props.getReplyTo)
       val replyProps = new BasicProperties
