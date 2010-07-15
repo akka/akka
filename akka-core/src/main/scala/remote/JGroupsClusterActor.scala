@@ -17,9 +17,8 @@ class JGroupsClusterActor extends BasicClusterActor {
   @volatile private var isActive = false
   @volatile private var channel: Option[JChannel] = None
 
-  override def init = {
-    super.init
-    log info "Initiating JGroups-based cluster actor"
+  protected def boot = {
+    log info "Booting JGroups-based cluster"
     isActive = true
 
     // Set up the JGroups local endpoint
