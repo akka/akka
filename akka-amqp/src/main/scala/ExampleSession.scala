@@ -6,8 +6,10 @@ package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import Actor._
-import se.scalablesolutions.akka.amqp.AMQP.{ConnectionParameters, ConsumerParameters, ChannelParameters, ProducerParameters}
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import se.scalablesolutions.akka.amqp.AMQP._
+import se.scalablesolutions.akka.serialization.Serializer
+import java.lang.Class
 
 object ExampleSession {
   def main(args: Array[String]) = {
@@ -31,6 +33,11 @@ object ExampleSession {
 
     TimeUnit.SECONDS.sleep(2)
 
+    println("==== RPC  ===")
+    rpc
+
+    TimeUnit.SECONDS.sleep(2)
+
     ActorRegistry.shutdownAll
     System.exit(0)
   }
@@ -40,13 +47,13 @@ object ExampleSession {
     // defaults to amqp://guest:guest@localhost:5672/
     val connection = AMQP.newConnection()
 
-    val channelParameters = ChannelParameters("my_direct_exchange", ExchangeType.Direct)
+    val exchangeParameters = ExchangeParameters("my_direct_exchange", ExchangeType.Direct)
 
-    val consumer = AMQP.newConsumer(connection, ConsumerParameters(channelParameters, "some.routing", actor {
+    val consumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "some.routing", actor {
       case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
     }))
 
-    val producer = AMQP.newProducer(connection, ProducerParameters(channelParameters))
+    val producer = AMQP.newProducer(connection, ProducerParameters(exchangeParameters))
     producer ! Message("@jonas_boner: You sucked!!".getBytes, "some.routing")
   }
 
@@ -55,17 +62,17 @@ object ExampleSession {
     // defaults to amqp://guest:guest@localhost:5672/
     val connection = AMQP.newConnection()
 
-    val channelParameters = ChannelParameters("my_fanout_exchange", ExchangeType.Fanout)
+    val exchangeParameters = ExchangeParameters("my_fanout_exchange", ExchangeType.Fanout)
 
-    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters(channelParameters, "@george_bush", actor {
+    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "@george_bush", actor {
       case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
     }))
 
-    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters(channelParameters, "@barack_obama", actor {
+    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "@barack_obama", actor {
       case Delivery(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", new String(payload))
     }))
 
-    val producer = AMQP.newProducer(connection, ProducerParameters(channelParameters))
+    val producer = AMQP.newProducer(connection, ProducerParameters(exchangeParameters))
     producer ! Message("@jonas_boner: I'm going surfing".getBytes, "")
   }
 
@@ -74,17 +81,17 @@ object ExampleSession {
     // defaults to amqp://guest:guest@localhost:5672/
     val connection = AMQP.newConnection()
 
-    val channelParameters = ChannelParameters("my_topic_exchange", ExchangeType.Topic)
+    val exchangeParameters = ExchangeParameters("my_topic_exchange", ExchangeType.Topic)
 
-    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters(channelParameters, "@george_bush", actor {
+    val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "@george_bush", actor {
       case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
     }))
 
-    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters(channelParameters, "@barack_obama", actor {
+    val obamaConsumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "@barack_obama", actor {
       case Delivery(payload, _, _, _, _) => log.info("@barack_obama received message from: %s", new String(payload))
     }))
 
-    val producer = AMQP.newProducer(connection, ProducerParameters(channelParameters))
+    val producer = AMQP.newProducer(connection, ProducerParameters(exchangeParameters))
     producer ! Message("@jonas_boner: You still suck!!".getBytes, "@george_bush")
     producer ! Message("@jonas_boner: Yes I can!".getBytes, "@barack_obama")
   }
@@ -107,16 +114,38 @@ object ExampleSession {
       case Restarting => // not used, sent when channel or connection fails and initiates a restart
       case Stopped => log.info("Channel callback: Stopped")
     }
-    val channelParameters = ChannelParameters("my_direct_exchange", ExchangeType.Direct, channelCallback = Some(channelCallback))
+    val exchangeParameters = ExchangeParameters("my_direct_exchange", ExchangeType.Direct)
+    val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
-    val consumer = AMQP.newConsumer(connection, ConsumerParameters(channelParameters, "callback.routing", actor {
+    val consumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "callback.routing", actor {
       case _ => () // not used
-    }))
+    }, channelParameters = Some(channelParameters)))
 
-    val producer = AMQP.newProducer(connection, ProducerParameters(channelParameters))
+    val producer = AMQP.newProducer(connection, ProducerParameters(exchangeParameters))
 
     // Wait until both channels (producer & consumer) are started before stopping the connection
     channelCountdown.await(2, TimeUnit.SECONDS)
     connection.stop
+  }
+
+  def rpc = {
+    val connection = AMQP.newConnection()
+
+    val exchangeParameters = ExchangeParameters("my_rpc_exchange", ExchangeType.Topic)
+
+    val stringSerializer = new Serializer {
+      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new String(bytes)
+      def toBinary(obj: AnyRef) = obj.asInstanceOf[String].getBytes
+    }
+
+    val rpcServer = AMQP.newRpcServer(connection, exchangeParameters, "rpc.in.key", stringSerializer, stringSerializer, {
+      case "rpc_request" => "rpc_response"
+      case _ => error("unknown request")
+    })
+
+    val rpcClient = AMQP.newRpcClient(connection, exchangeParameters, "rpc.in.key", stringSerializer, stringSerializer)
+
+    val response = (rpcClient !! "rpc_request")
+    log.info("Response: " + response)
   }
 }
