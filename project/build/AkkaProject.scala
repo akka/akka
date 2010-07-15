@@ -331,10 +331,25 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
-    val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE" % "compile"
-    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.3.0" % "compile"
-    val camel_jms = "org.apache.camel" % "camel-jms" % "2.3.0" % "compile"
-    val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.2" % "compile"
+    override def ivyXML =
+      <dependencies>
+        <dependency org="org.springframework" name="spring-jms" rev="3.0.1.RELEASE">
+        </dependency>
+        <dependency org="org.apache.geronimo.specs" name="geronimo-servlet_2.5_spec" rev="1.1.1">
+        </dependency>
+        <dependency org="org.apache.camel" name="camel-jetty" rev="2.3.0">
+          <exclude module="geronimo-servlet_2.4_spec"/>
+        </dependency>
+        <dependency org="org.apache.camel" name="camel-jms" rev="2.3.0">
+        </dependency>
+        <dependency org="org.apache.activemq" name="activemq-core" rev="5.3.2">
+        </dependency>
+      </dependencies>
+
+//    val spring_jms = "org.springframework" % "spring-jms" % "3.0.1.RELEASE" % "compile"
+//    val camel_jetty = "org.apache.camel" % "camel-jetty" % "2.3.0" % "compile"
+//    val camel_jms = "org.apache.camel" % "camel-jms" % "2.3.0" % "compile"
+//    val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.2" % "compile"
   }
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
