@@ -28,9 +28,7 @@ class RemoteActor2 extends Actor with Consumer {
 
 class Producer1 extends Actor with Producer {
   def endpointUri = "direct:welcome"
-
   override def oneway = false // default
-  override def async = true   // default
 }
 
 class Consumer1 extends Actor with Consumer with Logging {
