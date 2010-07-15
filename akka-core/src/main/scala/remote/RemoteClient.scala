@@ -250,26 +250,27 @@ class RemoteClientPipelineFactory(name: String,
                                   timer: HashedWheelTimer,
                                   client: RemoteClient) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
+    def join(ch: ChannelHandler*) = Array[ChannelHandler](ch:_*)
+    
     val engine = RemoteServerSslContext.client.createSSLEngine()
     engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
     engine.setUseClientMode(true)
   
-    val ssl = new SslHandler(engine)
-    val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT)
-    val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
-    val lenPrep = new LengthFieldPrepender(4)
+    val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
+    val timeout     = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT)
+    val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenPrep     = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(RemoteReplyProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
-    val zipCodec = RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib" => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL), new ZlibDecoder))
-      //case "lzf" => Some(Codec(new LzfEncoder, new LzfDecoder))
-      case _ => None
+    val(enc,dec)    = RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib"  => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)),join(new ZlibDecoder))
+      case       _ => (join(),join())
     }
+
     val remoteClient = new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
 
-    val stages: Array[ChannelHandler] =
-    zipCodec.map(codec => Array(ssl, timeout, codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteClient))
-        .getOrElse(Array(ssl, timeout, lenDec, protobufDec, lenPrep, protobufEnc, remoteClient))
+    val stages = ssl ++ join(timeout) ++ dec ++ join(lenDec, protobufDec) ++ enc ++ join(lenPrep, protobufEnc, remoteClient)
+
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -348,20 +349,24 @@ class RemoteClientHandler(val name: String,
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
+    def connect = {
+      client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
+      log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
+    }
 
-//    client.listeners.toArray.foreach(l =>
-//      l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
-//    log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
-
-   val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
-   sslHandler.handshake().addListener( new ChannelFutureListener {
+   if(RemoteServer.SECURE){
+     val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
+     sslHandler.handshake().addListener( new ChannelFutureListener {
       def operationComplete(future : ChannelFuture) : Unit = {
-        if(future.isSuccess) {
-          client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientConnected(client.hostname, client.port))
-          log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
-        }
+        if(future.isSuccess)
+          connect
+        //else
+        //FIXME: What is the correct action here?
       }
     })
+   } else {
+     connect
+   }
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
