@@ -11,8 +11,8 @@ import se.scalablesolutions.akka.amqp._
 import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ChannelParameters}
 import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.amqp.AMQP._
 
 class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging {
 
@@ -29,23 +29,34 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
       }
 
       val exchangeParameters = ExchangeParameters("text_topic_exchange", ExchangeType.Topic)
-      val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
-      val stringSerializer = new Serializer {
-        def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new String(bytes)
-        def toBinary(obj: AnyRef) = obj.asInstanceOf[String].getBytes
-      }
+      val channelParameters = ChannelParameters(channelCallback
+              = Some(channelCallback))
 
-      val rpcServer = AMQP.newRpcServer(connection, exchangeParameters, "rpc.routing", stringSerializer, stringSerializer, {
-        case "some_payload" => "some_result"
-        case _ => error("Unhandled message")
+      val serverFromBinary = new FromBinary[String] {
+        def fromBinary(bytes: Array[Byte]) = new String(bytes)
+      }
+      val serverToBinary = new ToBinary[Int] {
+        def toBinary(t: Int) = Array(t.toByte)
+      }
+      val rpcServerSerializer = new RpcServerSerializer[String, Int](serverFromBinary, serverToBinary)
+      val rpcServer = AMQP.newRpcServer[String,Int](connection, exchangeParameters, "rpc.routing", rpcServerSerializer, {
+        case "some_payload" => 3
+        case _ => error("unknown request")
       }, channelParameters = Some(channelParameters))
 
-      val rpcClient = AMQP.newRpcClient(connection, exchangeParameters, "rpc.routing", stringSerializer, stringSerializer
-        , channelParameters = Some(channelParameters))
+      val clientToBinary = new ToBinary[String] {
+        def toBinary(t: String) = t.getBytes
+      }
+      val clientFromBinary = new FromBinary[Int] {
+        def fromBinary(bytes: Array[Byte]) = bytes.head.toInt
+      }
+      val rpcClientSerializer = new RpcClientSerializer[String, Int](clientToBinary, clientFromBinary)
+      val rpcClient = AMQP.newRpcClient[String,Int](connection, exchangeParameters, "rpc.routing", rpcClientSerializer,
+        channelParameters = Some(channelParameters))
 
       countDown.await(2, TimeUnit.SECONDS) must be (true)
       val response = rpcClient !! "some_payload"
-      response must be (Some("some_result"))
+      response must be (Some(3))
     } finally {
       connection.stop
     }
