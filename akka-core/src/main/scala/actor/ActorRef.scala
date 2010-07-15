@@ -197,10 +197,13 @@ trait ActorRef extends TransactionManagement {
    */
   protected[akka] val dispatcherLock = new ReentrantLock
 
-  protected[akka] var _sender: Option[ActorRef] = None
-  protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
-  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s }
-  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf }
+  /**
+   * This is a reference to the message currently being processed by the actor
+   */
+  protected[akka] var _currentMessage: Option[MessageInvocation] = None
+
+  protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
+  protected[akka] def currentMessage = guard.withGuard { _currentMessage }
 
   /**
    * Returns the uuid for the actor.
@@ -211,13 +214,27 @@ trait ActorRef extends TransactionManagement {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def sender: Option[ActorRef] = guard.withGuard { _sender }
+  def sender: Option[ActorRef] = {
+    //Five lines of map-performance-avoidance, could be just: currentMessage map { _.sender }
+    val msg = currentMessage
+    if(msg.isEmpty)
+      None
+    else
+      msg.get.sender
+  }
 
   /**
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def senderFuture: Option[CompletableFuture[Any]] = guard.withGuard { _senderFuture }
+  def senderFuture: Option[CompletableFuture[Any]] = {
+    //Five lines of map-performance-avoidance, could be just: currentMessage map { _.senderFuture }
+    val msg = currentMessage
+    if(msg.isEmpty)
+      None
+    else
+      msg.get.senderFuture
+  }
 
   /**
    * Is the actor being restarted?
@@ -992,14 +1009,15 @@ sealed class LocalActorRef private[akka](
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return
     }
-    sender = messageHandle.sender
-    senderFuture = messageHandle.senderFuture
+    currentMessage = Option(messageHandle)
     try {
       dispatch(messageHandle)
     } catch {
       case e =>
         Actor.log.error(e, "Could not invoke actor [%s]", this)
         throw e
+    } finally {
+      currentMessage = None //TODO: Don't reset this, we might want to resend the message
     }
   }
 
