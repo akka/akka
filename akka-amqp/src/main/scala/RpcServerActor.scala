@@ -16,8 +16,8 @@ class RpcServerActor[I,O](producer: ActorRef, serializer: RpcServerSerializer[I,
     case Delivery(payload, _, tag, props, sender) => {
 
       log.debug("%s handling delivery with tag %d", this, tag)
-      val request = serializer.input(payload)
-      val response: Array[Byte] =  serializer.output(requestHandler(request))
+      val request = serializer.fromBinary.fromBinary(payload)
+      val response: Array[Byte] =  serializer.toBinary.toBinary(requestHandler(request))
 
       log.debug("%s sending reply to %s", this, props.getReplyTo)
       val replyProps = new BasicProperties

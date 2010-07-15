@@ -23,8 +23,8 @@ class RpcClientActor[I,O](exchangeParameters: ExchangeParameters,
 
       rpcClient match {
         case Some(client) =>
-          val response: Array[Byte] = client.primitiveCall(serializer.output(payload))
-          self.reply(serializer.input(response))
+          val response: Array[Byte] = client.primitiveCall(serializer.toBinary.toBinary(payload))
+          self.reply(serializer.fromBinary.fromBinary(response))
         case None => error("%s has no client to send messages with".format(this))
       }
     }

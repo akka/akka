@@ -136,15 +136,28 @@ object ExampleSession {
     val exchangeParameters = ExchangeParameters("my_rpc_exchange", ExchangeType.Topic)
 
     /** Server */
-    val rpcServerSerializer = new RpcServerSerializer[String, Int]({x:Array[Byte] => new String(x)}, {x:Int => Array(x.toByte)})
+    val serverFromBinary = new FromBinary[String] {
+      def fromBinary(bytes: Array[Byte]) = new String(bytes)
+    }
+    val serverToBinary = new ToBinary[Int] {
+      def toBinary(t: Int) = Array(t.toByte)
+    }
+    val rpcServerSerializer = new RpcServerSerializer[String, Int](serverFromBinary, serverToBinary)
 
     val rpcServer = AMQP.newRpcServer[String,Int](connection, exchangeParameters, "rpc.in.key", rpcServerSerializer, {
       case "rpc_request" => 3
       case _ => error("unknown request")
     })
 
+
     /** Client */
-    val rpcClientSerializer = new RpcClientSerializer[String, Int]({x:String => x.getBytes}, {x:Array[Byte] => x.head.toInt})
+    val clientToBinary = new ToBinary[String] {
+      def toBinary(t: String) = t.getBytes
+    }
+    val clientFromBinary = new FromBinary[Int] {
+      def fromBinary(bytes: Array[Byte]) = bytes.head.toInt
+    }
+    val rpcClientSerializer = new RpcClientSerializer[String, Int](clientToBinary, clientFromBinary)
 
     val rpcClient = AMQP.newRpcClient[String,Int](connection, exchangeParameters, "rpc.in.key", rpcClientSerializer)
 
