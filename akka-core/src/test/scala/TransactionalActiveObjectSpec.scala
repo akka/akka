@@ -44,8 +44,9 @@ class TransactionalActiveObjectSpec extends
   override def afterAll {
     conf.stop
   }
-
+  
   describe("Transactional in-memory Active Object ") {
+    /*
     it("map should not rollback state for stateful server in case of success") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -107,5 +108,6 @@ class TransactionalActiveObjectSpec extends
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state")
       stateful.getRefState should equal("new state")
     }
+    */
   }
 }

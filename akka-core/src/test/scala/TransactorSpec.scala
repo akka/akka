@@ -76,9 +76,7 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
       failer !! "Failure"
       self.reply(msg)
       notifier.countDown
-
     case SetMapStateOneWay(key, msg) =>
-      println("------- SetMapStateOneWay")
       mapState.put(key, msg)
       notifier.countDown
     case SetVectorStateOneWay(msg) =>
@@ -93,7 +91,6 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
       refState.swap(msg)
       notifier.countDown
     case FailureOneWay(key, msg, failer) =>
-      println("------- FailureOneWay")
       mapState.put(key, msg)
       vectorState.add(msg)
       refState.swap(msg)
@@ -107,13 +104,12 @@ class FailerTransactor extends Transactor {
 
   def receive = {
     case "Failure" =>
-      println("------- Failure")
       throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 }
 
 class TransactorSpec extends JUnitSuite {
-/*
+
   @Test
   def shouldOneWayMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = actorOf(new StatefulTransactor(2))
@@ -136,15 +132,12 @@ class TransactorSpec extends JUnitSuite {
 
   @Test
   def shouldOneWayMapShouldRollbackStateForStatefulServerInCaseOfFailure = {
-    val stateful = actorOf(new StatefulTransactor(4))
+    val stateful = actorOf(new StatefulTransactor(2))
     stateful.start
     val failer = actorOf[FailerTransactor]
     failer.start
     stateful ! SetMapStateOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-    println("------- sending SetMapStateOneWay")
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
-    println("------- sending FailureOneWay")
-    Thread.sleep(100)
     val notifier = (stateful !! GetNotifier).as[CountDownLatch]
     assert(notifier.get.await(5, TimeUnit.SECONDS))
     assert("init" === (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
@@ -259,5 +252,4 @@ class TransactorSpec extends JUnitSuite {
     } catch {case e: RuntimeException => {}}
     assert("init" === (stateful !! GetRefState).get) // check that state is == init state
   }
-*/
 }
