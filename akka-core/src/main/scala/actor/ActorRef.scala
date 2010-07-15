@@ -197,10 +197,13 @@ trait ActorRef extends TransactionManagement {
    */
   protected[akka] val dispatcherLock = new ReentrantLock
 
-  protected[akka] var _sender: Option[ActorRef] = None
-  protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
-  protected[akka] def sender_=(s: Option[ActorRef]) = guard.withGuard { _sender = s }
-  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) =  guard.withGuard { _senderFuture = sf }
+  /**
+   * This is a reference to the message currently being processed by the actor
+   */
+  protected[akka] var _currentMessage: Option[MessageInvocation] = None
+
+  protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
+  protected[akka] def currentMessage = guard.withGuard { _currentMessage }
 
   /**
    * Returns the uuid for the actor.
@@ -211,13 +214,27 @@ trait ActorRef extends TransactionManagement {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def sender: Option[ActorRef] = guard.withGuard { _sender }
+  def sender: Option[ActorRef] = {
+    //Five lines of map-performance-avoidance, could be just: currentMessage map { _.sender }
+    val msg = currentMessage
+    if(msg.isEmpty)
+      None
+    else
+      msg.get.sender
+  }
 
   /**
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def senderFuture: Option[CompletableFuture[Any]] = guard.withGuard { _senderFuture }
+  def senderFuture: Option[CompletableFuture[Any]] = {
+    //Five lines of map-performance-avoidance, could be just: currentMessage map { _.senderFuture }
+    val msg = currentMessage
+    if(msg.isEmpty)
+      None
+    else
+      msg.get.senderFuture
+  }
 
   /**
    * Is the actor being restarted?
@@ -404,13 +421,13 @@ trait ActorRef extends TransactionManagement {
    * Returns the home address and port for this actor.
    */
   def homeAddress: InetSocketAddress = _homeAddress
-
+  
   /**
    * Set the home address and port for this actor.
    */
   def homeAddress_=(hostnameAndPort: Tuple2[String, Int]): Unit =
     homeAddress_=(new InetSocketAddress(hostnameAndPort._1, hostnameAndPort._2))
-
+    
   /**
    * Set the home address and port for this actor.
    */
@@ -531,7 +548,7 @@ trait ActorRef extends TransactionManagement {
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit
 
   protected[akka] def mailbox: Deque[MessageInvocation]
-
+  
   protected[akka] def restart(reason: Throwable): Unit
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit
@@ -609,8 +626,7 @@ sealed class LocalActorRef private[akka](
           __format.asInstanceOf[SerializerBasedActorFormat[_]]
                   .serializer
                   .fromBinary(__actorBytes, Some(actorClass)).asInstanceOf[Actor]
-        else
-          actorClass.newInstance.asInstanceOf[Actor]
+        else actorClass.newInstance.asInstanceOf[Actor]
       })
       loader = Some(__loader)
       isDeserialized = true
@@ -993,14 +1009,15 @@ sealed class LocalActorRef private[akka](
       Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
       return
     }
-    sender = messageHandle.sender
-    senderFuture = messageHandle.senderFuture
+    currentMessage = Option(messageHandle)
     try {
       dispatch(messageHandle)
     } catch {
       case e =>
         Actor.log.error(e, "Could not invoke actor [%s]", this)
         throw e
+    } finally {
+      currentMessage = None //TODO: Don't reset this, we might want to resend the message
     }
   }
 
@@ -1058,20 +1075,22 @@ sealed class LocalActorRef private[akka](
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
-      if (faultHandler.isDefined) {
-        faultHandler.get match {
-          // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
-          case AllForOneStrategy(maxNrOfRetries, withinTimeRange) =>
-            restartLinkedActors(reason)
+      faultHandler match {
+        // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
+        case Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+          restartLinkedActors(reason)
 
-          case OneForOneStrategy(maxNrOfRetries, withinTimeRange) =>
-            dead.restart(reason)
-        }
-      } else throw new IllegalActorStateException(
-        "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
-        "\n\tto non-empty list of exception classes - can't proceed " + toString)
+        case Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+          dead.restart(reason)
+
+        case None =>
+            throw new IllegalActorStateException(
+              "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
+              "\n\tto non-empty list of exception classes - can't proceed " + toString)
+      }
     } else {
-      _supervisor.foreach(_ ! Exit(dead, reason)) // if 'trapExit' is not defined then pass the Exit on
+      if (lifeCycle.isEmpty) lifeCycle = Some(LifeCycle(Permanent)) // when passing on make sure we have a lifecycle
+      _supervisor.foreach(_ ! Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
     }
   }
 

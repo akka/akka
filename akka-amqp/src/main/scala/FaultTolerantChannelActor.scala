@@ -8,12 +8,14 @@ import collection.JavaConversions
 import java.lang.Throwable
 import se.scalablesolutions.akka.actor.Actor
 import Actor._
-import se.scalablesolutions.akka.amqp.AMQP.ChannelParameters
 import com.rabbitmq.client.{ShutdownSignalException, Channel, ShutdownListener}
 import scala.PartialFunction
+import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ChannelParameters}
 
-abstract private[amqp] class FaultTolerantChannelActor(channelParameters: ChannelParameters) extends Actor {
-  import channelParameters._
+abstract private[amqp] class FaultTolerantChannelActor(
+        exchangeParameters: ExchangeParameters, channelParameters: Option[ChannelParameters]) extends Actor {
+  
+  import exchangeParameters._
 
   protected[amqp] var channel: Option[Channel] = None
   log.info("%s is started", toString)
@@ -62,20 +64,20 @@ abstract private[amqp] class FaultTolerantChannelActor(channelParameters: Channe
   protected def setupChannel(ch: Channel)
 
   private def setupChannelInternal(ch: Channel) = if (channel.isEmpty) {
-    log.info("Exchange declare")
-    if (exchangePassive) {
-      ch.exchangeDeclarePassive(exchangeName)
-    } else {
-      ch.exchangeDeclare(exchangeName, exchangeType.toString, exchangeDurable, exchangeAutoDelete, JavaConversions.asMap(configurationArguments))
+    if (exchangeName != "") {
+      if (exchangePassive) {
+        ch.exchangeDeclarePassive(exchangeName)
+      } else {
+        ch.exchangeDeclare(exchangeName, exchangeType.toString, exchangeDurable, exchangeAutoDelete, JavaConversions.asMap(configurationArguments))
+      }
     }
     ch.addShutdownListener(new ShutdownListener {
       def shutdownCompleted(cause: ShutdownSignalException) = {
         self ! ChannelShutdown(cause)
       }
     })
-    shutdownListener.foreach(sdl => ch.getConnection.addShutdownListener(sdl))
+    channelParameters.foreach(_.shutdownListener.foreach(sdl => ch.getConnection.addShutdownListener(sdl)))
 
-    log.info("shutdown listener added")
     setupChannel(ch)
     channel = Some(ch)
     notifyCallback(Started)
@@ -93,7 +95,7 @@ abstract private[amqp] class FaultTolerantChannelActor(channelParameters: Channe
   }
 
   private def notifyCallback(message: AMQPMessage) = {
-    channelCallback.foreach(cb => if (cb.isRunning) cb ! message)
+    channelParameters.foreach(_.channelCallback.foreach(cb => if (cb.isRunning) cb ! message))
   }
 
   override def preRestart(reason: Throwable) = {

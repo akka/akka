@@ -14,13 +14,13 @@ import se.scalablesolutions.akka.amqp._
 import com.rabbitmq.client.ReturnListener
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.String
-import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ProducerParameters}
 import org.scalatest.matchers.MustMatchers
+import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ProducerParameters}
 
 class AMQPProducerMessageTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
-  def producerMessage = {
+  @Test
+  def producerMessage = if (AMQPTest.enabled) {
     
     val connection: ActorRef = AMQP.newConnection()
     try {
@@ -31,8 +31,7 @@ class AMQPProducerMessageTest extends JUnitSuite with MustMatchers with Logging 
         }
       }
       val producerParameters = ProducerParameters(
-        ChannelParameters("text_exchange", ExchangeType.Direct),
-        returnListener = Some(returnListener))
+        ExchangeParameters("text_exchange", ExchangeType.Direct), returnListener = Some(returnListener))
 
       val producer = AMQP.newProducer(connection, producerParameters)
 
