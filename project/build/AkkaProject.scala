@@ -204,7 +204,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
-    val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.0" % "compile"
+    val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile"
 
     // testing
     val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "test" intransitive()
