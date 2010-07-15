@@ -69,6 +69,19 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       then("the expected message should have been sent to mock:mock")
       mockEndpoint.assertIsSatisfied
     }
+
+    scenario("produce message twoway without sender reference") {
+      given("a registered asynchronous two-way producer for endpoint direct:producer-test-1")
+      val producer = actorOf(new TestProducer("direct:producer-test-1"))
+      producer.start
+
+      when("a test message is sent to the producer")
+      mockEndpoint.expectedBodiesReceived("test")
+      producer ! Message("test")
+
+      then("there should be only a warning that there's no sender reference")
+      mockEndpoint.assertIsSatisfied
+    }
   }
 
   private def mockEndpoint = CamelContextManager.context.getEndpoint("mock:mock", classOf[MockEndpoint])
