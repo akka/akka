@@ -16,8 +16,8 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParamete
 
 class AMQPConsumerMessageTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
-  def consumerMessage = {
+  @Test
+  def consumerMessage = if (AMQPTest.enabled) {
     val connection = AMQP.newConnection()
     try {
 

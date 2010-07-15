@@ -196,10 +196,13 @@ trait ActorRef extends TransactionManagement {
    */
   protected[akka] val dispatcherLock = new ReentrantLock
 
-  @volatile protected[akka] var _sender: Option[ActorRef] = None
-  @volatile protected[akka] var _senderFuture: Option[CompletableFuture[Any]] = None
-  protected[akka] def sender_=(s: Option[ActorRef]) = _sender = s
-  protected[akka] def senderFuture_=(sf: Option[CompletableFuture[Any]]) = _senderFuture = sf
+  /**
+   * This is a reference to the message currently being processed by the actor
+   */
+  protected[akka] var _currentMessage: Option[MessageInvocation] = None
+
+  protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
+  protected[akka] def currentMessage = guard.withGuard { _currentMessage }
 
   /**
    * Returns the uuid for the actor.
@@ -210,13 +213,23 @@ trait ActorRef extends TransactionManagement {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def sender: Option[ActorRef] = _sender
+  def sender: Option[ActorRef] = {
+    // Five lines of map-performance-avoidance, could be just: currentMessage map { _.sender }
+    val msg = currentMessage
+    if(msg.isEmpty) None
+    else msg.get.sender
+  }
 
   /**
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def senderFuture: Option[CompletableFuture[Any]] = _senderFuture
+  def senderFuture: Option[CompletableFuture[Any]] = {
+    // Five lines of map-performance-avoidance, could be just: currentMessage map { _.senderFuture }
+    val msg = currentMessage
+    if(msg.isEmpty) None
+    else msg.get.senderFuture
+  }
 
   /**
    * Is the actor being restarted?
@@ -424,7 +437,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Starts up the actor and its message queue.
    */
-  def start: ActorRef
+  def start(): ActorRef
 
   /**
    * Shuts down the actor its dispatcher and message queue.
@@ -531,11 +544,11 @@ trait ActorRef extends TransactionManagement {
 
   protected[akka] def mailbox: Deque[MessageInvocation]
   
-  protected[akka] def restart(reason: Throwable): Unit
-
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit
 
-  protected[akka] def restartLinkedActors(reason: Throwable): Unit
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit
+
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit
 
   protected[akka] def registerSupervisorAsRemoteActor: Option[String]
 
@@ -584,7 +597,9 @@ sealed class LocalActorRef private[akka](
   @volatile private var runActorInitialization = false
   @volatile private var isDeserialized = false
   @volatile private var loader: Option[ClassLoader] = None
-
+  @volatile private var maxNrOfRetriesCount: Int = 0
+  @volatile private var restartsWithinTimeRangeTimestamp: Long = 0L
+  
   protected[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
   protected[this] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
@@ -642,11 +657,6 @@ sealed class LocalActorRef private[akka](
     }
 
   // ========= PUBLIC FUNCTIONS =========
-
-  /**
-   * Returns the mailbox.
-   */
-  def mailbox: Deque[MessageInvocation] = _mailbox
 
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
@@ -878,6 +888,11 @@ sealed class LocalActorRef private[akka](
   }
 
   /**
+   * Returns the mailbox.
+   */
+  def mailbox: Deque[MessageInvocation] = _mailbox
+
+  /**
    * Returns the mailbox size.
    */
   def mailboxSize: Int = _mailbox.size
@@ -945,76 +960,96 @@ sealed class LocalActorRef private[akka](
   /**
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {//actor.synchronized {
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
     if (isShutdown) Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
     else {
-      sender = messageHandle.sender
-      senderFuture = messageHandle.senderFuture
+      currentMessage = Option(messageHandle)
       try {
         dispatch(messageHandle)
       } catch {
         case e =>
           Actor.log.error(e, "Could not invoke actor [%s]", this)
           throw e
-      }
+      } finally {
+        currentMessage = None //TODO: Don't reset this, we might want to resend the message
+      }      
     }
   }
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
-      if (faultHandler.isDefined) {
-        faultHandler.get match {
-          // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
-          case AllForOneStrategy(maxNrOfRetries, withinTimeRange) =>
-            restartLinkedActors(reason)
+      faultHandler match {
+        // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
+        case Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+          restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
 
-          case OneForOneStrategy(maxNrOfRetries, withinTimeRange) =>
-            dead.restart(reason)
-        }
-      } else throw new IllegalActorStateException(
-        "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
-        "\n\tto non-empty list of exception classes - can't proceed " + toString)
+        case Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+          dead.restart(reason, maxNrOfRetries, withinTimeRange)
+
+        case None =>
+            throw new IllegalActorStateException(
+              "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
+              "\n\tto non-empty list of exception classes - can't proceed " + toString)
+      }
     } else {
-      _supervisor.foreach(_ ! Exit(dead, reason)) // if 'trapExit' is not defined then pass the Exit on
+      if (lifeCycle.isEmpty) lifeCycle = Some(LifeCycle(Permanent)) // when passing on make sure we have a lifecycle
+      _supervisor.foreach(_ ! Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
     }
   }
 
-  protected[akka] def restart(reason: Throwable): Unit = {
-    _isBeingRestarted = true
-    val failedActor = actorInstance.get
-    val lock = guard.lock
-    guard.withGuard {
-      lifeCycle.get match {
-        case LifeCycle(scope, _, _) => {
-          scope match {
-            case Permanent =>
-              Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
-              restartLinkedActors(reason)
-              Actor.log.debug("Restarting linked actors for actor [%s].", id)
-              Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
-              failedActor.preRestart(reason)
-              nullOutActorRefReferencesFor(failedActor)
-              val freshActor = newActor
-              freshActor.init
-              freshActor.initTransactionalState
-              actorInstance.set(freshActor)
-              Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
-              freshActor.postRestart(reason)
-              _isBeingRestarted = false
-            case Temporary => shutDownTemporaryActor(this)
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = {
+    if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis
+    maxNrOfRetriesCount += 1
+    if (maxNrOfRetriesCount > maxNrOfRetries || (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange) {
+      val message = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
+      Actor.log.warning(
+        "Maximum number of restarts [%s] within time range [%s] reached." + 
+        "\n\tWill *not* restart actor [%s] anymore." + 
+        "\n\tLast exception causing restart was [%s].", 
+        maxNrOfRetries, withinTimeRange, this, reason)
+      _supervisor.foreach { sup => 
+        if (sup.isDefinedAt(message)) sup ! message
+        else Actor.log.warning(
+          "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
+          "\n\tCan't send the message to the supervisor [%s].", sup)
+      }
+    } else {    
+      _isBeingRestarted = true
+      val failedActor = actorInstance.get
+      val lock = guard.lock
+      guard.withGuard {
+        lifeCycle.get match {
+          case LifeCycle(scope, _, _) => {
+            scope match {
+              case Permanent =>
+                Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
+                restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
+                Actor.log.debug("Restarting linked actors for actor [%s].", id)
+                Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
+                failedActor.preRestart(reason)
+                nullOutActorRefReferencesFor(failedActor)
+                val freshActor = newActor
+                freshActor.init
+                freshActor.initTransactionalState
+                actorInstance.set(freshActor)
+                Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
+                freshActor.postRestart(reason)
+                _isBeingRestarted = false
+              case Temporary => shutDownTemporaryActor(this)
+            }
           }
         }
       }
     }
   }
 
-  protected[akka] def restartLinkedActors(reason: Throwable) = {
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int) = {
     linkedActorsAsList.foreach { actorRef =>
       if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
       actorRef.lifeCycle.get match {
         case LifeCycle(scope, _, _) => {
           scope match {
-            case Permanent => actorRef.restart(reason)
+            case Permanent => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
             case Temporary => shutDownTemporaryActor(actorRef)
           }
         }
@@ -1289,9 +1324,9 @@ private[akka] case class RemoteActorRef private[akka] (
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
-  protected[akka] def restart(reason: Throwable): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable): Unit = unsupported
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
   protected[akka] def linkedActors: JMap[String, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported

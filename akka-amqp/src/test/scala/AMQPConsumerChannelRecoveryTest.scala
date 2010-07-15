@@ -18,8 +18,8 @@ import se.scalablesolutions.akka.amqp.AMQP._
 
 class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
-  def consumerChannelRecovery = {
+  @Test
+  def consumerChannelRecovery = if (AMQPTest.enabled) {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
     try {
