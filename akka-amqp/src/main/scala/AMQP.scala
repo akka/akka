@@ -128,6 +128,16 @@ object AMQP {
     }
   }
 
-  case class RpcClientSerializer[O,I](output: Function[O, Array[Byte]], input: Function[Array[Byte], I])
-  case class RpcServerSerializer[I,O](input: Function[Array[Byte], I], output: Function[O, Array[Byte]])
+  trait FromBinary[T] {
+    def fromBinary(bytes: Array[Byte]): T
+  }
+
+  trait ToBinary[T] {
+    def toBinary(t: T): Array[Byte]
+  }
+
+  
+  case class RpcClientSerializer[O,I](toBinary: ToBinary[O], fromBinary: FromBinary[I])
+  
+  case class RpcServerSerializer[I,O](fromBinary: FromBinary[I], toBinary: ToBinary[O])
 }

@@ -32,13 +32,25 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
       val channelParameters = ChannelParameters(channelCallback
               = Some(channelCallback))
 
-      val rpcServerSerializer = new RpcServerSerializer[String, Int]({x:Array[Byte] => new String(x)}, {x:Int => Array(x.toByte)})
+      val serverFromBinary = new FromBinary[String] {
+        def fromBinary(bytes: Array[Byte]) = new String(bytes)
+      }
+      val serverToBinary = new ToBinary[Int] {
+        def toBinary(t: Int) = Array(t.toByte)
+      }
+      val rpcServerSerializer = new RpcServerSerializer[String, Int](serverFromBinary, serverToBinary)
       val rpcServer = AMQP.newRpcServer[String,Int](connection, exchangeParameters, "rpc.routing", rpcServerSerializer, {
         case "some_payload" => 3
         case _ => error("unknown request")
       }, channelParameters = Some(channelParameters))
 
-      val rpcClientSerializer = new RpcClientSerializer[String, Int]({x:String => x.getBytes}, {x:Array[Byte] => x.head.toInt})
+      val clientToBinary = new ToBinary[String] {
+        def toBinary(t: String) = t.getBytes
+      }
+      val clientFromBinary = new FromBinary[Int] {
+        def fromBinary(bytes: Array[Byte]) = bytes.head.toInt
+      }
+      val rpcClientSerializer = new RpcClientSerializer[String, Int](clientToBinary, clientFromBinary)
       val rpcClient = AMQP.newRpcClient[String,Int](connection, exchangeParameters, "rpc.routing", rpcClientSerializer,
         channelParameters = Some(channelParameters))
 
