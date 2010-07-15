@@ -27,21 +27,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
   feature("Produce a message to a Camel endpoint") {
 
-    scenario("produce message sync and receive response") {
-      given("a registered synchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = actorOf(new TestProducer("direct:producer-test-2") with Sync)
-      producer.start
-
-      when("a test message is sent to the producer")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer !! message
-
-      then("the expected result message should be returned including a correlation identifier")
-      val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
-      assert(result === Some(expected))
-    }
-
-    scenario("produce message async and receive response") {
+    scenario("produce message and receive response") {
       given("a registered asynchronous two-way producer for endpoint direct:producer-test-2")
       val producer = actorOf(new TestProducer("direct:producer-test-2"))
       producer.start
@@ -55,23 +41,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       assert(result === Some(expected))
     }
 
-    scenario("produce message sync and receive failure") {
-      given("a registered synchronous two-way producer for endpoint direct:producer-test-2")
-      val producer = actorOf(new TestProducer("direct:producer-test-2") with Sync)
-      producer.start
-
-      when("a fail message is sent to the producer")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer !! message).as[Failure]
-
-      then("the expected failure message should be returned including a correlation identifier")
-      val expectedFailureText = result.get.cause.getMessage
-      val expectedHeaders = result.get.headers
-      assert(expectedFailureText === "failure")
-      assert(expectedHeaders === Map(Message.MessageExchangeId -> "123"))
-    }
-
-    scenario("produce message async and receive failure") {
+    scenario("produce message and receive failure") {
       given("a registered asynchronous two-way producer for endpoint direct:producer-test-2")
       val producer = actorOf(new TestProducer("direct:producer-test-2"))
       producer.start
@@ -87,20 +57,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       assert(expectedHeaders === Map(Message.MessageExchangeId -> "123"))
     }
 
-    scenario("produce message sync oneway") {
-      given("a registered synchronous one-way producer for endpoint direct:producer-test-1")
-      val producer = actorOf(new TestProducer("direct:producer-test-1") with Sync with Oneway)
-      producer.start
-
-      when("a test message is sent to the producer")
-      mockEndpoint.expectedBodiesReceived("test")
-      producer ! Message("test")
-
-      then("the expected message should have been sent to mock:mock")
-      mockEndpoint.assertIsSatisfied
-    }
-
-    scenario("produce message async oneway") {
+    scenario("produce message oneway") {
       given("a registered asynchronous one-way producer for endpoint direct:producer-test-1")
       val producer = actorOf(new TestProducer("direct:producer-test-1") with Oneway)
       producer.start
