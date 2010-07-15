@@ -48,7 +48,7 @@ class NestedTransactionalActiveObjectSpec extends
   }
 
   describe("Transactional nested in-memory Active Object") {
-
+/*
     it("map should not rollback state for stateful server in case of success") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -156,5 +156,6 @@ class NestedTransactionalActiveObjectSpec extends
       Thread.sleep(100)
       nested.getRefState should equal("init")
     }
+    */
   }
 }
