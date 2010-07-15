@@ -10,8 +10,6 @@ import se.scalablesolutions.akka.config.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import java.lang.IllegalArgumentException
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.serialization.Serializer
-
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
  *
@@ -20,7 +18,6 @@ import se.scalablesolutions.akka.serialization.Serializer
  * @author Irmo Manie
  */
 object AMQP {
-  
   case class ConnectionParameters(
           host: String = ConnectionFactory.DEFAULT_HOST,
           port: Int = ConnectionFactory.DEFAULT_AMQP_PORT,
@@ -57,7 +54,6 @@ object AMQP {
                                 queueExclusive: Boolean = false,
                                 selfAcknowledging: Boolean = true,
                                 channelParameters: Option[ChannelParameters] = None) {
-
     if (queueDurable && queueName.isEmpty) {
       throw new IllegalArgumentException("A queue name is required when requesting a durable queue.")
     }
@@ -84,27 +80,25 @@ object AMQP {
     consumer
   }
 
-  def newRpcClient(connection: ActorRef,
+  def newRpcClient[O,I](connection: ActorRef,
                    exchangeParameters: ExchangeParameters,
                    routingKey: String,
-                   inSerializer: Serializer,
-                   outSerializer: Serializer,
+                   serializer: RpcClientSerializer[O,I],
                    channelParameters: Option[ChannelParameters] = None): ActorRef = {
-    val rpcActor: ActorRef = actorOf(new RpcClientActor(exchangeParameters, routingKey, inSerializer, outSerializer, channelParameters))
+    val rpcActor: ActorRef = actorOf(new RpcClientActor[O,I](exchangeParameters, routingKey, serializer, channelParameters))
     connection.startLink(rpcActor)
     rpcActor ! Start
     rpcActor
   }
 
-  def newRpcServer(connection: ActorRef,
-          exchangeParameters: ExchangeParameters,
-          routingKey: String,
-          inSerializer: Serializer,
-          outSerializer: Serializer,
-          requestHandler: PartialFunction[AnyRef, AnyRef],
-          channelParameters: Option[ChannelParameters] = None) = {
+  def newRpcServer[I,O](connection: ActorRef,
+                   exchangeParameters: ExchangeParameters,
+                   routingKey: String,
+                   serializer: RpcServerSerializer[I,O],
+                   requestHandler: PartialFunction[I, O],
+                   channelParameters: Option[ChannelParameters] = None) = {
     val producer = newProducer(connection, new ProducerParameters(new ExchangeParameters("", ExchangeType.Direct), channelParameters = channelParameters))
-    val rpcServer = actorOf(new RpcServerActor(producer, inSerializer, outSerializer, requestHandler))
+    val rpcServer = actorOf(new RpcServerActor[I,O](producer, serializer, requestHandler))
     val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, routingKey, rpcServer
       , channelParameters = channelParameters
       , selfAcknowledging = false))
@@ -133,4 +127,17 @@ object AMQP {
       connectionActor
     }
   }
+
+  trait FromBinary[T] {
+    def fromBinary(bytes: Array[Byte]): T
+  }
+
+  trait ToBinary[T] {
+    def toBinary(t: T): Array[Byte]
+  }
+
+  
+  case class RpcClientSerializer[O,I](toBinary: ToBinary[O], fromBinary: FromBinary[I])
+  
+  case class RpcServerSerializer[I,O](fromBinary: FromBinary[I], toBinary: ToBinary[O])
 }
