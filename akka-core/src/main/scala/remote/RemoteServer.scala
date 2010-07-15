@@ -75,6 +75,32 @@ object RemoteServer {
     level
   }
 
+  val SECURE = {
+    if(config.getBool("akka.remote.ssl.service",false)){
+
+      val properties = List(
+        ("key-store-type"  ,"keyStoreType"),
+        ("key-store"       ,"keyStore"),
+        ("key-store-pass"  ,"keyStorePassword"),
+        ("trust-store-type","trustStoreType"),
+        ("trust-store"     ,"trustStore"),
+        ("trust-store-pass","trustStorePassword")
+        ).map(x => ("akka.remote.ssl." + x._1,"javax.net.ssl."+x._2))
+
+      //If property is not set, and we have a value from our akka.conf, use that value
+      for{ p <- properties if System.getProperty(p._2) eq null
+           c <- config.getString(p._1)
+      } System.setProperty(p._2,c)
+
+      if(config.getBool("akka.remote.ssl.debug",false))
+        System.setProperty("javax.net.debug","ssl")
+
+      true
+    }
+    else
+      false
+  }
+
   object Address {
     def apply(hostname: String, port: Int) = new Address(hostname, port)
   }
@@ -279,30 +305,20 @@ class RemoteServer extends Logging {
   }
 }
 
-case class Codec(encoder: ChannelHandler, decoder: ChannelHandler)
-
 object RemoteServerSslContext {
-  import java.security.{KeyStore,Security}
-  import javax.net.ssl.{KeyManager,KeyManagerFactory,SSLContext,TrustManagerFactory}
+  import javax.net.ssl.SSLContext
 
   val (client,server) = {
     val protocol  = "TLS"
-    val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
-    val store = KeyStore.getInstance("JKS")
-    store.load(DummyKeyStore.asInputStream,DummyKeyStore.getKeyStorePassword) //TODO replace with getResourceAsStream + config-pass
- 
-    val keyMan = KeyManagerFactory.getInstance(algorithm)
-    keyMan.init(store, DummyKeyStore.getCertificatePassword) //TODO replace with config-pass
-    
-    //val trustMan = TrustManagerFactory.getInstance("SunX509");
-    //trustMan.init(store) //TODO safe to use same keystore? Or should use it's own keystore?
+    //val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
+    //val store = KeyStore.getInstance("JKS")
     
     val s = SSLContext.getInstance(protocol)
-    s.init(keyMan.getKeyManagers, null, null)
+    s.init(null,null,null)
     
     val c = SSLContext.getInstance(protocol)
-    c.init(null, DummyTrustManagerFactory.getTrustManagers, null) //TODO replace with TrustManagerFactory
-    
+    c.init(null,null,null)
+
     (c,s)
   }
 }
@@ -319,25 +335,26 @@ class RemoteServerPipelineFactory(
   import RemoteServer._
 
   def getPipeline: ChannelPipeline = {
+    def join(ch: ChannelHandler*) = Array[ChannelHandler](ch:_*)
+
     val engine = RemoteServerSslContext.server.createSSLEngine()
     engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
     engine.setUseClientMode(false)
 
-	val ssl          = new SslHandler(engine)
-    val lenDec       = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
-    val lenPrep      = new LengthFieldPrepender(4)
-    val protobufDec  = new ProtobufDecoder(RemoteRequestProtocol.getDefaultInstance)
-    val protobufEnc  = new ProtobufEncoder
-    val zipCodec = RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib"  => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL), new ZlibDecoder))
-      //case "lzf" => Some(Codec(new LzfEncoder, new LzfDecoder))
-      case _ => None
+	  val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
+    val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenPrep     = new LengthFieldPrepender(4)
+    val protobufDec = new ProtobufDecoder(RemoteRequestProtocol.getDefaultInstance)
+    val protobufEnc = new ProtobufEncoder
+    val(enc,dec)    = RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib"  => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)),join(new ZlibDecoder))
+      case       _ => (join(),join())
     }
+
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, activeObjects)
 
-    val stages: Array[ChannelHandler] =
-      zipCodec.map(codec => Array(ssl,codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteServer))
-              .getOrElse(Array(ssl,lenDec, protobufDec, lenPrep, protobufEnc, remoteServer))
+    val stages = ssl ++ dec ++ join(lenDec, protobufDec) ++ enc ++ join(lenPrep, protobufEnc, remoteServer)
+
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -365,17 +382,19 @@ class RemoteServerHandler(
   }
   
   override def channelConnected(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
-    val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
+    if(RemoteServer.SECURE) {
+      val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
  
-    // Begin handshake.
-    sslHandler.handshake().addListener( new ChannelFutureListener {
-      def operationComplete(future : ChannelFuture) : Unit = {
-        if(future.isSuccess) 
-          openChannels.add(future.getChannel)
-        else
-          future.getChannel.close
-      }
-    })
+      // Begin handshake.
+      sslHandler.handshake().addListener( new ChannelFutureListener {
+        def operationComplete(future : ChannelFuture) : Unit = {
+          if(future.isSuccess)
+            openChannels.add(future.getChannel)
+          else
+            future.getChannel.close
+        }
+      })
+    }
   }
 
 
