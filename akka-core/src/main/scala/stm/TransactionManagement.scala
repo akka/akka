@@ -149,14 +149,7 @@ class GlobalStm extends TransactionManagement with Logging {
   def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultGlobalTransactionFactory): T = atomic(factory)(body)
 
   def atomic[T](factory: TransactionFactory)(body: => T): T = {
-/*    MultiverseStmUtils.scheduleDeferredTask(new Runnable { 
-      def run = try { 
-        getTransactionSetInScope.tryJoinCommit(getRequiredThreadLocalTransaction, TransactionConfig.TIMEOUT, TimeUnit.MILLISECONDS) 
-        clearTransaction
-      } catch { 
-        case e: IllegalStateException => {}
-    }})
-*/    factory.boilerplate.execute(new TransactionalCallable[T]() {
+    factory.boilerplate.execute(new TransactionalCallable[T]() {
       def call(mtx: MultiverseTransaction): T = {
         if (!isTransactionSetInScope) createNewTransactionSet
         factory.addHooks
@@ -166,7 +159,6 @@ class GlobalStm extends TransactionManagement with Logging {
         mtx.commit
         // Need to catch IllegalStateException until we have fix in Multiverse, since it throws it by mistake
         try { txSet.tryJoinCommit(mtx, TransactionConfig.TIMEOUT, TimeUnit.MILLISECONDS) } catch { case e: IllegalStateException => {} }
-//        try { txSet.joinCommit(mtx) } catch { case e: IllegalStateException => {} }
         result
       }
     })

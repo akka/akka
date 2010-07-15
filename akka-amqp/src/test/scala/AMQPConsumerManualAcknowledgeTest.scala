@@ -17,8 +17,8 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParamete
 
 class AMQPConsumerManualAcknowledgeTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
-  def consumerMessageManualAcknowledge = {
+  @Test
+  def consumerMessageManualAcknowledge = if (AMQPTest.enabled) {
     val connection = AMQP.newConnection()
     try {
       val countDown = new CountDownLatch(2)
@@ -30,15 +30,21 @@ class AMQPConsumerManualAcknowledgeTest extends JUnitSuite with MustMatchers wit
       val exchangeParameters = ExchangeParameters("text_exchange",ExchangeType.Direct)
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
+      val failLatch = new StandardLatch
       val acknowledgeLatch = new StandardLatch
       var deliveryTagCheck: Long = -1
       val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "manual.ack.this", actor {
         case Delivery(payload, _, deliveryTag, _, sender) => {
-          deliveryTagCheck = deliveryTag
-          sender.foreach(_ ! Acknowledge(deliveryTag))
+          if (!failLatch.isOpen) {
+            failLatch.open
+            error("Make it fail!")
+          } else {
+            deliveryTagCheck = deliveryTag
+            sender.foreach(_ ! Acknowledge(deliveryTag))
+          }
         }
         case Acknowledged(deliveryTag) => if (deliveryTagCheck == deliveryTag) acknowledgeLatch.open
-      }, selfAcknowledging = false, channelParameters = Some(channelParameters)))
+      }, queueName = Some("self.ack.queue"), selfAcknowledging = false, queueAutoDelete = false, channelParameters = Some(channelParameters)))
 
       val producer = AMQP.newProducer(connection,
         ProducerParameters(exchangeParameters, channelParameters = Some(channelParameters)))

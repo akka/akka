@@ -16,8 +16,8 @@ import se.scalablesolutions.akka.serialization.Serializer
 
 class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging {
 
-//  @Test
-  def consumerMessage = {
+  @Test
+  def consumerMessage = if (AMQPTest.enabled) {
     val connection = AMQP.newConnection()
     try {
 
@@ -28,7 +28,7 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
         case Stopped => ()
       }
 
-      val exchangeParameters = ExchangeParameters("text_exchange",ExchangeType.Topic)
+      val exchangeParameters = ExchangeParameters("text_topic_exchange", ExchangeType.Topic)
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
       val stringSerializer = new Serializer {
         def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new String(bytes)
