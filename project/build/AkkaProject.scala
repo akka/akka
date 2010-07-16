@@ -71,7 +71,6 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
   def codehausSnapshotRepo    = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
   val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", codehausSnapshotRepo)
-  val apacheSnapshotRepo      = "Camel 2.4 Staging" at "https://repository.apache.org/content/repositories/orgapachecamel-053/"
 
   // ------------------------------------------------------------
   // project defintions
