@@ -68,8 +68,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", sonatypeSnapshotRepo)
   val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
   def codehausSnapshotRepo    = "Codehaus Snapshots" at "http://snapshots.repository.codehaus.org"
-  val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", embeddedRepo)
-  //  val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", codehausSnapshotRepo)
+  val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", codehausSnapshotRepo)
 
   // ------------------------------------------------------------
   // project defintions
