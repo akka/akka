@@ -241,7 +241,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
-    val camel_core = "org.apache.camel" % "camel-core" % CAMEL_VERSION % "compile" withSources()
+    val camel_core = "org.apache.camel" % "camel-core" % CAMEL_VERSION % "compile"
   }
 
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
@@ -340,8 +340,8 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
     val spring_jms = "org.springframework" % "spring-jms" % SPRING_VERSION % "compile"
-    val camel_jetty = "org.apache.camel" % "camel-jetty" % CAMEL_VERSION % "compile" withSources()
-    val camel_jms = "org.apache.camel" % "camel-jms" % CAMEL_VERSION % "compile" withSources()
+    val camel_jetty = "org.apache.camel" % "camel-jetty" % CAMEL_VERSION % "compile"
+    val camel_jms = "org.apache.camel" % "camel-jms" % CAMEL_VERSION % "compile"
     val activemq_core = "org.apache.activemq" % "activemq-core" % "5.3.2" % "compile"
   }
 
