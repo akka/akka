@@ -41,6 +41,8 @@ trait Producer { this: Actor =>
    */
   def oneway: Boolean = false
 
+  def forwardResultTo: Option[ActorRef] = None
+
   /**
    * Returns the Camel endpoint URI to produce messages to.
    */
@@ -91,10 +93,27 @@ trait Producer { this: Actor =>
       val senderFuture = self.senderFuture
 
       def done(doneSync: Boolean): Unit = {
-        val response =
-          if (exchange.isFailed) exchange.toFailureMessage(cmsg.headers(headersToCopy))
-          else exchange.toResponseMessage(cmsg.headers(headersToCopy))
+        val response = if (exchange.isFailed)
+          exchange.toFailureMessage(cmsg.headers(headersToCopy))
+        else
+          exchange.toResponseMessage(cmsg.headers(headersToCopy))
 
+        if (forwardResultTo.isDefined) 
+          forward(response, forwardResultTo.get)
+        else
+          reply(response)
+      }
+
+      private def forward(response: Any, target: ActorRef) = {
+        // TODO: avoid redundancy to ActorRef.forward
+        if (target.isRunning) {
+          if (senderFuture.isDefined) target.postMessageToMailboxAndCreateFutureResultWithTimeout(response, target.timeout, sender, senderFuture)
+          else target.postMessageToMailbox(response, sender) // initial sender doesn't need be an actor
+        }
+      }
+
+      private def reply(response: Any) = {
+        // TODO: avoid redundancy to ActorRef.reply
         if (senderFuture.isDefined) senderFuture.get completeWithResult response
         else if (sender.isDefined) sender.get ! response
         else log.warning("No destination for sending response")
