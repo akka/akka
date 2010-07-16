@@ -1,7 +1,9 @@
 package sample.camel
 
+import org.apache.camel.Exchange
+
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, RemoteActor}
-import se.scalablesolutions.akka.camel.{Producer, Message, Consumer}
+import se.scalablesolutions.akka.camel.{Failure, Producer, Message, Consumer}
 import se.scalablesolutions.akka.util.Logging
 
 /**
@@ -108,5 +110,25 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
       publisher ! msg.bodyAs[String]
       self.reply("message published")
     }
+  }
+}
+
+class HttpConsumer(producer: ActorRef) extends Actor with Consumer {
+  def endpointUri = "jetty:http://0.0.0.0:8875/"
+  protected def receive = {
+    // only keep Exchange.HTTP_PATH message header (which needed by bridge endpoint) 
+    case msg: Message => producer forward msg.setHeaders(msg.headers(Set(Exchange.HTTP_PATH)))
+  }
+}
+
+class HttpProducer(transformer: ActorRef) extends Actor with Producer {
+  def endpointUri = "jetty://http://akkasource.org/?bridgeEndpoint=true"
+  override def forwardResultTo = Some(transformer)
+}
+
+class HttpTransformer extends Actor {
+  protected def receive = {
+    case msg: Message => self.reply(msg.transformBody[String] {_ replaceAll ("Akka ", "AKKA ")})
+    case msg: Failure => self.reply(msg)
   }
 }
