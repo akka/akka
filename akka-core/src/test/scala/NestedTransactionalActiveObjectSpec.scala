@@ -17,18 +17,11 @@ import se.scalablesolutions.akka.config.ActiveObjectConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.actor._
 
-/*
 @RunWith(classOf[JUnitRunner])
 class NestedTransactionalActiveObjectSpec extends
-<<<<<<< HEAD:akka-core/src/test/scala/NestedTransactionalActiveObjectSpec.scala
   Spec with
   ShouldMatchers with
   BeforeAndAfterAll {
-=======
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
->>>>>>> 38e8bea3fe6a7e9fcc9c5f353124144739bdc234:akka-core/src/test/scala/NestedTransactionalActiveObjectSpec.scala
 
   private val conf = new ActiveObjectConfigurator
   private var messageLog = ""
@@ -55,7 +48,7 @@ class NestedTransactionalActiveObjectSpec extends
   }
 
   describe("Transactional nested in-memory Active Object") {
-
+/*
     it("map should not rollback state for stateful server in case of success") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -163,6 +156,6 @@ class NestedTransactionalActiveObjectSpec extends
       Thread.sleep(100)
       nested.getRefState should equal("init")
     }
+    */
   }
 }
-*/

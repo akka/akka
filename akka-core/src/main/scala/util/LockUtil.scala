@@ -10,10 +10,19 @@ import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ReentrantGuard {
-  private val lock = new ReentrantLock
+  val lock = new ReentrantLock
 
   def withGuard[T](body: => T): T = {
     lock.lock
+    try {
+      body
+    } finally {
+      lock.unlock
+    }
+  }
+
+  def tryWithGuard[T](body: => T): T = {
+    while(!lock.tryLock) { Thread.sleep(10) } // wait on the monitor to be unlocked
     try {
       body
     } finally {

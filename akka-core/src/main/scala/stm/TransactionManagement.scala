@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.stm
 import se.scalablesolutions.akka.util.Logging
 
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.TimeUnit
 
 import org.multiverse.api.{StmUtils => MultiverseStmUtils}
 import org.multiverse.api.ThreadLocalTransaction._
@@ -14,16 +15,20 @@ import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.templates.{TransactionalCallable, OrElseTemplate}
 
-class StmException(msg: String) extends RuntimeException(msg)
+class TransactionSetAbortedException(msg: String) extends RuntimeException(msg)
 
+// TODO Should we remove TransactionAwareWrapperException? Not used anywhere yet.
 class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause) {
   override def toString = "TransactionAwareWrapperException[" + cause + ", " + tx + "]"
 }
 
+/**
+ * Internal helper methods and properties for transaction management.
+ */
 object TransactionManagement extends TransactionManagement {
   import se.scalablesolutions.akka.config.Config._
 
-  // move to stm.global.fair?
+  // FIXME move to stm.global.fair?
   val FAIR_TRANSACTIONS = config.getBool("akka.stm.fair", true)
 
   private[akka] val transactionSet = new ThreadLocal[Option[CountDownCommitBarrier]]() {
@@ -47,6 +52,9 @@ object TransactionManagement extends TransactionManagement {
   }
 }
 
+/**
+ * Internal helper methods for transaction management.
+ */
 trait TransactionManagement {
 
   private[akka] def createNewTransactionSet: CountDownCommitBarrier = {
@@ -111,7 +119,9 @@ class LocalStm extends TransactionManagement with Logging {
     factory.boilerplate.execute(new TransactionalCallable[T]() {
       def call(mtx: MultiverseTransaction): T = {
         factory.addHooks
-        body
+        val result = body
+        log.ifTrace("Committing local transaction [" + mtx + "]")
+        result
       }
     })
   }
@@ -145,10 +155,9 @@ class GlobalStm extends TransactionManagement with Logging {
         factory.addHooks
         val result = body
         val txSet = getTransactionSetInScope
-        log.trace("Committing transaction [%s]\n\tby joining transaction set [%s]", mtx, txSet)
-        // FIXME ? txSet.tryJoinCommit(mtx, TransactionManagement.TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS)
-        try { txSet.joinCommit(mtx) } catch { case e: IllegalStateException => {} }
-        clearTransaction
+        log.ifTrace("Committing global transaction [" + mtx + "]\n\tand joining transaction set [" + txSet + "]")
+        // Need to catch IllegalStateException until we have fix in Multiverse, since it throws it by mistake
+        try { txSet.tryJoinCommit(mtx, TransactionConfig.TIMEOUT, TimeUnit.MILLISECONDS) } catch { case e: IllegalStateException => {} }
         result
       }
     })
@@ -156,6 +165,7 @@ class GlobalStm extends TransactionManagement with Logging {
 }
 
 trait StmUtil {
+  
   /**
    * Schedule a deferred task on the thread local transaction (use within an atomic).
    * This is executed when the transaction commits.
@@ -178,6 +188,14 @@ trait StmUtil {
 
   /**
    * Use either-orElse to combine two blocking transactions.
+   * Usage: 
+   * <pre>
+   * either {
+   *   ...
+   * } orElse {
+   *   ...
+   * }
+   * </pre>
    */
   def either[T](firstBody: => T) = new {
     def orElse(secondBody: => T) = new OrElseTemplate[T] {

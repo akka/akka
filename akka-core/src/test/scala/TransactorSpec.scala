@@ -76,7 +76,6 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
       failer !! "Failure"
       self.reply(msg)
       notifier.countDown
-
     case SetMapStateOneWay(key, msg) =>
       mapState.put(key, msg)
       notifier.countDown
@@ -95,8 +94,8 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
       mapState.put(key, msg)
       vectorState.add(msg)
       refState.swap(msg)
-      failer ! "Failure"
       notifier.countDown
+      failer ! "Failure"
   }
 }
 
@@ -110,6 +109,7 @@ class FailerTransactor extends Transactor {
 }
 
 class TransactorSpec extends JUnitSuite {
+
   @Test
   def shouldOneWayMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess = {
     val stateful = actorOf(new StatefulTransactor(2))
@@ -139,7 +139,7 @@ class TransactorSpec extends JUnitSuite {
     stateful ! SetMapStateOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
     stateful ! FailureOneWay("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer) // call failing transactionrequired method
     val notifier = (stateful !! GetNotifier).as[CountDownLatch]
-    assert(notifier.get.await(1, TimeUnit.SECONDS))
+    assert(notifier.get.await(5, TimeUnit.SECONDS))
     assert("init" === (stateful !! GetMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure")).get) // check that state is == init state
   }
 
