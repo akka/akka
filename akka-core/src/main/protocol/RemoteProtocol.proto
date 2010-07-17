@@ -36,10 +36,11 @@ message SerializedActorRefProtocol {
   optional string serializerClassname = 6;
   optional bool isTransactor = 7;
   optional uint64 timeout = 8;
-  optional LifeCycleProtocol lifeCycle = 9;
-  optional RemoteActorRefProtocol supervisor = 10;
-  optional bytes hotswapStack = 11;
-  repeated RemoteRequestProtocol messages = 12;
+  optional uint64 receiveTimeout = 9;
+  optional LifeCycleProtocol lifeCycle = 10;
+  optional RemoteActorRefProtocol supervisor = 11;
+  optional bytes hotswapStack = 12;
+  repeated RemoteRequestProtocol messages = 13;
 }
 
 /**

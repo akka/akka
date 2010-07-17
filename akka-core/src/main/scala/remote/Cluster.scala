@@ -151,11 +151,17 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
 
     case InitClusterActor(s) => {
       serializer = s
+      boot
     }
   }
 
   /**
-   * Implement this in a subclass to add node-to-node messaging
+   * Implement this in a subclass to boot up the cluster implementation
+   */
+  protected def boot: Unit
+
+  /**
+   *  Implement this in a subclass to add node-to-node messaging
    */
   protected def toOneNode(dest: ADDR_T, msg: Array[Byte]): Unit
 

@@ -16,18 +16,12 @@ import se.scalablesolutions.akka.config._
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.actor._
-/*
+
 @RunWith(classOf[JUnitRunner])
 class TransactionalActiveObjectSpec extends
-<<<<<<< HEAD:akka-core/src/test/scala/TransactionalActiveObjectSpec.scala
   Spec with
   ShouldMatchers with
   BeforeAndAfterAll {
-=======
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
->>>>>>> 38e8bea3fe6a7e9fcc9c5f353124144739bdc234:akka-core/src/test/scala/TransactionalActiveObjectSpec.scala
 
   private val conf = new ActiveObjectConfigurator
   private var messageLog = ""
@@ -50,9 +44,9 @@ class TransactionalActiveObjectSpec extends
   override def afterAll {
     conf.stop
   }
-
+  
   describe("Transactional in-memory Active Object ") {
-
+    /*
     it("map should not rollback state for stateful server in case of success") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -64,7 +58,9 @@ class TransactionalActiveObjectSpec extends
     it("map should rollback state for stateful server in case of failure") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
+      Thread.sleep(500)
       stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init")
+      Thread.sleep(500)
       val failer = conf.getInstance(classOf[ActiveObjectFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer)
@@ -112,6 +108,6 @@ class TransactionalActiveObjectSpec extends
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state")
       stateful.getRefState should equal("new state")
     }
+    */
   }
 }
-*/

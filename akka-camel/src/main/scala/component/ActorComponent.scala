@@ -22,6 +22,7 @@ import se.scalablesolutions.akka.stm.TransactionConfig
 import scala.reflect.BeanProperty
 
 import CamelMessageConversion.toExchangeAdapter
+import java.lang.Throwable
 
 /**
  * Camel component for sending messages to and receiving replies from actors.
@@ -250,8 +251,8 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def supervisor: Option[ActorRef] = unsupported
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[CompletableFuture[T]]) = unsupported
   protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
-  protected[akka] def restart(reason: Throwable): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable): Unit = unsupported
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
   protected[akka] def linkedActors: JavaMap[String, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
