@@ -41,6 +41,10 @@ trait Producer { this: Actor =>
    */
   def oneway: Boolean = false
 
+  /**
+   * Optional target to forward results to. Only relevant for in-out message exchanges
+   * (i.e. oneway == false).
+   */
   def forwardResultTo: Option[ActorRef] = None
 
   /**
@@ -79,7 +83,7 @@ trait Producer { this: Actor =>
   /**
    * Creates an in-out message exchange from <code>msg</code> and sends it to the endpoint
    * specified by <code>endpointUri</code>. The out-message returned by the endpoint is
-   * returned to the original sender.
+   * returned to the original sender or forwarded to <code>forwardResultTo</code> if defined.
    *
    * @param msg message to produce
    */
