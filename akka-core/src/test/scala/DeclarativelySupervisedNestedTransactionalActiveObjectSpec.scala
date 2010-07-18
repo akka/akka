@@ -18,7 +18,7 @@ import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.actor._
 
 @RunWith(classOf[JUnitRunner])
-class NestedTransactionalActiveObjectSpec extends
+class DeclarativelySupervisedNestedTransactionalActiveObjectSpec extends
   Spec with
   ShouldMatchers with
   BeforeAndAfterAll {
@@ -32,14 +32,14 @@ class NestedTransactionalActiveObjectSpec extends
       new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
         List(
           new Component(classOf[TransactionalActiveObject],
-              new LifeCycle(new Permanent),
-              10000),
+            new LifeCycle(new Permanent),
+            10000),
           new Component(classOf[NestedTransactionalActiveObject],
-              new LifeCycle(new Permanent),
-              10000),
+            new LifeCycle(new Permanent),
+            10000),
           new Component(classOf[ActiveObjectFailer],
-              new LifeCycle(new Permanent),
-              10000)
+            new LifeCycle(new Permanent),
+            10000)
         ).toArray).supervise
   }
 
@@ -47,8 +47,8 @@ class NestedTransactionalActiveObjectSpec extends
     conf.stop
   }
 
-  describe("Transactional nested in-memory Active Object") {
-/*
+  describe("Declaratively nested supervised transactional in-memory Active Object") {
+
     it("map should not rollback state for stateful server in case of success") {
       val stateful = conf.getInstance(classOf[TransactionalActiveObject])
       stateful.init
@@ -156,6 +156,5 @@ class NestedTransactionalActiveObjectSpec extends
       Thread.sleep(100)
       nested.getRefState should equal("init")
     }
-    */
   }
 }

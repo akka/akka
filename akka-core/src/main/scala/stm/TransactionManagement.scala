@@ -156,8 +156,13 @@ class GlobalStm extends TransactionManagement with Logging {
         val result = body
         val txSet = getTransactionSetInScope
         log.ifTrace("Committing global transaction [" + mtx + "]\n\tand joining transaction set [" + txSet + "]")
+        try {
+          txSet.tryJoinCommit(
+            mtx,
+            TransactionConfig.DefaultTimeout.length,
+            TransactionConfig.DefaultTimeout.unit) 
         // Need to catch IllegalStateException until we have fix in Multiverse, since it throws it by mistake
-        try { txSet.tryJoinCommit(mtx, TransactionConfig.TIMEOUT, TimeUnit.MILLISECONDS) } catch { case e: IllegalStateException => {} }
+        } catch { case e: IllegalStateException => {} }
         result
       }
     })
