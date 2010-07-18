@@ -222,7 +222,7 @@ class RemoteServer extends Logging {
         bootstrap.releaseExternalResources
         Cluster.deregisterLocalNode(hostname, port)
       } catch {
-        case e: java.nio.channels.ClosedChannelException => log.warning("Could not close remote server channel in a graceful way")
+        case e => log.warning("Could not close remote server channel in a graceful way")
       }
     }
   }

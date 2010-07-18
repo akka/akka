@@ -1189,8 +1189,10 @@ sealed class LocalActorRef private[akka](
     // abort transaction set
     if (isTransactionSetInScope) {
       val txSet = getTransactionSetInScope
-      Actor.log.debug("Aborting transaction set [%s]", txSet)
-      txSet.abort
+      if (!txSet.isCommitted) {
+        Actor.log.debug("Aborting transaction set [%s]", txSet)
+        txSet.abort
+      }
     }
 
     senderFuture.foreach(_.completeWithException(this, reason))
