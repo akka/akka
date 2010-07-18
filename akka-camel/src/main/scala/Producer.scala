@@ -42,12 +42,6 @@ trait Producer { this: Actor =>
   def oneway: Boolean = false
 
   /**
-   * Optional target to forward results to. Only relevant for in-out message exchanges
-   * (i.e. oneway == false).
-   */
-  def forwardResultTo: Option[ActorRef] = None
-
-  /**
    * Returns the Camel endpoint URI to produce messages to.
    */
   def endpointUri: String
@@ -68,68 +62,83 @@ trait Producer { this: Actor =>
   }
 
   /**
-   * Creates an in-only message exchange from <code>msg</code> and sends it to the endpoint
-   * specified by <code>endpointUri</code>. No reply is made to the original sender.
+   * Produces <code>msg</code> as exchange of given <code>pattern</code> to the endpoint specified by
+   * <code>endpointUri</code>. After producing to the endpoint the processing result is passed as argument
+   * to <code>receiveAfterProduce</code>. If the result was returned synchronously by the endpoint then
+   * <code>receiveAfterProduce</code> is called synchronously as well. If the result was returned asynchronously,
+   * the <code>receiveAfterProduce</code> is called asynchronously as well. This is done by wrapping the result,
+   * adding it to this producers mailbox, unwrapping it once it is received and calling
+   * <code>receiveAfterProduce</code>. The original sender and senderFuture are thereby preserved.
    *
    * @param msg message to produce
+   * @param pattern exchange pattern
    */
-  protected def produceOneway(msg: Any): Unit = {
-    val exchange = createInOnlyExchange.fromRequestMessage(Message.canonicalize(msg))
-    processor.process(exchange, new AsyncCallback {
-      def done(doneSync: Boolean): Unit = { /* ignore because it's an in-only exchange */ }
-    })
-  }
-
-  /**
-   * Creates an in-out message exchange from <code>msg</code> and sends it to the endpoint
-   * specified by <code>endpointUri</code>. The out-message returned by the endpoint is
-   * returned to the original sender or forwarded to <code>forwardResultTo</code> if defined.
-   *
-   * @param msg message to produce
-   */
-  protected def produceTwoway(msg: Any): Unit = {
+  protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
     val cmsg = Message.canonicalize(msg)
-    val exchange = createInOutExchange.fromRequestMessage(cmsg)
+    val exchange = createExchange(pattern).fromRequestMessage(cmsg)
     processor.process(exchange, new AsyncCallback {
+      val producer = self
       // Need copies of sender and senderFuture references here
       // since the callback could be done later by another thread.
       val sender = self.sender
       val senderFuture = self.senderFuture
 
       def done(doneSync: Boolean): Unit = {
-        val response = if (exchange.isFailed)
-          exchange.toFailureMessage(cmsg.headers(headersToCopy))
-        else
-          exchange.toResponseMessage(cmsg.headers(headersToCopy))
-
-        if (forwardResultTo.isDefined) 
-          forward(response, forwardResultTo.get)
-        else
-          reply(response)
-      }
-
-      private def forward(response: Any, target: ActorRef) = {
-        // TODO: avoid redundancy to ActorRef.forward
-        if (target.isRunning) {
-          if (senderFuture.isDefined) target.postMessageToMailboxAndCreateFutureResultWithTimeout(response, target.timeout, sender, senderFuture)
-          else target.postMessageToMailbox(response, sender) // initial sender doesn't need be an actor
+        (doneSync, exchange.isFailed) match {
+          case (true, true)   => dispatchSync(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
+          case (true, false)  => dispatchSync(exchange.toResponseMessage(cmsg.headers(headersToCopy)))
+          case (false, true)  => dispatchAsync(FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy))))
+          case (false, false) => dispatchAsync(MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))))
         }
       }
 
-      private def reply(response: Any) = {
-        // TODO: avoid redundancy to ActorRef.reply
-        if (senderFuture.isDefined) senderFuture.get completeWithResult response
-        else if (sender.isDefined) sender.get ! response
-        else log.warning("No destination for sending response")
+      private def dispatchSync(result: Any) =
+        receiveAfterProduce(result)
+
+      private def dispatchAsync(result: Any) = {
+        if (senderFuture.isDefined)
+          producer.postMessageToMailboxAndCreateFutureResultWithTimeout(result, producer.timeout, sender, senderFuture)
+        else
+          producer.postMessageToMailbox(result, sender)
       }
     })
   }
 
   /**
-   * Partial function that matches any argument and sends it as message to the endpoint
+   * Produces <code>msg</code> to the endpoint specified by <code>endpointUri</code>. Before the message is
+   * actually produced it is pre-processed by calling <code>receiveBeforeProduce</code>. If <code>oneway</code>
+   * is true an in-only message exchange is initiated, otherwise an in-out message exchange.
+   *
+   * @see Producer#produce(Any, ExchangePattern)
    */
   protected def produce: Receive = {
-    case msg => if (oneway) produceOneway(msg) else produceTwoway(msg)
+    case res: MessageResult => receiveAfterProduce(res.message)
+    case res: FailureResult => receiveAfterProduce(res.failure)
+    case msg => {
+      if (oneway)
+        produce(receiveBeforeProduce(msg), ExchangePattern.InOnly)
+      else
+        produce(receiveBeforeProduce(msg), ExchangePattern.InOut)
+    }
+  }
+
+  /**
+   * Called before the message is sent to the endpoint specified by <code>endpointUri</code>. The original
+   * message is passed as argument. By default, this method simply returns the argument but may be overridden
+   * by subtraits or subclasses.
+   */
+  protected def receiveBeforeProduce: PartialFunction[Any, Any] = {
+    case msg => msg
+  }
+
+  /**
+   * Called after the a result was received from the endpoint specified by <code>endpointUri</code>. The
+   * result is passed as argument. By default, this method replies the result back to the original sender
+   * if <code>oneway</code> is false. If <code>oneway</code> is true then nothing is done. This method may
+   * be overridden by subtraits or subclasses.
+   */
+  protected def receiveAfterProduce: Receive = {
+    case msg => if (!oneway) self.reply(msg)
   }
 
   /**
@@ -138,20 +147,10 @@ trait Producer { this: Actor =>
   protected def receive = produce
 
   /**
-   * Creates a new in-only Exchange from the endpoint specified by <code>endpointUri</code>.
-   */
-  protected def createInOnlyExchange: Exchange = createExchange(ExchangePattern.InOnly)
-
-  /**
-   * Creates a new in-out Exchange from the endpoint specified by <code>endpointUri</code>.
-   */
-  protected def createInOutExchange: Exchange = createExchange(ExchangePattern.InOut)
-
-  /**
    * Creates a new Exchange with given <code>pattern</code> from the endpoint specified by
    * <code>endpointUri</code>.
    */
-  protected def createExchange(pattern: ExchangePattern): Exchange = endpoint.createExchange(pattern)
+  private def createExchange(pattern: ExchangePattern): Exchange = endpoint.createExchange(pattern)
 
   /**
    * Creates a new <code>SendProcessor</code> for <code>endpoint</code>.
@@ -162,6 +161,16 @@ trait Producer { this: Actor =>
     sendProcessor
   }
 }
+
+/**
+ * @author Martin Krasser
+ */
+private[camel] case class MessageResult(message: Message)
+
+/**
+ * @author Martin Krasser
+ */
+private[camel] case class FailureResult(failure: Failure)
 
 /**
  * A one-way producer.

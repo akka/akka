@@ -115,6 +115,7 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
 
 class HttpConsumer(producer: ActorRef) extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8875/"
+  
   protected def receive = {
     // only keep Exchange.HTTP_PATH message header (which needed by bridge endpoint) 
     case msg: Message => producer forward msg.setHeaders(msg.headers(Set(Exchange.HTTP_PATH)))
@@ -123,7 +124,11 @@ class HttpConsumer(producer: ActorRef) extends Actor with Consumer {
 
 class HttpProducer(transformer: ActorRef) extends Actor with Producer {
   def endpointUri = "jetty://http://akkasource.org/?bridgeEndpoint=true"
-  override def forwardResultTo = Some(transformer)
+
+  override protected def receiveAfterProduce = {
+    // do not reply but forward result to transformer
+    case msg => transformer forward msg
+  }
 }
 
 class HttpTransformer extends Actor {
