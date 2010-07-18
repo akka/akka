@@ -128,7 +128,7 @@ object ActorRegistry extends ListenerManagement {
     }
 
     // Class name
-    val className = actor.actor.getClass.getName
+    val className = actor.actorClassName
     if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).add(actor)
     else {
       val set = new ConcurrentSkipListSet[ActorRef](refComparator)
@@ -149,7 +149,7 @@ object ActorRegistry extends ListenerManagement {
     val id = actor.id
     if (actorsById.containsKey(id)) actorsById.get(id).remove(actor)
 
-    val className = actor.getClass.getName
+    val className = actor.actorClassName
     if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).remove(actor)
 
     // notify listeners

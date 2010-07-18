@@ -1,8 +1,9 @@
 package sample.camel
 
-import se.scalablesolutions.akka.actor.annotation.consume
+import org.apache.camel.Exchange
+
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, RemoteActor}
-import se.scalablesolutions.akka.camel.{Producer, Message, Consumer}
+import se.scalablesolutions.akka.camel.{Failure, Producer, Message, Consumer}
 import se.scalablesolutions.akka.util.Logging
 
 /**
@@ -29,9 +30,7 @@ class RemoteActor2 extends Actor with Consumer {
 
 class Producer1 extends Actor with Producer {
   def endpointUri = "direct:welcome"
-
   override def oneway = false // default
-  override def async = true   // default
 }
 
 class Consumer1 extends Actor with Consumer with Logging {
@@ -42,8 +41,9 @@ class Consumer1 extends Actor with Consumer with Logging {
   }
 }
 
-@consume("jetty:http://0.0.0.0:8877/camel/default")
 class Consumer2 extends Actor {
+  def endpointUri = "jetty:http://0.0.0.0:8877/camel/default"
+
   def receive = {
     case msg: Message => self.reply("Hello %s" format msg.bodyAs[String])
   }
@@ -110,5 +110,25 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
       publisher ! msg.bodyAs[String]
       self.reply("message published")
     }
+  }
+}
+
+class HttpConsumer(producer: ActorRef) extends Actor with Consumer {
+  def endpointUri = "jetty:http://0.0.0.0:8875/"
+  protected def receive = {
+    // only keep Exchange.HTTP_PATH message header (which needed by bridge endpoint) 
+    case msg: Message => producer forward msg.setHeaders(msg.headers(Set(Exchange.HTTP_PATH)))
+  }
+}
+
+class HttpProducer(transformer: ActorRef) extends Actor with Producer {
+  def endpointUri = "jetty://http://akkasource.org/?bridgeEndpoint=true"
+  override def forwardResultTo = Some(transformer)
+}
+
+class HttpTransformer extends Actor {
+  protected def receive = {
+    case msg: Message => self.reply(msg.transformBody[String] {_ replaceAll ("Akka ", "AKKA ")})
+    case msg: Failure => self.reply(msg)
   }
 }
