@@ -773,7 +773,7 @@ sealed class LocalActorRef private[akka](
         address.getHostName, address.getPort, uuid))
       RemoteNode.unregister(this)
       nullOutActorRefReferencesFor(actorInstance.get)
-    } else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
+    } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
   }
 
   /**
@@ -961,7 +961,7 @@ sealed class LocalActorRef private[akka](
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
-    if (isShutdown) Actor.log.warning("Actor [%s] is shut down, ignoring message [%s]", toString, messageHandle)
+    if (isShutdown) Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
     else {
       currentMessage = Option(messageHandle)
       try {
@@ -986,29 +986,34 @@ sealed class LocalActorRef private[akka](
         case Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
           dead.restart(reason, maxNrOfRetries, withinTimeRange)
 
-        case None =>
-            throw new IllegalActorStateException(
-              "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
-              "\n\tto non-empty list of exception classes - can't proceed " + toString)
+        case None => throw new IllegalActorStateException(
+          "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
+          "\n\tto non-empty list of exception classes - can't proceed " + toString)
       }
     } else {
       if (lifeCycle.isEmpty) lifeCycle = Some(LifeCycle(Permanent)) // when passing on make sure we have a lifecycle
-      _supervisor.foreach(_ ! Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
+      notifySupervisorWithMessage(Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
     }
   }
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = {
-    if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis
+    if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis // first time around
     maxNrOfRetriesCount += 1
-    if (maxNrOfRetriesCount > maxNrOfRetries || (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange) {
-      val message = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
+    
+    val tooManyRestarts = maxNrOfRetriesCount > maxNrOfRetries
+    val restartingHasExpired = (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange
+    
+    if (tooManyRestarts || restartingHasExpired) {
+      val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
       Actor.log.warning(
         "Maximum number of restarts [%s] within time range [%s] reached." + 
         "\n\tWill *not* restart actor [%s] anymore." + 
-        "\n\tLast exception causing restart was [%s].", 
+        "\n\tLast exception causing restart was" + 
+        "\n\t[%s].", 
         maxNrOfRetries, withinTimeRange, this, reason)
       _supervisor.foreach { sup => 
-        if (sup.isDefinedAt(message)) sup ! message
+        // can supervisor handle the notification?
+        if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification) 
         else Actor.log.warning(
           "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
           "\n\tCan't send the message to the supervisor [%s].", sup)
@@ -1016,7 +1021,6 @@ sealed class LocalActorRef private[akka](
     } else {    
       _isBeingRestarted = true
       val failedActor = actorInstance.get
-      val lock = guard.lock
       guard.withGuard {
         lifeCycle.get match {
           case LifeCycle(scope, _, _) => {
@@ -1116,7 +1120,8 @@ sealed class LocalActorRef private[akka](
       clearTransactionSet
       createNewTransactionSet
     } else oldTxSet
-    Actor.log.ifTrace("Joining transaction set [" + currentTxSet + "];\n\tactor " + toString + "\n\twith message [" + message + "]")
+    Actor.log.ifTrace("Joining transaction set [" + currentTxSet + 
+                      "];\n\tactor " + toString + "\n\twith message [" + message + "]")
     val mtx = ThreadLocalTransaction.getThreadLocalTransaction
     if ((mtx eq null) || mtx.getStatus.isDead) currentTxSet.incParties
     else currentTxSet.incParties(mtx, 1)
@@ -1131,7 +1136,8 @@ sealed class LocalActorRef private[akka](
       else {
         topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
         if (isTransactor) {
-          Actor.log.ifTrace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString + "\n\twith message " + messageHandle)
+          Actor.log.ifTrace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString + 
+                            "\n\twith message " + messageHandle)
           Some(createNewTransactionSet)
         } else None
       }
@@ -1172,30 +1178,41 @@ sealed class LocalActorRef private[akka](
         "All linked actors have died permanently (they were all configured as TEMPORARY)" +
         "\n\tshutting down and unlinking supervisor actor as well [%s].",
         temporaryActor.id)
-      _supervisor.foreach(_ ! UnlinkAndStop(this))
+        notifySupervisorWithMessage(UnlinkAndStop(this))
     }
   }
 
-  private def handleExceptionInDispatch(e: Throwable, message: Any, topLevelTransaction: Boolean) = {
-    Actor.log.error(e, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
+  private def handleExceptionInDispatch(reason: Throwable, message: Any, topLevelTransaction: Boolean) = {
+    Actor.log.error(reason, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
     _isBeingRestarted = true
     // abort transaction set
     if (isTransactionSetInScope) {
       val txSet = getTransactionSetInScope
-      Actor.log.debug("Aborting transaction set [%s]", txSet)
-      txSet.abort
+      if (!txSet.isCommitted) {
+        Actor.log.debug("Aborting transaction set [%s]", txSet)
+        txSet.abort
+      }
     }
 
-    senderFuture.foreach(_.completeWithException(this, e))
+    senderFuture.foreach(_.completeWithException(this, reason))
 
     clearTransaction
     if (topLevelTransaction) clearTransactionSet
 
-    // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-    if (_supervisor.isDefined) _supervisor.get ! Exit(this, e)
+    notifySupervisorWithMessage(Exit(this, reason))
   }
 
+  private def notifySupervisorWithMessage(notification: LifeCycleMessage) = {
+    // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
+    _supervisor.foreach { sup => 
+      if (sup.isShutdown) { // if supervisor is shut down, game over for all linked actors
+//        shutdownLinkedActors
+//        stop
+      } else sup ! notification // else notify supervisor
+    }
+  }
+  
   private def nullOutActorRefReferencesFor(actor: Actor) = {
     actorSelfFields._1.set(actor, null)
     actorSelfFields._2.set(actor, null)
@@ -1215,7 +1232,8 @@ sealed class LocalActorRef private[akka](
       case e: NoSuchFieldException =>
         val parent = clazz.getSuperclass
         if (parent != null) findActorSelfField(parent)
-        else throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+        else throw new IllegalActorStateException(
+          toString + " is not an Actor since it have not mixed in the 'Actor' trait")
     }
   }
 

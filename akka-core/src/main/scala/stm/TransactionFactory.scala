@@ -22,7 +22,7 @@ object TransactionConfig {
   val FAMILY_NAME      = "DefaultTransaction"
   val READONLY         = null.asInstanceOf[JBoolean]
   val MAX_RETRIES      = config.getInt("akka.stm.max-retries", 1000)
-  val TIMEOUT          = config.getLong("akka.stm.timeout", Long.MaxValue)
+  val TIMEOUT          = config.getLong("akka.stm.timeout", 10)
   val TIME_UNIT        = config.getString("akka.stm.time-unit", "seconds")
   val TRACK_READS      = null.asInstanceOf[JBoolean]
   val WRITE_SKEW       = config.getBool("akka.stm.write-skew", true)
@@ -125,8 +125,9 @@ object TransactionFactory {
             quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
             traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
             hooks: Boolean           = TransactionConfig.HOOKS) = {
-    val config = new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-                                       explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+    val config = new TransactionConfig(
+      familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
+      explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
     new TransactionFactory(config)
   }
 }
@@ -152,8 +153,9 @@ object TransactionFactory {
  *
  * @see TransactionConfig for configuration options.
  */
-class TransactionFactory(val config: TransactionConfig = DefaultTransactionConfig, defaultName: String = TransactionConfig.FAMILY_NAME) {
-  self =>
+class TransactionFactory(
+  val config: TransactionConfig = DefaultTransactionConfig, 
+  defaultName: String = TransactionConfig.FAMILY_NAME) { self =>
 
   // use the config family name if it's been set, otherwise defaultName - used by actors to set class name as default
   val familyName = if (config.familyName != TransactionConfig.FAMILY_NAME) config.familyName else defaultName

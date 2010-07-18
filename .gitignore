@@ -9,6 +9,7 @@ project/boot/*
 lib_managed
 etags
 TAGS
+akka.tmproj
 reports
 dist
 build
