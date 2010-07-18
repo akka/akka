@@ -68,7 +68,7 @@ object World {
   lazy val ants = setup
   lazy val evaporator = actorOf[Evaporator].start
 
-  private val snapshotFactory = TransactionFactory(readonly = true, familyName = "snapshot")
+  private val snapshotFactory = TransactionFactory(readonly = true, familyName = "snapshot", hooks = false)
 
   def snapshot = atomic(snapshotFactory) { Array.tabulate(Dim, Dim)(place(_, _).get) }
 
@@ -139,7 +139,7 @@ class AntActor(initLoc: (Int, Int)) extends WorldActor {
   val locRef = Ref(initLoc)
 
   val name = "ant-from-" + initLoc._1 + "-" + initLoc._2
-  implicit val txFactory = TransactionFactory(familyName = name)
+  implicit val txFactory = TransactionFactory(familyName = name, hooks = false)
 
   val homing = (p: Place) => p.pher + (100 * (if (p.home) 0 else 1))
   val foraging = (p: Place) => p.pher + p.food
@@ -211,7 +211,7 @@ class Evaporator extends WorldActor {
   import Config._
   import World._
 
-  implicit val txFactory = TransactionFactory(familyName = "evaporator")
+  implicit val txFactory = TransactionFactory(familyName = "evaporator", hooks = false)
   val evaporate = (pher: Float) => pher * EvapRate
 
   def act = for (x <- 0 until Dim; y <- 0 until Dim) {
