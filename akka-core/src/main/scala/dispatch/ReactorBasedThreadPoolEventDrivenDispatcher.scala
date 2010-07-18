@@ -64,7 +64,7 @@ import se.scalablesolutions.akka.actor.IllegalActorStateException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
-    extends AbstractReactorBasedEventDrivenDispatcher("event-driven:reactor:thread-pool:dispatcher:" + _name)
+    extends AbstractReactorBasedEventDrivenDispatcher("akka:event-driven:reactor:dispatcher:" + _name)
     with ThreadPoolBuilder {
 
   private var fair = true
@@ -75,17 +75,18 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
   withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
   def start = if (!active) {
+    log.debug("Starting up %s", toString)
     active = true
 
     /**
-     * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
+     * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa
+     * [http://code.google.com/p/actorom/].
      */
     selectorThread = new Thread(name) {
       override def run = {
         while (active) {
           try {
             try {
-        //      guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
             } catch { case e: InterruptedException => active = false }
             process(messageDemultiplexer.acquireSelectedInvocations)
@@ -110,7 +111,8 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
       if (invocation eq null) throw new IllegalActorStateException("Message invocation is null [" + invocation + "]")
       if (!busyActors.contains(invocation.receiver)) {
         val invoker = messageInvokers.get(invocation.receiver)
-        if (invoker eq null) throw new IllegalActorStateException("Message invoker for invocation [" + invocation + "] is null")
+        if (invoker eq null) throw new IllegalActorStateException(
+          "Message invoker for invocation [" + invocation + "] is null")
         resume(invocation.receiver)
         invocations.remove
         executor.execute(new Runnable() {
@@ -141,6 +143,8 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
 
   def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
+
+  override def toString = "ReactorBasedThreadPoolEventDrivenDispatcher[" + name + "]"
 
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
     private val selectedInvocations: List[MessageInvocation] = new LinkedList[MessageInvocation]
