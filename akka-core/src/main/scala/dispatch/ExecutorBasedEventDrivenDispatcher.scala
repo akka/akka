@@ -64,7 +64,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
 
   @volatile private var active: Boolean = false
 
-  val name: String = "event-driven:executor:dispatcher:" + _name
+  val name = "akka:event-driven:dispatcher:" + _name
   init
 
   def dispatch(invocation: MessageInvocation) = dispatch(invocation.receiver)
@@ -92,8 +92,8 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
         } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !mailbox.isEmpty))
       }
     })
-  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
-
+  } else log.warning(
+    "%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, receiver)
 
   /**
    * Process the messages in the mailbox of the given actor.
@@ -107,25 +107,22 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
       messageInvocation.invoke
       processedMessages += 1
       // check if we simply continue with other messages, or reached the throughput limit
-      if (throughput <= 0 || processedMessages < throughput)
-        messageInvocation = receiver.mailbox.poll
+      if (throughput <= 0 || processedMessages < throughput) messageInvocation = receiver.mailbox.poll
       else {
-        return !receiver.mailbox.isEmpty
         messageInvocation = null
+        return !receiver.mailbox.isEmpty
       }
     }
-
-    return false
+    false
   }
 
   def start = if (!active) {
-    log.debug("Starting ExecutorBasedEventDrivenDispatcher [%s]", name)
-    log.debug("Throughput for %s = %d", name, throughput)
+    log.debug("Starting up %s\n\twith throughput [%d]", toString, throughput)
     active = true
   }
 
   def shutdown = if (active) {
-    log.debug("Shutting down ExecutorBasedEventDrivenDispatcher [%s]", name)
+    log.debug("Shutting down %s", toString)
     executor.shutdownNow
     active = false
     references.clear
@@ -135,6 +132,9 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
 
   def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
+    
+  override def toString = "ExecutorBasedEventDrivenDispatcher[" + name + "]"
 
+  // FIXME: should we have an unbounded queue and not bounded as default ????
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 }

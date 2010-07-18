@@ -16,7 +16,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
  */
 class ThreadBasedDispatcher(private val actor: ActorRef) extends MessageDispatcher {
   private val name = actor.getClass.getName + ":" + actor.uuid
-  private val threadName = "thread-based:dispatcher:" + name
+  private val threadName = "akka:thread-based:dispatcher:" + name
   private val queue = new BlockingMessageQueue(name)
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
@@ -24,6 +24,7 @@ class ThreadBasedDispatcher(private val actor: ActorRef) extends MessageDispatch
   def dispatch(invocation: MessageInvocation) = queue.append(invocation)
 
   def start = if (!active) {
+    log.debug("Starting up %s", toString)
     active = true
     selectorThread = new Thread(threadName) {
       override def run = {
@@ -42,11 +43,13 @@ class ThreadBasedDispatcher(private val actor: ActorRef) extends MessageDispatch
   def usesActorMailbox = false
 
   def shutdown = if (active) {
-    log.debug("Shutting down ThreadBasedDispatcher [%s]", name)
+    log.debug("Shutting down %s", toString)
     active = false
     selectorThread.interrupt
     references.clear
   }
+
+  override def toString = "ThreadBasedDispatcher[" + threadName + "]"
 }
 
 class BlockingMessageQueue(name: String) extends MessageQueue {

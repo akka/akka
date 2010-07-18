@@ -12,11 +12,14 @@ package se.scalablesolutions.akka.dispatch
 
 import java.util.{LinkedList, List}
 
-class ReactorBasedSingleThreadEventDrivenDispatcher(name: String) extends AbstractReactorBasedEventDrivenDispatcher(name) {
+class ReactorBasedSingleThreadEventDrivenDispatcher(_name: String)
+  extends AbstractReactorBasedEventDrivenDispatcher("akka:event-driven:reactor:single-thread:dispatcher:" + _name) {
+  
   def start = if (!active) {
+    log.debug("Starting up %s", toString)
     active = true
     val messageDemultiplexer = new Demultiplexer(queue)
-    selectorThread = new Thread("event-driven:reactor:single-thread:dispatcher:" + name) {
+    selectorThread = new Thread(name) {
       override def run = {
         while (active) {
           try {
@@ -39,6 +42,8 @@ class ReactorBasedSingleThreadEventDrivenDispatcher(name: String) extends Abstra
   def isShutdown = !active
 
   def usesActorMailbox = false
+
+  override def toString = "ReactorBasedSingleThreadEventDrivenDispatcher[" + name + "]"
 
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
 

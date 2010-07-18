@@ -21,7 +21,6 @@ public class TransactionalActiveObject {
       refState = new Ref();
       isInitialized = true;
     }
-    System.out.println("==========> init");
   }
   
   public String getMapState(String key) {
@@ -38,7 +37,6 @@ public class TransactionalActiveObject {
 
   public void setMapState(String key, String msg) {
     mapState.put(key, msg);
-    System.out.println("==========> setMapState");
   }
 
   public void setVectorState(String msg) {
@@ -74,7 +72,6 @@ public class TransactionalActiveObject {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
-    System.out.println("==========> failure");
     nested.failure(key, msg, failer);
     return msg;
   }
