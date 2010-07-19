@@ -34,5 +34,5 @@ trait Fsm[S] { self: Actor =>
 
   case class NextState(state: State, stateData: S, timeout: Option[Int] = None)
   case class Event(event: Any, stateData: S)
+  object StateTimeout
 }
-object StateTimeout
