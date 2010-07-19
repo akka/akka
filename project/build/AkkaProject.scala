@@ -310,13 +310,14 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
   class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
-  class AkkaSampleLiftProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
+  class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject with CodeFellowPlugin {
+    def deployPath = AkkaParent.this.deployPath
     val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
     val lift = "net.liftweb" % "lift-webkit" % LIFT_VERSION % "compile"
     val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile"
     val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
     // testing
-    val jetty = "org.mortbay.jetty" % "jetty" % "6.1.22" % "test"
+    val jettyServer = "org.mortbay.jetty" % "jetty" % "6.1.22" % "test"
     val junit = "junit" % "junit" % "4.5" % "test"
   }
 
@@ -403,7 +404,7 @@ class AkkaParent(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject
 
-  trait DeployProject extends DefaultProject {
+  trait DeployProject { self: Project =>
     // defines where the deployTask copies jars to
     def deployPath: Path
 
