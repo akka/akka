@@ -83,9 +83,7 @@ private[akka] object CassandraStorageBackend extends
       if (column.isDefined) Some(column.get.getColumn.value)
       else None
     } catch {
-      case e =>
-        log.error(e, "Could not retreive Ref from storage")
-        None
+      case e => None
     }
   }
 
@@ -195,9 +193,7 @@ private[akka] object CassandraStorageBackend extends
       if (column.isDefined) Some(column.get.getColumn.value)
       else None
     } catch {
-      case e =>
-        log.error(e, "Could not retreive Map from storage")
-        None
+      case e => None
     }
   }
 

@@ -92,7 +92,7 @@ class AccountActor extends Transactor {
   // timeout = 5000
   def receive = {
     case "Failure" =>
-      throw new RuntimeException("expected")
+      throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 }
 

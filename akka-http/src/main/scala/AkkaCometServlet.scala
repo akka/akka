@@ -50,6 +50,11 @@ class AkkaServlet extends AtmosphereServlet with Logging {
   addInitParameter(AtmosphereServlet.PROPERTY_USE_STREAM,"true")
   addInitParameter("com.sun.jersey.config.property.packages",c.getList("akka.rest.resource_packages").mkString(";"))
   addInitParameter("com.sun.jersey.spi.container.ResourceFilters",c.getList("akka.rest.filters").mkString(","))
+  c.getInt("akka.rest.maxInactiveActivity").foreach { value =>
+    log.info("MAX_INACTIVE:%s",value.toString)
+    addInitParameter(CometSupport.MAX_INACTIVE,value.toString)
+  }
+
 
   val servlet = new AtmosphereRestServlet {
     override def getInitParameter(key : String) = AkkaServlet.this.getInitParameter(key)

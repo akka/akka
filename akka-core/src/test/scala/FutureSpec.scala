@@ -12,7 +12,7 @@ object FutureSpec {
         self.reply("World")
       case "NoReply" => {}
       case "Failure" =>
-        throw new RuntimeException("expected")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
 }
@@ -36,7 +36,7 @@ class FutureSpec extends JUnitSuite {
     val future = actor !!! "Failure"
     future.await
     assert(future.exception.isDefined)
-    assert("expected" === future.exception.get._2.getMessage)
+    assert("Expected exception; to test fault-tolerance" === future.exception.get._2.getMessage)
     actor.stop
   }
 

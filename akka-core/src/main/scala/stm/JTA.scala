@@ -4,7 +4,9 @@
 
 package se.scalablesolutions.akka.stm
 
-import javax.transaction.{TransactionManager, UserTransaction, Transaction => JtaTransaction, SystemException, Status, Synchronization, TransactionSynchronizationRegistry}
+import javax.transaction.{TransactionManager, UserTransaction, 
+                          Transaction => JtaTransaction, SystemException, 
+                          Status, Synchronization, TransactionSynchronizationRegistry}
 import javax.naming.{InitialContext, Context, NamingException}
 
 import se.scalablesolutions.akka.config.Config._
@@ -16,7 +18,7 @@ import se.scalablesolutions.akka.util.Logging
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object TransactionContainer extends Logging {
-  val AKKA_JTA_TRANSACTION_SERVICE_CLASS = "se.scalablesolutions.akka.jta.AtomikosTransactionService"
+  val AKKA_JTA_TRANSACTION_SERVICE_CLASS =                "se.scalablesolutions.akka.jta.AtomikosTransactionService"
   val DEFAULT_USER_TRANSACTION_NAME =                     "java:comp/UserTransaction"
   val FALLBACK_TRANSACTION_MANAGER_NAMES =                "java:comp/TransactionManager" ::
                                                           "java:appserver/TransactionManager" ::
@@ -119,22 +121,31 @@ class TransactionContainer private (val tm: Either[Option[UserTransaction], Opti
     }
   }
 
-  def begin = tm match {
-    case Left(Some(userTx)) => userTx.begin
-    case Right(Some(txMan)) => txMan.begin
-    case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+  def begin = {
+    TransactionContainer.log.ifTrace("Starting JTA transaction")
+    tm match {
+      case Left(Some(userTx)) => userTx.begin
+      case Right(Some(txMan)) => txMan.begin
+      case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+    }
   }
 
-  def commit = tm match {
-    case Left(Some(userTx)) => userTx.commit
-    case Right(Some(txMan)) => txMan.commit
-    case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+  def commit = {
+    TransactionContainer.log.ifTrace("Committing JTA transaction")
+    tm match {
+      case Left(Some(userTx)) => userTx.commit
+      case Right(Some(txMan)) => txMan.commit
+      case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+    }
   }
 
-  def rollback =  tm match {
-    case Left(Some(userTx)) => userTx.rollback
-    case Right(Some(txMan)) => txMan.rollback
-    case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+  def rollback = {
+    TransactionContainer.log.ifTrace("Aborting JTA transaction")
+    tm match {
+      case Left(Some(userTx)) => userTx.rollback
+      case Right(Some(txMan)) => txMan.rollback
+      case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+    }
   }
 
   def getStatus = tm match {

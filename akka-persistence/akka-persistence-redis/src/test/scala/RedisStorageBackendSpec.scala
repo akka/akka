@@ -60,7 +60,7 @@ class RedisStorageBackendSpec extends
   describe("Store and query long value in maps") {
     it("should enter 4 entries in redis for transaction T-1") {
     val d = Calendar.getInstance.getTime.getTime
-      insertMapStorageEntryFor("T-11", "debasish".getBytes, 
+      insertMapStorageEntryFor("T-11", "debasish".getBytes,
         toByteArray[Long](d))
 
       getMapStorageSizeFor("T-11") should equal(1)
@@ -230,14 +230,14 @@ class RedisStorageBackendSpec extends
 
 object NameSerialization {
   implicit object DateFormat extends Format[Date] {
-    def reads(in : Input) = 
+    def reads(in : Input) =
       new Date(read[Long](in))
 
     def writes(out: Output, value: Date) =
       write[Long](out, value.getTime)
   }
 
-  case class Name(id: Int, name: String, 
+  case class Name(id: Int, name: String,
     address: String, dateOfBirth: Date, dateDied: Option[Date])
 
   implicit val NameFormat: Format[Name] =

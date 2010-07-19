@@ -8,7 +8,7 @@ import org.junit.{Before, After, Test}
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 @RunWith(classOf[JUnitRunner])
-class ActorObjectUtilFunctionsTest extends junit.framework.TestCase with Suite with MustMatchers {
+class ActorObjectUtilFunctionsSpec extends junit.framework.TestCase with Suite with MustMatchers {
   import Actor._
   @Test def testSpawn = {
     val latch = new CountDownLatch(1)

@@ -24,7 +24,6 @@ object ScalaConfig {
   abstract class Scope extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
-
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
@@ -43,12 +42,14 @@ object ScalaConfig {
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
 
-  case class LifeCycle(scope: Scope, callbacks: Option[RestartCallbacks]) extends ConfigElement
-  object LifeCycle {
-    def apply(scope: Scope) = new LifeCycle(scope, None)
-  }
+  case class LifeCycle(scope: Scope,
+                       restartCallbacks: Option[RestartCallbacks] = None,
+                       shutdownCallback: Option[ShutdownCallback] = None) extends ConfigElement
   case class RestartCallbacks(preRestart: String, postRestart: String) {
     if ((preRestart eq null) || (postRestart eq null)) throw new IllegalArgumentException("Restart callback methods can't be null")
+  }
+  case class ShutdownCallback(shutdown: String) {
+    if (shutdown eq null) throw new IllegalArgumentException("Shutdown callback method can't be null")
   }
 
   case object Permanent extends Scope
@@ -136,16 +137,24 @@ object JavaConfig {
       scheme.transform, maxNrOfRetries, withinTimeRange, trapExceptions.toList)
   }
 
-  class LifeCycle(@BeanProperty val scope: Scope, @BeanProperty val callbacks: RestartCallbacks) extends ConfigElement {
-    def this(scope: Scope) = this(scope, null)
+  class LifeCycle(@BeanProperty val scope: Scope,
+                  @BeanProperty val restartCallbacks: RestartCallbacks,
+                  @BeanProperty val shutdownCallback: ShutdownCallback) extends ConfigElement {
+    def this(scope: Scope) = this(scope, null, null)
+    def this(scope: Scope, restartCallbacks: RestartCallbacks) = this(scope, restartCallbacks, null)
+    def this(scope: Scope, shutdownCallback: ShutdownCallback) = this(scope, null, shutdownCallback)
     def transform = {
-      val callbackOption = if (callbacks eq null) None else Some(callbacks.transform)
-      se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform, callbackOption)
+      val restartCallbacksOption = if (restartCallbacks eq null) None else Some(restartCallbacks.transform)
+      val shutdownCallbackOption = if (shutdownCallback eq null) None else Some(shutdownCallback.transform)
+      se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform, restartCallbacksOption, shutdownCallbackOption)
     }
   }
 
   class RestartCallbacks(@BeanProperty val preRestart: String, @BeanProperty val postRestart: String) {
     def transform = se.scalablesolutions.akka.config.ScalaConfig.RestartCallbacks(preRestart, postRestart)
+  }
+  class ShutdownCallback(@BeanProperty val shutdown: String) {
+    def transform = se.scalablesolutions.akka.config.ScalaConfig.ShutdownCallback(shutdown)
   }
 
   abstract class Scope extends ConfigElement {

@@ -4,15 +4,25 @@
 
 package se.scalablesolutions.akka.camel.component
 
-import java.lang.{RuntimeException, String}
+import java.net.InetSocketAddress
 import java.util.{Map => JavaMap}
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicReference
 
-import org.apache.camel.{Exchange, Consumer, Processor}
+import jsr166x.Deque
+
+import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor, ActorRef}
 import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message}
+import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
+import se.scalablesolutions.akka.stm.TransactionConfig
+
+import scala.reflect.BeanProperty
+
+import CamelMessageConversion.toExchangeAdapter
+import java.lang.Throwable
 
 /**
  * Camel component for sending messages to and receiving replies from actors.
@@ -41,7 +51,7 @@ class ActorComponent extends DefaultComponent {
 
 /**
  * Camel endpoint for referencing an actor. The actor reference is given by the endpoint URI.
- * An actor can be referenced by its <code>Actor.getId</code> or its <code>Actor.uuid</code>.
+ * An actor can be referenced by its <code>ActorRef.id</code> or its <code>ActorRef.uuid</code>.
  * Supported endpoint URI formats are
  * <code>actor:&lt;actorid&gt;</code>,
  * <code>actor:id:&lt;actorid&gt;</code> and
@@ -56,6 +66,12 @@ class ActorEndpoint(uri: String,
                     comp: ActorComponent,
                     val id: Option[String],
                     val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
+
+  /**
+   * Blocking of client thread during two-way message exchanges with consumer actors. This is set
+   * via the <code>blocking=true|false</code> endpoint URI parameter. If omitted blocking is false.
+   */
+  @BeanProperty var blocking: Boolean = false
 
   /**
    * @throws UnsupportedOperationException
@@ -75,48 +91,43 @@ class ActorEndpoint(uri: String,
 }
 
 /**
- * Sends the in-message of an exchange to an actor. If the exchange pattern is out-capable,
- * the producer waits for a reply (using the !! operator), otherwise the ! operator is used
- * for sending the message.
+ * Sends the in-message of an exchange to an actor. If the exchange pattern is out-capable and
+ * <code>blocking</code> is enabled then the producer waits for a reply (using the !! operator),
+ * otherwise the ! operator is used for sending the message.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
  *
  * @author Martin Krasser
  */
-class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
-  import CamelMessageConversion.toExchangeAdapter
+class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with AsyncProcessor {
+  import ActorProducer._
 
-  implicit val sender = None
+  def process(exchange: Exchange) =
+    if (exchange.getPattern.isOutCapable) sendSync(exchange) else sendAsync(exchange)
 
-  /**
-   * Depending on the exchange pattern, this method either calls processInOut or
-   * processInOnly for interacting with an actor. This methods looks up the actor
-   * from the ActorRegistry according to this producer's endpoint URI.
-   *
-   * @param exchange represents the message exchange with the actor.
-   */
-  def process(exchange: Exchange) {
-    val actor = target getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
-    if (exchange.getPattern.isOutCapable) processInOut(exchange, actor)
-    else processInOnly(exchange, actor)
+  def process(exchange: Exchange, callback: AsyncCallback): Boolean = {
+    (exchange.getPattern.isOutCapable, ep.blocking) match {
+      case (true, true) => {
+        sendSync(exchange)
+        callback.done(true)
+        true
+      }
+      case (true, false) => {
+        sendAsync(exchange, Some(AsyncCallbackAdapter(exchange, callback)))
+        false
+      }
+      case (false, _) => {
+        sendAsync(exchange)
+        callback.done(true)
+        true
+      }
+    }
   }
 
-  /**
-   * Send the exchange in-message to the given actor using the ! operator. The message
-   * send to the actor is of type se.scalablesolutions.akka.camel.Message.
-   */
-  protected def processInOnly(exchange: Exchange, actor: ActorRef): Unit =
-    actor ! exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
-
-  /**
-   * Send the exchange in-message to the given actor using the !! operator. The exchange
-   * out-message is populated from the actor's reply message.  The message sent to the
-   * actor is of type se.scalablesolutions.akka.camel.Message.
-   */
-  protected def processInOut(exchange: Exchange, actor: ActorRef) {
-    val header = Map(Message.MessageExchangeId -> exchange.getExchangeId)
-    val result: Any = actor !! exchange.toRequestMessage(header)
+  private def sendSync(exchange: Exchange) = {
+    val actor = target
+    val result: Any = actor !! requestFor(exchange)
 
     result match {
       case Some(msg: Failure) => exchange.fromFailureMessage(msg)
@@ -128,7 +139,13 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
     }
   }
 
-  private def target: Option[ActorRef] =
+  private def sendAsync(exchange: Exchange, sender: Option[ActorRef] = None) =
+    target.!(requestFor(exchange))(sender)
+
+  private def target =
+    targetOption getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
+
+  private def targetOption: Option[ActorRef] =
     if (ep.id.isDefined) targetById(ep.id.get)
     else targetByUuid(ep.uuid.get)
 
@@ -142,6 +159,14 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
 }
 
 /**
+ * @author Martin Krasser
+ */
+private[camel] object ActorProducer {
+  def requestFor(exchange: Exchange) =
+    exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
+}
+
+/**
  * Thrown to indicate that an actor referenced by an endpoint URI cannot be
  * found in the ActorRegistry.
  *
@@ -149,4 +174,93 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) {
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException {
   override def getMessage = "%s not registered" format uri
+}
+
+/**
+ * @author Martin Krasser
+ */
+private[akka] object AsyncCallbackAdapter {
+  /**
+   * Creates and starts an <code>AsyncCallbackAdapter</code>.
+   *
+   * @param exchange message exchange to write results to.
+   * @param callback callback object to generate completion notifications.
+   */
+  def apply(exchange: Exchange, callback: AsyncCallback) =
+    new AsyncCallbackAdapter(exchange, callback).start
+}
+
+/**
+ * Adapts an <code>AsyncCallback</code> to <code>ActorRef.!</code>. Used by other actors to reply
+ * asynchronously to Camel with <code>ActorRef.reply</code>.
+ * <p>
+ * <em>Please note</em> that this adapter can only be used locally at the moment which should not
+ * be a problem is most situations as Camel endpoints are only activated for local actor references,
+ * never for remote references.
+ *
+ * @author Martin Krasser
+ */
+private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCallback) extends ActorRef {
+
+  def start = {
+    _isRunning = true
+    this
+  }
+
+  def stop() = {
+    _isRunning = false
+    _isShutDown = true
+  }
+
+  /**
+   * Writes the reply <code>message</code> to <code>exchange</code> and uses <code>callback</code> to
+   * generate completion notifications.
+   *
+   * @param message reply message
+   * @param sender ignored
+   */
+  protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]) = {
+    message match {
+      case msg: Failure => exchange.fromFailureMessage(msg)
+      case msg          => exchange.fromResponseMessage(Message.canonicalize(msg))
+    }
+    callback.done(false)
+  }
+
+  def actorClass: Class[_ <: Actor] = unsupported
+  def actorClassName = unsupported
+  def dispatcher_=(md: MessageDispatcher): Unit = unsupported
+  def dispatcher: MessageDispatcher = unsupported
+  def transactionConfig_=(config: TransactionConfig): Unit = unsupported
+  def transactionConfig: TransactionConfig = unsupported
+  def makeTransactionRequired: Unit = unsupported
+  def makeRemote(hostname: String, port: Int): Unit = unsupported
+  def makeRemote(address: InetSocketAddress): Unit = unsupported
+  def homeAddress_=(address: InetSocketAddress): Unit = unsupported
+  def remoteAddress: Option[InetSocketAddress] = unsupported
+  def link(actorRef: ActorRef): Unit = unsupported
+  def unlink(actorRef: ActorRef): Unit = unsupported
+  def startLink(actorRef: ActorRef): Unit = unsupported
+  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = unsupported
+  def spawn[T <: Actor : Manifest]: ActorRef = unsupported
+  def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef = unsupported
+  def spawnLink[T <: Actor: Manifest]: ActorRef = unsupported
+  def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = unsupported
+  def shutdownLinkedActors: Unit = unsupported
+  def mailboxSize: Int = unsupported
+  def supervisor: Option[ActorRef] = unsupported
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[CompletableFuture[T]]) = unsupported
+  protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
+  protected[akka] def linkedActors: JavaMap[String, ActorRef] = unsupported
+  protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
+  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
+  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
+  protected[akka] def registerSupervisorAsRemoteActor = unsupported
+  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported
+  protected[this] def actorInstance: AtomicReference[Actor] = unsupported
+
+  private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)
 }

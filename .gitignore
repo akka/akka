@@ -9,6 +9,7 @@ project/boot/*
 lib_managed
 etags
 TAGS
+akka.tmproj
 reports
 dist
 build
@@ -17,7 +18,9 @@ deploy/*.jar
 data
 out
 logs
+.codefellow
 storage
+.codefellow
 _dump
 .manager
 manifest.mf
@@ -30,6 +33,7 @@ tm.out
 *.iws
 *.ipr
 *.iml
+run-codefellow
 .project
 .settings
 .classpath

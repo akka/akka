@@ -44,7 +44,7 @@ trait EmbeddedAppServer extends Bootable with Logging {
       val adapter = new ServletAdapter
       adapter.setHandleStaticResources(true)
       adapter.setServletInstance(new AkkaServlet {
-        override def init(sc : ServletConfig) : Unit = {
+        override def init(sc : ServletConfig): Unit = {
           val cl = Thread.currentThread.getContextClassLoader
           try {
             Thread.currentThread.setContextClassLoader(applicationLoader.get)

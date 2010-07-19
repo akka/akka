@@ -55,7 +55,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     scenario("two-way communication with timeout") {
       val actor = actorOf[Tester3].start
       intercept[RuntimeCamelException] {
-        template.requestBody("actor:uuid:%s" format actor.uuid, "Martin")
+        template.requestBody("actor:uuid:%s?blocking=true" format actor.uuid, "Martin")
       }
     }
   }

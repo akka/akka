@@ -65,7 +65,7 @@ class CassandraPersistentActor extends Transactor {
 @serializable class PersistentFailerActor extends Transactor {
   def receive = {
     case "Failure" =>
-      throw new RuntimeException("expected")
+      throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 }
 
@@ -168,7 +168,7 @@ object // EmbeddedCassandraService {
   t.setDaemon(true)
   t.start
 
-  def start: Unit = {}
+  def start(): Unit = {}
 
 }
 */

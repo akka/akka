@@ -8,6 +8,8 @@ import java.util.concurrent.locks.ReentrantLock
 
 import java.util.{HashSet, HashMap, LinkedList, List}
 
+import se.scalablesolutions.akka.actor.IllegalActorStateException
+
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
  * See also this article: [http://today.java.net/cs/user/print/a/350].
@@ -62,7 +64,7 @@ import java.util.{HashSet, HashMap, LinkedList, List}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
-    extends AbstractReactorBasedEventDrivenDispatcher("event-driven:reactor:thread-pool:dispatcher:" + _name)
+    extends AbstractReactorBasedEventDrivenDispatcher("akka:event-driven:reactor:dispatcher:" + _name)
     with ThreadPoolBuilder {
 
   private var fair = true
@@ -73,17 +75,18 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
   withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
   def start = if (!active) {
+    log.debug("Starting up %s", toString)
     active = true
 
     /**
-     * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
+     * This dispatcher code is based on code from the actorom actor framework by Sergio Bossa
+     * [http://code.google.com/p/actorom/].
      */
     selectorThread = new Thread(name) {
       override def run = {
         while (active) {
           try {
             try {
-        //      guard.synchronized { /* empty */ } // prevents risk for deadlock as described in [http://developers.sun.com/learning/javaoneonline/2006/coreplatform/TS-1315.pdf]
               messageDemultiplexer.select
             } catch { case e: InterruptedException => active = false }
             process(messageDemultiplexer.acquireSelectedInvocations)
@@ -105,10 +108,11 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
     val invocations = selectedInvocations.iterator
     while (invocations.hasNext && totalNrOfActors > totalNrOfBusyActors && passFairnessCheck(nrOfBusyMessages)) {
       val invocation = invocations.next
-      if (invocation eq null) throw new IllegalStateException("Message invocation is null [" + invocation + "]")
+      if (invocation eq null) throw new IllegalActorStateException("Message invocation is null [" + invocation + "]")
       if (!busyActors.contains(invocation.receiver)) {
         val invoker = messageInvokers.get(invocation.receiver)
-        if (invoker eq null) throw new IllegalStateException("Message invoker for invocation [" + invocation + "] is null")
+        if (invoker eq null) throw new IllegalActorStateException(
+          "Message invoker for invocation [" + invocation + "] is null")
         resume(invocation.receiver)
         invocations.remove
         executor.execute(new Runnable() {
@@ -137,8 +141,10 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
 
   def usesActorMailbox = false
 
-  def ensureNotActive: Unit = if (active) throw new IllegalStateException(
+  def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
+
+  override def toString = "ReactorBasedThreadPoolEventDrivenDispatcher[" + name + "]"
 
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
     private val selectedInvocations: List[MessageInvocation] = new LinkedList[MessageInvocation]

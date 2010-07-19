@@ -17,19 +17,19 @@ import junit.framework.TestCase;
  */
 public class MiscActiveObjectTest extends TestCase {
 
-	
-	/**
-	 * Verifies that both preRestart and postRestart methods are invoked when
-	 * an actor is restarted
-	 */
-	public void testFailingPostRestartInvocation() throws InterruptedException {
-		SimpleJavaPojo pojo = newInstance(SimpleJavaPojo.class,500);
-		SimpleJavaPojo supervisor = newInstance(SimpleJavaPojo.class,500);
-		link(supervisor,pojo,new OneForOneStrategy(3, 2000),new Class[]{Throwable.class});
-		pojo.throwException();
-		Thread.sleep(500);
-		Assert.assertTrue(pojo.pre);
-		Assert.assertTrue(pojo.post);
-	}
-	
+        
+        /**
+         * Verifies that both preRestart and postRestart methods are invoked when
+         * an actor is restarted
+         */
+        public void testFailingPostRestartInvocation() throws InterruptedException {
+                SimpleJavaPojo pojo = newInstance(SimpleJavaPojo.class,500);
+                SimpleJavaPojo supervisor = newInstance(SimpleJavaPojo.class,500);
+                link(supervisor,pojo,new OneForOneStrategy(3, 2000),new Class[]{Throwable.class});
+                pojo.throwException();
+                Thread.sleep(500);
+                Assert.assertTrue(pojo.pre);
+                Assert.assertTrue(pojo.post);
+        }
+        
 }

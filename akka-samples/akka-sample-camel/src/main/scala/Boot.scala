@@ -80,6 +80,14 @@ class Boot {
   actorOf[Consumer5].start // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
 
   // -----------------------------------------------------------------------
+  // Non-blocking consumer-producer example (Akka homepage transformation)
+  // -----------------------------------------------------------------------
+
+  val nbResponder = actorOf(new HttpTransformer).start
+  val nbProducer = actorOf(new HttpProducer(nbResponder)).start
+  val nbConsumer = actorOf(new HttpConsumer(nbProducer)).start
+
+  // -----------------------------------------------------------------------
   // Active object example
   // -----------------------------------------------------------------------
 

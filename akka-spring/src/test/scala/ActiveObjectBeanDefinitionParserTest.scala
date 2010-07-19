@@ -26,9 +26,9 @@ class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                     target="foo.bar.MyPojo"
                                     timeout="1000"
                                     transactional="true"
-									scope="prototype">
-						<property name="someProp" value="someValue" ref="someRef"/>
-					</akka:active-object>
+                                                                        scope="prototype">
+                                                <property name="someProp" value="someValue" ref="someRef"/>
+                                        </akka:active-object>
 
       val props = parser.parseActiveObject(dom(xml).getDocumentElement);
       assert(props != null)
@@ -54,8 +54,8 @@ class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
                 </akka:active-object>
       val props = parser.parseActiveObject(dom(xml).getDocumentElement);
       assert(props != null)
-      assert(props.dispatcher.dispatcherType == "thread-based")
-}
+      assert(props.dispatcher.dispatcherType === "thread-based")
+    }
 
     it("should parse remote ActiveObjects configuration") {
       val xml = <akka:active-object id="remote active-object" target="se.scalablesolutions.akka.spring.foo.MyPojo"
@@ -64,8 +64,8 @@ class ActiveObjectBeanDefinitionParserTest extends Spec with ShouldMatchers {
                 </akka:active-object>
       val props = parser.parseActiveObject(dom(xml).getDocumentElement);
       assert(props != null)
-      assert(props.host == "com.some.host")
-      assert(props.port == 9999)
+      assert(props.host === "com.some.host")
+      assert(props.port === 9999)
     }
   }
 }

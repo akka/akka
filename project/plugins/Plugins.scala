@@ -1,6 +1,8 @@
 import sbt._
 
 class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
+  val embeddedRepo = "Embedded Repo" at (info.projectPath / "embedded-repo").asURL.toString
+  val codeFellow = "de.tuxed" % "codefellow-plugin" % "0.3" // for code completion and more in VIM
 //  val repo = "GH-pages repo" at "http://mpeltonen.github.com/maven/"
 //  val idea = "com.github.mpeltonen" % "sbt-idea-plugin" % "0.1-SNAPSHOT"
 
