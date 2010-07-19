@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.multiverse.api.latches.StandardLatch
-import Actor._
+import actor.{StateTimeout, Fsm}
 import java.util.concurrent.TimeUnit
 
 object FsmActorSpec {
@@ -15,7 +15,7 @@ object FsmActorSpec {
   class Lock(code: String,
              timeout: Int,
              unlockedLatch: StandardLatch,
-             lockedLatch: StandardLatch) extends FsmActor[CodeState] {
+             lockedLatch: StandardLatch) extends Actor with Fsm[CodeState] {
 
     def initialState = NextState(locked, CodeState("", "33221"))
 
@@ -26,7 +26,7 @@ object FsmActorSpec {
                NextState(locked, CodeState(incomplete, code))
              case codeTry if (codeTry == code) => {
                doUnlock
-               NextState(open, CodeState("", code), Some(timeout))
+               new NextState(open, CodeState("", code), Some(timeout))
              }
              case wrong => {
                log.error("Wrong code %s", wrong)
@@ -66,7 +66,7 @@ class FsmActorSpec extends JUnitSuite {
     val lockedLatch = new StandardLatch
 
     // lock that locked after being open for 1 sec
-    val lock = actorOf(new Lock("33221", 1000, unlockedLatch, lockedLatch)).start
+    val lock = Actor.actorOf(new Lock("33221", 1000, unlockedLatch, lockedLatch)).start
 
     lock ! '3'
     lock ! '3'
