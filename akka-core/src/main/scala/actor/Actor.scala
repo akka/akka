@@ -25,6 +25,40 @@ trait Transactor extends Actor {
   self.makeTransactionRequired
 }
 
+trait FsmActor[S] extends Actor {
+
+  type State = scala.PartialFunction[Event, NextState]
+
+  @volatile var currentState: NextState = initialState
+  @volatile var timeoutActor: Option[ActorRef] = None
+
+  def initialState: NextState
+
+  def handleEvent: State = {
+    case event@Event(value,stateData) =>
+      log.warning("No state for event with value %s - keeping current state %s", value, stateData)
+      NextState(currentState.state, stateData, currentState.timeout)
+  }
+
+  protected def receive = {
+    case value => {
+      timeoutActor.foreach{ref => Scheduler.unschedule(ref); timeoutActor = None }
+
+      val event = Event(value, currentState.stateData)
+      currentState = (currentState.state orElse handleEvent).apply(event)
+
+      currentState.timeout.foreach{timeout =>
+        timeoutActor = Some(Scheduler.scheduleOnce(self, StateTimeout, timeout, TimeUnit.MILLISECONDS))
+      }
+    }
+  }
+
+  case class NextState(state: State, stateData: S, timeout: Option[Int] = None)
+  case class Event(event: Any, stateData: S)
+  object StateTimeout
+}
+
+
 /**
  * Extend this abstract class to create a remote actor.
  * <p/>
