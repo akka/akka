@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.multiverse.api.latches.StandardLatch
-import actor.{StateTimeout, Fsm}
+import actor.Fsm
 import java.util.concurrent.TimeUnit
 
 object FsmActorSpec {
