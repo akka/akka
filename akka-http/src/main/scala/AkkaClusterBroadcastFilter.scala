@@ -27,7 +27,7 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter {
   /**
    * Stops the actor
    */
-  def destroy: Unit = self.stop
+  def destroy(): Unit = self.stop
 
   /**
    * Relays all non ClusterCometBroadcast messages to the other AkkaClusterBroadcastFilters in the cluster
