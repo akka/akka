@@ -247,7 +247,7 @@ private [akka] object RedisStorageBackend extends
     db.lindex(new String(encode(name.getBytes)), index) match {
       case None =>
         throw new NoSuchElementException(name + " does not have element at " + index)
-      case Some(e) => 
+      case Some(e) =>
         stringToByteArray(e)
     }
   }
@@ -280,7 +280,7 @@ private [akka] object RedisStorageBackend extends
     db.llen(new String(encode(name.getBytes))) match {
       case None =>
         throw new NoSuchElementException(name + " not present")
-      case Some(l) => 
+      case Some(l) =>
         l
     }
   }

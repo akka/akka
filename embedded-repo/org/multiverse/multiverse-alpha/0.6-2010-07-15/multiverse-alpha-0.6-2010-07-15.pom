@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>multiverse-alpha</artifactId>
+    <name>Alpha Multiverse STM engine</name>
+    <description>
+        Contains an all in one jar that that contains the AlphaStm including the Multiverse
+        Javaagent and the Multiverse Compiler. This is the JAR you want to include in your
+        projects, if you do, you don't need to worry about any Multiverse dependency
+        at all.
+    </description>
+    <packaging>jar</packaging>
+    <version>0.6-2010-07-15</version>
+      
+    <parent>
+        <groupId>org.multiverse</groupId>
+        <artifactId>multiverse</artifactId>
+        <version>0.6-2010-07-15</version>
+    </parent>
+
+    <properties>
+        <multiverse.agentclass>org.multiverse.javaagent.MultiverseJavaAgent</multiverse.agentclass>
+        <multiverse.instrumentor>org.multiverse.stms.alpha.instrumentation.AlphaStmInstrumentor
+        </multiverse.instrumentor>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+
+                    <execution>
+                        <id>create-main-jar</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="${project.build.directory}"/>
+
+                                <delete file="${project.build.outputDirectory}/GiveMavenSomethingToCompile.class"/>
+
+                                <echo message="-------------------------------------------"/>
+                                <echo message="Building ${artifactId}"/>
+                                <echo message="-------------------------------------------"/>
+
+                                <echo message="Unzipping all artifacts"/>
+                                <unzip src="${settings.localRepository}/org/multiverse/multiverse-core/${project.version}/multiverse-core-${project.version}.jar"
+                                       dest="${project.build.outputDirectory}"/>
+                                <unzip src="${settings.localRepository}/org/multiverse/multiverse-instrumentation/${project.version}/multiverse-instrumentation-${project.version}.jar"
+                                       dest="${project.build.outputDirectory}"/>
+                                <unzip src="${settings.localRepository}/args4j/args4j/${args4j.version}/args4j-${args4j.version}.jar"
+                                       dest="${project.build.outputDirectory}"/>
+                                <unzip src="${settings.localRepository}/asm/asm-all/${asm.version}/asm-all-${asm.version}.jar"
+                                       dest="${project.build.outputDirectory}"/>
+                                <unzip src="${settings.localRepository}/org/multiverse/multiverse-alpha-unborn/${project.version}/multiverse-alpha-unborn-${project.version}.jar"
+                                       dest="${project.build.outputDirectory}"/>
+
+                                <echo message="-------------------------------------------"/>
+                                <echo message="${settings.localRepository}/asm/asm-all/${asm.version}/asm-all-${asm.version}.jar"/>
+                                <echo message="-------------------------------------------"/>
+
+                                <java classname="org.multiverse.compiler.MultiverseCompiler">
+                                    <arg value="-o"/>
+                                    <arg value="-v"/>
+                                    <arg value="-d"/>
+                                    <arg value="${project.build.directory}/classes"/>
+                                    <classpath>
+                                        <pathelement
+                                                location="${settings.localRepository}/org/multiverse/multiverse-core/${project.version}/multiverse-core-${project.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/org/multiverse/multiverse-instrumentation/${project.version}/multiverse-instrumentation-${project.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/org/multiverse/multiverse-alpha-unborn/${project.version}/multiverse-alpha-unborn-${project.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/args4j/args4j/${args4j.version}/args4j-${args4j.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/asm/asm-all/${asm.version}/asm-all-${asm.version}.jar"/>
+                                    </classpath>
+                                </java>
+
+                                <!-- we are going create a new set of class files where the dependant
+                                    jars are integrated. Unfortunately jarjar only works on jars, so
+                                    we temporarily create the jar, unzip it and remove it again-->
+                                <echo message="Creating Jar"/>
+                                <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask"/>
+                                <jarjar destfile="${project.build.directory}/${artifactId}-${project.version}.jar"
+                                        update="true">
+                                    <rule pattern="org.objectweb.asm.**" result="${groupId}.repackaged.@0"/>
+                                    <fileset dir="${project.build.outputDirectory}"/>
+
+                                    <manifest>
+                                        <attribute name="Premain-Class" value="${multiverse.agentclass}"/>
+                                    </manifest>
+                                </jarjar>
+
+                                <delete dir="${project.build.outputDirectory}"/>
+                                <mkdir dir="${project.build.outputDirectory}"/>
+                                <unzip src="${project.build.directory}/${artifactId}-${project.version}.jar"
+                                       dest="${project.build.outputDirectory}"/>
+
+                                <delete file="${project.build.directory}/${artifactId}-${project.version}.jar"/>
+                            </tasks>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>Compiles the tests</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <echo message="Successfully created ${project.build.directory}/${artifactId}-${project.version}.jar"/>
+
+                                <echo message="-------------------------------------------"/>
+                                <echo message="Instrumenting the Multiverse-alpha test classes"/>
+                                <echo message="-------------------------------------------"/>
+
+                                <mkdir dir="${project.build.testOutputDirectory}"/>
+
+                                <unzip src="${settings.localRepository}/org/multiverse/multiverse-instrumentation/${project.version}/multiverse-instrumentation-${project.version}-tests.jar"
+                                       dest="${project.build.testOutputDirectory}"/>
+                                <delete>
+                                    <fileset dir="${project.build.testOutputDirectory}" includes="**/*Test.class"/>
+                                </delete>
+
+                                <unzip src="${settings.localRepository}/org/multiverse/multiverse-alpha-unborn/${project.version}/multiverse-alpha-unborn-${project.version}-tests.jar"
+                                       dest="${project.build.testOutputDirectory}"/>
+                                <delete>
+                                    <fileset dir="${project.build.testOutputDirectory}"
+                                             includes="**/transactions/**/Test.class"/>
+                                </delete>
+
+                                <unzip src="${settings.localRepository}/org/multiverse/multiverse-core/${project.version}/multiverse-core-${project.version}-tests.jar"
+                                       dest="${project.build.testOutputDirectory}"/>
+
+                                <!-- remove tests that can't be executed with the multiverse compiler.
+                                     The Multiverse compiler aborts when an instrumentation error occurs
+                                     and these errors cause instrumentation errors (their purpose) -->
+                                <delete file="${project.build.testOutputDirectory}/org/multiverse/stms/alpha/instrumentation/transactionalmethod/TransactionalMethod_InterruptibleTest.class"/>
+                                <delete file="${project.build.testOutputDirectory}/org/multiverse/stms/alpha/instrumentation/transactionalmethod/TransactionalMethod_InterruptibleTest$MethodWithoutException.class"/>
+                                <delete file="${project.build.testOutputDirectory}/org/multiverse/stms/alpha/instrumentation/transactionalmethod/TransactionalMethod_InterruptibleTest$MethodWithIncorrectException.class"/>
+                                <delete file="${project.build.testOutputDirectory}/org/multiverse/stms/alpha/instrumentation/fieldaccess/TransactionalObject_ClashingFieldAndMethodTest.class"/>
+                                <delete file="${project.build.testOutputDirectory}/org/multiverse/stms/alpha/instrumentation/fieldaccess/TransactionalObject_ClashingFieldAndMethodTest$ObjectWithClashingMethod.class"/>
+
+                                <java classname="org.multiverse.compiler.MultiverseCompiler">
+                                    <arg value="-o"/>
+                                    <arg value="-v"/>
+                                    <arg value="-d"/>
+                                    <arg value="${project.build.testOutputDirectory}"/>
+                                    <classpath>
+                                        <pathelement
+                                                location="${settings.localRepository}/org/multiverse/multiverse-core/${project.version}/multiverse-core-${project.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/org/multiverse/multiverse-instrumentation/${project.version}/multiverse-instrumentation-${project.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/org/multiverse/multiverse-alpha-unborn/${project.version}/multiverse-alpha-unborn-${project.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/args4j/args4j/${args4j.version}/args4j-${args4j.version}.jar"/>
+                                        <pathelement
+                                                location="${settings.localRepository}/asm/asm-all/${asm.version}/asm-all-${asm.version}.jar"/>
+                                    </classpath>
+                                </java>
+
+                                <echo message="Successfully instrumented the test classes"/>
+
+                            </tasks>
+                        </configuration>
+                    </execution>
+
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>ant</groupId>
+                        <artifactId>ant</artifactId>
+                        <version>1.7.0</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                        <version>${junit.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>ant</groupId>
+                        <artifactId>optional</artifactId>
+                        <version>1.5.4</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.tonicsystems.jarjar</groupId>
+                        <artifactId>jarjar</artifactId>
+                        <version>1.0-rc8</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Premain-Class>${multiverse.agentclass}</Premain-Class>
+                        </manifestEntries>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>  
+        </plugins>
+    </build>
+
+    <dependencies>
+        <!-- Multiverse dependencies -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>multiverse-alpha-unborn</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>multiverse-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>multiverse-instrumentation</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>multiverse-alpha-unborn</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>args4j</groupId>
+            <artifactId>args4j</artifactId>
+            <version>${args4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tonicsystems.jarjar</groupId>
+            <artifactId>jarjar</artifactId>
+            <version>1.0-rc8</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <version>${asm.version}</version>
+        </dependency>
+    </dependencies>
+</project>

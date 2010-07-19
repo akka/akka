@@ -32,7 +32,7 @@ object ServerInitiatedRemoteActorSpec {
       case "Hello" =>
         self.reply("World")
       case "Failure" =>
-        throw new RuntimeException("expected")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
 
@@ -130,7 +130,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
       fail("Should have thrown an exception")
     } catch {
       case e =>
-        assert("expected" === e.getMessage())
+        assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
     actor.stop
   }

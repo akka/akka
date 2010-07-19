@@ -19,3 +19,8 @@ message ProtobufPOJO {
 message Counter {
   required uint32 count = 1;
 }
+
+message DualCounter {
+  required uint32 count1 = 1;
+  required uint32 count2 = 2;
+}

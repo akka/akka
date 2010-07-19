@@ -7,10 +7,13 @@ import org.springframework.util.xml.DomUtils
 import org.w3c.dom.Element
 import scala.collection.JavaConversions._
 
+import se.scalablesolutions.akka.actor.IllegalActorStateException
+
 /**
  * Parser trait for custom namespace configuration for active-object.
  * @author michaelkober
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
+ * @author Martin Krasser
  */
 trait ActiveObjectParser extends BeanParser with DispatcherParser {
   import AkkaSpringConfigurationTags._
@@ -23,7 +26,8 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
   def parseActiveObject(element: Element): ActiveObjectProperties = {
     val objectProperties = new ActiveObjectProperties()
     val remoteElement = DomUtils.getChildElementByTagName(element, REMOTE_TAG);
-    val callbacksElement = DomUtils.getChildElementByTagName(element, RESTART_CALLBACKS_TAG);
+    val restartCallbacksElement = DomUtils.getChildElementByTagName(element, RESTART_CALLBACKS_TAG);
+    val shutdownCallbackElement = DomUtils.getChildElementByTagName(element, SHUTDOWN_CALLBACK_TAG);
     val dispatcherElement = DomUtils.getChildElementByTagName(element, DISPATCHER_TAG)
     val propertyEntries = DomUtils.getChildElementsByTagName(element,PROPERTYENTRY_TAG)
 
@@ -32,12 +36,16 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
       objectProperties.port = mandatory(remoteElement, PORT).toInt
     }
 
-    if (callbacksElement != null) {
-      objectProperties.preRestart = callbacksElement.getAttribute(PRE_RESTART)
-      objectProperties.postRestart = callbacksElement.getAttribute(POST_RESTART)
+    if (restartCallbacksElement != null) {
+      objectProperties.preRestart = restartCallbacksElement.getAttribute(PRE_RESTART)
+      objectProperties.postRestart = restartCallbacksElement.getAttribute(POST_RESTART)
       if ((objectProperties.preRestart.isEmpty) && (objectProperties.preRestart.isEmpty)) {
-        throw new IllegalStateException("At least one of pre or post must be defined.")
+        throw new IllegalActorStateException("At least one of pre or post must be defined.")
       }
+    }
+
+    if (shutdownCallbackElement != null) {
+      objectProperties.shutdown = shutdownCallbackElement.getAttribute("method")
     }
 
     if (dispatcherElement != null) {
@@ -46,11 +54,11 @@ trait ActiveObjectParser extends BeanParser with DispatcherParser {
     }
 
     for(element <- propertyEntries) {
-	    val entry = new PropertyEntry()
-	    entry.name = element.getAttribute("name");
+            val entry = new PropertyEntry()
+            entry.name = element.getAttribute("name");
         entry.value = element.getAttribute("value")
-		entry.ref   = element.getAttribute("ref")
-		objectProperties.propertyEntries.add(entry)
+                entry.ref   = element.getAttribute("ref")
+                objectProperties.propertyEntries.add(entry)
     }
 
     try {

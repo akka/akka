@@ -7,8 +7,8 @@ import org.springframework.beans.BeansException
 @author <a href="johan.rask@jayway.com">Johan Rask</a>
 */
 class AkkaBeansException(errorMsg:String,t:Throwable) extends BeansException(errorMsg,t) {
-		
-	def this(errorMsg:String) = {
-	   this(errorMsg,null)
-	}
+
+        def this(errorMsg:String) = {
+           this(errorMsg,null)
+        }
 }

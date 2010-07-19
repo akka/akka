@@ -84,22 +84,22 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     fast.stop
   }
 
-  @Test def canNotUseActorsOfDifferentTypesInSameDispatcher: Unit = {
+  @Test def canNotUseActorsOfDifferentTypesInSameDispatcher(): Unit = {
     val first = actorOf[FirstActor]
     val second = actorOf[SecondActor]
 
     first.start
-    intercept[IllegalStateException] {
+    intercept[IllegalActorStateException] {
       second.start
     }
   }
 
-  @Test def canNotUseActorsOfDifferentSubTypesInSameDispatcher: Unit = {
+  @Test def canNotUseActorsOfDifferentSubTypesInSameDispatcher(): Unit = {
     val parent = actorOf[ParentActor]
     val child = actorOf[ChildActor]
 
     parent.start
-    intercept[IllegalStateException] {
+    intercept[IllegalActorStateException] {
       child.start
     }
   }

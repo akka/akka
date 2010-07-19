@@ -134,7 +134,7 @@ sealed class Supervisor private[akka] (
     this
   }
 
-  def shutdown: Unit = supervisor.stop
+  def shutdown(): Unit = supervisor.stop
 
   def link(child: ActorRef) = supervisor.link(child)
 
@@ -161,8 +161,8 @@ sealed class Supervisor private[akka] (
             _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
             supervisor.link(actorRef)
-            remoteAddress.foreach(address =>
-              RemoteServer.registerActor(new InetSocketAddress(address.hostname, address.port), actorRef.uuid, actorRef))
+            remoteAddress.foreach(address => RemoteServer.registerActor(
+              new InetSocketAddress(address.hostname, address.port), actorRef.uuid, actorRef))
           case supervisorConfig @ SupervisorConfig(_, _) => // recursive supervisor configuration
             val childSupervisor = Supervisor(supervisorConfig)
             supervisor.link(childSupervisor.supervisor)
@@ -180,14 +180,23 @@ final class SupervisorActor private[akka] (
   handler: FaultHandlingStrategy,
   trapExceptions: List[Class[_ <: Throwable]]) extends Actor {
   import self._
+  
   trapExit = trapExceptions
   faultHandler = Some(handler)
 
-  override def shutdown: Unit = shutdownLinkedActors
+  override def shutdown(): Unit = shutdownLinkedActors
 
   def receive = {
+    // FIXME add a way to respond to MaximumNumberOfRestartsWithinTimeRangeReached in declaratively configured Supervisor
+    case MaximumNumberOfRestartsWithinTimeRangeReached(
+      victim, maxNrOfRetries, withinTimeRange, lastExceptionCausingRestart) =>
+      Actor.log.warning(
+        "Declaratively configured supervisor received a [MaximumNumberOfRestartsWithinTimeRangeReached] notification," +
+        "\n\tbut there is currently no way of handling it in a declaratively configured supervisor." +
+        "\n\tIf you want to be able to handle this error condition then you need to create the supervision tree programatically." +
+        "\n\tThis will be supported in the future.")
     case unknown => throw new SupervisorException(
-      "SupervisorActor can not respond to messages. Unknown message [" + unknown + "]")
+      "SupervisorActor can not respond to messages.\n\tUnknown message [" + unknown + "]")
   }
 }
 

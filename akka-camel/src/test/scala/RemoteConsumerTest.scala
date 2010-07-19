@@ -55,14 +55,13 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
     }
   }
 
-  /* TODO: enable once issues with remote active objects are resolved
   feature("Client-initiated remote consumer active object") {
     scenario("access published remote consumer method") {
       given("a client-initiated remote consumer active object")
       val consumer = ActiveObject.newRemoteInstance(classOf[PojoRemote], host, port)
 
       when("remote consumer publication is triggered")
-      val latch = service.consumerPublisher.!![CountDownLatch](SetExpectedMessageCount(1)).get
+      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       consumer.foo("init")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -71,7 +70,6 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       assert(response === "remote active object: test")
     }
   }
-  */
 }
 
 object RemoteConsumerTest {

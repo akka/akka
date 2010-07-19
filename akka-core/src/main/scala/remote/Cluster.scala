@@ -151,11 +151,17 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
 
     case InitClusterActor(s) => {
       serializer = s
+      boot
     }
   }
 
   /**
-   * Implement this in a subclass to add node-to-node messaging
+   * Implement this in a subclass to boot up the cluster implementation
+   */
+  protected def boot: Unit
+
+  /**
+   *  Implement this in a subclass to add node-to-node messaging
    */
   protected def toOneNode(dest: ADDR_T, msg: Array[Byte]): Unit
 
@@ -251,7 +257,7 @@ object Cluster extends Cluster with Logging {
 
   def foreach(f: (RemoteAddress) => Unit): Unit = clusterActor.foreach(_.foreach(f))
 
-  def start: Unit = start(None)
+  def start(): Unit = start(None)
 
   def start(serializerClassLoader: Option[ClassLoader]): Unit = synchronized {
     log.info("Starting up Cluster Service...")
@@ -274,7 +280,7 @@ object Cluster extends Cluster with Logging {
     }
   }
 
-  def shutdown: Unit = synchronized {
+  def shutdown(): Unit = synchronized {
     log.info("Shutting down Cluster Service...")
     for {
       c <- clusterActorRef

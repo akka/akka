@@ -29,6 +29,7 @@ abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) exten
   }
 
   def shutdown = if (active) {
+    log.debug("Shutting down %s", toString)
     active = false
     selectorThread.interrupt
     doShutdown

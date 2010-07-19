@@ -98,7 +98,7 @@ class BankAccountActor extends Transactor {
 @serializable class PersistentFailerActor extends Transactor {
   def receive = {
     case "Failure" =>
-      throw new RuntimeException("expected")
+      throw new RuntimeException("Expected exception; to test fault-tolerance")
   }
 }
 

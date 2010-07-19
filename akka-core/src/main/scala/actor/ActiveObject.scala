@@ -25,6 +25,7 @@ object Annotations {
   val transactionrequired =    classOf[transactionrequired]
   val prerestart =             classOf[prerestart]
   val postrestart =            classOf[postrestart]
+  val shutdown =               classOf[shutdown]
   val inittransactionalstate = classOf[inittransactionalstate]
 }
 
@@ -36,6 +37,7 @@ object Annotations {
 final class ActiveObjectConfiguration {
   private[akka] var _timeout: Long = Actor.TIMEOUT
   private[akka] var _restartCallbacks: Option[RestartCallbacks] = None
+  private[akka] var _shutdownCallback: Option[ShutdownCallback] = None
   private[akka] var _transactionRequired = false
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
@@ -47,6 +49,11 @@ final class ActiveObjectConfiguration {
 
   def restartCallbacks(pre: String, post: String) : ActiveObjectConfiguration = {
     _restartCallbacks = Some(new RestartCallbacks(pre, post))
+    this
+  }
+
+  def shutdownCallback(down: String) : ActiveObjectConfiguration = {
+    _shutdownCallback = Some(new ShutdownCallback(down))
     this
   }
 
@@ -102,7 +109,7 @@ final class ActiveObjectContext {
    * Scala style getter.
    */
   def sender: AnyRef = {
-    if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+    if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
     else _sender
   }
 
@@ -111,7 +118,7 @@ final class ActiveObjectContext {
    * Java style getter.
    */
    def getSender: AnyRef = {
-     if (_sender eq null) throw new IllegalStateException("Sender reference should not be null.")
+     if (_sender eq null) throw new IllegalActorStateException("Sender reference should not be null.")
      else _sender
    }
 
@@ -152,25 +159,25 @@ object ActiveObject extends Logging {
   private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   def newInstance[T](target: Class[T], timeout: Long): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), None, timeout)
+    newInstance(target, actorOf(new Dispatcher(false)), None, timeout)
 
   def newInstance[T](target: Class[T]): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), None, Actor.TIMEOUT)
+    newInstance(target, actorOf(new Dispatcher(false)), None, Actor.TIMEOUT)
 
   def newInstance[T](intf: Class[T], target: AnyRef, timeout: Long): T =
-    newInstance(intf, target, actorOf(new Dispatcher(false, None)), None, timeout)
+    newInstance(intf, target, actorOf(new Dispatcher(false)), None, timeout)
 
   def newInstance[T](intf: Class[T], target: AnyRef): T =
-    newInstance(intf, target, actorOf(new Dispatcher(false, None)), None, Actor.TIMEOUT)
+    newInstance(intf, target, actorOf(new Dispatcher(false)), None, Actor.TIMEOUT)
 
   def newRemoteInstance[T](target: Class[T], timeout: Long, hostname: String, port: Int): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(target, actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), timeout)
 
   def newRemoteInstance[T](target: Class[T], hostname: String, port: Int): T =
-    newInstance(target, actorOf(new Dispatcher(false, None)), Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)
+    newInstance(target, actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)
 
   def newInstance[T](target: Class[T], config: ActiveObjectConfiguration): T = {
-    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks))
+    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks, config._shutdownCallback))
      if (config._messageDispatcher.isDefined) {
        actor.dispatcher = config._messageDispatcher.get
      }
@@ -178,7 +185,7 @@ object ActiveObject extends Logging {
   }
 
   def newInstance[T](intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration): T = {
-    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks))
+    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks, config._shutdownCallback))
      if (config._messageDispatcher.isDefined) {
        actor.dispatcher = config._messageDispatcher.get
      }
@@ -358,7 +365,6 @@ object ActiveObject extends Logging {
     val proxy = Proxy.newInstance(target, true, false)
     val context = injectActiveObjectContext(proxy)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target, proxy, context)
-    ActorRegistry.unregister(actorRef) // do not store the dispatcher in the ActorRegistry since it will prevent GC
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(target, actorRef, remoteAddress, timeout))
@@ -371,12 +377,16 @@ object ActiveObject extends Logging {
     val context = injectActiveObjectContext(target)
     val proxy = Proxy.newInstance(Array(intf), Array(target), true, false)
     actorRef.actor.asInstanceOf[Dispatcher].initialize(target.getClass, target, context)
-    ActorRegistry.unregister(actorRef) // do not store the dispatcher in the ActorRegistry since it will prevent GC
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(intf, actorRef, remoteAddress, timeout))
     actorRef.start
     proxy.asInstanceOf[T]
+  }
+
+  def stop(obj: AnyRef): Unit = {
+    val init = AspectInitRegistry.initFor(obj)
+    init.actorRef.stop
   }
 
   /**
@@ -392,9 +402,9 @@ object ActiveObject extends Logging {
    */
   def link(supervisor: AnyRef, supervised: AnyRef) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't link when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalStateException("Can't link when the supervised is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervised is not an active object"))
     supervisorActor.link(supervisedActor)
   }
 
@@ -407,9 +417,9 @@ object ActiveObject extends Logging {
    */
   def link(supervisor: AnyRef, supervised: AnyRef, handler: FaultHandlingStrategy, trapExceptions: Array[Class[_ <: Throwable]]) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't link when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalStateException("Can't link when the supervised is not an active object"))
+      throw new IllegalActorStateException("Can't link when the supervised is not an active object"))
     supervisorActor.trapExit = trapExceptions.toList
     supervisorActor.faultHandler = Some(handler)
     supervisorActor.link(supervisedActor)
@@ -422,9 +432,9 @@ object ActiveObject extends Logging {
    */
   def unlink(supervisor: AnyRef, supervised: AnyRef) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't unlink when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't unlink when the supervisor is not an active object"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalStateException("Can't unlink when the supervised is not an active object"))
+      throw new IllegalActorStateException("Can't unlink when the supervised is not an active object"))
     supervisorActor.unlink(supervisedActor)
   }
 
@@ -435,7 +445,7 @@ object ActiveObject extends Logging {
    */
   def trapExit(supervisor: AnyRef, trapExceptions: Array[Class[_ <: Throwable]]) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't set trap exceptions when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't set trap exceptions when the supervisor is not an active object"))
     supervisorActor.trapExit = trapExceptions.toList
     this
   }
@@ -447,7 +457,7 @@ object ActiveObject extends Logging {
    */
   def faultHandler(supervisor: AnyRef, handler: FaultHandlingStrategy) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalStateException("Can't set fault handler when the supervisor is not an active object"))
+      throw new IllegalActorStateException("Can't set fault handler when the supervisor is not an active object"))
     supervisorActor.faultHandler = Some(handler)
     this
   }
@@ -464,9 +474,9 @@ object ActiveObject extends Logging {
         val parent = clazz.getSuperclass
         if (parent != null) injectActiveObjectContext0(activeObject, parent)
         else {
-          log.trace(
-          "Can't set 'ActiveObjectContext' for ActiveObject [%s] since no field of this type could be found.",
-          activeObject.getClass.getName)
+          log.ifTrace("Can't set 'ActiveObjectContext' for ActiveObject [" + 
+                      activeObject.getClass.getName + 
+                      "] since no field of this type could be found.")
           None
         }
       }
@@ -476,16 +486,13 @@ object ActiveObject extends Logging {
 
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
     Supervisor(SupervisorConfig(restartStrategy, components))
-
 }
 
 private[akka] object AspectInitRegistry extends ListenerManagement {
   private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
 
   def initFor(target: AnyRef) = {
-    val init = initializations.get(target)
-    initializations.remove(target)
-    init
+    initializations.get(target)
   }
 
   def register(target: AnyRef, init: AspectInit) = {
@@ -493,10 +500,17 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
     foreachListener(_ ! AspectInitRegistered(target, init))
     res
   }
+
+  def unregister(target: AnyRef) = {
+    val res = initializations.remove(target)
+    foreachListener(_ ! AspectInitUnregistered(target, res))
+    res
+  }
 }
 
 private[akka] sealed trait AspectInitRegistryEvent
 private[akka] case class AspectInitRegistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
+private[akka] case class AspectInitUnregistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
 
 private[akka] sealed case class AspectInit(
   val target: Class[_],
@@ -505,8 +519,6 @@ private[akka] sealed case class AspectInit(
   val timeout: Long) {
   def this(target: Class[_], actorRef: ActorRef, timeout: Long) = this(target, actorRef, None, timeout)
 }
-
-// FIXME: add @shutdown callback to ActiveObject in which we get the Aspect through 'Aspects.aspectOf(MyAspect.class, targetInstance)' and shuts down the Dispatcher actor
 
 /**
  * AspectWerkz Aspect that is turning POJOs into Active Object.
@@ -517,6 +529,7 @@ private[akka] sealed case class AspectInit(
 @Aspect("perInstance")
 private[akka] sealed class ActiveObjectAspect {
   @volatile private var isInitialized = false
+  @volatile private var isStopped = false
   private var target: Class[_] = _
   private var actorRef: ActorRef = _
   private var remoteAddress: Option[InetSocketAddress] = _
@@ -547,13 +560,17 @@ private[akka] sealed class ActiveObjectAspect {
     val isOneWay = isVoid(rtti)
     val sender = ActiveObjectContext.sender.value
     val senderFuture = ActiveObjectContext.senderFuture.value
-    if (isOneWay) {
+
+    if (!actorRef.isRunning && !isStopped) {
+      isStopped = true
+      joinPoint.proceed
+    } else if (isOneWay) {
       actorRef ! Invocation(joinPoint, true, true, sender, senderFuture)
       null.asInstanceOf[AnyRef]
     } else {
       val result = (actorRef !! (Invocation(joinPoint, false, isOneWay, sender, senderFuture), timeout)).as[AnyRef]
       if (result.isDefined) result.get
-      else throw new IllegalStateException("No result defined for invocation [" + joinPoint + "]")
+      else throw new IllegalActorStateException("No result defined for invocation [" + joinPoint + "]")
     }
   }
 
@@ -581,8 +598,8 @@ private[akka] sealed class ActiveObjectAspect {
         future.get.await
         val result = getResultOrThrowException(future.get)
         if (result.isDefined) result.get
-        else throw new IllegalStateException("No result returned from call to [" + joinPoint + "]")
-      } else throw new IllegalStateException("No future returned from call to [" + joinPoint + "]")
+        else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
+      } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
     }
   }
 
@@ -616,11 +633,12 @@ private[akka] sealed class ActiveObjectAspect {
   joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean, sender: AnyRef, senderFuture: CompletableFuture[Any]) {
 
   override def toString: String = synchronized {
-    "Invocation [joinPoint: " + joinPoint.toString +
-    ", isOneWay: " + isOneWay +
-    ", isVoid: " + isVoid +
-    ", sender: " + sender +
-    ", senderFuture: " + senderFuture +
+    "Invocation [" +
+    "\n\t\tmethod = " + joinPoint.getRtti.asInstanceOf[MethodRtti].getMethod.getName + " @ " + joinPoint.getTarget.getClass.getName +
+    "\n\t\tisOneWay = " + isOneWay +
+    "\n\t\tisVoid = " + isVoid +
+    "\n\t\tsender = " + sender +
+    "\n\t\tsenderFuture = " + senderFuture +
     "]"
   }
 
@@ -656,22 +674,23 @@ object Dispatcher {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Option[RestartCallbacks]) extends Actor {
+private[akka] class Dispatcher(transactionalRequired: Boolean,
+                               var restartCallbacks: Option[RestartCallbacks] = None,
+                               var shutdownCallback: Option[ShutdownCallback] = None) extends Actor {
   import Dispatcher._
 
   private[actor] var target: Option[AnyRef] = None
+  private var zhutdown: Option[Method] = None
   private var preRestart: Option[Method] = None
   private var postRestart: Option[Method] = None
   private var initTxState: Option[Method] = None
   private var context: Option[ActiveObjectContext] = None
   private var targetClass:Class[_] = _
 
-  
-
   def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
 
   private[actor] def initialize(targetClass: Class[_], targetInstance: AnyRef, ctx: Option[ActiveObjectContext]) = {
-  
+
    if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired))
       self.makeTransactionRequired
     self.id = targetClass.getName
@@ -680,54 +699,73 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
     context = ctx
     val methods = targetInstance.getClass.getDeclaredMethods.toList
 
+    if (self.lifeCycle.isEmpty) self.lifeCycle = Some(LifeCycle(Permanent))
+    
     // See if we have any config define restart callbacks
-    callbacks match {
+    restartCallbacks match {
       case None => {}
       case Some(RestartCallbacks(pre, post)) =>
         preRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(pre, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalStateException(
+        } catch { case e => throw new IllegalActorStateException(
           "Could not find pre restart method [" + pre + "] \nin [" +
           targetClass.getName + "]. \nIt must have a zero argument definition.") })
         postRestart = Some(try {
           targetInstance.getClass.getDeclaredMethod(post, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalStateException(
+        } catch { case e => throw new IllegalActorStateException(
           "Could not find post restart method [" + post + "] \nin [" +
+          targetClass.getName + "]. \nIt must have a zero argument definition.") })
+    }
+    // See if we have any config define a shutdown callback
+    shutdownCallback match {
+      case None => {}
+      case Some(ShutdownCallback(down)) =>
+        zhutdown = Some(try {
+          targetInstance.getClass.getDeclaredMethod(down, ZERO_ITEM_CLASS_ARRAY: _*)
+        } catch { case e => throw new IllegalStateException(
+          "Could not find shutdown method [" + down + "] \nin [" +
           targetClass.getName + "]. \nIt must have a zero argument definition.") })
     }
 
     // See if we have any annotation defined restart callbacks
     if (!preRestart.isDefined) preRestart = methods.find(m => m.isAnnotationPresent(Annotations.prerestart))
     if (!postRestart.isDefined) postRestart = methods.find(m => m.isAnnotationPresent(Annotations.postrestart))
+    // See if we have an annotation defined shutdown callback
+    if (!zhutdown.isDefined) zhutdown = methods.find(m => m.isAnnotationPresent(Annotations.shutdown))
 
     if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
-      throw new IllegalStateException(
+      throw new IllegalActorStateException(
         "Method annotated with @prerestart or defined as a restart callback in \n[" +
         targetClass.getName + "] must have a zero argument definition")
     if (postRestart.isDefined && postRestart.get.getParameterTypes.length != 0)
-      throw new IllegalStateException(
+      throw new IllegalActorStateException(
         "Method annotated with @postrestart or defined as a restart callback in \n[" +
+        targetClass.getName + "] must have a zero argument definition")
+    if (zhutdown.isDefined && zhutdown.get.getParameterTypes.length != 0)
+      throw new IllegalStateException(
+        "Method annotated with @shutdown or defined as a shutdown callback in \n[" +
         targetClass.getName + "] must have a zero argument definition")
 
     if (preRestart.isDefined) preRestart.get.setAccessible(true)
     if (postRestart.isDefined) postRestart.get.setAccessible(true)
+    if (zhutdown.isDefined) zhutdown.get.setAccessible(true)
 
     // see if we have a method annotated with @inittransactionalstate, if so invoke it
     initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
     if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0)
-      throw new IllegalStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
+      throw new IllegalActorStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
     if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
   def receive = {
-    case Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
+    case invocation @ Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
+      ActiveObject.log.ifTrace("Invoking active object with message:\n" + invocation)
       context.foreach { ctx =>
         if (sender ne null) ctx._sender = sender
         if (senderFuture ne null) ctx._senderFuture = senderFuture
       }
       ActiveObjectContext.sender.value = joinPoint.getThis // set next sender
       self.senderFuture.foreach(ActiveObjectContext.senderFuture.value = _)
-
       if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
       if (isOneWay) joinPoint.proceed
       else self.reply(joinPoint.proceed)
@@ -735,48 +773,52 @@ private[akka] class Dispatcher(transactionalRequired: Boolean, var callbacks: Op
     // Jan Kronquist: started work on issue 121
     case Link(target)   => self.link(target)
     case Unlink(target) => self.unlink(target)
-    case unexpected =>
-      throw new IllegalStateException("Unexpected message [" + unexpected + "] sent to [" + this + "]")
+    case unexpected     => throw new IllegalActorStateException(
+      "Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
 
   override def preRestart(reason: Throwable) {
     try {
-	   // Since preRestart is called we know that this dispatcher
-	   // is about to be restarted. Put the instance in a thread
-	   // local so the new dispatcher can be initialized with the contents of the
-	   // old.
-	   //FIXME - This should be considered as a workaround.
-	   crashedActorTl.set(this)
-      if (preRestart.isDefined) preRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
+       // Since preRestart is called we know that this dispatcher
+       // is about to be restarted. Put the instance in a thread
+       // local so the new dispatcher can be initialized with the 
+       // contents of the old.
+       //FIXME - This should be considered as a workaround.
+       crashedActorTl.set(this)
+       preRestart.foreach(_.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*))
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
   override def postRestart(reason: Throwable) {
     try {
-	 
-      if (postRestart.isDefined) {
-		postRestart.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
-	  } 
+      postRestart.foreach(_.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*))
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
 
   override def init = {
-	// Get the crashed dispatcher from thread local and intitialize this actor with the
-	 // contents of the old dispatcher
-	  val oldActor = crashedActorTl.get();
-	  if(oldActor != null) {
-	  	initialize(oldActor.targetClass,oldActor.target.get,oldActor.context)
-	  	crashedActorTl.set(null)
-	}
+    // Get the crashed dispatcher from thread local and intitialize this actor with the
+    // contents of the old dispatcher
+    val oldActor = crashedActorTl.get();
+    if (oldActor != null) {
+      initialize(oldActor.targetClass, oldActor.target.get, oldActor.context)
+      crashedActorTl.set(null)
+    }
+  }
+
+  override def shutdown = {
+    try {
+      zhutdown.foreach(_.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*))
+    } catch { case e: InvocationTargetException => throw e.getCause
+    } finally { 
+      AspectInitRegistry.unregister(target.get);
+    }
   }
 
   override def initTransactionalState = {
- try {
+    try {
       if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
     } catch { case e: InvocationTargetException => throw e.getCause }
   }
-
-
 
   private def serializeArguments(joinPoint: JoinPoint) = {
     val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues

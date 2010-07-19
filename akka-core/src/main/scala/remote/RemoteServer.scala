@@ -215,11 +215,15 @@ class RemoteServer extends Logging {
 
   def shutdown = synchronized {
     if (_isRunning) {
-      RemoteServer.unregister(hostname, port)
-      openChannels.disconnect
-      openChannels.close.awaitUninterruptibly
-      bootstrap.releaseExternalResources
-      Cluster.deregisterLocalNode(hostname, port)
+      try {
+        RemoteServer.unregister(hostname, port)
+        openChannels.disconnect
+        openChannels.close.awaitUninterruptibly
+        bootstrap.releaseExternalResources
+        Cluster.deregisterLocalNode(hostname, port)
+      } catch {
+        case e => log.warning("Could not close remote server channel in a graceful way")
+      }
     }
   }
 
@@ -324,7 +328,7 @@ class RemoteServerHandler(
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
   /**
-   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer. 
+   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer.
    * If a channel is closed before, it is automatically removed from the open channels group.
    */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
@@ -341,7 +345,7 @@ class RemoteServerHandler(
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val message = event.getMessage
-    if (message eq null) throw new IllegalStateException("Message in remote MessageEvent is null: " + event)
+    if (message eq null) throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
     if (message.isInstanceOf[RemoteRequestProtocol]) {
       handleRemoteRequestProtocol(message.asInstanceOf[RemoteRequestProtocol], event.getChannel)
     }
@@ -364,8 +368,8 @@ class RemoteServerHandler(
     val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
     actorRef.start
     val message = MessageSerializer.deserialize(request.getMessage)
-    val sender = 
-      if (request.hasSender) Some(ActorRef.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
+    val sender =
+      if (request.hasSender) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
       else None
     if (request.getIsOneWay) actorRef.!(message)(sender)
     else {
@@ -425,14 +429,14 @@ class RemoteServerHandler(
         log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
-            .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
+            .setException(ExceptionProtocol.newBuilder.setClassname(e.getCause.getClass.getName).setMessage(e.getCause.getMessage).build)
             .setIsSuccessful(false)
             .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
         val replyMessage = replyBuilder.build
         channel.write(replyMessage)
       case e: Throwable =>
-        log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
+        log.error(e, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
             .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)

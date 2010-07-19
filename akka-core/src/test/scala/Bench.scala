@@ -8,24 +8,24 @@ package se.scalablesolutions.akka.actor
 import se.scalablesolutions.akka.actor.Actor._
 
 object Chameneos {
-  
+
   sealed trait ChameneosEvent
   case class Meet(from: ActorRef, colour: Colour) extends ChameneosEvent
   case class Change(colour: Colour) extends ChameneosEvent
   case class MeetingCount(count: Int) extends ChameneosEvent
   case object Exit extends ChameneosEvent
-  
+
   abstract class Colour
   case object RED extends Colour
   case object YELLOW extends Colour
   case object BLUE extends Colour
   case object FADED extends Colour
-  
+
   val colours = Array[Colour](BLUE, RED, YELLOW)
-  
+
   var start = 0L
   var end = 0L
-  
+
   class Chameneo(var mall: ActorRef, var colour: Colour, cid: Int) extends Actor {
      var meetings = 0
      self.start
@@ -36,12 +36,12 @@ object Chameneos {
          colour = complement(otherColour)
          meetings = meetings +1
          from ! Change(colour)
-         mall ! Meet(self, colour)	
+         mall ! Meet(self, colour)
 
        case Change(newColour) =>
          colour = newColour
          meetings = meetings +1
-         mall ! Meet(self, colour)	
+         mall ! Meet(self, colour)
 
        case Exit =>
          colour = FADED
@@ -77,11 +77,11 @@ object Chameneos {
     var waitingChameneo: Option[ActorRef] = None
     var sumMeetings = 0
     var numFaded = 0
-    
+
     override def init = {
       for (i <- 0 until numChameneos) actorOf(new Chameneo(self, colours(i % 3), i))
     }
-    
+
     def receive = {
       case MeetingCount(i) =>
         numFaded += 1
@@ -90,13 +90,13 @@ object Chameneos {
           Chameneos.end = System.currentTimeMillis
           self.stop
         }
-          
+
       case msg @ Meet(a, c) =>
         if (n > 0) {
           waitingChameneo match {
             case Some(chameneo) =>
               n -= 1
-              chameneo ! msg 
+              chameneo ! msg
               waitingChameneo = None
             case None => waitingChameneo = self.sender
           }
@@ -106,7 +106,7 @@ object Chameneos {
         }
     }
   }
-  
+
   def run {
 //    System.setProperty("akka.config", "akka.conf")
       Chameneos.start = System.currentTimeMillis

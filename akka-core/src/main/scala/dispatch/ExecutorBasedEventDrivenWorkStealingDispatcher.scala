@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -41,8 +41,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   /** The index in the pooled actors list which was last used to steal work */
   @volatile private var lastThiefIndex = 0
 
-  // TODO: is there a naming convention for this name?
-  val name: String = "event-driven-work-stealing:executor:dispatcher:" + _name
+  val name = "akka:event-driven-work-stealing:dispatcher:" + _name
   init
 
   def dispatch(invocation: MessageInvocation) = if (active) {
@@ -55,7 +54,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
         }
       }
     })
-  } else throw new IllegalStateException("Can't submit invocations to dispatcher since it's not started")
+  } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
   /**
    * Try processing the mailbox of the given actor. Fails if the dispatching lock on the actor is already held by
@@ -129,8 +128,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def tryDonateAndProcessMessages(receiver: ActorRef, thief: ActorRef) = {
     if (thief.dispatcherLock.tryLock) {
       try {
-        while(donateMessage(receiver, thief))
-          processMailbox(thief)
+        while(donateMessage(receiver, thief)) processMailbox(thief)
       } finally {
         thief.dispatcherLock.unlock
       }
@@ -156,15 +154,17 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   def shutdown = if (active) {
-    log.debug("Shutting down ExecutorBasedEventDrivenWorkStealingDispatcher [%s]", name)
+    log.debug("Shutting down %s", toString)
     executor.shutdownNow
     active = false
     references.clear
   }
 
-  def ensureNotActive: Unit = if (active) throw new IllegalStateException(
+  def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
+  override def toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
+ 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
   override def register(actorRef: ActorRef) = {
@@ -182,15 +182,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   private def verifyActorsAreOfSameType(actorOfId: ActorRef) = {
     actorType match {
-      case None => {
-        actorType = Some(actorOfId.actor.getClass)
-      }
-      case Some(aType) => {
+      case None => actorType = Some(actorOfId.actor.getClass)
+      case Some(aType) =>
         if (aType != actorOfId.actor.getClass)
-          throw new IllegalStateException(
-            String.format("Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
-              actorOfId.actor, aType))
-      }
+          throw new IllegalActorStateException(String.format(
+            "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
+            actorOfId.actor, aType))
     }
   }
 }

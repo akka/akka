@@ -18,7 +18,7 @@ class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLC
     val normalResult = super.findResources(resource)
     if(normalResult.hasMoreElements) normalResult else findDeployed(resource)
   }
-  
+
   def findDeployed(resource : String) = new Enumeration[URL]{
     private val it =  getURLs.flatMap( listClassesInPackage(_,resource) ).iterator
     def hasMoreElements = it.hasNext
@@ -26,7 +26,7 @@ class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLC
   }
 
   def listClassesInPackage(jar : URL, pkg : String) = {
-	val f  = new File(jar.getFile)
+        val f  = new File(jar.getFile)
     val jf = new JarFile(f)
     try {
       val es = jf.entries
