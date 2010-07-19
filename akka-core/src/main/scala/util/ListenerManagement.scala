@@ -31,8 +31,8 @@ trait ListenerManagement extends Logging {
    * The <code>listener</code> is stopped by this method.
    */
   def removeListener(listener: ActorRef) = {
-    listener.stop
     listeners.remove(listener)
+    listener.stop
   }
 
   /**
