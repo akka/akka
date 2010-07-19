@@ -21,7 +21,7 @@ trait Fsm[S] { self: Actor =>
 
   override protected def receive: Receive = {
     case value => {
-      timeoutActor.foreach{ref => Scheduler.unschedule(ref); timeoutActor = None }
+      timeoutActor = timeoutActor flatMap { ref => Scheduler.unschedule(ref); None }
 
       val event = Event(value, currentState.stateData)
       currentState = (currentState.state orElse handleEvent).apply(event)
