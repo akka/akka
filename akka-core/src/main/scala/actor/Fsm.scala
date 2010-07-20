@@ -32,7 +32,7 @@ trait Fsm[S] { self: Actor =>
         val newState = (currentState.stateFunction orElse handleEvent).apply(event)
 
         newState match {
-          case State(Reply, _, _, _, replyValue) => replyValue.foreach(this.self.reply)
+          case State(Reply, _, _, _, Some(replyValue)) => this.self.reply(replyValue)
           case _ => () // ignore for now
         }
 
