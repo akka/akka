@@ -17,29 +17,29 @@ object FsmActorSpec {
              unlockedLatch: StandardLatch,
              lockedLatch: StandardLatch) extends Actor with Fsm[CodeState] {
 
-    def initialState = NextState(locked, CodeState("", "33221"))
+    def initialState = State(NextState, locked, CodeState("", "33221"))
 
-    def locked: State = {
+    def locked: StateFunction = {
       case Event(digit: Char, CodeState(soFar, code)) => {
            soFar + digit match {
              case incomplete if incomplete.length < code.length =>
-               NextState(locked, CodeState(incomplete, code))
+               State(NextState, locked, CodeState(incomplete, code))
              case codeTry if (codeTry == code) => {
                doUnlock
-               new NextState(open, CodeState("", code), Some(timeout))
+               new State(NextState, open, CodeState("", code), Some(timeout))
              }
              case wrong => {
                log.error("Wrong code %s", wrong)
-               NextState(locked, CodeState("", code))
+               State(NextState, locked, CodeState("", code))
              }
            }
       }
     }
 
-    def open: State = {
+    def open: StateFunction = {
       case Event(StateTimeout, stateData) => {
         doLock
-        NextState(locked, stateData)
+        State(NextState, locked, stateData)
       }
     }
 
