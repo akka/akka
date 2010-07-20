@@ -5,17 +5,17 @@ import se.scalablesolutions.akka.actor.{ActorRef, Scheduler, Actor}
 
 trait Fsm[S] { self: Actor =>
   
-  type State = scala.PartialFunction[Event, NextState]
+  type StateFunction = scala.PartialFunction[Event, State]
 
-  @volatile var currentState: NextState = initialState
+  @volatile var currentState: State = initialState
   @volatile var timeoutActor: Option[ActorRef] = None
 
-  def initialState: NextState
+  def initialState: State
 
-  def handleEvent: State = {
+  def handleEvent: StateFunction = {
     case event@Event(value,stateData) =>
       log.warning("No state for event with value %s - keeping current state %s", value, stateData)
-      NextState(currentState.state, stateData, currentState.timeout)
+      State(NextState, currentState.stateFunction, stateData, currentState.timeout)
   }
 
 
@@ -24,15 +24,30 @@ trait Fsm[S] { self: Actor =>
       timeoutActor = timeoutActor flatMap { ref => Scheduler.unschedule(ref); None }
 
       val event = Event(value, currentState.stateData)
-      currentState = (currentState.state orElse handleEvent).apply(event)
+      currentState = (currentState.stateFunction orElse handleEvent).apply(event)
 
       currentState.timeout.foreach{timeout =>
         timeoutActor = Some(Scheduler.scheduleOnce(this.self, StateTimeout, timeout, TimeUnit.MILLISECONDS))
       }
+
+      currentState match {
+        case State(Reply, _, _, _, reply) => reply.foreach(this.self.reply)
+      }
     }
   }
 
-  case class NextState(state: State, stateData: S, timeout: Option[Int] = None)
+  
+  case class State(stateEvent: StateEvent,
+                   stateFunction: StateFunction,
+                   stateData: S,
+                   timeout: Option[Int] = None,
+                   reply: Option[Any] =None)
+
   case class Event(event: Any, stateData: S)
+
+  sealed trait StateEvent
+  object NextState extends StateEvent
+  object Reply extends StateEvent
+
   object StateTimeout
 }
