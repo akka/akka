@@ -16,6 +16,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Compile settings
   // -------------------------------------------------------------------------------------------------------------------
+
   override def compileOptions = super.compileOptions ++
     Seq("-deprecation",
         "-Xmigration",
@@ -29,6 +30,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Deploy/dist settings
   // -------------------------------------------------------------------------------------------------------------------
+
   lazy val deployPath = info.projectPath / "deploy"
   lazy val distPath = info.projectPath / "dist"
   def distName = "%s_%s-%s.zip".format(name, buildScalaVersion, version)
@@ -37,6 +39,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 	// All repositories *must* go here! See ModuleConigurations below.
   // -------------------------------------------------------------------------------------------------------------------
+
 	object Repositories {
 	  lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
 	  lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
@@ -54,6 +57,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // must be resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
   // Therefore, if repositories are defined, this must happen as def, not as val.
   // -------------------------------------------------------------------------------------------------------------------
+
 	import Repositories._
   lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
   lazy val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
@@ -74,6 +78,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
+
   lazy val ATMO_VERSION       = "0.6"
   lazy val CAMEL_VERSION      = "2.4.0"
   lazy val CASSANDRA_VERSION  = "0.6.1"
@@ -90,6 +95,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
   // -------------------------------------------------------------------------------------------------------------------
+
   object Dependencies {
 
     // Compile
@@ -149,16 +155,16 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
 
-    lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive()
+    lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive
 
-    lazy val lift      = "net.liftweb" % "lift-webkit" % LIFT_VERSION % "compile"
-    lazy val lift_util = "net.liftweb" % "lift-util"   % LIFT_VERSION % "compile"
+    lazy val lift_util   = "net.liftweb" % "lift-util"   % LIFT_VERSION % "compile"
+    lazy val lift_webkit = "net.liftweb" % "lift-webkit" % LIFT_VERSION % "compile"
 
     lazy val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
 
     lazy val mongo = "org.mongodb" % "mongo-java-driver" % "1.4" % "compile"
 
-    lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive()
+    lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive
 
     lazy val netty = "org.jboss.netty" % "netty" % "3.2.1.Final" % "compile"
 
@@ -203,6 +209,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // Subprojects
   // -------------------------------------------------------------------------------------------------------------------
+
   lazy val akka_core        = project("akka-core", "akka-core", new AkkaCoreProject(_))
   lazy val akka_amqp        = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
   lazy val akka_http        = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
@@ -212,10 +219,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_jta         = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
   lazy val akka_kernel      = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
                                       akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
+  lazy val akka_osgi        = project("akka-osgi", "akka-osgi", new AkkaOSGiParentProject(_))
   lazy val akka_samples     = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
-  // ------------------------------------------------------------
-  // Run Akka microkernel using 'sbt run' + use for packaging executable JAR
+  // -------------------------------------------------------------------------------------------------------------------
+  // Miscellaneous
+  // -------------------------------------------------------------------------------------------------------------------
+
   override def mainClass = Some("se.scalablesolutions.akka.kernel.Main")
 
   override def packageOptions =
@@ -303,6 +313,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-core subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val aopalliance   = Dependencies.aopalliance
     val commons_codec = Dependencies.commons_codec
@@ -333,6 +344,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-amqp subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val commons_io = Dependencies.commons_io
     val rabbit     = Dependencies.rabbit
@@ -346,6 +358,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-http subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val annotation       = Dependencies.annotation
     val atmo             = Dependencies.atmo
@@ -374,6 +387,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-camel subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val camel_core = Dependencies.camel_core
   }
@@ -381,6 +395,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-persistence subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common",
       new AkkaPersistenceCommonProject(_), akka_core)
@@ -403,6 +418,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-persistence-redis subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_codec = Dependencies.commons_codec
     val redis         = Dependencies.redis
@@ -413,6 +429,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-persistence-mongo subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaMongoProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val mongo = Dependencies.mongo
 
@@ -422,6 +439,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-persistence-cassandra subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra   = Dependencies.cassandra
     val log4j       = Dependencies.log4j
@@ -440,11 +458,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-kernel subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-spring subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val spring_beans   = Dependencies.spring_beans
     val spring_context = Dependencies.spring_context
@@ -458,6 +478,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// -------------------------------------------------------------------------------------------------------------------
 	// akka-jta subproject
 	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaJTAProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val atomikos_transactions     = Dependencies.atomikos_transactions
     val atomikos_transactions_api = Dependencies.atomikos_transactions_api
@@ -466,7 +487,19 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
   }
 
-  // ================= OSGi Packaging ==================
+	// -------------------------------------------------------------------------------------------------------------------
+	// OSGi stuff
+	// -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
+    lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
+      new AkkaOSGiDependenciesBundleProject(_), akka_kernel, akka_jta) // akka_kernel does not depend on akka_jta (why?) therefore we list akka_jta here
+    lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
+      new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_core, akka_amqp, akka_http,
+        akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
+        akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
+        akka_persistence.akka_persistence_cassandra)
+  }
 
   class AkkaOSGiDependenciesBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
     override def bndClasspath = compileClasspath
@@ -497,73 +530,69 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaOSGiAssemblyProject(info: ProjectInfo) extends DefaultProject(info) {
 
     // Scala bundle
-    val scala_bundle = "com.weiglewilczek.scala-lang-osgi" % "scala-library_2.8.0.RC3" % "1.0" % "compile" intransitive()
+    val scala_bundle = "com.weiglewilczek.scala-lang-osgi" % "scala-library" % buildScalaVersion % "compile" intransitive
 
     // Lift bundles
-    val lift_actor = "net.liftweb" % "lift-actor" % LIFT_VERSION % "compile" intransitive()
-    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile" intransitive()
-    val lift_json = "net.liftweb" % "lift-json" % LIFT_VERSION % "compile" intransitive()
-    val lift_util = "net.liftweb" % "lift-util" % LIFT_VERSION % "compile" intransitive()
-    //val lift_webkit = "net.liftweb" % "lift-webkit" % LIFT_VERSION % "compile" intransitive()
-    //val lift_testkit = "net.liftweb" % "lift-testkit" % LIFT_VERSION % "compile" intransitive()
+//    val lift_util   = Dependencies.lift_util.intransitive
+//    val lift_actor  = "net.liftweb" % "lift-actor"  % LIFT_VERSION % "compile" intransitive
+//    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile" intransitive
+//    val lift_json   = "net.liftweb" % "lift-json"   % LIFT_VERSION % "compile" intransitive
 
     // Camel bundles
-    val camel_core = "org.apache.camel" % "camel-core" % "2.3.0" % "compile" intransitive()
-    val fusesource_commonman = "org.fusesource.commonman" % "commons-management" % "1.0" intransitive()
+    val camel_core           = Dependencies.camel_core.intransitive
+    val fusesource_commonman = "org.fusesource.commonman" % "commons-management" % "1.0" intransitive
 
     // Spring bundles
-    val spring_beans = "org.springframework" % "spring-beans" % "3.0.2.RELEASE" % "compile" intransitive()
-    val spring_context = "org.springframework" % "spring-context" % "3.0.2.RELEASE" % "compile" intransitive()
-    val spring_jms = "org.springframework" % "spring-jms" % "3.0.2.RELEASE" % "compile" intransitive()
-    val spring_aop = "org.springframework" % "spring-aop" % "3.0.2.RELEASE" % "compile" intransitive()
-    val spring_asm = "org.springframework" % "spring-asm" % "3.0.2.RELEASE" % "compile" intransitive()
-    val spring_core = "org.springframework" % "spring-core" % "3.0.2.RELEASE" % "compile" intransitive()
-    val spring_expression = "org.springframework" % "spring-expression" % "3.0.2.RELEASE" % "compile" intransitive()
-    val spring_tx = "org.springframework" % "spring-tx" % "3.0.2.RELEASE" % "compile" intransitive()
+    val spring_beans      = Dependencies.spring_beans.intransitive
+    val spring_context    = Dependencies.spring_context.intransitive
+    val spring_aop        = "org.springframework" % "spring-aop"        % SPRING_VERSION % "compile" intransitive
+    val spring_asm        = "org.springframework" % "spring-asm"        % SPRING_VERSION % "compile" intransitive
+    val spring_core       = "org.springframework" % "spring-core"       % SPRING_VERSION % "compile" intransitive
+    val spring_expression = "org.springframework" % "spring-expression" % SPRING_VERSION % "compile" intransitive
+    val spring_jms        = "org.springframework" % "spring-jms"        % SPRING_VERSION % "compile" intransitive
+    val spring_tx         = "org.springframework" % "spring-tx"         % SPRING_VERSION % "compile" intransitive
 
-    val commons_io = "commons-io" % "commons-io" % "1.4" % "compile" intransitive()
-    val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile" intransitive()
-    val commons_codec = "commons-codec" % "commons-codec" % "1.4" % "compile" intransitive()
-    val commons_fileupload = "commons-fileupload" % "commons-fileupload" % "1.2.1" % "compile" intransitive()
-    val jackson_core = "org.codehaus.jackson" % "jackson-core-asl" % "1.2.1" % "compile" intransitive()
-    val jackson = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.2.1" % "compile" intransitive()
-    val netty = "org.jboss.netty" % "netty" % "3.2.0.CR1" % "compile" intransitive()
-    val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile" intransitive()
-    val joda = "joda-time" % "joda-time" % "1.6" intransitive()
+    val commons_codec      = Dependencies.commons_codec.intransitive
+    val commons_io         = Dependencies.commons_io.intransitive
+    val commons_pool       = Dependencies.commons_pool.intransitive
+    val guicey             = Dependencies.guicey.intransitive
+    val jackson            = Dependencies.jackson.intransitive
+    val jackson_core       = Dependencies.jackson_core.intransitive
+    val jsr311             = Dependencies.jsr311.intransitive
+    val jta_1_1            = Dependencies.jta_1_1.intransitive
+    val netty              = Dependencies.netty.intransitive
+    val commons_fileupload = "commons-fileupload"        % "commons-fileupload" % "1.2.1" % "compile" intransitive
+    val jms_1_1            = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive
+    val joda               = "joda-time"                 % "joda-time" % "1.6" intransitive
 
-    val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive()
-    val jms_1_1 = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive()
-    val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile" intransitive()
+    override def packageAction = 
+      task {
+        val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
+        val prjs: Seq[Path] = info.dependencies.toSeq.asInstanceOf[Seq[DefaultProject]] map { _.jarPath }
+        val all = libs ++ prjs
+        val destination = outputPath / "bundles"
+        FileUtilities.copyFlat(all, destination, log)
+        log info "Copied %s bundles to %s".format(all.size, destination)
+        None
+      }
 
-    override def packageAction = {
-      val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
-      val prjs: Seq[Path] = info.dependencies.toSeq.asInstanceOf[Seq[DefaultProject]].map(_.jarPath)
-      val all = libs ++ prjs
-      FileUtilities.copyFlat(all, outputPath / "bundles", log)
-      super.packageAction
-    }
+    override def artifacts = Set.empty
   }
 
-  class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
-    lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
-      new AkkaOSGiDependenciesBundleProject(_), akka_kernel,
-      akka_jta // akka_kernel does not depend on akka_jta (why?) therefore we list akka_jta here
-      )
-    lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
-      new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_core, akka_amqp, akka_http,
-        akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
-        akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
-        akka_persistence.akka_persistence_cassandra)
-  }
+	// -------------------------------------------------------------------------------------------------------------------
+	// Test
+	// -------------------------------------------------------------------------------------------------------------------
 
-  // ================= TEST ==================
   class AkkaActiveObjectTestProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit = "junit" % "junit" % "4.5" % "test"
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
   }
 
-  // ================= EXAMPLES ==================
+	// -------------------------------------------------------------------------------------------------------------------
+	// Examples
+	// -------------------------------------------------------------------------------------------------------------------
+
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) with CodeFellowPlugin {
 //    val scalaToolsSnapshots = ScalaToolsSnapshots
     override def spdeSourcePath = mainSourcePath / "spde"
@@ -574,8 +603,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject with CodeFellowPlugin {
     val commons_logging = Dependencies.commons_logging
-    val lift            = Dependencies.lift
     val lift_util       = Dependencies.lift_util
+    val lift_webkit     = Dependencies.lift_webkit
     val servlet         = Dependencies.servlet
 
     // testing
@@ -649,8 +678,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleOSGiProject(_), akka_core)
   }
 
-  // ------------------------------------------------------------
-  // helper functions
+	// -------------------------------------------------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------------------------------------------------
+
   def removeDupEntries(paths: PathFinder) =
    Path.lazyPathFinder {
      val mapped = paths.get map { p => (p.relativePath, p) }
@@ -675,7 +706,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     )
   }
   
-  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "_osgi-" + version + ".jar")
+  def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject
