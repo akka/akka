@@ -21,18 +21,18 @@ object FsmActorSpec {
 
     def locked: StateFunction = {
       case Event(digit: Char, CodeState(soFar, code)) => {
-           soFar + digit match {
-             case incomplete if incomplete.length < code.length =>
-               State(NextState, locked, CodeState(incomplete, code))
-             case codeTry if (codeTry == code) => {
-               doUnlock
-               State(NextState, open, CodeState("", code), Some(timeout))
-             }
-             case wrong => {
-               log.error("Wrong code %s", wrong)
-               State(NextState, locked, CodeState("", code))
-             }
-           }
+        soFar + digit match {
+          case incomplete if incomplete.length < code.length =>
+            State(NextState, locked, CodeState(incomplete, code))
+          case codeTry if (codeTry == code) => {
+            doUnlock
+            State(NextState, open, CodeState("", code), Some(timeout))
+          }
+          case wrong => {
+            log.error("Wrong code %s", wrong)
+            State(NextState, locked, CodeState("", code))
+          }
+        }
       }
     }
 
