@@ -32,6 +32,7 @@ trait Fsm[S] { self: Actor =>
 
       currentState match {
         case State(Reply, _, _, _, reply) => reply.foreach(this.self.reply)
+        case _ => () // ignore for now
       }
     }
   }
