@@ -247,10 +247,10 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def spawnLink[T <: Actor: Manifest]: ActorRef = unsupported
   def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = unsupported
   def shutdownLinkedActors: Unit = unsupported
-  def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[CompletableFuture[T]]) = unsupported
-  protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
+  protected[akka] def mailbox: AnyRef = unsupported
+  protected[akka] def mailbox_=(msg: AnyRef):AnyRef = unsupported
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported

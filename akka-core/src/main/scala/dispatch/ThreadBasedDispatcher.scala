@@ -40,8 +40,6 @@ class ThreadBasedDispatcher(private val actor: ActorRef) extends MessageDispatch
 
   def isShutdown = !active
 
-  def usesActorMailbox = false
-
   def shutdown = if (active) {
     log.debug("Shutting down %s", toString)
     active = false
