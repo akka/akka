@@ -72,7 +72,7 @@ private [akka] object RedisStorageBackend extends
   // need an explicit definition in akka-conf
   val nodes = config.getList("akka.storage.redis.cluster")
 
-  val db =
+  def connect() =
     nodes match {
       case Seq() =>
         // no cluster defined
@@ -88,6 +88,8 @@ private [akka] object RedisStorageBackend extends
           val keyTag = Some(NoOpKeyTag)
         }
     }
+
+  var db = connect()
 
   /**
    * Map storage in Redis.
@@ -411,6 +413,10 @@ private [akka] object RedisStorageBackend extends
     try {
       body
     } catch {
+      case e: RedisConnectionException => {
+        db = connect()
+        body
+      }
       case e: java.lang.NullPointerException =>
         throw new StorageException("Could not connect to Redis server")
       case e =>
