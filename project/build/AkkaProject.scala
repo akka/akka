@@ -170,6 +170,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile"
 
+    lazy val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0"
+
     lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile"
 
     lazy val redis = "com.redis" % "redisclient" % "2.8.0-1.4" % "compile"
@@ -646,13 +648,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleOSGiProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
-    override def bndClasspath = compileClasspath
-
-    val osgi_core = "org.osgi" % "org.osgi.core" % "4.2.0"
-
-    override def bndBundleActivator = Some("sample.osgi.Activator")
-    override def bndPrivatePackage = Nil
-    override def bndExportPackage = Seq("sample.osgi.*;version=0.9")
+    val osgi_core = Dependencies.osgi_core
+    override lazy val bndBundleActivator = Some("se.scalablesolutions.akka.sample.osgi.Activator")
+    override lazy val bndExportPackage = Nil // Necessary because of mixing-in AkkaDefaultProject which exports all ...akka.* packages!
   }
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
