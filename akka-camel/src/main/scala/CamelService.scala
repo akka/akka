@@ -1,8 +1,9 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-
 package se.scalablesolutions.akka.camel
+
+import java.util.concurrent.CountDownLatch
 
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
@@ -77,6 +78,22 @@ trait CamelService extends Bootable with Logging {
    * @see onUnload
    */
   def unload = onUnload
+
+  /**
+   * Sets an expectation of the number of upcoming endpoint activations and returns
+   * a {@link CountDownLatch} that can be used to wait for the activations to occur.
+   * Endpoint activations that occurred in the past are not considered. 
+   */
+  def expectEndpointActivationCount(count: Int): CountDownLatch =
+    (consumerPublisher !! SetExpectedRegistrationCount(count)).as[CountDownLatch].get
+
+  /**
+   * Sets an expectation of the number of upcoming endpoint de-activations and returns
+   * a {@link CountDownLatch} that can be used to wait for the de-activations to occur.
+   * Endpoint de-activations that occurred in the past are not considered.
+   */
+  def expectEndpointDeactivationCount(count: Int): CountDownLatch =
+    (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
 }
 
 /**

@@ -65,50 +65,50 @@ private[camel] object ConsumerPublisher extends Logging {
  * Actor that publishes consumer actors and active object methods at Camel endpoints.
  * The Camel context used for publishing is CamelContextManager.context. This actor
  * accepts messages of type
- * se.scalablesolutions.akka.camel.service.ConsumerRegistered,
- * se.scalablesolutions.akka.camel.service.ConsumerMethodRegistered and
- * se.scalablesolutions.akka.camel.service.ConsumerUnregistered.
+ * se.scalablesolutions.akka.camel.ConsumerRegistered,
+ * se.scalablesolutions.akka.camel.ConsumerUnregistered.
+ * se.scalablesolutions.akka.camel.ConsumerMethodRegistered and
+ * se.scalablesolutions.akka.camel.ConsumerMethodUnregistered.
  *
  * @author Martin Krasser
  */
 private[camel] class ConsumerPublisher extends Actor {
   import ConsumerPublisher._
 
-  @volatile private var latch = new CountDownLatch(0)
+  @volatile private var registrationLatch = new CountDownLatch(0)
+  @volatile private var unregistrationLatch = new CountDownLatch(0)
 
-  /**
-   *  Adds a route to the actor identified by a Publish message to the global CamelContext.
-   */
   protected def receive = {
     case r: ConsumerRegistered => {
       handleConsumerRegistered(r)
-      latch.countDown // needed for testing only.
+      registrationLatch.countDown
     }
     case u: ConsumerUnregistered => {
       handleConsumerUnregistered(u)
-      latch.countDown // needed for testing only.
+      unregistrationLatch.countDown
     }
     case mr: ConsumerMethodRegistered => {
       handleConsumerMethodRegistered(mr)
-      latch.countDown // needed for testing only.
+      registrationLatch.countDown
     }
     case mu: ConsumerMethodUnregistered => {
       handleConsumerMethodUnregistered(mu)
-      latch.countDown // needed for testing only.
+      unregistrationLatch.countDown
     }
-    case SetExpectedMessageCount(num) => {
-      // needed for testing only.
-      latch = new CountDownLatch(num)
-      self.reply(latch)
+    case SetExpectedRegistrationCount(num) => {
+      registrationLatch = new CountDownLatch(num)
+      self.reply(registrationLatch)
+    }
+    case SetExpectedUnregistrationCount(num) => {
+      unregistrationLatch = new CountDownLatch(num)
+      self.reply(unregistrationLatch)
     }
     case _ => { /* ignore */}
   }
 }
 
-/**
- * Command message used For testing-purposes only.
- */
-private[camel] case class SetExpectedMessageCount(num: Int)
+private[camel] case class SetExpectedRegistrationCount(num: Int)
+private[camel] case class SetExpectedUnregistrationCount(num: Int)
 
 /**
  * Defines an abstract route to a target which is either an actor or an active object method..
