@@ -5,8 +5,9 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import se.scalablesolutions.akka.camel.{CamelService, CamelContextManager}
-import se.scalablesolutions.akka.actor.{ActorRegistry, ActiveObject}
+import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, ActiveObject}
+import se.scalablesolutions.akka.camel._
+import se.scalablesolutions.akka.util.Logging
 
 /**
  * @author Martin Krasser
@@ -79,5 +80,45 @@ class StandaloneSpringApplicationRoute extends RouteBuilder {
   def configure = {
     // routes to active object (in ApplicationContextRegistry)
     from("direct:test3").to("active-object:pojo3?method=foo")
+  }
+}
+
+object StandaloneJmsApplication {
+  def main(args: Array[String]) = {
+    val context = new ClassPathXmlApplicationContext("/context-jms.xml")
+    val registry = new ApplicationContextRegistry(context)
+
+    // Init CamelContextManager with custom CamelContext
+    CamelContextManager.init(new DefaultCamelContext(registry))
+
+    // Create new instance of CamelService and start it
+    val service = CamelService.newInstance.load
+    // Expect two consumer endpoints to be activated
+    val completion = service.expectEndpointActivationCount(2)
+
+    val jmsUri = "jms:topic:test"
+    // Wire publisher and consumer using a JMS topic
+    val jmsSubscriber1 = Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
+    val jmsSubscriber2 = Actor.actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
+    val jmsPublisher =   Actor.actorOf(new Publisher("jms-publisher", jmsUri)).start
+
+    // wait for the consumer (subscriber) endpoint being activated
+    completion.await
+
+    // Send 10 messages to via publisher actor
+    for(i <- 1 to 10) {
+      jmsPublisher ! ("Akka rocks (%d)" format i)
+    }
+
+    // Send 10 messages to JMS topic directly
+    for(i <- 1 to 10) {
+      CamelContextManager.template.sendBody(jmsUri, "Camel rocks (%d)" format i)
+    }
+
+    // Graceful shutdown of all endpoints/routes
+    service.unload
+
+    // Shutdown example actors
+    ActorRegistry.shutdownAll
   }
 }

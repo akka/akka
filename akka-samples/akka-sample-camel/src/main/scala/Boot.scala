@@ -35,7 +35,7 @@ class Boot {
   // -----------------------------------------------------------------------
 
   // Create CamelContext and a Spring-based registry
-  val context = new ClassPathXmlApplicationContext("/context-boot.xml", getClass)
+  val context = new ClassPathXmlApplicationContext("/context-jms.xml", getClass)
   val registry = new ApplicationContextRegistry(context)
 
   // Use a custom Camel context and a custom touter builder
