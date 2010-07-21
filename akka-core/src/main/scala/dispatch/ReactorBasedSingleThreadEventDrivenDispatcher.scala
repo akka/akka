@@ -41,8 +41,6 @@ class ReactorBasedSingleThreadEventDrivenDispatcher(_name: String)
 
   def isShutdown = !active
 
-  def usesActorMailbox = false
-
   override def toString = "ReactorBasedSingleThreadEventDrivenDispatcher[" + name + "]"
 
   class Demultiplexer(private val messageQueue: ReactiveMessageQueue) extends MessageDemultiplexer {
