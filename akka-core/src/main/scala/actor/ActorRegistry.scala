@@ -159,7 +159,7 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Shuts down and unregisters all actors in the system.
    */
-  def shutdownAll = {
+  def shutdownAll() {
     log.info("Shutting down all actors in the system...")
     foreach(_.stop)
     actorsByUUID.clear
