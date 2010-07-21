@@ -4,11 +4,11 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Actor._
-import se.scalablesolutions.akka.dispatch.{HawtDispatchEventDrivenDispatcher, Dispatchers}
+import se.scalablesolutions.akka.dispatch.{HawtDispatcher, Dispatchers}
 
-object HawtDispatchEventDrivenDispatcherActorSpec {
+object HawtDispatcherActorSpec {
   class TestActor extends Actor {
-    self.dispatcher = new HawtDispatchEventDrivenDispatcher()
+    self.dispatcher = new HawtDispatcher()
     def receive = {
       case "Hello" =>
         self.reply("World")
@@ -21,14 +21,15 @@ object HawtDispatchEventDrivenDispatcherActorSpec {
     val oneWay = new CountDownLatch(1)
   }
   class OneWayTestActor extends Actor {
-    self.dispatcher = new HawtDispatchEventDrivenDispatcher()
+    self.dispatcher = new HawtDispatcher()
     def receive = {
       case "OneWay" => OneWayTestActor.oneWay.countDown
     }
   }
 }
-class HawtDispatchEventDrivenDispatcherActorSpec extends JUnitSuite {
-  import HawtDispatchEventDrivenDispatcherActorSpec._
+
+class HawtDispatcherActorSpec extends JUnitSuite {
+  import HawtDispatcherActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
 
