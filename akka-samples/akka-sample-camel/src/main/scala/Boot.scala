@@ -51,7 +51,7 @@ class Boot {
   consumer.start
 
   // -----------------------------------------------------------------------
-  // Non-blocking consumer-producer example (Akka homepage transformation)
+  // Asynchronous consumer-producer example (Akka homepage transformation)
   // -----------------------------------------------------------------------
 
   val httpTransformer = actorOf(new HttpTransformer).start
