@@ -16,7 +16,6 @@
  */
 package se.scalablesolutions.akka.dispatch
 
-import se.scalablesolutions.akka.dispatch.{MessageInvocation, MessageDispatcher}
 import se.scalablesolutions.akka.actor.ActorRef
 import org.fusesource.hawtdispatch.DispatchQueue
 import org.fusesource.hawtdispatch.ScalaDispatch._
@@ -68,7 +67,7 @@ object HawtDispatchEventDrivenDispatcher {
  *
  * @author <a href="http://hiramchirino.com">Hiram Chirino</a>
  */
-class HawtDispatchEventDrivenDispatcher(parent:DispatchQueue=globalQueue) extends MessageDispatcher  {
+class HawtDispatchEventDrivenDispatcher(val aggregate:Boolean=true, val parent:DispatchQueue=globalQueue) extends MessageDispatcher  {
 
   private val active = new AtomicBoolean(false)
   
@@ -87,9 +86,7 @@ class HawtDispatchEventDrivenDispatcher(parent:DispatchQueue=globalQueue) extend
   def isShutdown = !active.get
 
   def dispatch(invocation: MessageInvocation) = if(active.get()) {
-    getMailbox(invocation.receiver) {
-      invocation.invoke
-    }
+    getMailbox(invocation.receiver).dispatch(invocation)
   } else {
     log.warning("%s is shut down,\n\tignoring the the messages sent to\n\t%s", toString, invocation.receiver)
   }
@@ -97,7 +94,7 @@ class HawtDispatchEventDrivenDispatcher(parent:DispatchQueue=globalQueue) extend
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[DispatchQueue]
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[HawtDispatchMailbox]
 
   // hawtdispatch does not have a way to get queue sizes, getting an accurate
   // size can cause extra contention.. is this really needed?
@@ -106,11 +103,49 @@ class HawtDispatchEventDrivenDispatcher(parent:DispatchQueue=globalQueue) extend
 
   override def register(actorRef: ActorRef) = {
     if( actorRef.mailbox == null ) {
-      actorRef.mailbox = parent.createSerialQueue(actorRef.toString)
+      val queue = parent.createSerialQueue(actorRef.toString)
+      if( aggregate ) {
+        actorRef.mailbox = new AggregatingHawtDispatchMailbox(queue)
+      } else {
+        actorRef.mailbox = new HawtDispatchMailbox(queue)
+      }
     }
     super.register(actorRef)
   }
 
   override def toString = "HawtDispatchEventDrivenDispatcher"
 
+}
+
+class HawtDispatchMailbox(val queue:DispatchQueue) {
+  def dispatch(invocation: MessageInvocation):Unit = {
+    queue {
+      invocation.invoke
+    }
+  }
+}
+
+class AggregatingHawtDispatchMailbox(queue:DispatchQueue) extends HawtDispatchMailbox(queue) {
+  private val source = createSource(new ListEventAggregator[MessageInvocation](), queue)
+  source.setEventHandler (^{drain_source} )
+  source.resume
+
+  private def drain_source = {
+    source.getData.foreach { invocation =>
+      invocation.invoke
+    }
+  }
+
+  override def dispatch(invocation: MessageInvocation):Unit = {
+    if ( getCurrentQueue == null ) {
+      // we are being call from a non hawtdispatch thread, can't aggregate
+      // it's events
+      super.dispatch(invocation)
+    } else {
+      // we are being call from a hawtdispatch thread, use the dispatch source
+      // so that multiple invocations issues on this thread will aggregate and then once
+      // the thread runs out of work, they get transferred as a batch to the other thread.
+      source.merge(invocation)
+    }
+  }
 }
