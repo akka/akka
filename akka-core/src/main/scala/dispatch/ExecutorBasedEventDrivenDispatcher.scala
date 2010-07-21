@@ -112,8 +112,10 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
         } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !mailbox.isEmpty))
       }
     })
-  } else log.warning(
-    "%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, receiver)
+  } else {
+    log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, receiver)
+  }
+
 
   /**
    * Process the messages in the mailbox of the given actor.

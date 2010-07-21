@@ -22,44 +22,73 @@ import org.fusesource.hawtdispatch.DispatchQueue
 import org.fusesource.hawtdispatch.ScalaDispatch._
 import actors.threadpool.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.CountDownLatch
+
+object HawtDispatchEventDrivenDispatcher {
+
+  private val retained = new AtomicInteger()
+  @volatile private var shutdownLatch: CountDownLatch = _
+
+  private def retain = {
+    if( retained.getAndIncrement == 0 ) {
+      shutdownLatch = new CountDownLatch(1)
+      new Thread("HawtDispatch Non-Daemon") {
+        override def run = {
+          try {
+            shutdownLatch.await
+          } catch {
+            case _ =>
+          }
+          println("done");
+        }
+      }.start()
+    }
+  }
+
+  private def release = {
+    if( retained.decrementAndGet == 0 ) {
+      shutdownLatch.countDown
+      shutdownLatch = null
+    }
+  }
+
+}
 
 /**
  * <p>
- * An HawtDispatch based MessageDispatcher.
+ * An HawtDispatch based MessageDispatcher.  Actors with this dispatcher are executed
+ * on the HawtDispatch thread pool which is restricted to only executing non blocking
+ * operations.  Therefore, you can only use this dispatcher with actors which are purely
+ * computational or which use non-blocking IO.
+ * </p>
+ * <p>
+ * This dispatcher delivers messages to the actors in the order that they
+ * were producer at the sender.
  * </p>
  *
  * @author <a href="http://hiramchirino.com">Hiram Chirino</a>
  */
-class HawtDispatchEventDrivenDispatcher(val name: String) extends MessageDispatcher  {
+class HawtDispatchEventDrivenDispatcher(parent:DispatchQueue=globalQueue) extends MessageDispatcher  {
 
-  // a counter used to track if the dispatcher is in use.
-  private val active = new AtomicBoolean()
-  private val retained = new AtomicInteger
-
+  private val active = new AtomicBoolean(false)
+  
   def start = {
-    val rc = active.compareAndSet(false, true)
-    assert( rc )
-    retained.incrementAndGet
+    if( active.compareAndSet(false, true) ) {
+      HawtDispatchEventDrivenDispatcher.retain
+    }
   }
 
   def shutdown = {
-    val rc = active.compareAndSet(true, false)
-    assert( rc )
-    retained.decrementAndGet
+    if( active.compareAndSet(true, false) ) {
+      HawtDispatchEventDrivenDispatcher.release
+    }
   }
 
-  def isShutdown = {
-    retained.get == 0
-  }
+  def isShutdown = !active.get
 
-  def dispatch(invocation: MessageInvocation) = if(active.get) {
-    retained.incrementAndGet
+  def dispatch(invocation: MessageInvocation) = if(active.get()) {
     getMailbox(invocation.receiver) {
-      try {
-        invocation.invoke
-      } finally {
-        retained.decrementAndGet
-      }
+      invocation.invoke
     }
   } else {
     log.warning("%s is shut down,\n\tignoring the the messages sent to\n\t%s", toString, invocation.receiver)
@@ -77,11 +106,11 @@ class HawtDispatchEventDrivenDispatcher(val name: String) extends MessageDispatc
 
   override def register(actorRef: ActorRef) = {
     if( actorRef.mailbox == null ) {
-      actorRef.mailbox = createQueue(actorRef.toString)
+      actorRef.mailbox = parent.createSerialQueue(actorRef.toString)
     }
     super.register(actorRef)
   }
 
-  override def toString = "HawtDispatchEventDrivenDispatcher["+name+"]"
+  override def toString = "HawtDispatchEventDrivenDispatcher"
 
 }

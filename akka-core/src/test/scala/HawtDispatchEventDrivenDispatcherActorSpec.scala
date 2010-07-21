@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.dispatch.{HawtDispatchEventDrivenDispatcher, Di
 
 object HawtDispatchEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
-    self.dispatcher = new HawtDispatchEventDrivenDispatcher(self.uuid)
+    self.dispatcher = new HawtDispatchEventDrivenDispatcher()
     def receive = {
       case "Hello" =>
         self.reply("World")
@@ -21,7 +21,7 @@ object HawtDispatchEventDrivenDispatcherActorSpec {
     val oneWay = new CountDownLatch(1)
   }
   class OneWayTestActor extends Actor {
-    self.dispatcher = new HawtDispatchEventDrivenDispatcher(self.uuid)
+    self.dispatcher = new HawtDispatchEventDrivenDispatcher()
     def receive = {
       case "OneWay" => OneWayTestActor.oneWay.countDown
     }
