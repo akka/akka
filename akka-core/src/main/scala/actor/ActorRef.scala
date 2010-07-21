@@ -950,7 +950,8 @@ sealed class LocalActorRef private[akka](
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
-    if (isShutdown) Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
+    if (isShutdown)
+      Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
     else {
       currentMessage = Option(messageHandle)
       try {
