@@ -38,17 +38,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 	// All repositories *must* go here! See ModuleConigurations below.
   // -------------------------------------------------------------------------------------------------------------------
-//	object Repositories {
-//	  lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-//	  lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
+	object Repositories {
+	  lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+	  lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
 	  lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
-//	  lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-//	  lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
-//	  lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
-//	  lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
-//	  lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-//	  lazy val ScalazRepo           = MavenRepository("Scalaz Repo", "http://scala-tools.org/repo-releases")
-//	}
+	  lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
+	  lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+	  lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+	  lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
+	  lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
+	  lazy val ScalazRepo           = MavenRepository("Scalaz Repo", "http://scala-tools.org/repo-releases")
+	}
 
   val mavenLocal = "Local Maven Repository" at "file:/e:/maven-repository"
 
@@ -61,22 +61,22 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // must be resolved from a ModuleConfiguration. This will result in a significant acceleration of the update action.
   // Therefore, if repositories are defined, this must happen as def, not as val.
   // -------------------------------------------------------------------------------------------------------------------
-//	import Repositories._
-//  lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
-//  lazy val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
-//  lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
-//  lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
-//  lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
-//  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
-//  lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
-//  lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
-//  lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
-//  lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
-//  lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
-//  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausSnapshotRepo)
-//  lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-//  lazy val scalazModuleConfig      = ModuleConfiguration("scalaz", ScalazRepo)
-//  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
+	import Repositories._
+  lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
+  lazy val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
+  lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
+  lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
+  lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
+  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
+  lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
+  lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
+  lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
+  lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
+  lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
+  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausSnapshotRepo)
+  lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
+  lazy val scalazModuleConfig      = ModuleConfiguration("scalaz", ScalazRepo)
+  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------

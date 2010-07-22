@@ -27,7 +27,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     // count expectations in the next step (needed for testing only).
     service.consumerPublisher.start
     // set expectations on publish count
-    val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val latch = service.expectEndpointActivationCount(1)
     // start the CamelService
     service.load
     // await publication of first test consumer
@@ -44,7 +44,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access non-blocking consumer actors via Camel direct-endpoints") {
 
       given("two consumer actors registered before and after CamelService startup")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      val latch = service.expectEndpointActivationCount(1)
       actorOf(new TestConsumer("direct:publish-test-2")).start
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -60,7 +60,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access blocking, non-responding consumer actor via a Camel direct-endpoint") {
 
       given("a consumer actor registered after CamelService startup")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      val latch = service.expectEndpointActivationCount(1)
       actorOf(new TestBlocker("direct:publish-test-3")).start
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -84,13 +84,13 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("a consumer actor registered after CamelService startup")
       assert(CamelContextManager.context.hasEndpoint(endpointUri) eq null)
-      var latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(1)
       val consumer = actorOf(new TestConsumer(endpointUri)).start
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
 
       when("the actor is stopped")
-      latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      latch = service.expectEndpointDeactivationCount(1)
       consumer.stop
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -121,7 +121,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access active object methods via Camel direct-endpoints") {
 
       given("an active object registered after CamelService startup")
-      var latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(3)
       val obj = ActiveObject.newInstance(classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -136,7 +136,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       assert(response3 === "m4base: x y")
 
       // cleanup to avoid conflicts with next test (i.e. avoid multiple consumers on direct-endpoints) 
-      latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      latch = service.expectEndpointDeactivationCount(3)
       ActiveObject.stop(obj)
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
     }
@@ -144,15 +144,15 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
   feature("Unpublish active object method from the global CamelContext") {
 
-    scenario("access to unregistered active object methof via Camel direct-endpoint fails") {
+    scenario("access to unregistered active object method via Camel direct-endpoint fails") {
 
       given("an active object registered after CamelService startup")
-      var latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(3)
       val obj = ActiveObject.newInstance(classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       when("the active object is stopped")
-      latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
+      latch = service.expectEndpointDeactivationCount(3)
       ActiveObject.stop(obj)
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 

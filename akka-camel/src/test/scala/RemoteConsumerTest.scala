@@ -45,7 +45,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       val consumer = actorOf[RemoteConsumer].start
 
       when("remote consumer publication is triggered")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(1)
       consumer !! "init"
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -61,7 +61,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       val consumer = ActiveObject.newRemoteInstance(classOf[PojoRemote], host, port)
 
       when("remote consumer publication is triggered")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(1)
       consumer.foo("init")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
