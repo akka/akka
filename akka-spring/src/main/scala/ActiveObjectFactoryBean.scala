@@ -22,7 +22,7 @@ import org.springframework.util.StringUtils
 import se.scalablesolutions.akka.actor.{ActiveObjectConfiguration, ActiveObject}
 import se.scalablesolutions.akka.config.ScalaConfig.{ShutdownCallback, RestartCallbacks}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.{Logging, Duration}
 
 /**
  * Factory bean for active objects.
@@ -167,7 +167,7 @@ class ActiveObjectFactoryBean extends AbstractFactoryBean[AnyRef] with Logging w
 
 
   private[akka] def createConfig: ActiveObjectConfiguration = {
-    val config = new ActiveObjectConfiguration().timeout(timeout)
+    val config = new ActiveObjectConfiguration().timeout(Duration(timeout, "millis"))
     if (hasRestartCallbacks) config.restartCallbacks(pre, post)
     if (hasShutdownCallback) config.shutdownCallback(shutdown)
     if (transactional) config.makeTransactionRequired

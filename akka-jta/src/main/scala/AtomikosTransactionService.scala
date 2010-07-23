@@ -10,6 +10,7 @@ import com.atomikos.icatch.jta.{J2eeTransactionManager, J2eeUserTransaction}
 import com.atomikos.icatch.config.{TSInitInfo, UserTransactionService, UserTransactionServiceImp}
 
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.util.Duration
 import se.scalablesolutions.akka.stm.{TransactionService, TransactionContainer}
 
 object AtomikosTransactionService extends AtomikosTransactionService
@@ -20,8 +21,8 @@ object AtomikosTransactionService extends AtomikosTransactionService
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class AtomikosTransactionService extends TransactionService with TransactionProtocol {
+  val JTA_TRANSACTION_TIMEOUT = Duration(config.getInt("akka.jta.timeout", 60), TIME_UNIT)
 
-  val JTA_TRANSACTION_TIMEOUT: Int = config.getInt("akka.jta.timeout", 60000) / 1000
   private val txService: UserTransactionService = new UserTransactionServiceImp
   private val info: TSInitInfo = txService.createTSInitInfo
 
@@ -29,10 +30,11 @@ class AtomikosTransactionService extends TransactionService with TransactionProt
     try {
       txService.init(info)
       val tm: TransactionManager = new J2eeTransactionManager
-      tm.setTransactionTimeout(JTA_TRANSACTION_TIMEOUT)
+      tm.setTransactionTimeout(JTA_TRANSACTION_TIMEOUT.toSeconds.toInt)
       tm
     } catch {
-      case e => throw new SystemException("Could not create a new Atomikos J2EE Transaction Manager, due to: " + e.toString)
+      case e => throw new SystemException(
+        "Could not create a new Atomikos J2EE Transaction Manager, due to: " + e.toString)
     }
   )))
   // TODO: gracefully shutdown of the TM

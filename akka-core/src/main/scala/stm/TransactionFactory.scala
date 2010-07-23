@@ -23,7 +23,6 @@ object TransactionConfig {
   val READONLY         = null.asInstanceOf[JBoolean]
   val MAX_RETRIES      = config.getInt("akka.stm.max-retries", 1000)
   val TIMEOUT          = config.getLong("akka.stm.timeout", 10)
-  val TIME_UNIT        = config.getString("akka.stm.time-unit", "seconds")
   val TRACK_READS      = null.asInstanceOf[JBoolean]
   val WRITE_SKEW       = config.getBool("akka.stm.write-skew", true)
   val EXPLICIT_RETRIES = config.getBool("akka.stm.explicit-retries", false)

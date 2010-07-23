@@ -42,8 +42,9 @@ final class ActiveObjectConfiguration {
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
 
-  def timeout(timeout: Long) : ActiveObjectConfiguration = {
-    _timeout = timeout
+  def timeout = _timeout
+  def timeout(timeout: Duration) : ActiveObjectConfiguration = {
+    _timeout = timeout.toMillis
     this
   }
 
@@ -181,7 +182,7 @@ object ActiveObject extends Logging {
      if (config._messageDispatcher.isDefined) {
        actor.dispatcher = config._messageDispatcher.get
      }
-     newInstance(target, actor, config._host, config._timeout)
+     newInstance(target, actor, config._host, config.timeout)
   }
 
   def newInstance[T](intf: Class[T], target: AnyRef, config: ActiveObjectConfiguration): T = {
@@ -189,7 +190,7 @@ object ActiveObject extends Logging {
      if (config._messageDispatcher.isDefined) {
        actor.dispatcher = config._messageDispatcher.get
      }
-     newInstance(intf, target, actor, config._host, config._timeout)
+     newInstance(intf, target, actor, config._host, config.timeout)
   }
 
   @deprecated("use newInstance(target: Class[T], config: ActiveObjectConfiguration) instead")
