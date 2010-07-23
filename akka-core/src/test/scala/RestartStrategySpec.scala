@@ -28,25 +28,26 @@ class RestartStrategySpec extends JUnitSuite {
     }).start
 
     val restartLatch = new StandardLatch
-    val firstCountDown = new CountDownLatch(2)
-    val secondCountDown = new CountDownLatch(2)
+    val secondRestartLatch = new StandardLatch
+    val countDownLatch = new CountDownLatch(2)
 
 
     val slave = actorOf(new Actor{
-      self.lifeCycle = Some(LifeCycle(Permanent))
+//      self.lifeCycle = Some(LifeCycle(Permanent))
 
       protected def receive = {
-        case Ping => {
-          log.info("png")
-          if (firstCountDown.getCount > 0) {
-            firstCountDown.countDown
-          } else {
-            secondCountDown.countDown
-          }
-        }
+        case Ping => countDownLatch.countDown
         case Crash => throw new Exception("Crashing...")
       }
-      override def postRestart(reason: Throwable) = restartLatch.open
+      override def postRestart(reason: Throwable) = {
+        restartLatch.open
+      }
+
+      override def shutdown = {
+        if (restartLatch.isOpen) {
+          secondRestartLatch.open
+        }
+      }
     })
     boss.startLink(slave)
 
@@ -56,16 +57,19 @@ class RestartStrategySpec extends JUnitSuite {
 
     // test restart and post restart ping
     assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
-    assert(firstCountDown.await(1, TimeUnit.SECONDS))
+    assert(countDownLatch.await(1, TimeUnit.SECONDS))
 
     // now crash again... should not restart
     slave ! Crash
 
-    slave ! Ping // this should fail
-    slave ! Ping // this should fail
-    slave ! Ping // this should fail
-    slave ! Ping // this should fail
-    assert(secondCountDown.await(2, TimeUnit.SECONDS) == false) // should not hold
+    assert(secondRestartLatch.tryAwait(1, TimeUnit.SECONDS))
+    val exceptionLatch = new StandardLatch
+    try {
+      slave ! Ping // this should fail
+    } catch {
+      case e => exceptionLatch.open // expected here
+    }
+    assert(exceptionLatch.tryAwait(1, TimeUnit.SECONDS))
   }
 }
 
