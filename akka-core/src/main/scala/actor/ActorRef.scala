@@ -979,7 +979,6 @@ sealed class LocalActorRef private[akka](
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
       faultHandler match {
-        // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
         case Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
           restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
 
@@ -1001,9 +1000,7 @@ sealed class LocalActorRef private[akka](
     
     val tooManyRestarts = maxNrOfRetriesCount > maxNrOfRetries
     val restartingHasExpired = (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange
-    
     if (tooManyRestarts || restartingHasExpired) {
-      stop
       val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
       Actor.log.warning(
         "Maximum number of restarts [%s] within time range [%s] reached." + 
@@ -1018,6 +1015,7 @@ sealed class LocalActorRef private[akka](
           "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
           "\n\tCan't send the message to the supervisor [%s].", sup)
       }
+      stop
     } else {
       _isBeingRestarted = true
       val failedActor = actorInstance.get
@@ -1025,7 +1023,7 @@ sealed class LocalActorRef private[akka](
         lifeCycle match {
           case Some(LifeCycle(Temporary, _, _)) => shutDownTemporaryActor(this)
           case _ =>
-            // eith permanent or none where default is permanent
+            // either permanent or none where default is permanent
             Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
             Actor.log.debug("Restarting linked actors for actor [%s].", id)
             restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
@@ -1047,6 +1045,7 @@ sealed class LocalActorRef private[akka](
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int) = {
     linkedActorsAsList.foreach { actorRef =>
       actorRef.lifeCycle match {
+        // either permanent or none where default is permanent
         case Some(LifeCycle(Temporary, _, _)) => shutDownTemporaryActor(actorRef)
         case _ => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }

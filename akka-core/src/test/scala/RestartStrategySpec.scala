@@ -33,7 +33,6 @@ class RestartStrategySpec extends JUnitSuite {
 
 
     val slave = actorOf(new Actor{
-//      self.lifeCycle = Some(LifeCycle(Permanent))
 
       protected def receive = {
         case Ping => countDownLatch.countDown
