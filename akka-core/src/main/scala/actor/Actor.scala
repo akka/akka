@@ -414,6 +414,14 @@ trait Actor extends Logging {
    * Is the actor able to handle the message passed in as arguments?
    */
   def isDefinedAt(message: Any): Boolean = base.isDefinedAt(message)
+  
+  /** One of the fundamental methods of the ActorsModel
+   * Actor assumes a new behavior
+   */
+  def become(behavior: Option[Receive]) {
+    self.hotswap = behavior
+    self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
+  }
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
@@ -427,7 +435,7 @@ trait Actor extends Logging {
   }
 
   private val lifeCycles: Receive = {
-    case HotSwap(code) => self.hotswap = code; self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
+    case HotSwap(code) => become(code)
     case Exit(dead, reason) => self.handleTrapExit(dead, reason)
     case Link(child) => self.link(child)
     case Unlink(child) => self.unlink(child)
