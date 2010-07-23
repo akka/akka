@@ -1,15 +1,17 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.dispatch
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.actor.Actor
 import Actor._
 
-object ReactorBasedThreadPoolEventDrivenDispatcherActorSpec {
+object ThreadBasedActorSpec {
   class TestActor extends Actor {
-    self.dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(self.uuid)
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+
     def receive = {
       case "Hello" =>
         self.reply("World")
@@ -19,15 +21,15 @@ object ReactorBasedThreadPoolEventDrivenDispatcherActorSpec {
   }
 }
 
-class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
-  import ReactorBasedThreadPoolEventDrivenDispatcherActorSpec._
+class ThreadBasedActorSpec extends JUnitSuite {
+  import ThreadBasedActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
 
-  @Test def shouldSendOneWay {
-    val oneWay = new CountDownLatch(1)
+  @Test def shouldSendOneWay  {
+    var oneWay = new CountDownLatch(1)
     val actor = actorOf(new Actor {
-      self.dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(self.uuid)
+      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
       def receive = {
         case "OneWay" => oneWay.countDown
       }
@@ -39,8 +41,8 @@ class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
 
   @Test def shouldSendReplySync = {
     val actor = actorOf[TestActor].start
-    val result = (actor !! ("Hello", 10000)).as[String].get
-    assert("World" === result)
+    val result = (actor !! ("Hello", 10000)).as[String]
+    assert("World" === result.get)
     actor.stop
   }
 

@@ -3,9 +3,9 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-import Actor._
 import java.util.concurrent.TimeUnit
 import org.multiverse.api.latches.StandardLatch
+import Actor._
 
 class ReceiveTimeoutSpec extends JUnitSuite {
 

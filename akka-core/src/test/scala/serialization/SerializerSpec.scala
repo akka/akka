@@ -1,9 +1,7 @@
 package se.scalablesolutions.akka.serialization
 
-import junit.framework.TestCase
-
 import org.scalatest.junit.JUnitSuite
-import org.junit.{Test, Before, After}
+import org.junit.Test
 
 import scala.reflect.BeanInfo
 
