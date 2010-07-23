@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.actor
 
 import org.scalatest.Spec
-import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner

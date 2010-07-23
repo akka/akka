@@ -1,13 +1,12 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.remote
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import junit.framework.TestCase
-
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.actor.{ActorRef, Actor}
 import Actor._
 
 case class Send(actor: Actor)

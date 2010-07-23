@@ -1,4 +1,4 @@
-package sample
+package se.scalablesolutions.akka.actor.remote
 
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.remote.{RemoteClient, RemoteNode}

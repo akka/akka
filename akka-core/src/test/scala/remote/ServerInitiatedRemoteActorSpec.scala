@@ -1,12 +1,12 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.remote
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
-import Actor._
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.actor.{ActorRef, Actor}
+import Actor._
 
 object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
@@ -52,8 +52,6 @@ object ServerInitiatedRemoteActorSpec {
 
 class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   import ServerInitiatedRemoteActorSpec._
-  import se.scalablesolutions.akka.config.Config.config
-
   private val unit = TimeUnit.MILLISECONDS
 
   @Before
@@ -84,7 +82,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   @Test
   def shouldSendWithBang  {
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional",
+      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional",
       5000L,
       HOSTNAME, PORT)
     val result = actor ! "OneWay"
@@ -95,7 +93,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   @Test
   def shouldSendWithBangBangAndGetReply {
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
+      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       5000L,
       HOSTNAME, PORT)
     val result = actor !! "Hello"
@@ -107,7 +105,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldSendWithBangAndGetReplyThroughSenderRef  {
     implicit val timeout = 500000000L
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
+      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
     val sender = actorOf[RemoteActorSpecActorAsyncSender]
@@ -122,7 +120,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldSendWithBangBangAndReplyWithException  {
     implicit val timeout = 500000000L
     val actor = RemoteClient.actorFor(
-      "se.scalablesolutions.akka.actor.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
+      "se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorBidirectional",
       timeout,
       HOSTNAME, PORT)
     try {
