@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.dispatch
 
 import collection.mutable.ListBuffer
 import java.util.concurrent.TimeUnit
@@ -23,6 +23,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{SocketChannel, SelectionKey, ServerSocketChannel}
 
+import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.HawtDispatcher
 import org.fusesource.hawtdispatch.DispatchSource
@@ -33,7 +34,7 @@ import org.fusesource.hawtdispatch.ScalaDispatch._
  * the HawtDispatch dispatcher and NIO event sources.
  *
  */
-object HawtDispacherEchoServer {
+object HawtDispatcherEchoServer {
 
   private val hawt = new HawtDispatcher
   var port=4444;
