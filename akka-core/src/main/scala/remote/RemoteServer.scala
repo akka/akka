@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
-import se.scalablesolutions.akka.config.Config.config
+import se.scalablesolutions.akka.config.Config._
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -63,7 +63,7 @@ object RemoteServer {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
-  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
+  val CONNECTION_TIMEOUT_MILLIS = Duration(config.getInt("akka.remote.server.connection-timeout", 1), TIME_UNIT)
 
   val COMPRESSION_SCHEME = config.getString("akka.remote.compression-scheme", "zlib")
   val ZLIB_COMPRESSION_LEVEL = {
@@ -202,7 +202,7 @@ class RemoteServer extends Logging {
         bootstrap.setOption("child.tcpNoDelay", true)
         bootstrap.setOption("child.keepAlive", true)
         bootstrap.setOption("child.reuseAddress", true)
-        bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
+        bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS.toMillis)
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         _isRunning = true
         Cluster.registerLocalNode(hostname, port)

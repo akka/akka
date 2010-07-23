@@ -9,9 +9,10 @@ import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.{Logging, Duration}
 
 import com.google.protobuf.Message
+
 import java.util.concurrent.TimeUnit
 
 /**
@@ -62,7 +63,7 @@ class ActorInitializationException private[akka](message: String) extends Runtim
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
-  val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
+  val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
