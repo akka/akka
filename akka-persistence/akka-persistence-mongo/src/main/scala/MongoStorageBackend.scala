@@ -78,10 +78,8 @@ private[akka] object MongoStorageBackend extends
         val o = dbo.get(VALUE).asInstanceOf[Map[AnyRef, AnyRef]]
         o.putAll(m)
 
-        // remove existing reference
-        removeMapStorageFor(name)
-        // and insert
-        coll.insert(new BasicDBObject().append(KEY, name).append(VALUE, o))
+        val newdbo = new BasicDBObject().append(KEY, name).append(VALUE, o)
+        coll.update(new BasicDBObject().append(KEY, name), newdbo, true, false)
       }
     }
   }
