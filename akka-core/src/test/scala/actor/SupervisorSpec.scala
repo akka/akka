@@ -4,126 +4,159 @@
 
 package se.scalablesolutions.akka.actor
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
-import se.scalablesolutions.akka.serialization.BinaryString
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.OneWay
-import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.{OneWay, Die, Ping}
 import Actor._
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import org.junit.{Test, Before, After}
+import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 
-object Log {
-  val messageLog: BlockingQueue[String] = new LinkedBlockingQueue[String]
-  val oneWayLog = new LinkedBlockingQueue[String]
+object SupervisorSpec {
+  var messageLog = new LinkedBlockingQueue[String]
+  var oneWayLog = new LinkedBlockingQueue[String]
 
   def clearMessageLogs {
     messageLog.clear
     oneWayLog.clear
   }
-}
 
-@serializable class RemotePingPong1Actor extends Actor {
-  def receive = {
-    case BinaryString("Ping") =>
-      Log.messageLog.put("ping")
-      self.reply("pong")
+  class PingPong1Actor extends Actor {
+    import self._
+    //dispatcher = Dispatchers.newThreadBasedDispatcher(self)
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
 
-    case OneWay =>
-      Log.oneWayLog.put("oneway")
+      case OneWay =>
+        oneWayLog.put("oneway")
 
-    case BinaryString("Die") =>
-      throw new RuntimeException("Expected exception; to test fault-tolerance")
+      case Die =>
+        println("******************** GOT DIE 1")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
+    }
+    override def postRestart(reason: Throwable) {
+      println("******************** restart 1")
+      messageLog.put(reason.getMessage)
+    }
   }
 
-  override def postRestart(reason: Throwable) {
-    Log.messageLog.put(reason.getMessage)
-  }
-}
-
-@serializable class RemotePingPong2Actor extends Actor {
-  def receive = {
-    case BinaryString("Ping") =>
-      Log.messageLog.put("ping")
-      self.reply("pong")
-    case BinaryString("Die") =>
-      throw new RuntimeException("Expected exception; to test fault-tolerance")
-  }
-
-  override def postRestart(reason: Throwable) {
-    Log.messageLog.put(reason.getMessage)
-  }
-}
-
-@serializable class RemotePingPong3Actor extends Actor {
-  def receive = {
-    case BinaryString("Ping") =>
-      Log.messageLog.put("ping")
-      self.reply("pong")
-    case BinaryString("Die") =>
-      throw new RuntimeException("Expected exception; to test fault-tolerance")
+  class PingPong2Actor extends Actor {
+    import self._
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
+      case Die =>
+        println("******************** GOT DIE 2")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
+    }
+    override def postRestart(reason: Throwable) {
+      println("******************** restart 2")
+      messageLog.put(reason.getMessage)
+    }
   }
 
-  override def postRestart(reason: Throwable) {
-    Log.messageLog.put(reason.getMessage)
-  }
-}
+  class PingPong3Actor extends Actor {
+    import self._
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
+      case Die =>
+        println("******************** GOT DIE 3")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
+    }
 
-object RemoteSupervisorSpec {
-  val HOSTNAME = "localhost"
-  val PORT = 9988
-  var server: RemoteServer = null
+    override def postRestart(reason: Throwable) {
+      println("******************** restart 3")
+      messageLog.put(reason.getMessage)
+    }
+  }
+
+  class TemporaryActor extends Actor {
+    import self._
+    lifeCycle = Some(LifeCycle(Temporary))
+    def receive = {
+      case Ping =>
+        messageLog.put("ping")
+        reply("pong")
+      case Die =>
+        println("******************** GOT DIE 3")
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
+    }
+
+    override def postRestart(reason: Throwable) {
+      println("******************** restart temporary")
+      messageLog.put(reason.getMessage)
+    }
+  }
+
+  class Master extends Actor {
+    self.trapExit = classOf[Exception] :: Nil
+    self.faultHandler = Some(OneForOneStrategy(5, 1000))
+    val temp = self.spawnLink[TemporaryActor]
+    override def receive = {
+      case Die => temp !! (Die, 5000)
+    }
+  }
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteSupervisorSpec extends JUnitSuite {
-  import RemoteSupervisorSpec._
+class SupervisorSpec extends JUnitSuite {
+  import SupervisorSpec._
 
   var pingpong1: ActorRef = _
   var pingpong2: ActorRef = _
   var pingpong3: ActorRef = _
+  var temporaryActor: ActorRef = _
 
-  import Log._
-
-  @Before
-  def init {
-    server = new RemoteServer()
-    server.start(HOSTNAME, PORT)
-    Thread.sleep(1000)
-  }
-
-  @After
-  def finished {
-    try {
-      server.shutdown
-      RemoteClient.shutdownAll
-      Thread.sleep(1000)
-    } catch {
-      case e => ()
-    }
-  }
-
+/*
   @Test def shouldStartServer = {
-    Log.messageLog.clear
+    clearMessageLogs
     val sup = getSingleActorAllForOneSupervisor
+    sup.start
 
     expect("pong") {
-      (pingpong1 !! BinaryString("Ping")).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
   }
+*/
+  @Test def shoulNotRestartProgrammaticallyLinkedTemporaryActor = {
+    clearMessageLogs
+    val master = actorOf[Master].start
+
+    intercept[RuntimeException] {
+      master !! (Die, 5000)
+    }
+
+    Thread.sleep(1000)
+    assert(messageLog.size === 0)
+  }
+
+  @Test def shoulNotRestartTemporaryActor = {
+    clearMessageLogs
+    val sup = getTemporaryActorAllForOneSupervisor
+
+    intercept[RuntimeException] {
+      temporaryActor !! (Die, 5000)
+    }
+
+    Thread.sleep(1000)
+    assert(messageLog.size === 0)
+  }
+
   @Test def shouldStartServerForNestedSupervisorHierarchy = {
     clearMessageLogs
     val sup = getNestedSupervisorsAllForOneConf
     sup.start
 
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
   }
 
@@ -132,7 +165,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getSingleActorOneForOneSupervisor
 
     intercept[RuntimeException] {
-      pingpong1 !! (BinaryString("Die"), 5000)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -145,21 +178,21 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getSingleActorOneForOneSupervisor
 
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong1 !! (BinaryString("Die"), 5000)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -172,7 +205,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getSingleActorAllForOneSupervisor
 
     intercept[RuntimeException] {
-      pingpong1 !! (BinaryString("Die"), 5000)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -185,21 +218,21 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getSingleActorAllForOneSupervisor
 
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong1 !! (BinaryString("Die"), 5000)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -212,7 +245,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getMultipleActorsOneForOneConf
 
     intercept[RuntimeException] {
-      pingpong1 !! (BinaryString("Die"), 5000)
+      pingpong1 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -220,35 +253,33 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
   }
 
-  /*
-  // Uncomment when the same test passes in SupervisorSpec - pending bug
   @Test def shouldKillMultipleActorsOneForOne2 = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
 
     intercept[RuntimeException] {
-      pingpong3 !! (BinaryString("Die"), 5000)
+      pingpong3 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-*/
+
   @Test def shouldKillCallMultipleActorsOneForOne = {
     clearMessageLogs
     val sup = getMultipleActorsOneForOneConf
 
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -261,22 +292,22 @@ class RemoteSupervisorSpec extends JUnitSuite {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! (BinaryString("Die"), 5000)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -295,7 +326,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getMultipleActorsAllForOneConf
 
     intercept[RuntimeException] {
-      pingpong2 !! (BinaryString("Die"), 5000)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -314,15 +345,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
     val sup = getMultipleActorsAllForOneConf
 
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -335,7 +366,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! (BinaryString("Die"), 5000)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -348,15 +379,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -370,13 +401,11 @@ class RemoteSupervisorSpec extends JUnitSuite {
     }
   }
 
-  /*
-
   @Test def shouldOneWayKillSingleActorOneForOne = {
     clearMessageLogs
     val sup = getSingleActorOneForOneSupervisor
 
-    pingpong1 ! BinaryString("Die")
+    pingpong1 ! Die
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
@@ -392,7 +421,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
     expect("oneway") {
       oneWayLog.poll(5, TimeUnit.SECONDS)
     }
-    pingpong1 ! BinaryString("Die")
+    pingpong1 ! Die
 
     expect("Expected exception; to test fault-tolerance") {
       messageLog.poll(5, TimeUnit.SECONDS)
@@ -410,15 +439,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
 
 
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -431,7 +460,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     intercept[RuntimeException] {
-      pingpong2 !! (BinaryString("Die"), 5000)
+      pingpong2 !! (Die, 5000)
     }
 
     expect("Expected exception; to test fault-tolerance") {
@@ -444,15 +473,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
     expect("pong") {
-      (pingpong1 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong1 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong2 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong2 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("pong") {
-      (pingpong3 !! (BinaryString("Ping"), 5000)).getOrElse("nil")
+      (pingpong3 !! (Ping, 5000)).getOrElse("nil")
     }
 
     expect("ping") {
@@ -465,137 +494,112 @@ class RemoteSupervisorSpec extends JUnitSuite {
       messageLog.poll(5, TimeUnit.SECONDS)
     }
   }
-   */
+
   // =============================================
-  // Creat some supervisors with different configurations
+  // Create some supervisors with different configurations
+
+  def getTemporaryActorAllForOneSupervisor: Supervisor = {
+    temporaryActor = actorOf[TemporaryActor].start
+
+    Supervisor(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
+        Supervise(
+          temporaryActor,
+          LifeCycle(Temporary))
+        :: Nil))
+  }
 
   def getSingleActorAllForOneSupervisor: Supervisor = {
+    pingpong1 = actorOf[PingPong1Actor].start
 
-    // Create an abstract SupervisorContainer that works for all implementations
-    // of the different Actors (Services).
-    //
-    // Then create a concrete container in which we mix in support for the specific
-    // implementation of the Actors we want to use.
-
-    pingpong1 = actorOf[RemotePingPong1Actor]
-    pingpong1.makeRemote(HOSTNAME, PORT)
-    pingpong1.start
-
-    val factory = SupervisorFactory(
+    Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
-            :: Nil))
-
-    factory.newInstance
+        :: Nil))
   }
 
   def getSingleActorOneForOneSupervisor: Supervisor = {
-    pingpong1 = actorOf[RemotePingPong1Actor]
-    pingpong1.makeRemote(HOSTNAME, PORT)
-    pingpong1.start
+    pingpong1 = actorOf[PingPong1Actor].start
 
-    val factory = SupervisorFactory(
+    Supervisor(
       SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
-            :: Nil))
-    factory.newInstance
+        :: Nil))
   }
 
   def getMultipleActorsAllForOneConf: Supervisor = {
-    pingpong1 = actorOf[RemotePingPong1Actor]
-    pingpong1.makeRemote(HOSTNAME, PORT)
-    pingpong1.start
-    pingpong2 = actorOf[RemotePingPong2Actor]
-    pingpong2.makeRemote(HOSTNAME, PORT)
-    pingpong2.start
-    pingpong3 = actorOf[RemotePingPong3Actor]
-    pingpong3.makeRemote(HOSTNAME, PORT)
-    pingpong3.start
+    pingpong1 = actorOf[PingPong1Actor].start
+    pingpong2 = actorOf[PingPong2Actor].start
+    pingpong3 = actorOf[PingPong3Actor].start
 
-    val factory = SupervisorFactory(
+    Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
-            ::
-            Supervise(
-              pingpong2,
-              LifeCycle(Permanent))
-            ::
-            Supervise(
-              pingpong3,
-              LifeCycle(Permanent))
-            :: Nil))
-    factory.newInstance
-  }
-
-  def getMultipleActorsOneForOneConf: Supervisor = {
-    pingpong1 = actorOf[RemotePingPong1Actor]
-    pingpong1.makeRemote(HOSTNAME, PORT)
-    pingpong1 = actorOf[RemotePingPong1Actor]
-    pingpong1.makeRemote(HOSTNAME, PORT)
-    pingpong1.start
-    pingpong2 = actorOf[RemotePingPong2Actor]
-    pingpong2.makeRemote(HOSTNAME, PORT)
-    pingpong2.start
-    pingpong3 = actorOf[RemotePingPong3Actor]
-    pingpong3.makeRemote(HOSTNAME, PORT)
-    pingpong3.start
-
-    val factory = SupervisorFactory(
-      SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-        Supervise(
-          pingpong1,
-          LifeCycle(Permanent))
-          ::
+        ::
         Supervise(
           pingpong2,
           LifeCycle(Permanent))
-          ::
+        ::
         Supervise(
           pingpong3,
           LifeCycle(Permanent))
-          :: Nil))
-    factory.newInstance
+        :: Nil))
   }
 
-  def getNestedSupervisorsAllForOneConf: Supervisor = {
-    pingpong1 = actorOf[RemotePingPong1Actor]
-    pingpong1.makeRemote(HOSTNAME, PORT)
-    pingpong1.start
-    pingpong2 = actorOf[RemotePingPong2Actor]
-    pingpong2.makeRemote(HOSTNAME, PORT)
-    pingpong2.start
-    pingpong3 = actorOf[RemotePingPong3Actor]
-    pingpong3.makeRemote(HOSTNAME, PORT)
-    pingpong3.start
+  def getMultipleActorsOneForOneConf: Supervisor = {
+    pingpong1 = actorOf[PingPong1Actor].start
+    pingpong2 = actorOf[PingPong2Actor].start
+    pingpong3 = actorOf[PingPong3Actor].start
 
-    val factory = SupervisorFactory(
+    Supervisor(
       SupervisorConfig(
-        RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
+        RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
           LifeCycle(Permanent))
-            ::
-            SupervisorConfig(
-              RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
-              Supervise(
-                pingpong2,
-                LifeCycle(Permanent))
-              ::
-              Supervise(
-                pingpong3,
-                LifeCycle(Permanent))
-              :: Nil)
-            :: Nil))
-    factory.newInstance
+        ::
+        Supervise(
+          pingpong2,
+          LifeCycle(Permanent))
+        ::
+        Supervise(
+          pingpong3,
+          LifeCycle(Permanent))
+        :: Nil))
   }
+
+  def getNestedSupervisorsAllForOneConf: Supervisor = {
+    pingpong1 = actorOf[PingPong1Actor].start
+    pingpong2 = actorOf[PingPong2Actor].start
+    pingpong3 = actorOf[PingPong3Actor].start
+
+    Supervisor(
+      SupervisorConfig(
+        RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
+        Supervise(
+          pingpong1,
+          LifeCycle(Permanent))
+        ::
+        SupervisorConfig(
+          RestartStrategy(AllForOne, 3, 5000, Nil),
+          Supervise(
+            pingpong2,
+            LifeCycle(Permanent))
+          ::
+          Supervise(
+            pingpong3,
+            LifeCycle(Permanent))
+          :: Nil)
+      :: Nil))
+   }
 }

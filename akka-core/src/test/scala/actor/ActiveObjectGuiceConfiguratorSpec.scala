@@ -8,7 +8,6 @@ import com.google.inject.AbstractModule
 import com.google.inject.Scopes
 
 import org.scalatest.Spec
-import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
@@ -18,7 +17,6 @@ import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.dispatch.FutureTimeoutException
 
 @RunWith(classOf[JUnitRunner])
 class ActiveObjectGuiceConfiguratorSpec extends

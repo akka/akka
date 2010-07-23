@@ -1,9 +1,10 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.dispatch
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.actor.Actor
 import Actor._
 
 object ExecutorBasedEventDrivenDispatcherActorSpec {

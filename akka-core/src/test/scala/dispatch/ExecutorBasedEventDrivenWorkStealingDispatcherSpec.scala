@@ -1,4 +1,4 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.dispatch
 
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitSuite
@@ -6,9 +6,10 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
-import Actor._
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
+import se.scalablesolutions.akka.actor.{IllegalActorStateException, Actor}
+import Actor._
 
 object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   val delayableActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")

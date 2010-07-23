@@ -5,13 +5,13 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.stm.local._
 
 @RunWith(classOf[JUnitRunner])
 class RefSpec extends Spec with ShouldMatchers {
 
   describe("A Ref") {
-    import local._
+
 
     it("should optionally accept an initial value") {
       val emptyRef = Ref[Int]

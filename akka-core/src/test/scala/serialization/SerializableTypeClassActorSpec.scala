@@ -1,16 +1,15 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.serialization
 
-import Actor._
 
 import org.scalatest.Spec
-import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import com.google.protobuf.Message
+import se.scalablesolutions.akka.actor._
 import ActorSerialization._
+import Actor._
 
 @RunWith(classOf[JUnitRunner])
 class SerializableTypeClassActorSpec extends
