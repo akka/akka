@@ -19,10 +19,11 @@ package se.scalablesolutions.akka.dispatch
 import se.scalablesolutions.akka.actor.ActorRef
 import org.fusesource.hawtdispatch.DispatchQueue
 import org.fusesource.hawtdispatch.ScalaDispatch._
-import actors.threadpool.AtomicInteger
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.CountDownLatch
 import org.fusesource.hawtdispatch.DispatchQueue.QueueType
+import org.fusesource.hawtdispatch.ListEventAggregator
 
 /**
  * Holds helper methods for working with actors that are using

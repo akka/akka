@@ -63,7 +63,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
   lazy val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
-  lazy val hawtdispatchModuleConfig  = ModuleConfiguration("org.fusesource.hawtdispatch", FusesourceSnapshotRepo)
+  // lazy val hawtdispatchModuleConfig  = ModuleConfiguration("org.fusesource.hawtdispatch", FusesourceSnapshotRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
   lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
   lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
@@ -85,7 +85,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val CAMEL_VERSION      = "2.4.0"
   lazy val CASSANDRA_VERSION  = "0.6.1"
 	lazy val DispatchVersion    = "0.7.4"
-  lazy val HAWTDISPATCH_VERSION = "1.0-SNAPSHOT"
+  lazy val HAWTDISPATCH_VERSION = "1.0"
 	lazy val JacksonVersion     = "1.2.1"
   lazy val JERSEY_VERSION     = "1.2"
   lazy val LIFT_VERSION       = "2.0-scala280-SNAPSHOT"
