@@ -1,16 +1,16 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.dispatch
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import Actor._
 
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.actor.Actor
+import Actor._
 
-object ReactorBasedSingleThreadEventDrivenDispatcherActorSpec {
+object ReactorBasedThreadPoolEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
-    self.dispatcher = Dispatchers.newReactorBasedSingleThreadEventDrivenDispatcher(self.uuid)
-
+    self.dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(self.uuid)
     def receive = {
       case "Hello" =>
         self.reply("World")
@@ -18,27 +18,23 @@ object ReactorBasedSingleThreadEventDrivenDispatcherActorSpec {
         throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
-
-  object OneWayTestActor {
-    val oneWay = new CountDownLatch(1)
-  }
-  class OneWayTestActor extends Actor {
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid)
-    def receive = {
-      case "OneWay" => OneWayTestActor.oneWay.countDown
-    }
-  }
 }
 
-class ReactorBasedSingleThreadEventDrivenDispatcherActorSpec extends JUnitSuite {
-  import ReactorBasedSingleThreadEventDrivenDispatcherActorSpec._
+class ReactorBasedThreadPoolEventDrivenDispatcherActorSpec extends JUnitSuite {
+  import ReactorBasedThreadPoolEventDrivenDispatcherActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
 
-  @Test def shouldSendOneWay = {
-    val actor = actorOf[OneWayTestActor].start
+  @Test def shouldSendOneWay {
+    val oneWay = new CountDownLatch(1)
+    val actor = actorOf(new Actor {
+      self.dispatcher = Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(self.uuid)
+      def receive = {
+        case "OneWay" => oneWay.countDown
+      }
+    }).start
     val result = actor ! "OneWay"
-    assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
+    assert(oneWay.await(1, TimeUnit.SECONDS))
     actor.stop
   }
 

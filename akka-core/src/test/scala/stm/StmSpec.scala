@@ -4,7 +4,6 @@ import se.scalablesolutions.akka.actor.{Actor, Transactor}
 import Actor._
 
 import org.scalatest.Spec
-import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
@@ -18,7 +17,7 @@ class StmSpec extends
 
   describe("Local STM") {
     it("should be able to do multiple consecutive atomic {..} statements") {
-      import local._
+      import se.scalablesolutions.akka.stm.local._
 
       lazy val ref = Ref[Int]()
 
@@ -37,7 +36,7 @@ class StmSpec extends
     }
 
     it("should be able to do nested atomic {..} statements") {
-      import local._
+      import se.scalablesolutions.akka.stm.local._
 
       lazy val ref = Ref[Int]()
 
@@ -59,7 +58,7 @@ class StmSpec extends
     }
 
     it("should roll back failing nested atomic {..} statements") {
-      import local._
+      import se.scalablesolutions.akka.stm.local._
 
       lazy val ref = Ref[Int]()
 

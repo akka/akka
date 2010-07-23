@@ -1,12 +1,11 @@
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.serialization
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.TimeUnit
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.dispatch.Dispatchers
-
+import se.scalablesolutions.akka.actor.{ProtobufProtocol, Actor}
 import ProtobufProtocol.ProtobufPOJO
 import Actor._
 

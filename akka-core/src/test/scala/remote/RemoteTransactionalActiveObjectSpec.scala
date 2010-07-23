@@ -2,19 +2,16 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.actor.remote
 
 import org.scalatest.Spec
-import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import org.junit.{Test, Before, After}
-
 import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator
-import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient}
+import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 
 object RemoteTransactionalActiveObjectSpec {
   val HOSTNAME = "localhost"

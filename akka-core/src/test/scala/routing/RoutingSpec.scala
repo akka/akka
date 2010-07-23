@@ -1,6 +1,5 @@
-package se.scalablesolutions.akka.routing
+package se.scalablesolutions.akka.actor.routing
 
-import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util.Logging
@@ -9,12 +8,11 @@ import org.scalatest.Suite
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.junit.{Before, After, Test}
-
-import scala.collection.mutable.HashSet
+import org.junit.Test
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import se.scalablesolutions.akka.routing._
 
 @RunWith(classOf[JUnitRunner])
 class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers with Logging {

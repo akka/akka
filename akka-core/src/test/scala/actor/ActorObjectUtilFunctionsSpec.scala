@@ -4,7 +4,7 @@ import org.scalatest.Suite
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.junit.{Before, After, Test}
+import org.junit.Test
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 @RunWith(classOf[JUnitRunner])

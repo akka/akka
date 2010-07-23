@@ -5,17 +5,14 @@
 package se.scalablesolutions.akka.actor
 
 import org.scalatest.Spec
-import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.config._
 import se.scalablesolutions.akka.config.ActiveObjectConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
-import se.scalablesolutions.akka.actor._
 
 @RunWith(classOf[JUnitRunner])
 class DeclarativelySupervisedNestedTransactionalActiveObjectSpec extends
