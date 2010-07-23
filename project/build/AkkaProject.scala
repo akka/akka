@@ -167,7 +167,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
 
-    lazy val mongo = "org.mongodb" % "mongo-java-driver" % "1.4" % "compile"
+    lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile"
 
     lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive
 
