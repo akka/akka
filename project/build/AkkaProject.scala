@@ -637,7 +637,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
         <dependency org="org.apache.geronimo.specs" name="geronimo-servlet_2.5_spec" rev="1.1.1">
         </dependency>
-        <dependency org="org.apache.camel" name="camel-jetty" rev={CAMEL_VERSION}>
+        <dependency org="org.apache.camel" name="camel-jetty" rev="2.4.0.1">
           <exclude module="geronimo-servlet_2.4_spec"/>
         </dependency>
         <dependency org="org.apache.camel" name="camel-jms" rev={CAMEL_VERSION}>
