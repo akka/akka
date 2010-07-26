@@ -13,17 +13,17 @@ import org.junit.runner.RunWith
 
 import se.scalablesolutions.akka.config.Config
 import se.scalablesolutions.akka.config._
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator
+import se.scalablesolutions.akka.config.TypedActorConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.actor._
 
 @RunWith(classOf[JUnitRunner])
-class RestartNestedTransactionalActiveObjectSpec extends
+class RestartNestedTransactionalTypedActorSpec extends
   Spec with
   ShouldMatchers with
   BeforeAndAfterAll {
 
-  private val conf = new ActiveObjectConfigurator
+  private val conf = new TypedActorConfigurator
   private var messageLog = ""
 
   override def beforeAll {
@@ -31,13 +31,13 @@ class RestartNestedTransactionalActiveObjectSpec extends
     conf.configure(
       new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
         List(
-          new Component(classOf[TransactionalActiveObject],
+          new Component(classOf[TransactionalTypedActor],
             new LifeCycle(new Permanent),
             10000),
-          new Component(classOf[NestedTransactionalActiveObject],
+          new Component(classOf[NestedTransactionalTypedActor],
             new LifeCycle(new Permanent),
             10000),
-          new Component(classOf[ActiveObjectFailer],
+          new Component(classOf[TypedActorFailer],
             new LifeCycle(new Permanent),
             10000)
         ).toArray).supervise
@@ -51,15 +51,15 @@ class RestartNestedTransactionalActiveObjectSpec extends
   describe("Restart nested supervised transactional Active Object") {
 /*
     it("map should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
+      val stateful = conf.getInstance(classOf[TransactionalTypedActor])
       stateful.init
       stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
       
-      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
+      val nested = conf.getInstance(classOf[NestedTransactionalTypedActor])
       nested.init
       nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
       
-      val failer = conf.getInstance(classOf[ActiveObjectFailer])
+      val failer = conf.getInstance(classOf[TypedActorFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         
@@ -71,15 +71,15 @@ class RestartNestedTransactionalActiveObjectSpec extends
     }
 
     it("vector should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
+      val stateful = conf.getInstance(classOf[TransactionalTypedActor])
       stateful.init
       stateful.setVectorState("init") // set init state
       
-      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
+      val nested = conf.getInstance(classOf[NestedTransactionalTypedActor])
       nested.init
       nested.setVectorState("init") // set init state
       
-      val failer = conf.getInstance(classOf[ActiveObjectFailer])
+      val failer = conf.getInstance(classOf[TypedActorFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         
@@ -91,15 +91,15 @@ class RestartNestedTransactionalActiveObjectSpec extends
     }
 
     it("ref should rollback state for stateful server in case of failure") {
-      val stateful = conf.getInstance(classOf[TransactionalActiveObject])
+      val stateful = conf.getInstance(classOf[TransactionalTypedActor])
       stateful.init
-      val nested = conf.getInstance(classOf[NestedTransactionalActiveObject])
+      val nested = conf.getInstance(classOf[NestedTransactionalTypedActor])
       nested.init
       stateful.setRefState("init") // set init state
       
       nested.setRefState("init") // set init state
       
-      val failer = conf.getInstance(classOf[ActiveObjectFailer])
+      val failer = conf.getInstance(classOf[TypedActorFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         

@@ -15,16 +15,16 @@ import se.scalablesolutions.akka.actor.IllegalActorStateException
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  * @author Martin Krasser
  */
-trait ActiveObjectParser extends BeanParser with DispatcherParser {
+trait TypedActorParser extends BeanParser with DispatcherParser {
   import AkkaSpringConfigurationTags._
 
   /**
-   * Parses the given element and returns a ActiveObjectProperties.
+   * Parses the given element and returns a TypedActorProperties.
    * @param element dom element to parse
-   * @return configuration for the active object
+   * @return configuration for the typed actor
    */
-  def parseActiveObject(element: Element): ActiveObjectProperties = {
-    val objectProperties = new ActiveObjectProperties()
+  def parseTypedActor(element: Element): TypedActorProperties = {
+    val objectProperties = new TypedActorProperties()
     val remoteElement = DomUtils.getChildElementByTagName(element, REMOTE_TAG);
     val restartCallbacksElement = DomUtils.getChildElementByTagName(element, RESTART_CALLBACKS_TAG);
     val shutdownCallbackElement = DomUtils.getChildElementByTagName(element, SHUTDOWN_CALLBACK_TAG);

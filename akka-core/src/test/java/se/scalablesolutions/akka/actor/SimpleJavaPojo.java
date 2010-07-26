@@ -2,12 +2,12 @@ package se.scalablesolutions.akka.actor;
 
 import se.scalablesolutions.akka.actor.annotation.prerestart;
 import se.scalablesolutions.akka.actor.annotation.postrestart;
-import se.scalablesolutions.akka.actor.ActiveObjectContext;
+import se.scalablesolutions.akka.actor.TypedActorContext;
 import se.scalablesolutions.akka.dispatch.CompletableFuture;
 
 public class SimpleJavaPojo {
 
-  ActiveObjectContext context;
+  TypedActorContext context;
   
   public boolean pre = false;
   public boolean post = false;

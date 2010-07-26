@@ -21,10 +21,10 @@ import se.scalablesolutions.akka.remote.RemoteNode;
 import se.scalablesolutions.akka.spring.foo.MyPojo;
 
 /**
- * Tests for spring configuration of active objects and supervisor configuration.
+ * Tests for spring configuration of typed actors and supervisor configuration.
  * @author michaelkober
  */
-public class ActiveObjectConfigurationTest {
+public class TypedActorConfigurationTest {
 
   private ApplicationContext context = null;
 
@@ -50,7 +50,7 @@ public class ActiveObjectConfigurationTest {
   }
 
   @Test
-  public void testSimpleActiveObject() {
+  public void testSimpleTypedActor() {
     MyPojo myPojo = (MyPojo) context.getBean("simple-active-object");
     String msg = myPojo.getFoo();
     msg += myPojo.getBar();
@@ -58,20 +58,20 @@ public class ActiveObjectConfigurationTest {
   }
 
   @Test(expected = FutureTimeoutException.class)
-  public void testSimpleActiveObject_Timeout() {
+  public void testSimpleTypedActor_Timeout() {
     MyPojo myPojo = (MyPojo) context.getBean("simple-active-object");
     myPojo.longRunning();
   }
 
   @Test
-  public void testSimpleActiveObject_NoTimeout() {
+  public void testSimpleTypedActor_NoTimeout() {
     MyPojo myPojo = (MyPojo) context.getBean("simple-active-object-long-timeout");
     String msg = myPojo.longRunning();
     assertEquals("this took long", msg);
   }
 
   @Test
-  public void testTransactionalActiveObject() {
+  public void testTransactionalTypedActor() {
     MyPojo myPojo = (MyPojo) context.getBean("transactional-active-object");
     String msg = myPojo.getFoo();
     msg += myPojo.getBar();
@@ -79,7 +79,7 @@ public class ActiveObjectConfigurationTest {
   }
 
   @Test
-  public void testRemoteActiveObject() {
+  public void testRemoteTypedActor() {
     new Thread(new Runnable() {
       public void run() {
         RemoteNode.start();

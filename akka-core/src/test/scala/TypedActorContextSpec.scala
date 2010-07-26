@@ -14,15 +14,15 @@ import org.junit.runner.RunWith
 import se.scalablesolutions.akka.dispatch.DefaultCompletableFuture;
 
 @RunWith(classOf[JUnitRunner])
-class ActiveObjectContextSpec extends
+class TypedActorContextSpec extends
   Spec with
   ShouldMatchers with
   BeforeAndAfterAll {
 
-  describe("ActiveObjectContext") {
-    it("context.sender should return the sender Active Object reference") {
-      val pojo = ActiveObject.newInstance(classOf[SimpleJavaPojo])
-      val pojoCaller = ActiveObject.newInstance(classOf[SimpleJavaPojoCaller])
+  describe("TypedActorContext") {
+    it("context.sender should return the sender TypedActor reference") {
+      val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo])
+      val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller])
       pojoCaller.setPojo(pojo)
       try { 
         pojoCaller.getSenderFromSimpleJavaPojo should equal (pojoCaller)
@@ -31,9 +31,9 @@ class ActiveObjectContextSpec extends
       }
     }
 
-    it("context.senderFuture should return the senderFuture Active Object reference") {
-      val pojo = ActiveObject.newInstance(classOf[SimpleJavaPojo])
-      val pojoCaller = ActiveObject.newInstance(classOf[SimpleJavaPojoCaller])
+    it("context.senderFuture should return the senderFuture TypedActor reference") {
+      val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo])
+      val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller])
       pojoCaller.setPojo(pojo)
       try { 
         pojoCaller.getSenderFutureFromSimpleJavaPojo.getClass.getName should equal (classOf[DefaultCompletableFuture[_]].getName)

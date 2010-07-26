@@ -585,7 +585,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	// Test
 	// -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaActiveObjectTestProject(info: ProjectInfo) extends DefaultProject(info) {
+  class AkkaTypedActorTestProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit = "junit" % "junit" % "4.5" % "test"
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"

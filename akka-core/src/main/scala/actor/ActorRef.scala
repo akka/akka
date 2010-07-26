@@ -291,15 +291,15 @@ trait ActorRef extends TransactionManagement {
   def !!(message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Option[Any] = {
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout[Any](message, timeout, sender, None)
-      val isActiveObject = message.isInstanceOf[Invocation]
-      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) {
+      val isTypedActor = message.isInstanceOf[Invocation]
+      if (isTypedActor && message.asInstanceOf[Invocation].isVoid) {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
       try {
         future.await
       } catch {
         case e: FutureTimeoutException =>
-          if (isActiveObject) throw e
+          if (isTypedActor) throw e
           else None
       }
       if (future.exception.isDefined) throw future.exception.get._2
@@ -347,7 +347,7 @@ trait ActorRef extends TransactionManagement {
     "\n\tNo sender in scope, can't reply. " +
     "\n\tYou have probably: " +
     "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
-    "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object." +
+    "\n\t\t2. Invoked a method on an TypedActor from an instance NOT an TypedActor." +
     "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if succes and Boolean(false) if no sender in scope")
 
   /**

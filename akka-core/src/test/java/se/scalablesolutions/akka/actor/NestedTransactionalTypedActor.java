@@ -5,7 +5,7 @@ import se.scalablesolutions.akka.actor.annotation.inittransactionalstate;
 import se.scalablesolutions.akka.stm.*;
 
 @transactionrequired
-public class NestedTransactionalActiveObject {
+public class NestedTransactionalTypedActor {
   private TransactionalMap<String, String> mapState;
   private TransactionalVector<String> vectorState;
   private Ref<String> refState;
@@ -58,7 +58,7 @@ public class NestedTransactionalActiveObject {
   }
 
 
-  public String failure(String key, String msg, ActiveObjectFailer failer) {
+  public String failure(String key, String msg, TypedActorFailer failer) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
@@ -67,7 +67,7 @@ public class NestedTransactionalActiveObject {
   }
 
 
-  public void thisMethodHangs(String key, String msg, ActiveObjectFailer failer) {
+  public void thisMethodHangs(String key, String msg, TypedActorFailer failer) {
     setMapState(key, msg);
   }
 

@@ -12,31 +12,31 @@ import org.apache.camel.component.bean._
 /**
  * @author Martin Krasser
  */
-object ActiveObjectComponent {
+object TypedActorComponent {
   /**
-   * Default schema name for active object endpoint URIs.
+   * Default schema name for typed actor endpoint URIs.
    */
   val InternalSchema = "active-object-internal"
 }
 
 /**
- * Camel component for exchanging messages with active objects. This component
- * tries to obtain the active object from the <code>activeObjectRegistry</code>
+ * Camel component for exchanging messages with typed actors. This component
+ * tries to obtain the typed actor from the <code>activeObjectRegistry</code>
  * first. If it's not there it tries to obtain it from the CamelContext's registry.
  *
  * @see org.apache.camel.component.bean.BeanComponent
  *
  * @author Martin Krasser
  */
-class ActiveObjectComponent extends BeanComponent {
+class TypedActorComponent extends BeanComponent {
   val activeObjectRegistry = new ConcurrentHashMap[String, AnyRef]
 
   /**
    * Creates a {@link org.apache.camel.component.bean.BeanEndpoint} with a custom
    * bean holder that uses <code>activeObjectRegistry</code> for getting access to
-   * active objects (beans).
+   * typed actors (beans).
    *
-   * @see se.scalablesolutions.akka.camel.component.ActiveObjectHolder
+   * @see se.scalablesolutions.akka.camel.component.TypedActorHolder
    */
   override def createEndpoint(uri: String, remaining: String, parameters: Map[String, AnyRef]) = {
     val endpoint = new BeanEndpoint(uri, this)
@@ -47,26 +47,26 @@ class ActiveObjectComponent extends BeanComponent {
   }
 
   private def createBeanHolder(beanName: String) =
-    new ActiveObjectHolder(activeObjectRegistry, getCamelContext, beanName).createCacheHolder
+    new TypedActorHolder(activeObjectRegistry, getCamelContext, beanName).createCacheHolder
 }
 
 /**
  * {@link org.apache.camel.component.bean.BeanHolder} implementation that uses a custom
- * registry for getting access to active objects.
+ * registry for getting access to typed actors.
  *
  * @author Martin Krasser
  */
-class ActiveObjectHolder(activeObjectRegistry: Map[String, AnyRef], context: CamelContext, name: String)
+class TypedActorHolder(activeObjectRegistry: Map[String, AnyRef], context: CamelContext, name: String)
     extends RegistryBean(context, name) {
 
   /**
-   * Returns an {@link se.scalablesolutions.akka.camel.component.ActiveObjectInfo} instance.
+   * Returns an {@link se.scalablesolutions.akka.camel.component.TypedActorInfo} instance.
    */
   override def getBeanInfo: BeanInfo =
-    new ActiveObjectInfo(getContext, getBean.getClass, getParameterMappingStrategy)
+    new TypedActorInfo(getContext, getBean.getClass, getParameterMappingStrategy)
 
   /**
-   * Obtains an active object from <code>activeObjectRegistry</code>.
+   * Obtains an typed actor from <code>activeObjectRegistry</code>.
    */
   override def getBean: AnyRef = {
     val bean = activeObjectRegistry.get(getName)
@@ -75,11 +75,11 @@ class ActiveObjectHolder(activeObjectRegistry: Map[String, AnyRef], context: Cam
 }
 
 /**
- * Provides active object meta information.
+ * Provides typed actor meta information.
  *
  * @author Martin Krasser
  */
-class ActiveObjectInfo(context: CamelContext, clazz: Class[_], strategy: ParameterMappingStrategy)
+class TypedActorInfo(context: CamelContext, clazz: Class[_], strategy: ParameterMappingStrategy)
     extends BeanInfo(context, clazz, strategy) {
 
   /**

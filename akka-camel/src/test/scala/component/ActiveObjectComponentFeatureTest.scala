@@ -4,7 +4,7 @@ import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
 import org.apache.camel.builder.RouteBuilder
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActorRegistry, ActiveObject}
+import se.scalablesolutions.akka.actor.{ActorRegistry, TypedActor}
 import se.scalablesolutions.akka.camel._
 import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
 import org.apache.camel.{ResolveEndpointFailedException, ExchangePattern, Exchange, Processor}
@@ -12,14 +12,14 @@ import org.apache.camel.{ResolveEndpointFailedException, ExchangePattern, Exchan
 /**
  * @author Martin Krasser
  */
-class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
-  import ActiveObjectComponentFeatureTest._
+class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+  import TypedActorComponentFeatureTest._
   import CamelContextManager.template
 
   override protected def beforeAll = {
-    val activePojo     = ActiveObject.newInstance(classOf[Pojo]) // not a consumer
-    val activePojoBase = ActiveObject.newInstance(classOf[PojoBase])
-    val activePojoIntf = ActiveObject.newInstance(classOf[PojoIntf], new PojoImpl)
+    val activePojo     = TypedActor.newInstance(classOf[Pojo]) // not a consumer
+    val activePojoBase = TypedActor.newInstance(classOf[PojoBase])
+    val activePojoIntf = TypedActor.newInstance(classOf[PojoIntf], new PojoImpl)
 
     val registry = new SimpleRegistry
     registry.put("pojo", activePojo)
@@ -37,8 +37,8 @@ class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAl
     ActorRegistry.shutdownAll
   }
 
-  feature("Communicate with an active object from a Camel application using active object endpoint URIs") {
-    import ActiveObjectComponent.InternalSchema
+  feature("Communicate with an typed actor from a Camel application using typed actor endpoint URIs") {
+    import TypedActorComponent.InternalSchema
     import ExchangePattern._
 
     scenario("in-out exchange with proxy created from interface and method returning String") {
@@ -81,14 +81,14 @@ class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAl
     }
   }
 
-  feature("Communicate with an active object from a Camel application from a custom Camel route") {
+  feature("Communicate with an typed actor from a Camel application from a custom Camel route") {
 
-    scenario("in-out exchange with externally registered active object") {
+    scenario("in-out exchange with externally registered typed actor") {
       val result = template.requestBody("direct:test", "test")
       assert(result === "foo: test")
     }
 
-    scenario("in-out exchange with internally registered active object not possible") {
+    scenario("in-out exchange with internally registered typed actor not possible") {
       intercept[ResolveEndpointFailedException] {
         template.requestBodyAndHeader("active-object:intf?method=m2", "x", "test", "y")
       }
@@ -96,7 +96,7 @@ class ActiveObjectComponentFeatureTest extends FeatureSpec with BeforeAndAfterAl
   }
 }
 
-object ActiveObjectComponentFeatureTest {
+object TypedActorComponentFeatureTest {
   class CustomRouteBuilder extends RouteBuilder {
     def configure = {
       from("direct:test").to("active-object:pojo?method=foo")

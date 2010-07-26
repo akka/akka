@@ -9,7 +9,7 @@ public class PojoRemote {
 
     @consume("direct:remote-active-object")
     public String foo(String s) {
-        return String.format("remote active object: %s", s);
+        return String.format("remote typed actor: %s", s);
     }
 
 }

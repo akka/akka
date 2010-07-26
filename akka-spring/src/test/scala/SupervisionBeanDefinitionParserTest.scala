@@ -26,8 +26,8 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
     val parser = new Parser()
     val builder = BeanDefinitionBuilder.genericBeanDefinition("foo.bar.Foo")
 
-    it("should be able to parse active object configuration") {
-      val props = parser.parseActiveObject(createActiveObjectElement);
+    it("should be able to parse typed actor configuration") {
+      val props = parser.parseTypedActor(createTypedActorElement);
       assert(props != null)
       assert(props.timeout == 1000)
       assert(props.target == "foo.bar.MyPojo")
@@ -45,9 +45,9 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       expect(1000) { strategy.withinTimeRange }
     }
 
-    it("should parse the supervised active objects") {
+    it("should parse the supervised typed actors") {
       parser.parseSupervisor(createSupervisorElement, builder);
-      val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[ActiveObjectProperties]]
+      val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[TypedActorProperties]]
       assert(supervised != null)
       expect(4) { supervised.length }
       val iterator = supervised.iterator
@@ -75,7 +75,7 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
   }
 
-  private def createActiveObjectElement : Element = {
+  private def createTypedActorElement : Element = {
     val xml = <akka:active-object id="active-object1"
                                         target="foo.bar.MyPojo"
                                         timeout="1000"
