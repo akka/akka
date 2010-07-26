@@ -66,7 +66,6 @@ class SchedulerSpec extends JUnitSuite {
 
       override def postRestart(reason: Throwable) = restartLatch.open
     })
-
     Supervisor(
       SupervisorConfig(
         RestartStrategy(AllForOne, 3, 1000,
