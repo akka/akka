@@ -15,18 +15,18 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import se.scalablesolutions.akka.config.Config
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator
+import se.scalablesolutions.akka.config.TypedActorConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.dispatch.FutureTimeoutException
 
 @RunWith(classOf[JUnitRunner])
-class ActiveObjectGuiceConfiguratorSpec extends
+class TypedActorGuiceConfiguratorSpec extends
   Spec with
   ShouldMatchers with
   BeforeAndAfterAll {
 
-  private val conf = new ActiveObjectConfigurator
+  private val conf = new TypedActorConfigurator
   private var messageLog = ""
 
   override def beforeAll {
@@ -55,9 +55,9 @@ class ActiveObjectGuiceConfiguratorSpec extends
 
   override def afterAll = conf.stop
 
-  describe("ActiveObjectGuiceConfigurator") {
+  describe("TypedActorGuiceConfigurator") {
 /*
-    it("should inject active object using guice") {
+    it("should inject typed actor using guice") {
       messageLog = ""
       val foo = conf.getInstance(classOf[Foo])
       val bar = conf.getInstance(classOf[Bar])
@@ -81,7 +81,7 @@ class ActiveObjectGuiceConfiguratorSpec extends
       }
     }
 
-    it("should be able to invoke active object") {
+    it("should be able to invoke typed actor") {
       messageLog = ""
       val foo = conf.getInstance(classOf[Foo])
       messageLog += foo.foo("foo ")
@@ -91,7 +91,7 @@ class ActiveObjectGuiceConfiguratorSpec extends
       messageLog should equal("foo return_foo before_bar ")
     }
 
-    it("should be able to invoke active object's invocation") {
+    it("should be able to invoke typed actor's invocation") {
       messageLog = ""
       val foo = conf.getInstance(classOf[Foo])
       val bar = conf.getInstance(classOf[Bar])

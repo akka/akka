@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.config
 import com.google.inject._
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.actor.{Supervisor, ActiveObject, Dispatcher, ActorRef, Actor, IllegalActorStateException}
+import se.scalablesolutions.akka.actor.{Supervisor, TypedActor, Dispatcher, ActorRef, Actor, IllegalActorStateException}
 import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
 
@@ -17,12 +17,12 @@ import java.net.InetSocketAddress
 import java.lang.reflect.Method
 
 /**
- * This is an class for internal usage. Instead use the <code>se.scalablesolutions.akka.config.ActiveObjectConfigurator</code>
- * class for creating ActiveObjects.
+ * This is an class for internal usage. Instead use the <code>se.scalablesolutions.akka.config.TypedActorConfigurator</code>
+ * class for creating TypedActors.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfiguratorBase with Logging {
+private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBase with Logging {
   private var injector: Injector = _
   private var supervisor: Option[Supervisor]  = None
   private var restartStrategy: RestartStrategy  = _
@@ -37,11 +37,11 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
   /**
    * Returns the active abject that has been put under supervision for the class specified.
    *
-   * @param clazz the class for the active object
-   * @return the active objects for the class
+   * @param clazz the class for the typed actor
+   * @return the typed actors for the class
    */
   def getInstance[T](clazz: Class[T]): List[T] = synchronized {
-    log.debug("Retrieving active object [%s]", clazz.getName)
+    log.debug("Retrieving typed actor [%s]", clazz.getName)
     if (injector eq null) throw new IllegalActorStateException(
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
@@ -67,7 +67,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     }
 
   override def configure(restartStrategy: RestartStrategy, components: List[Component]):
-    ActiveObjectConfiguratorBase = synchronized {
+    TypedActorConfiguratorBase = synchronized {
     this.restartStrategy = restartStrategy
     this.components = components.toArray.toList.asInstanceOf[List[Component]]
     bindings = for (component <- this.components) yield {
@@ -76,12 +76,14 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
     }
     val deps = new java.util.ArrayList[DependencyBinding](bindings.size)
     for (b <- bindings) deps.add(b)
-    modules.add(new ActiveObjectGuiceModule(deps))
+    modules.add(new TypedActorGuiceModule(deps))
     this
   }
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
-    val targetClass = component.target
+    val targetClass = 
+      if (component.target.isInstanceOf[Class[_ <: TypedActor]]) component.target.asInstanceOf[Class[_ <: TypedActor]]
+      else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
     val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired,
       component.lifeCycle.restartCallbacks,
       component.lifeCycle.shutdownCallback))
@@ -90,8 +92,8 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
       if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
-    val proxy = ActiveObject.newInstance(targetClass, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
-    remoteAddress.foreach(address => RemoteServer.registerActiveObject(address, targetClass.getName, proxy))
+    val proxy = TypedActor.newInstance(targetClass, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    remoteAddress.foreach(address => RemoteServer.registerTypedActor(address, targetClass.getName, proxy))
     supervised ::= Supervise(actorRef, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
@@ -99,7 +101,12 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
 
   private def newDelegatingProxy(component: Component): DependencyBinding = {
     val targetClass = component.intf.get
-    val targetInstance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
+    val instance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
+    val targetInstance = 
+      if (instance.isInstanceOf[TypedActor]) component.target.asInstanceOf[TypedActor]
+      else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
+    if (!component.target.isInstanceOf[TypedActor]) throw new IllegalArgumentException(
+      "TypedActor [" + component.target + "] must be a subclass of TypedActor")
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
     val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired,
       component.lifeCycle.restartCallbacks,
@@ -109,23 +116,23 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
       if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
-    val proxy = ActiveObject.newInstance(
+    val proxy = TypedActor.newInstance(
       targetClass, targetInstance, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
-    remoteAddress.foreach(address => RemoteServer.registerActiveObject(address, targetClass.getName, proxy))
+    remoteAddress.foreach(address => RemoteServer.registerTypedActor(address, targetClass.getName, proxy))
     supervised ::= Supervise(actorRef, component.lifeCycle)
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }
 
-  override def inject: ActiveObjectConfiguratorBase = synchronized {
+  override def inject: TypedActorConfiguratorBase = synchronized {
     if (injector ne null) throw new IllegalActorStateException("inject() has already been called on this configurator")
     injector = Guice.createInjector(modules)
     this
   }
 
-  override def supervise: ActiveObjectConfiguratorBase = synchronized {
+  override def supervise: TypedActorConfiguratorBase = synchronized {
     if (injector eq null) inject
-    supervisor = Some(ActiveObject.supervise(restartStrategy, supervised))
+    supervisor = Some(TypedActor.supervise(restartStrategy, supervised))
     this
   }
 
@@ -141,7 +148,7 @@ private[akka] class ActiveObjectGuiceConfigurator extends ActiveObjectConfigurat
    *   }})
    * </pre>
    */
-  def addExternalGuiceModule(module: Module): ActiveObjectConfiguratorBase  = synchronized {
+  def addExternalGuiceModule(module: Module): TypedActorConfiguratorBase  = synchronized {
     modules.add(module)
     this
   }

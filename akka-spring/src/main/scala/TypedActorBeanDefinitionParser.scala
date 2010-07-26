@@ -13,17 +13,17 @@ import org.w3c.dom.Element
  * Parser for custom namespace configuration.
  * @author michaelkober
  */
-class ActiveObjectBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectParser {
+class TypedActorBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with TypedActorParser {
   /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
   override def doParse(element: Element, parserContext: ParserContext, builder: BeanDefinitionBuilder) {
-    val activeObjectConf = parseActiveObject(element)
+    val activeObjectConf = parseTypedActor(element)
     activeObjectConf.setAsProperties(builder)
   }
 
   /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#getBeanClass(org.w3c.dom.Element)
    */
-  override def getBeanClass(element: Element): Class[_] = classOf[ActiveObjectFactoryBean]
+  override def getBeanClass(element: Element): Class[_] = classOf[TypedActorFactoryBean]
 }

@@ -89,7 +89,7 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
 
 
-    it("should throw IllegalArgumentException when configuring a thread based dispatcher without ActiveObject") {
+    it("should throw IllegalArgumentException when configuring a thread based dispatcher without TypedActor") {
       val xml = <akka:dispatcher id="dispatcher" type="thread-based" name="myDispatcher" />
       evaluating { parser.parseDispatcher(dom(xml).getDocumentElement) } should produce [IllegalArgumentException]
     }

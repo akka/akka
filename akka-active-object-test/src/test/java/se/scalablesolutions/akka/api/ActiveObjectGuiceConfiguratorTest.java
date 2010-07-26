@@ -10,14 +10,14 @@ import com.google.inject.Scopes;
 import junit.framework.TestCase;
 
 import se.scalablesolutions.akka.config.Config;
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
+import se.scalablesolutions.akka.config.TypedActorConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 import se.scalablesolutions.akka.dispatch.*;
 
-public class ActiveObjectGuiceConfiguratorTest extends TestCase {
+public class TypedActorGuiceConfiguratorTest extends TestCase {
   static String messageLog = "";
 
-    final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
+    final private TypedActorConfigurator conf = new TypedActorConfigurator();
 
     protected void setUp() {
       Config.config();
@@ -46,7 +46,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
 
   }
 
-  public void testGuiceActiveObjectInjection() {
+  public void testGuiceTypedActorInjection() {
     messageLog = "";
     Foo foo = conf.getInstance(Foo.class);
     Bar bar = conf.getInstance(Bar.class);
@@ -69,7 +69,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     }
   }
 
-  public void testActiveObjectInvocation() throws InterruptedException {
+  public void testTypedActorInvocation() throws InterruptedException {
     messageLog = "";
     Foo foo = conf.getInstance(Foo.class);
     messageLog += foo.foo("foo ");
@@ -79,7 +79,7 @@ public class ActiveObjectGuiceConfiguratorTest extends TestCase {
     assertEquals("foo return_foo before_bar ", messageLog);
   }
 
-  public void testActiveObjectInvocationsInvocation() throws InterruptedException {
+  public void testTypedActorInvocationsInvocation() throws InterruptedException {
     messageLog = "";
     Foo foo = conf.getInstance(Foo.class);
     Bar bar = conf.getInstance(Bar.class);

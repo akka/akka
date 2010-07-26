@@ -122,7 +122,8 @@ object ActorSerialization {
   private def fromBinaryToLocalActorRef[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
     fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, format, None)
 
-  private def fromProtobufToLocalActorRef[T <: Actor](protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
+  private def fromProtobufToLocalActorRef[T <: Actor](
+    protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
     Actor.log.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n" + protocol)
 
     val serializer =
@@ -225,26 +226,30 @@ object RemoteActorSerialization {
       .build
   }
 
-  def createRemoteRequestProtocolBuilder(ar: ActorRef,
-    message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]): RemoteRequestProtocol.Builder = {
-    import ar._
-    val protocol = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
-        .setMessage(MessageSerializer.serialize(message))
+  def createRemoteRequestProtocolBuilder(actorRef: ActorRef, message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]): 
+    RemoteRequestProtocol.Builder = {
+    import actorRef._
+
+    val actorInfo = ActorInfoProtocol.newBuilder
+        .setUuid(uuid)
         .setTarget(actorClassName)
         .setTimeout(timeout)
-        .setUuid(uuid)
-        .setIsActor(true)
+        .setActorType(ActorType.SCALA_ACTOR)
+        .build
+
+    val request = RemoteRequestProtocol.newBuilder
+        .setId(RemoteRequestProtocolIdFactory.nextId)
+        .setMessage(MessageSerializer.serialize(message))
+        .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
-        .setIsEscaped(false)
 
     val id = registerSupervisorAsRemoteActor
-    if (id.isDefined) protocol.setSupervisorUuid(id.get)
+    if (id.isDefined) request.setSupervisorUuid(id.get)
 
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-      protocol.setSender(toRemoteActorRefProtocol(sender))
+      request.setSender(toRemoteActorRefProtocol(sender))
     }
-    protocol
+    request
   }
 }

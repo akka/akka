@@ -13,10 +13,10 @@ import com.google.inject.Singleton;
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-public class ActiveObjectGuiceModule extends AbstractModule {
+public class TypedActorGuiceModule extends AbstractModule {
   private final List<DependencyBinding> bindings;
 
-  public ActiveObjectGuiceModule(final List<DependencyBinding> bindings) {
+  public TypedActorGuiceModule(final List<DependencyBinding> bindings) {
     this.bindings = bindings;
   }
 

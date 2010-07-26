@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 
 import org.scalatest.junit.JUnitSuite
 
-import se.scalablesolutions.akka.actor.{AspectInit, ActiveObject}
+import se.scalablesolutions.akka.actor.{AspectInit, TypedActor}
 import se.scalablesolutions.akka.camel.ConsumerMethodRegistered._
 import org.junit.{AfterClass, Test}
 
@@ -44,14 +44,14 @@ class ConsumerMethodRegisteredTest extends JUnitSuite {
 }
 
 object ConsumerMethodRegisteredTest {
-  val activePojoBase = ActiveObject.newInstance(classOf[PojoBase])
-  val activePojoSub = ActiveObject.newInstance(classOf[PojoSub])
-  val activePojoIntf = ActiveObject.newInstance(classOf[PojoIntf], new PojoImpl)
+  val activePojoBase = TypedActor.newInstance(classOf[PojoBase])
+  val activePojoSub = TypedActor.newInstance(classOf[PojoSub])
+  val activePojoIntf = TypedActor.newInstance(classOf[PojoIntf], new PojoImpl)
 
   @AfterClass
   def afterClass = {
-    ActiveObject.stop(activePojoBase)
-    ActiveObject.stop(activePojoSub)
-    ActiveObject.stop(activePojoIntf)
+    TypedActor.stop(activePojoBase)
+    TypedActor.stop(activePojoSub)
+    TypedActor.stop(activePojoIntf)
   }
 }

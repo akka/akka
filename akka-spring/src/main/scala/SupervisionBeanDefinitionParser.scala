@@ -18,7 +18,7 @@ import org.springframework.util.xml.DomUtils
  * Parser for custom namespace for Akka declarative supervisor configuration.
  * @author michaelkober
  */
-class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectParser {
+class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with TypedActorParser {
   /* (non-Javadoc)
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
@@ -33,7 +33,7 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
     val strategyElement = mandatoryElement(element, STRATEGY_TAG);
     val activeObjectsElement = mandatoryElement(element, ACTIVE_OBJECTS_TAG);
     parseRestartStrategy(strategyElement, builder)
-    parseActiveObjectList(activeObjectsElement, builder)
+    parseTypedActorList(activeObjectsElement, builder)
   }
 
   private[akka] def parseRestartStrategy(element: Element, builder: BeanDefinitionBuilder) {
@@ -46,9 +46,9 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
     builder.addPropertyValue("restartStrategy", restartStrategy)
   }
 
-  private[akka] def parseActiveObjectList(element: Element, builder: BeanDefinitionBuilder) {
+  private[akka] def parseTypedActorList(element: Element, builder: BeanDefinitionBuilder) {
     val activeObjects = DomUtils.getChildElementsByTagName(element, ACTIVE_OBJECT_TAG).toArray.toList.asInstanceOf[List[Element]]
-    val activeObjectProperties = activeObjects.map(parseActiveObject(_))
+    val activeObjectProperties = activeObjects.map(parseTypedActor(_))
     builder.addPropertyValue("supervised", activeObjectProperties)
   }
 

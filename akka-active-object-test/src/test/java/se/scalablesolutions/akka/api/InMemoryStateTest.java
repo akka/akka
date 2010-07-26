@@ -8,7 +8,7 @@ import junit.framework.TestCase;
 
 import se.scalablesolutions.akka.config.Config;
 import se.scalablesolutions.akka.config.*;
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
+import se.scalablesolutions.akka.config.TypedActorConfigurator;
 
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
@@ -17,7 +17,7 @@ import se.scalablesolutions.akka.actor.*;
 public class InMemoryStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
+  final private TypedActorConfigurator conf = new TypedActorConfigurator();
 
   public InMemoryStateTest() {
     Config.config();

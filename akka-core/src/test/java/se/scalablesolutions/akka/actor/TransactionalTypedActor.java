@@ -7,7 +7,7 @@ import se.scalablesolutions.akka.actor.annotation.inittransactionalstate;
 import se.scalablesolutions.akka.stm.*;
 
 @transactionrequired
-public class TransactionalActiveObject {
+public class TransactionalTypedActor {
   private TransactionalMap<String, String> mapState;
   private TransactionalVector<String> vectorState;
   private Ref<String> refState;
@@ -53,14 +53,14 @@ public class TransactionalActiveObject {
     refState.swap(msg);
   }
 
-  public void success(String key, String msg, NestedTransactionalActiveObject nested) {
+  public void success(String key, String msg, NestedTransactionalTypedActor nested) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
     nested.success(key, msg);
   }
 
-  public String failure(String key, String msg, ActiveObjectFailer failer) {
+  public String failure(String key, String msg, TypedActorFailer failer) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
@@ -68,7 +68,7 @@ public class TransactionalActiveObject {
     return msg;
   }
 
-  public String failure(String key, String msg, NestedTransactionalActiveObject nested, ActiveObjectFailer failer) {
+  public String failure(String key, String msg, NestedTransactionalTypedActor nested, TypedActorFailer failer) {
     mapState.put(key, msg);
     vectorState.add(msg);
     refState.swap(msg);
@@ -76,7 +76,7 @@ public class TransactionalActiveObject {
     return msg;
   }
 
-  public void thisMethodHangs(String key, String msg, ActiveObjectFailer failer) {
+  public void thisMethodHangs(String key, String msg, TypedActorFailer failer) {
     setMapState(key, msg);
   }
 

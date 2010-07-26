@@ -8,11 +8,11 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder
 import AkkaSpringConfigurationTags._
 
 /**
- * Data container for active object configuration data.
+ * Data container for typed actor configuration data.
  * @author michaelkober
  * @author Martin Krasser
  */
-class ActiveObjectProperties {
+class TypedActorProperties {
   var target: String = ""
   var timeout: Long = _
   var interface: String = ""

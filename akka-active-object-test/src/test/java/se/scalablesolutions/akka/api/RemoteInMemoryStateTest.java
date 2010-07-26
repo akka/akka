@@ -5,8 +5,8 @@
 package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.config.Config;
-import se.scalablesolutions.akka.actor.ActiveObject;
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
+import se.scalablesolutions.akka.actor.TypedActor;
+import se.scalablesolutions.akka.config.TypedActorConfigurator;
 import se.scalablesolutions.akka.remote.RemoteNode;
 
 import junit.framework.TestCase;
@@ -23,14 +23,14 @@ public class RemoteInMemoryStateTest extends TestCase {
     try { Thread.currentThread().sleep(1000);  } catch (Exception e) {}
       Config.config();
   }
-  final ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
+  final TypedActorConfigurator conf = new TypedActorConfigurator();
 
   protected void tearDown() {
     conf.stop();
   }
 
   public void testMapShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = ActiveObject.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
+    InMemStateful stateful = TypedActor.newRemoteInstance(InMemStateful.class, 1000, "localhost", 9999);
     stateful.init();
     stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
@@ -38,10 +38,10 @@ public class RemoteInMemoryStateTest extends TestCase {
   }
 
   public void testMapShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = ActiveObject.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
+    InMemStateful stateful = TypedActor.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
     stateful.init();
     stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init"); // set init state
-    InMemFailer failer = ActiveObject.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
+    InMemFailer failer = TypedActor.newRemoteInstance(InMemFailer.class, 1000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -51,7 +51,7 @@ public class RemoteInMemoryStateTest extends TestCase {
   }
 
   public void testVectorShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = ActiveObject.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
+    InMemStateful stateful = TypedActor.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
     stateful.init();
     stateful.setVectorState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
@@ -59,10 +59,10 @@ public class RemoteInMemoryStateTest extends TestCase {
   }
 
   public void testVectorShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = ActiveObject.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
+    InMemStateful stateful = TypedActor.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
     stateful.init();
     stateful.setVectorState("init"); // set init state
-    InMemFailer failer = ActiveObject.newRemoteInstance(InMemFailer.class, 10000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
+    InMemFailer failer = TypedActor.newRemoteInstance(InMemFailer.class, 10000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
@@ -72,7 +72,7 @@ public class RemoteInMemoryStateTest extends TestCase {
   }
 
   public void testRefShouldNotRollbackStateForStatefulServerInCaseOfSuccess() {
-    InMemStateful stateful = ActiveObject.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
+    InMemStateful stateful = TypedActor.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
     stateful.init();
     stateful.setRefState("init"); // set init state
     stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state"); // transactionrequired
@@ -80,10 +80,10 @@ public class RemoteInMemoryStateTest extends TestCase {
   }
 
   public void testRefShouldRollbackStateForStatefulServerInCaseOfFailure() {
-    InMemStateful stateful = ActiveObject.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
+    InMemStateful stateful = TypedActor.newRemoteInstance(InMemStateful.class, 10000, "localhost", 9999);
     stateful.init();
     stateful.setRefState("init"); // set init state
-    InMemFailer failer = ActiveObject.newRemoteInstance(InMemFailer.class, 10000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
+    InMemFailer failer = TypedActor.newRemoteInstance(InMemFailer.class, 10000, "localhost", 9999); //conf.getInstance(InMemFailer.class);
     try {
       stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", failer); // call failing transactionrequired method
       fail("should have thrown an exception");
