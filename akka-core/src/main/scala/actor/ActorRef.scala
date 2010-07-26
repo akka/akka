@@ -1151,6 +1151,7 @@ sealed class LocalActorRef private[akka](
         handleExceptionInDispatch(
           new TransactionSetAbortedException("Transaction set has been aborted by another participant"), 
           message, topLevelTransaction)
+      case e: InterruptedException => {} // received message while actor is shutting down, ignore
       case e => 
         handleExceptionInDispatch(e, message, topLevelTransaction)
     } finally {

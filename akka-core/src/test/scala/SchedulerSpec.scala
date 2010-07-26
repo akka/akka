@@ -64,10 +64,7 @@ class SchedulerSpec extends JUnitSuite {
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 1000,
             List(classOf[Exception])),
-          Supervise(
-            actor,
-            LifeCycle(Permanent))
-                  :: Nil)).start
+            Supervise(actor, LifeCycle(Permanent)) :: Nil)).start
 
       Scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS)
       // appx 2 pings before crash
@@ -78,8 +75,7 @@ class SchedulerSpec extends JUnitSuite {
       assert(pingLatch.await(4, TimeUnit.SECONDS))
 
     } finally {
-
-      Scheduler.shutdown
+      Scheduler.restart
     }
   }
 }

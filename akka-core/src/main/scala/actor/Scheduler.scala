@@ -20,7 +20,7 @@ import java.util.concurrent._
 
 import se.scalablesolutions.akka.util.Logging
 
-object Scheduler {
+object Scheduler extends Logging {
   import Actor._
 
   case object UnSchedule
@@ -28,8 +28,12 @@ object Scheduler {
 
   private var service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
   private val schedulers = new ConcurrentHashMap[ActorRef, ActorRef]
+  log.info("Starting up Scheduler")
 
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ActorRef = {
+    log.trace(
+      "Schedule scheduled event\n\tevent = [%s]\n\treceiver = [%s]\n\tinitialDelay = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      message, receiver, initialDelay, delay, timeUnit)
     try {
       val future = service.scheduleAtFixedRate(
         new Runnable { def run = receiver ! message },
@@ -44,6 +48,9 @@ object Scheduler {
   }
 
   def scheduleOnce(receiver: ActorRef, message: AnyRef, delay: Long, timeUnit: TimeUnit): ActorRef = {
+    log.trace(
+      "Schedule one-time event\n\tevent = [%s]\n\treceiver = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      message, receiver, delay, timeUnit)
     try {
       val future = service.schedule(
         new Runnable { def run = receiver ! message }, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
@@ -65,6 +72,7 @@ object Scheduler {
   }
 
   def shutdown = {
+    log.info("Shutting down Scheduler")
     import scala.collection.JavaConversions._
     schedulers.values.foreach(_ ! UnSchedule)
     schedulers.clear
@@ -72,14 +80,16 @@ object Scheduler {
   }
 
   def restart = {
+    log.info("Restarting Scheduler")
     shutdown
     service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
   }
 }
 
-private class ScheduleActor(future: ScheduledFuture[AnyRef]) extends Actor with Logging {
+private class ScheduleActor(future: ScheduledFuture[AnyRef]) extends Actor {
   def receive = {
     case Scheduler.UnSchedule =>
+      Scheduler.log.trace("Unschedule event handled by scheduleActor\n\tactorRef = [%s]", self.toString)
       future.cancel(true)
       self.stop
   }
@@ -91,7 +101,7 @@ private object SchedulerThreadFactory extends ThreadFactory {
 
   def newThread(r: Runnable): Thread = {
     val thread = threadFactory.newThread(r)
-    thread.setName("Scheduler-" + count)
+    thread.setName("akka:scheduler-" + count)
     thread.setDaemon(true)
     thread
   }
