@@ -979,7 +979,6 @@ sealed class LocalActorRef private[akka](
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
       faultHandler match {
-        // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
         case Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
           restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
 
@@ -991,7 +990,6 @@ sealed class LocalActorRef private[akka](
           "\n\tto non-empty list of exception classes - can't proceed " + toString)
       }
     } else {
-      if (lifeCycle.isEmpty) lifeCycle = Some(LifeCycle(Permanent)) // when passing on make sure we have a lifecycle
       notifySupervisorWithMessage(Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
     }
   }
@@ -1002,7 +1000,6 @@ sealed class LocalActorRef private[akka](
     
     val tooManyRestarts = maxNrOfRetriesCount > maxNrOfRetries
     val restartingHasExpired = (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange
-    
     if (tooManyRestarts || restartingHasExpired) {
       val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
       Actor.log.warning(
@@ -1018,30 +1015,28 @@ sealed class LocalActorRef private[akka](
           "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
           "\n\tCan't send the message to the supervisor [%s].", sup)
       }
-    } else {    
+      stop
+    } else {
       _isBeingRestarted = true
       val failedActor = actorInstance.get
       guard.withGuard {
-        lifeCycle.get match {
-          case LifeCycle(scope, _, _) => {
-            scope match {
-              case Permanent =>
-                Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
-                restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
-                Actor.log.debug("Restarting linked actors for actor [%s].", id)
-                Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
-                failedActor.preRestart(reason)
-                nullOutActorRefReferencesFor(failedActor)
-                val freshActor = newActor
-                freshActor.init
-                freshActor.initTransactionalState
-                actorInstance.set(freshActor)
-                Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
-                freshActor.postRestart(reason)
-                _isBeingRestarted = false
-              case Temporary => shutDownTemporaryActor(this)
-            }
-          }
+        lifeCycle match {
+          case Some(LifeCycle(Temporary, _, _)) => shutDownTemporaryActor(this)
+          case _ =>
+            // either permanent or none where default is permanent
+            Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
+            Actor.log.debug("Restarting linked actors for actor [%s].", id)
+            restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
+            Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
+            failedActor.preRestart(reason)
+            nullOutActorRefReferencesFor(failedActor)
+            val freshActor = newActor
+            freshActor.init
+            freshActor.initTransactionalState
+            actorInstance.set(freshActor)
+            Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
+            freshActor.postRestart(reason)
+            _isBeingRestarted = false
         }
       }
     }
@@ -1049,14 +1044,10 @@ sealed class LocalActorRef private[akka](
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int) = {
     linkedActorsAsList.foreach { actorRef =>
-      if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
-      actorRef.lifeCycle.get match {
-        case LifeCycle(scope, _, _) => {
-          scope match {
-            case Permanent => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
-            case Temporary => shutDownTemporaryActor(actorRef)
-          }
-        }
+      actorRef.lifeCycle match {
+        // either permanent or none where default is permanent
+        case Some(LifeCycle(Temporary, _, _)) => shutDownTemporaryActor(actorRef)
+        case _ => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }
   }
@@ -1160,6 +1151,7 @@ sealed class LocalActorRef private[akka](
         handleExceptionInDispatch(
           new TransactionSetAbortedException("Transaction set has been aborted by another participant"), 
           message, topLevelTransaction)
+      case e: InterruptedException => {} // received message while actor is shutting down, ignore
       case e => 
         handleExceptionInDispatch(e, message, topLevelTransaction)
     } finally {
