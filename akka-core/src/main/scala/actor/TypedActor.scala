@@ -26,6 +26,66 @@ import scala.reflect.BeanProperty
 /**
  * FIXME: document TypedActor
  *
+ * Here is an example of usage (in Java):
+ * <pre>
+ * class PingImpl extends TypedActor implements Ping {
+ *   public void hit(int count) {
+ *     Pong pong = (Pong) getContext().getSender();
+ *     pong.hit(count++);
+ *   }
+ * 
+ *   @Override
+ *   public void init() {
+ *     ... // optional initialization on start
+ *   }
+ * 
+ *   @Override
+ *   public void shutdown() {
+ *     ... // optional cleanup on stop
+ *   }
+ *
+ *   ... // more life-cycle callbacks if needed
+ * }
+ * 
+ * // create the ping actor
+ * Ping ping = TypedActor.newInstance(Ping.class, PingImpl.class);
+ *
+ * ping.hit(1); // use the actor
+ * ping.hit(1);
+ *
+ * // stop the actor
+ * TypedActor.stop(ping);
+ * </pre>
+ * 
+ * Here is an example of usage (in Scala):
+ * <pre>
+ * class PingImpl extends TypedActor with Ping {
+ *   def hit(count: Int) = {
+ *     val pong = context.sender.asInstanceOf[Pong]
+ *     pong.hit(count += 1)
+ *   }
+ *
+ *   override def init = {
+ *     ... // optional initialization on start
+ *   }
+ * 
+ *   override def shutdown = {
+ *     ... // optional cleanup on stop
+ *   }
+ *
+ *   ... // more life-cycle callbacks if needed
+ * }
+ * 
+ * // create the ping actor
+ * val ping = TypedActor.newInstance(classOf[Ping], classOf[PingImpl])
+ *
+ * ping.hit(1) // use the actor
+ * ping.hit(1)
+ *
+ * // stop the actor
+ * TypedActor.stop(ping)
+ * </pre>
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class TypedActor extends Logging {
@@ -37,12 +97,26 @@ abstract class TypedActor extends Logging {
    * This class does not contain static information but is updated by the runtime system
    * at runtime.
    * <p/>
+   * You can get a hold of the context using either the 'getContext()' or 'context' 
+   * methods from the 'TypedActor' base class.
+   * <p/>
+   *
    * Here is an example of usage (in Java):
    * <pre>
-   * class PingImpl exends TypedActor implements Ping {
+   * class PingImpl extends TypedActor implements Ping {
    *   public void hit(int count) {
    *     Pong pong = (Pong) getContext().getSender();
-   *     pong.hit(count++)
+   *     pong.hit(count++);
+   *   }
+   * }
+   * </pre>
+   * 
+   * Here is an example of usage (in Scala):
+   * <pre>
+   * class PingImpl extends TypedActor with Ping {
+   *   def hit(count: Int) = {
+   *     val pong = context.sender.asInstanceOf[Pong]
+   *     pong.hit(count += 1)
    *   }
    * }
    * </pre>
@@ -50,7 +124,7 @@ abstract class TypedActor extends Logging {
   @BeanProperty protected var context: TypedActorContext = _
 
   /**
-   * The uuid for the typed actor.
+   * The uuid for the Typed Actor.
    */
   @BeanProperty @volatile var uuid = UUID.newUuid.toString
   
@@ -172,12 +246,25 @@ final class TypedActorConfiguration {
  * This class does not contain static information but is updated by the runtime system
  * at runtime.
  * <p/>
+ * You can get a hold of the context using either the 'getContext()' or 'context' 
+ * methods from the 'TypedActor' base class.
+ * <p/>
  * Here is an example of usage (from Java):
  * <pre>
- * class PingImpl exends TypedActor implements Ping {
+ * class PingImpl extends TypedActor implements Ping {
  *   public void hit(int count) {
  *     Pong pong = (Pong) getContext().getSender();
- *     pong.hit(count++)
+ *     pong.hit(count++);
+ *   }
+ * }
+ * </pre>
+ * 
+ * Here is an example of usage (in Scala):
+ * <pre>
+ * class PingImpl extends TypedActor with Ping {
+ *   def hit(count: Int) = {
+ *     val pong = context.sender.asInstanceOf[Pong]
+ *     pong.hit(count += 1)
  *   }
  * }
  * </pre>
@@ -185,6 +272,7 @@ final class TypedActorConfiguration {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class TypedActorContext {
+  private[akka] var _self: AnyRef = _
   private[akka] var _sender: AnyRef = _
   private[akka] var _senderFuture: CompletableFuture[Any] = _
 
@@ -248,7 +336,7 @@ object TypedActor extends Logging {
   }
 
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T = {
-    val actor = actorOf(new Dispatcher(config._transactionRequired, config._restartCallbacks, config._shutdownCallback))
+    val actor = actorOf(new Dispatcher(config._transactionRequired))
     if (config._messageDispatcher.isDefined) actor.dispatcher = config._messageDispatcher.get
     newInstance(intfClass, newTypedActor(targetClass), actor, config._host, config.timeout)
   }
@@ -257,7 +345,7 @@ object TypedActor extends Logging {
                                    remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val context = injectTypedActorContext(targetInstance)
     val proxy = Proxy.newInstance(Array(intfClass), Array(targetInstance), true, false)
-    actorRef.actor.asInstanceOf[Dispatcher].initialize(targetInstance.getClass, targetInstance, context)
+    actorRef.actor.asInstanceOf[Dispatcher].initialize(targetInstance.getClass, targetInstance, proxy, context)
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(intfClass, targetInstance, actorRef, remoteAddress, timeout))
@@ -274,7 +362,7 @@ object TypedActor extends Logging {
       else throw new IllegalActorStateException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
     }
     val context = injectTypedActorContext(proxy)
-    actorRef.actor.asInstanceOf[Dispatcher].initialize(targetClass, proxy, context)
+    actorRef.actor.asInstanceOf[Dispatcher].initialize(targetClass, proxy, proxy, context)
     actorRef.timeout = timeout
     if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
     AspectInitRegistry.register(proxy, AspectInit(targetClass, proxy, actorRef, remoteAddress, timeout))
@@ -282,81 +370,81 @@ object TypedActor extends Logging {
     proxy.asInstanceOf[T]
   }
 
-  def stop(obj: AnyRef): Unit = {
-    val init = AspectInitRegistry.initFor(obj)
-    init.actorRef.stop
-  }
-
   /**
-   * Get the underlying dispatcher actor for the given typed actor.
+   * Stops the current Typed Actor.
    */
-  def actorFor(obj: AnyRef): Option[ActorRef] =
-    ActorRegistry.actorsFor(classOf[Dispatcher]).find(a => a.actor.asInstanceOf[Dispatcher].target == Some(obj))
+  def stop(proxy: AnyRef): Unit = AspectInitRegistry.initFor(proxy).actorRef.stop
 
   /**
-   * Links an other typed actor to this typed actor.
-   * @param supervisor the supervisor typed actor
-   * @param supervised the typed actor to link
+   * Get the underlying dispatcher actor for the given Typed Actor.
+   */
+  def actorFor(proxy: AnyRef): Option[ActorRef] = 
+    ActorRegistry.actorsFor(classOf[Dispatcher]).find(a => a.actor.asInstanceOf[Dispatcher].proxy == proxy)
+
+  /**
+   * Links an other Typed Actor to this Typed Actor.
+   * @param supervisor the supervisor Typed Actor
+   * @param supervised the Typed Actor to link
    */
   def link(supervisor: AnyRef, supervised: AnyRef) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalActorStateException("Can't link when the supervisor is not an typed actor"))
+      throw new IllegalActorStateException("Can't link when the supervisor is not an Typed Actor"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalActorStateException("Can't link when the supervised is not an typed actor"))
+      throw new IllegalActorStateException("Can't link when the supervised is not an Typed Actor"))
     supervisorActor.link(supervisedActor)
   }
 
   /**
-   * Links an other typed actor to this typed actor and sets the fault handling for the supervisor.
-   * @param supervisor the supervisor typed actor
-   * @param supervised the typed actor to link
+   * Links an other Typed Actor to this Typed Actor and sets the fault handling for the supervisor.
+   * @param supervisor the supervisor Typed Actor
+   * @param supervised the Typed Actor to link
    * @param handler fault handling strategy
    * @param trapExceptions array of exceptions that should be handled by the supervisor
    */
   def link(supervisor: AnyRef, supervised: AnyRef, 
            handler: FaultHandlingStrategy, trapExceptions: Array[Class[_ <: Throwable]]) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalActorStateException("Can't link when the supervisor is not an typed actor"))
+      throw new IllegalActorStateException("Can't link when the supervisor is not an Typed Actor"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalActorStateException("Can't link when the supervised is not an typed actor"))
+      throw new IllegalActorStateException("Can't link when the supervised is not an Typed Actor"))
     supervisorActor.trapExit = trapExceptions.toList
     supervisorActor.faultHandler = Some(handler)
     supervisorActor.link(supervisedActor)
   }
 
   /**
-   * Unlink the supervised typed actor from the supervisor.
-   * @param supervisor the supervisor typed actor
-   * @param supervised the typed actor to unlink
+   * Unlink the supervised Typed Actor from the supervisor.
+   * @param supervisor the supervisor Typed Actor
+   * @param supervised the Typed Actor to unlink
    */
   def unlink(supervisor: AnyRef, supervised: AnyRef) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalActorStateException("Can't unlink when the supervisor is not an typed actor"))
+      throw new IllegalActorStateException("Can't unlink when the supervisor is not an Typed Actor"))
     val supervisedActor = actorFor(supervised).getOrElse(
-      throw new IllegalActorStateException("Can't unlink when the supervised is not an typed actor"))
+      throw new IllegalActorStateException("Can't unlink when the supervised is not an Typed Actor"))
     supervisorActor.unlink(supervisedActor)
   }
 
   /**
-   * Sets the trap exit for the given supervisor typed actor.
-   * @param supervisor the supervisor typed actor
+   * Sets the trap exit for the given supervisor Typed Actor.
+   * @param supervisor the supervisor Typed Actor
    * @param trapExceptions array of exceptions that should be handled by the supervisor
    */
   def trapExit(supervisor: AnyRef, trapExceptions: Array[Class[_ <: Throwable]]) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalActorStateException("Can't set trap exceptions when the supervisor is not an typed actor"))
+      throw new IllegalActorStateException("Can't set trap exceptions when the supervisor is not an Typed Actor"))
     supervisorActor.trapExit = trapExceptions.toList
     this
   }
 
   /**
-   * Sets the fault handling strategy for the given supervisor typed actor.
-   * @param supervisor the supervisor typed actor
+   * Sets the fault handling strategy for the given supervisor Typed Actor.
+   * @param supervisor the supervisor Typed Actor
    * @param handler fault handling strategy
    */
   def faultHandler(supervisor: AnyRef, handler: FaultHandlingStrategy) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalActorStateException("Can't set fault handler when the supervisor is not an typed actor"))
+      throw new IllegalActorStateException("Can't set fault handler when the supervisor is not an Typed Actor"))
     supervisorActor.faultHandler = Some(handler)
     this
   }
@@ -536,6 +624,7 @@ private[akka] sealed class TypedActorAspect {
         .setTarget(targetInstance.getClass.getName)
         .setTimeout(timeout)
         .setActorType(ActorType.TYPED_ACTOR)
+        .setTypedActorInfo(typedActorInfo)
         .build
 
     val requestBuilder = RemoteRequestProtocol.newBuilder
@@ -633,93 +722,30 @@ object Dispatcher {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class Dispatcher(transactionalRequired: Boolean,
-                               var restartCallbacks: Option[RestartCallbacks] = None,
-                               var shutdownCallback: Option[ShutdownCallback] = None) extends Actor {
+private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
   import Dispatcher._
 
-  private[actor] var target: Option[AnyRef] = None
-  private var zhutdown: Option[Method] = None
-  private var preRestart: Option[Method] = None
-  private var postRestart: Option[Method] = None
-  private var initTxState: Option[Method] = None
+  private[actor] var proxy: AnyRef = _
   private var context: Option[TypedActorContext] = None
   private var targetClass: Class[_] = _
+  @volatile private[akka] var targetInstance: TypedActor = _
 
-  def this(transactionalRequired: Boolean) = this(transactionalRequired,None)
-
-  private[actor] def initialize(targetClass: Class[_], proxy: AnyRef, ctx: Option[TypedActorContext]) = {
-
-   if (transactionalRequired || targetClass.isAnnotationPresent(Annotations.transactionrequired))
-      self.makeTransactionRequired
+  private[actor] def initialize(
+    targetClass: Class[_], targetInstance: TypedActor, proxy: AnyRef, ctx: Option[TypedActorContext]) = {
+   if (transactionalRequired || isTransactional(targetClass)) self.makeTransactionRequired
+   
     self.id = targetClass.getName
     this.targetClass = targetClass
-    target = Some(proxy)
-    context = ctx
-    val proxyClass = proxy.getClass
-    val methods = proxyClass.getDeclaredMethods.toList
+    this.proxy = proxy
+    this.targetInstance = targetInstance
+    this.context = ctx
 
     if (self.lifeCycle.isEmpty) self.lifeCycle = Some(LifeCycle(Permanent))
-    
-    // See if we have any config define restart callbacks
-    restartCallbacks match {
-      case None => {}
-      case Some(RestartCallbacks(pre, post)) =>
-        preRestart = Some(try {
-          proxyClass.getDeclaredMethod(pre, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalActorStateException(
-          "Could not find pre restart method [" + pre + "] \nin [" +
-          targetClass.getName + "]. \nIt must have a zero argument definition.") })
-        postRestart = Some(try {
-          proxyClass.getDeclaredMethod(post, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalActorStateException(
-          "Could not find post restart method [" + post + "] \nin [" +
-          targetClass.getName + "]. \nIt must have a zero argument definition.") })
-    }
-    // See if we have any config define a shutdown callback
-    shutdownCallback match {
-      case None => {}
-      case Some(ShutdownCallback(down)) =>
-        zhutdown = Some(try {
-          proxyClass.getDeclaredMethod(down, ZERO_ITEM_CLASS_ARRAY: _*)
-        } catch { case e => throw new IllegalStateException(
-          "Could not find shutdown method [" + down + "] \nin [" +
-          targetClass.getName + "]. \nIt must have a zero argument definition.") })
-    }
-
-    // See if we have any annotation defined restart callbacks
-    if (!preRestart.isDefined) preRestart = methods.find(m => m.isAnnotationPresent(Annotations.prerestart))
-    if (!postRestart.isDefined) postRestart = methods.find(m => m.isAnnotationPresent(Annotations.postrestart))
-    // See if we have an annotation defined shutdown callback
-    if (!zhutdown.isDefined) zhutdown = methods.find(m => m.isAnnotationPresent(Annotations.shutdown))
-
-    if (preRestart.isDefined && preRestart.get.getParameterTypes.length != 0)
-      throw new IllegalActorStateException(
-        "Method annotated with @prerestart or defined as a restart callback in \n[" +
-        targetClass.getName + "] must have a zero argument definition")
-    if (postRestart.isDefined && postRestart.get.getParameterTypes.length != 0)
-      throw new IllegalActorStateException(
-        "Method annotated with @postrestart or defined as a restart callback in \n[" +
-        targetClass.getName + "] must have a zero argument definition")
-    if (zhutdown.isDefined && zhutdown.get.getParameterTypes.length != 0)
-      throw new IllegalStateException(
-        "Method annotated with @shutdown or defined as a shutdown callback in \n[" +
-        targetClass.getName + "] must have a zero argument definition")
-
-    if (preRestart.isDefined) preRestart.get.setAccessible(true)
-    if (postRestart.isDefined) postRestart.get.setAccessible(true)
-    if (zhutdown.isDefined) zhutdown.get.setAccessible(true)
-
-    // see if we have a method annotated with @inittransactionalstate, if so invoke it
-    initTxState = methods.find(m => m.isAnnotationPresent(Annotations.inittransactionalstate))
-    if (initTxState.isDefined && initTxState.get.getParameterTypes.length != 0)
-      throw new IllegalActorStateException("Method annotated with @inittransactionalstate must have a zero argument definition")
-    if (initTxState.isDefined) initTxState.get.setAccessible(true)
   }
 
   def receive = {
     case invocation @ Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
-      TypedActor.log.ifTrace("Invoking typed actor with message:\n" + invocation)
+      TypedActor.log.ifTrace("Invoking Typed Actor with message:\n" + invocation)
       context.foreach { ctx =>
         if (sender ne null) ctx._sender = sender
         if (senderFuture ne null) ctx._senderFuture = senderFuture
@@ -731,55 +757,45 @@ private[akka] class Dispatcher(transactionalRequired: Boolean,
       else self.reply(joinPoint.proceed)
 
     // Jan Kronquist: started work on issue 121
-    case Link(target)   => self.link(target)
-    case Unlink(target) => self.unlink(target)
+    case Link(proxy)   => self.link(proxy)
+    case Unlink(proxy) => self.unlink(proxy)
     case unexpected     => throw new IllegalActorStateException(
       "Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
 
   override def preRestart(reason: Throwable) {
-    try {
-       // Since preRestart is called we know that this dispatcher
-       // is about to be restarted. Put the instance in a thread
-       // local so the new dispatcher can be initialized with the 
-       // contents of the old.
-       //FIXME - This should be considered as a workaround.
-       crashedActorTl.set(this)
-       preRestart.foreach(_.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*))
-    } catch { case e: InvocationTargetException => throw e.getCause }
+    crashedActorTl.set(this)
+    targetInstance.preRestart(reason)
   }
 
   override def postRestart(reason: Throwable) {
-    try {
-      postRestart.foreach(_.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*))
-    } catch { case e: InvocationTargetException => throw e.getCause }
+    targetInstance.postRestart(reason)
   }
 
-  override def init = {
+  override def init {
     // Get the crashed dispatcher from thread local and intitialize this actor with the
     // contents of the old dispatcher
-    val oldActor = crashedActorTl.get();
+    val oldActor = crashedActorTl.get
     if (oldActor != null) {
-      initialize(oldActor.targetClass, oldActor.target.get, oldActor.context)
+      initialize(oldActor.targetClass, oldActor.targetInstance, oldActor.proxy, oldActor.context)
       crashedActorTl.set(null)
     }
   }
 
-  override def shutdown = {
-    try {
-      zhutdown.foreach(_.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*))
-    } catch { case e: InvocationTargetException => throw e.getCause
-    } finally { 
-      AspectInitRegistry.unregister(target.get);
-    }
+  override def shutdown {
+    targetInstance.shutdown
+    AspectInitRegistry.unregister(proxy);
   }
 
-  override def initTransactionalState = {
-    try {
-      if (initTxState.isDefined && target.isDefined) initTxState.get.invoke(target.get, ZERO_ITEM_OBJECT_ARRAY: _*)
-    } catch { case e: InvocationTargetException => throw e.getCause }
+  override def initTransactionalState {
+    targetInstance.initTransactionalState
   }
 
+  def isTransactional(clazz: Class[_]): Boolean = 
+    if (clazz == null) false
+    else if (clazz.isAnnotationPresent(Annotations.transactionrequired)) true
+    else isTransactional(clazz.getSuperclass)
+    
   private def serializeArguments(joinPoint: JoinPoint) = {
     val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
     var unserializable = false

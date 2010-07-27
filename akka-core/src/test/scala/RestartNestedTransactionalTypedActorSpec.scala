@@ -27,6 +27,7 @@ class RestartNestedTransactionalTypedActorSpec extends
   private var messageLog = ""
 
   override def beforeAll {
+    /*
     Config.config
     conf.configure(
       new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
@@ -41,11 +42,14 @@ class RestartNestedTransactionalTypedActorSpec extends
             new LifeCycle(new Permanent),
             10000)
         ).toArray).supervise
+        */
   }
 
   override def afterAll {
+    /*
     conf.stop
     ActorRegistry.shutdownAll
+    */
   }
 
   describe("Restart nested supervised transactional Active Object") {

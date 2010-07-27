@@ -8,6 +8,4 @@ public interface SimpleJavaPojo {
   public void setName(String name);
   public String getName();
   public void throwException();
-  public boolean pre();
-  public boolean post();
 }

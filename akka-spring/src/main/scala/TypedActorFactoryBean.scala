@@ -13,6 +13,7 @@ import reflect.BeanProperty
 import org.springframework.beans.BeanWrapperImpl
 import org.springframework.beans.BeanWrapper
 import org.springframework.beans.BeanUtils
+import org.springframework.beans.BeansException
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import org.springframework.context.{ApplicationContext,ApplicationContextAware}
@@ -23,6 +24,15 @@ import se.scalablesolutions.akka.actor.{TypedActorConfiguration, TypedActor}
 import se.scalablesolutions.akka.config.ScalaConfig.{ShutdownCallback, RestartCallbacks}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
+
+/**
+ * Exception to use when something goes wrong during bean creation.
+ * 
+ * @author <a href="johan.rask@jayway.com">Johan Rask</a>
+ */
+class AkkaBeansException(message: String, cause:Throwable) extends BeansException(message, cause) {
+  def this(message: String) = this(message, null)
+}
 
 /**
  * Factory bean for typed actors.
@@ -123,16 +133,22 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     ref
   }
 
-  private[akka] def create(argList: String) : AnyRef = argList match {
-    case "ri"  => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig.makeRemote(host, port))
-    case "i"   => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig)
-    case "id"  => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig.dispatcher(dispatcherInstance))
-    case "rid" => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass),
-                                         createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-    //    case "rd"  => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-    //    case "r"   => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port))
-    //    case "d"   => TypedActor.newInstance(target.toClass, createConfig.dispatcher(dispatcherInstance))
-    case _     => throw new AkkaBeansException("Illegal configuration argument list for TypedActor Spring bean [" + argList + "]")
+  private[akka] def create(argList: String): AnyRef = {
+    if (interface == null || interface == "") throw new AkkaBeansException(
+        "The 'interface' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
+    if (target == null || target == "") throw new AkkaBeansException(
+        "The 'target' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
+    argList match {
+      case "ri"  => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig.makeRemote(host, port))
+      case "i"   => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig)
+      case "id"  => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig.dispatcher(dispatcherInstance))
+      case "rid" => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass),
+                                           createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
+      case _     => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig)
+      //    case "rd"  => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
+      //    case "r"   => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port))
+      //    case "d"   => TypedActor.newInstance(target.toClass, createConfig.dispatcher(dispatcherInstance))
+    }
   }
 
   private[akka] def createConfig: TypedActorConfiguration = {
@@ -143,7 +159,7 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     config
   }
   
-  def newInstanceFor[T <: AnyRef](clazz: Class[T]) : T = {
+  def newInstanceFor[T <: AnyRef](clazz: Class[T]): T = {
     var ref = clazz.newInstance().asInstanceOf[T]
     postConstruct(setProperties(ref))
     hasSetDependecies = true
@@ -154,11 +170,16 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
 
   private[akka] def hasInterface = (interface != null) && (!interface.isEmpty)
 
-  private[akka] def hasRestartCallbacks = ((pre != null) && !pre.isEmpty) || ((post != null) && !post.isEmpty)
+  private[akka] def hasRestartCallbacks = 
+    ((pre != null) && !pre.isEmpty) || 
+    ((post != null) && !post.isEmpty)
 
   private[akka] def hasShutdownCallback = ((shutdown != null) && !shutdown.isEmpty)
 
-  private[akka] def hasDispatcher = (dispatcher != null) && (dispatcher.dispatcherType != null) && (!dispatcher.dispatcherType.isEmpty)
+  private[akka] def hasDispatcher = 
+    (dispatcher != null) && 
+    (dispatcher.dispatcherType != null) && 
+    (!dispatcher.dispatcherType.isEmpty)
 
   private[akka] def dispatcherInstance: MessageDispatcher = {
     import DispatcherFactoryBean._

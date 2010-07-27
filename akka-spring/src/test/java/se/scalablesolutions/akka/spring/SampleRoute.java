@@ -8,5 +8,4 @@ public class SampleRoute extends RouteBuilder {
     public void configure() throws Exception {
         from("direct:test").to("active-object:sample?method=foo");
     }
-
 }

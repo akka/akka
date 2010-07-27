@@ -19,6 +19,4 @@ public class PojoImpl extends TypedActor implements PojoIntf {
     public String m2(@Body String b, @Header("test") String h) {
         return "m2impl: " + b + " " + h;
     }
-
-
 }

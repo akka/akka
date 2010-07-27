@@ -40,6 +40,7 @@ class TypedActorGuiceConfiguratorSpec extends
           List(
              new Component(
                 classOf[Foo],
+                classOf[FooImpl],
                 new LifeCycle(new Permanent),
                 1000,
                 dispatcher),
