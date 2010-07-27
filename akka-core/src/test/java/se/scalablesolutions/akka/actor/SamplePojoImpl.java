@@ -6,7 +6,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class SamplePojoImpl extends TypedActor implements SamplePojo {
 
-    private CountDownLatch latch;
+    public static CountDownLatch latch = new CountDownLatch(1);
 
     public static boolean _pre = false;
     public static boolean _post = false;
@@ -17,15 +17,6 @@ public class SamplePojoImpl extends TypedActor implements SamplePojo {
       _down = false;
     }
     
-    public SamplePojoImpl() {
-        latch = new CountDownLatch(1);
-    }
-
-    public CountDownLatch newCountdownLatch(int count) {
-        latch = new CountDownLatch(count);
-        return latch;
-    }
-
     public String greet(String s) {
         return "hello " + s;
     }

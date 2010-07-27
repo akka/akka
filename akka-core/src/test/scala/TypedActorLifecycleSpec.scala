@@ -10,40 +10,35 @@ import se.scalablesolutions.akka.actor.TypedActor._
 import se.scalablesolutions.akka.config.{OneForOneStrategy, TypedActorConfigurator}
 import se.scalablesolutions.akka.config.JavaConfig._
 
+import java.util.concurrent.CountDownLatch
+
 /**
  * @author Martin Krasser
  */
 @RunWith(classOf[JUnitRunner])
 class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAfterAll {
-//  var conf1: TypedActorConfigurator = _
-//  var conf2: TypedActorConfigurator = _
-  var conf3: TypedActorConfigurator = _
-  var conf4: TypedActorConfigurator = _
+  var conf1: TypedActorConfigurator = _
+  var conf2: TypedActorConfigurator = _
 
   override protected def beforeAll() = {
     val strategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Exception]))
-//    val comp1 = new Component(classOf[SamplePojoAnnotated], classOf[SamplePojoAnnotatedImpl], new LifeCycle(new Permanent()), 1000)
-//    val comp2 = new Component(classOf[SamplePojoAnnotated], classOf[SamplePojoAnnotatedImpl], new LifeCycle(new Temporary()), 1000)
     val comp3 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new LifeCycle(new Permanent()), 1000)
     val comp4 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new LifeCycle(new Temporary()), 1000)
-//    conf1 = new TypedActorConfigurator().configure(strategy, Array(comp1)).supervise
-//    conf2 = new TypedActorConfigurator().configure(strategy, Array(comp2)).supervise
-    conf3 = new TypedActorConfigurator().configure(strategy, Array(comp3)).supervise
-    conf4 = new TypedActorConfigurator().configure(strategy, Array(comp4)).supervise
+    conf1 = new TypedActorConfigurator().configure(strategy, Array(comp3)).supervise
+    conf2 = new TypedActorConfigurator().configure(strategy, Array(comp4)).supervise
   }
 
   override protected def afterAll() = {
-//    conf1.stop
-//    conf2.stop
-    conf3.stop
-    conf4.stop
+    conf1.stop
+    conf2.stop
   }
 
   describe("TypedActor lifecycle management") {
     it("should restart supervised, non-annotated typed actor on failure") {
       SamplePojoImpl.reset
-      val obj = conf3.getInstance[SamplePojo](classOf[SamplePojo])
-      val cdl = obj.newCountdownLatch(2)
+      val obj = conf1.getInstance[SamplePojo](classOf[SamplePojo])
+      val cdl = new CountDownLatch(2)
+      SamplePojoImpl.latch = cdl
       assert(AspectInitRegistry.initFor(obj) ne null)
       try {
         obj.fail
@@ -61,8 +56,9 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
 
     it("should shutdown supervised, non-annotated typed actor on failure") {
       SamplePojoImpl.reset
-      val obj = conf4.getInstance[SamplePojo](classOf[SamplePojo])
-      val cdl = obj.newCountdownLatch(1)
+      val obj = conf2.getInstance[SamplePojo](classOf[SamplePojo])
+      val cdl = new CountDownLatch(1)
+      SamplePojoImpl.latch = cdl
       assert(AspectInitRegistry.initFor(obj) ne null)
       try {
         obj.fail
