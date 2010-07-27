@@ -46,11 +46,4 @@ class AMQPConsumerMessageTest extends JUnitSuite with MustMatchers with Logging 
       connection.stop
     }
   }
-
-  @Test
-  def dummy {
-    // amqp tests need local rabbitmq server running, so a disabled by default.
-    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
-    assert(true)
-  }
 }
