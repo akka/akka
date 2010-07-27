@@ -28,11 +28,9 @@ class NestedTransactionalTypedActorSpec extends
   describe("Declaratively nested supervised transactional in-memory TypedActor") {
 
     it("map should not rollback state for stateful server in case of success") {
-      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor])
-      stateful.init
+      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
       stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
-      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor])
-      nested.init
+      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor], classOf[NestedTransactionalTypedActorImpl])
       nested.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init") // set init state
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested) // transactionrequired
       stateful.getMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess") should equal("new state")
@@ -40,13 +38,11 @@ class NestedTransactionalTypedActorSpec extends
     }
 
     it("map should rollback state for stateful server in case of failure") {
-      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor])
-      stateful.init
+      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
       stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor])
-      nested.init
+      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor], classOf[NestedTransactionalTypedActorImpl])
       nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-      val failer = TypedActor.newInstance(classOf[TypedActorFailer])
+      val failer = TypedActor.newInstance(classOf[TypedActorFailer], classOf[TypedActorFailerImpl])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         fail("should have thrown an exception")
@@ -56,11 +52,9 @@ class NestedTransactionalTypedActorSpec extends
     }
 
     it("vector should not rollback state for stateful server in case of success") {
-      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor])
-      stateful.init
+      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
       stateful.setVectorState("init") // set init state
-      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor])
-      nested.init
+      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor], classOf[NestedTransactionalTypedActorImpl])
       nested.setVectorState("init") // set init state
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested) // transactionrequired
       stateful.getVectorState should equal("new state")
@@ -68,13 +62,11 @@ class NestedTransactionalTypedActorSpec extends
     }
 
     it("vector should rollback state for stateful server in case of failure") {
-      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor])
-      stateful.init
+      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
       stateful.setVectorState("init") // set init state
-      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor])
-      nested.init
+      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor], classOf[NestedTransactionalTypedActorImpl])
       nested.setVectorState("init") // set init state
-      val failer = TypedActor.newInstance(classOf[TypedActorFailer])
+      val failer = TypedActor.newInstance(classOf[TypedActorFailer], classOf[TypedActorFailerImpl])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         fail("should have thrown an exception")
@@ -84,10 +76,8 @@ class NestedTransactionalTypedActorSpec extends
     }
 
     it("ref should not rollback state for stateful server in case of success") {
-      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor])
-      stateful.init
-      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor])
-      nested.init
+      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
+      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor], classOf[NestedTransactionalTypedActorImpl])
       stateful.setRefState("init") // set init state
       nested.setRefState("init") // set init state
       stateful.success("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "new state", nested)
@@ -96,13 +86,11 @@ class NestedTransactionalTypedActorSpec extends
     }
 
     it("ref should rollback state for stateful server in case of failure") {
-      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor])
-      stateful.init
-      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor])
-      nested.init
+      val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
+      val nested = TypedActor.newInstance(classOf[NestedTransactionalTypedActor], classOf[NestedTransactionalTypedActorImpl])
       stateful.setRefState("init") // set init state
       nested.setRefState("init") // set init state
-      val failer = TypedActor.newInstance(classOf[TypedActorFailer])
+      val failer = TypedActor.newInstance(classOf[TypedActorFailer], classOf[TypedActorFailerImpl])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
         fail("should have thrown an exception")

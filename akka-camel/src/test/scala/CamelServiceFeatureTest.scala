@@ -122,7 +122,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("an typed actor registered after CamelService startup")
       var latch = service.expectEndpointActivationCount(3)
-      val obj = TypedActor.newInstance(classOf[PojoBase])
+      val obj = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       when("requests are sent to published methods")
@@ -148,7 +148,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       given("an typed actor registered after CamelService startup")
       var latch = service.expectEndpointActivationCount(3)
-      val obj = TypedActor.newInstance(classOf[PojoBase])
+      val obj = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       when("the typed actor is stopped")

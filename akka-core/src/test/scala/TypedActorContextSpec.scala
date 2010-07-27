@@ -21,8 +21,8 @@ class TypedActorContextSpec extends
 
   describe("TypedActorContext") {
     it("context.sender should return the sender TypedActor reference") {
-      val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo])
-      val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller])
+      val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
+      val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
       try { 
         pojoCaller.getSenderFromSimpleJavaPojo should equal (pojoCaller)
@@ -32,8 +32,8 @@ class TypedActorContextSpec extends
     }
 
     it("context.senderFuture should return the senderFuture TypedActor reference") {
-      val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo])
-      val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller])
+      val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
+      val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
       try { 
         pojoCaller.getSenderFutureFromSimpleJavaPojo.getClass.getName should equal (classOf[DefaultCompletableFuture[_]].getName)

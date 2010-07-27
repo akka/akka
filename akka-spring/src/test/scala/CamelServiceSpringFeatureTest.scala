@@ -31,7 +31,7 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
       val appctx = new ClassPathXmlApplicationContext("/appContextCamelServiceDefault.xml")
       // create a custom registry
       val registry = new SimpleRegistry
-      registry.put("custom", TypedActor.newInstance(classOf[SampleBean]))
+      registry.put("custom", TypedActor.newInstance(classOf[SampleBeanIntf], classOf[SampleBean]))
       // set custom registry in DefaultCamelContext
       assert(context.isInstanceOf[DefaultCamelContext])
       context.asInstanceOf[DefaultCamelContext].setRegistry(registry)

@@ -58,7 +58,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
   feature("Client-initiated remote consumer typed actor") {
     scenario("access published remote consumer method") {
       given("a client-initiated remote consumer typed actor")
-      val consumer = TypedActor.newRemoteInstance(classOf[PojoRemote], host, port)
+      val consumer = TypedActor.newRemoteInstance(classOf[PojoRemoteIntf], classOf[PojoRemote], host, port)
 
       when("remote consumer publication is triggered")
       var latch = service.expectEndpointActivationCount(1)
