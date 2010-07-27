@@ -8,10 +8,15 @@ public class SamplePojoImpl extends TypedActor implements SamplePojo {
 
     private CountDownLatch latch;
 
-    public boolean _pre = false;
-    public boolean _post = false;
-    public boolean _down = false;
-
+    public static boolean _pre = false;
+    public static boolean _post = false;
+    public static boolean _down = false;
+    public static void reset() {
+      _pre = false;
+      _post = false;
+      _down = false;
+    }
+    
     public SamplePojoImpl() {
         latch = new CountDownLatch(1);
     }
@@ -21,18 +26,6 @@ public class SamplePojoImpl extends TypedActor implements SamplePojo {
         return latch;
     }
 
-    public boolean pre() { 
-      return _pre;
-    }
-    
-    public boolean post() { 
-      return _post;
-    }
-    
-    public boolean down() { 
-      return _down;
-    }
-    
     public String greet(String s) {
         return "hello " + s;
     }

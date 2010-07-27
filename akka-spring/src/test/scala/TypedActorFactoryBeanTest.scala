@@ -48,34 +48,17 @@ class TypedActorFactoryBeanTest extends Spec with ShouldMatchers {
       assert(bean.getObjectType == classOf[String])
     }
 
-    it("should create a proxy of type ResourceEditor") {
-      val bean = new TypedActorFactoryBean()
-      // we must have a java class here
-      bean.setTarget("org.springframework.core.io.ResourceEditor")
-      val entries = new PropertyEntries()
-      val entry = new PropertyEntry()
-      entry.name = "source"
-      entry.value = "sourceBeanIsAString"
-      entries.add(entry)
-      bean.setProperty(entries)
-      assert(bean.getObjectType == classOf[ResourceEditor])
-
-      // Check that we have injected the depencency correctly
-      val target:ResourceEditor = bean.createInstance.asInstanceOf[ResourceEditor]
-      assert(target.getSource === entry.value)
-    }
-
+/*
     it("should create an application context and verify dependency injection") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val target:ResourceEditor = ctx.getBean("bean").asInstanceOf[ResourceEditor]
       assert(target.getSource === "someString")
-	  
-	  val pojoInf = ctx.getBean("pojoInf").asInstanceOf[PojoInf];
-	  println("pojoInf = " + pojoInf.getString)
-	  Thread.sleep(200)
-	  assert(pojoInf.isPostConstructInvoked)
-	  assert(pojoInf.getString == "akka rocks")
-	  assert(pojoInf.gotApplicationContext)
+
+      val pojoInf = ctx.getBean("pojoInf").asInstanceOf[PojoInf];
+      Thread.sleep(200)
+      assert(pojoInf.isPostConstructInvoked)
+      assert(pojoInf.getString == "akka rocks")
+      assert(pojoInf.gotApplicationContext)
     }
 
     it("should stop the created typed actor when scope is singleton and the context is closed") {
@@ -93,5 +76,27 @@ class TypedActorFactoryBeanTest extends Spec with ShouldMatchers {
       ctx.close
       assert(!target.down)
     }
+    */
   }
 }
+
+/*
+   // ------ NOTE: Can't work now when we only support POJO with interface -----
+   
+    it("should create a proxy of type ResourceEditor") {
+      val bean = new TypedActorFactoryBean()
+      // we must have a java class here
+      bean.setTarget("org.springframework.core.io.ResourceEditor")
+      val entries = new PropertyEntries()
+      val entry = new PropertyEntry()
+      entry.name = "source"
+      entry.value = "sourceBeanIsAString"
+      entries.add(entry)
+      bean.setProperty(entries)
+      assert(bean.getObjectType == classOf[ResourceEditor])
+
+      // Check that we have injected the depencency correctly
+      val target:ResourceEditor = bean.createInstance.asInstanceOf[ResourceEditor]
+      assert(target.getSource === entry.value)
+    }
+*/

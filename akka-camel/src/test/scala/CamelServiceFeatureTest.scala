@@ -180,7 +180,7 @@ object CamelServiceFeatureTest {
   }
 
   class TestBlocker(uri: String) extends Actor with Consumer {
-    self.timeout = 1
+    self.timeout = 1000
     def endpointUri = uri
     override def blocking = true
     protected def receive = {

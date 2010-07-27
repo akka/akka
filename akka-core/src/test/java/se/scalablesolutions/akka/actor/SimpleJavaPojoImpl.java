@@ -5,19 +5,17 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture;
 
 public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
 
-  public boolean pre = false;
-  public boolean post = false;
+  public static boolean _pre = false;
+  public static boolean _post = false;
+  public static boolean _down = false;
+  public static void reset() {
+    _pre = false;
+    _post = false;
+    _down = false;
+  }
 
   private String name;
 
-  public boolean pre() { 
-    return pre;
-  }
-  
-  public boolean post() { 
-    return post;
-  }
-  
   public Object getSender() {
     return getContext().getSender();
   }
@@ -36,14 +34,12 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
 
   @Override
   public void preRestart(Throwable e) {
-    System.out.println("** pre()");
-    pre = true;
+    _pre = true;
   }
 
   @Override
   public void postRestart(Throwable e) {
-    System.out.println("** post()");
-    post = true;
+    _post = true;
   }
 
   public void throwException() {

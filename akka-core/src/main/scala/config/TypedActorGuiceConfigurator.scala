@@ -84,9 +84,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     val targetClass = 
       if (component.target.isInstanceOf[Class[_ <: TypedActor]]) component.target.asInstanceOf[Class[_ <: TypedActor]]
       else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
-    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired,
-      component.lifeCycle.restartCallbacks,
-      component.lifeCycle.shutdownCallback))
+    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired))
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
     val remoteAddress =
       if (component.remoteAddress.isDefined)
@@ -100,26 +98,30 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   }
 
   private def newDelegatingProxy(component: Component): DependencyBinding = {
+    component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
+
     val targetClass = component.intf.get
     val instance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
+
     val targetInstance = 
-      if (instance.isInstanceOf[TypedActor]) component.target.asInstanceOf[TypedActor]
+      if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
       else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
-    if (!component.target.isInstanceOf[TypedActor]) throw new IllegalArgumentException(
-      "TypedActor [" + component.target + "] must be a subclass of TypedActor")
-    component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
-    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired,
-      component.lifeCycle.restartCallbacks,
-      component.lifeCycle.shutdownCallback))
+
+    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired))
+
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
+
     val remoteAddress =
       if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
+
     val proxy = TypedActor.newInstance(
       targetClass, targetInstance, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+
     remoteAddress.foreach(address => RemoteServer.registerTypedActor(address, targetClass.getName, proxy))
     supervised ::= Supervise(actorRef, component.lifeCycle)
+
     activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }
