@@ -12,8 +12,8 @@ class ConsumerMethodRegisteredTest extends JUnitSuite {
   import ConsumerMethodRegisteredTest._
 
   val remoteAddress = new InetSocketAddress("localhost", 8888);
-  val remoteAspectInit = AspectInit(classOf[String], null, Some(remoteAddress), 1000)
-  val localAspectInit = AspectInit(classOf[String], null, None, 1000)
+  val remoteAspectInit = AspectInit(classOf[String], null, null, Some(remoteAddress), 1000)
+  val localAspectInit = AspectInit(classOf[String], null, null, None, 1000)
 
   val ascendingMethodName = (r1: ConsumerMethodRegistered, r2: ConsumerMethodRegistered) =>
     r1.method.getName < r2.method.getName
@@ -44,9 +44,9 @@ class ConsumerMethodRegisteredTest extends JUnitSuite {
 }
 
 object ConsumerMethodRegisteredTest {
-  val activePojoBase = TypedActor.newInstance(classOf[PojoBase])
-  val activePojoSub = TypedActor.newInstance(classOf[PojoSub])
-  val activePojoIntf = TypedActor.newInstance(classOf[PojoIntf], new PojoImpl)
+  val activePojoBase = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
+  val activePojoSub = TypedActor.newInstance(classOf[PojoSubIntf], classOf[PojoSub])
+  val activePojoIntf = TypedActor.newInstance(classOf[PojoIntf], classOf[PojoImpl])
 
   @AfterClass
   def afterClass = {

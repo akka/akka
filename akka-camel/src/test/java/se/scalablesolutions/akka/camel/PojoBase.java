@@ -4,11 +4,12 @@ import org.apache.camel.Body;
 import org.apache.camel.Header;
 
 import se.scalablesolutions.akka.actor.annotation.consume;
+import se.scalablesolutions.akka.actor.*;
 
 /**
  * @author Martin Krasser
  */
-public class PojoBase {
+public class PojoBase extends TypedActor implements PojoBaseIntf {
 
     public String m1(String b, String h) {
         return "m1base: " + b + " " + h;

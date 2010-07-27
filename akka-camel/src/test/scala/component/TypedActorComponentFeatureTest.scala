@@ -17,9 +17,9 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
   import CamelContextManager.template
 
   override protected def beforeAll = {
-    val activePojo     = TypedActor.newInstance(classOf[Pojo]) // not a consumer
-    val activePojoBase = TypedActor.newInstance(classOf[PojoBase])
-    val activePojoIntf = TypedActor.newInstance(classOf[PojoIntf], new PojoImpl)
+    val activePojo     = TypedActor.newInstance(classOf[PojoNonConsumerIntf], classOf[PojoNonConsumer]) // not a consumer
+    val activePojoBase = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
+    val activePojoIntf = TypedActor.newInstance(classOf[PojoIntf], classOf[PojoImpl])
 
     val registry = new SimpleRegistry
     registry.put("pojo", activePojo)

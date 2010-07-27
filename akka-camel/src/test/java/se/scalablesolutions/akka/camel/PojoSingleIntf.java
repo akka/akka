@@ -5,10 +5,8 @@ import se.scalablesolutions.akka.actor.annotation.consume;
 /**
  * @author Martin Krasser
  */
-public class Pojo {
+public interface PojoSingleIntf {
 
-    public String foo(String s) {
-        return String.format("foo: %s", s);
-    }
-
+    @consume("direct:foo")
+    public void foo(String b);
 }

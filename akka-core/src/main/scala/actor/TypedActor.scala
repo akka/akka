@@ -385,8 +385,15 @@ object TypedActor extends Logging {
 
   private[akka] def newTypedActor(targetClass: Class[_]): TypedActor = {
     val instance = targetClass.newInstance
-    if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
-    else throw new IllegalArgumentException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
+    val typedActor = 
+      if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
+      else throw new IllegalArgumentException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
+    typedActor.init
+    import se.scalablesolutions.akka.stm.local.atomic
+    atomic {
+      typedActor.initTransactionalState
+    }
+    typedActor
   }
 
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =

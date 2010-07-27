@@ -1,12 +1,10 @@
 package se.scalablesolutions.akka.actor;
 
-import se.scalablesolutions.akka.actor.annotation.postrestart;
-import se.scalablesolutions.akka.actor.annotation.prerestart;
-import se.scalablesolutions.akka.actor.annotation.shutdown;
+import se.scalablesolutions.akka.actor.*;
 
 import java.util.concurrent.CountDownLatch;
 
-public class SamplePojoAnnotated {
+public class SamplePojoImpl extends TypedActor implements SamplePojo {
 
     private CountDownLatch latch;
 
@@ -14,7 +12,7 @@ public class SamplePojoAnnotated {
     public boolean _post = false;
     public boolean _down = false;
 
-    public SamplePojoAnnotated() {
+    public SamplePojoImpl() {
         latch = new CountDownLatch(1);
     }
 
@@ -23,6 +21,18 @@ public class SamplePojoAnnotated {
         return latch;
     }
 
+    public boolean pre() { 
+      return _pre;
+    }
+    
+    public boolean post() { 
+      return _post;
+    }
+    
+    public boolean down() { 
+      return _down;
+    }
+    
     public String greet(String s) {
         return "hello " + s;
     }
@@ -31,22 +41,21 @@ public class SamplePojoAnnotated {
         throw new RuntimeException("expected");
     }
 
-    @prerestart
-    public void pre() {
-        _pre = true;
-        latch.countDown();
+    @Override
+    public void preRestart(Throwable e) {
+      _pre = true;
+      latch.countDown();
     }
 
-    @postrestart
-    public void post() {
-        _post = true;
-        latch.countDown();
+    @Override
+    public void postRestart(Throwable e) {
+      _post = true;
+      latch.countDown();
     }
-
-    @shutdown
-    public void down() {
+    
+    @Override
+    public void shutdown() {
         _down = true;
         latch.countDown();
     }
-
 }
