@@ -11,7 +11,6 @@ import se.scalablesolutions.akka.amqp._
 import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.amqp.AMQP._
 
 class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging {
@@ -60,12 +59,5 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
     } finally {
       connection.stop
     }
-  }
-
-  @Test
-  def dummy {
-    // amqp tests need local rabbitmq server running, so a disabled by default.
-    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
-    assert(true)
   }
 }
