@@ -1022,20 +1022,14 @@ sealed class LocalActorRef private[akka](
       guard.withGuard {
         lifeCycle match {
           case Some(LifeCycle(Temporary, _, _)) => shutDownTemporaryActor(this)
-          case _ =>
+          case _ => 
             // either permanent or none where default is permanent
             Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
             Actor.log.debug("Restarting linked actors for actor [%s].", id)
             restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
             Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
-            failedActor.preRestart(reason)
-            nullOutActorRefReferencesFor(failedActor)
-            val freshActor = newActor
-            freshActor.init
-            freshActor.initTransactionalState
-            actorInstance.set(freshActor)
-            Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
-            freshActor.postRestart(reason)
+            if (isTypedActorDispatcher(failedActor)) restartTypedActorDispatcher(failedActor, reason)
+            else                                     restartActor(failedActor, reason)
             _isBeingRestarted = false
         }
       }
@@ -1072,6 +1066,24 @@ sealed class LocalActorRef private[akka](
 
   // ========= PRIVATE FUNCTIONS =========
 
+  private def isTypedActorDispatcher(a: Actor): Boolean = a.isInstanceOf[Dispatcher]
+
+  private def restartTypedActorDispatcher(failedActor: Actor, reason: Throwable) = {
+    failedActor.preRestart(reason)
+    failedActor.postRestart(reason)
+  }
+  
+  private def restartActor(failedActor: Actor, reason: Throwable) = {
+    failedActor.preRestart(reason)
+    nullOutActorRefReferencesFor(failedActor)
+    val freshActor = newActor
+    freshActor.init
+    freshActor.initTransactionalState
+    actorInstance.set(freshActor)
+    Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
+    freshActor.postRestart(reason)
+  }
+  
   private def spawnButDoNotStart[T <: Actor: Manifest]: ActorRef = guard.withGuard {
     val actorRef = Actor.actorOf(manifest[T].erasure.asInstanceOf[Class[T]].newInstance)
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actorRef.dispatcher = dispatcher
@@ -1112,7 +1124,8 @@ sealed class LocalActorRef private[akka](
       createNewTransactionSet
     } else oldTxSet
     Actor.log.ifTrace("Joining transaction set [" + currentTxSet + 
-                      "];\n\tactor " + toString + "\n\twith message [" + message + "]")
+                      "];\n\tactor " + toString + 
+                      "\n\twith message [" + message + "]")
     val mtx = ThreadLocalTransaction.getThreadLocalTransaction
     if ((mtx eq null) || mtx.getStatus.isDead) currentTxSet.incParties
     else currentTxSet.incParties(mtx, 1)
@@ -1152,8 +1165,7 @@ sealed class LocalActorRef private[akka](
           new TransactionSetAbortedException("Transaction set has been aborted by another participant"), 
           message, topLevelTransaction)
       case e: InterruptedException => {} // received message while actor is shutting down, ignore
-      case e => 
-        handleExceptionInDispatch(e, message, topLevelTransaction)
+      case e => handleExceptionInDispatch(e, message, topLevelTransaction)
     } finally {
       clearTransaction
       if (topLevelTransaction) clearTransactionSet

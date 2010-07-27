@@ -19,7 +19,7 @@ import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 
 import java.net.InetSocketAddress
-import java.lang.reflect.{InvocationTargetException, Method}
+import java.lang.reflect.{InvocationTargetException, Method, Field}
 
 import scala.reflect.BeanProperty
  
@@ -729,6 +729,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
   private var context: Option[TypedActorContext] = None
   private var targetClass: Class[_] = _
   @volatile private[akka] var targetInstance: TypedActor = _
+  private var proxyDelegate: Field = _
 
   private[actor] def initialize(
     targetClass: Class[_], targetInstance: TypedActor, proxy: AnyRef, ctx: Option[TypedActorContext]) = {
@@ -739,6 +740,12 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
     this.proxy = proxy
     this.targetInstance = targetInstance
     this.context = ctx
+
+    proxyDelegate = {
+      val field = proxy.getClass.getDeclaredField("DELEGATE_0")
+      field.setAccessible(true)
+      field
+    }
 
     if (self.lifeCycle.isEmpty) self.lifeCycle = Some(LifeCycle(Permanent))
   }
@@ -766,6 +773,10 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
   override def preRestart(reason: Throwable) {
     crashedActorTl.set(this)
     targetInstance.preRestart(reason)
+
+    // rewrite target instance in Dispatcher and AspectWerkz Proxy
+    targetInstance = TypedActor.newTypedActor(targetClass)
+    proxyDelegate.set(proxy, targetInstance)
   }
 
   override def postRestart(reason: Throwable) {
