@@ -10,7 +10,7 @@ http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka-0.10.xsd">
 
   <bean id="wrappedService"
-        class="se.scalablesolutions.akka.actor.ActiveObject"
+        class="se.scalablesolutions.akka.actor.TypedActor"
         factory-method="newInstance">
     <constructor-arg index="0" type="java.lang.Class" value="se.scalablesolutions.akka.spring.foo.MyPojo"/>
     <constructor-arg index="1" value="1000"/>

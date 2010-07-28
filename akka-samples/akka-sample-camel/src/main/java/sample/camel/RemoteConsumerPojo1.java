@@ -8,11 +8,8 @@ import se.scalablesolutions.akka.actor.annotation.consume;
 /**
  * @author Martin Krasser
  */
-public class RemoteConsumerPojo1 {
+public interface RemoteConsumerPojo1 {
 
     @consume("jetty:http://localhost:6644/camel/remote-active-object-1")
-    public String foo(@Body String body, @Header("name") String header) {
-        return String.format("remote1: body=%s header=%s", body, header);
-    }
-
+    public String foo(@Body String body, @Header("name") String header);
 }

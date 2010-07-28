@@ -4,11 +4,11 @@
 
 package sample.rest.java;
 
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
+import se.scalablesolutions.akka.config.TypedActorConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 
 public class Boot {
-  public final static ActiveObjectConfigurator configurator = new ActiveObjectConfigurator();
+  public final static TypedActorConfigurator configurator = new TypedActorConfigurator();
   static {
     configurator.configure(
       new RestartStrategy(new OneForOne(), 3, 5000, new Class[]{Exception.class}),

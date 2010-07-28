@@ -7,15 +7,15 @@
        http://www.akkasource.org/schema/akka
        classpath:se/scalablesolutions/akka/spring/akka-0.10.xsd">
        
-        <akka:active-object id="bean"
-                      target="org.springframework.core.io.ResourceEditor"
-                      transactional="true"
-                      timeout="1000"
-                      scope="prototype">
-             <property name="source" ref="nonExistentRef"/>                      
-        </akka:active-object>
-        
-                <bean id="string" class="java.lang.String">
-                        <constructor-arg value="someString"/>
-            </bean>
+    <akka:active-object id="bean"
+                        target="org.springframework.core.io.ResourceEditor"
+                        transactional="true"
+                        timeout="1000"
+                        scope="prototype">
+        <property name="source" ref="nonExistentRef"/>                      
+    </akka:active-object>
+
+    <bean id="string" class="java.lang.String">
+        <constructor-arg value="someString"/>
+    </bean>
  </beans>
