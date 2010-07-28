@@ -714,7 +714,7 @@ private[akka] sealed class TypedActorAspect {
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
   val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
-  var crashedActorTl:ThreadLocal[Dispatcher] = new ThreadLocal();
+//  var crashedActorTl: ThreadLocal[Dispatcher] = new ThreadLocal();
 }
 
 /**
@@ -771,7 +771,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
   }
 
   override def preRestart(reason: Throwable) {
-    crashedActorTl.set(this)
+//    crashedActorTl.set(this)
     targetInstance.preRestart(reason)
 
     // rewrite target instance in Dispatcher and AspectWerkz Proxy
@@ -786,11 +786,11 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
   override def init {
     // Get the crashed dispatcher from thread local and intitialize this actor with the
     // contents of the old dispatcher
-    val oldActor = crashedActorTl.get
-    if (oldActor != null) {
-      initialize(oldActor.targetClass, oldActor.targetInstance, oldActor.proxy, oldActor.context)
-      crashedActorTl.set(null)
-    }
+//    val oldActor = crashedActorTl.get
+//    if (oldActor != null) {
+//      initialize(oldActor.targetClass, oldActor.targetInstance, oldActor.proxy, oldActor.context)
+//      crashedActorTl.set(null)
+//    }
   }
 
   override def shutdown {

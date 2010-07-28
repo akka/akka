@@ -436,12 +436,12 @@ trait Actor extends Logging {
   }
 
   private val lifeCycles: Receive = {
-    case HotSwap(code) => become(code)
-    case Exit(dead, reason) => self.handleTrapExit(dead, reason)
-    case Link(child) => self.link(child)
-    case Unlink(child) => self.unlink(child)
+    case HotSwap(code)        => become(code)
+    case Exit(dead, reason)   => self.handleTrapExit(dead, reason)
+    case Link(child)          => self.link(child)
+    case Unlink(child)        => self.unlink(child)
     case UnlinkAndStop(child) => self.unlink(child); child.stop
-    case Restart(reason) => throw reason
+    case Restart(reason)      => throw reason
   }
 }
 
