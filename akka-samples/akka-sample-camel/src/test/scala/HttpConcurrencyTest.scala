@@ -16,7 +16,7 @@ import org.scalatest.junit.JUnitSuite
 /**
  * @author Martin Krasser
  */
-@Ignore
+@Ignore // do not run concurrency test by default
 class HttpConcurrencyTest extends JUnitSuite {
   import HttpConcurrencyTest._
 
@@ -86,6 +86,7 @@ object HttpConcurrencyTest {
 
   class HttpServerActor(balancer: ActorRef) extends Actor with Consumer {
     def endpointUri = "jetty:http://0.0.0.0:8855/echo"
+    var counter = 0
 
     def receive = {
       case msg => balancer forward msg
@@ -94,11 +95,7 @@ object HttpConcurrencyTest {
 
   class HttpServerWorker extends Actor {
     protected def receive = {
-      case msg => {
-        // slow processing
-        Thread.sleep(100)
-        self.reply(msg)
-      }
+      case msg => self.reply(msg)
     }
   }
 }

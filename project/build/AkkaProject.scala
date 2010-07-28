@@ -44,6 +44,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 	  lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
 	  lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
 	  lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
+	  lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
 	  lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
 	  lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
 	  lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
@@ -62,6 +63,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
   lazy val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
+  // lazy val hawtdispatchModuleConfig  = ModuleConfiguration("org.fusesource.hawtdispatch", FusesourceSnapshotRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
   lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
   lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
@@ -83,6 +85,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val CAMEL_VERSION      = "2.4.0"
   lazy val CASSANDRA_VERSION  = "0.6.1"
 	lazy val DispatchVersion    = "0.7.4"
+  lazy val HAWTDISPATCH_VERSION = "1.0"
 	lazy val JacksonVersion     = "1.2.1"
   lazy val JERSEY_VERSION     = "1.2"
   lazy val LIFT_VERSION       = "2.0-scala280-SNAPSHOT"
@@ -137,6 +140,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
 
     lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
+
+    lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWTDISPATCH_VERSION % "compile"
 
     lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JacksonVersion % "compile"
     lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JacksonVersion % "compile"
@@ -325,6 +330,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val dispatch_json = Dependencies.dispatch_json
     val guicey        = Dependencies.guicey
     val h2_lzf        = Dependencies.h2_lzf
+    val hawtdispatch  = Dependencies.hawtdispatch
     val jackson       = Dependencies.jackson
     val jackson_core  = Dependencies.jackson_core
     val jgroups       = Dependencies.jgroups
@@ -631,7 +637,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
         <dependency org="org.apache.geronimo.specs" name="geronimo-servlet_2.5_spec" rev="1.1.1">
         </dependency>
-        <dependency org="org.apache.camel" name="camel-jetty" rev={CAMEL_VERSION}>
+        <dependency org="org.apache.camel" name="camel-jetty" rev="2.4.0.1">
           <exclude module="geronimo-servlet_2.4_spec"/>
         </dependency>
         <dependency org="org.apache.camel" name="camel-jms" rev={CAMEL_VERSION}>
