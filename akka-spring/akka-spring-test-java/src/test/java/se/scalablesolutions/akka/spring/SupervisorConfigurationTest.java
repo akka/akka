@@ -13,8 +13,8 @@ import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import se.scalablesolutions.akka.actor.ActiveObject;
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
+import se.scalablesolutions.akka.actor.TypedActor;
+import se.scalablesolutions.akka.config.TypedActorConfigurator;
 import se.scalablesolutions.akka.config.JavaConfig.AllForOne;
 import se.scalablesolutions.akka.config.JavaConfig.Component;
 import se.scalablesolutions.akka.config.JavaConfig.LifeCycle;
@@ -45,10 +45,10 @@ public class SupervisorConfigurationTest {
 
         @Test
         public void testSupervision() {
-                // get ActiveObjectConfigurator bean from spring context
-                ActiveObjectConfigurator myConfigurator = (ActiveObjectConfigurator) context
+                // get TypedActorConfigurator bean from spring context
+                TypedActorConfigurator myConfigurator = (TypedActorConfigurator) context
                                 .getBean("supervision1");
-                // get ActiveObjects
+                // get TypedActors
                 Foo foo = myConfigurator.getInstance(Foo.class);
                 assertNotNull(foo);
                 IBar bar = myConfigurator.getInstance(IBar.class);
@@ -59,7 +59,7 @@ public class SupervisorConfigurationTest {
 
         @Test
         public void testTransactionalState() {
-                ActiveObjectConfigurator conf = (ActiveObjectConfigurator) context
+                TypedActorConfigurator conf = (TypedActorConfigurator) context
                                 .getBean("supervision2");
                 StatefulPojo stateful = conf.getInstance(StatefulPojo.class);
                 stateful.setMapState("testTransactionalState", "some map state");
@@ -73,23 +73,23 @@ public class SupervisorConfigurationTest {
 
         @Test
         public void testInitTransactionalState() {
-                StatefulPojo stateful = ActiveObject.newInstance(StatefulPojo.class,
+                StatefulPojo stateful = TypedActor.newInstance(StatefulPojo.class,
                                 1000, true);
                 assertTrue("should be inititalized", stateful.isInitialized());
         }
 
         @Test
         public void testSupervisionWithDispatcher() {
-                ActiveObjectConfigurator myConfigurator = (ActiveObjectConfigurator) context
+                TypedActorConfigurator myConfigurator = (TypedActorConfigurator) context
                                 .getBean("supervision-with-dispatcher");
-                // get ActiveObjects
+                // get TypedActors
                 Foo foo = myConfigurator.getInstance(Foo.class);
                 assertNotNull(foo);
                 // TODO how to check dispatcher?
         }
         
         @Test
-        public void testRemoteActiveObject() {
+        public void testRemoteTypedActor() {
                 new Thread(new Runnable() {
                         public void run() {
                                 RemoteNode.start();
@@ -99,13 +99,13 @@ public class SupervisorConfigurationTest {
                         Thread.currentThread().sleep(1000);
                 } catch (Exception e) {
                 }
-                Foo instance = ActiveObject.newRemoteInstance(Foo.class, 2000, "localhost", 9999);
+                Foo instance = TypedActor.newRemoteInstance(Foo.class, 2000, "localhost", 9999);
                 System.out.println(instance.foo());
         }
 
 
         @Test
-        public void testSupervisedRemoteActiveObject() {
+        public void testSupervisedRemoteTypedActor() {
                 new Thread(new Runnable() {
                         public void run() {
                                 RemoteNode.start();
@@ -116,7 +116,7 @@ public class SupervisorConfigurationTest {
                 } catch (Exception e) {
                 }
 
-                ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
+                TypedActorConfigurator conf = new TypedActorConfigurator();
                 conf.configure(
                                 new RestartStrategy(new AllForOne(), 3, 10000, new Class[] { Exception.class }),
                                 new Component[] { 

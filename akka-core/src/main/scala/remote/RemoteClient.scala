@@ -137,7 +137,7 @@ object RemoteClient extends Logging {
     actorsFor(RemoteServer.Address(hostname, port)) += uuid
   }
 
-  // TODO: add RemoteClient.unregister for ActiveObject, but first need a @shutdown callback
+  // TODO: add RemoteClient.unregister for TypedActor, but first need a @shutdown callback
   private[akka] def unregister(hostname: String, port: Int, uuid: String) = synchronized {
     val set = actorsFor(RemoteServer.Address(hostname, port))
     set -= uuid
@@ -217,7 +217,7 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, loader: O
     } else {
       futures.synchronized {
         val futureResult = if (senderFuture.isDefined) senderFuture.get
-        else new DefaultCompletableFuture[T](request.getTimeout)
+        else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
         futures.put(request.getId, futureResult)
         connection.getChannel.write(request)
         Some(futureResult)
@@ -230,11 +230,13 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, loader: O
   }
 
   private[akka] def registerSupervisorForActor(actorRef: ActorRef) =
-    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException("Can't register supervisor for " + actorRef + " since it is not under supervision")
+    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException(
+      "Can't register supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.putIfAbsent(actorRef.supervisor.get.uuid, actorRef)
 
   private[akka] def deregisterSupervisorForActor(actorRef: ActorRef) =
-    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException("Can't unregister supervisor for " + actorRef + " since it is not under supervision")
+    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException(
+      "Can't unregister supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.remove(actorRef.supervisor.get.uuid)
 }
 

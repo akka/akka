@@ -38,7 +38,7 @@ object AkkaSpringConfigurationTags {
 
   // --- ATTRIBUTES
   //
-  // active object attributes
+  // typed actor attributes
   val TIMEOUT = "timeout"
   val TARGET = "target"
   val INTERFACE = "interface"

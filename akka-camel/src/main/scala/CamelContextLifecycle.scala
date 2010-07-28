@@ -9,7 +9,7 @@ import java.util.Map
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
-import se.scalablesolutions.akka.camel.component.ActiveObjectComponent
+import se.scalablesolutions.akka.camel.component.TypedActorComponent
 import se.scalablesolutions.akka.util.Logging
 
 /**
@@ -29,13 +29,13 @@ trait CamelContextLifecycle extends Logging {
   private var _started = false
 
   /**
-   * Camel component for accessing active objects.
+   * Camel component for accessing typed actors.
    */
-  private[camel] var activeObjectComponent: ActiveObjectComponent = _
+  private[camel] var activeObjectComponent: TypedActorComponent = _
 
   /**
-   * Registry in which active objects are TEMPORARILY registered during
-   * creation of Camel routes to active objects.
+   * Registry in which typed actors are TEMPORARILY registered during
+   * creation of Camel routes to typed actors.
    */
   private[camel] var activeObjectRegistry: Map[String, AnyRef] = _
 
@@ -93,15 +93,15 @@ trait CamelContextLifecycle extends Logging {
    * CamelContext stream-caching is enabled. If applications want to disable stream-
    * caching they can do so after this method returned and prior to calling start.
    * This method also registers a new
-   * {@link se.scalablesolutions.akka.camel.component.ActiveObjectComponent} at
-   * <code>context</code> under a name defined by ActiveObjectComponent.InternalSchema.
+   * {@link se.scalablesolutions.akka.camel.component.TypedActorComponent} at
+   * <code>context</code> under a name defined by TypedActorComponent.InternalSchema.
    */
   def init(context: CamelContext) {
-    this.activeObjectComponent = new ActiveObjectComponent
+    this.activeObjectComponent = new TypedActorComponent
     this.activeObjectRegistry = activeObjectComponent.activeObjectRegistry
     this.context = context
     this.context.setStreamCaching(true)
-    this.context.addComponent(ActiveObjectComponent.InternalSchema, activeObjectComponent)
+    this.context.addComponent(TypedActorComponent.InternalSchema, activeObjectComponent)
     this.template = context.createProducerTemplate
     _initialized = true
     log.info("Camel context initialized")

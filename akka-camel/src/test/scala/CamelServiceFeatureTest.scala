@@ -7,7 +7,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActiveObject, Actor, ActorRegistry}
+import se.scalablesolutions.akka.actor.{TypedActor, Actor, ActorRegistry}
 
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
   import CamelServiceFeatureTest._
@@ -116,13 +116,13 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     }
   }
 
-  feature("Publish active object methods in the global CamelContext") {
+  feature("Publish typed actor methods in the global CamelContext") {
 
-    scenario("access active object methods via Camel direct-endpoints") {
+    scenario("access typed actor methods via Camel direct-endpoints") {
 
-      given("an active object registered after CamelService startup")
+      given("an typed actor registered after CamelService startup")
       var latch = service.expectEndpointActivationCount(3)
-      val obj = ActiveObject.newInstance(classOf[PojoBase])
+      val obj = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       when("requests are sent to published methods")
@@ -137,23 +137,23 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
       // cleanup to avoid conflicts with next test (i.e. avoid multiple consumers on direct-endpoints) 
       latch = service.expectEndpointDeactivationCount(3)
-      ActiveObject.stop(obj)
+      TypedActor.stop(obj)
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
     }
   }
 
-  feature("Unpublish active object method from the global CamelContext") {
+  feature("Unpublish typed actor method from the global CamelContext") {
 
-    scenario("access to unregistered active object method via Camel direct-endpoint fails") {
+    scenario("access to unregistered typed actor method via Camel direct-endpoint fails") {
 
-      given("an active object registered after CamelService startup")
+      given("an typed actor registered after CamelService startup")
       var latch = service.expectEndpointActivationCount(3)
-      val obj = ActiveObject.newInstance(classOf[PojoBase])
+      val obj = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
-      when("the active object is stopped")
+      when("the typed actor is stopped")
       latch = service.expectEndpointDeactivationCount(3)
-      ActiveObject.stop(obj)
+      TypedActor.stop(obj)
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       then("the associated endpoints aren't accessible any more")
@@ -180,7 +180,7 @@ object CamelServiceFeatureTest {
   }
 
   class TestBlocker(uri: String) extends Actor with Consumer {
-    self.timeout = 1
+    self.timeout = 1000
     def endpointUri = uri
     override def blocking = true
     protected def receive = {

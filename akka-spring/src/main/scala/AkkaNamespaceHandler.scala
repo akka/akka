@@ -12,7 +12,7 @@ import AkkaSpringConfigurationTags._
  */
 class AkkaNamespaceHandler extends NamespaceHandlerSupport {
   def init = {
-    registerBeanDefinitionParser(ACTIVE_OBJECT_TAG, new ActiveObjectBeanDefinitionParser());
+    registerBeanDefinitionParser(ACTIVE_OBJECT_TAG, new TypedActorBeanDefinitionParser());
     registerBeanDefinitionParser(SUPERVISION_TAG, new SupervisionBeanDefinitionParser());
     registerBeanDefinitionParser(DISPATCHER_TAG, new DispatcherBeanDefinitionParser());
     registerBeanDefinitionParser(CAMEL_SERVICE_TAG, new CamelServiceBeanDefinitionParser);

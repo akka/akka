@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Akka Active Object Tests in Java</name>
+  <name>Akka TypedActor Tests in Java</name>
   <artifactId>akka-active-object-test</artifactId>
   <groupId>se.scalablesolutions.akka</groupId>
   <version>0.9</version>

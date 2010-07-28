@@ -32,8 +32,8 @@ class PublishRequestorTest extends JUnitSuite {
   }
 
   @Test def shouldReceiveConsumerMethodRegisteredEvent = {
-    val obj = ActiveObject.newInstance(classOf[PojoSingle])
-    val init = AspectInit(classOf[PojoSingle], null, None, 1000)
+    val obj = TypedActor.newInstance(classOf[PojoSingleIntf], classOf[PojoSingle])
+    val init = AspectInit(classOf[PojoSingleIntf], null, null, None, 1000)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     requestor ! AspectInitRegistered(obj, init)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
@@ -45,8 +45,8 @@ class PublishRequestorTest extends JUnitSuite {
   }
 
   @Test def shouldReceiveConsumerMethodUnregisteredEvent = {
-    val obj = ActiveObject.newInstance(classOf[PojoSingle])
-    val init = AspectInit(classOf[PojoSingle], null, None, 1000)
+    val obj = TypedActor.newInstance(classOf[PojoSingleIntf], classOf[PojoSingle])
+    val init = AspectInit(classOf[PojoSingleIntf], null, null, None, 1000)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     requestor ! AspectInitUnregistered(obj, init)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))

@@ -1,1 +1,1 @@
-class=se.scalablesolutions.akka.camel.component.ActiveObjectComponent
+class=se.scalablesolutions.akka.camel.component.TypedActorComponent

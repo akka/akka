@@ -5,7 +5,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, ActiveObject}
+import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, TypedActor}
 import se.scalablesolutions.akka.camel._
 import se.scalablesolutions.akka.util.Logging
 
@@ -16,10 +16,9 @@ object StandaloneApplication {
   def main(args: Array[String]) {
     import CamelContextManager.context
 
-    // 'externally' register active objects
+    // 'externally' register typed actors
     val registry = new SimpleRegistry
-    registry.put("pojo1", ActiveObject.newInstance(classOf[BeanIntf], new BeanImpl))
-    registry.put("pojo2", ActiveObject.newInstance(classOf[BeanImpl]))
+    registry.put("pojo1", TypedActor.newInstance(classOf[BeanIntf], classOf[BeanImpl]))
 
     // customize CamelContext
     CamelContextManager.init(new DefaultCamelContext(registry))
@@ -28,12 +27,12 @@ object StandaloneApplication {
     // start CamelService
     val camelService = CamelService.newInstance.load
 
-    // access 'externally' registered active objects
+    // access 'externally' registered typed actors
     assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test1", "msg1"))
     assert("hello msg2" == context.createProducerTemplate.requestBody("direct:test2", "msg2"))
 
-    // 'internally' register active object (requires CamelService)
-    ActiveObject.newInstance(classOf[ConsumerPojo2])
+    // 'internally' register typed actor (requires CamelService)
+    TypedActor.newInstance(classOf[ConsumerPojo2], classOf[ConsumerPojo2Impl])
 
     // internal registration is done in background. Wait a bit ...
     Thread.sleep(1000)
@@ -52,7 +51,7 @@ object StandaloneApplication {
 
 class StandaloneApplicationRoute extends RouteBuilder {
   def configure = {
-    // routes to active objects (in SimpleRegistry)
+    // routes to typed actors (in SimpleRegistry)
     from("direct:test1").to("active-object:pojo1?method=foo")
     from("direct:test2").to("active-object:pojo2?method=foo")
   }
@@ -65,7 +64,7 @@ object StandaloneSpringApplication {
     // load Spring application context
     val appctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
 
-    // access 'externally' registered active objects with active-object component
+    // access 'externally' registered typed actors with active-object component
     assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
 
     // destroy Spring application context
@@ -78,7 +77,7 @@ object StandaloneSpringApplication {
 
 class StandaloneSpringApplicationRoute extends RouteBuilder {
   def configure = {
-    // routes to active object (in ApplicationContextRegistry)
+    // routes to typed actor (in ApplicationContextRegistry)
     from("direct:test3").to("active-object:pojo3?method=foo")
   }
 }

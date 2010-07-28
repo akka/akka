@@ -134,7 +134,7 @@
     </xsd:attribute>
   </xsd:complexType>
 
-  <!-- active object -->
+  <!-- typed actor -->
   <xsd:complexType name="active-object-type">
    <xsd:sequence>
       <xsd:element name="remote" type="remote-type" minOccurs="0" maxOccurs="1"/>
@@ -196,7 +196,7 @@
     </xsd:choice>
   </xsd:complexType>
 
-  <!-- active objects -->
+  <!-- typed actors -->
   <xsd:complexType name="active-objects-type">
     <xsd:choice minOccurs="1" maxOccurs="unbounded">
       <xsd:element name="active-object" type="active-object-type"/>
@@ -252,7 +252,7 @@
     <xsd:attribute name="ref" type="xsd:string"/>
   </xsd:complexType>
 
-  <!-- ActiveObject -->
+  <!-- TypedActor -->
   <xsd:element name="active-object" type="active-object-type"/>
 
   <!-- Dispatcher -->

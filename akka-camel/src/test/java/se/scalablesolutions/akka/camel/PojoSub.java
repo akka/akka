@@ -4,8 +4,9 @@ import org.apache.camel.Body;
 import org.apache.camel.Header;
 
 import se.scalablesolutions.akka.actor.annotation.consume;
+import se.scalablesolutions.akka.actor.*;
 
-public class PojoSub extends PojoBase {
+public class PojoSub extends PojoBase implements PojoSubIntf {
 
     @Override
     @consume("direct:m1sub")
