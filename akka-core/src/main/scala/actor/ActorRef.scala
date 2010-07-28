@@ -514,7 +514,7 @@ trait ActorRef extends TransactionManagement {
   /**
    * Returns the mailbox size.
    */
-  def mailboxSize: Int
+  def mailboxSize = dispatcher.mailboxSize(this)
 
   /**
    * Returns the supervisor, if there is one.
@@ -542,8 +542,9 @@ trait ActorRef extends TransactionManagement {
 
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit
 
-  protected[akka] def mailbox: Deque[MessageInvocation]
-  
+  protected[akka] def mailbox: AnyRef
+  protected[akka] def mailbox_=(value: AnyRef): AnyRef
+
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit
@@ -599,8 +600,8 @@ sealed class LocalActorRef private[akka](
   @volatile private var loader: Option[ClassLoader] = None
   @volatile private var maxNrOfRetriesCount: Int = 0
   @volatile private var restartsWithinTimeRangeTimestamp: Long = 0L
-  
-  protected[akka] val _mailbox: Deque[MessageInvocation] = new ConcurrentLinkedDeque[MessageInvocation]
+  @volatile private var _mailbox: AnyRef = _
+
   protected[this] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
   // Needed to be able to null out the 'val self: ActorRef' member variables to make the Actor
@@ -890,17 +891,9 @@ sealed class LocalActorRef private[akka](
   /**
    * Returns the mailbox.
    */
-  def mailbox: Deque[MessageInvocation] = _mailbox
+  def mailbox: AnyRef = _mailbox
 
-  /**
-   * Returns the mailbox size.
-   */
-  def mailboxSize: Int = _mailbox.size
-
-  /**
-   * Returns a copy of all the messages, put into a List[MessageInvocation].
-   */
-  def messagesInMailbox: List[MessageInvocation] = _mailbox.toArray.toList.asInstanceOf[List[MessageInvocation]]
+  protected[akka] def mailbox_=(value: AnyRef):AnyRef = { _mailbox = value; value }
 
   /**
    * Shuts down and removes all linked actors.
@@ -927,10 +920,7 @@ sealed class LocalActorRef private[akka](
         createRemoteRequestProtocolBuilder(this, message, true, senderOption).build, None)
     } else {
       val invocation = new MessageInvocation(this, message, senderOption, None, transactionSet.get)
-      if (dispatcher.usesActorMailbox) {
-        _mailbox.add(invocation)
-        invocation.send
-      } else invocation.send
+      invocation.send
     }
   }
 
@@ -951,7 +941,6 @@ sealed class LocalActorRef private[akka](
                    else new DefaultCompletableFuture[T](timeout)
       val invocation = new MessageInvocation(
         this, message, senderOption, Some(future.asInstanceOf[CompletableFuture[Any]]), transactionSet.get)
-      if (dispatcher.usesActorMailbox) _mailbox.add(invocation)
       invocation.send
       future
     }
@@ -961,7 +950,8 @@ sealed class LocalActorRef private[akka](
    * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
-    if (isShutdown) Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
+    if (isShutdown)
+      Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
     else {
       currentMessage = Option(messageHandle)
       try {
@@ -1330,10 +1320,10 @@ private[akka] case class RemoteActorRef private[akka] (
   def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef = unsupported
   def spawnLink[T <: Actor: Manifest]: ActorRef = unsupported
   def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = unsupported
-  def mailboxSize: Int = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
-  protected[akka] def mailbox: Deque[MessageInvocation] = unsupported
+  protected[akka] def mailbox: AnyRef = unsupported
+  protected[akka] def mailbox_=(value: AnyRef):AnyRef = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
