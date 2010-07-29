@@ -64,7 +64,7 @@ import com.google.protobuf.ByteString
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends TransactionManagement {
+trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef] {
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile protected[akka] var _uuid = UUID.newUuid.toString
@@ -203,6 +203,10 @@ trait ActorRef extends TransactionManagement {
 
   protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
   protected[akka] def currentMessage = guard.withGuard { _currentMessage }
+  
+  /** comparison only takes uuid into account
+   */
+  def compareTo(other: ActorRef) = this.uuid.compareTo(other.uuid)
 
   /**
    * Returns the uuid for the actor.
