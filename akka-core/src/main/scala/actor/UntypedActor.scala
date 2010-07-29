@@ -29,6 +29,5 @@ abstract class UntypedActor extends Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ActorContext(self: ActorRef) {
-  
+class ActorContext(val self: ActorRef) {
 }

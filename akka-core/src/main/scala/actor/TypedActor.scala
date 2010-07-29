@@ -379,7 +379,9 @@ object TypedActor extends Logging {
    * Get the underlying dispatcher actor for the given Typed Actor.
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] = 
-    ActorRegistry.actorsFor(classOf[Dispatcher]).find(a => a.actor.asInstanceOf[Dispatcher].proxy == proxy)
+    ActorRegistry
+      .actorsFor(classOf[Dispatcher])
+      .find(a => a.actor.asInstanceOf[Dispatcher].proxy == proxy)
 
   /**
    * Links an other Typed Actor to this Typed Actor.
