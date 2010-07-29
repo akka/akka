@@ -13,9 +13,9 @@ public class SenderUntypedActor extends UntypedActor {
       String str = (String)message;
 
       if (str.equals("ReplyToSendOneWayUsingReply")) {
-      	replyActor.sendOneWay("ReplyToSendOneWayUsingReply", context);
+        replyActor.sendOneWay("ReplyToSendOneWayUsingReply", context);
       } else if (str.equals("ReplyToSendOneWayUsingSender")) {
-      	replyActor.sendOneWay("ReplyToSendOneWayUsingSender", context);
+        replyActor.sendOneWay("ReplyToSendOneWayUsingSender", context);
 
       } else if (str.equals("ReplyToSendRequestReplyUsingReply")) {
         UntypedActorTestState.log = (String)replyActor.sendRequestReply("ReplyToSendRequestReplyUsingReply", context);
@@ -35,7 +35,7 @@ public class SenderUntypedActor extends UntypedActor {
         UntypedActorTestState.log = (String)future.result().get();
         UntypedActorTestState.finished.await();
 
-  	  } else if (str.equals("Reply")) {
+          } else if (str.equals("Reply")) {
         UntypedActorTestState.log = "Reply";
         UntypedActorTestState.finished.await();
       }

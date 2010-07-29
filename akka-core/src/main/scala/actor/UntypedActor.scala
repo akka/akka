@@ -23,22 +23,22 @@ import java.net.InetSocketAddress
  *      if (message instanceof String) {
  *        String msg = (String)message;
  *
- *	      if (msg.equals("UseReply")) {
- *	  	    // Reply to original sender of message using the 'replyUnsafe' method
- *	  	    self.replyUnsafe(msg + ":" + self.getUuid());
+ *            if (msg.equals("UseReply")) {
+ *                  // Reply to original sender of message using the 'replyUnsafe' method
+ *                  self.replyUnsafe(msg + ":" + self.getUuid());
  *
- *	      } else if (msg.equals("UseSender") && self.getSender().isDefined()) {	
- *	  	    // Reply to original sender of message using the sender reference
- *	  	    // also passing along my own refererence (the self)
- *	  	    self.getSender().get().sendOneWay(msg, self); 
+ *            } else if (msg.equals("UseSender") && self.getSender().isDefined()) {     
+ *                  // Reply to original sender of message using the sender reference
+ *                  // also passing along my own refererence (the self)
+ *                  self.getSender().get().sendOneWay(msg, self); 
  *
- *        } else if (msg.equals("UseSenderFuture") && self.getSenderFuture().isDefined()) {	
- *	  	    // Reply to original sender of message using the sender future reference
- *	  	    self.getSenderFuture().get().completeWithResult(msg);
+ *        } else if (msg.equals("UseSenderFuture") && self.getSenderFuture().isDefined()) {     
+ *                  // Reply to original sender of message using the sender future reference
+ *                  self.getSenderFuture().get().completeWithResult(msg);
  *
  *        } else if (msg.equals("SendToSelf")) {
- *	  	    // Send message to the actor itself recursively
- *	  	    self.sendOneWay(msg)
+ *                  // Send message to the actor itself recursively
+ *                  self.sendOneWay(msg)
  *
  *        } else if (msg.equals("ForwardMessage")) {
  *          // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
@@ -263,8 +263,8 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Is defined if the message was sent from another Actor, else None.
    */
   def getSender(): Option[UntypedActorRef] = actorRef.sender match {
-  	case Some(s) => Some(UntypedActorRef.wrap(s))
-  	case None    => None
+        case Some(s) => Some(UntypedActorRef.wrap(s))
+        case None    => None
   }
 
   /**
@@ -310,8 +310,8 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * <p/>
    */
   def sendOneWay(message: AnyRef, sender: UntypedActorRef) =
-  	if (sender eq null) actorRef.!(message)(None)
-  	else actorRef.!(message)(Some(sender.actorRef))
+        if (sender eq null) actorRef.!(message)(None)
+        else actorRef.!(message)(Some(sender.actorRef))
   
   /**
    * Sends a message asynchronously and waits on a future for a reply message under the hood. The timeout is taken from 
@@ -328,7 +328,7 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef): AnyRef = 
-  	actorRef.!!(message)(None).getOrElse(throw new ActorTimeoutException(
+        actorRef.!!(message)(None).getOrElse(throw new ActorTimeoutException(
       "Message [" + message + 
       "]\n\tsent to [" + actorRef.actorClassName + 
       "]\n\twith timeout [" + actorRef.timeout + 
@@ -350,9 +350,9 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef, sender: UntypedActorRef): AnyRef = {
-  	val result = if (sender eq null) actorRef.!!(message)(None)
-  				       else actorRef.!!(message)(Some(sender.actorRef))
-  	result.getOrElse(throw new ActorTimeoutException(
+        val result = if (sender eq null) actorRef.!!(message)(None)
+                                       else actorRef.!!(message)(Some(sender.actorRef))
+        result.getOrElse(throw new ActorTimeoutException(
       "Message [" + message + 
       "]\n\tsent to [" + actorRef.actorClassName + 
       "]\n\tfrom [" + sender.actorRef.actorClassName + 
@@ -375,7 +375,7 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef, timeout: Long): AnyRef = 
-  	actorRef.!!(message, timeout)(None).getOrElse(throw new ActorTimeoutException(
+        actorRef.!!(message, timeout)(None).getOrElse(throw new ActorTimeoutException(
       "Message [" + message + 
       "]\n\tsent to [" + actorRef.actorClassName + 
       "]\n\twith timeout [" + timeout + 
@@ -396,9 +396,9 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef, timeout: Long, sender: UntypedActorRef): AnyRef = {
-  	val result = if (sender eq null) actorRef.!!(message, timeout)(None)
-  				       else actorRef.!!(message)(Some(sender.actorRef))
-  	result.getOrElse(throw new ActorTimeoutException(
+        val result = if (sender eq null) actorRef.!!(message, timeout)(None)
+                                       else actorRef.!!(message)(Some(sender.actorRef))
+        result.getOrElse(throw new ActorTimeoutException(
       "Message [" + message + 
       "]\n\tsent to [" + actorRef.actorClassName + 
       "]\n\tfrom [" + sender.actorRef.actorClassName + 
@@ -432,8 +432,8 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReplyFuture(message: AnyRef, sender: UntypedActorRef): Future[_] = 
-  	if (sender eq null) actorRef.!!!(message)(None)
-  	else actorRef.!!!(message)(Some(sender.actorRef))
+        if (sender eq null) actorRef.!!!(message)(None)
+        else actorRef.!!!(message)(Some(sender.actorRef))
   
   /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
@@ -458,8 +458,8 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: UntypedActorRef): Future[_] = 
-  	if (sender eq null) actorRef.!!!(message, timeout)(None)
-  	else actorRef.!!!(message)(Some(sender.actorRef))
+        if (sender eq null) actorRef.!!!(message, timeout)(None)
+        else actorRef.!!!(message)(Some(sender.actorRef))
   
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -467,8 +467,8 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Works with 'sendOneWay', 'sendRequestReply' and 'sendRequestReplyFuture'.
    */
   def forward(message: AnyRef, sender: UntypedActorRef): Unit = 
-  	if (sender eq null) throw new IllegalArgumentException("The 'sender' argument to 'forward' can't be null") 
-  	else actorRef.forward(message)(Some(sender.actorRef))
+        if (sender eq null) throw new IllegalArgumentException("The 'sender' argument to 'forward' can't be null") 
+        else actorRef.forward(message)(Some(sender.actorRef))
 
   /**
    * Use <code>context.replyUnsafe(..)</code> to reply with a message to the original sender of the message currently
@@ -566,7 +566,7 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Atomically start, link and make an actor remote.
    */
  def startLinkRemote(actor: UntypedActorRef, hostname: String, port: Int): Unit = 
-  	actorRef.startLinkRemote(actor.actorRef, hostname, port)
+        actorRef.startLinkRemote(actor.actorRef, hostname, port)
 
   /**
    * Returns the mailbox size.
