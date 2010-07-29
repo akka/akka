@@ -20,7 +20,7 @@ class Activator extends BundleActivator {
   }
 
   def stop(context: BundleContext) {
-	  ActorRegistry.shutdownAll()
+          ActorRegistry.shutdownAll()
     println("Stopped the OSGi example.")
   }
 }
@@ -28,6 +28,6 @@ class Activator extends BundleActivator {
 class EchoActor extends Actor {
 
   override def receive = {
-	  case x => self reply x
-  }	
+          case x => self reply x
+  }
 }

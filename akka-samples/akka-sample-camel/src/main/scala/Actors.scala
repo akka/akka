@@ -115,7 +115,7 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
 
 class HttpConsumer(producer: ActorRef) extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8875/"
-  
+
   protected def receive = {
     case msg => producer forward msg
   }

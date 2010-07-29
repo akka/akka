@@ -174,7 +174,7 @@ class MyStatelessActorWithMessagesInMailbox extends Actor {
 @serializable class MyJavaSerializableActor extends Actor {
   var count = 0
   self.receiveTimeout = Some(1000)
-  
+
   def receive = {
     case "hello" =>
       count = count + 1

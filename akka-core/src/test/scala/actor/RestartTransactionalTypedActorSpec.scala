@@ -46,7 +46,7 @@ class RestartTransactionalTypedActorSpec extends
     conf.stop
     ActorRegistry.shutdownAll
   }
-  
+
   describe("Restart supervised transactional Active Object ") {
 /*
     it("map should rollback state for stateful server in case of failure") {

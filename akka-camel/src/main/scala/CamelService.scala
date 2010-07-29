@@ -82,7 +82,7 @@ trait CamelService extends Bootable with Logging {
   /**
    * Sets an expectation of the number of upcoming endpoint activations and returns
    * a {@link CountDownLatch} that can be used to wait for the activations to occur.
-   * Endpoint activations that occurred in the past are not considered. 
+   * Endpoint activations that occurred in the past are not considered.
    */
   def expectEndpointActivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedRegistrationCount(count)).as[CountDownLatch].get
