@@ -82,7 +82,7 @@ class TypedActorFactoryBeanTest extends Spec with ShouldMatchers {
 
 /*
    // ------ NOTE: Can't work now when we only support POJO with interface -----
-   
+
     it("should create a proxy of type ResourceEditor") {
       val bean = new TypedActorFactoryBean()
       // we must have a java class here

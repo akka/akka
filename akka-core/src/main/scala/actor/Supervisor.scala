@@ -180,7 +180,7 @@ final class SupervisorActor private[akka] (
   handler: FaultHandlingStrategy,
   trapExceptions: List[Class[_ <: Throwable]]) extends Actor {
   import self._
-  
+
   trapExit = trapExceptions
   faultHandler = Some(handler)
 

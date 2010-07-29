@@ -52,7 +52,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[ConcurrentLinkedDeque[MessageInvocation]]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
-  
+
   def dispatch(invocation: MessageInvocation) = if (active) {
     getMailbox(invocation.receiver).add(invocation)
     executor.execute(new Runnable() {
@@ -175,7 +175,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
   override def toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
- 
+
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
   override def register(actorRef: ActorRef) = {

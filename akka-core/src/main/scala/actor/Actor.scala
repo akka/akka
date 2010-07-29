@@ -418,7 +418,7 @@ trait Actor extends Logging {
    * Is the actor able to handle the message passed in as arguments?
    */
   def isDefinedAt(message: Any): Boolean = base.isDefinedAt(message)
-  
+
   /** One of the fundamental methods of the ActorsModel
    * Actor assumes a new behavior
    */

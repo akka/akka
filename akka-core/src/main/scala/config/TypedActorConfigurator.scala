@@ -32,7 +32,7 @@ class TypedActorConfigurator {
    * @param clazz the class for the typed actor
    * @return a list with all the typed actors for the class
    */
-  def getInstances[T](clazz: Class[T]): JList[T] = 
+  def getInstances[T](clazz: Class[T]): JList[T] =
     INSTANCE.getInstance(clazz).foldLeft(new ArrayList[T]){ (l, i) => l add i ; l }
 
   /**

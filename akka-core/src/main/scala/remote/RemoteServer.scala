@@ -432,9 +432,9 @@ class RemoteServerHandler(
 
   /**
    * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
-   * 
+   *
    * If actor already created then just return it from the registry.
-   * 
+   *
    * Does not start the actor.
    */
   private def createActor(actorInfo: ActorInfoProtocol): ActorRef = {
@@ -474,11 +474,11 @@ class RemoteServerHandler(
       try {
         log.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
 
-        val (interfaceClass, targetClass) = 
-          if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname), 
+        val (interfaceClass, targetClass) =
+          if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname),
                                             applicationLoader.get.loadClass(targetClassname))
           else (Class.forName(interfaceClassname), Class.forName(targetClassname))
-        
+
         val newInstance = TypedActor.newInstance(
           interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
         activeObjects.put(uuid, newInstance)
@@ -488,7 +488,7 @@ class RemoteServerHandler(
       }
     } else activeObjectOrNull
   }
-  
+
   private def createErrorReplyMessage(e: Throwable, request: RemoteRequestProtocol, isActor: Boolean): RemoteReplyProtocol = {
     val actorInfo = request.getActorInfo
     log.error(e, "Could not invoke remote typed actor [%s :: %s]", actorInfo.getTypedActorInfo.getMethod, actorInfo.getTarget)

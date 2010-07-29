@@ -27,7 +27,7 @@ import se.scalablesolutions.akka.util.{Logging, Duration}
 
 /**
  * Exception to use when something goes wrong during bean creation.
- * 
+ *
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  */
 class AkkaBeansException(message: String, cause:Throwable) extends BeansException(message, cause) {
@@ -158,7 +158,7 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     if (transactional) config.makeTransactionRequired
     config
   }
-  
+
   def newInstanceFor[T <: AnyRef](clazz: Class[T]): T = {
     var ref = clazz.newInstance().asInstanceOf[T]
     postConstruct(setProperties(ref))
@@ -170,15 +170,15 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
 
   private[akka] def hasInterface = (interface != null) && (!interface.isEmpty)
 
-  private[akka] def hasRestartCallbacks = 
-    ((pre != null) && !pre.isEmpty) || 
+  private[akka] def hasRestartCallbacks =
+    ((pre != null) && !pre.isEmpty) ||
     ((post != null) && !post.isEmpty)
 
   private[akka] def hasShutdownCallback = ((shutdown != null) && !shutdown.isEmpty)
 
-  private[akka] def hasDispatcher = 
-    (dispatcher != null) && 
-    (dispatcher.dispatcherType != null) && 
+  private[akka] def hasDispatcher =
+    (dispatcher != null) &&
+    (dispatcher.dispatcherType != null) &&
     (!dispatcher.dispatcherType.isEmpty)
 
   private[akka] def dispatcherInstance: MessageDispatcher = {

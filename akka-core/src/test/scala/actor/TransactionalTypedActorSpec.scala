@@ -24,7 +24,7 @@ class TransactionalTypedActorSpec extends
   override def afterAll {
 //    ActorRegistry.shutdownAll
   }
-  
+
   describe("Declaratively supervised transactional in-memory Active Object ") {
     it("map should not rollback state for stateful server in case of success") {
       val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
