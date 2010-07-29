@@ -37,20 +37,20 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val dist = zipTask(allArtifacts, "dist", distName) dependsOn (`package`) describedAs("Zips up the distribution.")
 
   // -------------------------------------------------------------------------------------------------------------------
-	// All repositories *must* go here! See ModuleConigurations below.
+        // All repositories *must* go here! See ModuleConigurations below.
   // -------------------------------------------------------------------------------------------------------------------
 
-	object Repositories {
-	  lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-	  lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
-	  lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
-	  lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
-	  lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-	  lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
-	  lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
-	  lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
-	  lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-	}
+        object Repositories {
+          lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+          lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
+          lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
+          lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
+          lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
+          lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+          lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+          lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
+          lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
+        }
 
   // -------------------------------------------------------------------------------------------------------------------
   // ModuleConfigurations
@@ -59,7 +59,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Therefore, if repositories are defined, this must happen as def, not as val.
   // -------------------------------------------------------------------------------------------------------------------
 
-	import Repositories._
+        import Repositories._
   lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
   lazy val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
@@ -84,16 +84,16 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val ATMO_VERSION       = "0.6"
   lazy val CAMEL_VERSION      = "2.4.0"
   lazy val CASSANDRA_VERSION  = "0.6.1"
-	lazy val DispatchVersion    = "0.7.4"
+        lazy val DispatchVersion    = "0.7.4"
   lazy val HAWTDISPATCH_VERSION = "1.0"
-	lazy val JacksonVersion     = "1.2.1"
+        lazy val JacksonVersion     = "1.2.1"
   lazy val JERSEY_VERSION     = "1.2"
   lazy val LIFT_VERSION       = "2.0-scala280-SNAPSHOT"
   lazy val MULTIVERSE_VERSION = "0.6-SNAPSHOT"
   lazy val SCALATEST_VERSION  = "1.2-for-scala-2.8.0.final-SNAPSHOT"
-	lazy val Slf4jVersion       = "1.6.0"
+        lazy val Slf4jVersion       = "1.6.0"
   lazy val SPRING_VERSION     = "3.0.3.RELEASE"
-	lazy val WerkzVersion       = "2.2.1"
+        lazy val WerkzVersion       = "2.2.1"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -317,9 +317,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
        None
     } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-core subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-core subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val aopalliance   = Dependencies.aopalliance
@@ -349,9 +349,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val scalatest = Dependencies.scalatest
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-amqp subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-amqp subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val commons_io = Dependencies.commons_io
@@ -363,9 +363,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val scalatest  = Dependencies.scalatest
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-http subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-http subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val annotation       = Dependencies.annotation
@@ -392,17 +392,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val scalatest = Dependencies.scalatest
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-camel subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-camel subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val camel_core = Dependencies.camel_core
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-persistence subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-persistence subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common",
@@ -415,17 +415,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCassandraProject(_), akka_persistence_common)
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-persistence-common subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-persistence-common subproject
+        // -------------------------------------------------------------------------------------------------------------------
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_pool = Dependencies.commons_pool
     val thrift       = Dependencies.thrift
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-persistence-redis subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-persistence-redis subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaRedisProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_codec = Dependencies.commons_codec
@@ -434,9 +434,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-persistence-mongo subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-persistence-mongo subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaMongoProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val mongo = Dependencies.mongo
@@ -444,9 +444,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-persistence-cassandra subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-persistence-cassandra subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra   = Dependencies.cassandra
@@ -463,15 +463,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-kernel subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-kernel subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-spring subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-spring subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val spring_beans   = Dependencies.spring_beans
@@ -483,9 +483,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val scalatest    = Dependencies.scalatest
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// akka-jta subproject
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // akka-jta subproject
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaJTAProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val atomikos_transactions     = Dependencies.atomikos_transactions
@@ -495,9 +495,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// OSGi stuff
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // OSGi stuff
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaOSGiParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
@@ -587,9 +587,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def artifacts = Set.empty
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// Test
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // Test
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaTypedActorTestProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
@@ -597,9 +597,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jmock = "org.jmock" % "jmock" % "2.4.0" % "test"
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// Examples
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // Examples
+        // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) with CodeFellowPlugin {
 //    val scalaToolsSnapshots = ScalaToolsSnapshots
@@ -682,9 +682,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleOSGiProject(_), akka_core)
   }
 
-	// -------------------------------------------------------------------------------------------------------------------
-	// Helpers
-	// -------------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------------
+        // Helpers
+        // -------------------------------------------------------------------------------------------------------------------
 
   def removeDupEntries(paths: PathFinder) =
    Path.lazyPathFinder {
