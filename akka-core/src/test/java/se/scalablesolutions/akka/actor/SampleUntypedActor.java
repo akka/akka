@@ -12,33 +12,33 @@ import se.scalablesolutions.akka.actor.*;
  */
 public class SampleUntypedActor extends UntypedActor {
 
-  public void onReceive(Object message, UntypedActorRef context) throws Exception {
+  public void onReceive(Object message, UntypedActorRef self) throws Exception {
   	if (message instanceof String) {
       String msg = (String)message;
 	    System.out.println("Received message: " + msg);
 
   	  if (msg.equals("UseReply")) {
   	  	// Reply to original sender of message using the 'replyUnsafe' method
-  	  	context.replyUnsafe(msg + ":" + context.getUuid());
+  	  	self.replyUnsafe(msg + ":" + self.getUuid());
 	  
-  	  } else if (msg.equals("UseSender") && context.getSender().isDefined()) {	
+  	  } else if (msg.equals("UseSender") && self.getSender().isDefined()) {	
   	  	// Reply to original sender of message using the sender reference
-  	  	// also passing along my own refererence (the context)
-  	  	context.getSender().get().sendOneWay(msg, context); 
+  	  	// also passing along my own refererence (the self)
+  	  	self.getSender().get().sendOneWay(msg, self); 
 
-  	  } else if (msg.equals("UseSenderFuture") && context.getSenderFuture().isDefined()) {	
+  	  } else if (msg.equals("UseSenderFuture") && self.getSenderFuture().isDefined()) {	
   	  	// Reply to original sender of message using the sender future reference
-  	  	context.getSenderFuture().get().completeWithResult(msg);
+  	  	self.getSenderFuture().get().completeWithResult(msg);
 
   	  } else if (msg.equals("SendToSelf")) {
   	  	// Send fire-forget message to the actor itself recursively
-  	  	context.sendOneWay(msg);
+  	  	self.sendOneWay(msg);
 
   	  } else if (msg.equals("ForwardMessage")) {
   	  	// Retreive an actor from the ActorRegistry by ID and get an ActorRef back
   	  	ActorRef actorRef = ActorRegistry.actorsFor("some-actor-id").head();
   	  	// Wrap the ActorRef in an UntypedActorRef and forward the message to this actor
-  	    UntypedActorRef.wrap(actorRef).forward(msg, context);
+  	    UntypedActorRef.wrap(actorRef).forward(msg, self);
   	      
       } else throw new IllegalArgumentException("Unknown message: " + message);
     } else throw new IllegalArgumentException("Unknown message: " + message);
