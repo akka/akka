@@ -4,8 +4,8 @@
 
 package se.scalablesolutions.akka.stm
 
-import javax.transaction.{TransactionManager, UserTransaction, 
-                          Transaction => JtaTransaction, SystemException, 
+import javax.transaction.{TransactionManager, UserTransaction,
+                          Transaction => JtaTransaction, SystemException,
                           Status, Synchronization, TransactionSynchronizationRegistry}
 import javax.naming.{InitialContext, Context, NamingException}
 

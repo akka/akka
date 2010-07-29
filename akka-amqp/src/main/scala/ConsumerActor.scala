@@ -14,7 +14,7 @@ import java.lang.Throwable
 
 private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
         extends FaultTolerantChannelActor(consumerParameters.exchangeParameters, consumerParameters.channelParameters) {
-  
+
   import consumerParameters._
   import exchangeParameters._
 

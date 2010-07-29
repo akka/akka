@@ -153,7 +153,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
 
   def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
-    
+
   override def toString = "ExecutorBasedEventDrivenDispatcher[" + name + "]"
 
   // FIXME: should we have an unbounded queue and not bounded as default ????

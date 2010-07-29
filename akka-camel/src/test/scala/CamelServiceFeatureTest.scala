@@ -135,7 +135,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       assert(response2 === "m3base: x y")
       assert(response3 === "m4base: x y")
 
-      // cleanup to avoid conflicts with next test (i.e. avoid multiple consumers on direct-endpoints) 
+      // cleanup to avoid conflicts with next test (i.e. avoid multiple consumers on direct-endpoints)
       latch = service.expectEndpointDeactivationCount(3)
       TypedActor.stop(obj)
       assert(latch.await(5000, TimeUnit.MILLISECONDS))

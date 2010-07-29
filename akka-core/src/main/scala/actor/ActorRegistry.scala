@@ -29,11 +29,11 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends ListenerManagement {
-  
+
   private val refComparator = new java.util.Comparator[ActorRef]{
     def compare(a: ActorRef,b: ActorRef) = a.uuid.compareTo(b.uuid)
   }
-  
+
   private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
   private val actorsById =            new ConcurrentHashMap[String, JSet[ActorRef]]
   private val actorsByClassName =     new ConcurrentHashMap[String, JSet[ActorRef]]

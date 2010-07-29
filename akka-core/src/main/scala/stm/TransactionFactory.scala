@@ -153,7 +153,7 @@ object TransactionFactory {
  * @see TransactionConfig for configuration options.
  */
 class TransactionFactory(
-  val config: TransactionConfig = DefaultTransactionConfig, 
+  val config: TransactionConfig = DefaultTransactionConfig,
   defaultName: String = TransactionConfig.FAMILY_NAME) { self =>
 
   // use the config family name if it's been set, otherwise defaultName - used by actors to set class name as default

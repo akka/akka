@@ -24,7 +24,7 @@ class TypedActorContextSpec extends
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
-      try { 
+      try {
         pojoCaller.getSenderFromSimpleJavaPojo should equal (pojoCaller)
       } catch {
         case e => fail("no sender available")
@@ -35,7 +35,7 @@ class TypedActorContextSpec extends
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
-      try { 
+      try {
         pojoCaller.getSenderFutureFromSimpleJavaPojo.getClass.getName should equal (classOf[DefaultCompletableFuture[_]].getName)
       } catch {
         case e => fail("no sender future available", e)

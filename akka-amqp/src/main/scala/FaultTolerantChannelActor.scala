@@ -14,7 +14,7 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ChannelParameter
 
 abstract private[amqp] class FaultTolerantChannelActor(
         exchangeParameters: ExchangeParameters, channelParameters: Option[ChannelParameters]) extends Actor {
-  
+
   import exchangeParameters._
 
   protected[amqp] var channel: Option[Channel] = None

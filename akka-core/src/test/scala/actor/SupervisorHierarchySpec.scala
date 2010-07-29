@@ -14,7 +14,7 @@ import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)
-  
+
   class CountDownActor(countDown: CountDownLatch) extends Actor {
     protected def receive = { case _ => () }
     override def postRestart(reason: Throwable) = countDown.countDown
@@ -57,7 +57,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
 
     assert(countDown.await(2, TimeUnit.SECONDS))
   }
-  
+
   @Test
   def supervisorShouldReceiveNotificationMessageWhenMaximumNumberOfRestartsWithinTimeRangeIsReached = {
     val countDown = new CountDownLatch(2)
@@ -65,7 +65,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
     val boss = actorOf(new Actor{
       self.trapExit = List(classOf[Throwable])
       self.faultHandler = Some(OneForOneStrategy(1, 5000))
-      protected def receive = { 
+      protected def receive = {
         case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) =>
           countDown.countDown
       }
@@ -75,7 +75,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
     crasher ! Exit(crasher, new FireWorkerException("Fire the worker!"))
     crasher ! Exit(crasher, new FireWorkerException("Fire the worker!"))
 
-    assert(countDown.await(2, TimeUnit.SECONDS))      
+    assert(countDown.await(2, TimeUnit.SECONDS))
   }
 }
 

@@ -58,19 +58,19 @@ class RestartNestedTransactionalTypedActorSpec extends
       val stateful = conf.getInstance(classOf[TransactionalTypedActor])
       stateful.init
       stateful.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-      
+
       val nested = conf.getInstance(classOf[NestedTransactionalTypedActor])
       nested.init
       nested.setMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure", "init") // set init state
-      
+
       val failer = conf.getInstance(classOf[TypedActorFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
-        
+
         fail("should have thrown an exception")
       } catch { case e => {} }
       stateful.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure") should equal("init")
-      
+
       nested.getMapState("testShouldRollbackStateForStatefulServerInCaseOfFailure") should equal("init")
     }
 
@@ -78,19 +78,19 @@ class RestartNestedTransactionalTypedActorSpec extends
       val stateful = conf.getInstance(classOf[TransactionalTypedActor])
       stateful.init
       stateful.setVectorState("init") // set init state
-      
+
       val nested = conf.getInstance(classOf[NestedTransactionalTypedActor])
       nested.init
       nested.setVectorState("init") // set init state
-      
+
       val failer = conf.getInstance(classOf[TypedActorFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
-        
+
         fail("should have thrown an exception")
       } catch { case e => {} }
       stateful.getVectorState should equal("init")
-      
+
       nested.getVectorState should equal("init")
     }
 
@@ -100,17 +100,17 @@ class RestartNestedTransactionalTypedActorSpec extends
       val nested = conf.getInstance(classOf[NestedTransactionalTypedActor])
       nested.init
       stateful.setRefState("init") // set init state
-      
+
       nested.setRefState("init") // set init state
-      
+
       val failer = conf.getInstance(classOf[TypedActorFailer])
       try {
         stateful.failure("testShouldRollbackStateForStatefulServerInCaseOfFailure", "new state", nested, failer)
-        
+
         fail("should have thrown an exception")
       } catch { case e => {} }
       stateful.getRefState should equal("init")
-      
+
       nested.getRefState should equal("init")
     }
     */

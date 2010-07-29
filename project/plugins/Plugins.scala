@@ -21,7 +21,7 @@ class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
         lazy val aquteModuleConfig      = ModuleConfiguration("biz.aQute", AquteRepo)
   lazy val codeFellowModuleConfig = ModuleConfiguration("de.tuxed", EmbeddedRepo)
   lazy val spdeModuleConfig       = ModuleConfiguration("us.technically.spde", DatabinderRepo)
-  
+
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
   // -------------------------------------------------------------------------------------------------------------------
