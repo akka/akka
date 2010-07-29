@@ -38,7 +38,7 @@ class AMQPConsumerMessageTest extends JUnitSuite with MustMatchers with Logging 
 
       val producer = AMQP.newProducer(connection,
         ProducerParameters(exchangeParameters, channelParameters = Some(channelParameters)))
-      
+
       countDown.await(2, TimeUnit.SECONDS) must be (true)
       producer ! Message("some_payload".getBytes, "non.interesting.routing.key")
       payloadLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)

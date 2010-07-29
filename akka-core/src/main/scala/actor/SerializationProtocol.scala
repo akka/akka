@@ -226,7 +226,7 @@ object RemoteActorSerialization {
       .build
   }
 
-  def createRemoteRequestProtocolBuilder(actorRef: ActorRef, message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]): 
+  def createRemoteRequestProtocolBuilder(actorRef: ActorRef, message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]):
     RemoteRequestProtocol.Builder = {
     import actorRef._
 

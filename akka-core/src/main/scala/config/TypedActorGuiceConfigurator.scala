@@ -81,7 +81,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   }
 
   private def newSubclassingProxy(component: Component): DependencyBinding = {
-    val targetClass = 
+    val targetClass =
       if (component.target.isInstanceOf[Class[_ <: TypedActor]]) component.target.asInstanceOf[Class[_ <: TypedActor]]
       else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
     val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired))
@@ -103,7 +103,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     val targetClass = component.intf.get
     val instance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
 
-    val targetInstance = 
+    val targetInstance =
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
       else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
 

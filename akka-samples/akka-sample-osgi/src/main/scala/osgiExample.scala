@@ -29,5 +29,5 @@ class EchoActor extends Actor {
 
   override def receive = {
           case x => self reply x
-  }     
+  }
 }

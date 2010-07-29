@@ -22,7 +22,7 @@ import java.net.InetSocketAddress
 import java.lang.reflect.{InvocationTargetException, Method, Field}
 
 import scala.reflect.BeanProperty
- 
+
 /**
  * FIXME: document TypedActor
  *
@@ -33,12 +33,12 @@ import scala.reflect.BeanProperty
  *     Pong pong = (Pong) getContext().getSender();
  *     pong.hit(count++);
  *   }
- * 
+ *
  *   @Override
  *   public void init() {
  *     ... // optional initialization on start
  *   }
- * 
+ *
  *   @Override
  *   public void shutdown() {
  *     ... // optional cleanup on stop
@@ -46,7 +46,7 @@ import scala.reflect.BeanProperty
  *
  *   ... // more life-cycle callbacks if needed
  * }
- * 
+ *
  * // create the ping actor
  * Ping ping = TypedActor.newInstance(Ping.class, PingImpl.class);
  *
@@ -56,7 +56,7 @@ import scala.reflect.BeanProperty
  * // stop the actor
  * TypedActor.stop(ping);
  * </pre>
- * 
+ *
  * Here is an example of usage (in Scala):
  * <pre>
  * class PingImpl extends TypedActor with Ping {
@@ -68,14 +68,14 @@ import scala.reflect.BeanProperty
  *   override def init = {
  *     ... // optional initialization on start
  *   }
- * 
+ *
  *   override def shutdown = {
  *     ... // optional cleanup on stop
  *   }
  *
  *   ... // more life-cycle callbacks if needed
  * }
- * 
+ *
  * // create the ping actor
  * val ping = TypedActor.newInstance(classOf[Ping], classOf[PingImpl])
  *
@@ -85,7 +85,7 @@ import scala.reflect.BeanProperty
  * // stop the actor
  * TypedActor.stop(ping)
  * </pre>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class TypedActor extends Logging {
@@ -97,7 +97,7 @@ abstract class TypedActor extends Logging {
    * This class does not contain static information but is updated by the runtime system
    * at runtime.
    * <p/>
-   * You can get a hold of the context using either the 'getContext()' or 'context' 
+   * You can get a hold of the context using either the 'getContext()' or 'context'
    * methods from the 'TypedActor' base class.
    * <p/>
    *
@@ -110,7 +110,7 @@ abstract class TypedActor extends Logging {
    *   }
    * }
    * </pre>
-   * 
+   *
    * Here is an example of usage (in Scala):
    * <pre>
    * class PingImpl extends TypedActor with Ping {
@@ -127,7 +127,7 @@ abstract class TypedActor extends Logging {
    * The uuid for the Typed Actor.
    */
   @BeanProperty @volatile var uuid = UUID.newUuid.toString
-  
+
   /**
    * Identifier for actor, does not have to be a unique one. Default is the 'uuid'.
    * <p/>
@@ -189,14 +189,14 @@ abstract class TypedActor extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@transactionrequired 
+@transactionrequired
 abstract class TypedTransactor extends TypedActor
 
 /**
  * Configuration factory for TypedActors.
  *
  * FIXDOC: document TypedActorConfiguration
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class TypedActorConfiguration {
@@ -246,7 +246,7 @@ final class TypedActorConfiguration {
  * This class does not contain static information but is updated by the runtime system
  * at runtime.
  * <p/>
- * You can get a hold of the context using either the 'getContext()' or 'context' 
+ * You can get a hold of the context using either the 'getContext()' or 'context'
  * methods from the 'TypedActor' base class.
  * <p/>
  * Here is an example of usage (from Java):
@@ -258,7 +258,7 @@ final class TypedActorConfiguration {
  *   }
  * }
  * </pre>
- * 
+ *
  * Here is an example of usage (in Scala):
  * <pre>
  * class PingImpl extends TypedActor with Ping {
@@ -320,19 +320,19 @@ object TypedActor extends Logging {
   private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), None, timeout)    
+    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), None, timeout)
   }
 
   def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), None, Actor.TIMEOUT)    
+    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), None, Actor.TIMEOUT)
   }
 
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long, hostname: String, port: Int): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), timeout)    
+    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], hostname: String, port: Int): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)    
+    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)
   }
 
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T = {
@@ -356,7 +356,7 @@ object TypedActor extends Logging {
   // NOTE: currently not used - but keep it around
   private[akka] def newInstance[T <: TypedActor](
       targetClass: Class[T], actorRef: ActorRef, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    val proxy = { 
+    val proxy = {
       val instance = Proxy.newInstance(targetClass, true, false)
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
       else throw new IllegalActorStateException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
@@ -378,7 +378,7 @@ object TypedActor extends Logging {
   /**
    * Get the underlying dispatcher actor for the given Typed Actor.
    */
-  def actorFor(proxy: AnyRef): Option[ActorRef] = 
+  def actorFor(proxy: AnyRef): Option[ActorRef] =
     ActorRegistry
       .actorsFor(classOf[Dispatcher])
       .find(a => a.actor.asInstanceOf[Dispatcher].proxy == proxy)
@@ -403,7 +403,7 @@ object TypedActor extends Logging {
    * @param handler fault handling strategy
    * @param trapExceptions array of exceptions that should be handled by the supervisor
    */
-  def link(supervisor: AnyRef, supervised: AnyRef, 
+  def link(supervisor: AnyRef, supervised: AnyRef,
            handler: FaultHandlingStrategy, trapExceptions: Array[Class[_ <: Throwable]]) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
       throw new IllegalActorStateException("Can't link when the supervisor is not an Typed Actor"))
@@ -463,8 +463,8 @@ object TypedActor extends Logging {
         val parent = clazz.getSuperclass
         if (parent != null) injectTypedActorContext0(activeObject, parent)
         else {
-          log.ifTrace("Can't set 'TypedActorContext' for TypedActor [" + 
-                      activeObject.getClass.getName + 
+          log.ifTrace("Can't set 'TypedActorContext' for TypedActor [" +
+                      activeObject.getClass.getName +
                       "] since no field of this type could be found.")
           None
         }
@@ -475,7 +475,7 @@ object TypedActor extends Logging {
 
   private[akka] def newTypedActor(targetClass: Class[_]): TypedActor = {
     val instance = targetClass.newInstance
-    val typedActor = 
+    val typedActor =
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
       else throw new IllegalArgumentException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
     typedActor.init
@@ -546,14 +546,14 @@ private[akka] sealed case class AspectInit(
   val actorRef: ActorRef,
   val remoteAddress: Option[InetSocketAddress],
   val timeout: Long) {
-  def this(interfaceClass: Class[_], targetInstance: TypedActor, actorRef: ActorRef, timeout: Long) = 
+  def this(interfaceClass: Class[_], targetInstance: TypedActor, actorRef: ActorRef, timeout: Long) =
     this(interfaceClass, targetInstance, actorRef, None, timeout)
 }
 
 /**
  * AspectWerkz Aspect that is turning POJO into TypedActor.
  * <p/>
- * Is deployed on a 'perInstance' basis with the pointcut 'execution(* *.*(..))', 
+ * Is deployed on a 'perInstance' basis with the pointcut 'execution(* *.*(..))',
  * e.g. all methods on the instance.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -620,7 +620,7 @@ private[akka] sealed class TypedActorAspect {
         .setInterface(interfaceClass.getName)
         .setMethod(rtti.getMethod.getName)
         .build
-    
+
     val actorInfo = ActorInfoProtocol.newBuilder
         .setUuid(uuid)
         .setTarget(targetInstance.getClass.getName)
@@ -736,7 +736,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
   private[actor] def initialize(
     targetClass: Class[_], targetInstance: TypedActor, proxy: AnyRef, ctx: Option[TypedActorContext]) = {
    if (transactionalRequired || isTransactional(targetClass)) self.makeTransactionRequired
-   
+
     self.id = targetClass.getName
     this.targetClass = targetClass
     this.proxy = proxy
@@ -804,11 +804,11 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
     targetInstance.initTransactionalState
   }
 
-  def isTransactional(clazz: Class[_]): Boolean = 
+  def isTransactional(clazz: Class[_]): Boolean =
     if (clazz == null) false
     else if (clazz.isAnnotationPresent(Annotations.transactionrequired)) true
     else isTransactional(clazz.getSuperclass)
-    
+
   private def serializeArguments(joinPoint: JoinPoint) = {
     val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
     var unserializable = false

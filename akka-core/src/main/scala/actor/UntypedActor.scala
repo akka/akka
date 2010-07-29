@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.actor
 
 /**
- * FIXME: document 
+ * FIXME: document
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -13,7 +13,7 @@ abstract class UntypedActor extends Actor {
   protected[akka] var context: Option[ActorContext] = None
 
   protected def receive = {
-    case msg => 
+    case msg =>
       if (context.isEmpty) {
         val ctx = new ActorContext(self)
         context = Some(ctx)
@@ -25,7 +25,7 @@ abstract class UntypedActor extends Actor {
 }
 
 /**
- * FIXME: document 
+ * FIXME: document
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

@@ -517,7 +517,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       "org.aopalliance.*;version=1.0.0",
 
       // Provided by other bundles
-      "!se.scalablesolutions.akka.*", 
+      "!se.scalablesolutions.akka.*",
       "!net.liftweb.*",
       "!com.google.inject.*",
       "!javax.transaction.*",
@@ -573,7 +573,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jms_1_1            = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive
     val joda               = "joda-time"                 % "joda-time" % "1.6" intransitive
 
-    override def packageAction = 
+    override def packageAction =
       task {
         val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
         val prjs: Seq[Path] = info.dependencies.toSeq.asInstanceOf[Seq[DefaultProject]] map { _.jarPath }
@@ -709,7 +709,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       !jar.toString.endsWith("scala-library-2.7.7.jar")
     )
   }
-  
+
   def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
 
   // ------------------------------------------------------------

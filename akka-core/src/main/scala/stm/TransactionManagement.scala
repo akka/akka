@@ -160,7 +160,7 @@ class GlobalStm extends TransactionManagement with Logging {
           txSet.tryJoinCommit(
             mtx,
             TransactionConfig.DefaultTimeout.length,
-            TransactionConfig.DefaultTimeout.unit) 
+            TransactionConfig.DefaultTimeout.unit)
         // Need to catch IllegalStateException until we have fix in Multiverse, since it throws it by mistake
         } catch { case e: IllegalStateException => {} }
         result
@@ -170,19 +170,19 @@ class GlobalStm extends TransactionManagement with Logging {
 }
 
 trait StmUtil {
-  
+
   /**
    * Schedule a deferred task on the thread local transaction (use within an atomic).
    * This is executed when the transaction commits.
    */
-  def deferred[T](body: => T): Unit = 
+  def deferred[T](body: => T): Unit =
     MultiverseStmUtils.scheduleDeferredTask(new Runnable { def run = body })
 
   /**
    * Schedule a compensating task on the thread local transaction (use within an atomic).
    * This is executed when the transaction aborts.
    */
-  def compensating[T](body: => T): Unit = 
+  def compensating[T](body: => T): Unit =
     MultiverseStmUtils.scheduleCompensatingTask(new Runnable { def run = body })
 
   /**
@@ -193,7 +193,7 @@ trait StmUtil {
 
   /**
    * Use either-orElse to combine two blocking transactions.
-   * Usage: 
+   * Usage:
    * <pre>
    * either {
    *   ...
