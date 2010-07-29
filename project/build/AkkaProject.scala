@@ -185,7 +185,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
 
-    lazy val sjson = "sjson.json" % "sjson" % "0.7-SNAPSHOT-2.8.0" % "compile"
+    lazy val sjson = "sjson.json" % "sjson" % "0.7-2.8.0" % "compile"
 
     lazy val slf4j       = "org.slf4j" % "slf4j-api"     % Slf4jVersion % "compile"
     lazy val slf4j_log4j = "org.slf4j" % "slf4j-log4j12" % Slf4jVersion % "compile"
