@@ -20,7 +20,7 @@ import org.springframework.context.{ApplicationContext,ApplicationContextAware}
 import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
-import se.scalablesolutions.akka.actor.{TypedActorConfiguration, TypedActor}
+import se.scalablesolutions.akka.actor.{AspectInitRegistry, TypedActorConfiguration, TypedActor}
 import se.scalablesolutions.akka.config.ScalaConfig.{ShutdownCallback, RestartCallbacks}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
@@ -75,7 +75,7 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     target.toClass
   } catch {
     // required by contract to return null
-    case e: ClassNotFoundException => null
+    case e: IllegalArgumentException => null
   }
 
   /*
@@ -86,30 +86,15 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     if (isRemote) argumentList += "r"
     if (hasInterface) argumentList += "i"
     if (hasDispatcher) argumentList += "d"
-    postConstruct(setProperties(create(argumentList)))
+    val ref = create(argumentList)
+    setProperties(AspectInitRegistry.initFor(ref).targetInstance)
+    ref
   }
 
  /**
   * Stop the typed actor if it is a singleton.
   */
- override def destroyInstance(instance: AnyRef) = TypedActor.stop(instance.asInstanceOf[TypedActor])
-
-  /**
-   * Invokes any method annotated with @PostConstruct
-   * When interfaces are specified, this method is invoked both on the
-   * target instance and on the typed actor, so a developer is free do decide
-   * where the annotation should be. If no interface is specified it is only invoked
-   * on the typed actor
-   */
-  private def postConstruct(ref: AnyRef): AnyRef = {
-    // Invoke postConstruct method if any
-    for {
-      method <- ref.getClass.getMethods
-      if method.isAnnotationPresent(classOf[PostConstruct])
-    } method.invoke(ref)
-    ref
-  }
-
+ override def destroyInstance(instance: AnyRef) = TypedActor.stop(instance)
 
   private def setProperties(ref: AnyRef): AnyRef = {
     if (hasSetDependecies) return ref
@@ -139,12 +124,11 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     if (target == null || target == "") throw new AkkaBeansException(
         "The 'target' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
     argList match {
-      case "ri"  => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig.makeRemote(host, port))
-      case "i"   => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig)
-      case "id"  => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig.dispatcher(dispatcherInstance))
-      case "rid" => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass),
-                                           createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-      case _     => TypedActor.newInstance(interface.toClass, newInstanceFor(target.toClass), createConfig)
+      case "ri"  => TypedActor.newInstance(interface.toClass, target.toClass, createConfig.makeRemote(host, port))
+      case "i"   => TypedActor.newInstance(interface.toClass, target.toClass, createConfig)
+      case "id"  => TypedActor.newInstance(interface.toClass, target.toClass, createConfig.dispatcher(dispatcherInstance))
+      case "rid" => TypedActor.newInstance(interface.toClass, target.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
+      case _     => TypedActor.newInstance(interface.toClass, target.toClass, createConfig)
       //    case "rd"  => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
       //    case "r"   => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port))
       //    case "d"   => TypedActor.newInstance(target.toClass, createConfig.dispatcher(dispatcherInstance))
@@ -157,13 +141,6 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     if (hasShutdownCallback) config.shutdownCallback(shutdown)
     if (transactional) config.makeTransactionRequired
     config
-  }
-
-  def newInstanceFor[T <: AnyRef](clazz: Class[T]): T = {
-    var ref = clazz.newInstance().asInstanceOf[T]
-    postConstruct(setProperties(ref))
-    hasSetDependecies = true
-    ref
   }
 
   private[akka] def isRemote = (host != null) && (!host.isEmpty)

@@ -89,7 +89,7 @@ class Boot {
   // Active object example
   // -----------------------------------------------------------------------
 
-  TypedActor.newInstance(classOf[ConsumerPojo1], classOf[ConsumerPojo1Impl])
+  TypedActor.newInstance(classOf[TypedConsumer1], classOf[TypedConsumer1Impl])
 }
 
 /**

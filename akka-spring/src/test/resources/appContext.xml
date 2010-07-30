@@ -21,23 +21,16 @@
                         timeout="1000" 
                         scope="prototype"/>
     
-    <bean id="string" class="java.lang.String">
-        <constructor-arg value="someString"/>
-    </bean>
-
-    <akka:active-object id="pojoInf"
+    <akka:active-object id="typedActor"
                         interface="se.scalablesolutions.akka.spring.PojoInf"
                         target="se.scalablesolutions.akka.spring.Pojo" 
                         scope="singleton"
                         timeout="1000">
-        <property name="string" value="akka rocks"/>
+        <property name="stringFromVal" value="akka rocks"/>
+        <property name="stringFromRef" ref="string"/>
     </akka:active-object>
 
-    <!--akka:active-object id="bean"
-                        target="org.springframework.core.io.ResourceEditor"
-                        transactional="true"
-                        timeout="1000"
-                        scope="prototype">
-        <property name="source" ref="string"/>
-    </akka:active-object-->
+    <bean id="string" class="java.lang.String">
+        <constructor-arg value="spring rocks"/>
+    </bean>
  </beans>

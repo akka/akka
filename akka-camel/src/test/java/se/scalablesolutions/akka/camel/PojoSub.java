@@ -1,16 +1,11 @@
 package se.scalablesolutions.akka.camel;
 
-import org.apache.camel.Body;
-import org.apache.camel.Header;
-
-import se.scalablesolutions.akka.actor.annotation.consume;
-import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.actor.TypedActor;
 
 public class PojoSub extends PojoBase implements PojoSubIntf {
 
     @Override
-    @consume("direct:m1sub")
-    public String m1(@Body String b, @Header("test") String h) {
+    public String m1(String b, String h) {
         return "m1sub: " + b + " " + h;
     }
 
@@ -20,8 +15,7 @@ public class PojoSub extends PojoBase implements PojoSubIntf {
     }
 
     @Override
-    @consume("direct:m3sub")
-    public String m3(@Body String b, @Header("test") String h) {
+    public String m3(String b, String h) {
         return "m3sub: " + b + " " + h;
     }
     
