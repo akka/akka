@@ -40,3 +40,4 @@ run-codefellow
 .idea
 .scala_dependencies
 multiverse.log
+.eprj
