@@ -64,7 +64,7 @@ import com.google.protobuf.ByteString
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends TransactionManagement {
+trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef] {
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile protected[akka] var _uuid = UUID.newUuid.toString
@@ -203,6 +203,10 @@ trait ActorRef extends TransactionManagement {
 
   protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
   protected[akka] def currentMessage = guard.withGuard { _currentMessage }
+  
+  /** comparison only takes uuid into account
+   */
+  def compareTo(other: ActorRef) = this.uuid.compareTo(other.uuid)
 
   /**
    * Returns the uuid for the actor.
@@ -457,57 +461,41 @@ trait ActorRef extends TransactionManagement {
    * If the 'trapExit' member field has been set to at contain at least one exception class then it will
    * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
    * defined by the 'faultHandler'.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def link(actorRef: ActorRef): Unit
 
   /**
    * Unlink the actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def unlink(actorRef: ActorRef): Unit
 
   /**
    * Atomically start and link an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def startLink(actorRef: ActorRef): Unit
 
   /**
    * Atomically start, link and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit
 
   /**
    * Atomically create (from actor class) and start an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawn[T <: Actor : Manifest]: ActorRef
 
   /**
    * Atomically create (from actor class), start and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef
 
   /**
    * Atomically create (from actor class), start and link an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawnLink[T <: Actor: Manifest]: ActorRef
 
   /**
    * Atomically create (from actor class), start, link and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef
 
@@ -587,7 +575,7 @@ trait ActorRef extends TransactionManagement {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-sealed class LocalActorRef private[akka](
+class LocalActorRef private[akka](
   private[this] var actorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None))
   extends ActorRef {
 
