@@ -1,10 +1,6 @@
 package se.scalablesolutions.akka.camel;
 
-import org.apache.camel.Body;
-import org.apache.camel.Header;
-
-import se.scalablesolutions.akka.actor.annotation.consume;
-import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.actor.TypedActor;
 
 /**
  * @author Martin Krasser
@@ -15,21 +11,18 @@ public class PojoBase extends TypedActor implements PojoBaseIntf {
         return "m1base: " + b + " " + h;
     }
 
-    @consume("direct:m2base")
-    public String m2(@Body String b, @Header("test") String h) {
+    public String m2(String b, String h) {
         return "m2base: " + b + " " + h;
     }
 
-    @consume("direct:m3base")
-    public String m3(@Body String b, @Header("test") String h) {
+    public String m3(String b, String h) {
         return "m3base: " + b + " " + h;
     }
 
-    @consume("direct:m4base")
-    public String m4(@Body String b, @Header("test") String h) {
+    public String m4(String b, String h) {
         return "m4base: " + b + " " + h;
     }
 
-    public void m5(@Body String b, @Header("test") String h) {
+    public void m5(String b, String h) {
     }
 }

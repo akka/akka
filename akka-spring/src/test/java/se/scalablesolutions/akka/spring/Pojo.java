@@ -10,10 +10,11 @@ import se.scalablesolutions.akka.actor.*;
 
 public class Pojo extends TypedActor implements PojoInf, ApplicationContextAware {
 
-    private String string;
+    private String stringFromVal;
+    private String stringFromRef;
 
     private boolean gotApplicationContext = false;
-    private boolean postConstructInvoked = false;
+    private boolean initInvoked = false;
     
     public boolean gotApplicationContext() {
       return gotApplicationContext;
@@ -23,20 +24,28 @@ public class Pojo extends TypedActor implements PojoInf, ApplicationContextAware
       gotApplicationContext = true;
     }
 
-    public void setString(String s) {
-      string = s;
+    public String getStringFromVal() {
+      return stringFromVal;
     }
 
-    public String getString() {
-      return string;
+    public void setStringFromVal(String s) {
+      stringFromVal = s;
     }
 
-    @PostConstruct
-    public void create() {
-      postConstructInvoked = true;
+    public String getStringFromRef() {
+      return stringFromRef;
     }
 
-    public boolean isPostConstructInvoked() {
-      return postConstructInvoked;
+    public void setStringFromRef(String s) {
+      stringFromRef = s;
+    }
+
+    @Override
+    public void init() {
+      initInvoked = true;
+    }
+
+    public boolean isInitInvoked() {
+      return initInvoked;
     }
 }

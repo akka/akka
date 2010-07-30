@@ -7,7 +7,7 @@ import se.scalablesolutions.akka.actor.annotation.consume;
 /**
  * @author Martin Krasser
  */
-public interface ConsumerPojo2 {
+public interface TypedConsumer2 {
 
     @consume("direct:default")
     public String foo(String body);

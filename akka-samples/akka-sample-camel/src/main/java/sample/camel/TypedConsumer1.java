@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.actor.annotation.consume;
 /**
  * @author Martin Krasser
  */
-public interface ConsumerPojo1 {
+public interface TypedConsumer1 {
     @consume("file:data/input/pojo")
     public void foo(String body);
     

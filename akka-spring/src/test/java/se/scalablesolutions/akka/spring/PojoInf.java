@@ -5,10 +5,9 @@ import javax.annotation.PostConstruct;
 
 public interface PojoInf {
 
-  public String getString();
+  public String getStringFromVal();
+  public String getStringFromRef();
   public boolean gotApplicationContext();
-  public boolean isPostConstructInvoked();
+  public boolean isInitInvoked();
 
-  @PostConstruct
-  public void create();
 }
