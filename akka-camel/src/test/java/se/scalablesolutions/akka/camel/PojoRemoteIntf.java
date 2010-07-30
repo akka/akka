@@ -7,6 +7,6 @@ import se.scalablesolutions.akka.actor.annotation.consume;
  */
 public interface PojoRemoteIntf {
 
-    @consume("direct:remote-active-object")
+    @consume("direct:remote-typed-actor")
     public String foo(String s);
 }

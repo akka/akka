@@ -10,7 +10,7 @@ import scala.collection.JavaConversions._
 import se.scalablesolutions.akka.actor.IllegalActorStateException
 
 /**
- * Parser trait for custom namespace configuration for active-object.
+ * Parser trait for custom namespace configuration for typed-actor.
  * @author michaelkober
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  * @author Martin Krasser
@@ -69,7 +69,7 @@ trait TypedActorParser extends BeanParser with DispatcherParser {
         throw nfe
     }
 
-    objectProperties.target = mandatory(element, TARGET)
+    objectProperties.target = mandatory(element, IMPLEMENTATION)
     objectProperties.transactional = if (element.getAttribute(TRANSACTIONAL).isEmpty) false else element.getAttribute(TRANSACTIONAL).toBoolean
 
     if (!element.getAttribute(INTERFACE).isEmpty) {

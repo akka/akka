@@ -66,7 +66,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       then("the published method is accessible via its endpoint URI")
-      val response = CamelContextManager.template.requestBody("direct:remote-active-object", "test")
+      val response = CamelContextManager.template.requestBody("direct:remote-typed-actor", "test")
       assert(response === "remote typed actor: test")
     }
   }

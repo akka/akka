@@ -30,7 +30,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   private var supervised: List[Supervise] = Nil
   private var bindings: List[DependencyBinding] = Nil
   private var configRegistry = new HashMap[Class[_], Component] // TODO is configRegistry needed?
-  private var activeObjectRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
+  private var typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
   private var modules = new java.util.ArrayList[Module]
   private var methodToUriRegistry = new HashMap[Method, String]
 
@@ -45,7 +45,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     if (injector eq null) throw new IllegalActorStateException(
       "inject() and/or supervise() must be called before invoking getInstance(clazz)")
     val (proxy, targetInstance, component) =
-        activeObjectRegistry.getOrElse(clazz, throw new IllegalActorStateException(
+        typedActorRegistry.getOrElse(clazz, throw new IllegalActorStateException(
           "Class [" + clazz.getName + "] has not been put under supervision" +
           "\n(by passing in the config to the 'configure' and then invoking 'supervise') method"))
     injector.injectMembers(targetInstance)
@@ -53,7 +53,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   }
 
   def isDefined(clazz: Class[_]): Boolean = synchronized {
-    activeObjectRegistry.get(clazz).isDefined
+    typedActorRegistry.get(clazz).isDefined
   }
 
   override def getExternalDependency[T](clazz: Class[T]): T = synchronized {
@@ -93,7 +93,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     val proxy = TypedActor.newInstance(targetClass, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
     remoteAddress.foreach(address => RemoteServer.registerTypedActor(address, targetClass.getName, proxy))
     supervised ::= Supervise(actorRef, component.lifeCycle)
-    activeObjectRegistry.put(targetClass, (proxy, proxy, component))
+    typedActorRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
   }
 
@@ -122,7 +122,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     remoteAddress.foreach(address => RemoteServer.registerTypedActor(address, targetClass.getName, proxy))
     supervised ::= Supervise(actorRef, component.lifeCycle)
 
-    activeObjectRegistry.put(targetClass, (proxy, targetInstance, component))
+    typedActorRegistry.put(targetClass, (proxy, targetInstance, component))
     new DependencyBinding(targetClass, proxy)
   }
 
@@ -141,7 +141,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   /**
    * Add additional services to be wired in.
    * <pre>
-   * activeObjectConfigurator.addExternalGuiceModule(new AbstractModule {
+   * typedActorConfigurator.addExternalGuiceModule(new AbstractModule {
    *   protected void configure() {
    *     bind(Foo.class).to(FooImpl.class).in(Scopes.SINGLETON);
    *     bind(BarImpl.class);
@@ -160,7 +160,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
   def reset = synchronized {
     modules = new java.util.ArrayList[Module]
     configRegistry = new HashMap[Class[_], Component]
-    activeObjectRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
+    typedActorRegistry = new HashMap[Class[_], Tuple3[AnyRef, AnyRef, Component]]
     methodToUriRegistry = new HashMap[Method, String]
     injector = null
     restartStrategy = null

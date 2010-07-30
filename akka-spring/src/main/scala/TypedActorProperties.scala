@@ -39,7 +39,7 @@ class TypedActorProperties {
     builder.addPropertyValue(POST_RESTART, postRestart)
     builder.addPropertyValue(SHUTDOWN, shutdown)
     builder.addPropertyValue(TIMEOUT, timeout)
-    builder.addPropertyValue(TARGET, target)
+    builder.addPropertyValue(IMPLEMENTATION, target)
     builder.addPropertyValue(INTERFACE, interface)
     builder.addPropertyValue(TRANSACTIONAL, transactional)
     builder.addPropertyValue(LIFECYCLE, lifecycle)

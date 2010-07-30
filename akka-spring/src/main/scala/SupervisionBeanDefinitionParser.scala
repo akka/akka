@@ -31,9 +31,9 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
    */
   private[akka] def parseSupervisor(element: Element, builder: BeanDefinitionBuilder) {
     val strategyElement = mandatoryElement(element, STRATEGY_TAG);
-    val activeObjectsElement = mandatoryElement(element, ACTIVE_OBJECTS_TAG);
+    val typedActorsElement = mandatoryElement(element, TYPED_ACTORS_TAG);
     parseRestartStrategy(strategyElement, builder)
-    parseTypedActorList(activeObjectsElement, builder)
+    parseTypedActorList(typedActorsElement, builder)
   }
 
   private[akka] def parseRestartStrategy(element: Element, builder: BeanDefinitionBuilder) {
@@ -47,9 +47,9 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
   }
 
   private[akka] def parseTypedActorList(element: Element, builder: BeanDefinitionBuilder) {
-    val activeObjects = DomUtils.getChildElementsByTagName(element, ACTIVE_OBJECT_TAG).toArray.toList.asInstanceOf[List[Element]]
-    val activeObjectProperties = activeObjects.map(parseTypedActor(_))
-    builder.addPropertyValue("supervised", activeObjectProperties)
+    val typedActors = DomUtils.getChildElementsByTagName(element, TYPED_ACTOR_TAG).toArray.toList.asInstanceOf[List[Element]]
+    val typedActorProperties = typedActors.map(parseTypedActor(_))
+    builder.addPropertyValue("supervised", typedActorProperties)
   }
 
   private def parseTrapExits(element: Element): Array[Class[_ <: Throwable]] = {

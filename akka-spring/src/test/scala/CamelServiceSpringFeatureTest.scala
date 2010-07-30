@@ -35,7 +35,7 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
       assert(context.isInstanceOf[DefaultCamelContext])
       context.asInstanceOf[DefaultCamelContext].setRegistry(registry)
       // access registered typed actor
-      assert("hello sample" === template.requestBody("active-object:custom?method=foo", "sample"))
+      assert("hello sample" === template.requestBody("typed-actor:custom?method=foo", "sample"))
       appctx.close
     }
   }

@@ -52,7 +52,7 @@ class RestartNestedTransactionalTypedActorSpec extends
     */
   }
 
-  describe("Restart nested supervised transactional Active Object") {
+  describe("Restart nested supervised transactional Typed Actor") {
 /*
     it("map should rollback state for stateful server in case of failure") {
       val stateful = conf.getInstance(classOf[TransactionalTypedActor])

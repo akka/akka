@@ -25,7 +25,7 @@ class TransactionalTypedActorSpec extends
 //    ActorRegistry.shutdownAll
   }
 
-  describe("Declaratively supervised transactional in-memory Active Object ") {
+  describe("Declaratively supervised transactional in-memory Typed Actor ") {
     it("map should not rollback state for stateful server in case of success") {
       val stateful = TypedActor.newInstance(classOf[TransactionalTypedActor], classOf[TransactionalTypedActorImpl])
       stateful.setMapState("testShouldNotRollbackStateForStatefulServerInCaseOfSuccess", "init")

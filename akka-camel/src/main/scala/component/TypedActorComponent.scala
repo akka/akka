@@ -16,12 +16,12 @@ object TypedActorComponent {
   /**
    * Default schema name for typed actor endpoint URIs.
    */
-  val InternalSchema = "active-object-internal"
+  val InternalSchema = "typed-actor-internal"
 }
 
 /**
  * Camel component for exchanging messages with typed actors. This component
- * tries to obtain the typed actor from the <code>activeObjectRegistry</code>
+ * tries to obtain the typed actor from the <code>typedActorRegistry</code>
  * first. If it's not there it tries to obtain it from the CamelContext's registry.
  *
  * @see org.apache.camel.component.bean.BeanComponent
@@ -29,11 +29,11 @@ object TypedActorComponent {
  * @author Martin Krasser
  */
 class TypedActorComponent extends BeanComponent {
-  val activeObjectRegistry = new ConcurrentHashMap[String, AnyRef]
+  val typedActorRegistry = new ConcurrentHashMap[String, AnyRef]
 
   /**
    * Creates a {@link org.apache.camel.component.bean.BeanEndpoint} with a custom
-   * bean holder that uses <code>activeObjectRegistry</code> for getting access to
+   * bean holder that uses <code>typedActorRegistry</code> for getting access to
    * typed actors (beans).
    *
    * @see se.scalablesolutions.akka.camel.component.TypedActorHolder
@@ -47,7 +47,7 @@ class TypedActorComponent extends BeanComponent {
   }
 
   private def createBeanHolder(beanName: String) =
-    new TypedActorHolder(activeObjectRegistry, getCamelContext, beanName).createCacheHolder
+    new TypedActorHolder(typedActorRegistry, getCamelContext, beanName).createCacheHolder
 }
 
 /**
@@ -56,7 +56,7 @@ class TypedActorComponent extends BeanComponent {
  *
  * @author Martin Krasser
  */
-class TypedActorHolder(activeObjectRegistry: Map[String, AnyRef], context: CamelContext, name: String)
+class TypedActorHolder(typedActorRegistry: Map[String, AnyRef], context: CamelContext, name: String)
     extends RegistryBean(context, name) {
 
   /**
@@ -66,10 +66,10 @@ class TypedActorHolder(activeObjectRegistry: Map[String, AnyRef], context: Camel
     new TypedActorInfo(getContext, getBean.getClass, getParameterMappingStrategy)
 
   /**
-   * Obtains an typed actor from <code>activeObjectRegistry</code>.
+   * Obtains an typed actor from <code>typedActorRegistry</code>.
    */
   override def getBean: AnyRef = {
-    val bean = activeObjectRegistry.get(getName)
+    val bean = typedActorRegistry.get(getName)
     if (bean eq null) super.getBean else bean
   }
 }
