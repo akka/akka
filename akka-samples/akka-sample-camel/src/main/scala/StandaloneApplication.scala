@@ -39,7 +39,7 @@ object StandaloneApplication {
     // internal registration is done in background. Wait a bit ...
     activation.await
 
-    // access 'internally' (automatically) registered active-objects
+    // access 'internally' (automatically) registered typed-actors
     // (see @consume annotation value at TypedConsumer2.foo method)
     assert("default: msg3" == context.createProducerTemplate.requestBody("direct:default", "msg3"))
 
@@ -54,7 +54,7 @@ object StandaloneApplication {
 class StandaloneApplicationRoute extends RouteBuilder {
   def configure = {
     // route to typed actors (in SimpleRegistry)
-    from("direct:test").to("active-object:sample?method=foo")
+    from("direct:test").to("typed-actor:sample?method=foo")
   }
 }
 
@@ -65,7 +65,7 @@ object StandaloneSpringApplication {
     // load Spring application context
     val appctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
 
-    // access 'externally' registered typed actors with active-object component
+    // access 'externally' registered typed actors with typed-actor component
     assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
 
     // destroy Spring application context
@@ -79,7 +79,7 @@ object StandaloneSpringApplication {
 class StandaloneSpringApplicationRoute extends RouteBuilder {
   def configure = {
     // routes to typed actor (in ApplicationContextRegistry)
-    from("direct:test3").to("active-object:pojo3?method=foo")
+    from("direct:test3").to("typed-actor:pojo3?method=foo")
   }
 }
 

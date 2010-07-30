@@ -31,13 +31,13 @@ trait CamelContextLifecycle extends Logging {
   /**
    * Camel component for accessing typed actors.
    */
-  private[camel] var activeObjectComponent: TypedActorComponent = _
+  private[camel] var typedActorComponent: TypedActorComponent = _
 
   /**
    * Registry in which typed actors are TEMPORARILY registered during
    * creation of Camel routes to typed actors.
    */
-  private[camel] var activeObjectRegistry: Map[String, AnyRef] = _
+  private[camel] var typedActorRegistry: Map[String, AnyRef] = _
 
   /**
    *  Returns the managed CamelContext.
@@ -97,11 +97,11 @@ trait CamelContextLifecycle extends Logging {
    * <code>context</code> under a name defined by TypedActorComponent.InternalSchema.
    */
   def init(context: CamelContext) {
-    this.activeObjectComponent = new TypedActorComponent
-    this.activeObjectRegistry = activeObjectComponent.activeObjectRegistry
+    this.typedActorComponent = new TypedActorComponent
+    this.typedActorRegistry = typedActorComponent.typedActorRegistry
     this.context = context
     this.context.setStreamCaching(true)
-    this.context.addComponent(TypedActorComponent.InternalSchema, activeObjectComponent)
+    this.context.addComponent(TypedActorComponent.InternalSchema, typedActorComponent)
     this.template = context.createProducerTemplate
     _initialized = true
     log.info("Camel context initialized")

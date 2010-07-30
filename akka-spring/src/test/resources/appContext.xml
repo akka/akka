@@ -7,28 +7,28 @@
        http://www.akkasource.org/schema/akka
        http://scalablesolutions.se/akka/akka-0.10.xsd">
 
-    <akka:active-object id="sample" 
+    <akka:typed-actor id="sample" 
                         interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
-                        target="se.scalablesolutions.akka.spring.SampleBean" 
+                        implementation="se.scalablesolutions.akka.spring.SampleBean" 
                         timeout="1000" />
-    <akka:active-object id="bean-singleton" 
+    <akka:typed-actor id="bean-singleton" 
                         interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
-                        target="se.scalablesolutions.akka.spring.SampleBean" 
+                        implementation="se.scalablesolutions.akka.spring.SampleBean" 
                         timeout="1000"/>
-    <akka:active-object id="bean-prototype" 
+    <akka:typed-actor id="bean-prototype" 
                         interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
-                        target="se.scalablesolutions.akka.spring.SampleBean" 
+                        implementation="se.scalablesolutions.akka.spring.SampleBean" 
                         timeout="1000" 
                         scope="prototype"/>
     
-    <akka:active-object id="typedActor"
+    <akka:typed-actor id="typedActor"
                         interface="se.scalablesolutions.akka.spring.PojoInf"
-                        target="se.scalablesolutions.akka.spring.Pojo" 
+                        implementation="se.scalablesolutions.akka.spring.Pojo" 
                         scope="singleton"
                         timeout="1000">
         <property name="stringFromVal" value="akka rocks"/>
         <property name="stringFromRef" ref="string"/>
-    </akka:active-object>
+    </akka:typed-actor>
 
     <bean id="string" class="java.lang.String">
         <constructor-arg value="spring rocks"/>

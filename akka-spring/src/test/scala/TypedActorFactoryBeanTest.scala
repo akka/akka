@@ -23,8 +23,8 @@ class TypedActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndA
   describe("A TypedActorFactoryBean") {
     val bean = new TypedActorFactoryBean
     it("should have java getters and setters for all properties") {
-      bean.setTarget("java.lang.String")
-      assert(bean.getTarget == "java.lang.String")
+      bean.setImplementation("java.lang.String")
+      assert(bean.getImplementation == "java.lang.String")
       bean.setTimeout(1000)
       assert(bean.getTimeout == 1000)
     }
@@ -47,14 +47,14 @@ class TypedActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndA
     }
 
     it("should return the object type") {
-      bean.setTarget("java.lang.String")
+      bean.setImplementation("java.lang.String")
       assert(bean.getObjectType == classOf[String])
     }
 
     it("should create a proxy of type PojoInf") {
       val bean = new TypedActorFactoryBean()
       bean.setInterface("se.scalablesolutions.akka.spring.PojoInf")
-      bean.setTarget("se.scalablesolutions.akka.spring.Pojo")
+      bean.setImplementation("se.scalablesolutions.akka.spring.Pojo")
       bean.timeout = 1000
       val entries = new PropertyEntries()
       val entry = new PropertyEntry()

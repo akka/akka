@@ -18,8 +18,8 @@ class TypedActorBeanDefinitionParser extends AbstractSingleBeanDefinitionParser 
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
   override def doParse(element: Element, parserContext: ParserContext, builder: BeanDefinitionBuilder) {
-    val activeObjectConf = parseTypedActor(element)
-    activeObjectConf.setAsProperties(builder)
+    val typedActorConf = parseTypedActor(element)
+    typedActorConf.setAsProperties(builder)
   }
 
   /*

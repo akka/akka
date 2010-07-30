@@ -31,8 +31,8 @@ trait DispatcherParser extends BeanParser {
     properties.name = mandatory(dispatcherElement, NAME)
     properties.dispatcherType = mandatory(dispatcherElement, TYPE)
     if (properties.dispatcherType == THREAD_BASED) {
-      if (dispatcherElement.getParentNode.getNodeName != "active-object") {
-        throw new IllegalArgumentException("Thread based dispatcher must be nested in active-object element!")
+      if (dispatcherElement.getParentNode.getNodeName != "typed-actor") {
+        throw new IllegalArgumentException("Thread based dispatcher must be nested in typed-actor element!")
       }
     }
     val threadPoolElement = DomUtils.getChildElementByTagName(dispatcherElement, THREAD_POOL_TAG);

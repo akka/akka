@@ -93,7 +93,7 @@ object RemoteServer {
 
   private class RemoteActorSet {
     private[RemoteServer] val actors =        new ConcurrentHashMap[String, ActorRef]
-    private[RemoteServer] val activeObjects = new ConcurrentHashMap[String, AnyRef]
+    private[RemoteServer] val typedActors = new ConcurrentHashMap[String, AnyRef]
   }
 
   private val guard = new ReadWriteGuard
@@ -104,8 +104,8 @@ object RemoteServer {
     actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
   }
 
-  private[akka] def registerTypedActor(address: InetSocketAddress, name: String, activeObject: AnyRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).activeObjects.put(name, activeObject)
+  private[akka] def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef) = guard.withWriteGuard {
+    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(name, typedActor)
   }
 
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
@@ -197,7 +197,7 @@ class RemoteServer extends Logging {
         RemoteServer.register(hostname, port, this)
         val remoteActorSet = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
         val pipelineFactory = new RemoteServerPipelineFactory(
-          name, openChannels, loader, remoteActorSet.actors, remoteActorSet.activeObjects)
+          name, openChannels, loader, remoteActorSet.actors, remoteActorSet.typedActors)
         bootstrap.setPipelineFactory(pipelineFactory)
         bootstrap.setOption("child.tcpNoDelay", true)
         bootstrap.setOption("child.keepAlive", true)
@@ -292,7 +292,7 @@ class RemoteServerPipelineFactory(
     val openChannels: ChannelGroup,
     val loader: Option[ClassLoader],
     val actors: JMap[String, ActorRef],
-    val activeObjects: JMap[String, AnyRef]) extends ChannelPipelineFactory {
+    val typedActors: JMap[String, AnyRef]) extends ChannelPipelineFactory {
   import RemoteServer._
 
   def getPipeline: ChannelPipeline = {
@@ -305,7 +305,7 @@ class RemoteServerPipelineFactory(
       //case "lzf" => Some(Codec(new LzfEncoder, new LzfDecoder))
       case _ => None
     }
-    val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, activeObjects)
+    val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, typedActors)
 
     val stages: Array[ChannelHandler] =
       zipCodec.map(codec => Array(codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteServer))
@@ -323,7 +323,7 @@ class RemoteServerHandler(
     val openChannels: ChannelGroup,
     val applicationLoader: Option[ClassLoader],
     val actors: JMap[String, ActorRef],
-    val activeObjects: JMap[String, AnyRef]) extends SimpleChannelUpstreamHandler with Logging {
+    val typedActors: JMap[String, AnyRef]) extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
@@ -405,16 +405,16 @@ class RemoteServerHandler(
     val actorInfo = request.getActorInfo
     val typedActorInfo = actorInfo.getTypedActorInfo
     log.debug("Dispatching to remote typed actor [%s :: %s]", typedActorInfo.getMethod, typedActorInfo.getInterface)
-    val activeObject = createTypedActor(actorInfo)
+    val typedActor = createTypedActor(actorInfo)
 
     val args = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Array[AnyRef]].toList
     val argClasses = args.map(_.getClass)
 
     try {
-      val messageReceiver = activeObject.getClass.getDeclaredMethod(typedActorInfo.getMethod, argClasses: _*)
-      if (request.getIsOneWay) messageReceiver.invoke(activeObject, args: _*)
+      val messageReceiver = typedActor.getClass.getDeclaredMethod(typedActorInfo.getMethod, argClasses: _*)
+      if (request.getIsOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
-        val result = messageReceiver.invoke(activeObject, args: _*)
+        val result = messageReceiver.invoke(typedActor, args: _*)
         log.debug("Returning result from remote typed actor invocation [%s]", result)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
@@ -464,9 +464,9 @@ class RemoteServerHandler(
 
   private def createTypedActor(actorInfo: ActorInfoProtocol): AnyRef = {
     val uuid = actorInfo.getUuid
-    val activeObjectOrNull = activeObjects.get(uuid)
+    val typedActorOrNull = typedActors.get(uuid)
 
-    if (activeObjectOrNull eq null) {
+    if (typedActorOrNull eq null) {
       val typedActorInfo = actorInfo.getTypedActorInfo
       val interfaceClassname = typedActorInfo.getInterface
       val targetClassname = actorInfo.getTarget
@@ -481,12 +481,12 @@ class RemoteServerHandler(
 
         val newInstance = TypedActor.newInstance(
           interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
-        activeObjects.put(uuid, newInstance)
+        typedActors.put(uuid, newInstance)
         newInstance
       } catch {
         case e => log.error(e, "Could not create remote typed actor instance"); throw e
       }
-    } else activeObjectOrNull
+    } else typedActorOrNull
   }
 
   private def createErrorReplyMessage(e: Throwable, request: RemoteRequestProtocol, isActor: Boolean): RemoteReplyProtocol = {

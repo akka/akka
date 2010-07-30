@@ -46,9 +46,9 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
   import StringReflect._
   import AkkaSpringConfigurationTags._
 
-  @BeanProperty var target: String = ""
-  @BeanProperty var timeout: Long = _
   @BeanProperty var interface: String = ""
+  @BeanProperty var implementation: String = ""
+  @BeanProperty var timeout: Long = _
   @BeanProperty var transactional: Boolean = false
   @BeanProperty var pre: String = ""
   @BeanProperty var post: String = ""
@@ -72,7 +72,7 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
    */
   def getObjectType: Class[AnyRef] = try {
-    target.toClass
+    implementation.toClass
   } catch {
     // required by contract to return null
     case e: IllegalArgumentException => null
@@ -98,7 +98,7 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
 
   private def setProperties(ref: AnyRef): AnyRef = {
     if (hasSetDependecies) return ref
-    log.debug("Processing properties and dependencies for target class\n\t[%s]", target)
+    log.debug("Processing properties and dependencies for implementation class\n\t[%s]", implementation)
     val beanWrapper = new BeanWrapperImpl(ref);
     if (ref.isInstanceOf[ApplicationContextAware]) {
       log.debug("Setting application context")
@@ -121,17 +121,17 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
   private[akka] def create(argList: String): AnyRef = {
     if (interface == null || interface == "") throw new AkkaBeansException(
         "The 'interface' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
-    if (target == null || target == "") throw new AkkaBeansException(
-        "The 'target' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
+    if (implementation == null || implementation == "") throw new AkkaBeansException(
+        "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
     argList match {
-      case "ri"  => TypedActor.newInstance(interface.toClass, target.toClass, createConfig.makeRemote(host, port))
-      case "i"   => TypedActor.newInstance(interface.toClass, target.toClass, createConfig)
-      case "id"  => TypedActor.newInstance(interface.toClass, target.toClass, createConfig.dispatcher(dispatcherInstance))
-      case "rid" => TypedActor.newInstance(interface.toClass, target.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-      case _     => TypedActor.newInstance(interface.toClass, target.toClass, createConfig)
-      //    case "rd"  => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-      //    case "r"   => TypedActor.newInstance(target.toClass, createConfig.makeRemote(host, port))
-      //    case "d"   => TypedActor.newInstance(target.toClass, createConfig.dispatcher(dispatcherInstance))
+      case "ri"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port))
+      case "i"   => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+      case "id"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.dispatcher(dispatcherInstance))
+      case "rid" => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
+      case _     => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+      //    case "rd"  => TypedActor.newInstance(implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
+      //    case "r"   => TypedActor.newInstance(implementation.toClass, createConfig.makeRemote(host, port))
+      //    case "d"   => TypedActor.newInstance(implementation.toClass, createConfig.dispatcher(dispatcherInstance))
     }
   }
 

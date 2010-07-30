@@ -10,15 +10,15 @@ http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka-0.10.xsd">
 
 
-  <akka:active-object id="active-object-with-dispatcher" target="se.scalablesolutions.akka.spring.foo.MyPojo"
+  <akka:typed-actor id="typed-actor-with-dispatcher" implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="1000">
     <akka:dispatcher type="executor-based-event-driven" name="test"/>
-  </akka:active-object>
+  </akka:typed-actor>
 
-  <akka:active-object id="active-object-with-dispatcher-ref" target="se.scalablesolutions.akka.spring.foo.MyPojo"
+  <akka:typed-actor id="typed-actor-with-dispatcher-ref" implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                         timeout="1000">
       <akka:dispatcher ref="executor-event-driven-dispatcher-1"/>
-  </akka:active-object>
+  </akka:typed-actor>
 
 
   <!-- executor-event-driven-dispatcher with bounded-array-blocking-queue -->
@@ -69,14 +69,14 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
         <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
       </akka:trap-exits>
     </akka:restart-strategy>
-    <akka:active-objects>
-      <akka:active-object target="se.scalablesolutions.akka.spring.foo.Foo" lifecycle="permanent" timeout="1000"/>
-      <akka:active-object interface="se.scalablesolutions.akka.spring.foo.IBar"
-                          target="se.scalablesolutions.akka.spring.foo.Bar" lifecycle="permanent" timeout="1000"/>
-      <akka:active-object target="se.scalablesolutions.akka.spring.foo.MyPojo" lifecycle="temporary" timeout="1000">
+    <akka:typed-actors>
+      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.Foo" lifecycle="permanent" timeout="1000"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IBar"
+                          implementation="se.scalablesolutions.akka.spring.foo.Bar" lifecycle="permanent" timeout="1000"/>
+      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.MyPojo" lifecycle="temporary" timeout="1000">
         <akka:restart-callbacks pre="preRestart" post="postRestart"/>
-      </akka:active-object>
-    </akka:active-objects>
+      </akka:typed-actor>
+    </akka:typed-actors>
   </akka:supervision>
 
 

@@ -28,8 +28,8 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
     CamelContextManager.context.addRoutes(new CustomRouteBuilder)
     CamelContextManager.start
 
-    CamelContextManager.activeObjectRegistry.put("base", activePojoBase)
-    CamelContextManager.activeObjectRegistry.put("intf", activePojoIntf)
+    CamelContextManager.typedActorRegistry.put("base", activePojoBase)
+    CamelContextManager.typedActorRegistry.put("intf", activePojoIntf)
   }
 
   override protected def afterAll = {
@@ -90,7 +90,7 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
 
     scenario("in-out exchange with internally registered typed actor not possible") {
       intercept[ResolveEndpointFailedException] {
-        template.requestBodyAndHeader("active-object:intf?method=m2", "x", "test", "y")
+        template.requestBodyAndHeader("typed-actor:intf?method=m2", "x", "test", "y")
       }
     }
   }
@@ -99,7 +99,7 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
 object TypedActorComponentFeatureTest {
   class CustomRouteBuilder extends RouteBuilder {
     def configure = {
-      from("direct:test").to("active-object:pojo?method=foo")
+      from("direct:test").to("typed-actor:pojo?method=foo")
     }
   }
 }

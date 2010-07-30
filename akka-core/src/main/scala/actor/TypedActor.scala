@@ -451,26 +451,26 @@ object TypedActor extends Logging {
     this
   }
 
-  private def injectTypedActorContext(activeObject: AnyRef): Option[TypedActorContext] = {
-    def injectTypedActorContext0(activeObject: AnyRef, clazz: Class[_]): Option[TypedActorContext] = {
+  private def injectTypedActorContext(typedActor: AnyRef): Option[TypedActorContext] = {
+    def injectTypedActorContext0(typedActor: AnyRef, clazz: Class[_]): Option[TypedActorContext] = {
       val contextField = clazz.getDeclaredFields.toList.find(_.getType == classOf[TypedActorContext])
       if (contextField.isDefined) {
         contextField.get.setAccessible(true)
         val context = new TypedActorContext
-        contextField.get.set(activeObject, context)
+        contextField.get.set(typedActor, context)
         Some(context)
       } else {
         val parent = clazz.getSuperclass
-        if (parent != null) injectTypedActorContext0(activeObject, parent)
+        if (parent != null) injectTypedActorContext0(typedActor, parent)
         else {
           log.ifTrace("Can't set 'TypedActorContext' for TypedActor [" +
-                      activeObject.getClass.getName +
+                      typedActor.getClass.getName +
                       "] since no field of this type could be found.")
           None
         }
       }
     }
-    injectTypedActorContext0(activeObject, activeObject.getClass)
+    injectTypedActorContext0(typedActor, typedActor.getClass)
   }
 
   private[akka] def newTypedActor(targetClass: Class[_]): TypedActor = {

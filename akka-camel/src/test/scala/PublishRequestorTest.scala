@@ -40,7 +40,7 @@ class PublishRequestorTest extends JUnitSuite {
     val event = (publisher !! GetRetainedMessage).get.asInstanceOf[ConsumerMethodRegistered]
     assert(event.init === init)
     assert(event.uri === "direct:foo")
-    assert(event.activeObject === obj)
+    assert(event.typedActor === obj)
     assert(event.method.getName === "foo")
   }
 
@@ -53,7 +53,7 @@ class PublishRequestorTest extends JUnitSuite {
     val event = (publisher !! GetRetainedMessage).get.asInstanceOf[ConsumerMethodUnregistered]
     assert(event.init === init)
     assert(event.uri === "direct:foo")
-    assert(event.activeObject === obj)
+    assert(event.typedActor === obj)
     assert(event.method.getName === "foo")
   }
 

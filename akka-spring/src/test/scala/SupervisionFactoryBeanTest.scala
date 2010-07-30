@@ -16,7 +16,7 @@ private[akka] class Foo
 class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
 
   val restartStrategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Throwable]))
-  val activeObjects = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", 1000L))
+  val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", 1000L))
 
   def createTypedActorProperties(target: String, timeout: Long) : TypedActorProperties = {
     val properties = new TypedActorProperties()
@@ -30,8 +30,8 @@ class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
     it("should have java getters and setters for all properties") {
       bean.setRestartStrategy(restartStrategy)
       assert(bean.getRestartStrategy == restartStrategy)
-      bean.setSupervised(activeObjects)
-      assert(bean.getSupervised == activeObjects)
+      bean.setSupervised(typedActors)
+      assert(bean.getSupervised == typedActors)
     }
 
     it("should return the object type TypedActorConfigurator") {
