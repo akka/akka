@@ -1,8 +1,5 @@
 package se.scalablesolutions.akka.actor.ticket
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
