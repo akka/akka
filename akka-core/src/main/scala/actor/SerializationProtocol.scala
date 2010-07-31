@@ -85,13 +85,8 @@ object ActorSerialization {
       }
       val builder = LifeCycleProtocol.newBuilder
       actorRef.lifeCycle match {
-        case Some(LifeCycle(scope, None, _)) =>
+        case Some(LifeCycle(scope)) =>
           setScope(builder, scope)
-          Some(builder.build)
-        case Some(LifeCycle(scope, Some(callbacks), _)) =>
-          setScope(builder, scope)
-          builder.setPreRestart(callbacks.preRestart)
-          builder.setPostRestart(callbacks.postRestart)
           Some(builder.build)
         case None => None
       }
@@ -134,12 +129,8 @@ object ActorSerialization {
     val lifeCycle =
       if (protocol.hasLifeCycle) {
         val lifeCycleProtocol = protocol.getLifeCycle
-        val restartCallbacks =
-          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart)
-            Some(RestartCallbacks(lifeCycleProtocol.getPreRestart, lifeCycleProtocol.getPostRestart))
-          else None
-        Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent, restartCallbacks)
-             else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary, restartCallbacks)
+        Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent)
+             else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary)
              else throw new IllegalActorStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
       } else None
 

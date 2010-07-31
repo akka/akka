@@ -999,7 +999,7 @@ class LocalActorRef private[akka](
       val failedActor = actorInstance.get
       guard.withGuard {
         lifeCycle match {
-          case Some(LifeCycle(Temporary, _, _)) => shutDownTemporaryActor(this)
+          case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this)
           case _ =>
             // either permanent or none where default is permanent
             Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
@@ -1018,7 +1018,7 @@ class LocalActorRef private[akka](
     linkedActorsAsList.foreach { actorRef =>
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
-        case Some(LifeCycle(Temporary, _, _)) => shutDownTemporaryActor(actorRef)
+        case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(actorRef)
         case _ => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }

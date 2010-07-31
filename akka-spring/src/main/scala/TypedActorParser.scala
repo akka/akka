@@ -26,8 +26,6 @@ trait TypedActorParser extends BeanParser with DispatcherParser {
   def parseTypedActor(element: Element): TypedActorProperties = {
     val objectProperties = new TypedActorProperties()
     val remoteElement = DomUtils.getChildElementByTagName(element, REMOTE_TAG);
-    val restartCallbacksElement = DomUtils.getChildElementByTagName(element, RESTART_CALLBACKS_TAG);
-    val shutdownCallbackElement = DomUtils.getChildElementByTagName(element, SHUTDOWN_CALLBACK_TAG);
     val dispatcherElement = DomUtils.getChildElementByTagName(element, DISPATCHER_TAG)
     val propertyEntries = DomUtils.getChildElementsByTagName(element,PROPERTYENTRY_TAG)
 
@@ -36,29 +34,17 @@ trait TypedActorParser extends BeanParser with DispatcherParser {
       objectProperties.port = mandatory(remoteElement, PORT).toInt
     }
 
-    if (restartCallbacksElement != null) {
-      objectProperties.preRestart = restartCallbacksElement.getAttribute(PRE_RESTART)
-      objectProperties.postRestart = restartCallbacksElement.getAttribute(POST_RESTART)
-      if ((objectProperties.preRestart.isEmpty) && (objectProperties.preRestart.isEmpty)) {
-        throw new IllegalActorStateException("At least one of pre or post must be defined.")
-      }
-    }
-
-    if (shutdownCallbackElement != null) {
-      objectProperties.shutdown = shutdownCallbackElement.getAttribute("method")
-    }
-
     if (dispatcherElement != null) {
       val dispatcherProperties = parseDispatcher(dispatcherElement)
       objectProperties.dispatcher = dispatcherProperties
     }
 
-    for(element <- propertyEntries) {
-            val entry = new PropertyEntry()
-            entry.name = element.getAttribute("name");
-        entry.value = element.getAttribute("value")
-                entry.ref   = element.getAttribute("ref")
-                objectProperties.propertyEntries.add(entry)
+    for (element <- propertyEntries) {
+      val entry = new PropertyEntry
+      entry.name = element.getAttribute("name");
+      entry.value = element.getAttribute("value")
+      entry.ref   = element.getAttribute("ref")
+      objectProperties.propertyEntries.add(entry)
     }
 
     try {

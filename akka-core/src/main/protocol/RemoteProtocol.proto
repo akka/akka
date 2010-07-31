@@ -138,10 +138,6 @@ enum DispatcherType {
  */
 message LifeCycleProtocol {
   required LifeCycleType lifeCycle = 1;
-  optional string preRestart = 2;
-  optional string postRestart = 3;
-  optional string init = 4;
-  optional string shutdown = 5;
 }
 
 /**
