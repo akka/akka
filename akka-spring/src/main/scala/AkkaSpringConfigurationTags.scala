@@ -20,8 +20,6 @@ object AkkaSpringConfigurationTags {
   val CAMEL_SERVICE_TAG = "camel-service"
 
   // typed-actor sub tags
-  val RESTART_CALLBACKS_TAG = "restart-callbacks"
-  val SHUTDOWN_CALLBACK_TAG = "shutdown-callback"
   val REMOTE_TAG = "remote"
 
   // superivision sub tags
@@ -45,9 +43,6 @@ object AkkaSpringConfigurationTags {
   val TRANSACTIONAL = "transactional"
   val HOST = "host"
   val PORT = "port"
-  val PRE_RESTART = "pre"
-  val POST_RESTART = "post"
-  val SHUTDOWN = "shutdown"
   val LIFECYCLE = "lifecycle"
   val SCOPE = "scope"
 

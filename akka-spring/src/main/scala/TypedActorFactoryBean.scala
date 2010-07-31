@@ -21,7 +21,6 @@ import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, TypedActorConfiguration, TypedActor}
-import se.scalablesolutions.akka.config.ScalaConfig.{ShutdownCallback, RestartCallbacks}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
 
@@ -50,9 +49,6 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
   @BeanProperty var implementation: String = ""
   @BeanProperty var timeout: Long = _
   @BeanProperty var transactional: Boolean = false
-  @BeanProperty var pre: String = ""
-  @BeanProperty var post: String = ""
-  @BeanProperty var shutdown: String = ""
   @BeanProperty var host: String = ""
   @BeanProperty var port: Int = _
   @BeanProperty var lifecycle: String = ""
@@ -137,8 +133,6 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
 
   private[akka] def createConfig: TypedActorConfiguration = {
     val config = new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
-    if (hasRestartCallbacks) config.restartCallbacks(pre, post)
-    if (hasShutdownCallback) config.shutdownCallback(shutdown)
     if (transactional) config.makeTransactionRequired
     config
   }
@@ -146,12 +140,6 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
   private[akka] def isRemote = (host != null) && (!host.isEmpty)
 
   private[akka] def hasInterface = (interface != null) && (!interface.isEmpty)
-
-  private[akka] def hasRestartCallbacks =
-    ((pre != null) && !pre.isEmpty) ||
-    ((post != null) && !post.isEmpty)
-
-  private[akka] def hasShutdownCallback = ((shutdown != null) && !shutdown.isEmpty)
 
   private[akka] def hasDispatcher =
     (dispatcher != null) &&

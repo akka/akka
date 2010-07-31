@@ -17,9 +17,6 @@ class TypedActorProperties {
   var timeout: Long = _
   var interface: String = ""
   var transactional: Boolean = false
-  var preRestart: String = ""
-  var postRestart: String = ""
-  var shutdown: String = ""
   var host: String = ""
   var port: Int = _
   var lifecycle: String = ""
@@ -35,9 +32,6 @@ class TypedActorProperties {
   def setAsProperties(builder: BeanDefinitionBuilder) {
     builder.addPropertyValue(HOST, host)
     builder.addPropertyValue(PORT, port)
-    builder.addPropertyValue(PRE_RESTART, preRestart)
-    builder.addPropertyValue(POST_RESTART, postRestart)
-    builder.addPropertyValue(SHUTDOWN, shutdown)
     builder.addPropertyValue(TIMEOUT, timeout)
     builder.addPropertyValue(IMPLEMENTATION, target)
     builder.addPropertyValue(INTERFACE, interface)

@@ -59,9 +59,6 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       expect("foo.bar.Bar") { prop2.target }
       expect("foo.bar.MyPojo") { prop3.target }
       expect("foo.bar.MyPojo") { prop4.target }
-      expect("preRestart") { prop3.preRestart }
-      expect("postRestart") { prop3.postRestart }
-      expect("shutdown") { prop4.shutdown }
       expect("permanent") { prop1.lifecycle }
       expect("temporary") { prop4.lifecycle }
     }

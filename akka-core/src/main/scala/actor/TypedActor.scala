@@ -12,7 +12,6 @@ import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, Completabl
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
-import se.scalablesolutions.akka.actor.annotation._
 
 import org.codehaus.aspectwerkz.joinpoint.{MethodRtti, JoinPoint}
 import org.codehaus.aspectwerkz.proxy.Proxy
@@ -189,7 +188,6 @@ abstract class TypedActor extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@transactionrequired
 abstract class TypedTransactor extends TypedActor
 
 /**
@@ -201,8 +199,6 @@ abstract class TypedTransactor extends TypedActor
  */
 final class TypedActorConfiguration {
   private[akka] var _timeout: Long = Actor.TIMEOUT
-  private[akka] var _restartCallbacks: Option[RestartCallbacks] = None
-  private[akka] var _shutdownCallback: Option[ShutdownCallback] = None
   private[akka] var _transactionRequired = false
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
@@ -210,16 +206,6 @@ final class TypedActorConfiguration {
   def timeout = _timeout
   def timeout(timeout: Duration) : TypedActorConfiguration = {
     _timeout = timeout.toMillis
-    this
-  }
-
-  def restartCallbacks(pre: String, post: String) : TypedActorConfiguration = {
-    _restartCallbacks = Some(new RestartCallbacks(pre, post))
-    this
-  }
-
-  def shutdownCallback(down: String) : TypedActorConfiguration = {
-    _shutdownCallback = Some(new ShutdownCallback(down))
     this
   }
 
@@ -504,17 +490,6 @@ private[akka] object TypedActorContext {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Annotations {
-  val transactionrequired =    classOf[transactionrequired]
-  val prerestart =             classOf[prerestart]
-  val postrestart =            classOf[postrestart]
-  val shutdown =               classOf[shutdown]
-  val inittransactionalstate = classOf[inittransactionalstate]
-}
-
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 private[akka] object AspectInitRegistry extends ListenerManagement {
   private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
 
@@ -716,7 +691,6 @@ private[akka] sealed class TypedActorAspect {
 object Dispatcher {
   val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
   val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
-//  var crashedActorTl: ThreadLocal[Dispatcher] = new ThreadLocal();
 }
 
 /**
@@ -773,7 +747,6 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
   }
 
   override def preRestart(reason: Throwable) {
-//    crashedActorTl.set(this)
     targetInstance.preRestart(reason)
 
     // rewrite target instance in Dispatcher and AspectWerkz Proxy
@@ -783,16 +756,6 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
 
   override def postRestart(reason: Throwable) {
     targetInstance.postRestart(reason)
-  }
-
-  override def init {
-    // Get the crashed dispatcher from thread local and intitialize this actor with the
-    // contents of the old dispatcher
-//    val oldActor = crashedActorTl.get
-//    if (oldActor != null) {
-//      initialize(oldActor.targetClass, oldActor.targetInstance, oldActor.proxy, oldActor.context)
-//      crashedActorTl.set(null)
-//    }
   }
 
   override def shutdown {
@@ -806,7 +769,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
 
   def isTransactional(clazz: Class[_]): Boolean =
     if (clazz == null) false
-    else if (clazz.isAnnotationPresent(Annotations.transactionrequired)) true
+    else if (clazz.isAssignableFrom(classOf[TypedTransactor])) true
     else isTransactional(clazz.getSuperclass)
 
   private def serializeArguments(joinPoint: JoinPoint) = {
