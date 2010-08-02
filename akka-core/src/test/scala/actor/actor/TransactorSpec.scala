@@ -35,9 +35,9 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
 
   val notifier = new CountDownLatch(expectedInvocationCount)
 
-  private lazy val mapState = TransactionalMap[String, String]()
-  private lazy val vectorState = TransactionalVector[String]()
-  private lazy val refState = Ref[String]()
+  private val mapState = TransactionalMap[String, String]()
+  private val vectorState = TransactionalVector[String]()
+  private val refState = Ref[String]()
 
   def receive = {
     case GetNotifier =>
@@ -49,7 +49,7 @@ class StatefulTransactor(expectedInvocationCount: Int) extends Transactor {
       self.reply(vectorState.length.asInstanceOf[AnyRef])
       notifier.countDown
     case GetRefState =>
-      self.reply(refState.get.get)
+      self.reply(refState.get)
       notifier.countDown
     case SetMapState(key, msg) =>
       mapState.put(key, msg)

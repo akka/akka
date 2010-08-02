@@ -3,71 +3,66 @@ package se.scalablesolutions.akka.stm
 import se.scalablesolutions.akka.actor.{Actor, Transactor}
 import Actor._
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
 
-@RunWith(classOf[JUnitRunner])
-class StmSpec extends
-  Spec with
-  ShouldMatchers with
-  BeforeAndAfterAll {
+class StmSpec extends WordSpec with MustMatchers {
 
-  describe("Local STM") {
-    it("should be able to do multiple consecutive atomic {..} statements") {
-      import se.scalablesolutions.akka.stm.local._
+  "Local STM" should {
 
-      lazy val ref = Ref[Int]()
+    import se.scalablesolutions.akka.stm.local._
+
+    "be able to do multiple consecutive atomic {..} statements" in {
+      val ref = Ref(0)
 
       def increment = atomic {
-        ref.swap(ref.get.getOrElse(0) + 1)
+        ref alter (_ + 1)
       }
 
       def total: Int = atomic {
-        ref.get.getOrElse(0)
+        ref.getOrElse(0)
       }
 
       increment
       increment
       increment
-      total should equal(3)
+
+      total must be (3)
     }
 
-    it("should be able to do nested atomic {..} statements") {
-      import se.scalablesolutions.akka.stm.local._
-
-      lazy val ref = Ref[Int]()
+    "be able to do nested atomic {..} statements" in {
+      val ref = Ref(0)
 
       def increment = atomic {
-        ref.swap(ref.get.getOrElse(0) + 1)
+        ref alter (_ + 1)
       }
+
       def total: Int = atomic {
-        ref.get.getOrElse(0)
+        ref.getOrElse(0)
       }
 
       atomic {
         increment
         increment
       }
+
       atomic {
         increment
-        total should equal(3)
+        total must be (3)
       }
     }
 
-    it("should roll back failing nested atomic {..} statements") {
-      import se.scalablesolutions.akka.stm.local._
-
-      lazy val ref = Ref[Int]()
+    "roll back failing nested atomic {..} statements" in {
+      val ref = Ref(0)
 
       def increment = atomic {
-        ref.swap(ref.get.getOrElse(0) + 1)
+        ref alter (_ + 1)
       }
+
       def total: Int = atomic {
-        ref.get.getOrElse(0)
+        ref.getOrElse(0)
       }
+
       try {
         atomic(DefaultLocalTransactionFactory) {
           increment
@@ -77,21 +72,22 @@ class StmSpec extends
       } catch {
         case e => {}
       }
-      total should equal(0)
+
+      total must be (0)
     }
   }
 
-  describe("Global STM") {
-    it("should be able to initialize with atomic {..} block inside actor constructor") {
+  "Global STM" should {
+    "be able to initialize with atomic {..} block inside actor constructor" in {
       import GlobalTransactionVectorTestActor._
       try {
         val actor = actorOf[GlobalTransactionVectorTestActor].start
         actor !! Add(5)
         val size1 = (actor !! Size).as[Int].getOrElse(fail("Could not get Vector::size"))
-        size1 should equal(2)
+        size1 must be (2)
         actor !! Add(2)
         val size2 = (actor !! Size).as[Int].getOrElse(fail("Could not get Vector::size"))
-        size2 should equal(3)
+        size2 must be (3)
       } catch {
         case e =>
           e.printStackTrace
@@ -99,25 +95,26 @@ class StmSpec extends
       }
     }
   }
+
 /*
-  describe("Transactor") {
-    it("should be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multiple times in a row") {
+  "Transactor" should {
+    "be able receive message sent with !! and pass it along to nested transactor with !! and receive reply; multiple times in a row" in {
       import GlobalTransactionVectorTestActor._
       val actor = actorOf[NestedTransactorLevelOneActor].start
       actor !! (Add(2), 10000)
       val size1 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
-      size1 should equal(2)
+      size1 must be (2)
       actor !! (Add(7), 10000)
       actor ! "HiLevelOne"
       val size2 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
-      size2 should equal(7)
+      size2 must be (7)
       actor !! (Add(0), 10000)
       actor ! "HiLevelTwo"
       val size3 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
-      size3 should equal(0)
+      size3 must be (0)
       actor !! (Add(3), 10000)
       val size4 = (actor !! (Size, 10000)).as[Int].getOrElse(fail("Could not get size"))
-      size4 should equal(3)
+      size4 must be (3)
     }
   }
   */
@@ -128,6 +125,7 @@ object GlobalTransactionVectorTestActor {
   case object Size
   case object Success
 }
+
 class GlobalTransactionVectorTestActor extends Actor {
   import GlobalTransactionVectorTestActor._
   import se.scalablesolutions.akka.stm.global._
@@ -147,6 +145,7 @@ class GlobalTransactionVectorTestActor extends Actor {
 
 class NestedTransactorLevelOneActor extends Actor {
   import GlobalTransactionVectorTestActor._
+
   private val nested = actorOf[NestedTransactorLevelTwoActor].start
   self.timeout = 10000
 
@@ -164,6 +163,7 @@ class NestedTransactorLevelOneActor extends Actor {
 
 class NestedTransactorLevelTwoActor extends Transactor {
   import GlobalTransactionVectorTestActor._
+
   private val ref = Ref(0)
   self.timeout = 10000
 
