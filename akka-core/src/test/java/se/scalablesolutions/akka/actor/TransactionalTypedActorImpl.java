@@ -28,7 +28,7 @@ public class TransactionalTypedActorImpl extends TypedTransactor implements Tran
   }
 
   public String getRefState() {
-    return (String)refState.get().get();
+    return (String)refState.get();
   }
 
   public void setMapState(String key, String msg) {

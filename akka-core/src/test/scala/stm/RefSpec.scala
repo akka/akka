@@ -1,31 +1,27 @@
 package se.scalablesolutions.akka.stm
 
-import org.scalatest.Spec
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
 
-import se.scalablesolutions.akka.stm.local._
+class RefSpec extends WordSpec with MustMatchers {
 
-@RunWith(classOf[JUnitRunner])
-class RefSpec extends Spec with ShouldMatchers {
+  import se.scalablesolutions.akka.stm.local._
 
-  describe("A Ref") {
+  "A Ref" should {
 
-
-    it("should optionally accept an initial value") {
+    "optionally accept an initial value" in {
       val emptyRef = Ref[Int]
-      val empty = atomic { emptyRef.get }
+      val empty = atomic { emptyRef.getOption }
 
-      empty should be(None)
+      empty must be(None)
 
       val ref = Ref(3)
-      val value = atomic { ref.get.get }
+      val value = atomic { ref.get }
 
-      value should be(3)
+      value must be (3)
     }
 
-    it("should keep the initial value, even if the first transaction is rolled back") {
+    "keep the initial value, even if the first transaction is rolled back" in {
       val ref = Ref(3)
 
       try {
@@ -37,22 +33,32 @@ class RefSpec extends Spec with ShouldMatchers {
         case e => {}
       }
 
-      val value = atomic { ref.get.get }
+      val value = atomic { ref.get }
 
-      value should be(3)
+      value must be (3)
     }
 
-    it("should be settable using swap") {
+    "be settable using set" in {
+      val ref = Ref[Int]
+
+      atomic { ref.set(3) }
+
+      val value = atomic { ref.get }
+
+      value must be (3)
+    }
+
+    "be settable using swap" in {
       val ref = Ref[Int]
 
       atomic { ref.swap(3) }
 
-      val value = atomic { ref.get.get }
+      val value = atomic { ref.get }
 
-      value should be(3)
+      value must be (3)
     }
 
-    it("should be changeable using alter") {
+    "be changeable using alter" in {
       val ref = Ref(0)
 
       def increment = atomic {
@@ -63,36 +69,36 @@ class RefSpec extends Spec with ShouldMatchers {
       increment
       increment
 
-      val value = atomic { ref.get.get }
+      val value = atomic { ref.get }
 
-      value should be(3)
+      value must be (3)
     }
 
-    it("should not be changeable using alter if no value has been set") {
+    "not be changeable using alter if no value has been set" in {
       val ref = Ref[Int]
 
       def increment = atomic {
         ref alter (_ + 1)
       }
 
-      evaluating { increment } should produce [RuntimeException]
+      evaluating { increment } must produce [RuntimeException]
     }
 
-    it("should be able to be mapped") {
+    "be able to be mapped" in {
       val ref1 = Ref(1)
 
       val ref2 = atomic {
         ref1 map (_ + 1)
       }
 
-      val value1 = atomic { ref1.get.get }
-      val value2 = atomic { ref2.get.get }
+      val value1 = atomic { ref1.get }
+      val value2 = atomic { ref2.get }
 
-      value1 should be(1)
-      value2 should be(2)
+      value1 must be (1)
+      value2 must be (2)
     }
 
-    it("should be able to be used in a 'foreach' for comprehension") {
+    "be able to be used in a 'foreach' for comprehension" in {
       val ref = Ref(3)
 
       var result = 0
@@ -103,22 +109,22 @@ class RefSpec extends Spec with ShouldMatchers {
         }
       }
 
-      result should be(3)
+      result must be (3)
     }
 
-    it("should be able to be used in a 'map' for comprehension") {
+    "be able to be used in a 'map' for comprehension" in {
       val ref1 = Ref(1)
 
       val ref2 = atomic {
         for (value <- ref1) yield value + 2
       }
 
-      val value2 = atomic { ref2.get.get }
+      val value2 = atomic { ref2.get }
 
-      value2 should be(3)
+      value2 must be (3)
     }
 
-    it("should be able to be used in a 'flatMap' for comprehension") {
+    "be able to be used in a 'flatMap' for comprehension" in {
       val ref1 = Ref(1)
       val ref2 = Ref(2)
 
@@ -129,28 +135,28 @@ class RefSpec extends Spec with ShouldMatchers {
         } yield value1 + value2
       }
 
-      val value3 = atomic { ref3.get.get }
+      val value3 = atomic { ref3.get }
 
-      value3 should be(3)
+      value3 must be (3)
     }
 
-    it("should be able to be used in a 'filter' for comprehension") {
+    "be able to be used in a 'filter' for comprehension" in {
       val ref1 = Ref(1)
 
       val refLess2 = atomic {
         for (value <- ref1 if value < 2) yield value
       }
 
-      val optLess2 = atomic { refLess2.get }
+      val optLess2 = atomic { refLess2.getOption }
 
       val refGreater2 = atomic {
         for (value <- ref1 if value > 2) yield value
       }
 
-      val optGreater2 = atomic { refGreater2.get }
+      val optGreater2 = atomic { refGreater2.getOption }
 
-      optLess2 should be(Some(1))
-      optGreater2 should be(None)
+      optLess2 must be (Some(1))
+      optGreater2 must be (None)
     }
   }
 }
