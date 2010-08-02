@@ -6,23 +6,15 @@ package se.scalablesolutions.akka.stm
 
 import se.scalablesolutions.akka.util.UUID
 
-import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
-
-object RefFactory {
-  private val factory = getGlobalStmInstance.getProgrammaticRefFactoryBuilder.build
-
-  def createRef[T] = factory.atomicCreateRef[T]()
-
-  def createRef[T](value: T) = factory.atomicCreateRef(value)
-}
+import org.multiverse.transactional.refs.BasicRef
 
 /**
- * Ref.
+ * Ref
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Ref {
-  def apply[T]() = new Ref[T]
+  def apply[T]() = new Ref[T]()
 
   def apply[T](initialValue: T) = new Ref[T](Some(initialValue))
 
@@ -33,77 +25,47 @@ object Ref {
 }
 
 /**
- * Implements a transactional managed reference.
+ * Transactional managed reference.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Ref[T](initialOpt: Option[T] = None) extends Transactional {
+class Ref[T](initialOpt: Option[T] = None)
+  extends BasicRef[T](initialOpt.getOrElse(null.asInstanceOf[T]))
+  with Transactional {
+
   self =>
 
   def this() = this(None) // Java compatibility
 
-  import org.multiverse.api.ThreadLocalTransaction._
-
   val uuid = UUID.newUuid.toString
 
-  private[this] val ref = {
-    if (initialOpt.isDefined) RefFactory.createRef(initialOpt.get)
-    else RefFactory.createRef[T]
-  }
-
-  def swap(elem: T) = {
-    ensureIsInTransaction
-    ref.set(elem)
-  }
+  def swap(elem: T) = set(elem)
 
   def alter(f: T => T): T = {
-    ensureIsInTransaction
     ensureNotNull
-    ref.set(f(ref.get))
-    ref.get
+    set(f(this.get))
+    this.get
   }
 
-  def get: Option[T] = {
-    ensureIsInTransaction
-    if (ref.isNull) None
-    else Some(ref.get)
-  }
+  def getOption: Option[T] = Option(this.get)
 
-  def getOrWait: T = {
-    ensureIsInTransaction
-    ref.getOrAwait
-  }
+  def getOrWait: T = getOrAwait
 
-  def getOrElse(default: => T): T = {
-    ensureIsInTransaction
-    if (ref.isNull) default
-    else ref.get
-  }
+  def getOrElse(default: => T): T =
+    if (isNull) default else this.get
 
-  def isDefined: Boolean = {
-    ensureIsInTransaction
-    !ref.isNull
-  }
+  def isDefined: Boolean = !isNull
 
-  def isEmpty: Boolean = {
-    ensureIsInTransaction
-    ref.isNull
-  }
+  def isEmpty: Boolean = isNull
 
-  def map[B](f: T => B): Ref[B] = {
-    ensureIsInTransaction
-    if (isEmpty) Ref[B] else Ref(f(ref.get))
-  }
+  def map[B](f: T => B): Ref[B] =
+    if (isEmpty) Ref[B] else Ref(f(this.get))
 
-  def flatMap[B](f: T => Ref[B]): Ref[B] = {
-    ensureIsInTransaction
-    if (isEmpty) Ref[B] else f(ref.get)
-  }
+  def flatMap[B](f: T => Ref[B]): Ref[B] =
+    if (isEmpty) Ref[B] else f(this.get)
 
-  def filter(p: T => Boolean): Ref[T] = {
-    ensureIsInTransaction
-    if (isDefined && p(ref.get)) Ref(ref.get) else Ref[T]
-  }
+  def filter(p: T => Boolean): Ref[T] =
+    if (isDefined && p(this.get)) Ref(this.get) else Ref[T]
 
   /**
    * Necessary to keep from being implicitly converted to Iterable in for comprehensions.
@@ -117,34 +79,21 @@ class Ref[T](initialOpt: Option[T] = None) extends Transactional {
     def withFilter(q: T => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
   }
 
-  def foreach[U](f: T => U): Unit = {
-    ensureIsInTransaction
-    if (isDefined) f(ref.get)
-  }
+  def foreach[U](f: T => U): Unit =
+    if (isDefined) f(this.get)
 
-  def elements: Iterator[T] = {
-    ensureIsInTransaction
-    if (isEmpty) Iterator.empty else Iterator(ref.get)
-  }
+  def elements: Iterator[T] =
+    if (isEmpty) Iterator.empty else Iterator(this.get)
 
-  def toList: List[T] = {
-    ensureIsInTransaction
-    if (isEmpty) List() else List(ref.get)
-  }
+  def toList: List[T] =
+    if (isEmpty) List() else List(this.get)
 
-  def toRight[X](left: => X) = {
-    ensureIsInTransaction
-    if (isEmpty) Left(left) else Right(ref.get)
-  }
+  def toRight[X](left: => X) =
+    if (isEmpty) Left(left) else Right(this.get)
 
-  def toLeft[X](right: => X) = {
-    ensureIsInTransaction
-    if (isEmpty) Right(right) else Left(ref.get)
-  }
-
-  private def ensureIsInTransaction =
-   if (getThreadLocalTransaction eq null) throw new NoTransactionInScopeException
+  def toLeft[X](right: => X) =
+    if (isEmpty) Right(right) else Left(this.get)
 
   private def ensureNotNull =
-    if (ref.isNull) throw new RuntimeException("Cannot alter Ref's value when it is null")
+    if (isNull) throw new RuntimeException("Cannot alter Ref's value when it is null")
 }

@@ -90,7 +90,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
   val storage: MapStorageBackend[K, V]
 
   def commit = {
-    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get) storage.removeMapStorageFor(uuid)
+    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get) storage.removeMapStorageFor(uuid)
     removedEntries.toList.foreach(key => storage.removeMapStorageFor(uuid, key))
     storage.insertMapStorageEntriesFor(uuid, newAndUpdatedEntries.toList)
     newAndUpdatedEntries.clear
@@ -281,7 +281,7 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
   val storage: RefStorageBackend[T]
 
   def commit = if (ref.isDefined) {
-    storage.insertRefStorageFor(uuid, ref.get.get)
+    storage.insertRefStorageFor(uuid, ref.get)
     ref.swap(null.asInstanceOf[T])
   }
 
@@ -292,7 +292,7 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
     ref.swap(elem)
   }
 
-  def get: Option[T] = if (ref.isDefined) ref.get else storage.getRefStorageFor(uuid)
+  def get: Option[T] = if (ref.isDefined) ref.getOption else storage.getRefStorageFor(uuid)
 
   def isDefined: Boolean = ref.isDefined || storage.getRefStorageFor(uuid).isDefined
 
@@ -365,7 +365,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
         case DEQ => storage.dequeue(uuid)
       }
     }
-    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get.get) {
+    if (shouldClearOnCommit.isDefined && shouldClearOnCommit.get) {
       storage.remove(uuid)
     }
     enqueuedNDequeuedEntries.clear
@@ -386,7 +386,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     register
     elems.foreach(e => {
       enqueuedNDequeuedEntries.add((Some(e), ENQ))
-      localQ.get.get.enqueue(e)
+      localQ.get.enqueue(e)
     })
   }
 
@@ -395,15 +395,15 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
     // record for later playback
     enqueuedNDequeuedEntries.add((None, DEQ))
 
-    val i = pickMeForDQ.get.get
+    val i = pickMeForDQ.get
     if (i < storage.size(uuid)) {
       // still we can DQ from storage
       pickMeForDQ.swap(i + 1)
       storage.peek(uuid, i, 1)(0)
     } else {
       // check we have transient candidates in localQ for DQ
-      if (localQ.get.get.isEmpty == false) {
-        val (a, q) = localQ.get.get.dequeue
+      if (localQ.get.isEmpty == false) {
+        val (a, q) = localQ.get.dequeue
         localQ.swap(q)
         a
       } else throw new NoSuchElementException("trying to dequeue from empty queue")
@@ -418,7 +418,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   }
 
   override def size: Int = try {
-    storage.size(uuid) + localQ.get.get.length
+    storage.size(uuid) + localQ.get.length
   } catch { case e: Exception => 0 }
 
   override def isEmpty: Boolean =
