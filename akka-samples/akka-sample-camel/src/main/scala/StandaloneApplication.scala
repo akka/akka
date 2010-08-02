@@ -25,13 +25,13 @@ object StandaloneApplication {
     CamelContextManager.context.addRoutes(new StandaloneApplicationRoute)
 
     // start CamelService
-    val camelService = CamelService.newInstance.load
+    CamelService.start
 
     // access 'externally' registered typed actors
     assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test", "msg1"))
 
     // set expectations on upcoming endpoint activation
-    val activation = camelService.expectEndpointActivationCount(1)
+    val activation = CamelService.expectEndpointActivationCount(1)
 
     // 'internally' register typed actor (requires CamelService)
     TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
@@ -44,7 +44,7 @@ object StandaloneApplication {
     assert("default: msg3" == context.createProducerTemplate.requestBody("direct:default", "msg3"))
 
     // shutdown CamelService
-    camelService.unload
+    CamelService.stop
 
     // shutdown all (internally) created actors
     ActorRegistry.shutdownAll
@@ -91,10 +91,10 @@ object StandaloneJmsApplication {
     // Init CamelContextManager with custom CamelContext
     CamelContextManager.init(new DefaultCamelContext(registry))
 
-    // Create new instance of CamelService and start it
-    val service = CamelService.newInstance.load
+    // Start CamelService
+    CamelService.start
     // Expect two consumer endpoints to be activated
-    val completion = service.expectEndpointActivationCount(2)
+    val completion = CamelService.expectEndpointActivationCount(2)
 
     val jmsUri = "jms:topic:test"
     // Wire publisher and consumer using a JMS topic
@@ -116,7 +116,7 @@ object StandaloneJmsApplication {
     }
 
     // Graceful shutdown of all endpoints/routes
-    service.unload
+    CamelService.stop
 
     // Shutdown example actors
     ActorRegistry.shutdownAll

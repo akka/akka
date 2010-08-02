@@ -20,7 +20,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
 
-    service = CamelService.newInstance
+    service = CamelServiceFactory.createCamelService
     service.load
 
     server = new RemoteServer()

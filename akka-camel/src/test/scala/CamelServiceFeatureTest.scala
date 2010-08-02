@@ -17,7 +17,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     // create new CamelService instance
-    service = CamelService.newInstance
+    service = CamelServiceFactory.createCamelService
     // register test consumer before starting the CamelService
     actorOf(new TestConsumer("direct:publish-test-1")).start
     // Configure a custom camel route

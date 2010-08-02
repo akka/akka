@@ -5,6 +5,8 @@ package se.scalablesolutions.akka.camel
 
 import java.util.concurrent.CountDownLatch
 
+import org.apache.camel.CamelContext
+
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
 import se.scalablesolutions.akka.util.{Bootable, Logging}
@@ -97,24 +99,34 @@ trait CamelService extends Bootable with Logging {
 }
 
 /**
- * CamelService companion object used by standalone applications to create their own
- * CamelService instance.
+ * Single CamelService instance.
  *
  * @author Martin Krasser
  */
-object CamelService {
+object CamelService extends CamelService {
 
   /**
-   * Creates a new CamelService instance.
+   * Starts the CamelService singleton.
    */
-  def newInstance: CamelService = new DefaultCamelService
+  def start = load
+
+  /**
+   * Stops the CamelService singleton.
+   */
+  def stop = unload
 }
 
-/**
- * Default CamelService implementation to be created in Java applications with
- * <pre>
- * CamelService service = new DefaultCamelService()
- * </pre>
- */
-class DefaultCamelService extends CamelService {
+object CamelServiceFactory {
+  /**
+   * Creates a new CamelService instance
+   */
+  def createCamelService: CamelService = new CamelService { }
+
+  /**
+   * Creates a new CamelService instance
+   */
+  def createCamelService(camelContext: CamelContext): CamelService = {
+    CamelContextManager.init(camelContext)
+    createCamelService
+  }
 }
