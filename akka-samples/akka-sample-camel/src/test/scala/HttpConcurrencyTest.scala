@@ -43,23 +43,21 @@ class HttpConcurrencyTest extends JUnitSuite {
 }
 
 object HttpConcurrencyTest {
-  var service: CamelService = _
-
   @BeforeClass
   def beforeClass = {
-    service = CamelService.newInstance.load
+    CamelService.start
 
     val workers = for (i <- 1 to 8) yield actorOf[HttpServerWorker].start
     val balancer = loadBalancerActor(new CyclicIterator(workers.toList))
 
-    val completion = service.expectEndpointActivationCount(1)
+    val completion = CamelService.expectEndpointActivationCount(1)
     val server = actorOf(new HttpServerActor(balancer)).start
     completion.await
   }
 
   @AfterClass
   def afterClass = {
-    service.unload
+    CamelService.stop
     ActorRegistry.shutdownAll
   }
 

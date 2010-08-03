@@ -1,22 +1,25 @@
 package se.scalablesolutions.akka.spring;
 
-import se.scalablesolutions.akka.actor.annotation.shutdown;
+import se.scalablesolutions.akka.actor.*;
 
-public class SampleBean {
+public class SampleBean extends TypedActor implements SampleBeanIntf {
 
-    public boolean down;
+    private boolean down;
 
     public SampleBean() {
         down = false;
+    }
+
+    public boolean down() { 
+      return down;
     }
 
     public String foo(String s) {
         return "hello " + s;
     }
 
-    @shutdown
+    @Override
     public void shutdown() {
         down = true;
     }
-
  }

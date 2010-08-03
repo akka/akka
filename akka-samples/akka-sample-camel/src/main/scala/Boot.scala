@@ -7,7 +7,7 @@ import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActiveObject, Supervisor}
+import se.scalablesolutions.akka.actor.{TypedActor, Supervisor}
 import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.config.ScalaConfig._
 
@@ -89,7 +89,7 @@ class Boot {
   // Active object example
   // -----------------------------------------------------------------------
 
-  ActiveObject.newInstance(classOf[ConsumerPojo1])
+  TypedActor.newInstance(classOf[TypedConsumer1], classOf[TypedConsumer1Impl])
 }
 
 /**

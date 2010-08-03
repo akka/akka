@@ -53,20 +53,34 @@ message MessageProtocol {
 }
 
 /**
+ * Defines the actor info.
+ */
+message ActorInfoProtocol {
+  required string uuid = 1;
+  required string target = 2;
+  required uint64 timeout = 3;
+  required ActorType actorType = 4;
+  optional TypedActorInfoProtocol typedActorInfo = 5;
+}
+
+/**
+ * Defines the typed actor extra info.
+ */
+message TypedActorInfoProtocol {
+  required string interface = 1;
+  required string method = 2;
+}
+
+/**
  * Defines a remote message request.
  */
 message RemoteRequestProtocol {
   required uint64 id = 1;
   required MessageProtocol message = 2;
-  optional string method = 3;
-  required string target = 4;
-  required string uuid = 5;
-  required uint64 timeout = 6;
-  optional string supervisorUuid = 7;
-  required bool isActor = 8;
-  required bool isOneWay = 9;
-  required bool isEscaped = 10;
-  optional RemoteActorRefProtocol sender = 11;
+  required ActorInfoProtocol actorInfo = 3;
+  required bool isOneWay = 4;
+  optional string supervisorUuid = 5;
+  optional RemoteActorRefProtocol sender = 6;
 }
 
 /**
@@ -79,6 +93,15 @@ message RemoteReplyProtocol {
   optional string supervisorUuid = 4;
   required bool isActor = 5;
   required bool isSuccessful = 6;
+}
+
+/**
+ * Defines the actor type.
+ */
+enum ActorType {
+  SCALA_ACTOR = 1;
+  JAVA_ACTOR = 2;
+  TYPED_ACTOR = 3;
 }
 
 /**
@@ -115,8 +138,6 @@ enum DispatcherType {
  */
 message LifeCycleProtocol {
   required LifeCycleType lifeCycle = 1;
-  optional string preRestart = 2;
-  optional string postRestart = 3;
 }
 
 /**

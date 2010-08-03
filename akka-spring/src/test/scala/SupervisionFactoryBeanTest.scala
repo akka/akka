@@ -8,7 +8,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import se.scalablesolutions.akka.config.JavaConfig._
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator
+import se.scalablesolutions.akka.config.TypedActorConfigurator
 
 private[akka] class Foo
 
@@ -16,10 +16,10 @@ private[akka] class Foo
 class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
 
   val restartStrategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Throwable]))
-  val activeObjects = List(createActiveObjectProperties("se.scalablesolutions.akka.spring.Foo", 1000L))
+  val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", 1000L))
 
-  def createActiveObjectProperties(target: String, timeout: Long) : ActiveObjectProperties = {
-    val properties = new ActiveObjectProperties()
+  def createTypedActorProperties(target: String, timeout: Long) : TypedActorProperties = {
+    val properties = new TypedActorProperties()
     properties.target = target
     properties.timeout = timeout
     properties
@@ -30,12 +30,12 @@ class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
     it("should have java getters and setters for all properties") {
       bean.setRestartStrategy(restartStrategy)
       assert(bean.getRestartStrategy == restartStrategy)
-      bean.setSupervised(activeObjects)
-      assert(bean.getSupervised == activeObjects)
+      bean.setSupervised(typedActors)
+      assert(bean.getSupervised == typedActors)
     }
 
-    it("should return the object type ActiveObjectConfigurator") {
-      assert(bean.getObjectType == classOf[ActiveObjectConfigurator])
+    it("should return the object type TypedActorConfigurator") {
+      assert(bean.getObjectType == classOf[TypedActorConfigurator])
     }
   }
 }

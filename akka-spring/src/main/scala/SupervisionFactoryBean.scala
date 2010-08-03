@@ -4,7 +4,7 @@
 package se.scalablesolutions.akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator
+import se.scalablesolutions.akka.config.TypedActorConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
@@ -14,20 +14,20 @@ import reflect.BeanProperty
  * Factory bean for supervisor configuration.
  * @author michaelkober
  */
-class SupervisionFactoryBean extends AbstractFactoryBean[ActiveObjectConfigurator] {
+class SupervisionFactoryBean extends AbstractFactoryBean[TypedActorConfigurator] {
   @BeanProperty var restartStrategy: RestartStrategy = _
-  @BeanProperty var supervised: List[ActiveObjectProperties] = _
+  @BeanProperty var supervised: List[TypedActorProperties] = _
 
   /*
    * @see org.springframework.beans.factory.FactoryBean#getObjectType()
    */
-  def getObjectType: Class[ActiveObjectConfigurator] = classOf[ActiveObjectConfigurator]
+  def getObjectType: Class[TypedActorConfigurator] = classOf[TypedActorConfigurator]
 
   /*
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
    */
-  def createInstance: ActiveObjectConfigurator =  {
-    val configurator = new ActiveObjectConfigurator()
+  def createInstance: TypedActorConfigurator =  {
+    val configurator = new TypedActorConfigurator()
 
     configurator.configure(
       restartStrategy,
@@ -36,9 +36,9 @@ class SupervisionFactoryBean extends AbstractFactoryBean[ActiveObjectConfigurato
   }
 
   /**
-   * Create configuration for ActiveObject
+   * Create configuration for TypedActor
    */
-  private[akka] def createComponent(props: ActiveObjectProperties): Component = {
+  private[akka] def createComponent(props: TypedActorProperties): Component = {
     import StringReflect._
     val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) new LifeCycle(new Temporary()) else new LifeCycle(new Permanent())
     val isRemote = (props.host != null) && (!props.host.isEmpty)

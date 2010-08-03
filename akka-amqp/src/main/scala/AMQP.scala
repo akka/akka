@@ -136,8 +136,8 @@ object AMQP {
     def toBinary(t: T): Array[Byte]
   }
 
-  
+
   case class RpcClientSerializer[O,I](toBinary: ToBinary[O], fromBinary: FromBinary[I])
-  
+
   case class RpcServerSerializer[I,O](fromBinary: FromBinary[I], toBinary: ToBinary[O])
 }

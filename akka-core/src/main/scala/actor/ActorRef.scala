@@ -64,7 +64,7 @@ import com.google.protobuf.ByteString
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends TransactionManagement {
+trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef] {
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile protected[akka] var _uuid = UUID.newUuid.toString
@@ -203,6 +203,10 @@ trait ActorRef extends TransactionManagement {
 
   protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
   protected[akka] def currentMessage = guard.withGuard { _currentMessage }
+  
+  /** comparison only takes uuid into account
+   */
+  def compareTo(other: ActorRef) = this.uuid.compareTo(other.uuid)
 
   /**
    * Returns the uuid for the actor.
@@ -291,15 +295,15 @@ trait ActorRef extends TransactionManagement {
   def !!(message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Option[Any] = {
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout[Any](message, timeout, sender, None)
-      val isActiveObject = message.isInstanceOf[Invocation]
-      if (isActiveObject && message.asInstanceOf[Invocation].isVoid) {
+      val isTypedActor = message.isInstanceOf[Invocation]
+      if (isTypedActor && message.asInstanceOf[Invocation].isVoid) {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
       try {
         future.await
       } catch {
         case e: FutureTimeoutException =>
-          if (isActiveObject) throw e
+          if (isTypedActor) throw e
           else None
       }
       if (future.exception.isDefined) throw future.exception.get._2
@@ -347,7 +351,7 @@ trait ActorRef extends TransactionManagement {
     "\n\tNo sender in scope, can't reply. " +
     "\n\tYou have probably: " +
     "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
-    "\n\t\t2. Invoked a method on an Active Object from an instance NOT an Active Object." +
+    "\n\t\t2. Invoked a method on an TypedActor from an instance NOT an TypedActor." +
     "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if succes and Boolean(false) if no sender in scope")
 
   /**
@@ -416,13 +420,13 @@ trait ActorRef extends TransactionManagement {
    * Returns the home address and port for this actor.
    */
   def homeAddress: InetSocketAddress = _homeAddress
-  
+
   /**
    * Set the home address and port for this actor.
    */
   def homeAddress_=(hostnameAndPort: Tuple2[String, Int]): Unit =
     homeAddress_=(new InetSocketAddress(hostnameAndPort._1, hostnameAndPort._2))
-    
+
   /**
    * Set the home address and port for this actor.
    */
@@ -457,57 +461,41 @@ trait ActorRef extends TransactionManagement {
    * If the 'trapExit' member field has been set to at contain at least one exception class then it will
    * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
    * defined by the 'faultHandler'.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def link(actorRef: ActorRef): Unit
 
   /**
    * Unlink the actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def unlink(actorRef: ActorRef): Unit
 
   /**
    * Atomically start and link an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def startLink(actorRef: ActorRef): Unit
 
   /**
    * Atomically start, link and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit
 
   /**
    * Atomically create (from actor class) and start an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawn[T <: Actor : Manifest]: ActorRef
 
   /**
    * Atomically create (from actor class), start and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef
 
   /**
    * Atomically create (from actor class), start and link an actor.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawnLink[T <: Actor: Manifest]: ActorRef
 
   /**
    * Atomically create (from actor class), start, link and make an actor remote.
-   * <p/>
-   * To be invoked from within the actor itself.
    */
   def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef
 
@@ -587,7 +575,7 @@ trait ActorRef extends TransactionManagement {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-sealed class LocalActorRef private[akka](
+class LocalActorRef private[akka](
   private[this] var actorFactory: Either[Option[Class[_ <: Actor]], Option[() => Actor]] = Left(None))
   extends ActorRef {
 
@@ -962,14 +950,13 @@ sealed class LocalActorRef private[akka](
           throw e
       } finally {
         currentMessage = None //TODO: Don't reset this, we might want to resend the message
-      }      
+      }
     }
   }
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = {
     if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
       faultHandler match {
-        // FIXME: implement support for maxNrOfRetries and withinTimeRange in RestartStrategy
         case Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
           restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
 
@@ -981,7 +968,6 @@ sealed class LocalActorRef private[akka](
           "\n\tto non-empty list of exception classes - can't proceed " + toString)
       }
     } else {
-      if (lifeCycle.isEmpty) lifeCycle = Some(LifeCycle(Permanent)) // when passing on make sure we have a lifecycle
       notifySupervisorWithMessage(Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
     }
   }
@@ -989,49 +975,40 @@ sealed class LocalActorRef private[akka](
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = {
     if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis // first time around
     maxNrOfRetriesCount += 1
-    
+
     val tooManyRestarts = maxNrOfRetriesCount > maxNrOfRetries
     val restartingHasExpired = (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange
-    
     if (tooManyRestarts || restartingHasExpired) {
       val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
       Actor.log.warning(
-        "Maximum number of restarts [%s] within time range [%s] reached." + 
-        "\n\tWill *not* restart actor [%s] anymore." + 
-        "\n\tLast exception causing restart was" + 
-        "\n\t[%s].", 
+        "Maximum number of restarts [%s] within time range [%s] reached." +
+        "\n\tWill *not* restart actor [%s] anymore." +
+        "\n\tLast exception causing restart was" +
+        "\n\t[%s].",
         maxNrOfRetries, withinTimeRange, this, reason)
-      _supervisor.foreach { sup => 
+      _supervisor.foreach { sup =>
         // can supervisor handle the notification?
-        if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification) 
+        if (sup.isDefinedAt(notification)) notifySupervisorWithMessage(notification)
         else Actor.log.warning(
           "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
           "\n\tCan't send the message to the supervisor [%s].", sup)
       }
-    } else {    
+      stop
+    } else {
       _isBeingRestarted = true
       val failedActor = actorInstance.get
       guard.withGuard {
-        lifeCycle.get match {
-          case LifeCycle(scope, _, _) => {
-            scope match {
-              case Permanent =>
-                Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
-                restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
-                Actor.log.debug("Restarting linked actors for actor [%s].", id)
-                Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
-                failedActor.preRestart(reason)
-                nullOutActorRefReferencesFor(failedActor)
-                val freshActor = newActor
-                freshActor.init
-                freshActor.initTransactionalState
-                actorInstance.set(freshActor)
-                Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
-                freshActor.postRestart(reason)
-                _isBeingRestarted = false
-              case Temporary => shutDownTemporaryActor(this)
-            }
-          }
+        lifeCycle match {
+          case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this)
+          case _ =>
+            // either permanent or none where default is permanent
+            Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
+            Actor.log.debug("Restarting linked actors for actor [%s].", id)
+            restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
+            Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
+            if (isTypedActorDispatcher(failedActor)) restartTypedActorDispatcher(failedActor, reason)
+            else                                     restartActor(failedActor, reason)
+            _isBeingRestarted = false
         }
       }
     }
@@ -1039,14 +1016,10 @@ sealed class LocalActorRef private[akka](
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int) = {
     linkedActorsAsList.foreach { actorRef =>
-      if (actorRef.lifeCycle.isEmpty) actorRef.lifeCycle = Some(LifeCycle(Permanent))
-      actorRef.lifeCycle.get match {
-        case LifeCycle(scope, _, _) => {
-          scope match {
-            case Permanent => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
-            case Temporary => shutDownTemporaryActor(actorRef)
-          }
-        }
+      actorRef.lifeCycle match {
+        // either permanent or none where default is permanent
+        case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(actorRef)
+        case _ => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }
   }
@@ -1070,6 +1043,24 @@ sealed class LocalActorRef private[akka](
     linkedActors.values.toArray.toList.asInstanceOf[List[ActorRef]]
 
   // ========= PRIVATE FUNCTIONS =========
+
+  private def isTypedActorDispatcher(a: Actor): Boolean = a.isInstanceOf[Dispatcher]
+
+  private def restartTypedActorDispatcher(failedActor: Actor, reason: Throwable) = {
+    failedActor.preRestart(reason)
+    failedActor.postRestart(reason)
+  }
+
+  private def restartActor(failedActor: Actor, reason: Throwable) = {
+    failedActor.preRestart(reason)
+    nullOutActorRefReferencesFor(failedActor)
+    val freshActor = newActor
+    freshActor.init
+    freshActor.initTransactionalState
+    actorInstance.set(freshActor)
+    Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
+    freshActor.postRestart(reason)
+  }
 
   private def spawnButDoNotStart[T <: Actor: Manifest]: ActorRef = guard.withGuard {
     val actorRef = Actor.actorOf(manifest[T].erasure.asInstanceOf[Class[T]].newInstance)
@@ -1110,8 +1101,9 @@ sealed class LocalActorRef private[akka](
       clearTransactionSet
       createNewTransactionSet
     } else oldTxSet
-    Actor.log.ifTrace("Joining transaction set [" + currentTxSet + 
-                      "];\n\tactor " + toString + "\n\twith message [" + message + "]")
+    Actor.log.ifTrace("Joining transaction set [" + currentTxSet +
+                      "];\n\tactor " + toString +
+                      "\n\twith message [" + message + "]")
     val mtx = ThreadLocalTransaction.getThreadLocalTransaction
     if ((mtx eq null) || mtx.getStatus.isDead) currentTxSet.incParties
     else currentTxSet.incParties(mtx, 1)
@@ -1126,7 +1118,7 @@ sealed class LocalActorRef private[akka](
       else {
         topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
         if (isTransactor) {
-          Actor.log.ifTrace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString + 
+          Actor.log.ifTrace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString +
                             "\n\twith message " + messageHandle)
           Some(createNewTransactionSet)
         } else None
@@ -1148,10 +1140,10 @@ sealed class LocalActorRef private[akka](
     } catch {
       case e: DeadTransactionException =>
         handleExceptionInDispatch(
-          new TransactionSetAbortedException("Transaction set has been aborted by another participant"), 
+          new TransactionSetAbortedException("Transaction set has been aborted by another participant"),
           message, topLevelTransaction)
-      case e => 
-        handleExceptionInDispatch(e, message, topLevelTransaction)
+      case e: InterruptedException => {} // received message while actor is shutting down, ignore
+      case e => handleExceptionInDispatch(e, message, topLevelTransaction)
     } finally {
       clearTransaction
       if (topLevelTransaction) clearTransactionSet
@@ -1195,14 +1187,14 @@ sealed class LocalActorRef private[akka](
 
   private def notifySupervisorWithMessage(notification: LifeCycleMessage) = {
     // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
-    _supervisor.foreach { sup => 
+    _supervisor.foreach { sup =>
       if (sup.isShutdown) { // if supervisor is shut down, game over for all linked actors
 //        shutdownLinkedActors
 //        stop
       } else sup ! notification // else notify supervisor
     }
   }
-  
+
   private def nullOutActorRefReferencesFor(actor: Actor) = {
     actorSelfFields._1.set(actor, null)
     actorSelfFields._2.set(actor, null)

@@ -41,36 +41,36 @@ class TransactionalMap[K, V](initialOpt: Option[HashMap[K, V]] = None) extends T
   }
 
   override def remove(key: K) = {
-    val map = ref.get.get
+    val map = ref.get
     val oldValue = map.get(key)
-    ref.swap(ref.get.get - key)
+    ref.swap(ref.get - key)
     oldValue
   }
 
-  def get(key: K): Option[V] = ref.get.get.get(key)
+  def get(key: K): Option[V] = ref.get.get(key)
 
   override def put(key: K, value: V): Option[V] = {
-    val map = ref.get.get
+    val map = ref.get
     val oldValue = map.get(key)
     ref.swap(map.updated(key, value))
     oldValue
   }
 
   override def update(key: K, value: V) = {
-    val map = ref.get.get
+    val map = ref.get
     val oldValue = map.get(key)
     ref.swap(map.updated(key, value))
   }
 
-  def iterator = ref.get.get.iterator
+  def iterator = ref.get.iterator
 
-  override def elements: Iterator[(K, V)] = ref.get.get.iterator
+  override def elements: Iterator[(K, V)] = ref.get.iterator
 
-  override def contains(key: K): Boolean = ref.get.get.contains(key)
+  override def contains(key: K): Boolean = ref.get.contains(key)
 
   override def clear = ref.swap(HashMap[K, V]())
 
-  override def size: Int = ref.get.get.size
+  override def size: Int = ref.get.size
 
   override def hashCode: Int = System.identityHashCode(this);
 

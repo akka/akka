@@ -5,7 +5,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, ActiveObject}
+import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, TypedActor}
 import se.scalablesolutions.akka.camel._
 import se.scalablesolutions.akka.util.Logging
 
@@ -16,34 +16,35 @@ object StandaloneApplication {
   def main(args: Array[String]) {
     import CamelContextManager.context
 
-    // 'externally' register active objects
+    // 'externally' register typed actors
     val registry = new SimpleRegistry
-    registry.put("pojo1", ActiveObject.newInstance(classOf[BeanIntf], new BeanImpl))
-    registry.put("pojo2", ActiveObject.newInstance(classOf[BeanImpl]))
+    registry.put("sample", TypedActor.newInstance(classOf[BeanIntf], classOf[BeanImpl]))
 
     // customize CamelContext
     CamelContextManager.init(new DefaultCamelContext(registry))
     CamelContextManager.context.addRoutes(new StandaloneApplicationRoute)
 
     // start CamelService
-    val camelService = CamelService.newInstance.load
+    CamelService.start
 
-    // access 'externally' registered active objects
-    assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test1", "msg1"))
-    assert("hello msg2" == context.createProducerTemplate.requestBody("direct:test2", "msg2"))
+    // access 'externally' registered typed actors
+    assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test", "msg1"))
 
-    // 'internally' register active object (requires CamelService)
-    ActiveObject.newInstance(classOf[ConsumerPojo2])
+    // set expectations on upcoming endpoint activation
+    val activation = CamelService.expectEndpointActivationCount(1)
+
+    // 'internally' register typed actor (requires CamelService)
+    TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
 
     // internal registration is done in background. Wait a bit ...
-    Thread.sleep(1000)
+    activation.await
 
-    // access 'internally' (automatically) registered active-objects
-    // (see @consume annotation value at ConsumerPojo2.foo method)
+    // access 'internally' (automatically) registered typed-actors
+    // (see @consume annotation value at TypedConsumer2.foo method)
     assert("default: msg3" == context.createProducerTemplate.requestBody("direct:default", "msg3"))
 
     // shutdown CamelService
-    camelService.unload
+    CamelService.stop
 
     // shutdown all (internally) created actors
     ActorRegistry.shutdownAll
@@ -52,9 +53,8 @@ object StandaloneApplication {
 
 class StandaloneApplicationRoute extends RouteBuilder {
   def configure = {
-    // routes to active objects (in SimpleRegistry)
-    from("direct:test1").to("active-object:pojo1?method=foo")
-    from("direct:test2").to("active-object:pojo2?method=foo")
+    // route to typed actors (in SimpleRegistry)
+    from("direct:test").to("typed-actor:sample?method=foo")
   }
 }
 
@@ -65,7 +65,7 @@ object StandaloneSpringApplication {
     // load Spring application context
     val appctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
 
-    // access 'externally' registered active objects with active-object component
+    // access 'externally' registered typed actors with typed-actor component
     assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
 
     // destroy Spring application context
@@ -78,8 +78,8 @@ object StandaloneSpringApplication {
 
 class StandaloneSpringApplicationRoute extends RouteBuilder {
   def configure = {
-    // routes to active object (in ApplicationContextRegistry)
-    from("direct:test3").to("active-object:pojo3?method=foo")
+    // routes to typed actor (in ApplicationContextRegistry)
+    from("direct:test3").to("typed-actor:pojo3?method=foo")
   }
 }
 
@@ -91,10 +91,10 @@ object StandaloneJmsApplication {
     // Init CamelContextManager with custom CamelContext
     CamelContextManager.init(new DefaultCamelContext(registry))
 
-    // Create new instance of CamelService and start it
-    val service = CamelService.newInstance.load
+    // Start CamelService
+    CamelService.start
     // Expect two consumer endpoints to be activated
-    val completion = service.expectEndpointActivationCount(2)
+    val completion = CamelService.expectEndpointActivationCount(2)
 
     val jmsUri = "jms:topic:test"
     // Wire publisher and consumer using a JMS topic
@@ -116,7 +116,7 @@ object StandaloneJmsApplication {
     }
 
     // Graceful shutdown of all endpoints/routes
-    service.unload
+    CamelService.stop
 
     // Shutdown example actors
     ActorRegistry.shutdownAll

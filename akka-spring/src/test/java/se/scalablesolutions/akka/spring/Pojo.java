@@ -2,38 +2,50 @@ package se.scalablesolutions.akka.spring;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+
 import javax.annotation.PreDestroy;
 import javax.annotation.PostConstruct;
 
-public class Pojo implements PojoInf,ApplicationContextAware {
+import se.scalablesolutions.akka.actor.*;
 
-    private String string;
+public class Pojo extends TypedActor implements PojoInf, ApplicationContextAware {
 
-	private boolean gotApplicationContext = false;
-		private boolean postConstructInvoked = false;
-	
-	public boolean gotApplicationContext() {
-		return gotApplicationContext;
-	}
-	public void setApplicationContext(ApplicationContext context) {
-		gotApplicationContext = true;
-	}
+    private String stringFromVal;
+    private String stringFromRef;
 
-   public void setString(String s) {
-		string = s;
- }
+    private boolean gotApplicationContext = false;
+    private boolean initInvoked = false;
+    
+    public boolean gotApplicationContext() {
+      return gotApplicationContext;
+    }
+    
+    public void setApplicationContext(ApplicationContext context) {
+      gotApplicationContext = true;
+    }
 
-    public String getString() {
-		return string;
-   }
-  
-	@PostConstruct
-	public void create() {
-		postConstructInvoked = true;
-	}
+    public String getStringFromVal() {
+      return stringFromVal;
+    }
 
- public boolean isPostConstructInvoked() {
-	return postConstructInvoked;
+    public void setStringFromVal(String s) {
+      stringFromVal = s;
+    }
+
+    public String getStringFromRef() {
+      return stringFromRef;
+    }
+
+    public void setStringFromRef(String s) {
+      stringFromRef = s;
+    }
+
+    @Override
+    public void init() {
+      initInvoked = true;
+    }
+
+    public boolean isInitInvoked() {
+      return initInvoked;
+    }
 }
-
- }

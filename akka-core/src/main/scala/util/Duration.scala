@@ -20,8 +20,21 @@ object Duration {
 
 /**
  * Utility for working with java.util.concurrent.TimeUnit durations.
+ *
  * <p/>
- * Example:
+ * Examples of usage from Java:
+ * <pre>
+ * import se.scalablesolutions.akka.util.Duration;
+ * import java.util.concurrent.TimeUnit;
+ *
+ * Duration duration = new Duration(100, TimeUnit.MILLISECONDS);
+ * Duration duration = new Duration(5, "seconds");
+ *
+ * duration.toNanos();
+ * </pre>
+ *
+ * <p/>
+ * Examples of usage from Scala:
  * <pre>
  * import se.scalablesolutions.akka.util.Duration
  * import java.util.concurrent.TimeUnit
@@ -31,6 +44,7 @@ object Duration {
  *
  * duration.toNanos
  * </pre>
+ *
  * <p/>
  * Implicits are also provided for Int and Long. Example usage:
  * <pre>
@@ -40,6 +54,7 @@ object Duration {
  * </pre>
  */
 class Duration(val length: Long, val unit: TimeUnit) {
+  def this(length: Long, unit: String) = this(length, Duration.timeUnit(unit))
   def toNanos = unit.toNanos(length)
   def toMicros = unit.toMicros(length)
   def toMillis = unit.toMillis(length)

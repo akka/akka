@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.api;
 
 import se.scalablesolutions.akka.config.*;
 import se.scalablesolutions.akka.config.Config;
-import se.scalablesolutions.akka.config.ActiveObjectConfigurator;
+import se.scalablesolutions.akka.config.TypedActorConfigurator;
 import static se.scalablesolutions.akka.config.JavaConfig.*;
 import se.scalablesolutions.akka.actor.*;
 import junit.framework.TestCase;
@@ -14,7 +14,7 @@ import junit.framework.TestCase;
 public class InMemNestedStateTest extends TestCase {
   static String messageLog = "";
 
-  final private ActiveObjectConfigurator conf = new ActiveObjectConfigurator();
+  final private TypedActorConfigurator conf = new TypedActorConfigurator();
 
   public InMemNestedStateTest() {
     conf.configure(

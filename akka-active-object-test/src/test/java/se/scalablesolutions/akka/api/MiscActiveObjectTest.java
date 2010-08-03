@@ -1,7 +1,7 @@
 package se.scalablesolutions.akka.api;
 
-import static se.scalablesolutions.akka.actor.ActiveObject.link;
-import static se.scalablesolutions.akka.actor.ActiveObject.newInstance;
+import static se.scalablesolutions.akka.actor.TypedActor.link;
+import static se.scalablesolutions.akka.actor.TypedActor.newInstance;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,7 +15,7 @@ import junit.framework.TestCase;
  * @author johanrask
  *
  */
-public class MiscActiveObjectTest extends TestCase {
+public class MiscTypedActorTest extends TestCase {
 
         
         /**

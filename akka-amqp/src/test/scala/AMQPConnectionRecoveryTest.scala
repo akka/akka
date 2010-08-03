@@ -49,4 +49,11 @@ class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers with Loggi
       disconnectedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
     }
   }
+
+  @Test
+  def dummy {
+    // amqp tests need local rabbitmq server running, so a disabled by default.
+    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
+    assert(true)
+  }
 }
