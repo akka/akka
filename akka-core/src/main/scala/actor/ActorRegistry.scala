@@ -32,10 +32,12 @@ object ActorRegistry extends ListenerManagement {
   private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
   private val actorsById =            new ConcurrentHashMap[String, JSet[ActorRef]]
 
+  private val Naught = Array[ActorRef]() //Nil for Arrays
+
   /**
    * Returns all actors in the system.
    */
-  def actors: List[ActorRef] = filter(_ => true)
+  def actors: Array[ActorRef] = filter(_ => true)
 
   /**
    * Invokes a function for all actors.
@@ -63,13 +65,13 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument and supproting passed message.
    */
-  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): List[ActorRef] =
+  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): Array[ActorRef] =
     filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
 
   /**
    * Finds all actors that satisfy a predicate.
    */
-  def filter(p: ActorRef => Boolean): List[ActorRef] = {
+  def filter(p: ActorRef => Boolean): Array[ActorRef] = {
    val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
@@ -78,35 +80,34 @@ object ActorRegistry extends ListenerManagement {
         all += actorId
       }
     }
-    all.toList
+    all.toArray
   }
 
   /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument.
    */
-  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] =
+  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): Array[ActorRef] =
     actorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
 
   /**
    * Finds any actor that matches T.
-   * FIXME: Improve performance by breaking out after the first match
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
-    actorsFor[T](manifest).headOption
+    find(a => if(manifest.erasure.isAssignableFrom(a.actor.getClass)) Some(a) else None)
 
   /**
    * Finds all actors of type or sub-type specified by the class passed in as the Class argument.
    */
-  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] =
+  def actorsFor[T <: Actor](clazz: Class[T]): Array[ActorRef] =
     filter(a => clazz.isAssignableFrom(a.actor.getClass))
 
   /**
    * Finds all actors that has a specific id.
    */
-  def actorsFor(id: String): List[ActorRef] = {
+  def actorsFor(id: String): Array[ActorRef] = {
     if (actorsById.containsKey(id)) {
-      actorsById.get(id).toArray.toList.asInstanceOf[List[ActorRef]]
-    } else Nil
+      actorsById.get(id).toArray(Naught)
+    } else Naught
   }
 
    /**

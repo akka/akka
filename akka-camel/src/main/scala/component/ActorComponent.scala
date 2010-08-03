@@ -148,9 +148,8 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     else targetByUuid(ep.uuid.get)
 
   private def targetById(id: String) = ActorRegistry.actorsFor(id) match {
-    case Nil          => None
-    case actor :: Nil => Some(actor)
-    case actors       => Some(actors.head)
+    case actors if actors.length == 0 => None
+    case actors                       => Some(actors(0))
   }
 
   private def targetByUuid(uuid: String) = ActorRegistry.actorFor(uuid)

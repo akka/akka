@@ -36,7 +36,7 @@ public class SampleUntypedActor extends UntypedActor {
 
           } else if (msg.equals("ForwardMessage")) {
                 // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
-                ActorRef actorRef = ActorRegistry.actorsFor("some-actor-id").head();
+                ActorRef actorRef = ActorRegistry.actorsFor("some-actor-id")[0];
                 // Wrap the ActorRef in an UntypedActorRef and forward the message to this actor
             UntypedActorRef.wrap(actorRef).forward(msg, self);
               
