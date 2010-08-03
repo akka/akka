@@ -76,6 +76,17 @@ class ActorRegistrySpec extends JUnitSuite {
     actor.stop
   }
 
+  @Test def shouldFindThingsFromActorRegistry {
+    ActorRegistry.shutdownAll
+    val actor = actorOf[TestActor]
+    actor.start
+    val found = ActorRegistry.find(a => if(a.actor.isInstanceOf[TestActor]) Some(a) else None)
+    assert(found.isDefined)
+    assert(found.get.actor.isInstanceOf[TestActor])
+    assert(found.get.id === "MyID")
+    actor.stop
+  }
+
   @Test def shouldGetActorsByIdFromActorRegistry {
     ActorRegistry.shutdownAll
     val actor1 = actorOf[TestActor]
