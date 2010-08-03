@@ -1,35 +1,24 @@
 package sample.lift
 
-import se.scalablesolutions.akka.actor.{Transactor, Actor}
+import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.TransactionalMap
 import se.scalablesolutions.akka.persistence.cassandra.CassandraStorage
-import Actor._
-
+import scala.xml.Node
 import java.lang.Integer
 import javax.ws.rs.{GET, Path, Produces}
 import java.nio.ByteBuffer
+import net.liftweb.http._
+import net.liftweb.http.rest._
 
-/**
- * Try service out by invoking (multiple times):
- * <pre>
- * curl http://localhost:9998/liftcount
- * </pre>
- * Or browse to the URL from a web browser.
- */
-@Path("/liftcount")
-class SimpleService extends Transactor {
-  case object Tick
+class SimpleServiceActor extends Transactor {
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
   private lazy val storage = TransactionalMap[String, Integer]()
 
-  @GET
-  @Produces(Array("text/html"))
-  def count = (self !! Tick).getOrElse(<h1>Error in counter</h1>)
-
   def receive = {
-    case Tick => if (hasStartedTicking) {
+    case "Tick" => if (hasStartedTicking) {
       val counter = storage.get(KEY).get.asInstanceOf[Integer].intValue
       storage.put(KEY, new Integer(counter + 1))
       self.reply(<h1>Tick: {counter + 1}</h1>)
@@ -41,27 +30,14 @@ class SimpleService extends Transactor {
   }
 }
 
-/**
- * Try service out by invoking (multiple times):
- * <pre>
- * curl http://localhost:9998/persistentliftcount
- * </pre>
- * Or browse to the URL from a web browser.
- */
-@Path("/persistentliftcount")
-class PersistentSimpleService extends Transactor {
+class PersistentServiceActor extends Transactor {
 
-  case object Tick
   private val KEY = "COUNTER"
   private var hasStartedTicking = false
   private lazy val storage = CassandraStorage.newMap
 
-  @GET
-  @Produces(Array("text/html"))
-  def count = (self !! Tick).getOrElse(<h1>Error in counter</h1>)
-
   def receive = {
-    case Tick => if (hasStartedTicking) {
+    case "Tick" => if (hasStartedTicking) {
       val bytes = storage.get(KEY.getBytes).get
       val counter = ByteBuffer.wrap(bytes).getInt
       storage.put(KEY.getBytes, ByteBuffer.allocate(4).putInt(counter + 1).array)
@@ -73,3 +49,46 @@ class PersistentSimpleService extends Transactor {
     }
   }
 }
+
+
+/**
+ * Try service out by invoking (multiple times):
+ * <pre>
+ * curl http://localhost:8080/liftcount
+ * </pre>
+ * Or browse to the URL from a web browser.
+ */
+
+object SimpleRestService extends RestHelper {
+ serve {
+   case Get("liftcount" :: _, req) =>
+     //Fetch the first actor of type SimpleServiceActor
+     //Send it the "Tick" message and expect a Node back
+     val result = for( a <- ActorRegistry.actorsFor(classOf[SimpleServiceActor]).headOption;
+                       r <- (a !! "Tick").as[Node] ) yield r
+
+     //Return either the resulting NodeSeq or a default one
+     (result getOrElse <h1>Error in counter</h1>).asInstanceOf[Node]
+  }
+}
+
+
+/**
+ * Try service out by invoking (multiple times):
+ * <pre>
+ * curl http://localhost:8080/persistentliftcount
+ * </pre>
+ * Or browse to the URL from a web browser.
+ */
+ object PersistentRestService extends RestHelper {
+  serve {
+    case Get("persistentliftcount" :: _, req) =>
+      //Fetch the first actor of type SimpleServiceActor
+      //Send it the "Tick" message and expect a Node back
+      val result = for( a <- ActorRegistry.actorsFor(classOf[PersistentServiceActor]).headOption;
+                        r <- (a !! "Tick").as[Node] ) yield r
+
+      //Return either the resulting NodeSeq or a default one
+      (result getOrElse <h1>Error in counter</h1>).asInstanceOf[Node]
+   }
+ }

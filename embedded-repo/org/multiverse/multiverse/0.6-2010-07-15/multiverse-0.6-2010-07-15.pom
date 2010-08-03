@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>Multiverse Software Transactional Memory</name>
+    <description>
+        Multiverse is a Software Transactional Memory implementation that can be used in Java
+        but also in other languages running on the JVM like Scala or Groovy. Essentially it is a framework that allows
+        different STM implementation (with different featuresets or performance characteristics) to be used
+        under the hood. The main STM implementation is multiverse-alpha..
+    </description>
+    <groupId>org.multiverse</groupId>
+    <artifactId>multiverse</artifactId>
+    <version>0.6-2010-07-15</version>
+    <inceptionYear>2008</inceptionYear>
+    <packaging>pom</packaging>
+
+    <properties>
+        <sourceEncoding>UTF-8</sourceEncoding>
+        <targetJdk>1.6</targetJdk>
+        <asm.version>3.2</asm.version>
+        <args4j.version>2.0.16</args4j.version>
+        <junit.version>4.8.1</junit.version>
+        <mockito.version>1.8.2</mockito.version>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>The Apache License, ASL Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <organization>
+        <name>Multiverse</name>
+        <url>http://multiverse.codehaus.org</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <id>pveentjer</id>
+            <name>Peter Veentjer</name>
+            <timezone>+1</timezone>
+            <email>alarmnummer AT gmail DOTCOM</email>
+            <roles>
+                <role>Founder</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>aphillips</id>
+            <name>Andrew Phillips</name>
+            <timezone>+1</timezone>
+            <email>aphillips AT qrmedia DOTCOM</email>
+            <roles>
+                <role>Committer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <repositories>
+        <repository>
+            <id>maven.atlassian.com</id>
+            <name>Atlassian Maven Proxy</name>
+            <url>https://maven.atlassian.com/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>repo1.maven</id>
+            <name>Maven Main Repository</name>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+            <id>maven2-repository.dev.java.net</id>
+            <name>Java.net Repository for Maven</name>
+            <url>http://download.java.net/maven/2</url>
+        </repository>
+        <repository>
+            <id>java.net</id>
+            <name>Java.net Legacy Repository for Maven</name>
+            <url>http://download.java.net/maven/1</url>
+            <layout>legacy</layout>
+        </repository>
+        <repository>
+            <id>google-maven-repository</id>
+            <name>Google Maven Repository</name>
+            <url>http://google-maven-repository.googlecode.com/svn/repository/</url>
+        </repository>
+        <repository>
+            <id>repository.codehaus.org</id>
+            <name>Codehaus Maven Repository</name>
+            <url>http://repository.codehaus.org</url>
+        </repository>
+        <repository>
+            <id>ibiblio</id>
+            <url>http://www.ibiblio.org/maven</url>
+        </repository>
+        <repository>
+            <id>sourceforge</id>
+            <url>http://maven-plugins.sourceforge.net/repository</url>
+        </repository>
+        <!-- contains the google data api's-->
+        <repository>
+            <id>mandubian-mvn</id>
+            <url>http://mandubian-mvn.googlecode.com/svn/trunk/mandubian-mvn/repository</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>snapshots</id>
+            <url>http://snapshots.maven.codehaus.org/maven2</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <modules>
+        <module>multiverse-benchy</module>
+        <!-- module>multiverse-documentation</module -->
+        <module>multiverse-core</module>
+        <module>multiverse-core-tests</module>
+        <module>multiverse-instrumentation</module>
+        <module>multiverse-alpha-unborn</module>
+        <module>multiverse-alpha</module>
+        <!-- module>multiverse-scala</module -->
+        <module>multiverse-site</module>
+        <!-- module>multiverse-project-archetype</module -->
+        <module>multiverse-performance-tool</module>
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <encoding>${sourceEncoding}</encoding>
+                        <source>${targetJdk}</source>
+                        <target>${targetJdk}</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <configuration>
+                        <encoding>${sourceEncoding}</encoding>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>**/*LongTest.java</exclude>
+                            <exclude>**/*longTest.java</exclude>
+                            <exclude>**/*StressTest.java</exclude>
+                            <exclude>**/*stressTest.java</exclude>
+                            <exclude>**/*PerformanceTest.java</exclude>
+                            <exclude>**/*performanceTest.java</exclude>
+                        </excludes>
+                        <includes>
+                            <include>**/*Test.java</include>
+                        </includes>
+                        <forkMode>once</forkMode>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>${targetJdk}</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>failsafe-maven-plugin</artifactId>
+                <version>2.4.3-alpha-1</version>
+                <configuration>
+                    <encoding>${sourceEncoding}</encoding>
+                    <includes>
+                        <include>**/*LongTest.java</include>
+                    </includes>
+                    <argLine>-Xmx256m</argLine>
+                    <forkMode>once</forkMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>verify</id>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin -->
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- plugin>
+                <groupId>com.atlassian.maven.plugins</groupId>
+                <artifactId>maven-clover2-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>verify</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>instrument</goal>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>pre-site</id>
+                        <phase>pre-site</phase>
+                        <goals>
+                            <goal>instrument</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin -->
+        </plugins>
+
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-webdav</artifactId>
+                <version>1.0-beta-2</version>
+            </extension>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ftp</artifactId>
+                <version>1.0-beta-6</version>
+            </extension>
+        </extensions>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <scm>
+        <connection>scm:git:git://git.codehaus.org/multiverse.git</connection>
+        <developerConnection>scm:git:ssh://git@git.codehaus.org/multiverse.git</developerConnection>
+        <url>http://git.codehaus.org/gitweb.cgi?p=multiverse.git</url>
+    </scm>
+
+    <issueManagement>
+        <system>Jira</system>
+        <url>http://jira.codehaus.org/browse/MULTIVERSE</url>
+    </issueManagement>
+
+    <mailingLists>
+        <mailingList>
+            <name>Development List</name>
+            <subscribe>dev-subscribe@multiverse.codehaus.org</subscribe>
+            <unsubscribe>dev-unsubscribe@multiverse.codehaus.org</unsubscribe>
+            <post>dev@multiverse.codehaus.org</post>
+            <archive>http://archive.multiverse.codehaus.org/dev</archive>
+        </mailingList>
+
+        <mailingList>
+            <name>User List</name>
+            <subscribe>user-subscribe@multiverse.codehaus.org</subscribe>
+            <unsubscribe>user-unsubscribe@multiverse.codehaus.org</unsubscribe>
+            <post>user@multiverse.codehaus.org</post>
+            <archive>http://archive.multiverse.codehaus.org/user</archive>
+        </mailingList>
+
+        <mailingList>
+            <name>Commits List</name>
+            <subscribe>scm-subscribe@multiverse.codehaus.org</subscribe>
+            <unsubscribe>scm-unsubscribe@multiverse.codehaus.org</unsubscribe>
+            <archive>http://archive.multiverse.codehaus.org/scm</archive>
+        </mailingList>
+    </mailingLists>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.6.1</version>
+                <configuration>
+                    <encoding>${sourceEncoding}</encoding>
+                    <quiet>true</quiet>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <id>default</id>
+                        <reports>
+                            <report>aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jxr-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>taglist-maven-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <encoding>${sourceEncoding}</encoding>
+                    <tags>
+                        <tag>FIXME</tag>
+                        <tag>Fixme</tag>
+                        <tag>fixme</tag>
+                        <tag>TODO</tag>
+                        <tag>todo</tag>
+                        <tag>Todo</tag>
+                        <tag>@todo</tag>
+                        <tag>@deprecated</tag>
+                    </tags>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-changes-plugin</artifactId>
+                <version>2.0-beta-3</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>changes-report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+                <configuration>
+                    <xmlPath>${basedir}/changes.xml</xmlPath>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <configuration>
+                    <showSuccess>false</showSuccess>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>report-only</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>2.0.1</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <sourceEncoding>${sourceEncoding}</sourceEncoding>
+                    <targetJdk>${targetJdk}</targetJdk>
+                </configuration>
+            </plugin>
+            <!-- plugin>
+                <groupId>com.atlassian.maven.plugins</groupId>
+                <artifactId>maven-clover2-plugin</artifactId>
+                <configuration>
+                    <generateHistorical>true</generateHistorical>
+                </configuration>
+            </plugin -->
+        </plugins>
+    </reporting>
+
+    <distributionManagement>
+        <repository>
+            <id>multiverse-releases</id>
+            <name>Multiverse Central Repository</name>
+            <url>dav:https://dav.codehaus.org/repository/multiverse/</url>
+        </repository>
+        <snapshotRepository>
+            <id>multiverse-snapshots</id>
+            <name>Multiverse Central Development Repository</name>
+            <url>dav:https://dav.codehaus.org/snapshots.repository/multiverse/</url>
+        </snapshotRepository>
+        <!-- site>
+            <id>multiverse-site</id>
+            <name>Multiverse Maven site</name>
+            <url>dav:https://dav.codehaus.org/multiverse/maven-site</url>
+        </site -->
+        <downloadUrl>http://dist.codehaus.org/multiverse/</downloadUrl>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <!-- should only be executed at the top-level POM -->
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.6.1</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <encoding>${sourceEncoding}</encoding>
+                            <quiet>true</quiet>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.2-beta-2</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>distribution</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>distribution.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>stress</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/*LongTest.java</include>
+                            </includes>
+                            <argLine>-Xmx256m</argLine>
+                            <forkMode>once</forkMode>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

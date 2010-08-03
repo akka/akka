@@ -53,7 +53,7 @@ final class MessageInvocation(val receiver: ActorRef,
      "\n\tsender = " + sender +
      "\n\tsenderFuture = " + senderFuture +
      "\n\ttransactionSet = " + transactionSet +
-     "\n]"
+     "]"
   }
 }
 
@@ -79,7 +79,7 @@ trait MessageDispatcher extends Logging {
   }
   def canBeShutDown: Boolean = references.isEmpty
   def isShutdown: Boolean
-  def usesActorMailbox : Boolean
+  def mailboxSize(actorRef: ActorRef):Int = 0
 }
 
 /**

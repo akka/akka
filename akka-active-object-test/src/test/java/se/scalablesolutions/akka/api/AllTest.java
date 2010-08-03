@@ -10,7 +10,7 @@ public class AllTest extends TestCase {
     suite.addTestSuite(InMemoryStateTest.class);
     suite.addTestSuite(InMemNestedStateTest.class);
     suite.addTestSuite(RemoteInMemoryStateTest.class);
-    suite.addTestSuite(ActiveObjectGuiceConfiguratorTest.class);
+    suite.addTestSuite(TypedActorGuiceConfiguratorTest.class);
     return suite;
   }
 

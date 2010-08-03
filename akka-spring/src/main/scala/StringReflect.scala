@@ -1,9 +1,11 @@
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
+
 package se.scalablesolutions.akka.spring
 
 object StringReflect {
+
   /**
    * Implicit conversion from String to StringReflect.
    */
@@ -15,10 +17,9 @@ object StringReflect {
  * @author michaelkober
  */
 class StringReflect(val self: String) {
+  if (self == null || self == "") throw new IllegalArgumentException("Class name can't be null or empty string [" + self + "]")
   def toClass[T <: AnyRef]: Class[T] = {
     val clazz = Class.forName(self)
     clazz.asInstanceOf[Class[T]]
   }
 }
-
-

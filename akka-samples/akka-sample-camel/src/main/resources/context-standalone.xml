@@ -20,6 +20,6 @@ http://camel.apache.org/schema/spring/camel-spring.xsd">
     <akka:camel-context ref="camelContext" />
   </akka:camel-service>
 
-  <akka:active-object id="pojo3" target="sample.camel.BeanImpl" timeout="1000" />
+  <akka:typed-actor id="pojo3" interface="sample.camel.BeanIntf" implementation="sample.camel.BeanImpl" timeout="1000" />
 
 </beans>

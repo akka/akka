@@ -5,7 +5,7 @@
 package se.scalablesolutions.akka.config
 
 /*
-import se.scalablesolutions.akka.kernel.{ActiveObject, ActiveObjectProxy}
+import se.scalablesolutions.akka.kernel.{TypedActor, TypedActorProxy}
 import com.google.inject.{AbstractModule}
 import java.util.{List => JList, ArrayList}
 import scala.reflect.BeanProperty
@@ -55,6 +55,6 @@ class Component(@BeanProperty val intf: Class[_],
                 @BeanProperty val target: Class[_],
                 @BeanProperty val lifeCycle: LifeCycle,
                 @BeanProperty val timeout: Int) extends Server {
-  def newWorker(proxy: ActiveObjectProxy) = se.scalablesolutions.akka.kernel.Supervise(proxy.server, lifeCycle.transform)
+  def newWorker(proxy: TypedActorProxy) = se.scalablesolutions.akka.kernel.Supervise(proxy.server, lifeCycle.transform)
 }
 */

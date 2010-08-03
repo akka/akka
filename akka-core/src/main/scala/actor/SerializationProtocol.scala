@@ -77,42 +77,38 @@ object ActorSerialization {
     toSerializedActorRefProtocol(a, format).toByteArray
   }
 
-  private def toSerializedActorRefProtocol[T <: Actor](a: ActorRef, format: Format[T]): SerializedActorRefProtocol = {
+  private def toSerializedActorRefProtocol[T <: Actor](actorRef: ActorRef, format: Format[T]): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
       def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
         case Permanent => builder.setLifeCycle(LifeCycleType.PERMANENT)
         case Temporary => builder.setLifeCycle(LifeCycleType.TEMPORARY)
       }
       val builder = LifeCycleProtocol.newBuilder
-      a.lifeCycle match {
-        case Some(LifeCycle(scope, None, _)) =>
+      actorRef.lifeCycle match {
+        case Some(LifeCycle(scope)) =>
           setScope(builder, scope)
-          Some(builder.build)
-        case Some(LifeCycle(scope, Some(callbacks), _)) =>
-          setScope(builder, scope)
-          builder.setPreRestart(callbacks.preRestart)
-          builder.setPostRestart(callbacks.postRestart)
           Some(builder.build)
         case None => None
       }
     }
 
     val originalAddress = AddressProtocol.newBuilder
-      .setHostname(a.homeAddress.getHostName)
-      .setPort(a.homeAddress.getPort)
+      .setHostname(actorRef.homeAddress.getHostName)
+      .setPort(actorRef.homeAddress.getPort)
       .build
 
     val builder = SerializedActorRefProtocol.newBuilder
-      .setUuid(a.uuid)
-      .setId(a.id)
-      .setActorClassname(a.actorClass.getName)
+      .setUuid(actorRef.uuid)
+      .setId(actorRef.id)
+      .setActorClassname(actorRef.actorClass.getName)
       .setOriginalAddress(originalAddress)
-      .setIsTransactor(a.isTransactor)
-      .setTimeout(a.timeout)
+      .setIsTransactor(actorRef.isTransactor)
+      .setTimeout(actorRef.timeout)
 
-    builder.setActorInstance(ByteString.copyFrom(format.toBinary(a.actor.asInstanceOf[T])))
+    actorRef.receiveTimeout.foreach(builder.setReceiveTimeout(_))
+    builder.setActorInstance(ByteString.copyFrom(format.toBinary(actorRef.actor.asInstanceOf[T])))
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
-    a.supervisor.foreach(s => builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
+    actorRef.supervisor.foreach(s => builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
     // FIXME: how to serialize the hotswap PartialFunction ??
     //hotswap.foreach(builder.setHotswapStack(_))
     builder.build
@@ -121,7 +117,8 @@ object ActorSerialization {
   private def fromBinaryToLocalActorRef[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
     fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, format, None)
 
-  private def fromProtobufToLocalActorRef[T <: Actor](protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
+  private def fromProtobufToLocalActorRef[T <: Actor](
+    protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
     Actor.log.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n" + protocol)
 
     val serializer =
@@ -132,12 +129,8 @@ object ActorSerialization {
     val lifeCycle =
       if (protocol.hasLifeCycle) {
         val lifeCycleProtocol = protocol.getLifeCycle
-        val restartCallbacks =
-          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart)
-            Some(RestartCallbacks(lifeCycleProtocol.getPreRestart, lifeCycleProtocol.getPostRestart))
-          else None
-        Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent, restartCallbacks)
-             else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary, restartCallbacks)
+        Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent)
+             else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary)
              else throw new IllegalActorStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
       } else None
 
@@ -161,6 +154,7 @@ object ActorSerialization {
       protocol.getOriginalAddress.getPort,
       if (protocol.hasIsTransactor) protocol.getIsTransactor else false,
       if (protocol.hasTimeout) protocol.getTimeout else Actor.TIMEOUT,
+      if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None,
       lifeCycle,
       supervisor,
       hotswap,
@@ -223,26 +217,30 @@ object RemoteActorSerialization {
       .build
   }
 
-  def createRemoteRequestProtocolBuilder(ar: ActorRef,
-    message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]): RemoteRequestProtocol.Builder = {
-    import ar._
-    val protocol = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
-        .setMessage(MessageSerializer.serialize(message))
+  def createRemoteRequestProtocolBuilder(actorRef: ActorRef, message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]):
+    RemoteRequestProtocol.Builder = {
+    import actorRef._
+
+    val actorInfo = ActorInfoProtocol.newBuilder
+        .setUuid(uuid)
         .setTarget(actorClassName)
         .setTimeout(timeout)
-        .setUuid(uuid)
-        .setIsActor(true)
+        .setActorType(ActorType.SCALA_ACTOR)
+        .build
+
+    val request = RemoteRequestProtocol.newBuilder
+        .setId(RemoteRequestProtocolIdFactory.nextId)
+        .setMessage(MessageSerializer.serialize(message))
+        .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
-        .setIsEscaped(false)
 
     val id = registerSupervisorAsRemoteActor
-    if (id.isDefined) protocol.setSupervisorUuid(id.get)
+    if (id.isDefined) request.setSupervisorUuid(id.get)
 
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-      protocol.setSender(toRemoteActorRefProtocol(sender))
+      request.setSender(toRemoteActorRefProtocol(sender))
     }
-    protocol
+    request
   }
 }

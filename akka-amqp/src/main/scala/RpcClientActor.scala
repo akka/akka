@@ -4,6 +4,9 @@
 
 package se.scalablesolutions.akka.amqp
 
+import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
+
 import com.rabbitmq.client.{Channel, RpcClient}
 import se.scalablesolutions.akka.amqp.AMQP.{RpcClientSerializer, ChannelParameters, ExchangeParameters}
 
@@ -20,7 +23,6 @@ class RpcClientActor[I,O](exchangeParameters: ExchangeParameters,
 
   def specificMessageHandler = {
     case payload: I => {
-
       rpcClient match {
         case Some(client) =>
           val response: Array[Byte] = client.primitiveCall(serializer.toBinary.toBinary(payload))
@@ -30,18 +32,12 @@ class RpcClientActor[I,O](exchangeParameters: ExchangeParameters,
     }
   }
 
-  protected def setupChannel(ch: Channel) = {
-    rpcClient = Some(new RpcClient(ch, exchangeName, routingKey))
-  }
+  protected def setupChannel(ch: Channel) = rpcClient = Some(new RpcClient(ch, exchangeName, routingKey))
 
   override def preRestart(reason: Throwable) = {
     rpcClient = None
     super.preRestart(reason)
   }
 
-
-  override def toString(): String =
-    "AMQP.RpcClient[exchange=" +exchangeName +
-            ", routingKey=" + routingKey+ "]"
-
+  override def toString = "AMQP.RpcClient[exchange=" +exchangeName + ", routingKey=" + routingKey+ "]"
 }

@@ -1,12 +1,13 @@
 package se.scalablesolutions.akka.camel
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
 
+import org.apache.camel.CamelExecutionException
 import org.apache.camel.builder.RouteBuilder
 import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActiveObject, Actor, ActorRegistry}
+import se.scalablesolutions.akka.actor.{TypedActor, Actor, ActorRegistry}
 
 class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
   import CamelServiceFeatureTest._
@@ -16,7 +17,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     // create new CamelService instance
-    service = CamelService.newInstance
+    service = CamelServiceFactory.createCamelService
     // register test consumer before starting the CamelService
     actorOf(new TestConsumer("direct:publish-test-1")).start
     // Configure a custom camel route
@@ -26,7 +27,7 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     // count expectations in the next step (needed for testing only).
     service.consumerPublisher.start
     // set expectations on publish count
-    val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+    val latch = service.expectEndpointActivationCount(1)
     // start the CamelService
     service.load
     // await publication of first test consumer
@@ -40,10 +41,10 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
 
   feature("Publish registered consumer actors in the global CamelContext") {
 
-    scenario("access registered consumer actors via Camel direct-endpoints") {
+    scenario("access non-blocking consumer actors via Camel direct-endpoints") {
 
       given("two consumer actors registered before and after CamelService startup")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      val latch = service.expectEndpointActivationCount(1)
       actorOf(new TestConsumer("direct:publish-test-2")).start
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -55,6 +56,25 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       assert(response1 === "received msg1")
       assert(response2 === "received msg2")
     }
+
+    scenario("access blocking, non-responding consumer actor via a Camel direct-endpoint") {
+
+      given("a consumer actor registered after CamelService startup")
+      val latch = service.expectEndpointActivationCount(1)
+      actorOf(new TestBlocker("direct:publish-test-3")).start
+      assert(latch.await(5000, TimeUnit.MILLISECONDS))
+
+      try {
+        when("a request is sent to this actor")
+        CamelContextManager.template.requestBody("direct:publish-test-3", "msg3")
+        fail("expected TimoutException not thrown")
+      } catch {
+        case e => {
+          then("a TimoutException should be thrown")
+          assert(e.getCause.isInstanceOf[TimeoutException])
+        }
+      }
+    }
   }
 
   feature("Unpublish registered consumer actor from the global CamelContext") {
@@ -62,24 +82,22 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     scenario("access to unregistered consumer actor via Camel direct-endpoint fails") {
       val endpointUri = "direct:unpublish-test-1"
 
-      given("a consumer actor that has been stopped")
+      given("a consumer actor registered after CamelService startup")
       assert(CamelContextManager.context.hasEndpoint(endpointUri) eq null)
-      var latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(1)
       val consumer = actorOf(new TestConsumer(endpointUri)).start
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
 
-      latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      when("the actor is stopped")
+      latch = service.expectEndpointDeactivationCount(1)
       consumer.stop
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
-      // endpoint is still there but the route has been stopped
-      assert(CamelContextManager.context.hasEndpoint(endpointUri) ne null)
 
-      when("a request is sent to this actor")
-      val response1 = CamelContextManager.template.requestBody(endpointUri, "msg1")
-
-      then("the direct-endpoint falls back to its default behaviour and returns the original message")
-      assert(response1 === "msg1")
+      then("the associated endpoint isn't accessible any more")
+      intercept[CamelExecutionException] {
+        CamelContextManager.template.requestBody(endpointUri, "msg1")
+      }
     }
   }
 
@@ -98,13 +116,13 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
     }
   }
 
-  feature("Publish active object methods in the global CamelContext") {
+  feature("Publish typed actor methods in the global CamelContext") {
 
-    scenario("access active object methods via Camel direct-endpoints") {
+    scenario("access typed actor methods via Camel direct-endpoints") {
 
-      given("an active object registered after CamelService startup")
-      var latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
-      val obj = ActiveObject.newInstance(classOf[PojoBase])
+      given("an typed actor registered after CamelService startup")
+      var latch = service.expectEndpointActivationCount(3)
+      val obj = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       when("requests are sent to published methods")
@@ -117,35 +135,37 @@ class CamelServiceFeatureTest extends FeatureSpec with BeforeAndAfterAll with Gi
       assert(response2 === "m3base: x y")
       assert(response3 === "m4base: x y")
 
-      // cleanup to avoid conflicts with next test (i.e. avoid multiple consumers on direct-endpoints) 
-      latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
-      ActiveObject.stop(obj)
+      // cleanup to avoid conflicts with next test (i.e. avoid multiple consumers on direct-endpoints)
+      latch = service.expectEndpointDeactivationCount(3)
+      TypedActor.stop(obj)
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
     }
   }
 
-  feature("Unpublish active object method from the global CamelContext") {
+  feature("Unpublish typed actor method from the global CamelContext") {
 
-    scenario("access to unregistered active object methof via Camel direct-endpoint fails") {
+    scenario("access to unregistered typed actor method via Camel direct-endpoint fails") {
 
-      given("an active object that has been stopped")
-      var latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
-      val obj = ActiveObject.newInstance(classOf[PojoBase])
+      given("an typed actor registered after CamelService startup")
+      var latch = service.expectEndpointActivationCount(3)
+      val obj = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
-      latch = (service.consumerPublisher !! SetExpectedMessageCount(3)).as[CountDownLatch].get
-      ActiveObject.stop(obj)
+      when("the typed actor is stopped")
+      latch = service.expectEndpointDeactivationCount(3)
+      TypedActor.stop(obj)
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
-      when("requests are sent to published methods")
-      val response1 = CamelContextManager.template.requestBodyAndHeader("direct:m2base", "x", "test", "y")
-      val response2 = CamelContextManager.template.requestBodyAndHeader("direct:m3base", "x", "test", "y")
-      val response3 = CamelContextManager.template.requestBodyAndHeader("direct:m4base", "x", "test", "y")
-
-      then("the direct-endpoints fall back to their default behaviour and return the original message")
-      assert(response1 === "x")
-      assert(response2 === "x")
-      assert(response3 === "x")
+      then("the associated endpoints aren't accessible any more")
+      intercept[CamelExecutionException] {
+        CamelContextManager.template.requestBodyAndHeader("direct:m2base", "x", "test", "y")
+      }
+      intercept[CamelExecutionException] {
+        CamelContextManager.template.requestBodyAndHeader("direct:m3base", "x", "test", "y")
+      }
+      intercept[CamelExecutionException] {
+        CamelContextManager.template.requestBodyAndHeader("direct:m4base", "x", "test", "y")
+      }
     }
   }
 }
@@ -156,6 +176,15 @@ object CamelServiceFeatureTest {
     def endpointUri = uri
     protected def receive = {
       case msg: Message => self.reply("received %s" format msg.body)
+    }
+  }
+
+  class TestBlocker(uri: String) extends Actor with Consumer {
+    self.timeout = 1000
+    def endpointUri = uri
+    override def blocking = true
+    protected def receive = {
+      case msg: Message => { /* do not reply */ }
     }
   }
 
