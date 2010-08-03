@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.security.{BasicAuthenticationActor,BasicCredentials,SpnegoAuthenticationActor,DigestAuthenticationActor, UserInfo}
 import se.scalablesolutions.akka.stm.TransactionalMap
-import se.scalablesolutions.akka.actor.ActorRegistry.actorsFor
+import se.scalablesolutions.akka.actor.ActorRegistry.actorFor
 
 class Boot {
   val factory = SupervisorFactory(
@@ -122,7 +122,7 @@ class SecureTickService {
   def tick = {
         //Fetch the first actor of type PersistentSimpleServiceActor
         //Send it the "Tick" message and expect a NdeSeq back
-        val result = for{a <- actorsFor(classOf[SecureTickActor]).headOption
+        val result = for{a <- actorFor[SecureTickActor]
                          r <- (a !! "Tick").as[Integer]} yield r
         //Return either the resulting NodeSeq or a default one
         result match {

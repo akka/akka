@@ -31,7 +31,6 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
 object ActorRegistry extends ListenerManagement {
   private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
   private val actorsById =            new ConcurrentHashMap[String, JSet[ActorRef]]
-  private val actorsByClassName =     new ConcurrentHashMap[String, JSet[ActorRef]]
 
   /**
    * Returns all actors in the system.
@@ -44,6 +43,21 @@ object ActorRegistry extends ListenerManagement {
   def foreach(f: (ActorRef) => Unit) = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) f(elements.nextElement)
+  }
+
+  /**
+   * Invokes the function on all known actors until it returns Some
+   * Returns None if the function never returns Some 
+   */
+  def find[T](f: (ActorRef) => Option[T]) : Option[T] = {
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val result = f(elements.nextElement)
+      
+      if(result.isDefined)
+        return result
+    }
+    None
   }
 
   /**
@@ -71,22 +85,20 @@ object ActorRegistry extends ListenerManagement {
    * Finds all actors that are subtypes of the class passed in as the Manifest argument.
    */
   def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] =
-    filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass))
+    actorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
 
   /**
    * Finds any actor that matches T.
+   * FIXME: Improve performance by breaking out after the first match
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
     actorsFor[T](manifest).headOption
 
   /**
-   * Finds all actors of the exact type specified by the class passed in as the Class argument.
+   * Finds all actors of type or sub-type specified by the class passed in as the Class argument.
    */
-  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] = {
-    if (actorsByClassName.containsKey(clazz.getName)) {
-      actorsByClassName.get(clazz.getName).toArray.toList.asInstanceOf[List[ActorRef]]
-    } else Nil
-  }
+  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] =
+    filter(a => clazz.isAssignableFrom(a.actor.getClass))
 
   /**
    * Finds all actors that has a specific id.
@@ -122,15 +134,6 @@ object ActorRegistry extends ListenerManagement {
       actorsById.put(id, set)
     }
 
-    // Class name
-    val className = actor.actorClassName
-    if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).add(actor)
-    else {
-      val set = new ConcurrentSkipListSet[ActorRef]
-      set.add(actor)
-      actorsByClassName.put(className, set)
-    }
-
     // notify listeners
     foreachListener(_ ! ActorRegistered(actor))
   }
@@ -144,9 +147,6 @@ object ActorRegistry extends ListenerManagement {
     val id = actor.id
     if (actorsById.containsKey(id)) actorsById.get(id).remove(actor)
 
-    val className = actor.actorClassName
-    if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).remove(actor)
-
     // notify listeners
     foreachListener(_ ! ActorUnregistered(actor))
   }
@@ -159,7 +159,6 @@ object ActorRegistry extends ListenerManagement {
     foreach(_.stop)
     actorsByUUID.clear
     actorsById.clear
-    actorsByClassName.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
   }
 }
