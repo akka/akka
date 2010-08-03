@@ -21,7 +21,7 @@ class AMQPProducerMessageTest extends JUnitSuite with MustMatchers with Logging 
 
   @Test
   def producerMessage = if (AMQPTest.enabled) {
-    
+
     val connection: ActorRef = AMQP.newConnection()
     try {
       val returnLatch = new StandardLatch
@@ -40,5 +40,12 @@ class AMQPProducerMessageTest extends JUnitSuite with MustMatchers with Logging 
     } finally {
       connection.stop
     }
+  }
+
+  @Test
+  def dummy {
+    // amqp tests need local rabbitmq server running, so a disabled by default.
+    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
+    assert(true)
   }
 }

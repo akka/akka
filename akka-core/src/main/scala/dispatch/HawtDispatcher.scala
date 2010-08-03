@@ -69,7 +69,7 @@ object HawtDispatcher {
    */
   def queue(actorRef: ActorRef) = {
     mailbox(actorRef).queue
-  }  
+  }
 
 
   /**
@@ -173,7 +173,7 @@ object HawtDispatcher {
 class HawtDispatcher(val aggregate:Boolean=true, val parent:DispatchQueue=globalQueue) extends MessageDispatcher  {
   import HawtDispatcher._
   private val active = new AtomicBoolean(false)
-  
+
   def start = {
     if( active.compareAndSet(false, true) ) {
       retainNonDaemon

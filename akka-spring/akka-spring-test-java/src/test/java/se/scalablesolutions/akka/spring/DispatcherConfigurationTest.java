@@ -58,7 +58,7 @@ public class DispatcherConfigurationTest {
          */
         @Test
         public void testDispatcherRef() {
-      MyPojo pojo = (MyPojo) context.getBean("active-object-with-dispatcher-ref");
+      MyPojo pojo = (MyPojo) context.getBean("typed-actor-with-dispatcher-ref");
       assertNotNull(pojo);
         }
 

@@ -38,12 +38,19 @@ class AMQPConsumerMessageTest extends JUnitSuite with MustMatchers with Logging 
 
       val producer = AMQP.newProducer(connection,
         ProducerParameters(exchangeParameters, channelParameters = Some(channelParameters)))
-      
+
       countDown.await(2, TimeUnit.SECONDS) must be (true)
       producer ! Message("some_payload".getBytes, "non.interesting.routing.key")
       payloadLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
     } finally {
       connection.stop
     }
+  }
+
+  @Test
+  def dummy {
+    // amqp tests need local rabbitmq server running, so a disabled by default.
+    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
+    assert(true)
   }
 }

@@ -14,7 +14,7 @@ import java.util.{LinkedList, List}
 
 class ReactorBasedSingleThreadEventDrivenDispatcher(_name: String)
   extends AbstractReactorBasedEventDrivenDispatcher("akka:event-driven:reactor:single-thread:dispatcher:" + _name) {
-  
+
   def start = if (!active) {
     log.debug("Starting up %s", toString)
     active = true

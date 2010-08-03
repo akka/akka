@@ -9,10 +9,12 @@ import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.{Logging, Duration}
 
 import com.google.protobuf.Message
+
 import java.util.concurrent.TimeUnit
+import java.net.InetSocketAddress
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -32,8 +34,9 @@ trait Transactor extends Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class RemoteActor(hostname: String, port: Int) extends Actor {
-  self.makeRemote(hostname, port)
+abstract class RemoteActor(address: InetSocketAddress) extends Actor {
+  def this(hostname: String, port: Int) = this(new InetSocketAddress(hostname, port))
+  self.makeRemote(address)
 }
 
 /**
@@ -55,6 +58,7 @@ class ActorStartException private[akka](message: String) extends RuntimeExceptio
 class IllegalActorStateException private[akka](message: String) extends RuntimeException(message)
 class ActorKilledException private[akka](message: String) extends RuntimeException(message)
 class ActorInitializationException private[akka](message: String) extends RuntimeException(message)
+class ActorTimeoutException private[akka](message: String) extends RuntimeException(message)
 
 /**
  * Actor factory module with factory methods for creating various kinds of Actors.
@@ -62,7 +66,7 @@ class ActorInitializationException private[akka](message: String) extends Runtim
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
-  val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
+  val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
@@ -72,9 +76,9 @@ object Actor extends Logging {
   type Receive = PartialFunction[Any, Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
-
+  
   /**
-   * Creates a Actor.actorOf out of the Actor with type T.
+   * Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
@@ -90,7 +94,7 @@ object Actor extends Logging {
   def actorOf[T <: Actor : Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-   * Creates a Actor.actorOf out of the Actor. Allows you to pass in a factory function
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
    * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
@@ -414,7 +418,7 @@ trait Actor extends Logging {
    * Is the actor able to handle the message passed in as arguments?
    */
   def isDefinedAt(message: Any): Boolean = base.isDefinedAt(message)
-  
+
   /** One of the fundamental methods of the ActorsModel
    * Actor assumes a new behavior
    */
@@ -435,12 +439,12 @@ trait Actor extends Logging {
   }
 
   private val lifeCycles: Receive = {
-    case HotSwap(code) => become(code)
-    case Exit(dead, reason) => self.handleTrapExit(dead, reason)
-    case Link(child) => self.link(child)
-    case Unlink(child) => self.unlink(child)
+    case HotSwap(code)        => become(code)
+    case Exit(dead, reason)   => self.handleTrapExit(dead, reason)
+    case Link(child)          => self.link(child)
+    case Unlink(child)        => self.unlink(child)
     case UnlinkAndStop(child) => self.unlink(child); child.stop
-    case Restart(reason) => throw reason
+    case Restart(reason)      => throw reason
   }
 }
 

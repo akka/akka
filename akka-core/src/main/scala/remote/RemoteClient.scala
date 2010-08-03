@@ -7,8 +7,8 @@ package se.scalablesolutions.akka.remote
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, RemoteActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
-import se.scalablesolutions.akka.util.{UUID, Logging}
-import se.scalablesolutions.akka.config.Config.config
+import se.scalablesolutions.akka.util.{UUID, Logging, Duration}
+import se.scalablesolutions.akka.config.Config._
 
 import org.jboss.netty.channel._
 import group.DefaultChannelGroup
@@ -50,8 +50,8 @@ case class RemoteClientConnected(host: String, port: Int) extends RemoteClientLi
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
-  val READ_TIMEOUT = config.getInt("akka.remote.client.read-timeout", 10000)
-  val RECONNECT_DELAY = config.getInt("akka.remote.client.reconnect-delay", 5000)
+  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
+  val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
 
   private val remoteClients = new HashMap[String, RemoteClient]
   private val remoteActors = new HashMap[RemoteServer.Address, HashSet[String]]
@@ -137,7 +137,7 @@ object RemoteClient extends Logging {
     actorsFor(RemoteServer.Address(hostname, port)) += uuid
   }
 
-  // TODO: add RemoteClient.unregister for ActiveObject, but first need a @shutdown callback
+  // TODO: add RemoteClient.unregister for TypedActor, but first need a @shutdown callback
   private[akka] def unregister(hostname: String, port: Int, uuid: String) = synchronized {
     val set = actorsFor(RemoteServer.Address(hostname, port))
     set -= uuid
@@ -217,7 +217,7 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, loader: O
     } else {
       futures.synchronized {
         val futureResult = if (senderFuture.isDefined) senderFuture.get
-        else new DefaultCompletableFuture[T](request.getTimeout)
+        else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
         futures.put(request.getId, futureResult)
         connection.getChannel.write(request)
         Some(futureResult)
@@ -230,11 +230,13 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, loader: O
   }
 
   private[akka] def registerSupervisorForActor(actorRef: ActorRef) =
-    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException("Can't register supervisor for " + actorRef + " since it is not under supervision")
+    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException(
+      "Can't register supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.putIfAbsent(actorRef.supervisor.get.uuid, actorRef)
 
   private[akka] def deregisterSupervisorForActor(actorRef: ActorRef) =
-    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException("Can't unregister supervisor for " + actorRef + " since it is not under supervision")
+    if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException(
+      "Can't unregister supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.remove(actorRef.supervisor.get.uuid)
 }
 
@@ -249,7 +251,7 @@ class RemoteClientPipelineFactory(name: String,
                                   timer: HashedWheelTimer,
                                   client: RemoteClient) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
-    val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT)
+    val timeout = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
     val lenDec = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(RemoteReplyProtocol.getDefaultInstance)
@@ -338,7 +340,7 @@ class RemoteClientHandler(val name: String,
           log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)
         }
       }
-    }, RemoteClient.RECONNECT_DELAY, TimeUnit.MILLISECONDS)
+    }, RemoteClient.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {

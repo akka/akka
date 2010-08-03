@@ -132,10 +132,8 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     result match {
       case Some(msg: Failure) => exchange.fromFailureMessage(msg)
       case Some(msg)          => exchange.fromResponseMessage(Message.canonicalize(msg))
-      case None               => {
-        throw new TimeoutException("timeout (%d ms) while waiting response from %s"
-            format (actor.timeout, ep.getEndpointUri))
-      }
+      case None               => throw new TimeoutException("timeout (%d ms) while waiting response from %s"
+                                                            format (actor.timeout, ep.getEndpointUri))
     }
   }
 
