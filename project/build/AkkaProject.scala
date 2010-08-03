@@ -347,6 +347,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     // testing
     val junit     = Dependencies.junit
     val scalatest = Dependencies.scalatest
+
+    override def bndImportPackage = "javax.transaction;version=1.1" :: super.bndImportPackage.toList
   }
 
   // -------------------------------------------------------------------------------------------------------------------
