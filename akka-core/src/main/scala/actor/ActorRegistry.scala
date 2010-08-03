@@ -29,11 +29,6 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends ListenerManagement {
-  
-  private val refComparator = new java.util.Comparator[ActorRef]{
-    def compare(a: ActorRef,b: ActorRef) = a.uuid.compareTo(b.uuid)
-  }
-  
   private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
   private val actorsById =            new ConcurrentHashMap[String, JSet[ActorRef]]
   private val actorsByClassName =     new ConcurrentHashMap[String, JSet[ActorRef]]
@@ -122,16 +117,16 @@ object ActorRegistry extends ListenerManagement {
     if (id eq null) throw new IllegalActorStateException("Actor.id is null " + actor)
     if (actorsById.containsKey(id)) actorsById.get(id).add(actor)
     else {
-      val set = new ConcurrentSkipListSet[ActorRef](refComparator)
+      val set = new ConcurrentSkipListSet[ActorRef]
       set.add(actor)
       actorsById.put(id, set)
     }
 
     // Class name
-    val className = actor.actor.getClass.getName
+    val className = actor.actorClassName
     if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).add(actor)
     else {
-      val set = new ConcurrentSkipListSet[ActorRef](refComparator)
+      val set = new ConcurrentSkipListSet[ActorRef]
       set.add(actor)
       actorsByClassName.put(className, set)
     }
@@ -149,7 +144,7 @@ object ActorRegistry extends ListenerManagement {
     val id = actor.id
     if (actorsById.containsKey(id)) actorsById.get(id).remove(actor)
 
-    val className = actor.getClass.getName
+    val className = actor.actorClassName
     if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).remove(actor)
 
     // notify listeners
@@ -159,7 +154,7 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Shuts down and unregisters all actors in the system.
    */
-  def shutdownAll = {
+  def shutdownAll() {
     log.info("Shutting down all actors in the system...")
     foreach(_.stop)
     actorsByUUID.clear

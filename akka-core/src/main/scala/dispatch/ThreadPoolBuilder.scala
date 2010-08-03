@@ -234,18 +234,19 @@ trait ThreadPoolBuilder {
       extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) with Logging {
 
     setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-      def uncaughtException(thread: Thread, cause: Throwable) = log.error(cause, "UNCAUGHT in thread [%s]", thread.getName)
+      def uncaughtException(thread: Thread, cause: Throwable) = 
+        log.error(cause, "UNCAUGHT in thread [%s]", thread.getName)
     })
 
     override def run = {
       val debug = MonitorableThread.debugLifecycle
-      log.debug("Created %s", getName)
+      log.debug("Created thread %s", getName)
       try {
         MonitorableThread.alive.incrementAndGet
         super.run
       } finally {
         MonitorableThread.alive.decrementAndGet
-        log.debug("Exiting %s", getName)
+        log.debug("Exiting thread %s", getName)
       }
     }
   }

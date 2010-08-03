@@ -5,7 +5,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.{GivenWhenThen, BeforeAndAfterAll, FeatureSpec}
 
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActiveObject, ActorRegistry, RemoteActor}
+import se.scalablesolutions.akka.actor.{TypedActor, ActorRegistry, RemoteActor}
 import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
 
 /**
@@ -20,7 +20,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
 
-    service = CamelService.newInstance
+    service = CamelServiceFactory.createCamelService
     service.load
 
     server = new RemoteServer()
@@ -45,7 +45,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       val consumer = actorOf[RemoteConsumer].start
 
       when("remote consumer publication is triggered")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(1)
       consumer !! "init"
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
@@ -55,19 +55,19 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
     }
   }
 
-  feature("Client-initiated remote consumer active object") {
+  feature("Client-initiated remote consumer typed actor") {
     scenario("access published remote consumer method") {
-      given("a client-initiated remote consumer active object")
-      val consumer = ActiveObject.newRemoteInstance(classOf[PojoRemote], host, port)
+      given("a client-initiated remote consumer typed actor")
+      val consumer = TypedActor.newRemoteInstance(classOf[PojoRemoteIntf], classOf[PojoRemote], host, port)
 
       when("remote consumer publication is triggered")
-      val latch = (service.consumerPublisher !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      var latch = service.expectEndpointActivationCount(1)
       consumer.foo("init")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       then("the published method is accessible via its endpoint URI")
-      val response = CamelContextManager.template.requestBody("direct:remote-active-object", "test")
-      assert(response === "remote active object: test")
+      val response = CamelContextManager.template.requestBody("direct:remote-typed-actor", "test")
+      assert(response === "remote typed actor: test")
     }
   }
 }

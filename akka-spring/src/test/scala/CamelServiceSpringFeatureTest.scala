@@ -6,7 +6,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FeatureSpec}
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import se.scalablesolutions.akka.camel.CamelContextManager
-import se.scalablesolutions.akka.actor.{ActiveObject, ActorRegistry}
+import se.scalablesolutions.akka.actor.{TypedActor, ActorRegistry}
 
 class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach with BeforeAndAfterAll {
   override protected def beforeAll = {
@@ -19,24 +19,23 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
 
   feature("start CamelService from Spring application context") {
     import CamelContextManager._
-
-    scenario("with a custom CamelContext and access a registered active object") {
+    scenario("with a custom CamelContext and access a registered typed actor") {
       val appctx = new ClassPathXmlApplicationContext("/appContextCamelServiceCustom.xml")
       assert(context.isInstanceOf[SpringCamelContext])
       assert("hello sample" === template.requestBody("direct:test", "sample"))
       appctx.close
     }
 
-    scenario("with a default CamelContext and access a registered active object") {
+    scenario("with a default CamelContext and access a registered typed actor") {
       val appctx = new ClassPathXmlApplicationContext("/appContextCamelServiceDefault.xml")
       // create a custom registry
       val registry = new SimpleRegistry
-      registry.put("custom", ActiveObject.newInstance(classOf[SampleBean]))
+      registry.put("custom", TypedActor.newInstance(classOf[SampleBeanIntf], classOf[SampleBean]))
       // set custom registry in DefaultCamelContext
       assert(context.isInstanceOf[DefaultCamelContext])
       context.asInstanceOf[DefaultCamelContext].setRegistry(registry)
-      // access registered active object
-      assert("hello sample" === template.requestBody("active-object:custom?method=foo", "sample"))
+      // access registered typed actor
+      assert("hello sample" === template.requestBody("typed-actor:custom?method=foo", "sample"))
       appctx.close
     }
   }

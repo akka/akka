@@ -9,6 +9,7 @@ project/boot/*
 lib_managed
 etags
 TAGS
+akka.tmproj
 reports
 dist
 build
@@ -32,9 +33,11 @@ tm.out
 *.iws
 *.ipr
 *.iml
+run-codefellow
 .project
 .settings
 .classpath
 .idea
 .scala_dependencies
 multiverse.log
+.eprj

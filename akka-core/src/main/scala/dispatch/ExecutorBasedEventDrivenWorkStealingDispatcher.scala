@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.dispatch
 import java.util.concurrent.CopyOnWriteArrayList
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
+import jsr166x.ConcurrentLinkedDeque
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -41,11 +42,19 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   /** The index in the pooled actors list which was last used to steal work */
   @volatile private var lastThiefIndex = 0
 
-  // TODO: is there a naming convention for this name?
-  val name: String = "event-driven-work-stealing:executor:dispatcher:" + _name
+  val name = "akka:event-driven-work-stealing:dispatcher:" + _name
   init
 
+
+  /**
+   * @return the mailbox associated with the actor
+   */
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[ConcurrentLinkedDeque[MessageInvocation]]
+
+  override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
+
   def dispatch(invocation: MessageInvocation) = if (active) {
+    getMailbox(invocation.receiver).add(invocation)
     executor.execute(new Runnable() {
       def run = {
         if (!tryProcessMailbox(invocation.receiver)) {
@@ -77,7 +86,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
           lock.unlock
         }
       }
-    } while ((lockAcquiredOnce && !receiver.mailbox.isEmpty))
+    } while ((lockAcquiredOnce && !getMailbox(receiver).isEmpty))
 
     return lockAcquiredOnce
   }
@@ -86,10 +95,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * Process the messages in the mailbox of the given actor.
    */
   private def processMailbox(receiver: ActorRef) = {
-    var messageInvocation = receiver.mailbox.poll
+    val mailbox = getMailbox(receiver)
+    var messageInvocation = mailbox.poll
     while (messageInvocation != null) {
       messageInvocation.invoke
-      messageInvocation = receiver.mailbox.poll
+      messageInvocation = mailbox.poll
     }
   }
 
@@ -117,7 +127,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     for (i <- 0 to actors.length) {
       val index = (i + startIndex) % actors.length
       val actor = actors(index)
-      if (actor != receiver && actor.mailbox.isEmpty) return (Some(actor), index)
+      if (actor != receiver && getMailbox(actor).isEmpty) return (Some(actor), index)
     }
     (None, startIndex) // nothing found, reuse same start index next time
   }
@@ -129,8 +139,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def tryDonateAndProcessMessages(receiver: ActorRef, thief: ActorRef) = {
     if (thief.dispatcherLock.tryLock) {
       try {
-        while(donateMessage(receiver, thief))
-          processMailbox(thief)
+        while(donateMessage(receiver, thief)) processMailbox(thief)
       } finally {
         thief.dispatcherLock.unlock
       }
@@ -141,7 +150,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
    * Steal a message from the receiver and give it to the thief.
    */
   private def donateMessage(receiver: ActorRef, thief: ActorRef): Boolean = {
-    val donated = receiver.mailbox.pollLast
+    val donated = getMailbox(receiver).pollLast
     if (donated ne null) {
       if (donated.senderFuture.isDefined) thief.self.postMessageToMailboxAndCreateFutureResultWithTimeout[Any](
         donated.message, receiver.timeout, donated.sender, donated.senderFuture)
@@ -156,7 +165,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   }
 
   def shutdown = if (active) {
-    log.debug("Shutting down ExecutorBasedEventDrivenWorkStealingDispatcher [%s]", name)
+    log.debug("Shutting down %s", toString)
     executor.shutdownNow
     active = false
     references.clear
@@ -165,10 +174,16 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
+  override def toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
+
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
   override def register(actorRef: ActorRef) = {
     verifyActorsAreOfSameType(actorRef)
+    // The actor will need a ConcurrentLinkedDeque based mailbox
+    if( actorRef.mailbox == null ) {
+      actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]()
+    }
     pooledActors.add(actorRef)
     super.register(actorRef)
   }
@@ -178,19 +193,14 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     super.unregister(actorRef)
   }
 
-  def usesActorMailbox = true
-
   private def verifyActorsAreOfSameType(actorOfId: ActorRef) = {
     actorType match {
-      case None => {
-        actorType = Some(actorOfId.actor.getClass)
-      }
-      case Some(aType) => {
+      case None => actorType = Some(actorOfId.actor.getClass)
+      case Some(aType) =>
         if (aType != actorOfId.actor.getClass)
-          throw new IllegalActorStateException(
-            String.format("Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
-              actorOfId.actor, aType))
-      }
+          throw new IllegalActorStateException(String.format(
+            "Can't register actor %s in a work stealing dispatcher which already knows actors of type %s",
+            actorOfId.actor, aType))
     }
   }
 }
