@@ -64,7 +64,7 @@ object SimpleRestService extends RestHelper {
    case Get("liftcount" :: _, req) =>
      //Fetch the first actor of type SimpleServiceActor
      //Send it the "Tick" message and expect a Node back
-     val result = for( a <- ActorRegistry.actorsFor(classOf[SimpleServiceActor]).headOption;
+     val result = for( a <- ActorRegistry.actorFor[SimpleServiceActor];
                        r <- (a !! "Tick").as[Node] ) yield r
 
      //Return either the resulting NodeSeq or a default one
@@ -85,7 +85,7 @@ object SimpleRestService extends RestHelper {
     case Get("persistentliftcount" :: _, req) =>
       //Fetch the first actor of type SimpleServiceActor
       //Send it the "Tick" message and expect a Node back
-      val result = for( a <- ActorRegistry.actorsFor(classOf[PersistentServiceActor]).headOption;
+      val result = for( a <- ActorRegistry.actorFor[PersistentServiceActor];
                         r <- (a !! "Tick").as[Node] ) yield r
 
       //Return either the resulting NodeSeq or a default one
