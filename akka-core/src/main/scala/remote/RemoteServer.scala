@@ -76,8 +76,7 @@ object RemoteServer {
   }
 
   val SECURE = {
-    //TODO: Remove this when SSL is in working condition
-    /*if(config.getBool("akka.remote.ssl.service",false)){
+    if(config.getBool("akka.remote.ssl.service",false)){
 
       val properties = List(
         ("key-store-type"  ,"keyStoreType"),
@@ -98,7 +97,7 @@ object RemoteServer {
 
       true
     }
-    else */
+    else
       false
   }
 
