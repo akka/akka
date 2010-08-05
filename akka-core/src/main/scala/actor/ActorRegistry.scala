@@ -126,22 +126,19 @@ object ActorRegistry extends ListenerManagement {
     val id = actor.id
     if (id eq null) throw new IllegalActorStateException("Actor.id is null " + actor)
 
-    //Tries to avoid a race-condition
-    def registerById(attemptNo: Int = 0,maxAttempts: Int = 10) {
-      if(attemptNo >= maxAttempts)
-        throw new IllegalStateException("Tried to add %s to the ActorRegistry %d times but failed.".format(actor,maxAttempts))
-      val set = actorsById.get(id)
-      if(set ne null)
-        set.add(actor)
-      else {
-        val newSet = new ConcurrentSkipListSet[ActorRef]
-        newSet.add(actor)
-        if(actorsById.putIfAbsent(id,newSet) ne null)
-          registerById(attemptNo+1)
-      }
-    }
+    val set = actorsById get id
+    if(set ne null)
+      set add actor
+    else {
+      val newSet = new ConcurrentSkipListSet[ActorRef]
+      newSet add actor
 
-    registerById()
+      val oldSet = actorsById.putIfAbsent(id,newSet)
+      
+      //Parry for two simultaneous putIfAbsent(id,newSet)
+      if(oldSet ne null)
+        oldSet add actor
+    }
 
     // UUID
     actorsByUUID.put(actor.uuid, actor)
@@ -156,7 +153,7 @@ object ActorRegistry extends ListenerManagement {
   def unregister(actor: ActorRef) = {
     actorsByUUID remove actor.uuid
 
-    val set = actorsById.get(actor.id)
+    val set = actorsById get actor.id
     if (set ne null)
       set remove actor
 
