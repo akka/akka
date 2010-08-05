@@ -82,7 +82,7 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
 
   override def register(actorRef: ActorRef) = {
     // The actor will need a ConcurrentLinkedDeque based mailbox
-    if( actorRef.mailbox == null ) {
+    if( actorRef.mailbox eq null ) {
       actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]()
     }
     super.register(actorRef)
