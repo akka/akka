@@ -52,11 +52,7 @@ object RPC {
   /**
    * RPC convenience
    */
-  trait RpcClient[O, I] {
-    def callService(request: O, timeout: Long = 5000): Option[I]
-  }
-
-  private class RpcServiceClient[O, I](client: ActorRef) extends RpcClient[O, I] {
+  class RpcClient[O, I](client: ActorRef){
     def callService(request: O, timeout: Long = 5000): Option[I] = {
       (client.!!(request, timeout)).as[I]
     }
@@ -101,7 +97,7 @@ object RPC {
     val queueName = "%s.in".format(routingKey)
 
     val client = newRpcClient[O, I](connection, exchangeParameters, routingKey, serializer)
-    new RpcServiceClient[O, I](client)
+    new RpcClient[O, I](client)
   }
 
   private def createProtobufFromBytes[I](bytes: Array[Byte])(implicit manifest: Manifest[I]): I = {
