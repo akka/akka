@@ -4,11 +4,9 @@
 
 package se.scalablesolutions.akka.amqp
 
-import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
-
 import com.rabbitmq.client.{Channel, RpcClient}
-import se.scalablesolutions.akka.amqp.AMQP.{RpcClientSerializer, ChannelParameters, ExchangeParameters}
+import rpc.RPC.RpcClientSerializer
+import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
 
 class RpcClientActor[I,O](exchangeParameters: ExchangeParameters,
                      routingKey: String,

@@ -1,19 +1,21 @@
+package se.scalablesolutions.akka.amqp.test
+
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp.test
-
-import se.scalablesolutions.akka.util.Logging
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
 import se.scalablesolutions.akka.amqp._
+import rpc.RPC
+import rpc.RPC.{RpcClientSerializer, RpcServerSerializer, FromBinary, ToBinary}
 import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import se.scalablesolutions.akka.amqp.AMQP._
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
-class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging {
+class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers {
+  
   @Test
   def consumerMessage = if (AMQPTest.enabled) {
     val connection = AMQP.newConnection()
@@ -39,7 +41,7 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
 
       def requestHandler(request: String) = 3
 
-      val rpcServer = AMQP.newRpcServer[String, Int](connection, exchangeParameters, "rpc.routing", rpcServerSerializer,
+      val rpcServer = RPC.newRpcServer[String, Int](connection, exchangeParameters, "rpc.routing", rpcServerSerializer,
         requestHandler, channelParameters = Some(channelParameters))
 
       val rpcClientSerializer = new RpcClientSerializer[String, Int](
@@ -49,7 +51,7 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
           def fromBinary(bytes: Array[Byte]) = bytes.head.toInt
         })
 
-      val rpcClient = AMQP.newRpcClient[String, Int](connection, exchangeParameters, "rpc.routing", rpcClientSerializer,
+      val rpcClient = RPC.newRpcClient[String, Int](connection, exchangeParameters, "rpc.routing", rpcClientSerializer,
         channelParameters = Some(channelParameters))
 
       countDown.await(2, TimeUnit.SECONDS) must be(true)
@@ -58,12 +60,5 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers with Logging 
     } finally {
       connection.stop
     }
-  }
-
-  @Test
-  def dummy {
-    // amqp tests need local rabbitmq server running, so a disabled by default.
-    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
-    assert(true)
   }
 }

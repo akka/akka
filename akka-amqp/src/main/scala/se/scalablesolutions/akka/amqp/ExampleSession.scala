@@ -4,6 +4,8 @@
 
 package se.scalablesolutions.akka.amqp
 
+import rpc.RPC
+import rpc.RPC.{RpcClientSerializer, RpcServerSerializer, ToBinary, FromBinary}
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
@@ -146,7 +148,7 @@ object ExampleSession {
 
     def requestHandler(request: String) = 3
 
-    val rpcServer = AMQP.newRpcServer[String,Int](connection, exchangeParameters, "rpc.in.key", rpcServerSerializer,
+    val rpcServer = RPC.newRpcServer[String,Int](connection, exchangeParameters, "rpc.in.key", rpcServerSerializer,
       requestHandler, queueName = Some("rpc.in.key.queue"))
 
 
@@ -159,7 +161,7 @@ object ExampleSession {
     }
     val rpcClientSerializer = new RpcClientSerializer[String, Int](clientToBinary, clientFromBinary)
 
-    val rpcClient = AMQP.newRpcClient[String,Int](connection, exchangeParameters, "rpc.in.key", rpcClientSerializer)
+    val rpcClient = RPC.newRpcClient[String,Int](connection, exchangeParameters, "rpc.in.key", rpcClientSerializer)
 
     val response = (rpcClient !! "rpc_request")
     log.info("Response: " + response)
