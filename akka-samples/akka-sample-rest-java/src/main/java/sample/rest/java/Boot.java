@@ -15,10 +15,12 @@ public class Boot {
         new Component[] {
           new Component(
             SimpleService.class,
+            SimpleServiceImpl.class,
             new LifeCycle(new Permanent()),
             1000),
           new Component(
             PersistentSimpleService.class,
+            PersistentSimpleServiceImpl.class,
             new LifeCycle(new Permanent()),
             1000)
         }).supervise();
