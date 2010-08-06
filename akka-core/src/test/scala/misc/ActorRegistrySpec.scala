@@ -3,6 +3,7 @@ package se.scalablesolutions.akka.actor
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Actor._
+import java.util.concurrent.{CyclicBarrier, TimeUnit, CountDownLatch}
 
 object ActorRegistrySpec {
   var record = ""
@@ -73,6 +74,17 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(actors.size === 1)
     assert(actors.head.actor.isInstanceOf[TestActor])
     assert(actors.head.id === "MyID")
+    actor.stop
+  }
+
+  @Test def shouldFindThingsFromActorRegistry {
+    ActorRegistry.shutdownAll
+    val actor = actorOf[TestActor]
+    actor.start
+    val found = ActorRegistry.find(a => if(a.actor.isInstanceOf[TestActor]) Some(a) else None)
+    assert(found.isDefined)
+    assert(found.get.actor.isInstanceOf[TestActor])
+    assert(found.get.id === "MyID")
     actor.stop
   }
 
@@ -202,5 +214,42 @@ class ActorRegistrySpec extends JUnitSuite {
     assert(ActorRegistry.actors.size === 1)
     ActorRegistry.unregister(actor2)
     assert(ActorRegistry.actors.size === 0)
+  }
+
+  @Test def shouldBeAbleToRegisterActorsConcurrently {
+    ActorRegistry.shutdownAll
+
+    val latch = new CountDownLatch(3)
+    val barrier = new CyclicBarrier(3)
+
+    def mkTestActor(i:Int) = actorOf( new Actor {
+      self.id = i.toString
+      def receive = { case _ => }
+    })
+
+    def mkTestActors = for(i <- 1 to 10;j <- 1 to 1000) yield mkTestActor(i)
+
+    def mkThread(actors: Iterable[ActorRef]) = new Thread {
+      start
+      override def run {
+        barrier.await
+        actors foreach { _.start }
+        latch.countDown
+      }
+    }
+
+    val testActors1 = mkTestActors
+    val testActors2 = mkTestActors
+    val testActors3 = mkTestActors
+
+    mkThread(testActors1)
+    mkThread(testActors2)
+    mkThread(testActors3)
+
+    assert(latch.await(30,TimeUnit.SECONDS) === true)
+
+    for(i <- 1 to 10) {
+      assert(ActorRegistry.actorsFor(i.toString).length === 3000)
+    }
   }
 }
