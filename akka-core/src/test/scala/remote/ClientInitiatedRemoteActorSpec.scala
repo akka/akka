@@ -9,54 +9,57 @@ import se.scalablesolutions.akka.dispatch.Dispatchers
 import se.scalablesolutions.akka.actor.{ActorRef, Actor}
 import Actor._
 
-case class Send(actor: Actor)
+object ClientInitiatedRemoteActorSpec {
+  case class Send(actor: Actor)
 
-object RemoteActorSpecActorUnidirectional {
-  val latch = new CountDownLatch(1)
-}
-class RemoteActorSpecActorUnidirectional extends Actor {
-  self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
-
-  def receive = {
-    case "OneWay" =>
-      RemoteActorSpecActorUnidirectional.latch.countDown
+  object RemoteActorSpecActorUnidirectional {
+    val latch = new CountDownLatch(1)
   }
-}
+  class RemoteActorSpecActorUnidirectional extends Actor {
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
-class RemoteActorSpecActorBidirectional extends Actor {
-  def receive = {
-    case "Hello" =>
-      self.reply("World")
-    case "Failure" =>
-      throw new RuntimeException("Expected exception; to test fault-tolerance")
+    def receive = {
+      case "OneWay" =>
+        RemoteActorSpecActorUnidirectional.latch.countDown
+    }
   }
-}
 
-class SendOneWayAndReplyReceiverActor extends Actor {
-  def receive = {
-    case "Hello" =>
-      self.reply("World")
+  class RemoteActorSpecActorBidirectional extends Actor {
+    def receive = {
+      case "Hello" =>
+        self.reply("World")
+      case "Failure" =>
+        throw new RuntimeException("Expected exception; to test fault-tolerance")
+    }
   }
-}
 
-object SendOneWayAndReplySenderActor {
-  val latch = new CountDownLatch(1)
-}
-class SendOneWayAndReplySenderActor extends Actor {
-  var state: Option[AnyRef] = None
-  var sendTo: ActorRef = _
-  var latch: CountDownLatch = _
+  class SendOneWayAndReplyReceiverActor extends Actor {
+    def receive = {
+      case "Hello" =>
+        self.reply("World")
+    }
+  }
 
-  def sendOff = sendTo ! "Hello"
+  object SendOneWayAndReplySenderActor {
+    val latch = new CountDownLatch(1)
+  }
+  class SendOneWayAndReplySenderActor extends Actor {
+    var state: Option[AnyRef] = None
+    var sendTo: ActorRef = _
+    var latch: CountDownLatch = _
 
-  def receive = {
-    case msg: AnyRef =>
-      state = Some(msg)
-      SendOneWayAndReplySenderActor.latch.countDown
+    def sendOff = sendTo ! "Hello"
+
+    def receive = {
+      case msg: AnyRef =>
+        state = Some(msg)
+        SendOneWayAndReplySenderActor.latch.countDown
+    }
   }
 }
 
 class ClientInitiatedRemoteActorSpec extends JUnitSuite {
+  import ClientInitiatedRemoteActorSpec._
   se.scalablesolutions.akka.config.Config.config
 
   val HOSTNAME = "localhost"

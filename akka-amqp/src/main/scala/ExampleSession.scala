@@ -144,10 +144,10 @@ object ExampleSession {
     }
     val rpcServerSerializer = new RpcServerSerializer[String, Int](serverFromBinary, serverToBinary)
 
-    val rpcServer = AMQP.newRpcServer[String,Int](connection, exchangeParameters, "rpc.in.key", rpcServerSerializer, {
-      case "rpc_request" => 3
-      case _ => error("unknown request")
-    })
+    def requestHandler(request: String) = 3
+
+    val rpcServer = AMQP.newRpcServer[String,Int](connection, exchangeParameters, "rpc.in.key", rpcServerSerializer,
+      requestHandler, queueName = Some("rpc.in.key.queue"))
 
 
     /** Client */
