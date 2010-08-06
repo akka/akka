@@ -266,7 +266,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     )
 
   // Exclude slf4j1.5.11 from the classpath, it's conflicting...
-  override def runClasspath = super.runClasspath --- (super.runClasspath ** "slf4j*1.5.11.jar")
+  override def runClasspath = super.runClasspath +++
+                              descendents(info.projectPath / "config", "*") ---
+                              (super.runClasspath ** "slf4j*1.5.11.jar")
+
+  override def mainResources = super.mainResources +++
+                               descendents(info.projectPath / "config", "*")
 
   // ------------------------------------------------------------
   // publishing
@@ -343,6 +348,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val sjson         = Dependencies.sjson
     val werkz         = Dependencies.werkz
     val werkz_core    = Dependencies.werkz_core
+    val slf4j         = Dependencies.slf4j
+    val slf4j_log4j   = Dependencies.slf4j_log4j
+    val log4j         = Dependencies.log4j
 
     // testing
     val junit     = Dependencies.junit
@@ -453,9 +461,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra   = Dependencies.cassandra
-    val log4j       = Dependencies.log4j
-    val slf4j       = Dependencies.slf4j
-    val slf4j_log4j = Dependencies.slf4j_log4j
 
     // testing
     val cassandra_clhm = Dependencies.cassandra_clhm
@@ -634,6 +639,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
+    //Must be like this to be able to exclude the geronimo-servlet_2.4_spec which is a too old Servlet spec
     override def ivyXML =
       <dependencies>
         <dependency org="org.springframework" name="spring-jms" rev={SPRING_VERSION}>
@@ -701,7 +707,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     ((outputPath ##) / defaultJarName) +++
     mainResources +++
     mainDependencies.scalaJars +++
-    descendents(info.projectPath, "*.conf") +++
     descendents(info.projectPath / "scripts", "run_akka.sh") +++
     descendents(info.projectPath / "dist", "*.jar") +++
     descendents(info.projectPath / "deploy", "*.jar") +++
