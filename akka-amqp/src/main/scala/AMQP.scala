@@ -95,13 +95,15 @@ object AMQP {
                    exchangeParameters: ExchangeParameters,
                    routingKey: String,
                    serializer: RpcServerSerializer[I,O],
-                   requestHandler: PartialFunction[I, O],
+                   requestHandler: I => O,
+                   queueName: Option[String] = None,
                    channelParameters: Option[ChannelParameters] = None) = {
     val producer = newProducer(connection, new ProducerParameters(new ExchangeParameters("", ExchangeType.Direct), channelParameters = channelParameters))
     val rpcServer = actorOf(new RpcServerActor[I,O](producer, serializer, requestHandler))
     val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, routingKey, rpcServer
       , channelParameters = channelParameters
-      , selfAcknowledging = false))
+      , selfAcknowledging = false
+      , queueName = queueName))
 
   }
 
