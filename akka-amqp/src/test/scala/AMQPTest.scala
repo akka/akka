@@ -5,5 +5,5 @@
 package se.scalablesolutions.akka.amqp.test
 
 object AMQPTest {
-  def enabled = false
+  def enabled = true
 }
