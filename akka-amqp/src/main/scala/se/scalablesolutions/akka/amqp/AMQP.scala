@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
- */
-
 package se.scalablesolutions.akka.amqp
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.actor.Actor._
+/**
+ *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import java.lang.IllegalArgumentException
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import Actor._
+
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
  *
@@ -80,33 +81,6 @@ object AMQP {
     consumer
   }
 
-  def newRpcClient[O,I](connection: ActorRef,
-                   exchangeParameters: ExchangeParameters,
-                   routingKey: String,
-                   serializer: RpcClientSerializer[O,I],
-                   channelParameters: Option[ChannelParameters] = None): ActorRef = {
-    val rpcActor: ActorRef = actorOf(new RpcClientActor[O,I](exchangeParameters, routingKey, serializer, channelParameters))
-    connection.startLink(rpcActor)
-    rpcActor ! Start
-    rpcActor
-  }
-
-  def newRpcServer[I,O](connection: ActorRef,
-                   exchangeParameters: ExchangeParameters,
-                   routingKey: String,
-                   serializer: RpcServerSerializer[I,O],
-                   requestHandler: I => O,
-                   queueName: Option[String] = None,
-                   channelParameters: Option[ChannelParameters] = None) = {
-    val producer = newProducer(connection, new ProducerParameters(new ExchangeParameters("", ExchangeType.Direct), channelParameters = channelParameters))
-    val rpcServer = actorOf(new RpcServerActor[I,O](producer, serializer, requestHandler))
-    val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, routingKey, rpcServer
-      , channelParameters = channelParameters
-      , selfAcknowledging = false
-      , queueName = queueName))
-
-  }
-
   private val supervisor = new AMQPSupervisor
 
   class AMQPSupervisor extends Logging {
@@ -129,17 +103,4 @@ object AMQP {
       connectionActor
     }
   }
-
-  trait FromBinary[T] {
-    def fromBinary(bytes: Array[Byte]): T
-  }
-
-  trait ToBinary[T] {
-    def toBinary(t: T): Array[Byte]
-  }
-
-
-  case class RpcClientSerializer[O,I](toBinary: ToBinary[O], fromBinary: FromBinary[I])
-
-  case class RpcServerSerializer[I,O](fromBinary: FromBinary[I], toBinary: ToBinary[O])
 }
