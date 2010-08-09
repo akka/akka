@@ -45,7 +45,7 @@ class Logger(val logger: SLFLogger)
 
   //Trace
   def trace(t: Throwable, fmt: => String, arg: Any, argN: Any*){
-    trace(t,message(fmt,arg,argN))
+    trace(t,message(fmt,arg,argN:_*))
   }
 
   def trace(t: Throwable, msg: => String){
@@ -53,7 +53,7 @@ class Logger(val logger: SLFLogger)
   }
 
   def trace(fmt: => String, arg: Any, argN: Any*){
-     trace(message(fmt,arg,argN))
+     trace(message(fmt,arg,argN:_*))
   }
 
   def trace(msg: => String){
@@ -61,7 +61,7 @@ class Logger(val logger: SLFLogger)
   }
   //Debug
   def debug(t: Throwable, fmt: => String, arg: Any, argN: Any*){
-    debug(t,message(fmt,arg,argN))
+    debug(t,message(fmt,arg,argN:_*))
   }
 
   def debug(t: Throwable, msg: => String){
@@ -69,7 +69,7 @@ class Logger(val logger: SLFLogger)
   }
 
   def debug(fmt: => String, arg: Any, argN: Any*){
-     debug(message(fmt,arg,argN))
+     debug(message(fmt,arg,argN:_*))
   }
 
   def debug(msg: => String){
@@ -77,7 +77,7 @@ class Logger(val logger: SLFLogger)
   }
   //Info
   def info(t: Throwable, fmt: => String, arg: Any, argN: Any*){
-    info(t,message(fmt,arg,argN))
+    info(t,message(fmt,arg,argN:_*))
   }
 
   def info(t: Throwable, msg: => String){
@@ -85,7 +85,7 @@ class Logger(val logger: SLFLogger)
   }
 
   def info(fmt: => String, arg: Any, argN: Any*){
-     info(message(fmt,arg,argN))
+     info(message(fmt,arg,argN:_*))
   }
 
   def info(msg: => String){
@@ -93,7 +93,7 @@ class Logger(val logger: SLFLogger)
   }
   //Warning
   def warning(t: Throwable, fmt: => String, arg: Any, argN: Any*){
-    warning(t,message(fmt,arg,argN))
+    warning(t,message(fmt,arg,argN:_*))
   }
 
   def warning(t: Throwable, msg: => String){
@@ -101,7 +101,7 @@ class Logger(val logger: SLFLogger)
   }
 
   def warning(fmt: => String, arg: Any, argN: Any*){
-     warning(message(fmt,arg,argN))
+     warning(message(fmt,arg,argN:_*))
   }
 
   def warning(msg: => String){
@@ -109,7 +109,7 @@ class Logger(val logger: SLFLogger)
   }
   //Error
   def error(t: Throwable, fmt: => String, arg: Any, argN: Any*){
-    error(t,message(fmt,arg,argN))
+    error(t,message(fmt,arg,argN:_*))
   }
 
   def error(t: Throwable, msg: => String){
@@ -117,18 +117,18 @@ class Logger(val logger: SLFLogger)
   }
 
   def error(fmt: => String, arg: Any, argN: Any*){
-     error(message(fmt,arg,argN))
+     error(message(fmt,arg,argN:_*))
   }
 
   def error(msg: => String){
      if(error_?) logger error msg
   }
 
-  protected def message(msg: String,arg: Any, argN: Any*) : String = {
+  protected def message(fmt: String, arg: Any, argN: Any*) : String = {
     if((argN eq null) || argN.isEmpty)
-      msg.format(arg)
+      fmt.format(arg)
     else
-      msg.format((arg +: argN):_*)
+      fmt.format((arg +: argN):_*)
   }
 }
 
