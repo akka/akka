@@ -83,12 +83,15 @@ trait BootableActorLoaderService extends Bootable with Logging {
     } else Thread.currentThread.getContextClassLoader)
   }
 
-  abstract override def onLoad = {
+  abstract override def onLoad = {  
+    applicationLoader.foreach(_ => log.info("Creating /deploy class-loader"))
+
+    super.onLoad
+
     for (loader <- applicationLoader; clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
-    super.onLoad
   }
 
   abstract override def onUnload = {
