@@ -83,12 +83,12 @@ object Transaction {
     if (JTA_AWARE) Some(TransactionContainer())
     else None
 
-  log.ifTrace("Creating transaction " + toString)
+  log.trace("Creating transaction " + toString)
 
   // --- public methods ---------
 
   def begin = synchronized {
-    log.ifTrace("Starting transaction " + toString)
+    log.trace("Starting transaction " + toString)
     jta.foreach { txContainer =>
       txContainer.begin
       txContainer.registerSynchronization(new StmSynchronization(txContainer, this))
@@ -96,14 +96,14 @@ object Transaction {
   }
 
   def commit = synchronized {
-    log.ifTrace("Committing transaction " + toString)
+    log.trace("Committing transaction " + toString)
     persistentStateMap.valuesIterator.foreach(_.commit)
     status = TransactionStatus.Completed
     jta.foreach(_.commit)
   }
 
   def abort = synchronized {
-    log.ifTrace("Aborting transaction " + toString)
+    log.trace("Aborting transaction " + toString)
     jta.foreach(_.rollback)
     persistentStateMap.valuesIterator.foreach(_.abort)
     persistentStateMap.clear
