@@ -449,7 +449,7 @@ object TypedActor extends Logging {
         val parent = clazz.getSuperclass
         if (parent != null) injectTypedActorContext0(typedActor, parent)
         else {
-          log.ifTrace("Can't set 'TypedActorContext' for TypedActor [" +
+          log.trace("Can't set 'TypedActorContext' for TypedActor [" +
                       typedActor.getClass.getName +
                       "] since no field of this type could be found.")
           None
@@ -728,7 +728,7 @@ private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
 
   def receive = {
     case invocation @ Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
-      TypedActor.log.ifTrace("Invoking Typed Actor with message:\n" + invocation)
+      TypedActor.log.trace("Invoking Typed Actor with message:\n" + invocation)
       context.foreach { ctx =>
         if (sender ne null) ctx._sender = sender
         if (senderFuture ne null) ctx._senderFuture = senderFuture
