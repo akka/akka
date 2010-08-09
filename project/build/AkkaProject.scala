@@ -628,6 +628,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val junit       = Dependencies.junit
 
     def deployPath = AkkaParentProject.this.deployPath
+    override def jarPath = warPath
   }
 
   class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
@@ -723,27 +724,28 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject
 
-  trait DeployProject { self: Project =>
+}
+
+  trait DeployProject { self: BasicScalaProject =>
     // defines where the deployTask copies jars to
     def deployPath: Path
 
-    lazy val dist = distAction
-    def distAction = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
+    lazy val dist = deployTask(jarPath, packageDocsJar, packageSrcJar, deployPath, true, true, true) dependsOn(
       `package`, packageDocs, packageSrc) describedAs("Deploying")
     def deployTask(jar: Path, docs: Path, src: Path, toDir: Path,
                    genJar: Boolean, genDocs: Boolean, genSource: Boolean) = task {
-      gen(jar, toDir, genJar, "Deploying bits") orElse
-      gen(docs, toDir, genDocs, "Deploying docs") orElse
-      gen(src, toDir, genSource, "Deploying sources")
-    }
-    private def gen(jar: Path, toDir: Path, flag: Boolean, msg: String): Option[String] =
+      def gen(jar: Path, toDir: Path, flag: Boolean, msg: String): Option[String] =
       if (flag) {
         log.info(msg + " " + jar)
         FileUtilities.copyFile(jar, toDir / jar.name, log)
       } else None
+
+      gen(jar, toDir, genJar, "Deploying bits") orElse
+      gen(docs, toDir, genDocs, "Deploying docs") orElse
+      gen(src, toDir, genSource, "Deploying sources")
+    }
   }
 
-  trait OSGiProject extends DefaultProject with BNDPlugin {
+  trait OSGiProject extends BNDPlugin { self: DefaultProject =>
     override def bndExportPackage = Seq("se.scalablesolutions.akka.*;version=%s".format(projectVersion.value))
   }
-}
