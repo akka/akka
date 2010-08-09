@@ -30,7 +30,8 @@ trait Logging {
  *   log.error(new Exception(),"My foo is %s","broken")
  * }
  *
- * The if*-methods do not take vararg parameters, and are therefor faster
+ * The logger uses String.format:
+ * http://download-llnw.oracle.com/javase/6/docs/api/java/lang/String.html#format(java.lang.String,%20java.lang.Object...)
  */
 class Logger(val logger: SLFLogger)
 {
