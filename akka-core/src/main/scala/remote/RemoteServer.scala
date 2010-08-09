@@ -261,20 +261,14 @@ class RemoteServer extends Logging {
   /**
    * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
-  def register(actorRef: ActorRef) = synchronized {
-    if (_isRunning) {
-      if (!actorRef.isRunning) actorRef.start
-      log.info("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
-      RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actorRef.id, actorRef)
-    }
-  }
+  def register(actorRef: ActorRef): Unit = register(actorRef.id,actorRef)
 
   /**
    * Register Remote Actor by a specific 'id' passed as argument.
    * <p/>
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
-  def register(id: String, actorRef: ActorRef) = synchronized {
+  def register(id: String, actorRef: ActorRef): Unit = synchronized {
     if (_isRunning) {
       if (!actorRef.isRunning) actorRef.start
       log.info("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
@@ -285,7 +279,7 @@ class RemoteServer extends Logging {
   /**
    * Unregister Remote Actor that is registered using its 'id' field (not custom ID).
    */
-  def unregister(actorRef: ActorRef) = synchronized {
+  def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
       log.info("Unregistering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
       val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
@@ -299,7 +293,7 @@ class RemoteServer extends Logging {
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
-  def unregister(id: String) = synchronized {
+  def unregister(id: String):Unit = synchronized {
     if (_isRunning) {
       log.info("Unregistering server side remote actor with id [%s]", id)
       val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
@@ -509,7 +503,8 @@ class RemoteServerHandler(
     val uuid = actorInfo.getUuid
     val timeout = actorInfo.getTimeout
 
-    val actorRefOrNull = actors.get(uuid)
+    val actorRefOrNull = actors get uuid
+
     if (actorRefOrNull eq null) {
       try {
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
