@@ -640,7 +640,6 @@ class LocalActorRef private[akka](
       hotswap = __hotswap
       actorSelfFields._1.set(actor, this)
       actorSelfFields._2.set(actor, Some(this))
-      actorSelfFields._3.set(actor, Some(this))
       start
       __messages.foreach(message => this ! MessageSerializer.deserialize(message.getMessage))
       checkReceiveTimeout
@@ -1201,18 +1200,15 @@ class LocalActorRef private[akka](
   private def nullOutActorRefReferencesFor(actor: Actor) = {
     actorSelfFields._1.set(actor, null)
     actorSelfFields._2.set(actor, null)
-    actorSelfFields._3.set(actor, null)
   }
 
-  private def findActorSelfField(clazz: Class[_]): Tuple3[Field, Field, Field] = {
+  private def findActorSelfField(clazz: Class[_]): Tuple2[Field, Field] = {
     try {
       val selfField =       clazz.getDeclaredField("self")
-      val optionSelfField = clazz.getDeclaredField("optionSelf")
       val someSelfField =   clazz.getDeclaredField("someSelf")
       selfField.setAccessible(true)
-      optionSelfField.setAccessible(true)
       someSelfField.setAccessible(true)
-      (selfField, optionSelfField, someSelfField)
+      (selfField, someSelfField)
     } catch {
       case e: NoSuchFieldException =>
         val parent = clazz.getSuperclass
