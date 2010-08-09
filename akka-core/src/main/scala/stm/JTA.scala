@@ -122,7 +122,7 @@ class TransactionContainer private (val tm: Either[Option[UserTransaction], Opti
   }
 
   def begin = {
-    TransactionContainer.log.ifTrace("Starting JTA transaction")
+    TransactionContainer.log.trace("Starting JTA transaction")
     tm match {
       case Left(Some(userTx)) => userTx.begin
       case Right(Some(txMan)) => txMan.begin
@@ -131,7 +131,7 @@ class TransactionContainer private (val tm: Either[Option[UserTransaction], Opti
   }
 
   def commit = {
-    TransactionContainer.log.ifTrace("Committing JTA transaction")
+    TransactionContainer.log.trace("Committing JTA transaction")
     tm match {
       case Left(Some(userTx)) => userTx.commit
       case Right(Some(txMan)) => txMan.commit
@@ -140,7 +140,7 @@ class TransactionContainer private (val tm: Either[Option[UserTransaction], Opti
   }
 
   def rollback = {
-    TransactionContainer.log.ifTrace("Aborting JTA transaction")
+    TransactionContainer.log.trace("Aborting JTA transaction")
     tm match {
       case Left(Some(userTx)) => userTx.rollback
       case Right(Some(txMan)) => txMan.rollback

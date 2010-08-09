@@ -1101,7 +1101,7 @@ class LocalActorRef private[akka](
       clearTransactionSet
       createNewTransactionSet
     } else oldTxSet
-    Actor.log.ifTrace("Joining transaction set [" + currentTxSet +
+    Actor.log.trace("Joining transaction set [" + currentTxSet +
                       "];\n\tactor " + toString +
                       "\n\twith message [" + message + "]")
     val mtx = ThreadLocalTransaction.getThreadLocalTransaction
@@ -1110,7 +1110,7 @@ class LocalActorRef private[akka](
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    Actor.log.ifTrace("Invoking actor with message:\n" + messageHandle)
+    Actor.log.trace("Invoking actor with message:\n" + messageHandle)
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     var topLevelTransaction = false
     val txSet: Option[CountDownCommitBarrier] =
@@ -1118,7 +1118,7 @@ class LocalActorRef private[akka](
       else {
         topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
         if (isTransactor) {
-          Actor.log.ifTrace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString +
+          Actor.log.trace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString +
                             "\n\twith message " + messageHandle)
           Some(createNewTransactionSet)
         } else None
