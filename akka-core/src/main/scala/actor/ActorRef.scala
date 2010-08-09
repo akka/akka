@@ -1069,8 +1069,8 @@ class LocalActorRef private[akka](
   }
 
   private[this] def newActor: Actor = {
+    Actor.actorRefInCreation.withValue(Some(this)){
     isInInitialization = true
-    Actor.actorRefInCreation.value = Some(this)
     val actor = actorFactory match {
       case Left(Some(clazz)) =>
         try {
@@ -1092,6 +1092,7 @@ class LocalActorRef private[akka](
       "Actor instance passed to ActorRef can not be 'null'")
     isInInitialization = false
     actor
+    }
   }
 
   private def joinTransaction(message: Any) = if (isTransactionSetInScope) {

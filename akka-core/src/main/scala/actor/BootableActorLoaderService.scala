@@ -26,7 +26,7 @@ class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLC
   }
 
   def listClassesInPackage(jar : URL, pkg : String) = {
-        val f  = new File(jar.getFile)
+    val f  = new File(jar.getFile)
     val jf = new JarFile(f)
     try {
       val es = jf.entries
