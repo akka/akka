@@ -12,33 +12,33 @@ import se.scalablesolutions.akka.actor.*;
  */
 public class SampleUntypedActor extends UntypedActor {
 
-  public void onReceive(Object message, UntypedActorRef self) throws Exception {
-        if (message instanceof String) {
+  public void onReceive(Object message) throws Exception {
+    if (message instanceof String) {
       String msg = (String)message;
-            System.out.println("Received message: " + msg);
+      System.out.println("Received message: " + msg);
 
-          if (msg.equals("UseReply")) {
-                // Reply to original sender of message using the 'replyUnsafe' method
-                self.replyUnsafe(msg + ":" + self.getUuid());
+      if (msg.equals("UseReply")) {
+        // Reply to original sender of message using the 'replyUnsafe' method
+        getContext().replyUnsafe(msg + ":" + getContext().getUuid());
           
-          } else if (msg.equals("UseSender") && self.getSender().isDefined()) { 
-                // Reply to original sender of message using the sender reference
-                // also passing along my own refererence (the self)
-                self.getSender().get().sendOneWay(msg, self); 
+      } else if (msg.equals("UseSender") && getContext().getSender().isDefined()) { 
+        // Reply to original sender of message using the sender reference
+        // also passing along my own refererence (the context)
+        getContext().getSender().get().sendOneWay(msg, getContext()); 
 
-          } else if (msg.equals("UseSenderFuture") && self.getSenderFuture().isDefined()) {     
-                // Reply to original sender of message using the sender future reference
-                self.getSenderFuture().get().completeWithResult(msg);
+      } else if (msg.equals("UseSenderFuture") && getContext().getSenderFuture().isDefined()) {     
+        // Reply to original sender of message using the sender future reference
+        getContext().getSenderFuture().get().completeWithResult(msg);
 
-          } else if (msg.equals("SendToSelf")) {
-                // Send fire-forget message to the actor itself recursively
-                self.sendOneWay(msg);
+      } else if (msg.equals("SendToSelf")) {
+        // Send fire-forget message to the actor recursively
+        getContext().sendOneWay(msg);
 
-          } else if (msg.equals("ForwardMessage")) {
-                // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
-                ActorRef actorRef = ActorRegistry.actorsFor("some-actor-id")[0];
-                // Wrap the ActorRef in an UntypedActorRef and forward the message to this actor
-            UntypedActorRef.wrap(actorRef).forward(msg, self);
+      } else if (msg.equals("ForwardMessage")) {
+        // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
+        ActorRef actorRef = ActorRegistry.actorsFor("some-actor-id")[0];
+        // Wrap the ActorRef in an UntypedActorRef and forward the message to this actor
+        UntypedActorRef.wrap(actorRef).forward(msg, getContext());
               
       } else throw new IllegalArgumentException("Unknown message: " + message);
     } else throw new IllegalArgumentException("Unknown message: " + message);

@@ -75,7 +75,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
   @volatile protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
-  protected[this] val guard = new ReentrantGuard
+  protected[akka] val guard = new ReentrantGuard
 
   /**
    * User overridable callback/setting.
