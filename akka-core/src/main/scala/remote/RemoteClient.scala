@@ -255,11 +255,11 @@ class RemoteClientPipelineFactory(name: String,
   def getPipeline: ChannelPipeline = {
 
     def join(ch: ChannelHandler*) = Array[ChannelHandler](ch:_*)
-    
+
     val engine = RemoteServerSslContext.client.createSSLEngine()
     engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
     engine.setUseClientMode(true)
-  
+
     val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val timeout     = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
     val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)

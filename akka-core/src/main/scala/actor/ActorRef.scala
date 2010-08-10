@@ -203,7 +203,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
 
   protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
   protected[akka] def currentMessage = guard.withGuard { _currentMessage }
-  
+
   /** comparison only takes uuid into account
    */
   def compareTo(other: ActorRef) = this.uuid.compareTo(other.uuid)

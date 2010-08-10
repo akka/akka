@@ -428,7 +428,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
   // akka-persistence-common subproject
   // -------------------------------------------------------------------------------------------------------------------
-  
+
   class AkkaPersistenceCommonProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_pool = Dependencies.commons_pool
     val thrift       = Dependencies.thrift

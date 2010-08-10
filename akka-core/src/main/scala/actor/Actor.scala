@@ -97,7 +97,7 @@ object Actor extends Logging {
   type Receive = PartialFunction[Any, Unit]
 
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
-  
+
   /**
    * Creates an ActorRef out of the Actor with type T.
    * <pre>
