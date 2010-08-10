@@ -60,7 +60,6 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
   }
 
   private def connect = if (connection.isEmpty || !connection.get.isOpen) {
-
     try {
       connection = Some(connectionFactory.newConnection)
       connection.foreach {
@@ -118,5 +117,4 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     notifyCallback(Reconnecting)
     connect
   }
-
 }

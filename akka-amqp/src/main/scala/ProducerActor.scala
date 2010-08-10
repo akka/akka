@@ -8,7 +8,8 @@ import com.rabbitmq.client._
 import se.scalablesolutions.akka.amqp.AMQP.ProducerParameters
 
 private[amqp] class ProducerActor(producerParameters: ProducerParameters)
-        extends FaultTolerantChannelActor(producerParameters.exchangeParameters, producerParameters.channelParameters) {
+    extends FaultTolerantChannelActor(
+        producerParameters.exchangeParameters, producerParameters.channelParameters) {
 
   import producerParameters._
   import exchangeParameters._
@@ -32,29 +33,29 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
       case Some(listener) => ch.setReturnListener(listener)
       case None => ch.setReturnListener(new ReturnListener() {
         def handleBasicReturn(
-                replyCode: Int,
-                replyText: String,
-                exchange: String,
-                routingKey: String,
-                properties: com.rabbitmq.client.AMQP.BasicProperties,
-                body: Array[Byte]) = {
+            replyCode: Int,
+            replyText: String,
+            exchange: String,
+            routingKey: String,
+            properties: com.rabbitmq.client.AMQP.BasicProperties,
+            body: Array[Byte]) = {
           throw new MessageNotDeliveredException(
             "Could not deliver message [" + body +
-                    "] with reply code [" + replyCode +
-                    "] with reply text [" + replyText +
-                    "] and routing key [" + routingKey +
-                    "] to exchange [" + exchange + "]",
+            "] with reply code [" + replyCode +
+            "] with reply text [" + replyText +
+            "] and routing key [" + routingKey +
+            "] to exchange [" + exchange + "]",
             replyCode, replyText, exchange, routingKey, properties, body)
         }
       })
     }
   }
 
-  override def toString(): String =
+  override def toString =
     "AMQP.Poducer[id= "+ self.id +
-            ", exchange=" + exchangeName +
-            ", exchangeType=" + exchangeType +
-            ", durable=" + exchangeDurable +
-            ", autoDelete=" + exchangeAutoDelete + "]"
+    ", exchange=" + exchangeName +
+    ", exchangeType=" + exchangeType +
+    ", durable=" + exchangeDurable +
+    ", autoDelete=" + exchangeAutoDelete + "]"
 }
 
