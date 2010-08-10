@@ -66,7 +66,7 @@ object RPC {
           connection: ActorRef, exchange: String, requestHandler: I => O,
           routingKey: Option[String] = None,
           queueName: Option[String] = None,
-          durable = false, autoDelete = true)(implicit manifest: Manifest[I]) = {
+          durable: Boolean = false, autoDelete: Boolean = true)(implicit manifest: Manifest[I]) = {
 
     val serializer = new RpcServerSerializer[I, O](
       new FromBinary[I] {
@@ -89,7 +89,8 @@ object RPC {
   def startProtobufClient[O <: Message, I <: Message](
           connection: ActorRef, exchange: String,
           routingKey: Option[String] = None,
-          durable = false, autoDelete = true, passive = true)(implicit manifest: Manifest[I]): RpcClient[O, I] = {
+          durable: Boolean = false, autoDelete: Boolean = true,
+          passive: Boolean = true)(implicit manifest: Manifest[I]): RpcClient[O, I] = {
 
 
     val serializer = new RpcClientSerializer[O, I](
