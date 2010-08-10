@@ -16,6 +16,8 @@ import com.google.protobuf.Message
 import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 
+import scala.reflect.BeanProperty
+
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
  * <p/>
@@ -43,15 +45,34 @@ abstract class RemoteActor(address: InetSocketAddress) extends Actor {
  * Life-cycle messages for the Actors
  */
 @serializable sealed trait LifeCycleMessage
+
 case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
+
 case class Restart(reason: Throwable) extends LifeCycleMessage
-case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage
-case class Link(child: ActorRef) extends LifeCycleMessage
-case class Unlink(child: ActorRef) extends LifeCycleMessage
-case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
+
+case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage {
+  def this(child: UntypedActorRef, killer: Throwable) = this(child.actorRef, killer)
+}
+
+case class Link(child: ActorRef) extends LifeCycleMessage {
+  def this(child: UntypedActorRef) = this(child.actorRef)
+}
+
+case class Unlink(child: ActorRef) extends LifeCycleMessage {
+  def this(child: UntypedActorRef) = this(child.actorRef)
+}
+
+case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage {
+  def this(child: UntypedActorRef) = this(child.actorRef)
+}
+
 case object ReceiveTimeout extends LifeCycleMessage
+
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
-  victim: ActorRef, maxNrOfRetries: Int, withinTimeRange: Int, lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
+  @BeanProperty val victim: ActorRef,
+  @BeanProperty val maxNrOfRetries: Int,
+  @BeanProperty val withinTimeRange: Int,
+  @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
 class ActorStartException private[akka](message: String) extends RuntimeException(message)

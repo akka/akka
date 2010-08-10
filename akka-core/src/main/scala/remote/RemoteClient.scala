@@ -26,6 +26,7 @@ import java.util.concurrent.{TimeUnit, Executors, ConcurrentMap, ConcurrentHashM
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.mutable.{HashSet, HashMap}
+import scala.reflect.BeanProperty
 
 /**
  * Atomic remote request/reply message id generator.
@@ -43,9 +44,9 @@ object RemoteRequestProtocolIdFactory {
  * Life-cycle events for RemoteClient.
  */
 sealed trait RemoteClientLifeCycleEvent
-case class RemoteClientError(cause: Throwable, host: String, port: Int) extends RemoteClientLifeCycleEvent
-case class RemoteClientDisconnected(host: String, port: Int) extends RemoteClientLifeCycleEvent
-case class RemoteClientConnected(host: String, port: Int) extends RemoteClientLifeCycleEvent
+case class RemoteClientError(@BeanProperty val cause: Throwable, @BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
+case class RemoteClientDisconnected(@BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
+case class RemoteClientConnected(@BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
