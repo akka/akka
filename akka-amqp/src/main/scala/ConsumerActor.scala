@@ -35,9 +35,8 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
       queueName match {
         case Some(name) =>
           log.debug("Declaring new queue [%s] for %s", name, toString)
-          if (queuePassive) {
-            ch.queueDeclarePassive(name)
-          } else {
+          if (queuePassive) ch.queueDeclarePassive(name)
+          else {
             ch.queueDeclare(
               name, queueDurable, queueExclusive, queueAutoDelete,
               JavaConversions.asMap(configurationArguments))

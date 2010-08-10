@@ -76,7 +76,8 @@ object AMQP {
 
   def newConsumer(connection: ActorRef, consumerParameters: ConsumerParameters): ActorRef = {
     val consumer: ActorRef = actorOf(new ConsumerActor(consumerParameters))
-    consumer.startLink(consumerParameters.deliveryHandler)
+    val handler = consumerParameters.deliveryHandler
+    if (handler.supervisor.isEmpty) consumer.startLink(handler)
     connection.startLink(consumer)
     consumer ! Start
     consumer
