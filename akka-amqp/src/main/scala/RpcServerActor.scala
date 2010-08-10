@@ -9,8 +9,8 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import se.scalablesolutions.akka.amqp.AMQP.RpcServerSerializer
 
 class RpcServerActor[I,O](
-    producer: ActorRef, 
-    serializer: RpcServerSerializer[I,O], 
+    producer: ActorRef,
+    serializer: RpcServerSerializer[I,O],
     requestHandler: I => O) extends Actor {
 
   log.info("%s started", this)

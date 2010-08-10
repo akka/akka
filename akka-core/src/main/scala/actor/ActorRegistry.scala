@@ -49,13 +49,13 @@ object ActorRegistry extends ListenerManagement {
 
   /**
    * Invokes the function on all known actors until it returns Some
-   * Returns None if the function never returns Some 
+   * Returns None if the function never returns Some
    */
   def find[T](f: (ActorRef) => Option[T]) : Option[T] = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val result = f(elements.nextElement)
-      
+
       if(result.isDefined)
         return result
     }
@@ -134,7 +134,7 @@ object ActorRegistry extends ListenerManagement {
       newSet add actor
 
       val oldSet = actorsById.putIfAbsent(id,newSet)
-      
+
       //Parry for two simultaneous putIfAbsent(id,newSet)
       if(oldSet ne null)
         oldSet add actor

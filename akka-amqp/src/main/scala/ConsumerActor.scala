@@ -39,7 +39,7 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
             ch.queueDeclarePassive(name)
           } else {
             ch.queueDeclare(
-              name, queueDurable, queueExclusive, queueAutoDelete, 
+              name, queueDurable, queueExclusive, queueAutoDelete,
               JavaConversions.asMap(configurationArguments))
           }
         case None =>

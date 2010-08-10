@@ -311,10 +311,10 @@ object RemoteServerSslContext {
     val protocol  = "TLS"
     //val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
     //val store = KeyStore.getInstance("JKS")
-    
+
     val s = SSLContext.getInstance(protocol)
     s.init(null,null,null)
-    
+
     val c = SSLContext.getInstance(protocol)
     c.init(null,null,null)
 
@@ -379,11 +379,11 @@ class RemoteServerHandler(
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
     openChannels.add(ctx.getChannel)
   }
-  
+
   override def channelConnected(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
     if(RemoteServer.SECURE) {
       val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
- 
+
       // Begin handshake.
       sslHandler.handshake().addListener( new ChannelFutureListener {
         def operationComplete(future : ChannelFuture) : Unit = {

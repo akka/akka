@@ -44,7 +44,7 @@ class SchedulerSpec extends JUnitSuite {
     // should still be 1 left
     assert(countDownLatch.getCount == 1)
   }
-  
+
   /**
    * ticket #372
    */
@@ -59,19 +59,19 @@ class SchedulerSpec extends JUnitSuite {
     assert(ticks.await(10,TimeUnit.SECONDS))
     assert(ActorRegistry.actors.length === numActors)
   }
-  
+
   /**
    * ticket #372
    */
   @Test def schedulerShouldBeCancellable = withCleanEndState {
     object Ping
     val ticks = new CountDownLatch(1)
-    
+
     val actor = actorOf(new Actor {
       def receive = { case Ping => ticks.countDown }
     }).start
 
-    (1 to 10).foreach { i => 
+    (1 to 10).foreach { i =>
       val future = Scheduler.scheduleOnce(actor,Ping,1,TimeUnit.SECONDS)
       future.cancel(true)
     }

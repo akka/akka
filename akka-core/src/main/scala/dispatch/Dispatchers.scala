@@ -43,7 +43,7 @@ object Dispatchers {
   val THROUGHPUT = config.getInt("akka.actor.throughput", 5)
 
   object globalHawtDispatcher extends HawtDispatcher
-  
+
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global") {
     override def register(actor: ActorRef) = {
       if (isShutdown) init
@@ -52,7 +52,7 @@ object Dispatchers {
   }
 
   object globalReactorBasedSingleThreadEventDrivenDispatcher extends ReactorBasedSingleThreadEventDrivenDispatcher("global")
-  
+
   object globalReactorBasedThreadPoolEventDrivenDispatcher extends ReactorBasedThreadPoolEventDrivenDispatcher("global")
 
   /**
