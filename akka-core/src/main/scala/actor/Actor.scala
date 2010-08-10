@@ -317,15 +317,14 @@ trait Actor extends Logging {
   type Receive = Actor.Receive
 
   /*
-  * Option[ActorRef] representation of the 'self' ActorRef reference.
-  * <p/>
-  * Mainly for internal use, functions as the implicit sender references when invoking
-  * one of the message send functions ('!', '!!' and '!!!').
-  */
-  @transient implicit val optionSelf: Option[ActorRef] = {
-    val ref = Actor.actorRefInCreation.value
-    Actor.actorRefInCreation.value = None
-    if (ref.isEmpty) throw new ActorInitializationException(
+   * Some[ActorRef] representation of the 'self' ActorRef reference.
+   * <p/>
+   * Mainly for internal use, functions as the implicit sender references when invoking
+   * the 'forward' function.
+   */
+  @transient implicit val someSelf: Some[ActorRef] = {
+    val optRef = Actor.actorRefInCreation.value
+    if (optRef.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
       "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
@@ -333,16 +332,19 @@ trait Actor extends Logging {
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
       "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
-    else ref
+    
+     val ref = optRef.asInstanceOf[Some[ActorRef]].get
+     ref.id = getClass.getName //FIXME: Is this needed?
+     optRef.asInstanceOf[Some[ActorRef]]
   }
 
-  /*
-   * Some[ActorRef] representation of the 'self' ActorRef reference.
+   /*
+   * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
-   * the 'forward' function.
+   * one of the message send functions ('!', '!!' and '!!!').
    */
-  @transient implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
+  implicit def optionSelf: Option[ActorRef] = someSelf
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -371,11 +373,7 @@ trait Actor extends Logging {
    * self.stop(..)
    * </pre>
    */
-  @transient val self: ActorRef = {
-    val zelf = optionSelf.get
-    zelf.id = getClass.getName
-    zelf
-  }
+  @transient val self: ActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
