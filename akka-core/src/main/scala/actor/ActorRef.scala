@@ -24,13 +24,13 @@ import org.multiverse.api.exceptions.DeadTransactionException
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
 
 import jsr166x.{Deque, ConcurrentLinkedDeque}
 
 import com.google.protobuf.ByteString
+import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -72,7 +72,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
   @volatile protected[this] var _isShutDown = false
   @volatile protected[akka] var _isBeingRestarted = false
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServer.HOSTNAME, RemoteServer.PORT)
-  @volatile protected[akka] var _timeoutActor: Option[ActorRef] = None
+  @volatile protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
   protected[akka] val guard = new ReentrantGuard
@@ -559,14 +559,16 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
     cancelReceiveTimeout
     receiveTimeout.foreach { time =>
       log.debug("Scheduling timeout for %s", this)
-      _timeoutActor = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, time, TimeUnit.MILLISECONDS))
+      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, time, TimeUnit.MILLISECONDS))
     }
   }
 
-  protected[akka] def cancelReceiveTimeout = _timeoutActor.foreach { timeoutActor =>
-    if (timeoutActor.isRunning) Scheduler.unschedule(timeoutActor)
-    _timeoutActor = None
-    log.debug("Timeout canceled for %s", this)
+  protected[akka] def cancelReceiveTimeout = {
+    if(_futureTimeout.isDefined) {
+      _futureTimeout.get.cancel(true)
+      _futureTimeout = None
+      log.debug("Timeout canceled for %s", this)
+    }
   }
 }
 
@@ -1069,8 +1071,8 @@ class LocalActorRef private[akka](
   }
 
   private[this] def newActor: Actor = {
+    Actor.actorRefInCreation.withValue(Some(this)){
     isInInitialization = true
-    Actor.actorRefInCreation.value = Some(this)
     val actor = actorFactory match {
       case Left(Some(clazz)) =>
         try {
@@ -1092,6 +1094,7 @@ class LocalActorRef private[akka](
       "Actor instance passed to ActorRef can not be 'null'")
     isInInitialization = false
     actor
+    }
   }
 
   private def joinTransaction(message: Any) = if (isTransactionSetInScope) {

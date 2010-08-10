@@ -71,7 +71,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
   lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
   lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
-  lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
+  lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsReleases)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausSnapshotRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
@@ -81,14 +81,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val ATMO_VERSION       = "0.6"
+  lazy val ATMO_VERSION       = "0.6.1"
   lazy val CAMEL_VERSION      = "2.4.0"
   lazy val CASSANDRA_VERSION  = "0.6.1"
   lazy val DispatchVersion    = "0.7.4"
   lazy val HAWTDISPATCH_VERSION = "1.0"
   lazy val JacksonVersion     = "1.2.1"
   lazy val JERSEY_VERSION     = "1.2"
-  lazy val LIFT_VERSION       = "2.0-scala280-SNAPSHOT"
+  lazy val LIFT_VERSION       = "2.1-M1"
   lazy val MULTIVERSE_VERSION = "0.6-SNAPSHOT"
   lazy val SCALATEST_VERSION  = "1.2-for-scala-2.8.0.final-SNAPSHOT"
   lazy val Slf4jVersion       = "1.6.0"
@@ -162,8 +162,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive
 
-    lazy val lift_util   = "net.liftweb" % "lift-util"   % LIFT_VERSION % "compile"
-    lazy val lift_webkit = "net.liftweb" % "lift-webkit" % LIFT_VERSION % "compile"
+    lazy val lift_util   = "net.liftweb" % "lift-util_2.8.0"   % LIFT_VERSION % "compile"
+    lazy val lift_webkit = "net.liftweb" % "lift-webkit_2.8.0" % LIFT_VERSION % "compile"
 
     lazy val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
 
