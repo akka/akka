@@ -13,7 +13,8 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.Throwable
 
 private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
-        extends FaultTolerantChannelActor(consumerParameters.exchangeParameters, consumerParameters.channelParameters) {
+    extends FaultTolerantChannelActor(
+        consumerParameters.exchangeParameters, consumerParameters.channelParameters) {
 
   import consumerParameters._
   import exchangeParameters._
@@ -37,7 +38,9 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
           if (queuePassive) {
             ch.queueDeclarePassive(name)
           } else {
-            ch.queueDeclare(name, queueDurable, queueExclusive, queueAutoDelete, JavaConversions.asMap(configurationArguments))
+            ch.queueDeclare(
+              name, queueDurable, queueExclusive, queueAutoDelete, 
+              JavaConversions.asMap(configurationArguments))
           }
         case None =>
           log.debug("Declaring new generated queue for %s", toString)
@@ -85,7 +88,6 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     throw new IllegalArgumentException(errorMessage)
   }
 
-
   override def preRestart(reason: Throwable) = {
     listenerTag = None
     super.preRestart(reason)
@@ -97,11 +99,11 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     super.shutdown
   }
 
-  override def toString(): String =
+  override def toString =
     "AMQP.Consumer[id= "+ self.id +
-            ", exchange=" + exchangeName +
-            ", exchangeType=" + exchangeType +
-            ", durable=" + exchangeDurable +
-            ", autoDelete=" + exchangeAutoDelete + "]"
+    ", exchange=" + exchangeName +
+    ", exchangeType=" + exchangeType +
+    ", durable=" + exchangeDurable +
+    ", autoDelete=" + exchangeAutoDelete + "]"
 }
 

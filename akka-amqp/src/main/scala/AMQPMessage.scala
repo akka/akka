@@ -11,19 +11,19 @@ import com.rabbitmq.client.ShutdownSignalException
 sealed trait AMQPMessage
 sealed trait InternalAMQPMessage extends AMQPMessage
 
-case class Message(payload: Array[Byte],
-                      routingKey: String,
-                      mandatory: Boolean = false,
-                      immediate: Boolean = false,
-                      properties: Option[BasicProperties] = None) extends AMQPMessage
+case class Message(
+    payload: Array[Byte],
+    routingKey: String,
+    mandatory: Boolean = false,
+    immediate: Boolean = false,
+    properties: Option[BasicProperties] = None) extends AMQPMessage
 
-case class Delivery(payload: Array[Byte],
-                        routingKey: String,
-                        deliveryTag: Long,
-                        properties: BasicProperties,
-                        sender: Option[ActorRef]) extends AMQPMessage
-
-
+case class Delivery(
+    payload: Array[Byte],
+    routingKey: String,
+    deliveryTag: Long,
+    properties: BasicProperties,
+    sender: Option[ActorRef]) extends AMQPMessage
 
 // connection messages
 case object Connect extends AMQPMessage
@@ -51,10 +51,10 @@ private[akka] case class ConnectionShutdown(cause: ShutdownSignalException) exte
 private[akka] case class ChannelShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
 
 private[akka] class MessageNotDeliveredException(
-        val message: String,
-        val replyCode: Int,
-        val replyText: String,
-        val exchange: String,
-        val routingKey: String,
-        val properties: BasicProperties,
-        val body: Array[Byte]) extends RuntimeException(message)
+    val message: String,
+    val replyCode: Int,
+    val replyText: String,
+    val exchange: String,
+    val routingKey: String,
+    val properties: BasicProperties,
+    val body: Array[Byte]) extends RuntimeException(message)

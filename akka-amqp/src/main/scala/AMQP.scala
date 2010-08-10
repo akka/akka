@@ -19,41 +19,43 @@ import se.scalablesolutions.akka.util.Logging
  */
 object AMQP {
   case class ConnectionParameters(
-          host: String = ConnectionFactory.DEFAULT_HOST,
-          port: Int = ConnectionFactory.DEFAULT_AMQP_PORT,
-          username: String = ConnectionFactory.DEFAULT_USER,
-          password: String = ConnectionFactory.DEFAULT_PASS,
-          virtualHost: String = ConnectionFactory.DEFAULT_VHOST,
-          initReconnectDelay: Long = 5000,
-          connectionCallback: Option[ActorRef] = None)
+      host: String = ConnectionFactory.DEFAULT_HOST,
+      port: Int = ConnectionFactory.DEFAULT_AMQP_PORT,
+      username: String = ConnectionFactory.DEFAULT_USER,
+      password: String = ConnectionFactory.DEFAULT_PASS,
+      virtualHost: String = ConnectionFactory.DEFAULT_VHOST,
+      initReconnectDelay: Long = 5000,
+      connectionCallback: Option[ActorRef] = None)
 
   case class ChannelParameters(
-          shutdownListener: Option[ShutdownListener] = None,
-          channelCallback: Option[ActorRef] = None)
+      shutdownListener: Option[ShutdownListener] = None,
+      channelCallback: Option[ActorRef] = None)
 
   case class ExchangeParameters(
-          exchangeName: String,
-          exchangeType: ExchangeType,
-          exchangeDurable: Boolean = false,
-          exchangeAutoDelete: Boolean = true,
-          exchangePassive: Boolean = false,
-          configurationArguments: Map[String, AnyRef] = Map())
+      exchangeName: String,
+      exchangeType: ExchangeType,
+      exchangeDurable: Boolean = false,
+      exchangeAutoDelete: Boolean = true,
+      exchangePassive: Boolean = false,
+      configurationArguments: Map[String, AnyRef] = Map())
 
-  case class ProducerParameters(exchangeParameters: ExchangeParameters,
-                                producerId: Option[String] = None,
-                                returnListener: Option[ReturnListener] = None,
-                                channelParameters: Option[ChannelParameters] = None)
+  case class ProducerParameters(
+      exchangeParameters: ExchangeParameters,
+      producerId: Option[String] = None,
+      returnListener: Option[ReturnListener] = None,
+      channelParameters: Option[ChannelParameters] = None)
 
-  case class ConsumerParameters(exchangeParameters: ExchangeParameters,
-                                routingKey: String,
-                                deliveryHandler: ActorRef,
-                                queueName: Option[String] = None,
-                                queueDurable: Boolean = false,
-                                queueAutoDelete: Boolean = true,
-                                queuePassive: Boolean = false,
-                                queueExclusive: Boolean = false,
-                                selfAcknowledging: Boolean = true,
-                                channelParameters: Option[ChannelParameters] = None) {
+  case class ConsumerParameters(
+      exchangeParameters: ExchangeParameters,
+      routingKey: String,
+      deliveryHandler: ActorRef,
+      queueName: Option[String] = None,
+      queueDurable: Boolean = false,
+      queueAutoDelete: Boolean = true,
+      queuePassive: Boolean = false,
+      queueExclusive: Boolean = false,
+      selfAcknowledging: Boolean = true,
+      channelParameters: Option[ChannelParameters] = None) {
     if (queueDurable && queueName.isEmpty) {
       throw new IllegalArgumentException("A queue name is required when requesting a durable queue.")
     }
@@ -80,24 +82,26 @@ object AMQP {
     consumer
   }
 
-  def newRpcClient[O,I](connection: ActorRef,
-                   exchangeParameters: ExchangeParameters,
-                   routingKey: String,
-                   serializer: RpcClientSerializer[O,I],
-                   channelParameters: Option[ChannelParameters] = None): ActorRef = {
+  def newRpcClient[O,I](
+      connection: ActorRef,
+      exchangeParameters: ExchangeParameters,
+      routingKey: String,
+      serializer: RpcClientSerializer[O,I],
+      channelParameters: Option[ChannelParameters] = None): ActorRef = {
     val rpcActor: ActorRef = actorOf(new RpcClientActor[O,I](exchangeParameters, routingKey, serializer, channelParameters))
     connection.startLink(rpcActor)
     rpcActor ! Start
     rpcActor
   }
 
-  def newRpcServer[I,O](connection: ActorRef,
-                   exchangeParameters: ExchangeParameters,
-                   routingKey: String,
-                   serializer: RpcServerSerializer[I,O],
-                   requestHandler: I => O,
-                   queueName: Option[String] = None,
-                   channelParameters: Option[ChannelParameters] = None) = {
+  def newRpcServer[I,O](
+      connection: ActorRef,
+      exchangeParameters: ExchangeParameters,
+      routingKey: String,
+      serializer: RpcServerSerializer[I,O],
+      requestHandler: I => O,
+      queueName: Option[String] = None,
+      channelParameters: Option[ChannelParameters] = None) = {
     val producer = newProducer(connection, new ProducerParameters(new ExchangeParameters("", ExchangeType.Direct), channelParameters = channelParameters))
     val rpcServer = actorOf(new RpcServerActor[I,O](producer, serializer, requestHandler))
     val consumer = newConsumer(connection, new ConsumerParameters(exchangeParameters, routingKey, rpcServer
