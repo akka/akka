@@ -23,18 +23,18 @@ trait Logging {
 /**
  * Scala SLF4J wrapper
  *
- * ex.
- *
+ * Example:
+ * <pre>
  * class Foo extends Logging {
  *   log.info("My foo is %s","alive")
  *   log.error(new Exception(),"My foo is %s","broken")
  * }
+ * </pre>
  *
  * The logger uses String.format:
  * http://download-llnw.oracle.com/javase/6/docs/api/java/lang/String.html#format(java.lang.String,%20java.lang.Object...)
  */
-class Logger(val logger: SLFLogger)
-{
+class Logger(val logger: SLFLogger) {
   def name       = logger.getName
 
   def trace_?    = logger.isTraceEnabled
@@ -44,91 +44,89 @@ class Logger(val logger: SLFLogger)
   def error_?    = logger.isErrorEnabled
 
   //Trace
-  def trace(t: Throwable, fmt: => String, arg: Any, argN: Any*){
+  def trace(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     trace(t,message(fmt,arg,argN:_*))
   }
 
-  def trace(t: Throwable, msg: => String){
-    if(trace_?) logger.trace(msg,t)
+  def trace(t: Throwable, msg: => String) {
+    if (trace_?) logger.trace(msg,t)
   }
 
-  def trace(fmt: => String, arg: Any, argN: Any*){
+  def trace(fmt: => String, arg: Any, argN: Any*) {
      trace(message(fmt,arg,argN:_*))
   }
 
-  def trace(msg: => String){
-     if(trace_?) logger trace msg
+  def trace(msg: => String) {
+     if (trace_?) logger trace msg
   }
   //Debug
-  def debug(t: Throwable, fmt: => String, arg: Any, argN: Any*){
+  def debug(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     debug(t,message(fmt,arg,argN:_*))
   }
 
-  def debug(t: Throwable, msg: => String){
-    if(debug_?) logger.debug(msg,t)
+  def debug(t: Throwable, msg: => String) {
+    if (debug_?) logger.debug(msg,t)
   }
 
-  def debug(fmt: => String, arg: Any, argN: Any*){
+  def debug(fmt: => String, arg: Any, argN: Any*) {
      debug(message(fmt,arg,argN:_*))
   }
 
-  def debug(msg: => String){
-     if(debug_?) logger debug msg
+  def debug(msg: => String) {
+     if (debug_?) logger debug msg
   }
   //Info
-  def info(t: Throwable, fmt: => String, arg: Any, argN: Any*){
+  def info(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     info(t,message(fmt,arg,argN:_*))
   }
 
-  def info(t: Throwable, msg: => String){
-    if(info_?) logger.info(msg,t)
+  def info(t: Throwable, msg: => String) {
+    if (info_?) logger.info(msg,t)
   }
 
-  def info(fmt: => String, arg: Any, argN: Any*){
+  def info(fmt: => String, arg: Any, argN: Any*) {
      info(message(fmt,arg,argN:_*))
   }
 
-  def info(msg: => String){
-     if(info_?) logger info msg
+  def info(msg: => String) {
+     if (info_?) logger info msg
   }
   //Warning
-  def warning(t: Throwable, fmt: => String, arg: Any, argN: Any*){
+  def warning(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     warning(t,message(fmt,arg,argN:_*))
   }
 
-  def warning(t: Throwable, msg: => String){
-    if(warning_?) logger.warn(msg,t)
+  def warning(t: Throwable, msg: => String) {
+    if (warning_?) logger.warn(msg,t)
   }
 
-  def warning(fmt: => String, arg: Any, argN: Any*){
+  def warning(fmt: => String, arg: Any, argN: Any*) {
      warning(message(fmt,arg,argN:_*))
   }
 
-  def warning(msg: => String){
-     if(warning_?) logger warn msg
+  def warning(msg: => String) {
+     if (warning_?) logger warn msg
   }
   //Error
-  def error(t: Throwable, fmt: => String, arg: Any, argN: Any*){
+  def error(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     error(t,message(fmt,arg,argN:_*))
   }
 
-  def error(t: Throwable, msg: => String){
-    if(error_?) logger.error(msg,t)
+  def error(t: Throwable, msg: => String) {
+    if (error_?) logger.error(msg,t)
   }
 
-  def error(fmt: => String, arg: Any, argN: Any*){
+  def error(fmt: => String, arg: Any, argN: Any*) {
      error(message(fmt,arg,argN:_*))
   }
 
-  def error(msg: => String){
-     if(error_?) logger error msg
+  def error(msg: => String) {
+     if (error_?) logger error msg
   }
 
   protected def message(fmt: String, arg: Any, argN: Any*) : String = {
-    if((argN eq null) || argN.isEmpty)
-      fmt.format(arg)
-    else
-      fmt.format((arg +: argN):_*)
+    if ((argN eq null) || argN.isEmpty) fmt.format(arg)
+    else fmt.format((arg +: argN):_*)
   }
 }
 
@@ -142,16 +140,11 @@ class Logger(val logger: SLFLogger)
  * val rootLogger = Logger.root
  *
  */
-object Logger
-{
+object Logger {
   def apply(logger: String)  : Logger = new Logger(SLFLoggerFactory getLogger logger)
-
   def apply(clazz: Class[_]) : Logger = apply(clazz.getName)
-
   def root                   : Logger = apply(SLFLogger.ROOT_LOGGER_NAME)
 }
-
-
 
 /**
  * LoggableException is a subclass of Exception and can be used as the base exception
