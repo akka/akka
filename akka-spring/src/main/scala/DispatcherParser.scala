@@ -31,7 +31,8 @@ trait DispatcherParser extends BeanParser {
     properties.name = mandatory(dispatcherElement, NAME)
     properties.dispatcherType = mandatory(dispatcherElement, TYPE)
     if (properties.dispatcherType == THREAD_BASED) {
-      if (dispatcherElement.getParentNode.getNodeName != "typed-actor") {
+      if ((dispatcherElement.getParentNode.getNodeName != "akka:typed-actor") &&
+            (dispatcherElement.getParentNode.getNodeName != "typed-actor")) {
         throw new IllegalArgumentException("Thread based dispatcher must be nested in typed-actor element!")
       }
     }

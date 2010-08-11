@@ -9,42 +9,41 @@ http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
 http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka-0.10.xsd">
 
-  <bean id="wrappedService"
-        class="se.scalablesolutions.akka.actor.TypedActor"
-        factory-method="newInstance">
-    <constructor-arg index="0" type="java.lang.Class" value="se.scalablesolutions.akka.spring.foo.MyPojo"/>
-    <constructor-arg index="1" value="1000"/>
-  </bean>
-
   <akka:typed-actor id="simple-typed-actor"
+                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
                       implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="1000"/>
 
   <akka:typed-actor id="simple-typed-actor-long-timeout"
+                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
                       implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="10000"/>
 
   <akka:typed-actor id="transactional-typed-actor"
+                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
                       implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true"/>
 
   <akka:typed-actor id="typed-actor-callbacks"
+                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
                       implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true">
-    <akka:restart-callbacks pre="preRestart" post="postRestart"/>
   </akka:typed-actor>
 
   <akka:typed-actor id="remote-typed-actor"
+                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
                       implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true">
     <akka:remote host="localhost" port="9999"/>
-    <akka:restart-callbacks pre="preRestart" post="postRestart"/>
   </akka:typed-actor>
 
-  <akka:typed-actor id="remote-service1" implementation="se.scalablesolutions.akka.spring.foo.MyPojo" timeout="1000">
+  <akka:typed-actor id="remote-service1"
+                      interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                      implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                      timeout="1000">
     <akka:remote host="localhost" port="9999"/>
   </akka:typed-actor>
 
@@ -65,11 +64,18 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
       </akka:trap-exits>
     </akka:restart-strategy>
     <akka:typed-actors>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.Foo" lifecycle="permanent" timeout="1000"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IFoo"
+                          implementation="se.scalablesolutions.akka.spring.foo.Foo"
+                          lifecycle="permanent"
+                          timeout="1000"/>
       <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IBar"
-                          implementation="se.scalablesolutions.akka.spring.foo.Bar" lifecycle="permanent" timeout="1000"/>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.MyPojo" lifecycle="temporary" timeout="1000">
-        <akka:restart-callbacks pre="preRestart" post="postRestart"/>
+                          implementation="se.scalablesolutions.akka.spring.foo.Bar"
+                          lifecycle="permanent"
+                          timeout="1000"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                          implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                          lifecycle="temporary"
+                          timeout="1000">
       </akka:typed-actor>
     </akka:typed-actors>
   </akka:supervision>

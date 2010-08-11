@@ -93,8 +93,10 @@ object AkkaSpringConfigurationTags {
 
   // dispatcher types
   val EXECUTOR_BASED_EVENT_DRIVEN = "executor-based-event-driven"
+  val EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING = "executor-based-event-driven-work-stealing"
   val REACTOR_BASED_THREAD_POOL_EVENT_DRIVEN = "reactor-based-thread-pool-event-driven"
   val REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN = "reactor-based-single-thread-event-driven"
   val THREAD_BASED = "thread-based"
+  val HAWT = "hawt"
 
 }

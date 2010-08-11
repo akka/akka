@@ -17,15 +17,23 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
       </akka:trap-exits>
     </akka:restart-strategy>
     <akka:typed-actors>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.Foo" lifecycle="permanent" timeout="1000"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IFoo"
+                        implementation="se.scalablesolutions.akka.spring.foo.Foo"
+                        lifecycle="permanent"
+                        timeout="1000"/>
       <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IBar"
-                          implementation="se.scalablesolutions.akka.spring.foo.Bar" lifecycle="permanent" timeout="1000"/>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.MyPojo" lifecycle="temporary" timeout="1000">
-        <akka:restart-callbacks pre="preRestart" post="postRestart"/>
+                        implementation="se.scalablesolutions.akka.spring.foo.Bar"
+                        lifecycle="permanent"
+                        timeout="1000"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                        implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                        lifecycle="temporary"
+                        timeout="1000">
       </akka:typed-actor>
     </akka:typed-actors>
   </akka:supervision>
 
+<!--
   <akka:supervision id="supervision2">
     <akka:restart-strategy failover="AllForOne" retries="3" timerange="5000">
       <akka:trap-exits>
@@ -37,7 +45,7 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
                           timeout="10000" transactional="true"/>
     </akka:typed-actors>
   </akka:supervision>
-
+    -->
   <akka:dispatcher id="mydispatcher" type="executor-based-event-driven" name="myDispatcher">
     <akka:thread-pool queue="bounded-array-blocking-queue"
                       capacity="100"
@@ -54,17 +62,22 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
       </akka:trap-exits>
     </akka:restart-strategy>
     <akka:typed-actors>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.Foo" lifecycle="permanent" timeout="1000">
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IFoo"
+                        implementation="se.scalablesolutions.akka.spring.foo.Foo"
+                        lifecycle="permanent"
+                        timeout="1000">
         <akka:dispatcher ref="mydispatcher" />
       </akka:typed-actor>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.MyPojo" lifecycle="temporary" timeout="1000">
-        <akka:restart-callbacks pre="preRestart" post="postRestart"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                        implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                        lifecycle="temporary"
+                        timeout="1000">
         <akka:dispatcher ref="mydispatcher" />
       </akka:typed-actor>
     </akka:typed-actors>
   </akka:supervision>
 
-  <akka:supervision id="parent-supervision">
+<!--  <akka:supervision id="parent-supervision">
     <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
       <akka:trap-exits>
         <akka:trap-exit>java.lang.Exception</akka:trap-exit>
@@ -85,5 +98,6 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
       </akka:typed-actors>
     </akka:supervision>
   </akka:supervision>
+  -->
 
 </beans>

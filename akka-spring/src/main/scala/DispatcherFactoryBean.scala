@@ -18,9 +18,11 @@ object DispatcherFactoryBean {
   def createNewInstance(properties: DispatcherProperties): MessageDispatcher = {
     var dispatcher = properties.dispatcherType match {
       case EXECUTOR_BASED_EVENT_DRIVEN => Dispatchers.newExecutorBasedEventDrivenDispatcher(properties.name)
+      case EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING => Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher(properties.name)
       case REACTOR_BASED_THREAD_POOL_EVENT_DRIVEN => Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(properties.name)
       case REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN => Dispatchers.newReactorBasedSingleThreadEventDrivenDispatcher(properties.name)
       case THREAD_BASED => throw new IllegalArgumentException("not implemented yet") //FIXME
+      case HAWT => throw new IllegalArgumentException("not implemented yet") //FIXME
       case _ => throw new IllegalArgumentException("unknown dispatcher type")
     }
    if ((properties.threadPool != null) && (properties.threadPool.queue != null)) {

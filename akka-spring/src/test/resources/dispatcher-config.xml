@@ -10,19 +10,23 @@ http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka-0.10.xsd">
 
 
-  <akka:typed-actor id="typed-actor-with-dispatcher" implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
-                      timeout="1000">
+  <akka:typed-actor id="typed-actor-with-dispatcher"
+                    interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                    implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                    timeout="1000">
     <akka:dispatcher type="executor-based-event-driven" name="test"/>
   </akka:typed-actor>
 
-  <akka:typed-actor id="typed-actor-with-dispatcher-ref" implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
-                        timeout="1000">
+  <akka:typed-actor id="typed-actor-with-dispatcher-ref"
+                    interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                    implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                    timeout="1000">
       <akka:dispatcher ref="executor-event-driven-dispatcher-1"/>
   </akka:typed-actor>
 
 
   <!-- executor-event-driven-dispatcher with bounded-array-blocking-queue -->
-  <akka:dispatcher id="executor-event-driven-dispatcher-1" type="executor-based-event-driven" name="myDispatcher">
+  <akka:dispatcher id="executor-event-driven-dispatcher-1" type="executor-based-event-driven" name="dispatcher-1">
     <akka:thread-pool queue="bounded-array-blocking-queue"
                       capacity="100"
                       fairness="true"
@@ -33,25 +37,25 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
   </akka:dispatcher>
 
   <!-- executor-event-driven-dispatcher with bounded-linked-blocking-queue with unbounded capacity-->
-  <akka:dispatcher id="executor-event-driven-dispatcher-2" type="executor-based-event-driven" name="myDispatcher">
+  <akka:dispatcher id="executor-event-driven-dispatcher-2" type="executor-based-event-driven" name="dispatcher-2">
     <akka:thread-pool queue="bounded-linked-blocking-queue"
                       bound="10" />
   </akka:dispatcher>
 
   <!-- executor-event-driven-dispatcher with unbounded-linked-blocking-queue with bounded capacity-->
-  <akka:dispatcher id="executor-event-driven-dispatcher-4" type="executor-based-event-driven" name="myDispatcher">
+  <akka:dispatcher id="executor-event-driven-dispatcher-4" type="executor-based-event-driven" name="dispatcher-4">
     <akka:thread-pool queue="unbounded-linked-blocking-queue"
                       capacity="55" />
   </akka:dispatcher>
 
   <!-- executor-event-driven-dispatcher with unbounded-linked-blocking-queue with unbounded capacity-->
-  <akka:dispatcher id="executor-event-driven-dispatcher-5" type="executor-based-event-driven" name="myDispatcher">
+  <akka:dispatcher id="executor-event-driven-dispatcher-5" type="executor-based-event-driven" name="dispatcher-5">
     <akka:thread-pool queue="unbounded-linked-blocking-queue" />
   </akka:dispatcher>
 
 
   <!-- executor-event-driven-dispatcher with synchronous-queue -->
-  <akka:dispatcher id="executor-event-driven-dispatcher-6" type="executor-based-event-driven" name="myDispatcher">
+  <akka:dispatcher id="executor-event-driven-dispatcher-6" type="executor-based-event-driven" name="dispatcher-6">
       <akka:thread-pool queue="synchronous-queue" fairness="true" />
   </akka:dispatcher>
 
@@ -62,6 +66,21 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
 
   <akka:dispatcher id="reactor-based-single-thread-event-driven-dispatcher" type="reactor-based-single-thread-event-driven" name="myDispatcher" />
 
+  <!-- executor-based-event-driven-work-stealing-dispatcher -->
+  <akka:dispatcher id="executor-based-event-driven-work-stealing-dispatcher" type="executor-based-event-driven-work-stealing" name="workStealingDispatcher" />
+  
+  <!-- hawt-dispatcher
+  <akka:dispatcher id="hawt-dispatcher" type="hawt" name="hawtDispatcher" />   -->
+
+  <!-- thread-based-dispatcher
+   <akka:typed-actor id="typed-actor-with-thread-based-dispatcher"
+                    interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                    implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                    timeout="1000">
+      <akka:dispatcher type="thread-based" name="threadBasedDispatcher"/>
+  </akka:typed-actor>   -->
+
+
   <akka:supervision id="supervision1">
     <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
       <akka:trap-exits>
@@ -70,11 +89,18 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
       </akka:trap-exits>
     </akka:restart-strategy>
     <akka:typed-actors>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.Foo" lifecycle="permanent" timeout="1000"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IFoo"
+                        implementation="se.scalablesolutions.akka.spring.foo.Foo"
+                        lifecycle="permanent"
+                        timeout="1000"/>
       <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IBar"
-                          implementation="se.scalablesolutions.akka.spring.foo.Bar" lifecycle="permanent" timeout="1000"/>
-      <akka:typed-actor implementation="se.scalablesolutions.akka.spring.foo.MyPojo" lifecycle="temporary" timeout="1000">
-        <akka:restart-callbacks pre="preRestart" post="postRestart"/>
+                        implementation="se.scalablesolutions.akka.spring.foo.Bar"
+                        lifecycle="permanent"
+                        timeout="1000"/>
+      <akka:typed-actor interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
+                        implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
+                        lifecycle="temporary"
+                        timeout="1000">
       </akka:typed-actor>
     </akka:typed-actors>
   </akka:supervision>
