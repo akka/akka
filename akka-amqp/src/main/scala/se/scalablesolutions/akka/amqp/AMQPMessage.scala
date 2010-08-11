@@ -44,6 +44,9 @@ case object Stopped extends AMQPMessage
 // delivery messages
 case class Acknowledge(deliveryTag: Long) extends AMQPMessage
 case class Acknowledged(deliveryTag: Long) extends AMQPMessage
+case class Reject(deliveryTag: Long) extends AMQPMessage
+case class Rejected(deliveryTag: Long) extends AMQPMessage
+class RejectionException(deliveryTag: Long) extends RuntimeException
 
 // internal messages
 private[akka] case class Failure(cause: Throwable) extends InternalAMQPMessage
