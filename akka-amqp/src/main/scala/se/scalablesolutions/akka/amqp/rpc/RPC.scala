@@ -55,8 +55,15 @@ object RPC {
    * RPC convenience
    */
   class RpcClient[O, I](client: ActorRef){
-    def callService(request: O, timeout: Long = 5000): Option[I] = {
+    def call(request: O, timeout: Long = 5000): Option[I] = {
       (client.!!(request, timeout)).as[I]
+    }
+
+    def callAsync(request: O, timeout: Long = 5000)(responseHandler: PartialFunction[Option[I],Unit]) = {
+      spawn {
+        val result = call(request, timeout)
+        responseHandler.apply(result)
+      }
     }
   }
 
