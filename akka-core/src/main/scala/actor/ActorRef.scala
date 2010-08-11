@@ -24,13 +24,13 @@ import org.multiverse.api.exceptions.DeadTransactionException
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
 
 import jsr166x.{Deque, ConcurrentLinkedDeque}
 
 import com.google.protobuf.ByteString
+import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -72,10 +72,10 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
   @volatile protected[this] var _isShutDown = false
   @volatile protected[akka] var _isBeingRestarted = false
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServer.HOSTNAME, RemoteServer.PORT)
-  @volatile protected[akka] var _timeoutActor: Option[ActorRef] = None
+  @volatile protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
-  protected[this] val guard = new ReentrantGuard
+  protected[akka] val guard = new ReentrantGuard
 
   /**
    * User overridable callback/setting.
@@ -203,7 +203,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
 
   protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
   protected[akka] def currentMessage = guard.withGuard { _currentMessage }
-  
+
   /** comparison only takes uuid into account
    */
   def compareTo(other: ActorRef) = this.uuid.compareTo(other.uuid)
@@ -559,14 +559,16 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
     cancelReceiveTimeout
     receiveTimeout.foreach { time =>
       log.debug("Scheduling timeout for %s", this)
-      _timeoutActor = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, time, TimeUnit.MILLISECONDS))
+      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, time, TimeUnit.MILLISECONDS))
     }
   }
 
-  protected[akka] def cancelReceiveTimeout = _timeoutActor.foreach { timeoutActor =>
-    if (timeoutActor.isRunning) Scheduler.unschedule(timeoutActor)
-    _timeoutActor = None
-    log.debug("Timeout canceled for %s", this)
+  protected[akka] def cancelReceiveTimeout = {
+    if(_futureTimeout.isDefined) {
+      _futureTimeout.get.cancel(true)
+      _futureTimeout = None
+      log.debug("Timeout canceled for %s", this)
+    }
   }
 }
 
@@ -638,7 +640,6 @@ class LocalActorRef private[akka](
       hotswap = __hotswap
       actorSelfFields._1.set(actor, this)
       actorSelfFields._2.set(actor, Some(this))
-      actorSelfFields._3.set(actor, Some(this))
       start
       __messages.foreach(message => this ! MessageSerializer.deserialize(message.getMessage))
       checkReceiveTimeout
@@ -1069,8 +1070,8 @@ class LocalActorRef private[akka](
   }
 
   private[this] def newActor: Actor = {
+    Actor.actorRefInCreation.withValue(Some(this)){
     isInInitialization = true
-    Actor.actorRefInCreation.value = Some(this)
     val actor = actorFactory match {
       case Left(Some(clazz)) =>
         try {
@@ -1092,6 +1093,7 @@ class LocalActorRef private[akka](
       "Actor instance passed to ActorRef can not be 'null'")
     isInInitialization = false
     actor
+    }
   }
 
   private def joinTransaction(message: Any) = if (isTransactionSetInScope) {
@@ -1101,7 +1103,7 @@ class LocalActorRef private[akka](
       clearTransactionSet
       createNewTransactionSet
     } else oldTxSet
-    Actor.log.ifTrace("Joining transaction set [" + currentTxSet +
+    Actor.log.trace("Joining transaction set [" + currentTxSet +
                       "];\n\tactor " + toString +
                       "\n\twith message [" + message + "]")
     val mtx = ThreadLocalTransaction.getThreadLocalTransaction
@@ -1110,7 +1112,7 @@ class LocalActorRef private[akka](
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    Actor.log.ifTrace("Invoking actor with message:\n" + messageHandle)
+    Actor.log.trace("Invoking actor with message:\n" + messageHandle)
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     var topLevelTransaction = false
     val txSet: Option[CountDownCommitBarrier] =
@@ -1118,7 +1120,7 @@ class LocalActorRef private[akka](
       else {
         topLevelTransaction = true // FIXME create a new internal atomic block that can wait for X seconds if top level tx
         if (isTransactor) {
-          Actor.log.ifTrace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString +
+          Actor.log.trace("Creating a new transaction set (top-level transaction)\n\tfor actor " + toString +
                             "\n\twith message " + messageHandle)
           Some(createNewTransactionSet)
         } else None
@@ -1198,18 +1200,15 @@ class LocalActorRef private[akka](
   private def nullOutActorRefReferencesFor(actor: Actor) = {
     actorSelfFields._1.set(actor, null)
     actorSelfFields._2.set(actor, null)
-    actorSelfFields._3.set(actor, null)
   }
 
-  private def findActorSelfField(clazz: Class[_]): Tuple3[Field, Field, Field] = {
+  private def findActorSelfField(clazz: Class[_]): Tuple2[Field, Field] = {
     try {
       val selfField =       clazz.getDeclaredField("self")
-      val optionSelfField = clazz.getDeclaredField("optionSelf")
       val someSelfField =   clazz.getDeclaredField("someSelf")
       selfField.setAccessible(true)
-      optionSelfField.setAccessible(true)
       someSelfField.setAccessible(true)
-      (selfField, optionSelfField, someSelfField)
+      (selfField, someSelfField)
     } catch {
       case e: NoSuchFieldException =>
         val parent = clazz.getSuperclass
@@ -1261,8 +1260,8 @@ class LocalActorRef private[akka](
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-//  uuid: String, className: String, hostname: String, port: Int, timeOut: Long, isOnRemoteHost: Boolean) extends ActorRef {
   uuuid: String, val className: String, val hostname: String, val port: Int, _timeout: Long, loader: Option[ClassLoader])
+  //  uuid: String, className: String, hostname: String, port: Int, timeOut: Long, isOnRemoteHost: Boolean) extends ActorRef {
   extends ActorRef {
   _uuid = uuuid
   timeout = _timeout

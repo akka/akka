@@ -8,10 +8,12 @@ import com.rabbitmq.client.{Channel, RpcClient}
 import rpc.RPC.RpcClientSerializer
 import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
 
-class RpcClientActor[I,O](exchangeParameters: ExchangeParameters,
-                     routingKey: String,
-                     serializer: RpcClientSerializer[I,O],
-                     channelParameters: Option[ChannelParameters] = None) extends FaultTolerantChannelActor(exchangeParameters, channelParameters) {
+class RpcClientActor[I,O](
+    exchangeParameters: ExchangeParameters,
+    routingKey: String,
+    serializer: RpcClientSerializer[I,O],
+    channelParameters: Option[ChannelParameters] = None)
+    extends FaultTolerantChannelActor(exchangeParameters, channelParameters) {
 
   import exchangeParameters._
 

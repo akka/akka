@@ -8,7 +8,10 @@ import rpc.RPC.RpcServerSerializer
 import se.scalablesolutions.akka.actor.{ActorRef, Actor}
 import com.rabbitmq.client.AMQP.BasicProperties
 
-class RpcServerActor[I,O](producer: ActorRef, serializer: RpcServerSerializer[I,O], requestHandler: I => O) extends Actor {
+class RpcServerActor[I,O](
+    producer: ActorRef,
+    serializer: RpcServerSerializer[I,O],
+    requestHandler: I => O) extends Actor {
 
   log.info("%s started", this)
 
@@ -29,6 +32,5 @@ class RpcServerActor[I,O](producer: ActorRef, serializer: RpcServerSerializer[I,
     case Acknowledged(tag) => log.debug("%s acknowledged delivery with tag %d", this, tag)
   }
 
-  override def toString(): String =
-    "AMQP.RpcServer[]"
+  override def toString = "AMQP.RpcServer[]"
 }
