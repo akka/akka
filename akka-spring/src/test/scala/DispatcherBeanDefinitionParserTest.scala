@@ -20,13 +20,21 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
     val parser = new DispatcherBeanDefinitionParser()
 
     it("should be able to parse the dispatcher configuration") {
+      // executor-based-event-driven
       val xml = <akka:dispatcher id="dispatcher"
                                type="executor-based-event-driven"
                                name="myDispatcher" />
-      val props = parser.parseDispatcher(dom(xml).getDocumentElement);
+      var props = parser.parseDispatcher(dom(xml).getDocumentElement);
       assert(props != null)
-      assert(props.dispatcherType == "executor-based-event-driven")
-      assert(props.name == "myDispatcher")
+      assert(props.dispatcherType === "executor-based-event-driven")
+      assert(props.name === "myDispatcher")
+
+      // executor-based-event-driven-work-stealing
+      val xml2 = <akka:dispatcher id="dispatcher"
+                               type="executor-based-event-driven-work-stealing"
+                               name="myDispatcher" />
+      props = parser.parseDispatcher(dom(xml2).getDocumentElement);
+      assert(props.dispatcherType === "executor-based-event-driven-work-stealing")
     }
 
     it("should be able to parse the thread pool configuration") {

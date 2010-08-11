@@ -1,6 +1,8 @@
 package se.scalablesolutions.akka.spring.foo;
 
-public class MyPojo {
+import se.scalablesolutions.akka.actor.*;
+
+public class MyPojo extends TypedActor implements IMyPojo{
         
         private String foo;
         private String bar;
