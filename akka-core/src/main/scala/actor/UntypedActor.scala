@@ -11,45 +11,47 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 
 import java.net.InetSocketAddress
 
+import scala.reflect.BeanProperty
+
 /**
- * Subclass this abstract class to create a MDB-style untyped actor. 
+ * Subclass this abstract class to create a MDB-style untyped actor.
  * <p/>
  * This class is meant to be used from Java.
  * <p/>
  * Here is an example on how to create and use an UntypedActor:
  * <pre>
  *  public class SampleUntypedActor extends UntypedActor {
- *    public void onReceive(Object message, UntypedActorRef self) throws Exception {
+ *    public void onReceive(Object message) throws Exception {
  *      if (message instanceof String) {
  *        String msg = (String)message;
  *
- *            if (msg.equals("UseReply")) {
- *                  // Reply to original sender of message using the 'replyUnsafe' method
- *                  self.replyUnsafe(msg + ":" + self.getUuid());
+ *        if (msg.equals("UseReply")) {
+ *          // Reply to original sender of message using the 'replyUnsafe' method
+ *          getContext().replyUnsafe(msg + ":" + getContext().getUuid());
  *
- *            } else if (msg.equals("UseSender") && self.getSender().isDefined()) {     
- *                  // Reply to original sender of message using the sender reference
- *                  // also passing along my own refererence (the self)
- *                  self.getSender().get().sendOneWay(msg, self); 
+ *        } else if (msg.equals("UseSender") && getContext().getSender().isDefined()) {
+ *          // Reply to original sender of message using the sender reference
+ *          // also passing along my own refererence (the context)
+ *          getContext().getSender().get().sendOneWay(msg, context);
  *
- *        } else if (msg.equals("UseSenderFuture") && self.getSenderFuture().isDefined()) {     
- *                  // Reply to original sender of message using the sender future reference
- *                  self.getSenderFuture().get().completeWithResult(msg);
+ *        } else if (msg.equals("UseSenderFuture") && getContext().getSenderFuture().isDefined()) {
+ *          // Reply to original sender of message using the sender future reference
+ *          getContext().getSenderFuture().get().completeWithResult(msg);
  *
  *        } else if (msg.equals("SendToSelf")) {
- *                  // Send message to the actor itself recursively
- *                  self.sendOneWay(msg)
+ *          // Send message to the actor itself recursively
+ *          getContext().sendOneWay(msg)
  *
  *        } else if (msg.equals("ForwardMessage")) {
  *          // Retreive an actor from the ActorRegistry by ID and get an ActorRef back
  *          ActorRef actorRef = ActorRegistry.actorsFor("some-actor-id").head();
  *          // Wrap the ActorRef in an UntypedActorRef and forward the message to this actor
- *          UntypedActorRef.wrap(actorRef).forward(msg, self);
+ *          UntypedActorRef.wrap(actorRef).forward(msg, context);
  *
  *        } else throw new IllegalArgumentException("Unknown message: " + message);
  *      } else throw new IllegalArgumentException("Unknown message: " + message);
  *    }
- *   
+ *
  *    public static void main(String[] args) {
  *      UntypedActorRef actor = UntypedActor.actorOf(SampleUntypedActor.class);
  *      actor.start();
@@ -62,19 +64,14 @@ import java.net.InetSocketAddress
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class UntypedActor extends Actor {
-  protected[akka] var context: Option[UntypedActorRef] = None
+  @BeanProperty val context = UntypedActorRef.wrap(self)
 
   final protected def receive = {
-    case msg => 
-      if (context.isEmpty) {
-        val ctx = new UntypedActorRef(self)
-        context = Some(ctx)
-        onReceive(msg, ctx)
-      } else onReceive(msg, context.get)
+    case msg => onReceive(msg)
   }
 
   @throws(classOf[Exception])
-  def onReceive(message: Any, context: UntypedActorRef): Unit
+  def onReceive(message: Any): Unit
 }
 
 /**
@@ -99,7 +96,7 @@ abstract class RemoteUntypedActor(address: InetSocketAddress) extends UntypedAct
 /**
  * Factory object for creating and managing 'UntypedActor's. Meant to be used from Java.
  * <p/>
- * Example on how to create an actor: 
+ * Example on how to create an actor:
  * <pre>
  *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class);
  *   actor.start();
@@ -114,11 +111,11 @@ abstract class RemoteUntypedActor(address: InetSocketAddress) extends UntypedAct
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object UntypedActor {
-  
+
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in the class for the Actor.
    * <p/>
-   * Example in Java: 
+   * Example in Java:
    * <pre>
    *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class);
    *   actor.start();
@@ -137,13 +134,13 @@ object UntypedActor {
   }
 
   /**
-   * NOTE: Use this convenience method with care, do NOT make it possible to get a reference to the 
+   * NOTE: Use this convenience method with care, do NOT make it possible to get a reference to the
    * UntypedActor instance directly, but only through its 'UntypedActorRef' wrapper reference.
    * <p/>
-   * Creates an ActorRef out of the Actor. Allows you to pass in the instance for the Actor. Only 
+   * Creates an ActorRef out of the Actor. Allows you to pass in the instance for the Actor. Only
    * use this method when you need to pass in constructor arguments into the 'UntypedActor'.
    * <p/>
-   * Example in Java: 
+   * Example in Java:
    * <pre>
    *   ActorRef actor = UntypedActor.actorOf(new MyUntypedActor("service:name", 5));
    *   actor.start();
@@ -159,7 +156,7 @@ object UntypedActor {
 }
 
 /**
- * Use this class if you need to wrap an 'ActorRef' in the more Java-friendly 'UntypedActorRef'.  
+ * Use this class if you need to wrap an 'ActorRef' in the more Java-friendly 'UntypedActorRef'.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -173,7 +170,7 @@ object UntypedActorRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class UntypedActorRef(val actorRef: ActorRef) {
-  
+
   /**
    * Returns the uuid for the actor.
    */
@@ -189,14 +186,14 @@ class UntypedActorRef(val actorRef: ActorRef) {
    */
   def setId(id: String) = actorRef.id = id
   def getId(): String = actorRef.id
-  
+
   /**
    * Defines the default timeout for '!!' and '!!!' invocations,
    * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
    */
   def setTimeout(timeout: Long) = actorRef.timeout = timeout
   def getTimeout(): Long = actorRef.timeout
-  
+
   /**
    * Defines the default timeout for an initial receive invocation.
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
@@ -212,12 +209,12 @@ class UntypedActorRef(val actorRef: ActorRef) {
    *
    * Trap all exceptions:
    * <pre>
-   * context.setTrapExit(new Class[]{Throwable.class});
+   * getContext().setTrapExit(new Class[]{Throwable.class});
    * </pre>
    *
    * Trap specific exceptions only:
    * <pre>
-   * context.setTrapExit(new Class[]{MyApplicationException.class, MyApplicationError.class});
+   * getContext().setTrapExit(new Class[]{MyApplicationException.class, MyApplicationError.class});
    * </pre>
    */
   def setTrapExit(exceptions: Array[Class[_ <: Throwable]]) = actorRef.trapExit = exceptions.toList
@@ -228,11 +225,11 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * <p/>
    * Can be one of:
    * <pre>
-   *  context.setFaultHandler(new AllForOneStrategy(maxNrOfRetries, withinTimeRange));
+   *  getContext().setFaultHandler(new AllForOneStrategy(maxNrOfRetries, withinTimeRange));
    * </pre>
    * Or:
    * <pre>
-   *  context.setFaultHandler(new OneForOneStrategy(maxNrOfRetries, withinTimeRange));
+   *  getContext().setFaultHandler(new OneForOneStrategy(maxNrOfRetries, withinTimeRange));
    * </pre>
    */
   def setFaultHandler(handler: FaultHandlingStrategy) = actorRef.faultHandler = Some(handler)
@@ -263,8 +260,8 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Is defined if the message was sent from another Actor, else None.
    */
   def getSender(): Option[UntypedActorRef] = actorRef.sender match {
-        case Some(s) => Some(UntypedActorRef.wrap(s))
-        case None    => None
+    case Some(s) => Some(UntypedActorRef.wrap(s))
+    case None    => None
   }
 
   /**
@@ -272,7 +269,7 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Is defined if the message was sent with sent with 'sendRequestReply' or 'sendRequestReplyFuture', else None.
    */
   def getSenderFuture(): Option[CompletableFuture[Any]] = actorRef.senderFuture
-  
+
   /**
    * Starts up the actor and its message queue.
    */
@@ -288,7 +285,7 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Shuts down the actor its dispatcher and message queue.
    */
   def stop(): Unit = actorRef.stop()
-  
+
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    * <p/>
@@ -310,176 +307,176 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * <p/>
    */
   def sendOneWay(message: AnyRef, sender: UntypedActorRef) =
-        if (sender eq null) actorRef.!(message)(None)
-        else actorRef.!(message)(Some(sender.actorRef))
-  
+    if (sender eq null) actorRef.!(message)(None)
+    else actorRef.!(message)(Some(sender.actorRef))
+
   /**
-   * Sends a message asynchronously and waits on a future for a reply message under the hood. The timeout is taken from 
-   * the default timeout in the Actor. 
+   * Sends a message asynchronously and waits on a future for a reply message under the hood. The timeout is taken from
+   * the default timeout in the Actor.
    * <p/>
-   * It waits on the reply either until it receives it or until the timeout expires 
+   * It waits on the reply either until it receives it or until the timeout expires
    * (which will throw an ActorTimeoutException). E.g. send-and-receive-eventually semantics.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReply(message: AnyRef): AnyRef = 
-        actorRef.!!(message)(None).getOrElse(throw new ActorTimeoutException(
-      "Message [" + message + 
-      "]\n\tsent to [" + actorRef.actorClassName + 
-      "]\n\twith timeout [" + actorRef.timeout + 
+  def sendRequestReply(message: AnyRef): AnyRef =
+    actorRef.!!(message)(None).getOrElse(throw new ActorTimeoutException(
+      "Message [" + message +
+      "]\n\tsent to [" + actorRef.actorClassName +
+      "]\n\twith timeout [" + actorRef.timeout +
       "]\n\ttimed out."))
     .asInstanceOf[AnyRef]
 
   /**
-   * Sends a message asynchronously and waits on a future for a reply message under the hood. The timeout is taken from 
-   * the default timeout in the Actor. 
+   * Sends a message asynchronously and waits on a future for a reply message under the hood. The timeout is taken from
+   * the default timeout in the Actor.
    * <p/>
-   * It waits on the reply either until it receives it or until the timeout expires 
+   * It waits on the reply either until it receives it or until the timeout expires
    * (which will throw an ActorTimeoutException). E.g. send-and-receive-eventually semantics.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef, sender: UntypedActorRef): AnyRef = {
-        val result = if (sender eq null) actorRef.!!(message)(None)
-                                       else actorRef.!!(message)(Some(sender.actorRef))
-        result.getOrElse(throw new ActorTimeoutException(
-      "Message [" + message + 
-      "]\n\tsent to [" + actorRef.actorClassName + 
-      "]\n\tfrom [" + sender.actorRef.actorClassName + 
-      "]\n\twith timeout [" + actorRef.timeout + 
+    val result = if (sender eq null) actorRef.!!(message)(None)
+                 else actorRef.!!(message)(Some(sender.actorRef))
+    result.getOrElse(throw new ActorTimeoutException(
+      "Message [" + message +
+      "]\n\tsent to [" + actorRef.actorClassName +
+      "]\n\tfrom [" + sender.actorRef.actorClassName +
+      "]\n\twith timeout [" + actorRef.timeout +
       "]\n\ttimed out."))
     .asInstanceOf[AnyRef]
   }
-  
+
   /**
    * Sends a message asynchronously and waits on a future for a reply message under the hood.
    * <p/>
-   * It waits on the reply either until it receives it or until the timeout expires 
+   * It waits on the reply either until it receives it or until the timeout expires
    * (which will throw an ActorTimeoutException). E.g. send-and-receive-eventually semantics.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReply(message: AnyRef, timeout: Long): AnyRef = 
-        actorRef.!!(message, timeout)(None).getOrElse(throw new ActorTimeoutException(
-      "Message [" + message + 
-      "]\n\tsent to [" + actorRef.actorClassName + 
-      "]\n\twith timeout [" + timeout + 
-      "]\n\ttimed out.")) 
+  def sendRequestReply(message: AnyRef, timeout: Long): AnyRef =
+    actorRef.!!(message, timeout)(None).getOrElse(throw new ActorTimeoutException(
+      "Message [" + message +
+      "]\n\tsent to [" + actorRef.actorClassName +
+      "]\n\twith timeout [" + timeout +
+      "]\n\ttimed out."))
     .asInstanceOf[AnyRef]
-  
+
   /**
    * Sends a message asynchronously and waits on a future for a reply message under the hood.
    * <p/>
-   * It waits on the reply either until it receives it or until the timeout expires 
+   * It waits on the reply either until it receives it or until the timeout expires
    * (which will throw an ActorTimeoutException). E.g. send-and-receive-eventually semantics.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReply</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReply(message: AnyRef, timeout: Long, sender: UntypedActorRef): AnyRef = {
-        val result = if (sender eq null) actorRef.!!(message, timeout)(None)
-                                       else actorRef.!!(message)(Some(sender.actorRef))
-        result.getOrElse(throw new ActorTimeoutException(
-      "Message [" + message + 
-      "]\n\tsent to [" + actorRef.actorClassName + 
-      "]\n\tfrom [" + sender.actorRef.actorClassName + 
-      "]\n\twith timeout [" + timeout + 
-      "]\n\ttimed out.")) 
+    val result = if (sender eq null) actorRef.!!(message, timeout)(None)
+                 else actorRef.!!(message)(Some(sender.actorRef))
+    result.getOrElse(throw new ActorTimeoutException(
+      "Message [" + message +
+      "]\n\tsent to [" + actorRef.actorClassName +
+      "]\n\tfrom [" + sender.actorRef.actorClassName +
+      "]\n\twith timeout [" + timeout +
+      "]\n\ttimed out."))
     .asInstanceOf[AnyRef]
   }
-  
+
   /**
-   * Sends a message asynchronously returns a future holding the eventual reply message. The timeout is taken from 
-   * the default timeout in the Actor. 
+   * Sends a message asynchronously returns a future holding the eventual reply message. The timeout is taken from
+   * the default timeout in the Actor.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReplyFuture(message: AnyRef): Future[_] = actorRef.!!!(message)(None)
-  
+
   /**
-   * Sends a message asynchronously returns a future holding the eventual reply message. The timeout is taken from 
-   * the default timeout in the Actor. 
+   * Sends a message asynchronously returns a future holding the eventual reply message. The timeout is taken from
+   * the default timeout in the Actor.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReplyFuture(message: AnyRef, sender: UntypedActorRef): Future[_] = 
-        if (sender eq null) actorRef.!!!(message)(None)
-        else actorRef.!!!(message)(Some(sender.actorRef))
-  
+  def sendRequestReplyFuture(message: AnyRef, sender: UntypedActorRef): Future[_] =
+    if (sender eq null) actorRef.!!!(message)(None)
+    else actorRef.!!!(message)(Some(sender.actorRef))
+
   /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def sendRequestReplyFuture(message: AnyRef, timeout: Long): Future[_] = actorRef.!!!(message, timeout)(None)
-  
+
   /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'context.getSender()' to
+   * Use this method with care. In most cases it is better to use 'sendOneWay' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>context.reply(..)</code>
+   * If you are sending messages using <code>sendRequestReplyFuture</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: UntypedActorRef): Future[_] = 
-        if (sender eq null) actorRef.!!!(message, timeout)(None)
-        else actorRef.!!!(message)(Some(sender.actorRef))
-  
+  def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: UntypedActorRef): Future[_] =
+    if (sender eq null) actorRef.!!!(message, timeout)(None)
+    else actorRef.!!!(message)(Some(sender.actorRef))
+
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
    * Works with 'sendOneWay', 'sendRequestReply' and 'sendRequestReplyFuture'.
    */
-  def forward(message: AnyRef, sender: UntypedActorRef): Unit = 
-        if (sender eq null) throw new IllegalArgumentException("The 'sender' argument to 'forward' can't be null") 
-        else actorRef.forward(message)(Some(sender.actorRef))
+  def forward(message: AnyRef, sender: UntypedActorRef): Unit =
+    if (sender eq null) throw new IllegalArgumentException("The 'sender' argument to 'forward' can't be null")
+    else actorRef.forward(message)(Some(sender.actorRef))
 
   /**
-   * Use <code>context.replyUnsafe(..)</code> to reply with a message to the original sender of the message currently
+   * Use <code>getContext().replyUnsafe(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
    * <p/>
    * Throws an IllegalStateException if unable to determine what to reply to.
    */
   def replyUnsafe(message: AnyRef): Unit = actorRef.reply(message)
-  
+
     /**
-   * Use <code>context.replySafe(..)</code> to reply with a message to the original sender of the message currently
+   * Use <code>getContext().replySafe(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
    * <p/>
    * Returns true if reply was sent, and false if unable to determine what to reply to.
@@ -495,22 +492,22 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
   def getActorClassName(): String = actorRef.actorClassName
-  
-  /**
-   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
-   */
- def makeRemote(hostname: String, port: Int): Unit = actorRef.makeRemote(hostname, port)
 
   /**
    * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
    */
- def makeRemote(address: InetSocketAddress): Unit = actorRef.makeRemote(address)
+  def makeRemote(hostname: String, port: Int): Unit = actorRef.makeRemote(hostname, port)
+
+  /**
+   * Invoking 'makeRemote' means that an actor will be moved to and invoked on a remote host.
+   */
+  def makeRemote(address: InetSocketAddress): Unit = actorRef.makeRemote(address)
 
   /**
    * Invoking 'makeTransactionRequired' means that the actor will **start** a new transaction if non exists.
    * However, it will always participate in an existing transaction.
    */
- def makeTransactionRequired(): Unit = actorRef.makeTransactionRequired
+  def makeTransactionRequired(): Unit = actorRef.makeTransactionRequired
 
   /**
    * Sets the transaction configuration for this actor. Needs to be invoked before the actor is started.
@@ -541,7 +538,7 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * Set the home address and port for this actor.
    */
   def setHomeAddress(address: InetSocketAddress): Unit = actorRef.homeAddress = address
-  
+
   /**
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
    * receive a notification if the linked actor has crashed.
@@ -550,31 +547,90 @@ class UntypedActorRef(val actorRef: ActorRef) {
    * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
    * defined by the 'faultHandler'.
    */
- def link(actor: UntypedActorRef): Unit = actorRef.link(actor.actorRef)
+  def link(actor: UntypedActorRef): Unit = actorRef.link(actor.actorRef)
 
   /**
    * Unlink the actor.
    */
- def unlink(actor: UntypedActorRef): Unit = actorRef.unlink(actor.actorRef)
+  def unlink(actor: UntypedActorRef): Unit = actorRef.unlink(actor.actorRef)
 
   /**
    * Atomically start and link an actor.
    */
- def startLink(actor: UntypedActorRef): Unit = actorRef.startLink(actor.actorRef)
+  def startLink(actor: UntypedActorRef): Unit = actorRef.startLink(actor.actorRef)
 
   /**
    * Atomically start, link and make an actor remote.
    */
- def startLinkRemote(actor: UntypedActorRef, hostname: String, port: Int): Unit = 
-        actorRef.startLinkRemote(actor.actorRef, hostname, port)
+  def startLinkRemote(actor: UntypedActorRef, hostname: String, port: Int): Unit =
+    actorRef.startLinkRemote(actor.actorRef, hostname, port)
+
+  /**
+   * Atomically create (from actor class) and start an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawn(clazz: Class[_]): ActorRef = actorRef.guard.withGuard {
+    val actorRef = spawnButDoNotStart(clazz)
+    actorRef.start
+    actorRef
+  }
+
+  /**
+   * Atomically create (from actor class), start and make an actor remote.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawnRemote(clazz: Class[_], hostname: String, port: Int): ActorRef = actorRef.guard.withGuard {
+    val actor = spawnButDoNotStart(clazz)
+    actor.makeRemote(hostname, port)
+    actor.start
+    actor
+  }
+
+  /**
+   * Atomically create (from actor class), start and link an actor.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawnLink(clazz: Class[_]): ActorRef = actorRef.guard.withGuard {
+    val actor = spawnButDoNotStart(clazz)
+    try {
+      actor.start
+    } finally {
+      actorRef.link(actor)
+    }
+    actor
+  }
+
+  /**
+   * Atomically create (from actor class), start, link and make an actor remote.
+   * <p/>
+   * To be invoked from within the actor itself.
+   */
+  def spawnLinkRemote(clazz: Class[_], hostname: String, port: Int): ActorRef = actorRef.guard.withGuard {
+    val actor = spawnButDoNotStart(clazz)
+    try {
+      actor.makeRemote(hostname, port)
+      actor.start
+    } finally {
+      actorRef.link(actor)
+    }
+  }
 
   /**
    * Returns the mailbox size.
    */
   def getMailboxSize(): Int = actorRef.mailboxSize
-  
+
   /**
    * Returns the current supervisor if there is one, null if not.
    */
   def getSupervisor(): UntypedActorRef = UntypedActorRef.wrap(actorRef.supervisor.getOrElse(null))
+
+  private def spawnButDoNotStart(clazz: Class[_]): ActorRef = actorRef.guard.withGuard {
+    val actor = UntypedActor.actorOf(clazz)
+    if (!actorRef.dispatcher.isInstanceOf[ThreadBasedDispatcher]) actor.actorRef.dispatcher = actorRef.dispatcher
+    actorRef
+  }
 }

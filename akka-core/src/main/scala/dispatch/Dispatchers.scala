@@ -42,6 +42,8 @@ import se.scalablesolutions.akka.config.Config.config
 object Dispatchers {
   val THROUGHPUT = config.getInt("akka.actor.throughput", 5)
 
+  object globalHawtDispatcher extends HawtDispatcher
+
   object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global") {
     override def register(actor: ActorRef) = {
       if (isShutdown) init
@@ -50,7 +52,17 @@ object Dispatchers {
   }
 
   object globalReactorBasedSingleThreadEventDrivenDispatcher extends ReactorBasedSingleThreadEventDrivenDispatcher("global")
+
   object globalReactorBasedThreadPoolEventDrivenDispatcher extends ReactorBasedThreadPoolEventDrivenDispatcher("global")
+
+  /**
+   * Creates an event-driven dispatcher based on the excellent HawtDispatch library.
+   * <p/>
+   * Can be beneficial to use the <code>HawtDispatcher.pin(self)</code> to "pin" an actor to a specific thread.
+   * <p/>
+   * See the ScalaDoc for the {@link se.scalablesolutions.akka.dispatch.HawtDispatcher} for details.
+   */
+  def newHawtDispatcher(aggregate: Boolean) = new HawtDispatcher(aggregate)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.

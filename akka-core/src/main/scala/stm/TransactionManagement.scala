@@ -120,7 +120,7 @@ class LocalStm extends TransactionManagement with Logging {
       def call(mtx: MultiverseTransaction): T = {
         factory.addHooks
         val result = body
-        log.ifTrace("Committing local transaction [" + mtx + "]")
+        log.trace("Committing local transaction [" + mtx + "]")
         result
       }
     })
@@ -155,7 +155,7 @@ class GlobalStm extends TransactionManagement with Logging {
         factory.addHooks
         val result = body
         val txSet = getTransactionSetInScope
-        log.ifTrace("Committing global transaction [" + mtx + "]\n\tand joining transaction set [" + txSet + "]")
+        log.trace("Committing global transaction [" + mtx + "]\n\tand joining transaction set [" + txSet + "]")
         try {
           txSet.tryJoinCommit(
             mtx,
