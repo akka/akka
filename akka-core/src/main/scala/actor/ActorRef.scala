@@ -1132,11 +1132,11 @@ class LocalActorRef private[akka](
       if (isTransactor) {
         val txFactory = _transactionFactory.getOrElse(DefaultGlobalTransactionFactory)
         atomic(txFactory) {
-          actor.base(message)
+          actor(message)
           setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
         }
       } else {
-        actor.base(message)
+        actor(message)
         setTransactionSet(txSet) // restore transaction set to allow atomic block to do commit
       }
     } catch {

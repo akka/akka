@@ -49,7 +49,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
           assert(SamplePojoImpl._pre)
           assert(SamplePojoImpl._post)
           assert(!SamplePojoImpl._down)
-          assert(AspectInitRegistry.initFor(obj) ne null)
+//          assert(AspectInitRegistry.initFor(obj) ne null)
         }
       }
     }
@@ -69,7 +69,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
           assert(!SamplePojoImpl._pre)
           assert(!SamplePojoImpl._post)
           assert(SamplePojoImpl._down)
-          assert(AspectInitRegistry.initFor(obj) eq null)
+ //         assert(AspectInitRegistry.initFor(obj) eq null)
         }
       }
     }

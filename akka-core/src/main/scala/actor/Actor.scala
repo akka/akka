@@ -436,7 +436,7 @@ trait Actor extends Logging {
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  def isDefinedAt(message: Any): Boolean = base.isDefinedAt(message)
+  def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
 
   /** One of the fundamental methods of the ActorsModel
    * Actor assumes a new behavior
@@ -449,21 +449,26 @@ trait Actor extends Logging {
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
+  
+  private[akka] def apply(msg: Any) = processingBehavior(msg)
 
-  private[akka] def base: Receive = try {
-    lifeCycles orElse (self.hotswap getOrElse receive)
-  } catch {
-    case e: NullPointerException => throw new IllegalActorStateException(
-      "The 'self' ActorRef reference for [" + getClass.getName + "] is NULL, error in the ActorRef initialization process.")
-  }
+  private lazy val processingBehavior: Receive = {
+   lazy val defaultBehavior = receive
 
-  private val lifeCycles: Receive = {
-    case HotSwap(code)        => become(code)
-    case Exit(dead, reason)   => self.handleTrapExit(dead, reason)
-    case Link(child)          => self.link(child)
-    case Unlink(child)        => self.unlink(child)
-    case UnlinkAndStop(child) => self.unlink(child); child.stop
-    case Restart(reason)      => throw reason
+   val actorBehavior: Receive = {
+    case HotSwap(code)                 => become(code)
+    case Exit(dead, reason)            => self.handleTrapExit(dead, reason)
+    case Link(child)                   => self.link(child)
+    case Unlink(child)                 => self.unlink(child)
+    case UnlinkAndStop(child)          => self.unlink(child); child.stop
+    case Restart(reason)               => throw reason
+    case msg if self.hotswap.isDefined &&
+                self.hotswap.get.isDefinedAt(msg) => self.hotswap.get.apply(msg)
+    case msg if self.hotswap.isEmpty   &&
+                defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg) 
+   }
+
+   actorBehavior
   }
 }
 
