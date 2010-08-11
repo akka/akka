@@ -48,44 +48,48 @@ case class RemoteClientError(@BeanProperty val cause: Throwable, @BeanProperty v
 case class RemoteClientDisconnected(@BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
 case class RemoteClientConnected(@BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
 
+class RemoteClientException private[akka](message: String) extends RuntimeException(message)
+
 /**
+ * The RemoteClient object manages RemoteClient instances and gives you an API to lookup remote actor handles.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
-  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
+  val READ_TIMEOUT =    Duration(config.getInt("akka.remote.client.read-timeout", 1), TIME_UNIT)
   val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
 
   private val remoteClients = new HashMap[String, RemoteClient]
-  private val remoteActors = new HashMap[RemoteServer.Address, HashSet[String]]
+  private val remoteActors =  new HashMap[RemoteServer.Address, HashSet[String]]
 
   // FIXME: simplify overloaded methods when we have Scala 2.8
 
-  def actorFor(className: String, hostname: String, port: Int): ActorRef =
-    actorFor(className, className, 5000L, hostname, port, None)
+  def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
 
-  def actorFor(className: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(className, className, 5000L, hostname, port, Some(loader))
+  def actorFor(classNameOrServiceId: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, Some(loader))
 
-  def actorFor(uuid: String, className: String, hostname: String, port: Int): ActorRef =
-    actorFor(uuid, className, 5000L, hostname, port, None)
+  def actorFor(serviceId: String, className: String, hostname: String, port: Int): ActorRef =
+    actorFor(serviceId, className, 5000L, hostname, port, None)
 
-  def actorFor(uuid: String, className: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(uuid, className, 5000L, hostname, port, Some(loader))
+  def actorFor(serviceId: String, className: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(serviceId, className, 5000L, hostname, port, Some(loader))
 
-  def actorFor(className: String, timeout: Long, hostname: String, port: Int): ActorRef =
-    actorFor(className, className, timeout, hostname, port, None)
+  def actorFor(classNameOrServiceId: String, timeout: Long, hostname: String, port: Int): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, timeout, hostname, port, None)
 
-  def actorFor(className: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(className, className, timeout, hostname, port, Some(loader))
+  def actorFor(classNameOrServiceId: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(classNameOrServiceId, classNameOrServiceId, timeout, hostname, port, Some(loader))
 
-  def actorFor(uuid: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
-    RemoteActorRef(uuid, className, hostname, port, timeout, None)
+  def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
+    RemoteActorRef(serviceId, className, hostname, port, timeout, None)
 
-  private[akka] def actorFor(uuid: String, className: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    RemoteActorRef(uuid, className, hostname, port, timeout, Some(loader))
+  private[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    RemoteActorRef(serviceId, className, hostname, port, timeout, Some(loader))
 
-  private[akka] def actorFor(uuid: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef =
-    RemoteActorRef(uuid, className, hostname, port, timeout, loader)
+  private[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef =
+    RemoteActorRef(serviceId, className, hostname, port, timeout, loader)
 
   def clientFor(hostname: String, port: Int): RemoteClient =
     clientFor(new InetSocketAddress(hostname, port), None)
@@ -158,9 +162,11 @@ object RemoteClient extends Logging {
 }
 
 /**
+ * RemoteClient represents a connection to a RemoteServer. Is used to send messages to remote actors on the RemoteServer.
+ * 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteClient private[akka] (val hostname: String, val port: Int, loader: Option[ClassLoader]) extends Logging {
+class RemoteClient private[akka] (val hostname: String, val port: Int, val loader: Option[ClassLoader] = None) extends Logging {
   val name = "RemoteClient@" + hostname + "::" + port
 
   @volatile private[remote] var isRunning = false
@@ -226,7 +232,7 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, loader: O
       }
     }
   } else {
-    val exception = new IllegalStateException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.")
+    val exception = new RemoteClientException("Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.")
     listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(exception, hostname, port))
     throw exception
   }
@@ -245,21 +251,22 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, loader: O
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteClientPipelineFactory(name: String,
-                                  futures: ConcurrentMap[Long, CompletableFuture[_]],
-                                  supervisors: ConcurrentMap[String, ActorRef],
-                                  bootstrap: ClientBootstrap,
-                                  remoteAddress: SocketAddress,
-                                  timer: HashedWheelTimer,
-                                  client: RemoteClient) extends ChannelPipelineFactory {
+class RemoteClientPipelineFactory(
+    name: String,
+    futures: ConcurrentMap[Long, CompletableFuture[_]],
+    supervisors: ConcurrentMap[String, ActorRef],
+    bootstrap: ClientBootstrap,
+    remoteAddress: SocketAddress,
+    timer: HashedWheelTimer,
+    client: RemoteClient) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
 
     def join(ch: ChannelHandler*) = Array[ChannelHandler](ch:_*)
-    
+
     val engine = RemoteServerSslContext.client.createSSLEngine()
     engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
     engine.setUseClientMode(true)
-  
+
     val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val timeout     = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
     val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
@@ -272,9 +279,7 @@ class RemoteClientPipelineFactory(name: String,
     }
 
     val remoteClient = new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
-
     val stages = ssl ++ join(timeout) ++ dec ++ join(lenDec, protobufDec) ++ enc ++ join(lenPrep, protobufEnc, remoteClient)
-
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -283,13 +288,14 @@ class RemoteClientPipelineFactory(name: String,
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @ChannelHandler.Sharable
-class RemoteClientHandler(val name: String,
-                          val futures: ConcurrentMap[Long, CompletableFuture[_]],
-                          val supervisors: ConcurrentMap[String, ActorRef],
-                          val bootstrap: ClientBootstrap,
-                          val remoteAddress: SocketAddress,
-                          val timer: HashedWheelTimer,
-                          val client: RemoteClient)
+class RemoteClientHandler(
+    val name: String,
+    val futures: ConcurrentMap[Long, CompletableFuture[_]],
+    val supervisors: ConcurrentMap[String, ActorRef],
+    val bootstrap: ClientBootstrap,
+    val remoteAddress: SocketAddress,
+    val timer: HashedWheelTimer,
+    val client: RemoteClient)
     extends SimpleChannelUpstreamHandler with Logging {
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
@@ -318,13 +324,13 @@ class RemoteClientHandler(val name: String,
             val supervisedActor = supervisors.get(supervisorUuid)
             if (!supervisedActor.supervisor.isDefined) throw new IllegalActorStateException(
               "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
-            else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply))
+            else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply, client.loader))
           }
-          future.completeWithException(null, parseException(reply))
+          future.completeWithException(null, parseException(reply, client.loader))
         }
         futures.remove(reply.getId)
       } else {
-        val exception = new IllegalArgumentException("Unknown message received in remote client handler: " + result)
+        val exception = new RemoteClientException("Unknown message received in remote client handler: " + result)
         client.listeners.toArray.foreach(l => l.asInstanceOf[ActorRef] ! RemoteClientError(exception, client.hostname, client.port))
         throw exception
       }
@@ -358,24 +364,20 @@ class RemoteClientHandler(val name: String,
       log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
     }
 
-   if(RemoteServer.SECURE){
-     val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
-     sslHandler.handshake().addListener( new ChannelFutureListener {
-      def operationComplete(future : ChannelFuture) : Unit = {
-        if(future.isSuccess)
-          connect
-        //else
-        //FIXME: What is the correct action here?
-      }
-    })
-   } else {
-     connect
-   }
+    if (RemoteServer.SECURE) {
+      val sslHandler: SslHandler = ctx.getPipeline.get(classOf[SslHandler])
+      sslHandler.handshake.addListener(new ChannelFutureListener {
+        def operationComplete(future: ChannelFuture): Unit = {
+          if (future.isSuccess) connect
+          else throw new RemoteClientException("Could not establish SSL handshake")
+        }
+      })
+    } else connect
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.listeners.toArray.foreach(l =>
-      l.asInstanceOf[ActorRef] ! RemoteClientDisconnected(client.hostname, client.port))
+    client.listeners.toArray.foreach(listener =>
+      listener.asInstanceOf[ActorRef] ! RemoteClientDisconnected(client.hostname, client.port))
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
   }
 
@@ -385,9 +387,11 @@ class RemoteClientHandler(val name: String,
     event.getChannel.close
   }
 
-  private def parseException(reply: RemoteReplyProtocol): Throwable = {
+  private def parseException(reply: RemoteReplyProtocol, loader: Option[ClassLoader]): Throwable = {
     val exception = reply.getException
-    val exceptionClass = Class.forName(exception.getClassname)
+    val classname = exception.getClassname
+    val exceptionClass = if (loader.isDefined) loader.get.loadClass(classname)
+                         else Class.forName(classname)
     exceptionClass
         .getConstructor(Array[Class[_]](classOf[String]): _*)
         .newInstance(exception.getMessage).asInstanceOf[Throwable]

@@ -234,7 +234,7 @@ trait ThreadPoolBuilder {
       extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) with Logging {
 
     setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-      def uncaughtException(thread: Thread, cause: Throwable) = 
+      def uncaughtException(thread: Thread, cause: Throwable) =
         log.error(cause, "UNCAUGHT in thread [%s]", thread.getName)
     })
 
