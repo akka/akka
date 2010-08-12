@@ -306,7 +306,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
           if (isTypedActor) throw e
           else None
       }
-      if (future.exception.isDefined) throw future.exception.get._2
+      if (future.exception.isDefined) throw future.exception.get
       else future.result
     } else throw new ActorInitializationException(
         "Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -1179,7 +1179,7 @@ class LocalActorRef private[akka](
       }
     }
 
-    senderFuture.foreach(_.completeWithException(this, reason))
+    senderFuture.foreach(_.completeWithException(reason))
 
     clearTransaction
     if (topLevelTransaction) clearTransactionSet
