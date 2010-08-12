@@ -27,7 +27,7 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
     val builder = BeanDefinitionBuilder.genericBeanDefinition("foo.bar.Foo")
 
     it("should be able to parse typed actor configuration") {
-      val props = parser.parseTypedActor(createTypedActorElement);
+      val props = parser.parseActor(createTypedActorElement);
       assert(props != null)
       assert(props.timeout == 1000)
       assert(props.target == "foo.bar.MyPojo")
@@ -47,7 +47,7 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
 
     it("should parse the supervised typed actors") {
       parser.parseSupervisor(createSupervisorElement, builder);
-      val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[TypedActorProperties]]
+      val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[ActorProperties]]
       assert(supervised != null)
       expect(4) { supervised.length }
       val iterator = supervised.iterator

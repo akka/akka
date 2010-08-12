@@ -33,6 +33,23 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
     </akka:typed-actors>
   </akka:supervision>
 
+  <akka:supervision id="supervision-untyped-actors">
+    <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
+      <akka:trap-exits>
+        <akka:trap-exit>java.io.IOException</akka:trap-exit>
+        <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
+      </akka:trap-exits>
+    </akka:restart-strategy>
+    <akka:untyped-actors>
+      <akka:untyped-actor implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                        lifecycle="permanent"
+                        timeout="1000"/>
+      <akka:untyped-actor implementation="se.scalablesolutions.akka.spring.foo.PongActor"
+                        lifecycle="permanent"
+                        timeout="1000"/>
+      </akka:untyped-actors>
+  </akka:supervision>
+
 <!--
   <akka:supervision id="supervision2">
     <akka:restart-strategy failover="AllForOne" retries="3" timerange="5000">

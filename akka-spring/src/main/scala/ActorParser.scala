@@ -15,7 +15,7 @@ import se.scalablesolutions.akka.actor.IllegalActorStateException
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  * @author Martin Krasser
  */
-trait TypedActorParser extends BeanParser with DispatcherParser {
+trait ActorParser extends BeanParser with DispatcherParser {
   import AkkaSpringConfigurationTags._
 
   /**
@@ -23,8 +23,8 @@ trait TypedActorParser extends BeanParser with DispatcherParser {
    * @param element dom element to parse
    * @return configuration for the typed actor
    */
-  def parseTypedActor(element: Element): TypedActorProperties = {
-    val objectProperties = new TypedActorProperties()
+  def parseActor(element: Element): ActorProperties = {
+    val objectProperties = new ActorProperties()
     val remoteElement = DomUtils.getChildElementByTagName(element, REMOTE_TAG);
     val dispatcherElement = DomUtils.getChildElementByTagName(element, DISPATCHER_TAG)
     val propertyEntries = DomUtils.getChildElementsByTagName(element,PROPERTYENTRY_TAG)
