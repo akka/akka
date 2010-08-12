@@ -17,7 +17,7 @@ import org.junit.Test
 class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def connectionAndRecovery = if (AMQPTest.enabled) {
+  def connectionAndRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
 
     val connectedLatch = new StandardLatch
     val reconnectingLatch = new StandardLatch

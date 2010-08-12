@@ -16,7 +16,7 @@ import org.junit.Test
 class AMQPConsumerMessageTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = if (AMQPTest.enabled) {
+  def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
     val connection = AMQP.newConnection()
     try {
 
