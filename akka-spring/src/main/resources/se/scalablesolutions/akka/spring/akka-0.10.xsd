@@ -76,6 +76,7 @@
     <xsd:attribute name="ref" type="xsd:string"/>
     <xsd:attribute name="type" type="dispatcher-enum-type"/>
     <xsd:attribute name="name" type="xsd:string"/>
+    <xsd:attribute name="aggregate" type="xsd:boolean"/>
   </xsd:complexType>
 
   <xsd:complexType name="threadpool-type">

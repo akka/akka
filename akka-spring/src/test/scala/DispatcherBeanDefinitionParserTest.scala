@@ -101,6 +101,17 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
       val xml = <akka:dispatcher id="dispatcher" type="thread-based" name="myDispatcher" />
       evaluating { parser.parseDispatcher(dom(xml).getDocumentElement) } should produce [IllegalArgumentException]
     }
+
+    it("should be able to parse the hawt dispatcher configuration") {
+      // hawt
+      val xml = <akka:dispatcher id="dispatcher"
+                               type="hawt"
+                               aggregate="false" />
+      var props = parser.parseDispatcher(dom(xml).getDocumentElement);
+      assert(props != null)
+      assert(props.dispatcherType === "hawt")
+      assert(props.aggregate === false)
+    }
   }
 }
 
