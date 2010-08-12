@@ -16,12 +16,12 @@ import org.scalatest.matchers.ShouldMatchers
  * @author michaelkober
  */
 @RunWith(classOf[JUnitRunner])
-class TypedActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
+class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
 
   override protected def afterAll = ActorRegistry.shutdownAll
 
-  describe("A TypedActorFactoryBean") {
-    val bean = new TypedActorFactoryBean
+  describe("A ActorFactoryBean") {
+    val bean = new ActorFactoryBean
     it("should have java getters and setters for all properties") {
       bean.setImplementation("java.lang.String")
       assert(bean.getImplementation == "java.lang.String")
@@ -52,10 +52,11 @@ class TypedActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndA
     }
 
     it("should create a proxy of type PojoInf") {
-      val bean = new TypedActorFactoryBean()
+      val bean = new ActorFactoryBean()
       bean.setInterface("se.scalablesolutions.akka.spring.PojoInf")
       bean.setImplementation("se.scalablesolutions.akka.spring.Pojo")
       bean.timeout = 1000
+      bean.typed = AkkaSpringConfigurationTags.TYPED_ACTOR_TAG
       val entries = new PropertyEntries()
       val entry = new PropertyEntry()
       entry.name = "stringFromVal"

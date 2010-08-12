@@ -111,11 +111,13 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(dispatcher.aggregate === false)
     }
 
-   scenario("get a thread-based-dispatcher from context") {
+    /*
+    scenario("get a thread-based-dispatcher from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val pojo = context.getBean("typed-actor-with-thread-based-dispatcher").asInstanceOf[IMyPojo]
       assert(pojo != null)
     }
+    */
 
   }
 

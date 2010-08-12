@@ -14,16 +14,18 @@ object AkkaSpringConfigurationTags {
   //
   // top level tags
   val TYPED_ACTOR_TAG = "typed-actor"
+  val UNTYPED_ACTOR_TAG = "untyped-actor"
   val SUPERVISION_TAG = "supervision"
   val DISPATCHER_TAG = "dispatcher"
   val PROPERTYENTRY_TAG = "property"
   val CAMEL_SERVICE_TAG = "camel-service"
 
-  // typed-actor sub tags
+  // actor sub tags
   val REMOTE_TAG = "remote"
 
   // superivision sub tags
   val TYPED_ACTORS_TAG = "typed-actors"
+  val UNTYPED_ACTORS_TAG = "untyped-actors"
   val STRATEGY_TAG = "restart-strategy"
   val TRAP_EXISTS_TAG = "trap-exits"
   val TRAP_EXIT_TAG = "trap-exit"
@@ -36,7 +38,7 @@ object AkkaSpringConfigurationTags {
 
   // --- ATTRIBUTES
   //
-  // typed actor attributes
+  // actor attributes
   val TIMEOUT = "timeout"
   val IMPLEMENTATION = "implementation"
   val INTERFACE = "interface"

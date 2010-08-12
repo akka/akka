@@ -20,7 +20,7 @@ import org.springframework.context.{ApplicationContext,ApplicationContextAware}
 import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
-import se.scalablesolutions.akka.actor.{AspectInitRegistry, TypedActorConfiguration, TypedActor}
+import se.scalablesolutions.akka.actor.{AspectInitRegistry, TypedActorConfiguration, TypedActor, UntypedActor, UntypedActorRef}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
 
@@ -34,17 +34,18 @@ class AkkaBeansException(message: String, cause:Throwable) extends BeansExceptio
 }
 
 /**
- * Factory bean for typed actors.
+ * Factory bean for typed and untyped actors.
  *
  * @author michaelkober
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  * @author Martin Krasser
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with ApplicationContextAware {
+class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with ApplicationContextAware {
   import StringReflect._
   import AkkaSpringConfigurationTags._
 
+  @BeanProperty var typed: String = ""
   @BeanProperty var interface: String = ""
   @BeanProperty var implementation: String = ""
   @BeanProperty var timeout: Long = _
@@ -82,15 +83,57 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     if (isRemote) argumentList += "r"
     if (hasInterface) argumentList += "i"
     if (hasDispatcher) argumentList += "d"
-    val ref = create(argumentList)
-    setProperties(AspectInitRegistry.initFor(ref).targetInstance)
+    val ref = typed match {
+      case TYPED_ACTOR_TAG => val typedActor = createTypedInstance(argumentList)
+        setProperties(AspectInitRegistry.initFor(typedActor).targetInstance)
+        typedActor
+      case UNTYPED_ACTOR_TAG => createUntypedInstance(argumentList)
+    }
     ref
+  }
+
+  private[akka] def createTypedInstance(argList: String) : AnyRef = {
+    if (interface == null || interface == "") throw new AkkaBeansException(
+        "The 'interface' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
+    if (implementation == null || implementation == "") throw new AkkaBeansException(
+        "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
+    argList match {
+      case "ri"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port))
+      case "i"   => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+      case "id"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.dispatcher(dispatcherInstance))
+      case "rid" => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
+      case _     => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+    }
+  }
+
+  private[akka] def createUntypedInstance(args: String) : UntypedActorRef = {
+    if (implementation == null || implementation == "") throw new AkkaBeansException(
+        "The 'implementation' part of the 'akka:untyped-actor' element in the Spring config file can't be null or empty string")
+    val actorRef = UntypedActor.actorOf(implementation.toClass)
+    if (timeout > 0) {
+      actorRef.setTimeout(timeout)
+    }
+    if (transactional) {
+      actorRef.makeTransactionRequired
+    }
+    if (isRemote) {
+      actorRef.makeRemote(host, port)
+    }
+    if (hasDispatcher) {
+      actorRef.setDispatcher(dispatcherInstance)
+    }
+    actorRef
   }
 
  /**
   * Stop the typed actor if it is a singleton.
   */
- override def destroyInstance(instance: AnyRef) = TypedActor.stop(instance)
+ override def destroyInstance(instance: AnyRef) {
+   typed match {
+      case TYPED_ACTOR_TAG => TypedActor.stop(instance)
+      case UNTYPED_ACTOR_TAG => instance.asInstanceOf[UntypedActorRef].stop
+    }
+ }
 
   private def setProperties(ref: AnyRef): AnyRef = {
     if (hasSetDependecies) return ref
@@ -114,22 +157,6 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
     ref
   }
 
-  private[akka] def create(argList: String): AnyRef = {
-    if (interface == null || interface == "") throw new AkkaBeansException(
-        "The 'interface' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
-    if (implementation == null || implementation == "") throw new AkkaBeansException(
-        "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
-    argList match {
-      case "ri"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port))
-      case "i"   => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
-      case "id"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.dispatcher(dispatcherInstance))
-      case "rid" => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-      case _     => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
-      //    case "rd"  => TypedActor.newInstance(implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-      //    case "r"   => TypedActor.newInstance(implementation.toClass, createConfig.makeRemote(host, port))
-      //    case "d"   => TypedActor.newInstance(implementation.toClass, createConfig.dispatcher(dispatcherInstance))
-    }
-  }
 
   private[akka] def createConfig: TypedActorConfiguration = {
     val config = new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
@@ -148,6 +175,12 @@ class TypedActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging wit
 
   private[akka] def dispatcherInstance: MessageDispatcher = {
     import DispatcherFactoryBean._
-    createNewInstance(dispatcher)
+    if (dispatcher.dispatcherType != THREAD_BASED) {
+      createNewInstance(dispatcher)
+    } else {
+      println("### create thread based dispatcher")
+      createNewInstance(dispatcher)
+    }
+
   }
 }

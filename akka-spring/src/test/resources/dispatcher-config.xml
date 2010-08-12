@@ -78,7 +78,7 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
                     implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                     timeout="1000">
       <akka:dispatcher type="thread-based" name="threadBasedDispatcher"/>
-  </akka:typed-actor>   -->
+  </akka:typed-actor> -->
 
 
   <akka:supervision id="supervision1">

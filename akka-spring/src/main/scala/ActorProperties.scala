@@ -12,7 +12,8 @@ import AkkaSpringConfigurationTags._
  * @author michaelkober
  * @author Martin Krasser
  */
-class TypedActorProperties {
+class ActorProperties {
+  var typed: String = ""
   var target: String = ""
   var timeout: Long = _
   var interface: String = ""
@@ -30,6 +31,7 @@ class TypedActorProperties {
    * @param builder bean definition builder
    */
   def setAsProperties(builder: BeanDefinitionBuilder) {
+    builder.addPropertyValue("typed", typed)
     builder.addPropertyValue(HOST, host)
     builder.addPropertyValue(PORT, port)
     builder.addPropertyValue(TIMEOUT, timeout)
