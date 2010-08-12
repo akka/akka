@@ -259,9 +259,9 @@ object ExampleSession {
     
     RPC.newProtobufRpcServer(connection, exchangeName, protobufRequestHandler)
 
-    val stringRpcClient = RPC.newProtobufRpcClient[AddressProtocol, AddressProtocol](connection, exchangeName)
+    val protobufRpcClient = RPC.newProtobufRpcClient[AddressProtocol, AddressProtocol](connection, exchangeName)
 
-    val response = stringRpcClient.call(AddressProtocol.newBuilder.setHostname("localhost").setPort(4321).build)
+    val response = protobufRpcClient.call(AddressProtocol.newBuilder.setHostname("localhost").setPort(4321).build)
 
     log.info("Got response: "+response)
   }
