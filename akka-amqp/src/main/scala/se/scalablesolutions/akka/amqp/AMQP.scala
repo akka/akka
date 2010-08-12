@@ -9,7 +9,7 @@ import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import java.lang.IllegalArgumentException
-import se.scalablesolutions.akka.util.Logging
+
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
  *
@@ -62,7 +62,8 @@ object AMQP {
   }
 
   def newConnection(connectionParameters: ConnectionParameters = new ConnectionParameters): ActorRef = {
-    val connection: ActorRef = supervisor.newConnection(connectionParameters)
+    val connection = actorOf(new FaultTolerantConnectionActor(connectionParameters))
+    supervisor.startLink(connection)
     connection ! Connect
     connection
   }
@@ -83,26 +84,20 @@ object AMQP {
     consumer
   }
 
-  private val supervisor = new AMQPSupervisor
+  class AMQPSupervisorActor extends Actor {
+    import self._
 
-  class AMQPSupervisor extends Logging {
-    class AMQPSupervisorActor extends Actor {
-      import self._
+    faultHandler = Some(OneForOneStrategy(5, 5000))
+    trapExit = List(classOf[Throwable])
 
-      faultHandler = Some(OneForOneStrategy(5, 5000))
-      trapExit = List(classOf[Throwable])
-
-      def receive = {
-        case _ => {} // ignore all messages
-      }
+    def receive = {
+      case _ => {} // ignore all messages
     }
+  }
 
-    private val supervisor = actorOf(new AMQPSupervisorActor).start
+  private val supervisor = actorOf(new AMQPSupervisorActor).start
 
-    def newConnection(connectionParameters: ConnectionParameters): ActorRef = {
-      val connectionActor = actorOf(new FaultTolerantConnectionActor(connectionParameters))
-      supervisor.startLink(connectionActor)
-      connectionActor
-    }
+  def shutdownAll = {
+    supervisor.stop
   }
 }
