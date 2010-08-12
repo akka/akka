@@ -34,6 +34,7 @@ trait ThreadPoolBuilder {
   def buildThreadPool(): Unit = synchronized {
     ensureNotActive
     inProcessOfBuilding = false
+    threadPoolBuilder.allowCoreThreadTimeOut(true)
     if (boundedExecutorBound > 0) {
       val boundedExecutor = new BoundedExecutorDecorator(threadPoolBuilder, boundedExecutorBound)
       boundedExecutorBound = -1
