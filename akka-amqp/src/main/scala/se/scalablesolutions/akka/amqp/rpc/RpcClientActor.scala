@@ -4,11 +4,9 @@
 
 package se.scalablesolutions.akka.amqp
 
-import se.scalablesolutions.akka.serialization.Serializer
-import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
-
 import com.rabbitmq.client.{Channel, RpcClient}
-import se.scalablesolutions.akka.amqp.AMQP.{RpcClientSerializer, ChannelParameters, ExchangeParameters}
+import rpc.RPC.RpcClientSerializer
+import se.scalablesolutions.akka.amqp.AMQP.{ChannelParameters, ExchangeParameters}
 
 class RpcClientActor[I,O](
     exchangeParameters: ExchangeParameters,
@@ -39,6 +37,12 @@ class RpcClientActor[I,O](
   override def preRestart(reason: Throwable) = {
     rpcClient = None
     super.preRestart(reason)
+  }
+
+
+  override def shutdown = {
+    rpcClient.foreach(rpc => rpc.close)
+    super.shutdown
   }
 
   override def toString = "AMQP.RpcClient[exchange=" +exchangeName + ", routingKey=" + routingKey+ "]"

@@ -374,6 +374,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
     val commons_io = Dependencies.commons_io
     val rabbit     = Dependencies.rabbit
+    val protobuf      = Dependencies.protobuf
 
     // testing
     val junit      = Dependencies.junit

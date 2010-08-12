@@ -1,12 +1,9 @@
+package se.scalablesolutions.akka.amqp.test
+
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp.test
-
-import se.scalablesolutions.akka.util.Logging
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
 import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.actor.ActorRef
 import org.multiverse.api.latches.StandardLatch
@@ -16,11 +13,13 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.String
 import org.scalatest.matchers.MustMatchers
 import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ProducerParameters}
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
-class AMQPProducerMessageTest extends JUnitSuite with MustMatchers with Logging {
+class AMQPProducerMessageTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def producerMessage = if (AMQPTest.enabled) {
+  def producerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
 
     val connection: ActorRef = AMQP.newConnection()
     try {
@@ -40,12 +39,5 @@ class AMQPProducerMessageTest extends JUnitSuite with MustMatchers with Logging 
     } finally {
       connection.stop
     }
-  }
-
-  @Test
-  def dummy {
-    // amqp tests need local rabbitmq server running, so a disabled by default.
-    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
-    assert(true)
   }
 }

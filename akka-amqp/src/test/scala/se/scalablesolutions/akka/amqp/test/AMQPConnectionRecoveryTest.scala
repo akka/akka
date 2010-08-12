@@ -1,12 +1,9 @@
+package se.scalablesolutions.akka.amqp.test
+
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.amqp.test
-
-import se.scalablesolutions.akka.util.Logging
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
 import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import org.multiverse.api.latches.StandardLatch
@@ -14,11 +11,13 @@ import com.rabbitmq.client.ShutdownSignalException
 import se.scalablesolutions.akka.amqp._
 import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
 import org.scalatest.matchers.MustMatchers
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
-class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers with Logging {
+class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def connectionAndRecovery = if (AMQPTest.enabled) {
+  def connectionAndRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
 
     val connectedLatch = new StandardLatch
     val reconnectingLatch = new StandardLatch
@@ -45,15 +44,9 @@ class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers with Loggi
       reconnectedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
 
     } finally {
-      connection.stop
+      AMQP.shutdownAll
       disconnectedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
     }
   }
 
-  @Test
-  def dummy {
-    // amqp tests need local rabbitmq server running, so a disabled by default.
-    // this dummy test makes sure that the whole test class doesn't fail because of missing tests
-    assert(true)
-  }
 }
