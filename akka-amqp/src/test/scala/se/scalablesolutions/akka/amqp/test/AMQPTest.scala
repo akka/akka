@@ -4,6 +4,16 @@
 
 package se.scalablesolutions.akka.amqp.test
 
+import se.scalablesolutions.akka.amqp.AMQP
 object AMQPTest {
+  
   def enabled = false
+
+  def withCleanEndState(action: => Unit) {
+    try {
+      action
+    } finally {
+      AMQP.shutdownAll
+    }
+  }
 }

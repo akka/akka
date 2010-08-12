@@ -23,6 +23,7 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
 
   def specificMessageHandler = {
     case Acknowledge(deliveryTag) => acknowledgeDeliveryTag(deliveryTag, true)
+    case Reject(deliveryTag) => rejectDeliveryTag(deliveryTag, true)
     case message: Message =>
       handleIllegalMessage("%s can't be used to send messages, ignoring message [%s]".format(this, message))
     case unknown =>
@@ -82,6 +83,19 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     }
   }
 
+  private def rejectDeliveryTag(deliveryTag: Long, remoteAcknowledgement: Boolean) = {
+    log.debug("Rejecting message with delivery tag [%s]", deliveryTag)
+    // FIXME: when rabbitmq 1.9 arrives, basicReject should be available on the API and implemented instead of this
+    log.warning("Consumer is rejecting delivery with tag [%s] - " +
+            "for now this means we have to self terminate and kill the channel - see you in a second.")
+    channel.foreach{ch =>
+      if (remoteAcknowledgement) {
+        deliveryHandler ! Rejected(deliveryTag)
+      }
+    }
+    throw new RejectionException(deliveryTag)
+  }
+
   private def handleIllegalMessage(errorMessage: String) = {
     log.error(errorMessage)
     throw new IllegalArgumentException(errorMessage)
@@ -94,7 +108,7 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
 
   override def shutdown = {
     listenerTag.foreach(tag => channel.foreach(_.basicCancel(tag)))
-    self.linkedActorsAsList.foreach(_.stop)
+    self.shutdownLinkedActors
     super.shutdown
   }
 
