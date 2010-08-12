@@ -269,16 +269,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
     )
 
-  override def runClasspath = super.runClasspath +++
-                              descendents(info.projectPath / "config", "*")
-
   //Exclude slf4j1.5.11 from the classpath, it's conflicting...
   override def fullClasspath(config: Configuration): PathFinder = {
-    super.fullClasspath(config) --- (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
+    super.fullClasspath(config) ---
+    (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
   }
 
   override def mainResources = super.mainResources +++
-                               descendents(info.projectPath / "config", "*")
+                               descendents(info.projectPath / "config", "*") ---
+                               (info.projectPath / "config" / "logback-test.xml")
+
+  override def testResources = super.testResources +++ (info.projectPath / "config" / "logback-test.xml")
 
   // ------------------------------------------------------------
   // publishing
