@@ -108,6 +108,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       val dispatcher = context.getBean("hawt-dispatcher").asInstanceOf[HawtDispatcher]
       assert(dispatcher != null)
       assert(dispatcher.toString === "HawtDispatchEventDrivenDispatcher")
+      assert(dispatcher.aggregate === false)
     }
 
    scenario("get a thread-based-dispatcher from context") {

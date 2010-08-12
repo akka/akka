@@ -28,7 +28,7 @@ trait DispatcherParser extends BeanParser {
         throw new IllegalArgumentException("Referenced dispatcher not found: '" + ref + "'")
       }
     }
-    properties.name = mandatory(dispatcherElement, NAME)
+
     properties.dispatcherType = mandatory(dispatcherElement, TYPE)
     if (properties.dispatcherType == THREAD_BASED) {
       if ((dispatcherElement.getParentNode.getNodeName != "akka:typed-actor") &&
@@ -36,6 +36,16 @@ trait DispatcherParser extends BeanParser {
         throw new IllegalArgumentException("Thread based dispatcher must be nested in typed-actor element!")
       }
     }
+
+    if (properties.dispatcherType == HAWT) {   // no name for HawtDispatcher
+      properties.name = dispatcherElement.getAttribute(NAME)
+      if (dispatcherElement.hasAttribute(AGGREGATE)) {
+       properties.aggregate = dispatcherElement.getAttribute(AGGREGATE).toBoolean
+      }
+    } else {
+      properties.name = mandatory(dispatcherElement, NAME)
+    }
+
     val threadPoolElement = DomUtils.getChildElementByTagName(dispatcherElement, THREAD_POOL_TAG);
     if (threadPoolElement != null) {
       if (properties.dispatcherType == REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN ||

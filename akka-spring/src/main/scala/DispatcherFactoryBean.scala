@@ -22,7 +22,7 @@ object DispatcherFactoryBean {
       case REACTOR_BASED_THREAD_POOL_EVENT_DRIVEN => Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(properties.name)
       case REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN => Dispatchers.newReactorBasedSingleThreadEventDrivenDispatcher(properties.name)
       case THREAD_BASED => throw new IllegalArgumentException("not implemented yet") //FIXME
-      case HAWT => throw new IllegalArgumentException("not implemented yet") //FIXME
+      case HAWT => Dispatchers.newHawtDispatcher(properties.aggregate)
       case _ => throw new IllegalArgumentException("unknown dispatcher type")
     }
    if ((properties.threadPool != null) && (properties.threadPool.queue != null)) {

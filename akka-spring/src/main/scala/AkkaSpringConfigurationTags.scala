@@ -55,6 +55,7 @@ object AkkaSpringConfigurationTags {
   val NAME = "name"
   val REF = "ref"
   val TYPE = "type"
+  val AGGREGATE = "aggregate"  // HawtDispatcher
 
   // thread pool attributes
   val QUEUE = "queue"
