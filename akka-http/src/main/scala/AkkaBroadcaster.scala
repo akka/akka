@@ -6,11 +6,21 @@ package se.scalablesolutions.akka.comet
 
 import org.atmosphere.cpr.{AtmosphereResourceEvent, AtmosphereResource}
 import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.dispatch.Dispatchers
 
 class AkkaBroadcaster extends org.atmosphere.jersey.JerseyBroadcaster {
   name = classOf[AkkaBroadcaster].getName
 
-  val caster = actor { case f : Function0[_] => f() }
+  val broadcasterDispatcher = Dispatchers.fromConfig("akka.rest.comet-dispatcher")
+
+  //FIXME should be supervised
+  val caster = actorOf(new Actor {
+    self.dispatcher = broadcasterDispatcher
+    def receive = {
+      case f : Function0[_] => f()
+    }
+  })
 
   override def destroy {
     super.destroy

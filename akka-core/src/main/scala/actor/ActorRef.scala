@@ -165,7 +165,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    * The default is also that all actors that are created and spawned from within this actor
    * is sharing the same dispatcher as its creator.
    */
-  @volatile private[akka] var _dispatcher: MessageDispatcher = Dispatchers.globalExecutorBasedEventDrivenDispatcher
+  @volatile private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
   /**
    * Holds the hot swapped partial function.
