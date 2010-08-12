@@ -43,8 +43,9 @@ class Ref[T](initialOpt: Option[T] = None)
 
   def alter(f: T => T): T = {
     ensureNotNull
-    set(f(this.get))
-    this.get
+    val value = f(this.get)
+    set(value)
+    value
   }
 
   def getOption: Option[T] = Option(this.get)
