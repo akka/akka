@@ -108,7 +108,7 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
 
   override def shutdown = {
     listenerTag.foreach(tag => channel.foreach(_.basicCancel(tag)))
-    self.linkedActorsAsList.foreach(_.stop)
+    self.shutdownLinkedActors
     super.shutdown
   }
 
