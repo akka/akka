@@ -19,7 +19,7 @@ import org.junit.Test
 class AMQPProducerMessageTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def producerMessage = if (AMQPTest.enabled) {
+  def producerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
 
     val connection: ActorRef = AMQP.newConnection()
     try {

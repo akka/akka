@@ -6,44 +6,42 @@ package se.scalablesolutions.akka.amqp.test
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitSuite
 import se.scalablesolutions.akka.amqp.AMQP
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol
 import org.junit.Test
 import se.scalablesolutions.akka.amqp.rpc.RPC
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.TimeUnit
 
-class AMQPRpcProtobufTest extends JUnitSuite with MustMatchers {
+class AMQPRpcStringTest extends JUnitSuite with MustMatchers {
 
   @Test
   def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection()
 
-    RPC.newProtobufRpcServer(connection, "protoservice", requestHandler)
+    RPC.newStringRpcServer(connection, "stringservice", requestHandler)
 
-    val protobufClient = RPC.newProtobufRpcClient[AddressProtocol, AddressProtocol](connection, "protoservice")
+    val protobufClient = RPC.newStringRpcClient(connection, "stringservice")
 
-    val request = AddressProtocol.newBuilder.setHostname("testhost").setPort(4321).build
+    val request = "teststring"
 
     protobufClient.call(request) match {
-      case Some(response) => assert(response.getHostname == request.getHostname.reverse)
+      case Some(response) => assert(response == request.reverse)
       case None => fail("no response")
     }
 
     val aSyncLatch = new StandardLatch
     protobufClient.callAsync(request) {
       case Some(response) => {
-        assert(response.getHostname == request.getHostname.reverse)
+        assert(response == request.reverse)
         aSyncLatch.open
       }
       case None => fail("no response")
     }
 
     aSyncLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
-
   }
 
-  def requestHandler(request: AddressProtocol): AddressProtocol = {
-    AddressProtocol.newBuilder.setHostname(request.getHostname.reverse).setPort(request.getPort).build
+  def requestHandler(request: String): String= {
+    request.reverse
   }
 }

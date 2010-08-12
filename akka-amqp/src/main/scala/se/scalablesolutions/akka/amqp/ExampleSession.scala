@@ -5,43 +5,61 @@
 package se.scalablesolutions.akka.amqp
 
 import rpc.RPC
-import rpc.RPC.{RpcClientSerializer, RpcServerSerializer, ToBinary, FromBinary}
+import rpc.RPC.{RpcClientSerializer, RpcServerSerializer}
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry}
 import Actor._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.amqp.AMQP._
 import java.lang.String
+import se.scalablesolutions.akka.amqp.AMQP._
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol
 
 object ExampleSession {
 
   def main(args: Array[String]) = {
-    println("==== DIRECT ===")
+
+    printTopic("DIRECT")
     direct
 
-    TimeUnit.SECONDS.sleep(2)
-
-    println("==== FANOUT ===")
+    printTopic("FANOUT")
     fanout
 
-    TimeUnit.SECONDS.sleep(2)
-
-    println("==== TOPIC  ===")
+    printTopic("TOPIC")
     topic
 
-    TimeUnit.SECONDS.sleep(2)
-
-    println("==== CALLBACK  ===")
+    printTopic("CALLBACK")
     callback
 
-    TimeUnit.SECONDS.sleep(2)
+    printTopic("EASY STRING PRODUCER AND CONSUMER")
+    easyStringProducerConsumer
 
-    println("==== RPC  ===")
+    printTopic("EASY PROTOBUF PRODUCER AND CONSUMER")
+    easyProtobufProducerConsumer
+
+    printTopic("RPC")
     rpc
 
-    TimeUnit.SECONDS.sleep(2)
+    printTopic("EASY STRING RPC")
+    easyStringRpc
+
+    printTopic("EASY PROTOBUF RPC")
+    easyProtobufRpc
+
+    printTopic("Happy hAkking :-)")
+
+    // shutdown everything the amqp tree except the main AMQP supervisor
+    // all connections/consumers/producers will be stopped
+    AMQP.shutdownAll
 
     ActorRegistry.shutdownAll
     System.exit(0)
+  }
+
+  def printTopic(topic: String) {
+
+    println("")
+    println("==== " + topic + " ===")
+    println("")
+    TimeUnit.SECONDS.sleep(2)
   }
 
   def direct = {
@@ -117,7 +135,7 @@ object ExampleSession {
       case Restarting => // not used, sent when channel or connection fails and initiates a restart
       case Stopped => log.info("Channel callback: Stopped")
     }
-    val exchangeParameters = ExchangeParameters("my_direct_exchange", ExchangeType.Direct)
+    val exchangeParameters = ExchangeParameters("my_callback_exchange", ExchangeType.Direct)
     val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
     val consumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "callback.routing", actor {
@@ -129,6 +147,40 @@ object ExampleSession {
     // Wait until both channels (producer & consumer) are started before stopping the connection
     channelCountdown.await(2, TimeUnit.SECONDS)
     connection.stop
+  }
+
+  def easyStringProducerConsumer = {
+    val connection = AMQP.newConnection()
+
+    val exchangeName = "easy.string"
+
+    // listen by default to:
+    // exchange = exchangeName
+    // routingKey = <exchange>.request
+    // queueName = <routingKey>.in
+    AMQP.newStringConsumer(connection, exchangeName, message => println("Received message: "+message))
+
+    // send by default to:
+    // exchange = exchangeName
+    // routingKey = <exchange>.request
+    val producer = AMQP.newStringProducer(connection, exchangeName)
+
+    producer.send("This shit is easy!")
+  }
+
+  def easyProtobufProducerConsumer = {
+    val connection = AMQP.newConnection()
+
+    val exchangeName = "easy.protobuf"
+
+    def protobufMessageHandler(message: AddressProtocol) = {
+      log.info("Received "+message)
+    }
+
+    AMQP.newProtobufConsumer(connection, exchangeName, protobufMessageHandler)
+
+    val producerClient = AMQP.newProtobufProducer[AddressProtocol](connection, exchangeName)
+    producerClient.send(AddressProtocol.newBuilder.setHostname("akkarocks.com").setPort(1234).build)
   }
 
   def rpc = {
@@ -165,5 +217,52 @@ object ExampleSession {
 
     val response = (rpcClient !! "rpc_request")
     log.info("Response: " + response)
+  }
+
+  def easyStringRpc = {
+
+    val connection = AMQP.newConnection()
+
+    val exchangeName = "easy.stringrpc"
+
+    // listen by default to:
+    // exchange = exchangeName
+    // routingKey = <exchange>.request
+    // queueName = <routingKey>.in
+    RPC.newStringRpcServer(connection, exchangeName, request => {
+      log.info("Got request: "+request)
+      "Response to: '"+request+"'"
+    })
+
+    // send by default to:
+    // exchange = exchangeName
+    // routingKey = <exchange>.request
+    val stringRpcClient = RPC.newStringRpcClient(connection, exchangeName)
+
+    val response = stringRpcClient.call("AMQP Rocks!")
+    log.info("Got response: "+response)
+
+    stringRpcClient.callAsync("AMQP is dead easy") {
+      case response => log.info("This is handled async: "+response)
+    }
+  }
+
+  def easyProtobufRpc = {
+
+    val connection = AMQP.newConnection()
+
+    val exchangeName = "easy.protobuf.rpc"
+
+    def protobufRequestHandler(request: AddressProtocol): AddressProtocol = {
+      AddressProtocol.newBuilder.setHostname(request.getHostname.reverse).setPort(request.getPort).build
+    }
+    
+    RPC.newProtobufRpcServer(connection, exchangeName, protobufRequestHandler)
+
+    val stringRpcClient = RPC.newProtobufRpcClient[AddressProtocol, AddressProtocol](connection, exchangeName)
+
+    val response = stringRpcClient.call(AddressProtocol.newBuilder.setHostname("localhost").setPort(4321).build)
+
+    log.info("Got response: "+response)
   }
 }

@@ -18,7 +18,7 @@ import Actor._
 class AMQPConsumerConnectionRecoveryTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerConnectionRecovery = if (AMQPTest.enabled) {
+  def consumerConnectionRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
     try {

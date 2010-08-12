@@ -17,7 +17,7 @@ import org.junit.Test
 class AMQPProducerConnectionRecoveryTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def producerConnectionRecovery = if (AMQPTest.enabled) {
+  def producerConnectionRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
     try {

@@ -17,7 +17,7 @@ import org.scalatest.junit.JUnitSuite
 class AMQPConsumerManualAcknowledgeTest extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessageManualAcknowledge = if (AMQPTest.enabled) {
+  def consumerMessageManualAcknowledge = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
     val connection = AMQP.newConnection()
     try {
       val countDown = new CountDownLatch(2)
