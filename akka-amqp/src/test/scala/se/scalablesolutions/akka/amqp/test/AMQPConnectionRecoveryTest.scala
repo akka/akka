@@ -44,7 +44,7 @@ class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers {
       reconnectedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
 
     } finally {
-      connection.stop
+      AMQP.shutdownAll
       disconnectedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
     }
   }
