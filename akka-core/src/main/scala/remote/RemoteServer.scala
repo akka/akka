@@ -309,10 +309,10 @@ object RemoteServerSslContext {
     //val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
     //val store = KeyStore.getInstance("JKS")
     val s = SSLContext.getInstance(protocol)
-    s.init(null,null,null)
+    s.init(null, null, null)
     val c = SSLContext.getInstance(protocol)
-    c.init(null,null,null)
-    (c,s)
+    c.init(null, null, null)
+    (c, s)
   }
 }
 
@@ -429,25 +429,29 @@ class RemoteServerHandler(
       if (request.hasSender) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
       else None
 
-    if (request.getIsOneWay) actorRef.!(message)(sender)
-    else {
-      try {
-        val resultOrNone = (actorRef.!!(message)(sender)).as[AnyRef]
-        val result = if (resultOrNone.isDefined) resultOrNone.get else null
+    message match { // first match on system messages
+      case RemoteActorSystemMessage.Stop => actorRef.stop
+      case _ =>     // then match on user defined messages
+        if (request.getIsOneWay) actorRef.!(message)(sender)
+        else {
+          try {
+            val resultOrNone = (actorRef.!!(message)(sender)).as[AnyRef]
+            val result = if (resultOrNone.isDefined) resultOrNone.get else null
 
-        log.debug("Returning result from actor invocation [%s]", result)
-        val replyBuilder = RemoteReplyProtocol.newBuilder
-            .setId(request.getId)
-            .setMessage(MessageSerializer.serialize(result))
-            .setIsSuccessful(true)
-            .setIsActor(true)
+            log.debug("Returning result from actor invocation [%s]", result)
+            val replyBuilder = RemoteReplyProtocol.newBuilder
+                .setId(request.getId)
+                .setMessage(MessageSerializer.serialize(result))
+                .setIsSuccessful(true)
+                .setIsActor(true)
 
-        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        channel.write(replyBuilder.build)
+            if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
+            channel.write(replyBuilder.build)
 
-      } catch {
-        case e: Throwable => channel.write(createErrorReplyMessage(e, request, true))
-      }
+          } catch {
+            case e: Throwable => channel.write(createErrorReplyMessage(e, request, true))
+          }
+        }
     }
   }
 

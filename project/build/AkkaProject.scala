@@ -93,6 +93,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val MULTIVERSE_VERSION = "0.6-SNAPSHOT"
   lazy val SCALATEST_VERSION  = "1.2-for-scala-2.8.0.final-SNAPSHOT"
   lazy val LOGBACK_VERSION    = "0.9.24"
+  lazy val SLF4J_VERSION      = "1.6.0"
   lazy val SPRING_VERSION     = "3.0.3.RELEASE"
   lazy val WerkzVersion       = "2.2.1"
 
@@ -188,6 +189,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sjson = "sjson.json" % "sjson" % "0.7-2.8.0" % "compile"
 
+    lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile"
+
     lazy val logback      = "ch.qos.logback" % "logback-classic" % LOGBACK_VERSION % "compile"
     lazy val logback_core = "ch.qos.logback" % "logback-core" % LOGBACK_VERSION % "compile"
 
@@ -266,13 +269,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
     )
 
-  //FIXME STILL NEEDED? => Exclude slf4j1.5.11 from the classpath, it's conflicting...
-  override def runClasspath = super.runClasspath +++
-                              descendents(info.projectPath / "config", "*") ---
-                              (super.runClasspath ** "slf4j*1.5.11.jar")
+  //Exclude slf4j1.5.11 from the classpath, it's conflicting...
+  override def fullClasspath(config: Configuration): PathFinder = {
+    super.fullClasspath(config) ---
+    (super.fullClasspath(config) ** "slf4j*1.5.11.jar")
+  }
 
   override def mainResources = super.mainResources +++
-                               descendents(info.projectPath / "config", "*")
+                               descendents(info.projectPath / "config", "*") ---
+                               (info.projectPath / "config" / "logback-test.xml")
+
+  override def testResources = super.testResources +++ (info.projectPath / "config" / "logback-test.xml")
 
   // ------------------------------------------------------------
   // publishing
@@ -349,6 +356,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val sjson         = Dependencies.sjson
     val werkz         = Dependencies.werkz
     val werkz_core    = Dependencies.werkz_core
+    val slf4j         = Dependencies.slf4j
     val logback       = Dependencies.logback
     val logback_core  = Dependencies.logback_core
 

@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.{TransactionManagement, TransactionSetAbortedException}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, MessageSerializer, RemoteRequestProtocolIdFactory}
-import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.serialization.{Serializer, BinaryString}
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID, ReentrantGuard}
 import RemoteActorSerialization._
 
@@ -306,7 +306,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
           if (isTypedActor) throw e
           else None
       }
-      if (future.exception.isDefined) throw future.exception.get._2
+      if (future.exception.isDefined) throw future.exception.get
       else future.result
     } else throw new ActorInitializationException(
         "Actor has not been started, you need to invoke 'actor.start' before using it")
@@ -1179,7 +1179,7 @@ class LocalActorRef private[akka](
       }
     }
 
-    senderFuture.foreach(_.completeWithException(this, reason))
+    senderFuture.foreach(_.completeWithException(reason))
 
     clearTransaction
     if (topLevelTransaction) clearTransactionSet
@@ -1254,6 +1254,15 @@ class LocalActorRef private[akka](
 }
 
 /**
+ * System messages for RemoteActorRef.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object RemoteActorSystemMessage {
+  val Stop = BinaryString("RemoteActorRef:stop")
+}
+
+/**
  * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
  * This reference is network-aware (remembers its origin) and immutable.
  *
@@ -1263,6 +1272,7 @@ private[akka] case class RemoteActorRef private[akka] (
   uuuid: String, val className: String, val hostname: String, val port: Int, _timeout: Long, loader: Option[ClassLoader])
   //  uuid: String, className: String, hostname: String, port: Int, timeOut: Long, isOnRemoteHost: Boolean) extends ActorRef {
   extends ActorRef {
+  
   _uuid = uuuid
   timeout = _timeout
 
@@ -1291,6 +1301,7 @@ private[akka] case class RemoteActorRef private[akka] (
   def stop: Unit = {
     _isRunning = false
     _isShutDown = true
+    postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
   }
 
   /**
