@@ -93,6 +93,10 @@ object AMQP {
     def receive = {
       case _ => {} // ignore all messages
     }
+
+    override def shutdown = {
+      self.shutdownLinkedActors
+    }
   }
 
   private val supervisor = actorOf(new AMQPSupervisorActor).start
