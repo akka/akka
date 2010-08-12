@@ -629,10 +629,8 @@ private[akka] sealed class TypedActorAspect {
   }
 
   private def getResultOrThrowException[T](future: Future[T]): Option[T] =
-    if (future.exception.isDefined) {
-      val (_, cause) = future.exception.get
-      throw cause
-    } else future.result
+    if (future.exception.isDefined) throw future.exception.get
+    else future.result
 
   private def isVoid(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
 

@@ -326,7 +326,7 @@ class RemoteClientHandler(
               "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
             else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply, client.loader))
           }
-          future.completeWithException(null, parseException(reply, client.loader))
+          future.completeWithException(parseException(reply, client.loader))
         }
         futures.remove(reply.getId)
       } else {

@@ -36,7 +36,7 @@ class FutureSpec extends JUnitSuite {
     val future = actor !!! "Failure"
     future.await
     assert(future.exception.isDefined)
-    assert("Expected exception; to test fault-tolerance" === future.exception.get._2.getMessage)
+    assert("Expected exception; to test fault-tolerance" === future.exception.get.getMessage)
     actor.stop
   }
 
