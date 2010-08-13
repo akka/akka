@@ -39,8 +39,7 @@ class SerializerFactory {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Serializer {
-  val EMPTY_CLASS_ARRAY = Array[Class[_]]()
-  val EMPTY_ANY_REF_ARRAY = Array[AnyRef]()
+  val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
 
   object NOOP extends NOOP
   class NOOP extends Serializer {
@@ -85,10 +84,7 @@ object Serializer {
     def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       if (!clazz.isDefined) throw new IllegalArgumentException(
         "Need a protobuf message class to be able to serialize bytes using protobuf")
-      // TODO: should we cache this method lookup?
-      val message = clazz.get.getDeclaredMethod(
-        "getDefaultInstance", EMPTY_CLASS_ARRAY: _*).invoke(null, EMPTY_ANY_REF_ARRAY: _*).asInstanceOf[Message]
-      message.toBuilder().mergeFrom(bytes).build
+      clazz.get.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]
     }
 
     def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = {

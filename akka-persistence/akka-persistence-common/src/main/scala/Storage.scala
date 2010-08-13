@@ -292,7 +292,7 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
     ref.swap(elem)
   }
 
-  def get: Option[T] = if (ref.isDefined) ref.getOption else storage.getRefStorageFor(uuid)
+  def get: Option[T] = if (ref.isDefined) ref.opt else storage.getRefStorageFor(uuid)
 
   def isDefined: Boolean = ref.isDefined || storage.getRefStorageFor(uuid).isDefined
 

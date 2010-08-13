@@ -8,7 +8,7 @@ import Actor._
 import se.scalablesolutions.akka.config.FaultHandlingStrategy
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.{MessageSerializer, RemoteClient, RemoteRequestProtocolIdFactory}
-import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture}
+import se.scalablesolutions.akka.dispatch.{MessageDispatcher, Future, CompletableFuture, Dispatchers}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util._
@@ -202,6 +202,7 @@ final class TypedActorConfiguration {
   private[akka] var _transactionRequired = false
   private[akka] var _host: Option[InetSocketAddress] = None
   private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
+  private[akka] var _threadBasedDispatcher: Option[Boolean] = None
 
   def timeout = _timeout
   def timeout(timeout: Duration) : TypedActorConfiguration = {
@@ -220,7 +221,14 @@ final class TypedActorConfiguration {
   }
 
   def dispatcher(messageDispatcher: MessageDispatcher) : TypedActorConfiguration = {
+    if(_threadBasedDispatcher.isDefined) throw new IllegalArgumentException("Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
     _messageDispatcher = Some(messageDispatcher)
+    this
+  }
+
+  def threadBasedDispatcher() : TypedActorConfiguration = {
+    if(_messageDispatcher.isDefined) throw new IllegalArgumentException("Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
+    _threadBasedDispatcher = Some(true)
     this
   }
 }
@@ -324,6 +332,7 @@ object TypedActor extends Logging {
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T = {
     val actor = actorOf(new Dispatcher(config._transactionRequired))
     if (config._messageDispatcher.isDefined) actor.dispatcher = config._messageDispatcher.get
+    if (config._threadBasedDispatcher.isDefined) actor.dispatcher = Dispatchers.newThreadBasedDispatcher(actor)
     newInstance(intfClass, newTypedActor(targetClass), actor, config._host, config.timeout)
   }
 
