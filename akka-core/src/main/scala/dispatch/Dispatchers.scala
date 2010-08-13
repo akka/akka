@@ -46,8 +46,9 @@ import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, D
 object Dispatchers extends Logging {
   val THROUGHPUT = config.getInt("akka.actor.throughput", 5)
 
-
-  val defaultGlobalDispatcher = fromConfig("akka.actor.default-dispatcher",globalExecutorBasedEventDrivenDispatcher)
+  lazy val defaultGlobalDispatcher = {
+    config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
+  }
 
   object globalHawtDispatcher extends HawtDispatcher
 
@@ -111,23 +112,40 @@ object Dispatchers extends Logging {
    */
   def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
 
-  def fromConfig(identifier: String, defaultDispatcher: => MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher = {
-    config.getConfigMap(identifier).map(from).getOrElse(defaultDispatcher)  
-  }
+  /*
+   * Creates of obtains a dispatcher from a ConfigMap according to the format below
+   *
+   * default-dispatcher {
+   *   type = "Default"        # ReactorBasedSingleThreadEventDriven, ExecutorBasedEventDrivenWorkStealing, ExecutorBasedEventDriven,
+   *                           # ReactorBasedThreadPoolEventDriven, Hawt, GlobalReactorBasedSingleThreadEventDriven,
+   *                           # GlobalReactorBasedThreadPoolEventDriven, GlobalExecutorBasedEventDriven, GlobalHawt, Default
+   *   keep-alive-ms = 60000   # Keep alive time for threads
+   *   core-pool-size = 4      # No of core threads
+   *   max-pool-size = 16      # Max no of threads
+   *   allow-core-timeout = on # Allow core threads to time out
+   *   rejection-policy = "caller-runs" # abort, caller-runs, discard-oldest, discard
+   *   throughput = 5          # Throughput for ExecutorBasedEventDrivenDispatcher
+   *   aggregate = off         # Aggregate on/off for HawtDispatchers
+   * }
+   * ex: from(config.getConfigMap(identifier).get)
+   *
+   * Gotcha: Only configures the dispatcher if possible
+   * Returns: None if "type" isn't specified in the config
+   * Throws: IllegalArgumentException if the value of "type" is not valid
+   */
+  def from(cfg: ConfigMap): Option[MessageDispatcher] = {
+    lazy val name = cfg.getString("name",UUID.newUuid.toString)
 
-  def from(map: ConfigMap): MessageDispatcher = {
-    lazy val name = map.getString("name",UUID.newUuid.toString)
-
-    val dispatcher = map.getString("type").map({
+    val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
       case "ReactorBasedSingleThreadEventDriven"       => newReactorBasedSingleThreadEventDrivenDispatcher(name)
 
       case "ExecutorBasedEventDrivenWorkStealing"      => newExecutorBasedEventDrivenWorkStealingDispatcher(name)
 
-      case "ExecutorBasedEventDriven"                  => newExecutorBasedEventDrivenDispatcher(name,map.getInt("throughput",THROUGHPUT))
+      case "ExecutorBasedEventDriven"                  => newExecutorBasedEventDrivenDispatcher(name,cfg.getInt("throughput",THROUGHPUT))
 
       case "ReactorBasedThreadPoolEventDriven"         => newReactorBasedThreadPoolEventDrivenDispatcher(name)
 
-      case "Hawt"                                      => newHawtDispatcher(map.getBool("aggregate").getOrElse(true))
+      case "Hawt"                                      => newHawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
 
       case "GlobalReactorBasedSingleThreadEventDriven" => globalReactorBasedSingleThreadEventDrivenDispatcher
 
@@ -137,37 +155,38 @@ object Dispatchers extends Logging {
 
       case "GlobalHawt"                                => globalHawtDispatcher
 
-      case "Default"                                   => defaultGlobalDispatcher
-
+      case "Default"                                   => globalExecutorBasedEventDrivenDispatcher
+    
       case unknown => throw new IllegalArgumentException("Unknown dispatcher type %s" format unknown)
-
-    }).get
-
-    if(dispatcher.isInstanceOf[ThreadPoolBuilder]) {
-      val configurable = dispatcher.asInstanceOf[ThreadPoolBuilder]
-      
-      map.getInt("keep-alive-ms").foreach(configurable.setKeepAliveTimeInMillis(_))
-
-      map.getInt("core-pool-size").foreach(configurable.setCorePoolSize(_))
-
-      map.getInt("max-pool-size").foreach(configurable.setMaxPoolSize(_))
-
-      map.getString("rejection-policy").map(_ match {
-
-        case "abort"          => new AbortPolicy()
-
-        case "caller-runs"    => new CallerRunsPolicy()
-
-        case "discard-oldest" => new DiscardOldestPolicy()
-
-        case "discard"        => new DiscardPolicy()
-
-        case x => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
-
-      }).foreach(configurable.setRejectionPolicy(_))
     }
 
-    log.info("Dispatchers.from: %s:%s for %s",dispatcher.getClass.getName,dispatcher,map.getString("type").getOrElse("<null>"))
+    dispatcher foreach {
+      case d: ThreadPoolBuilder => d.configureIfPossible( builder => {
+      
+        cfg.getInt("keep-alive-ms").foreach(builder.setKeepAliveTimeInMillis(_))
+
+        cfg.getInt("core-pool-size").foreach(builder.setCorePoolSize(_))
+
+        cfg.getInt("max-pool-size").foreach(builder.setMaxPoolSize(_))
+
+        cfg.getBool("allow-core-timeout").foreach(builder.setAllowCoreThreadTimeout(_))
+
+        cfg.getString("rejection-policy").map({
+
+          case "abort"          => new AbortPolicy()
+
+          case "caller-runs"    => new CallerRunsPolicy()
+
+          case "discard-oldest" => new DiscardOldestPolicy()
+
+          case "discard"        => new DiscardPolicy()
+
+          case x => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
+
+        }).foreach(builder.setRejectionPolicy(_))
+      })
+      case _ =>
+    }
 
     dispatcher
   }
