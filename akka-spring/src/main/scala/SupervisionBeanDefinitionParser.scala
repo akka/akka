@@ -18,7 +18,7 @@ import org.springframework.util.xml.DomUtils
  * Parser for custom namespace for Akka declarative supervisor configuration.
  * @author michaelkober
  */
-class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with TypedActorParser {
+class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActorParser {
   /* (non-Javadoc)
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */
@@ -30,10 +30,20 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
    * made accessible for testing
    */
   private[akka] def parseSupervisor(element: Element, builder: BeanDefinitionBuilder) {
-    val strategyElement = mandatoryElement(element, STRATEGY_TAG);
-    val typedActorsElement = mandatoryElement(element, TYPED_ACTORS_TAG);
+    val strategyElement = mandatoryElement(element, STRATEGY_TAG)
+    val typedActorsElement = DomUtils.getChildElementByTagName(element, TYPED_ACTORS_TAG)
+    val untypedActorsElement = DomUtils.getChildElementByTagName(element, UNTYPED_ACTORS_TAG)
+    if ((typedActorsElement == null) && (untypedActorsElement == null)) {
+      throw new IllegalArgumentException("One of 'akka:typed-actors' or 'akka:untyped-actors' needed.")
+    }
     parseRestartStrategy(strategyElement, builder)
-    parseTypedActorList(typedActorsElement, builder)
+    if (typedActorsElement != null) {
+      builder.addPropertyValue("typed", AkkaSpringConfigurationTags.TYPED_ACTOR_TAG)
+      parseTypedActorList(typedActorsElement, builder)
+    } else {
+      builder.addPropertyValue("typed", AkkaSpringConfigurationTags.UNTYPED_ACTOR_TAG)
+      parseUntypedActorList(untypedActorsElement, builder)
+    }
   }
 
   private[akka] def parseRestartStrategy(element: Element, builder: BeanDefinitionBuilder) {
@@ -48,8 +58,14 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
 
   private[akka] def parseTypedActorList(element: Element, builder: BeanDefinitionBuilder) {
     val typedActors = DomUtils.getChildElementsByTagName(element, TYPED_ACTOR_TAG).toArray.toList.asInstanceOf[List[Element]]
-    val typedActorProperties = typedActors.map(parseTypedActor(_))
-    builder.addPropertyValue("supervised", typedActorProperties)
+    val actorProperties = typedActors.map(parseActor(_))
+    builder.addPropertyValue("supervised", actorProperties)
+  }
+
+  private[akka] def parseUntypedActorList(element: Element, builder: BeanDefinitionBuilder) {
+    val untypedActors = DomUtils.getChildElementsByTagName(element, UNTYPED_ACTOR_TAG).toArray.toList.asInstanceOf[List[Element]]
+    val actorProperties = untypedActors.map(parseActor(_))
+    builder.addPropertyValue("supervised", actorProperties)
   }
 
   private def parseTrapExits(element: Element): Array[Class[_ <: Throwable]] = {

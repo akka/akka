@@ -42,13 +42,12 @@ class Ref[T](initialOpt: Option[T] = None)
   def swap(elem: T) = set(elem)
 
   def alter(f: T => T): T = {
-    ensureNotNull
     val value = f(this.get)
     set(value)
     value
   }
 
-  def getOption: Option[T] = Option(this.get)
+  def opt: Option[T] = Option(this.get)
 
   def getOrWait: T = getOrAwait
 
@@ -94,7 +93,4 @@ class Ref[T](initialOpt: Option[T] = None)
 
   def toLeft[X](right: => X) =
     if (isEmpty) Right(right) else Left(this.get)
-
-  private def ensureNotNull =
-    if (isNull) throw new RuntimeException("Cannot alter Ref's value when it is null")
 }

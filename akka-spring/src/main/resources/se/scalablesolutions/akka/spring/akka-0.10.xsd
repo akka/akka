@@ -38,9 +38,11 @@
   <xsd:simpleType name="dispatcher-enum-type">
     <xsd:restriction base="xsd:token">
       <xsd:enumeration value="executor-based-event-driven"/>
+      <xsd:enumeration value="executor-based-event-driven-work-stealing"/>
       <xsd:enumeration value="reactor-based-thread-pool-event-driven"/>
       <xsd:enumeration value="reactor-based-single-thread-event-driven"/>
       <xsd:enumeration value="thread-based"/>
+      <xsd:enumeration value="hawt"/>
     </xsd:restriction>
   </xsd:simpleType>
 
@@ -74,6 +76,7 @@
     <xsd:attribute name="ref" type="xsd:string"/>
     <xsd:attribute name="type" type="dispatcher-enum-type"/>
     <xsd:attribute name="name" type="xsd:string"/>
+    <xsd:attribute name="aggregate" type="xsd:boolean"/>
   </xsd:complexType>
 
   <xsd:complexType name="threadpool-type">
@@ -158,6 +161,52 @@
     </xsd:attribute>
   </xsd:complexType>
 
+  <!-- untyped actor -->
+  <xsd:complexType name="untyped-actor-type">
+   <xsd:sequence>
+      <xsd:element name="remote" type="remote-type" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="dispatcher" type="dispatcher-type" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="dispatcher" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="beans:property" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:ID"/>
+    <xsd:attribute name="implementation" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>
+          Name of the implementation class.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="timeout" type="xsd:long">
+      <xsd:annotation>
+        <xsd:documentation>
+          The default timeout for '!!' invocations.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="transactional" type="xsd:boolean">
+      <xsd:annotation>
+        <xsd:documentation>
+          Set this to true if messages should have REQUIRES_NEW semantics.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="lifecycle" type="lifecycle-type">
+      <xsd:annotation>
+        <xsd:documentation>
+          Defines the lifecycle, can be either 'permanent' or 'temporary'.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="scope" type="scope-enum-type">
+      <xsd:annotation>
+        <xsd:documentation>
+          Supported scopes are 'singleton' and 'prototype'.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
   <!-- trap exits -->
   <xsd:complexType name="trap-exits-type">
     <xsd:choice minOccurs="1" maxOccurs="unbounded">
@@ -169,6 +218,13 @@
   <xsd:complexType name="typed-actors-type">
     <xsd:choice minOccurs="1" maxOccurs="unbounded">
       <xsd:element name="typed-actor" type="typed-actor-type"/>
+    </xsd:choice>
+  </xsd:complexType>
+
+  <!-- untyped actors -->
+  <xsd:complexType name="untyped-actors-type">
+    <xsd:choice minOccurs="1" maxOccurs="unbounded">
+      <xsd:element name="untyped-actor" type="untyped-actor-type"/>
     </xsd:choice>
   </xsd:complexType>
 
@@ -205,6 +261,7 @@
     <xsd:all>
       <xsd:element name="restart-strategy" type="strategy-type" minOccurs="1" maxOccurs="1"/>
       <xsd:element name="typed-actors" type="typed-actors-type" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="untyped-actors" type="untyped-actors-type" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="supervision" type="supervision-type" minOccurs="0"/>
     </xsd:all>
     <xsd:attribute name="id" type="xsd:ID"/>
@@ -223,6 +280,9 @@
 
   <!-- TypedActor -->
   <xsd:element name="typed-actor" type="typed-actor-type"/>
+
+  <!-- UntypedActor -->
+  <xsd:element name="untyped-actor" type="untyped-actor-type"/>
 
   <!-- Dispatcher -->
   <xsd:element name="dispatcher" type="dispatcher-type"/>
