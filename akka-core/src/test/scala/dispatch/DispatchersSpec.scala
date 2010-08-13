@@ -14,14 +14,15 @@ import se.scalablesolutions.akka.dispatch._
 object DispatchersSpec {
   import Dispatchers._
   //
-  val tipe             = "type"
-  val keepalivems      = "keep-alive-ms"
-  val corepoolsize     = "core-pool-size"
-  val maxpoolsize      = "max-pool-size"
-  val allowcoretimeout = "allow-core-timeout"
-  val rejectionpolicy  = "rejection-policy"   // abort, caller-runs, discard-oldest, discard
-  val throughput       = "throughput"         // Throughput for ExecutorBasedEventDrivenDispatcher
-  val aggregate        = "aggregate"          // Aggregate on/off for HawtDispatchers
+  val tipe               = "type"
+  val keepalivems        = "keep-alive-ms"
+  val corepoolsizefactor = "core-pool-size-factor"
+  val maxpoolsizefactor  = "max-pool-size-factor"
+  val executorbounds     = "executor-bounds"
+  val allowcoretimeout   = "allow-core-timeout"
+  val rejectionpolicy    = "rejection-policy"   // abort, caller-runs, discard-oldest, discard
+  val throughput         = "throughput"         // Throughput for ExecutorBasedEventDrivenDispatcher
+  val aggregate          = "aggregate"          // Aggregate on/off for HawtDispatchers
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) => Boolean = _ == dispatcher
   def ofType[T <: MessageDispatcher : Manifest]: (MessageDispatcher) => Boolean = _.getClass == manifest[T].erasure
