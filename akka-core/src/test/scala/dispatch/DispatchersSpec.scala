@@ -35,8 +35,7 @@ object DispatchersSpec {
     "GlobalReactorBasedSingleThreadEventDriven" -> instance(globalReactorBasedSingleThreadEventDrivenDispatcher),
     "GlobalReactorBasedThreadPoolEventDriven"   -> instance(globalReactorBasedThreadPoolEventDrivenDispatcher),
     "GlobalExecutorBasedEventDriven"            -> instance(globalExecutorBasedEventDrivenDispatcher),
-    "GlobalHawt"                                -> instance(globalHawtDispatcher),
-    "Default"                                   -> instance(globalExecutorBasedEventDrivenDispatcher)
+    "GlobalHawt"                                -> instance(globalHawtDispatcher)
   )
 
   def validTypes = typesAndValidators.keys.toList
@@ -68,7 +67,7 @@ class DispatchersSpec extends JUnitSuite {
   }
 
   @Test def defaultingToDefaultWhileLoadingTheDefaultShouldWork {
-    assert(from(Config.fromMap(Map(tipe -> "Default"))).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
+    assert(from(Config.fromMap(Map())).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
   }
 
 }
