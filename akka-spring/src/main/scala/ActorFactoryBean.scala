@@ -16,7 +16,7 @@ import org.springframework.context.{ApplicationContext,ApplicationContextAware}
 import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
-import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor, UntypedActor}
+import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor,Actor}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
 import scala.reflect.BeanProperty
@@ -101,7 +101,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   private[akka] def createUntypedInstance() : ActorRef = {
     if (implementation == null || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:untyped-actor' element in the Spring config file can't be null or empty string")
-    val actorRef = UntypedActor.actorOf(implementation.toClass)
+    val actorRef = Actor.actorOf(implementation.toClass)
     if (timeout > 0) {
       actorRef.setTimeout(timeout)
     }

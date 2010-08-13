@@ -118,11 +118,9 @@ abstract class RemoteUntypedActor(address: InetSocketAddress) extends UntypedAct
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object UntypedActor {
-
   /**
-   * Creates an ActorRef out of the Actor. Allows you to pass in the class for the Actor.
-   * <p/>
-   * Example in Java:
+   * Creates an ActorRef out of the Actor type represented by the class provided.
+   *  Example in Java:
    * <pre>
    *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class);
    *   actor.start();
@@ -131,13 +129,12 @@ object UntypedActor {
    * </pre>
    * You can create and start the actor in one statement like this:
    * <pre>
-   *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class).start();
+   *   val actor = actorOf(classOf[MyActor]).start
    * </pre>
    */
-  def actorOf(clazz: Class[_ <: UntypedActor]): ActorRef =
-    Actor.actorOf(clazz.newInstance)
+  def actorOf[T <: Actor](clazz: Class[T]): ActorRef = Actor.actorOf(clazz)
 
-  /**
+ /**
    * NOTE: Use this convenience method with care, do NOT make it possible to get a reference to the
    * UntypedActor instance directly, but only through its 'ActorRef' wrapper reference.
    * <p/>
@@ -148,8 +145,8 @@ object UntypedActor {
    * Example in Java:
    * <pre>
    *   ActorRef actor = UntypedActor.actorOf(new UntypedActorFactory() {
-   *     public UntypedActor create() { 
-   *       return new MyUntypedActor("service:name", 5); 
+   *     public UntypedActor create() {
+   *       return new MyUntypedActor("service:name", 5);
    *     }
    *   });
    *   actor.start();
@@ -157,6 +154,5 @@ object UntypedActor {
    *   actor.stop();
    * </pre>
    */
-  def actorOf(factory: UntypedActorFactory) =
-    Actor.actorOf(factory.create)
+  def actorOf(factory: UntypedActorFactory): ActorRef = Actor.actorOf(factory.create)
 }

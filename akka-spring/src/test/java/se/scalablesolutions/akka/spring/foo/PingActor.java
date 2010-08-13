@@ -1,7 +1,7 @@
 package se.scalablesolutions.akka.spring.foo;
 
 import se.scalablesolutions.akka.actor.UntypedActor;
-import se.scalablesolutions.akka.actor.UntypedActorRef;
+import se.scalablesolutions.akka.actor.ActorRef;
 
 /**
  * test class
@@ -21,7 +21,7 @@ public class PingActor extends UntypedActor {
       System.out.println("Ping received String message: " + message);
       if (message.equals("longRunning")) {
         System.out.println("### starting pong");
-        UntypedActorRef pongActor = UntypedActor.actorOf(PongActor.class).start();
+        ActorRef pongActor = UntypedActor.actorOf(PongActor.class).start();
         pongActor.sendRequestReply("longRunning", getContext());
       }
     } else {
