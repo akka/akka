@@ -8,21 +8,18 @@ import java.beans.PropertyDescriptor
 import java.lang.reflect.Method
 import javax.annotation.PreDestroy
 import javax.annotation.PostConstruct
-import reflect.BeanProperty
 
-import org.springframework.beans.BeanWrapperImpl
-import org.springframework.beans.BeanWrapper
-import org.springframework.beans.BeanUtils
-import org.springframework.beans.BeansException
+import org.springframework.beans.{BeanUtils,BeansException,BeanWrapper,BeanWrapperImpl}
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import org.springframework.context.{ApplicationContext,ApplicationContextAware}
 import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
-import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor, UntypedActor, UntypedActorRef}
+import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor, UntypedActor}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
+import scala.reflect.BeanProperty
 
 /**
  * Exception to use when something goes wrong during bean creation.
@@ -101,28 +98,27 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   /**
    * Create an UntypedActor.
    */
-  private[akka] def createUntypedInstance() : UntypedActorRef = {
+  private[akka] def createUntypedInstance() : ActorRef = {
     if (implementation == null || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:untyped-actor' element in the Spring config file can't be null or empty string")
-    val untypedActorRef = UntypedActor.actorOf(implementation.toClass)
+    val actorRef = UntypedActor.actorOf(implementation.toClass)
     if (timeout > 0) {
-      untypedActorRef.setTimeout(timeout)
+      actorRef.setTimeout(timeout)
     }
     if (transactional) {
-      untypedActorRef.makeTransactionRequired
+      actorRef.makeTransactionRequired
     }
     if (isRemote) {
-      untypedActorRef.makeRemote(host, port)
+      actorRef.makeRemote(host, port)
     }
     if (hasDispatcher) {
       if (dispatcher.dispatcherType != THREAD_BASED){
-        untypedActorRef.setDispatcher(dispatcherInstance())
+        actorRef.setDispatcher(dispatcherInstance())
       } else {
-        val actorRef = untypedActorRef.actorRef
-        untypedActorRef.setDispatcher(dispatcherInstance(Some(actorRef)))
+        actorRef.setDispatcher(dispatcherInstance(Some(actorRef)))
       }
     }
-    untypedActorRef
+    actorRef
   }
 
  /**
@@ -131,7 +127,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
  override def destroyInstance(instance: AnyRef) {
    typed match {
       case TYPED_ACTOR_TAG => TypedActor.stop(instance)
-      case UNTYPED_ACTOR_TAG => instance.asInstanceOf[UntypedActorRef].stop
+      case UNTYPED_ACTOR_TAG => instance.asInstanceOf[ActorRef].stop
     }
  }
 

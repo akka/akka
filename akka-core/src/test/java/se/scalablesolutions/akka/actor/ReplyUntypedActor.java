@@ -1,9 +1,18 @@
 package se.scalablesolutions.akka.actor;
 
 import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.actor.UntypedActor;
 
 public class ReplyUntypedActor extends UntypedActor {
-  public void onReceive(Object message) throws Exception {
+
+    public ReplyUntypedActor() {
+        ActorRef actor = UntypedActor.untypedActorOf(ReplyUntypedActor.class)
+        actor.setId("JavaNinja");
+        actor.start()
+        actor.sendOneWay("ReplyToSendOneWayUsingReply");
+    }
+
+    public void onReceive(Object message) throws Exception {
     if (message instanceof String) {
       String str = (String)message;
       if (str.equals("ReplyToSendOneWayUsingReply")) {
