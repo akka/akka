@@ -67,4 +67,8 @@ class DispatchersSpec extends JUnitSuite {
     assert(typesAndValidators.forall( tuple => tuple._2(allDispatchers(tuple._1).get) ))
   }
 
+  @Test def defaultingToDefaultWhileLoadingTheDefaultShouldWork {
+    assert(from(Config.fromMap(Map(tipe -> "Default"))).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
+  }
+
 }
