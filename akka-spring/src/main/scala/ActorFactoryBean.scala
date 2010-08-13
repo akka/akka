@@ -79,11 +79,8 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
    * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
    */
   def createInstance: AnyRef = {
-    var argumentList = ""
-    if (isRemote) argumentList += "r"
-    if (hasDispatcher) argumentList += "d"
     val ref = typed match {
-      case TYPED_ACTOR_TAG => val typedActor = createTypedInstance(argumentList)
+      case TYPED_ACTOR_TAG => val typedActor = createTypedInstance()
         setProperties(AspectInitRegistry.initFor(typedActor).targetInstance)
         typedActor
       case UNTYPED_ACTOR_TAG => createUntypedInstance()
@@ -92,17 +89,13 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     ref
   }
 
-  private[akka] def createTypedInstance(argList: String) : AnyRef = {
+  private[akka] def createTypedInstance() : AnyRef = {
     if (interface == null || interface == "") throw new AkkaBeansException(
         "The 'interface' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
     if (implementation == null || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
-    argList match {
-      case "r"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port))
-      case "d"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.dispatcher(dispatcherInstance()))
-      case "rd" => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance()))
-      case _    => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
-    }
+
+    TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
   }
 
   /**
@@ -168,6 +161,14 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   private[akka] def createConfig: TypedActorConfiguration = {
     val config = new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
     if (transactional) config.makeTransactionRequired
+    if (isRemote) config.makeRemote(host, port)
+    if (hasDispatcher) {
+      if (dispatcher.dispatcherType != THREAD_BASED) {
+        config.dispatcher(dispatcherInstance())
+      } else {
+        config.threadBasedDispatcher()
+      }
+    }
     config
   }
 
