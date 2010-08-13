@@ -123,9 +123,10 @@ object Dispatchers extends Logging {
    * Creates of obtains a dispatcher from a ConfigMap according to the format below
    *
    * default-dispatcher {
-   *   type = "Default"        # ReactorBasedSingleThreadEventDriven, ExecutorBasedEventDrivenWorkStealing, ExecutorBasedEventDriven,
+   *   type = "GlobalExecutorBasedEventDriven" # Must be one of the following, all "Global*" are non-configurable
+   *                           # ReactorBasedSingleThreadEventDriven, ExecutorBasedEventDrivenWorkStealing, ExecutorBasedEventDriven,
    *                           # ReactorBasedThreadPoolEventDriven, Hawt, GlobalReactorBasedSingleThreadEventDriven,
-   *                           # GlobalReactorBasedThreadPoolEventDriven, GlobalExecutorBasedEventDriven, GlobalHawt, Default
+   *                           # GlobalReactorBasedThreadPoolEventDriven, GlobalExecutorBasedEventDriven, GlobalHawt
    *   keep-alive-ms = 60000   # Keep alive time for threads
    *   core-pool-size = 4      # No of core threads
    *   max-pool-size = 16      # Max no of threads

@@ -12,7 +12,7 @@ import ThreadPoolExecutor.CallerRunsPolicy
 import se.scalablesolutions.akka.actor.IllegalActorStateException
 import se.scalablesolutions.akka.util.{Logger, Logging}
 
-trait ThreadPoolBuilder {
+trait ThreadPoolBuilder extends Logging {
   val name: String
 
   private val NR_START_THREADS = 16
@@ -34,6 +34,15 @@ trait ThreadPoolBuilder {
   def buildThreadPool(): Unit = synchronized {
     ensureNotActive
     inProcessOfBuilding = false
+
+    log.debug("Creating a %s with config [core-pool:%d,max-pool:%d,timeout:%d,allowCoreTimeout:%s,rejectPolicy:%s]",
+      getClass.getName,
+      threadPoolBuilder.getCorePoolSize,
+      threadPoolBuilder.getMaximumPoolSize,
+      threadPoolBuilder.getKeepAliveTime(MILLISECONDS),
+      threadPoolBuilder.allowsCoreThreadTimeOut,
+      threadPoolBuilder.getRejectedExecutionHandler.getClass.getSimpleName)
+
     if (boundedExecutorBound > 0) {
       val boundedExecutor = new BoundedExecutorDecorator(threadPoolBuilder, boundedExecutorBound)
       boundedExecutorBound = -1
@@ -108,7 +117,7 @@ trait ThreadPoolBuilder {
       true
     }
     else {
-      Logger(getClass).info("Tried to configure an already started ThreadPoolBuilder")
+      log.warning("Tried to configure an already started ThreadPoolBuilder of type [%s]",getClass.getName)
       false
     }
   }
