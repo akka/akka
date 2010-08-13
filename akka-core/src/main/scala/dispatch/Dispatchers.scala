@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ *   Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package se.scalablesolutions.akka.dispatch
@@ -111,6 +111,13 @@ object Dispatchers extends Logging {
    * E.g. each actor consumes its own thread.
    */
   def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
+
+  /**
+   * Utility function that tries to load the specified dispatcher config from the akka.conf
+   * or else use the supplied default dispatcher
+   */
+  def fromConfig(key: String, default: => MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher = 
+    config.getConfigMap(key).flatMap(from).getOrElse(default)
 
   /*
    * Creates of obtains a dispatcher from a ConfigMap according to the format below
