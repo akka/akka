@@ -72,13 +72,13 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
   <!-- hawt-dispatcher -->
   <akka:dispatcher id="hawt-dispatcher" type="hawt" aggregate="false" name="test" />
 
-  <!-- thread-based-dispatcher
+  <!-- thread-based-dispatcher -->
    <akka:typed-actor id="typed-actor-with-thread-based-dispatcher"
                     interface="se.scalablesolutions.akka.spring.foo.IMyPojo"
                     implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                     timeout="1000">
       <akka:dispatcher type="thread-based" name="threadBasedDispatcher"/>
-  </akka:typed-actor>  -->
+  </akka:typed-actor>
 
   <!-- thread-based-dispatcher for untyped actor -->
    <akka:untyped-actor id="untyped-actor-with-thread-based-dispatcher"
