@@ -177,7 +177,7 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="timeout" type="xsd:long" use="required">
+    <xsd:attribute name="timeout" type="xsd:long">
       <xsd:annotation>
         <xsd:documentation>
           The default timeout for '!!' invocations.

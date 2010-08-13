@@ -10,8 +10,7 @@ http://www.akkasource.org/schema/akka
 http://scalablesolutions.se/akka/akka-0.10.xsd">
 
   <akka:untyped-actor id="simple-untyped-actor"
-                      implementation="se.scalablesolutions.akka.spring.foo.PingActor"
-                      timeout="1000"/>
+                      implementation="se.scalablesolutions.akka.spring.foo.PingActor"/>
 
   <akka:untyped-actor id="simple-untyped-actor-long-timeout"
                       implementation="se.scalablesolutions.akka.spring.foo.PingActor"

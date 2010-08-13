@@ -48,7 +48,8 @@ trait ActorParser extends BeanParser with DispatcherParser {
     }
 
     try {
-      objectProperties.timeout = mandatory(element, TIMEOUT).toLong
+      val timeout = element.getAttribute(TIMEOUT)
+      objectProperties.timeout = if ((timeout != null) && (!timeout.isEmpty)) timeout.toLong else -1L
     } catch {
       case nfe: NumberFormatException =>
         log.error(nfe, "could not parse timeout %s", element.getAttribute(TIMEOUT))
