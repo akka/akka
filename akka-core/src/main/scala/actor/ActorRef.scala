@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
+import scala.reflect.BeanProperty
 
 import jsr166x.{Deque, ConcurrentLinkedDeque}
 
@@ -87,7 +88,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    * that you can use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
    */
-  @volatile var id: String = _uuid
+  @BeanProperty @volatile var id: String = _uuid
 
   /**
    * User overridable callback/setting.
@@ -95,7 +96,7 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    * Defines the default timeout for '!!' and '!!!' invocations,
    * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
    */
-  @volatile var timeout: Long = Actor.TIMEOUT
+  @BeanProperty @volatile var timeout: Long = Actor.TIMEOUT
 
   /**
    * User overridable callback/setting.
@@ -104,6 +105,10 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
    */
   @volatile var receiveTimeout: Option[Long] = None
+
+  //Java Methods
+  def setReceiveTimeout(timeout: Long) = this.receiveTimeout = Some(timeout)
+  def getReceiveTimeout(): Option[Long] = receiveTimeout
 
   /**
    * User overridable callback/setting.
@@ -131,6 +136,11 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    */
   @volatile var trapExit: List[Class[_ <: Throwable]] = Nil
 
+  //Java methods
+  def setTrapExit(exceptions: Array[Class[_ <: Throwable]]) = trapExit = exceptions.toList
+  def getTrapExit(): Array[Class[_ <: Throwable]] = trapExit.toArray
+
+
   /**
    * User overridable callback/setting.
    * <p/>
@@ -147,12 +157,21 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    */
   @volatile var faultHandler: Option[FaultHandlingStrategy] = None
 
+  //Java Methods
+  def setFaultHandler(handler: FaultHandlingStrategy) = this.faultHandler = Some(handler)
+  def getFaultHandler(): Option[FaultHandlingStrategy] = faultHandler
+
   /**
    * User overridable callback/setting.
    * <p/>
    * Defines the life-cycle for a supervised actor.
    */
   @volatile var lifeCycle: Option[LifeCycle] = None
+
+  //Java Methods
+  def setLifeCycle(lifeCycle: LifeCycle) = this.lifeCycle = Some(lifeCycle)
+  def getLifeCycle(): Option[LifeCycle] = lifeCycle
+
 
   /**
    * The default dispatcher is the <tt>Dispatchers.globalExecutorBasedEventDrivenDispatcher</tt>.
@@ -166,6 +185,11 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    * is sharing the same dispatcher as its creator.
    */
   @volatile private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
+
+  //Java Methods
+  def setDispatcher(dispatcher: MessageDispatcher) = this.dispatcher = dispatcher
+  def getDispatcher(): MessageDispatcher = dispatcher
+
 
   /**
    * Holds the hot swapped partial function.
@@ -224,11 +248,14 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
     else msg.get.sender
   }
 
+  //Java Methods
+  def getSender(): Option[ActorRef] = sender
+
   /**
    * The reference sender future of the last received message.
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
-  def senderFuture: Option[CompletableFuture[Any]] = {
+  def senderFuture(): Option[CompletableFuture[Any]] = {
     // Five lines of map-performance-avoidance, could be just: currentMessage map { _.senderFuture }
     val msg = currentMessage
     if(msg.isEmpty) None
@@ -274,11 +301,15 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit sender: Option[ActorRef] = None) = {
+  def !(message: Any)(implicit sender: Option[ActorRef] = None): Unit = {
     if (isRunning) postMessageToMailbox(message, sender)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
+
+  //Java Methods
+  def sendOneWay(message: AnyRef): Unit = sendOneWay(message,null)
+  def sendOneWay(message: AnyRef, sender: ActorRef): Unit = this.!(message)(Option(sender))
 
   /**
    * Sends a message asynchronously and waits on a future for a reply message.
@@ -312,6 +343,19 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
         "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
+  //Java Methods
+  def sendRequestReply(message: AnyRef): AnyRef = sendRequestReply(message,timeout,null)
+  def sendRequestReply(message: AnyRef, sender: ActorRef): AnyRef = sendRequestReply(message,timeout,sender)
+  def sendRequestReply(message: AnyRef, timeout: Long, sender: ActorRef): AnyRef = {
+    !!(message,timeout)(Option(sender)).getOrElse(throw new ActorTimeoutException(
+      "Message [" + message +
+      "]\n\tsent to [" + actorClassName +
+      "]\n\tfrom [" + (if(sender ne null) sender.actorClassName else "nowhere") +
+      "]\n\twith timeout [" + timeout +
+      "]\n\ttimed out."))
+    .asInstanceOf[AnyRef]
+  }
+
   /**
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
@@ -327,6 +371,11 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
       "Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
+  //Java Methods
+  def sendRequestReplyFuture(message: AnyRef): Future[_] = sendRequestReplyFuture(message,timeout,null)
+  def sendRequestReplyFuture(message: AnyRef, sender: ActorRef): Future[_] = sendRequestReplyFuture(message,timeout,sender)
+  def sendRequestReplyFuture(message: AnyRef, timeout: Long, sender: ActorRef): Future[_] = !!!(message,timeout)(Option(sender))
+
   /**
    * Forwards the message and passes the original sender actor as the sender.
    * <p/>
@@ -341,6 +390,12 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
     } else throw new ActorInitializationException("Actor has not been started, you need to invoke 'actor.start' before using it")
   }
 
+  //Java Methods
+  def forward(message: AnyRef, sender: ActorRef): Unit =
+      if (sender eq null) throw new IllegalArgumentException("The 'sender' argument to 'forward' can't be null")
+      else forward(message)(Some(sender))
+
+
   /**
    * Use <code>self.reply(..)</code> to reply with a message to the original sender of the message currently
    * being processed.
@@ -353,6 +408,9 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
     "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
     "\n\t\t2. Invoked a method on an TypedActor from an instance NOT an TypedActor." +
     "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if succes and Boolean(false) if no sender in scope")
+
+  //Java Methods
+  def replyUnsafe(message: AnyRef) = reply(message)
 
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently
@@ -370,15 +428,25 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
     } else false
   }
 
+  //Java Methods
+  def replySafe(message: AnyRef): Boolean = reply_?(message)
+
   /**
    * Returns the class for the Actor instance that is managed by the ActorRef.
    */
   def actorClass: Class[_ <: Actor]
 
+  //Java Methods
+  def getActorClass(): Class[_ <: Actor] = actorClass
+
+
   /**
    * Returns the class name for the Actor instance that is managed by the ActorRef.
    */
   def actorClassName: String
+
+  //Java Methods
+  def getActorClassName(): String = actorClassName
 
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
@@ -411,15 +479,26 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
    */
   def transactionConfig_=(config: TransactionConfig): Unit
 
+  //Java Methods
+  def setTransactionConfig(config: TransactionConfig): Unit = transactionConfig = config
+
+
   /**
    * Get the transaction configuration for this actor.
    */
   def transactionConfig: TransactionConfig
 
+  //Java Methods
+  def getTransactionConfig(): TransactionConfig = transactionConfig
+
+
   /**
    * Returns the home address and port for this actor.
    */
   def homeAddress: InetSocketAddress = _homeAddress
+
+  //Java Methods
+  def getHomeAddress(): InetSocketAddress = homeAddress
 
   /**
    * Set the home address and port for this actor.
@@ -427,16 +506,28 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
   def homeAddress_=(hostnameAndPort: Tuple2[String, Int]): Unit =
     homeAddress_=(new InetSocketAddress(hostnameAndPort._1, hostnameAndPort._2))
 
+  //Java Methods
+  def setHomeAddress(hostname: String, port: Int): Unit = homeAddress = (hostname,port)
+
+
   /**
    * Set the home address and port for this actor.
    */
   def homeAddress_=(address: InetSocketAddress): Unit
+
+  //Java Methods
+  def setHomeAddress(address: InetSocketAddress): Unit = homeAddress = address
+
 
   /**
    * Returns the remote address for the actor, if any, else None.
    */
   def remoteAddress: Option[InetSocketAddress]
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit
+
+  //Java Methods
+  def getRemoteAddress(): Option[InetSocketAddress] = remoteAddress
+
 
   /**
    * Starts up the actor and its message queue.
@@ -482,32 +573,56 @@ trait ActorRef extends TransactionManagement with java.lang.Comparable[ActorRef]
   /**
    * Atomically create (from actor class) and start an actor.
    */
-  def spawn[T <: Actor : Manifest]: ActorRef
+  def spawn[T <: Actor : Manifest]: ActorRef =
+    spawn(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+
+  //Java Methods
+  def spawn(clazz: Class[_ <: Actor]): ActorRef
 
   /**
    * Atomically create (from actor class), start and make an actor remote.
    */
-  def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef
+  def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef =
+    spawnRemote(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]],hostname,port)
+
+  //Java Methods
+  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef
 
   /**
    * Atomically create (from actor class), start and link an actor.
    */
-  def spawnLink[T <: Actor: Manifest]: ActorRef
+  def spawnLink[T <: Actor: Manifest]: ActorRef =
+    spawnLink(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+
+  //Java Methods
+  def spawnLink(clazz: Class[_ <: Actor]): ActorRef
 
   /**
    * Atomically create (from actor class), start, link and make an actor remote.
    */
-  def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef
+  def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef =
+    spawnLinkRemote(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]],hostname,port)
+
+  //Java Methods
+  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef
 
   /**
    * Returns the mailbox size.
    */
   def mailboxSize = dispatcher.mailboxSize(this)
 
+  //Java Methods
+  def getMailboxSize(): Int = mailboxSize
+
+
   /**
    * Returns the supervisor, if there is one.
    */
   def supervisor: Option[ActorRef]
+
+  //Java Methods
+  def getSupervisor(): ActorRef = supervisor getOrElse null
+
 
   /**
    * Shuts down and removes all linked actors.
@@ -829,8 +944,8 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawn[T <: Actor : Manifest]: ActorRef = guard.withGuard {
-    val actorRef = spawnButDoNotStart[T]
+  def spawn(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
+    val actorRef = spawnButDoNotStart(clazz)
     actorRef.start
     actorRef
   }
@@ -840,8 +955,8 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef = guard.withGuard {
-    val actor = spawnButDoNotStart[T]
+  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = guard.withGuard {
+    val actor = spawnButDoNotStart(clazz)
     actor.makeRemote(hostname, port)
     actor.start
     actor
@@ -852,8 +967,8 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawnLink[T <: Actor: Manifest]: ActorRef = guard.withGuard {
-    val actor = spawnButDoNotStart[T]
+  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
+    val actor = spawnButDoNotStart(clazz)
     try {
       actor.start
     } finally {
@@ -867,8 +982,8 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = guard.withGuard {
-    val actor = spawnButDoNotStart[T]
+  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = guard.withGuard {
+    val actor = spawnButDoNotStart(clazz)
     try {
       actor.makeRemote(hostname, port)
       actor.start
@@ -1063,8 +1178,8 @@ class LocalActorRef private[akka](
     freshActor.postRestart(reason)
   }
 
-  private def spawnButDoNotStart[T <: Actor: Manifest]: ActorRef = guard.withGuard {
-    val actorRef = Actor.actorOf(manifest[T].erasure.asInstanceOf[Class[T]].newInstance)
+  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
+    val actorRef = Actor.actorOf(clazz.newInstance)
     if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actorRef.dispatcher = dispatcher
     actorRef
   }
@@ -1326,10 +1441,10 @@ private[akka] case class RemoteActorRef private[akka] (
   def unlink(actorRef: ActorRef): Unit = unsupported
   def startLink(actorRef: ActorRef): Unit = unsupported
   def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = unsupported
-  def spawn[T <: Actor : Manifest]: ActorRef = unsupported
-  def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef = unsupported
-  def spawnLink[T <: Actor: Manifest]: ActorRef = unsupported
-  def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = unsupported
+  def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
+  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = unsupported
+  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
+  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = unsupported
   def supervisor: Option[ActorRef] = unsupported
   def shutdownLinkedActors: Unit = unsupported
   protected[akka] def mailbox: AnyRef = unsupported

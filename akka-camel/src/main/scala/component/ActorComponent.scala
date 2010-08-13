@@ -14,7 +14,6 @@ import jsr166x.Deque
 import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
-import se.scalablesolutions.akka.actor.{ActorRegistry, Actor, ActorRef}
 import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message}
 import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 import se.scalablesolutions.akka.stm.TransactionConfig
@@ -23,6 +22,7 @@ import scala.reflect.BeanProperty
 
 import CamelMessageConversion.toExchangeAdapter
 import java.lang.Throwable
+import se.scalablesolutions.akka.actor.{ActorRegistry, Actor, ActorRef}
 
 /**
  * Camel component for sending messages to and receiving replies from actors.
@@ -239,10 +239,10 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def unlink(actorRef: ActorRef): Unit = unsupported
   def startLink(actorRef: ActorRef): Unit = unsupported
   def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = unsupported
-  def spawn[T <: Actor : Manifest]: ActorRef = unsupported
-  def spawnRemote[T <: Actor: Manifest](hostname: String, port: Int): ActorRef = unsupported
-  def spawnLink[T <: Actor: Manifest]: ActorRef = unsupported
-  def spawnLinkRemote[T <: Actor : Manifest](hostname: String, port: Int): ActorRef = unsupported
+  def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
+  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = unsupported
+  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
+  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int): ActorRef = unsupported
   def shutdownLinkedActors: Unit = unsupported
   def supervisor: Option[ActorRef] = unsupported
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[CompletableFuture[T]]) = unsupported

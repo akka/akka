@@ -50,21 +50,13 @@ case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
 
 case class Restart(reason: Throwable) extends LifeCycleMessage
 
-case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage {
-  def this(child: UntypedActorRef, killer: Throwable) = this(child.actorRef, killer)
-}
+case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage
 
-case class Link(child: ActorRef) extends LifeCycleMessage {
-  def this(child: UntypedActorRef) = this(child.actorRef)
-}
+case class Link(child: ActorRef) extends LifeCycleMessage
 
-case class Unlink(child: ActorRef) extends LifeCycleMessage {
-  def this(child: UntypedActorRef) = this(child.actorRef)
-}
+case class Unlink(child: ActorRef) extends LifeCycleMessage
 
-case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage {
-  def this(child: UntypedActorRef) = this(child.actorRef)
-}
+case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
 
 case object ReceiveTimeout extends LifeCycleMessage
 
