@@ -31,16 +31,16 @@ trait DispatcherParser extends BeanParser {
 
     properties.dispatcherType = mandatory(dispatcherElement, TYPE)
     if (properties.dispatcherType == THREAD_BASED) {
-      if ((dispatcherElement.getParentNode.getNodeName != "akka:typed-actor") &&
-            (dispatcherElement.getParentNode.getNodeName != "typed-actor")) {
-        throw new IllegalArgumentException("Thread based dispatcher must be nested in typed-actor element!")
+      val allowedParentNodes = "akka:typed-actor" :: "akka:untyped-actor" :: "typed-actor" :: "untyped-actor" :: Nil
+      if (!allowedParentNodes.contains(dispatcherElement.getParentNode.getNodeName)) {
+        throw new IllegalArgumentException("Thread based dispatcher must be nested in 'typed-actor' or 'untyped-actor' element!")
       }
     }
 
-    if (properties.dispatcherType == HAWT) {   // no name for HawtDispatcher
+    if (properties.dispatcherType == HAWT) { // no name for HawtDispatcher
       properties.name = dispatcherElement.getAttribute(NAME)
       if (dispatcherElement.hasAttribute(AGGREGATE)) {
-       properties.aggregate = dispatcherElement.getAttribute(AGGREGATE).toBoolean
+        properties.aggregate = dispatcherElement.getAttribute(AGGREGATE).toBoolean
       }
     } else {
       properties.name = mandatory(dispatcherElement, NAME)
@@ -56,7 +56,7 @@ trait DispatcherParser extends BeanParser {
       properties.threadPool = threadPoolProperties
     }
     properties
-}
+  }
 
   /**
    * Parses the given element and returns a ThreadPoolProperties.

@@ -4,8 +4,9 @@
 package se.scalablesolutions.akka.spring
 
 
-import foo.{IMyPojo, MyPojo}
+import foo.{IMyPojo, MyPojo, PingActor}
 import se.scalablesolutions.akka.dispatch._
+import se.scalablesolutions.akka.actor.UntypedActorRef
 
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers
@@ -111,14 +112,21 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(dispatcher.aggregate === false)
     }
 
-    /*
-    scenario("get a thread-based-dispatcher from context") {
+    /* FIXME
+      scenario("get a thread-based-dispatcher for typed actor from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val pojo = context.getBean("typed-actor-with-thread-based-dispatcher").asInstanceOf[IMyPojo]
       assert(pojo != null)
-    }
-    */
+    } */
 
+    scenario("get a thread-based-dispatcher for untyped from context") {
+      val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
+      val actorRef = context.getBean("untyped-actor-with-thread-based-dispatcher").asInstanceOf[UntypedActorRef]
+      assert(actorRef.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
+      actorRef.start()
+      actorRef.sendOneWay("Hello")
+      assert(actorRef.getDispatcher.isInstanceOf[ThreadBasedDispatcher])
+    }
   }
 
   /**

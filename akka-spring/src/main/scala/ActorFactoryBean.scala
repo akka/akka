@@ -20,7 +20,7 @@ import org.springframework.context.{ApplicationContext,ApplicationContextAware}
 import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
-import se.scalablesolutions.akka.actor.{AspectInitRegistry, TypedActorConfiguration, TypedActor, UntypedActor, UntypedActorRef}
+import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor, UntypedActor, UntypedActorRef}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
 
@@ -81,13 +81,13 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   def createInstance: AnyRef = {
     var argumentList = ""
     if (isRemote) argumentList += "r"
-    if (hasInterface) argumentList += "i"
     if (hasDispatcher) argumentList += "d"
     val ref = typed match {
       case TYPED_ACTOR_TAG => val typedActor = createTypedInstance(argumentList)
         setProperties(AspectInitRegistry.initFor(typedActor).targetInstance)
         typedActor
-      case UNTYPED_ACTOR_TAG => createUntypedInstance(argumentList)
+      case UNTYPED_ACTOR_TAG => createUntypedInstance()
+      case _ => throw new IllegalArgumentException("Unknown actor type")
     }
     ref
   }
@@ -98,31 +98,38 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     if (implementation == null || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
     argList match {
-      case "ri"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port))
-      case "i"   => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
-      case "id"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.dispatcher(dispatcherInstance))
-      case "rid" => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance))
-      case _     => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+      case "r"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port))
+      case "d"  => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.dispatcher(dispatcherInstance()))
+      case "rd" => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig.makeRemote(host, port).dispatcher(dispatcherInstance()))
+      case _    => TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
     }
   }
 
-  private[akka] def createUntypedInstance(args: String) : UntypedActorRef = {
+  /**
+   * Create an UntypedActor.
+   */
+  private[akka] def createUntypedInstance() : UntypedActorRef = {
     if (implementation == null || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:untyped-actor' element in the Spring config file can't be null or empty string")
-    val actorRef = UntypedActor.actorOf(implementation.toClass)
+    val untypedActorRef = UntypedActor.actorOf(implementation.toClass)
     if (timeout > 0) {
-      actorRef.setTimeout(timeout)
+      untypedActorRef.setTimeout(timeout)
     }
     if (transactional) {
-      actorRef.makeTransactionRequired
+      untypedActorRef.makeTransactionRequired
     }
     if (isRemote) {
-      actorRef.makeRemote(host, port)
+      untypedActorRef.makeRemote(host, port)
     }
     if (hasDispatcher) {
-      actorRef.setDispatcher(dispatcherInstance)
+      if (dispatcher.dispatcherType != THREAD_BASED){
+        untypedActorRef.setDispatcher(dispatcherInstance())
+      } else {
+        val actorRef = untypedActorRef.actorRef
+        untypedActorRef.setDispatcher(dispatcherInstance(Some(actorRef)))
+      }
     }
-    actorRef
+    untypedActorRef
   }
 
  /**
@@ -166,21 +173,22 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
 
   private[akka] def isRemote = (host != null) && (!host.isEmpty)
 
-  private[akka] def hasInterface = (interface != null) && (!interface.isEmpty)
-
   private[akka] def hasDispatcher =
     (dispatcher != null) &&
     (dispatcher.dispatcherType != null) &&
     (!dispatcher.dispatcherType.isEmpty)
 
-  private[akka] def dispatcherInstance: MessageDispatcher = {
+  /**
+   * Create dispatcher instance with dispatcher properties.
+   * @param actorRef actorRef for thread based dispatcher
+   * @return new dispatcher instance
+   */
+  private[akka] def dispatcherInstance(actorRef: Option[ActorRef] = None) : MessageDispatcher = {
     import DispatcherFactoryBean._
     if (dispatcher.dispatcherType != THREAD_BASED) {
       createNewInstance(dispatcher)
     } else {
-      println("### create thread based dispatcher")
-      createNewInstance(dispatcher)
+      createNewInstance(dispatcher, actorRef)
     }
-
   }
 }

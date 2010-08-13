@@ -17,7 +17,6 @@ import org.scalatest.matchers.ShouldMatchers
  */
 @RunWith(classOf[JUnitRunner])
 class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
-
   override protected def afterAll = ActorRegistry.shutdownAll
 
   describe("A ActorFactoryBean") {
@@ -32,11 +31,6 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
     it("should create a remote typed actor when a host is set") {
       bean.setHost("some.host.com");
       assert(bean.isRemote)
-    }
-
-    it("should create object that implements the given interface") {
-      bean.setInterface("com.biz.IPojo");
-      assert(bean.hasInterface)
     }
 
     it("should create an typed actor with dispatcher if dispatcher is set") {
