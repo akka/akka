@@ -22,7 +22,7 @@ import scala.reflect.BeanProperty
 
 import CamelMessageConversion.toExchangeAdapter
 import java.lang.Throwable
-import se.scalablesolutions.akka.actor.{ActorRegistry, Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{ScalaActorRef, ActorRegistry, Actor, ActorRef}
 
 /**
  * Camel component for sending messages to and receiving replies from actors.
@@ -197,7 +197,7 @@ private[akka] object AsyncCallbackAdapter {
  *
  * @author Martin Krasser
  */
-private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCallback) extends ActorRef {
+private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCallback) extends ActorRef with ScalaActorRef {
 
   def start = {
     _isRunning = true

@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.spring
 import foo.PingActor
 import se.scalablesolutions.akka.dispatch.ExecutorBasedEventDrivenWorkStealingDispatcher
 import se.scalablesolutions.akka.remote.RemoteNode
-import se.scalablesolutions.akka.actor.UntypedActorRef
+import se.scalablesolutions.akka.actor.ActorRef
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
@@ -26,16 +26,16 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
 
     scenario("get a untyped actor") {
       val context = new ClassPathXmlApplicationContext("/untyped-actor-config.xml")
-      val myactor = context.getBean("simple-untyped-actor").asInstanceOf[UntypedActorRef]
+      val myactor = context.getBean("simple-untyped-actor").asInstanceOf[ActorRef]
       assert(myactor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
       myactor.start()
       myactor.sendOneWay("Hello")
-      assert(myactor.actorRef.isDefinedAt("some string message"))
+      assert(myactor.isDefinedAt("some string message"))
     }
 
     scenario("untyped-actor with timeout") {
       val context = new ClassPathXmlApplicationContext("/untyped-actor-config.xml")
-      val myactor = context.getBean("simple-untyped-actor-long-timeout").asInstanceOf[UntypedActorRef]
+      val myactor = context.getBean("simple-untyped-actor-long-timeout").asInstanceOf[ActorRef]
       assert(myactor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
       myactor.start()
       myactor.sendOneWay("Hello")
@@ -44,22 +44,22 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
 
     scenario("transactional untyped-actor") {
       val context = new ClassPathXmlApplicationContext("/untyped-actor-config.xml")
-      val myactor = context.getBean("transactional-untyped-actor").asInstanceOf[UntypedActorRef]
+      val myactor = context.getBean("transactional-untyped-actor").asInstanceOf[ActorRef]
       assert(myactor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
       myactor.start()
       myactor.sendOneWay("Hello")
-      assert(myactor.actorRef.isDefinedAt("some string message"))
+      assert(myactor.isDefinedAt("some string message"))
     }
 
     scenario("get a remote typed-actor") {
       RemoteNode.start
       Thread.sleep(1000)
       val context = new ClassPathXmlApplicationContext("/untyped-actor-config.xml")
-      val myactor = context.getBean("remote-untyped-actor").asInstanceOf[UntypedActorRef]
+      val myactor = context.getBean("remote-untyped-actor").asInstanceOf[ActorRef]
       assert(myactor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
       myactor.start()
       myactor.sendOneWay("Hello")
-      assert(myactor.actorRef.isDefinedAt("some string message"))
+      assert(myactor.isDefinedAt("some string message"))
       assert(myactor.getRemoteAddress().isDefined)
       assert(myactor.getRemoteAddress().get.getHostName() === "localhost")
       assert(myactor.getRemoteAddress().get.getPort() === 9999)
@@ -67,7 +67,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
 
     scenario("untyped-actor with custom dispatcher") {
       val context = new ClassPathXmlApplicationContext("/untyped-actor-config.xml")
-      val myactor = context.getBean("untyped-actor-with-dispatcher").asInstanceOf[UntypedActorRef]
+      val myactor = context.getBean("untyped-actor-with-dispatcher").asInstanceOf[ActorRef]
       assert(myactor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
       myactor.start()
       myactor.sendOneWay("Hello")

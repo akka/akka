@@ -104,7 +104,24 @@ object Actor extends Logging {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-  def actorOf[T <: Actor : Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+
+  /**
+     * Creates an ActorRef out of the Actor with type T.
+     * <pre>
+     *   import Actor._
+     *   val actor = actorOf[MyActor]
+     *   actor.start
+     *   actor ! message
+     *   actor.stop
+     * </pre>
+     * You can create and start the actor in one statement like this:
+     * <pre>
+     *   val actor = actorOf[MyActor].start
+     * </pre>
+     */
+    def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(clazz)
+
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -365,7 +382,7 @@ trait Actor extends Logging {
    * self.stop(..)
    * </pre>
    */
-  @transient val self: ActorRef = someSelf.get
+  @transient val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
