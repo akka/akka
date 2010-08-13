@@ -20,7 +20,7 @@ class AkkaBroadcaster extends org.atmosphere.jersey.JerseyBroadcaster {
     def receive = {
       case f : Function0[_] => f()
     }
-  })
+  }).start
 
   override def destroy {
     super.destroy
