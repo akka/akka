@@ -78,7 +78,14 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
                     implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                     timeout="1000">
       <akka:dispatcher type="thread-based" name="threadBasedDispatcher"/>
-  </akka:typed-actor> -->
+  </akka:typed-actor>  -->
+
+  <!-- thread-based-dispatcher for untyped actor -->
+   <akka:untyped-actor id="untyped-actor-with-thread-based-dispatcher"
+                    implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                    timeout="1000">
+      <akka:dispatcher type="thread-based" name="threadBasedDispatcher"/>
+  </akka:untyped-actor>
 
 
   <akka:supervision id="supervision1">
