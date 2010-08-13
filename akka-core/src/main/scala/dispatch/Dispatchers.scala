@@ -162,8 +162,6 @@ object Dispatchers extends Logging {
       case "GlobalExecutorBasedEventDriven"            => globalExecutorBasedEventDrivenDispatcher
 
       case "GlobalHawt"                                => globalHawtDispatcher
-
-      case "Default"                                   => globalExecutorBasedEventDrivenDispatcher
     
       case unknown => throw new IllegalArgumentException("Unknown dispatcher type %s" format unknown)
     }
