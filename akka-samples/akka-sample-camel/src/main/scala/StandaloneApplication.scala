@@ -75,7 +75,7 @@ object StandaloneSpringApplication extends Application {
 class StandaloneSpringApplicationRoute extends RouteBuilder {
   def configure = {
     // routes to typed actor (in ApplicationContextRegistry)
-    from("direct:test3").to("typed-actor:pojo3?method=foo")
+    from("direct:test3").to("typed-actor:ta?method=foo")
   }
 }
 
