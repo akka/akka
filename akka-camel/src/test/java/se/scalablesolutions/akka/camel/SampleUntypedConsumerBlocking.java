@@ -3,7 +3,7 @@ package se.scalablesolutions.akka.camel;
 /**
  * @author Martin Krasser
  */
-public class SampleUntypedConsumerBlocking extends UntypedConsumer {
+public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
 
     public String getEndpointUri() {
         return "direct:test-untyped-consumer-blocking";

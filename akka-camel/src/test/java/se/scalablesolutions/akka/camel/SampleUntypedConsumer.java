@@ -1,9 +1,11 @@
 package se.scalablesolutions.akka.camel;
 
+import se.scalablesolutions.akka.camel.UntypedConsumerActor;
+
 /**
  * @author Martin Krasser
  */
-public class SampleUntypedConsumer extends UntypedConsumer {
+public class SampleUntypedConsumer extends UntypedConsumerActor {
 
     public String getEndpointUri() {
         return "direct:test-untyped-consumer";

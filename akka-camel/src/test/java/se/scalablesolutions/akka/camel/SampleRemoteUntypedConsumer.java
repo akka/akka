@@ -1,11 +1,11 @@
 package se.scalablesolutions.akka.camel;
 
-import java.net.InetSocketAddress;
+import se.scalablesolutions.akka.camel.RemoteUntypedConsumerActor;
 
 /**
  * @author Martin Krasser
  */
-public class SampleRemoteUntypedConsumer extends RemoteUntypedConsumer {
+public class SampleRemoteUntypedConsumer extends RemoteUntypedConsumerActor {
 
     public SampleRemoteUntypedConsumer() {
         this("localhost", 7774);

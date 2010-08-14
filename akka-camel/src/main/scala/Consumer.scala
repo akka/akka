@@ -30,14 +30,16 @@ trait Consumer { self: Actor =>
  * Java-friendly {@link Consumer} inherited by
  *
  * <ul>
- *   <li>{@link UntypedConsumer}</li>
- *   <li>{@link RemoteUntypedConsumer}</li>
- *   <li>{@link TransactedUntypedConsumer}</li>
+ *   <li>{@link UntypedConsumerActor}</li>
+ *   <li>{@link RemoteUntypedConsumerActor}</li>
+ *   <li>{@link UntypedConsumerTransactor}</li>
  * </ul>
  *
  * implementations.
+ *
+ * @author Martin Krasser
  */
-trait JavaConsumer extends Consumer { self: Actor =>
+trait UntypedConsumer extends Consumer { self: UntypedActor =>
 
   final override def endpointUri = getEndpointUri
 
@@ -60,19 +62,19 @@ trait JavaConsumer extends Consumer { self: Actor =>
  * Subclass this abstract class to create an MDB-style untyped consumer actor. This
  * class is meant to be used from Java.
  */
-abstract class UntypedConsumer extends UntypedActor with JavaConsumer
+abstract class UntypedConsumerActor extends UntypedActor with UntypedConsumer
 
 /**
  * Subclass this abstract class to create an MDB-style transacted untyped consumer 
  * actor. This class is meant to be used from Java.
  */
-abstract class TransactedUntypedConsumer extends UntypedTransactor with JavaConsumer
+abstract class UntypedConsumerTransactor extends UntypedTransactor with UntypedConsumer
 
 /**
  * Subclass this abstract class to create an MDB-style remote untyped consumer
  * actor. This class is meant to be used from Java.
  */
-abstract class RemoteUntypedConsumer(address: InetSocketAddress) extends RemoteUntypedActor(address) with JavaConsumer {
+abstract class RemoteUntypedConsumerActor(address: InetSocketAddress) extends RemoteUntypedActor(address) with UntypedConsumer {
   def this(host: String, port: Int) = this(new InetSocketAddress(host, port))
 }
 
