@@ -84,6 +84,15 @@ abstract class UntypedTransactor extends UntypedActor {
 }
 
 /**
+ * Factory closure for an UntypedActor, to be used with 'UntypedActor.actorOf(factory)'.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+trait UntypedActorFactory {
+ def create: UntypedActor
+}
+
+/**
  * Extend this abstract class to create a remote UntypedActor.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -119,7 +128,7 @@ object UntypedActor {
    * <pre>
    *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class);
    *   actor.start();
-   *   actor.sendOneWay(message, context)
+   *   actor.sendOneWay(message, context);
    *   actor.stop();
    * </pre>
    * You can create and start the actor in one statement like this:
@@ -137,22 +146,23 @@ object UntypedActor {
    * NOTE: Use this convenience method with care, do NOT make it possible to get a reference to the
    * UntypedActor instance directly, but only through its 'UntypedActorRef' wrapper reference.
    * <p/>
-   * Creates an ActorRef out of the Actor. Allows you to pass in the instance for the Actor. Only
-   * use this method when you need to pass in constructor arguments into the 'UntypedActor'.
+   * Creates an UntypedActorRef out of the Actor. Allows you to pass in the instance for the UntypedActor. 
+   * Only use this method when you need to pass in constructor arguments into the 'UntypedActor'.
    * <p/>
+   * You use it by implementing the UntypedActorFactory interface.
    * Example in Java:
    * <pre>
-   *   ActorRef actor = UntypedActor.actorOf(new MyUntypedActor("service:name", 5));
+   *   UntypedActorRef actor = UntypedActor.actorOf(new UntypedActorFactory() {
+   *     public UntypedActor create() { 
+   *       return new MyUntypedActor("service:name", 5); 
+   *     }
+   *   });
    *   actor.start();
-   *   actor.sendOneWay(message, context)
+   *   actor.sendOneWay(message, context);
    *   actor.stop();
    * </pre>
-   * You can create and start the actor in one statement like this:
-   * <pre>
-   *   ActorRef actor = UntypedActor.actorOf(MyUntypedActor.class).start();
-   * </pre>
    */
-  def actorOf(actorInstance: UntypedActor): UntypedActorRef = UntypedActorRef.wrap(new LocalActorRef(() => actorInstance))
+  def actorOf(factory: UntypedActorFactory) = UntypedActorRef.wrap(new LocalActorRef(() => factory.create))  
 }
 
 /**

@@ -11,6 +11,22 @@ import Actor._
 class UntypedActorFireForgetRequestReplySpec extends WordSpec with MustMatchers {
 
   "An UntypedActor" should {
+    "be able to be created using the UntypedActor.actorOf(UntypedActorFactory) factory method" in {
+      UntypedActorTestState.finished = new CyclicBarrier(2);
+      UntypedActorTestState.log = "NIL";
+      val replyActor = UntypedActor.actorOf(new UntypedActorFactory() {
+        def create: UntypedActor = new ReplyUntypedActor 
+      }).start
+      val senderActor = UntypedActor.actorOf(new UntypedActorFactory() {
+        def create: UntypedActor = new SenderUntypedActor 
+      }).start
+      senderActor.sendOneWay(replyActor)
+      senderActor.sendOneWay("ReplyToSendOneWayUsingReply")
+      try { UntypedActorTestState.finished.await(1L, TimeUnit.SECONDS) }
+      catch { case e: TimeoutException => fail("Never got the message") }
+      UntypedActorTestState.log must be ("Reply")
+    }
+
     "reply to message sent with 'sendOneWay' using 'reply'" in {
       UntypedActorTestState.finished = new CyclicBarrier(2);
       UntypedActorTestState.log = "NIL";

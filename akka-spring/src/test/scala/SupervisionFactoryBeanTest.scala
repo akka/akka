@@ -18,8 +18,8 @@ class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
   val restartStrategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Throwable]))
   val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", 1000L))
 
-  def createTypedActorProperties(target: String, timeout: Long) : TypedActorProperties = {
-    val properties = new TypedActorProperties()
+  def createTypedActorProperties(target: String, timeout: Long) : ActorProperties = {
+    val properties = new ActorProperties()
     properties.target = target
     properties.timeout = timeout
     properties
@@ -34,8 +34,8 @@ class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
       assert(bean.getSupervised == typedActors)
     }
 
-    it("should return the object type TypedActorConfigurator") {
-      assert(bean.getObjectType == classOf[TypedActorConfigurator])
+    it("should return the object type AnyRef") {
+      assert(bean.getObjectType == classOf[AnyRef])
     }
   }
 }

@@ -10,9 +10,9 @@ import atomic.{AtomicLong, AtomicInteger}
 import ThreadPoolExecutor.CallerRunsPolicy
 
 import se.scalablesolutions.akka.actor.IllegalActorStateException
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.{Logger, Logging}
 
-trait ThreadPoolBuilder {
+trait ThreadPoolBuilder extends Logging {
   val name: String
 
   private val NR_START_THREADS = 16
@@ -22,7 +22,7 @@ trait ThreadPoolBuilder {
 
   private var threadPoolBuilder: ThreadPoolExecutor = _
   private var boundedExecutorBound = -1
-  private var inProcessOfBuilding = false
+  @volatile private var inProcessOfBuilding = false
   private var blockingQueue: BlockingQueue[Runnable] = _
 
   private lazy val threadFactory = new MonitorableThreadFactory(name)
@@ -34,6 +34,15 @@ trait ThreadPoolBuilder {
   def buildThreadPool(): Unit = synchronized {
     ensureNotActive
     inProcessOfBuilding = false
+
+    log.debug("Creating a %s with config [core-pool:%d,max-pool:%d,timeout:%d,allowCoreTimeout:%s,rejectPolicy:%s]",
+      getClass.getName,
+      threadPoolBuilder.getCorePoolSize,
+      threadPoolBuilder.getMaximumPoolSize,
+      threadPoolBuilder.getKeepAliveTime(MILLISECONDS),
+      threadPoolBuilder.allowsCoreThreadTimeOut,
+      threadPoolBuilder.getRejectedExecutionHandler.getClass.getSimpleName)
+
     if (boundedExecutorBound > 0) {
       val boundedExecutor = new BoundedExecutorDecorator(threadPoolBuilder, boundedExecutorBound)
       boundedExecutorBound = -1
@@ -102,45 +111,57 @@ trait ThreadPoolBuilder {
     this
   }
 
+  def configureIfPossible(f: (ThreadPoolBuilder) => Unit): Boolean = synchronized {
+    if(inProcessOfBuilding) {
+      f(this)
+      true
+    }
+    else {
+      log.warning("Tried to configure an already started ThreadPoolBuilder of type [%s]",getClass.getName)
+      false
+    }
+  }
+
   /**
    * Default is 16.
    */
-  def setCorePoolSize(size: Int): ThreadPoolBuilder = synchronized {
-    ensureNotActive
-    verifyInConstructionPhase
-    threadPoolBuilder.setCorePoolSize(size)
-    this
-  }
+  def setCorePoolSize(size: Int): ThreadPoolBuilder =
+    setThreadPoolExecutorProperty(_.setCorePoolSize(size))
 
   /**
    * Default is 128.
    */
-  def setMaxPoolSize(size: Int): ThreadPoolBuilder = synchronized {
-    ensureNotActive
-    verifyInConstructionPhase
-    threadPoolBuilder.setMaximumPoolSize(size)
-    this
-  }
+  def setMaxPoolSize(size: Int): ThreadPoolBuilder =
+    setThreadPoolExecutorProperty(_.setMaximumPoolSize(size))
 
   /**
    * Default is 60000 (one minute).
    */
-  def setKeepAliveTimeInMillis(time: Long): ThreadPoolBuilder = synchronized {
-    ensureNotActive
-    verifyInConstructionPhase
-    threadPoolBuilder.setKeepAliveTime(time, MILLISECONDS)
-    this
-  }
+  def setKeepAliveTimeInMillis(time: Long): ThreadPoolBuilder =
+    setThreadPoolExecutorProperty(_.setKeepAliveTime(time, MILLISECONDS))
 
   /**
    * Default ThreadPoolExecutor.CallerRunsPolicy. To allow graceful backing off when pool is overloaded.
    */
-  def setRejectionPolicy(policy: RejectedExecutionHandler): ThreadPoolBuilder = synchronized {
+  def setRejectionPolicy(policy: RejectedExecutionHandler): ThreadPoolBuilder =
+    setThreadPoolExecutorProperty(_.setRejectedExecutionHandler(policy))
+
+  /**
+   * Default false, set to true to conserve thread for potentially unused dispatchers
+   */
+  def setAllowCoreThreadTimeout(allow: Boolean) =
+    setThreadPoolExecutorProperty(_.allowCoreThreadTimeOut(allow))
+
+  /**
+   * Default ThreadPoolExecutor.CallerRunsPolicy. To allow graceful backing off when pool is overloaded.
+   */
+  protected def setThreadPoolExecutorProperty(f: (ThreadPoolExecutor) => Unit): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyInConstructionPhase
-    threadPoolBuilder.setRejectedExecutionHandler(policy)
+    f(threadPoolBuilder)
     this
   }
+
 
   protected def verifyNotInConstructionPhase = {
     if (inProcessOfBuilding) throw new IllegalActorStateException("Is already in the process of building a thread pool")

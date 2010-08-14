@@ -127,17 +127,13 @@ object ActorRegistry extends ListenerManagement {
     if (id eq null) throw new IllegalActorStateException("Actor.id is null " + actor)
 
     val set = actorsById get id
-    if(set ne null)
-      set add actor
+    if (set ne null) set add actor
     else {
       val newSet = new ConcurrentSkipListSet[ActorRef]
       newSet add actor
-
       val oldSet = actorsById.putIfAbsent(id,newSet)
-
-      //Parry for two simultaneous putIfAbsent(id,newSet)
-      if(oldSet ne null)
-        oldSet add actor
+      // Parry for two simultaneous putIfAbsent(id,newSet)
+      if (oldSet ne null) oldSet add actor
     }
 
     // UUID
@@ -154,8 +150,7 @@ object ActorRegistry extends ListenerManagement {
     actorsByUUID remove actor.uuid
 
     val set = actorsById get actor.id
-    if (set ne null)
-      set remove actor
+    if (set ne null) set remove actor
 
     //FIXME: safely remove set if empty, leaks memory
 
