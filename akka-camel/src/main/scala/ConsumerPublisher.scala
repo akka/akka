@@ -12,7 +12,6 @@ import java.util.concurrent.CountDownLatch
 import org.apache.camel.builder.RouteBuilder
 
 import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.actor.annotation.consume
 import se.scalablesolutions.akka.camel.component.TypedActorComponent
 import se.scalablesolutions.akka.util.Logging
 
@@ -244,9 +243,8 @@ private[camel] case class ConsumerRegistered(actorRef: ActorRef, uri: String, uu
 private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, uuid: String) extends ConsumerEvent
 
 /**
- * Event indicating that an typed actor proxy has been created for a POJO. For each
- * <code>@consume</code> annotated POJO method a separate instance of this class is
- * created.
+ * Event indicating that an typed actor proxy has been created for a typed actor. For each <code>@consume</code>
+ * annotated typed actor method a separate instance of this class is created.
  *
  * @param typedActor typed actor (proxy).
  * @param init
@@ -258,9 +256,8 @@ private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, 
 private[camel] case class ConsumerMethodRegistered(typedActor: AnyRef, init: AspectInit, uri: String, method: Method) extends ConsumerEvent
 
 /**
- * Event indicating that an typed actor has been stopped. For each
- * <code>@consume</code> annotated POJO method a separate instance of this class is
- * created.
+ * Event indicating that an typed actor has been stopped. For each <code>@consume</code>
+ * annotated typed object method a separate instance of this class is created.
  *
  * @param typedActor typed actor (proxy).
  * @param init
@@ -306,18 +303,22 @@ private[camel] object ConsumerUnregistered {
  */
 private[camel] object ConsumerMethod {
   /**
-   * Applies a function <code>f</code> to each consumer method of <code>typedActor</code> and
+   * Applies a function <code>f</code> to each consumer method of <code>TypedActor</code> and
    * returns the function results as a list. A consumer method is one that is annotated with
    * <code>@consume</code>. If <code>typedActor</code> is a proxy for a remote typed actor
    * <code>f</code> is never called and <code>Nil</code> is returned.
    */
   def forConsumer[T](typedActor: AnyRef, init: AspectInit)(f: Method => T): List[T] = {
-    // TODO: support consumer annotation inheritance
-    // - visit overridden methods in superclasses
-    // - visit implemented method declarations in interfaces
     if (init.remoteAddress.isDefined) Nil // let remote node publish typed actor methods on endpoints
-    else for (m <- typedActor.getClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume])))
-    yield f(m)
+    else {
+      // TODO: support consumer annotation inheritance
+      // - visit overridden methods in superclasses
+      // - visit implemented method declarations in interfaces
+      val intfClass = typedActor.getClass
+      val implClass = init.targetInstance.getClass
+      (for (m <- intfClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m)) ++
+      (for (m <- implClass.getMethods.toList; if (m.isAnnotationPresent(classOf[consume]))) yield f(m))
+    }
   }
 }
 

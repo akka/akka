@@ -4,7 +4,8 @@
 
 package se.scalablesolutions.akka.camel
 
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
+import se.scalablesolutions.akka.actor._
+import java.net.InetSocketAddress
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
@@ -23,6 +24,56 @@ trait Consumer { self: Actor =>
    * communications never block.
    */
   def blocking = false
+}
+
+/**
+ * Java-friendly {@link Consumer} inherited by
+ *
+ * <ul>
+ *   <li>{@link UntypedConsumer}</li>
+ *   <li>{@link RemoteUntypedConsumer}</li>
+ *   <li>{@link TransactedUntypedConsumer}</li>
+ * </ul>
+ *
+ * implementations.
+ */
+trait JavaConsumer extends Consumer { self: Actor =>
+
+  final override def endpointUri = getEndpointUri
+
+  final override def blocking = isBlocking
+
+  /**
+   * Returns the Camel endpoint URI to consume messages from.
+   */
+  def getEndpointUri(): String
+
+  /**
+   * Determines whether two-way communications with this consumer actor should
+   * be done in blocking or non-blocking mode (default is non-blocking). One-way
+   * communications never block.
+   */
+  def isBlocking() = super.blocking
+}
+
+/**
+ * Subclass this abstract class to create an MDB-style untyped consumer actor. This
+ * class is meant to be used from Java.
+ */
+abstract class UntypedConsumer extends UntypedActor with JavaConsumer
+
+/**
+ * Subclass this abstract class to create an MDB-style transacted untyped consumer 
+ * actor. This class is meant to be used from Java.
+ */
+abstract class TransactedUntypedConsumer extends UntypedTransactor with JavaConsumer
+
+/**
+ * Subclass this abstract class to create an MDB-style remote untyped consumer
+ * actor. This class is meant to be used from Java.
+ */
+abstract class RemoteUntypedConsumer(address: InetSocketAddress) extends RemoteUntypedActor(address) with JavaConsumer {
+  def this(host: String, port: Int) = this(new InetSocketAddress(host, port))
 }
 
 /**

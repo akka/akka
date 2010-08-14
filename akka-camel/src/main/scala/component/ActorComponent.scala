@@ -25,7 +25,7 @@ import CamelMessageConversion.toExchangeAdapter
 import java.lang.Throwable
 
 /**
- * Camel component for sending messages to and receiving replies from actors.
+ * Camel component for sending messages to and receiving replies from (untyped) actors.
  *
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
  * @see se.scalablesolutions.akka.camel.component.ActorProducer
@@ -50,7 +50,7 @@ class ActorComponent extends DefaultComponent {
 }
 
 /**
- * Camel endpoint for referencing an actor. The actor reference is given by the endpoint URI.
+ * Camel endpoint for referencing an (untyped) actor. The actor reference is given by the endpoint URI.
  * An actor can be referenced by its <code>ActorRef.id</code> or its <code>ActorRef.uuid</code>.
  * Supported endpoint URI formats are
  * <code>actor:&lt;actorid&gt;</code>,
@@ -68,7 +68,7 @@ class ActorEndpoint(uri: String,
                     val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
 
   /**
-   * Blocking of client thread during two-way message exchanges with consumer actors. This is set
+   * Blocking of caller thread during two-way message exchanges with consumer actors. This is set
    * via the <code>blocking=true|false</code> endpoint URI parameter. If omitted blocking is false.
    */
   @BeanProperty var blocking: Boolean = false
@@ -91,7 +91,7 @@ class ActorEndpoint(uri: String,
 }
 
 /**
- * Sends the in-message of an exchange to an actor. If the exchange pattern is out-capable and
+ * Sends the in-message of an exchange to an (untyped) actor. If the exchange pattern is out-capable and
  * <code>blocking</code> is enabled then the producer waits for a reply (using the !! operator),
  * otherwise the ! operator is used for sending the message.
  *
