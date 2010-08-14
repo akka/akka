@@ -29,19 +29,10 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     mockEndpoint.reset
   }
 
-  feature("Communicate with an actor from a Camel application using actor endpoint URIs") {
+  feature("Communicate with an actor via an actor:uuid endpoint") {
     import CamelContextManager.template
 
-    scenario("one-way communication using actor id") {
-      val actor = actorOf[Tester1].start
-      val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
-      template.sendBody("actor:%s" format actor.id, "Martin")
-      assert(latch.await(5000, TimeUnit.MILLISECONDS))
-      val reply = (actor !! GetRetainedMessage).get.asInstanceOf[Message]
-      assert(reply.body === "Martin")
-    }
-
-    scenario("one-way communication using actor uuid") {
+    scenario("one-way communication") {
       val actor = actorOf[Tester1].start
       val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
       template.sendBody("actor:uuid:%s" format actor.uuid, "Martin")
@@ -50,12 +41,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
       assert(reply.body === "Martin")
     }
 
-    scenario("two-way communication using actor id") {
-      val actor = actorOf[Tester2].start
-      assert(template.requestBody("actor:%s" format actor.id, "Martin") === "Hello Martin")
-    }
-
-    scenario("two-way communication using actor uuid") {
+    scenario("two-way communication") {
       val actor = actorOf[Tester2].start
       assert(template.requestBody("actor:uuid:%s" format actor.uuid, "Martin") === "Hello Martin")
     }
@@ -67,16 +53,40 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
       }
     }
 
-    scenario("two-way async communication with failure response") {
+    scenario("two-way communication via a custom route with failure response") {
       mockEndpoint.expectedBodiesReceived("whatever")
       template.requestBody("direct:failure-test-1", "whatever")
       mockEndpoint.assertIsSatisfied
     }
 
-    scenario("two-way sync communication with exception") {
+    scenario("two-way communication via a custom route with exception") {
       mockEndpoint.expectedBodiesReceived("whatever")
       template.requestBody("direct:failure-test-2", "whatever")
       mockEndpoint.assertIsSatisfied
+    }
+  }
+
+  feature("Communicate with an actor via an actor:id endpoint") {
+    import CamelContextManager.template
+
+    scenario("one-way communication") {
+      val actor = actorOf[Tester1].start
+      val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
+      template.sendBody("actor:%s" format actor.id, "Martin")
+      assert(latch.await(5000, TimeUnit.MILLISECONDS))
+      val reply = (actor !! GetRetainedMessage).get.asInstanceOf[Message]
+      assert(reply.body === "Martin")
+    }
+
+    scenario("two-way communication") {
+      val actor = actorOf[Tester2].start
+      assert(template.requestBody("actor:%s" format actor.id, "Martin") === "Hello Martin")
+    }
+
+    scenario("two-way communication via a custom route") {
+      val actor = actorOf[CustomIdActor].start
+      assert(template.requestBody("direct:custom-id-test-1", "Martin") === "Received Martin")
+      assert(template.requestBody("direct:custom-id-test-2", "Martin") === "Received Martin")
     }
   }
 
@@ -84,6 +94,13 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
 }
 
 object ActorComponentFeatureTest {
+  class CustomIdActor extends Actor {
+    self.id = "custom-id"
+    protected def receive = {
+      case msg: Message => self.reply("Received %s" format msg.body)
+    }
+  }
+
   class FailWithMessage extends Actor {
     protected def receive = {
       case msg: Message => self.reply(Failure(new Exception("test")))
@@ -100,6 +117,8 @@ object ActorComponentFeatureTest {
     val failWithMessage = actorOf[FailWithMessage].start
     val failWithException = actorOf[FailWithException].start
     def configure {
+      from("direct:custom-id-test-1").to("actor:custom-id")
+      from("direct:custom-id-test-2").to("actor:id:custom-id")
       from("direct:failure-test-1")
         .onException(classOf[Exception]).to("mock:mock").handled(true).end
         .to("actor:uuid:%s" format failWithMessage.uuid)
