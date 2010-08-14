@@ -44,9 +44,16 @@ object RemoteRequestProtocolIdFactory {
  * Life-cycle events for RemoteClient.
  */
 sealed trait RemoteClientLifeCycleEvent
-case class RemoteClientError(@BeanProperty val cause: Throwable, @BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
-case class RemoteClientDisconnected(@BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
-case class RemoteClientConnected(@BeanProperty val host: String, @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
+case class RemoteClientError(
+  @BeanProperty val cause: Throwable, 
+  @BeanProperty val host: String, 
+  @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
+case class RemoteClientDisconnected(
+  @BeanProperty val host: String, 
+  @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
+case class RemoteClientConnected(
+  @BeanProperty val host: String, 
+  @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
 
 class RemoteClientException private[akka](message: String) extends RuntimeException(message)
 
@@ -259,23 +266,23 @@ class RemoteClientPipelineFactory(
     remoteAddress: SocketAddress,
     timer: HashedWheelTimer,
     client: RemoteClient) extends ChannelPipelineFactory {
-  def getPipeline: ChannelPipeline = {
 
-    def join(ch: ChannelHandler*) = Array[ChannelHandler](ch:_*)
+  def getPipeline: ChannelPipeline = {
+    def join(ch: ChannelHandler*) = Array[ChannelHandler](ch: _*)
 
     val engine = RemoteServerSslContext.client.createSSLEngine()
     engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
     engine.setUseClientMode(true)
 
-    val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
+    val ssl         = if (RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val timeout     = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
     val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
     val lenPrep     = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(RemoteReplyProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
-    val(enc,dec)    = RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib"  => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)),join(new ZlibDecoder))
-      case       _ => (join(),join())
+    val (enc, dec)  = RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib" => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)), join(new ZlibDecoder))
+      case _      => (join(), join())
     }
 
     val remoteClient = new RemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
@@ -326,7 +333,7 @@ class RemoteClientHandler(
               "Can't handle restart for remote actor " + supervisedActor + " since its supervisor has been removed")
             else supervisedActor.supervisor.get ! Exit(supervisedActor, parseException(reply, client.loader))
           }
-          future.completeWithException(null, parseException(reply, client.loader))
+          future.completeWithException(parseException(reply, client.loader))
         }
         futures.remove(reply.getId)
       } else {

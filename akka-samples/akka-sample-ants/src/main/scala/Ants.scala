@@ -70,7 +70,7 @@ object World {
 
   private val snapshotFactory = TransactionFactory(readonly = true, familyName = "snapshot", hooks = false)
 
-  def snapshot = atomic(snapshotFactory) { Array.tabulate(Dim, Dim)(place(_, _).getOption) }
+  def snapshot = atomic(snapshotFactory) { Array.tabulate(Dim, Dim)(place(_, _).opt) }
 
   def place(loc: (Int, Int)) = places(loc._1)(loc._2)
 

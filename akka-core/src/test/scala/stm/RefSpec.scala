@@ -11,7 +11,7 @@ class RefSpec extends WordSpec with MustMatchers {
 
     "optionally accept an initial value" in {
       val emptyRef = Ref[Int]
-      val empty = atomic { emptyRef.getOption }
+      val empty = atomic { emptyRef.opt }
 
       empty must be(None)
 
@@ -72,16 +72,6 @@ class RefSpec extends WordSpec with MustMatchers {
       val value = atomic { ref.get }
 
       value must be (3)
-    }
-
-    "not be changeable using alter if no value has been set" in {
-      val ref = Ref[Int]
-
-      def increment = atomic {
-        ref alter (_ + 1)
-      }
-
-      evaluating { increment } must produce [RuntimeException]
     }
 
     "be able to be mapped" in {
@@ -147,13 +137,13 @@ class RefSpec extends WordSpec with MustMatchers {
         for (value <- ref1 if value < 2) yield value
       }
 
-      val optLess2 = atomic { refLess2.getOption }
+      val optLess2 = atomic { refLess2.opt }
 
       val refGreater2 = atomic {
         for (value <- ref1 if value > 2) yield value
       }
 
-      val optGreater2 = atomic { refGreater2.getOption }
+      val optGreater2 = atomic { refGreater2.opt }
 
       optLess2 must be (Some(1))
       optGreater2 must be (None)

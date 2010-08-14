@@ -17,7 +17,7 @@ import org.w3c.dom.Element
  */
 @RunWith(classOf[JUnitRunner])
 class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
-  private class Parser extends TypedActorParser
+  private class Parser extends ActorParser
 
   describe("An TypedActorParser") {
     val parser = new Parser()
@@ -30,7 +30,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                                 <property name="someProp" value="someValue" ref="someRef"/>
                                         </akka:typed-actor>
 
-      val props = parser.parseTypedActor(dom(xml).getDocumentElement);
+      val props = parser.parseActor(dom(xml).getDocumentElement);
       assert(props != null)
       assert(props.timeout === 1000)
       assert(props.target === "foo.bar.MyPojo")
@@ -44,7 +44,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                     timeout="1000"
                                     transactional="true"/>
 
-      evaluating { parser.parseTypedActor(dom(xml).getDocumentElement) } should produce [IllegalArgumentException]
+      evaluating { parser.parseActor(dom(xml).getDocumentElement) } should produce [IllegalArgumentException]
     }
 
     it("should parse TypedActors configuration with dispatcher") {
@@ -52,7 +52,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                   timeout="1000">
                   <akka:dispatcher type="thread-based" name="my-thread-based-dispatcher"/>
                 </akka:typed-actor>
-      val props = parser.parseTypedActor(dom(xml).getDocumentElement);
+      val props = parser.parseActor(dom(xml).getDocumentElement);
       assert(props != null)
       assert(props.dispatcher.dispatcherType === "thread-based")
     }
@@ -62,7 +62,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                   timeout="1000">
                   <akka:remote host="com.some.host" port="9999"/>
                 </akka:typed-actor>
-      val props = parser.parseTypedActor(dom(xml).getDocumentElement);
+      val props = parser.parseActor(dom(xml).getDocumentElement);
       assert(props != null)
       assert(props.host === "com.some.host")
       assert(props.port === 9999)

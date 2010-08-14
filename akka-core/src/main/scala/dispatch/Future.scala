@@ -25,7 +25,7 @@ object Futures {
     try {
       promise completeWithResult body
     } catch {
-      case e => promise completeWithException (None, e)
+      case e => promise completeWithException e
     }
     promise
   }
@@ -77,12 +77,12 @@ sealed trait Future[T] {
   def isExpired: Boolean
   def timeoutInNanos: Long
   def result: Option[T]
-  def exception: Option[Tuple2[AnyRef, Throwable]]
+  def exception: Option[Throwable]
 }
 
 trait CompletableFuture[T] extends Future[T] {
   def completeWithResult(result: T)
-  def completeWithException(toBlame: AnyRef, exception: Throwable)
+  def completeWithException(exception: Throwable)
 }
 
 // Based on code from the actorom actor framework by Sergio Bossa [http://code.google.com/p/actorom/].
@@ -96,7 +96,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
   private val _signal = _lock.newCondition
   private var _completed: Boolean = _
   private var _result: Option[T] = None
-  private var _exception: Option[Tuple2[AnyRef, Throwable]] = None
+  private var _exception: Option[Throwable] = None
 
   def await = try {
     _lock.lock
@@ -147,7 +147,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     _lock.unlock
   }
 
-  def exception: Option[Tuple2[AnyRef, Throwable]] = try {
+  def exception: Option[Throwable] = try {
     _lock.lock
     _exception
   } finally {
@@ -165,11 +165,11 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     _lock.unlock
   }
 
-  def completeWithException(toBlame: AnyRef, exception: Throwable) = try {
+  def completeWithException(exception: Throwable) = try {
     _lock.lock
     if (!_completed) {
       _completed = true
-      _exception = Some((toBlame, exception))
+      _exception = Some(exception)
     }
   } finally {
     _signal.signalAll
