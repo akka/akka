@@ -19,9 +19,6 @@ import se.scalablesolutions.akka.util.{Bootable, Logging}
  * @author Martin Krasser
  */
 trait CamelService extends Bootable with Logging {
-
-  import CamelContextManager._
-
   private[camel] val consumerPublisher = actorOf[ConsumerPublisher]
   private[camel] val publishRequestor =  actorOf[PublishRequestor]
 
@@ -43,43 +40,62 @@ trait CamelService extends Bootable with Logging {
     super.onLoad
 
     // Only init and start if not already done by application
-    if (!initialized) init
-    if (!started) start
+    if (!CamelContextManager.initialized) CamelContextManager.init
+    if (!CamelContextManager.started) CamelContextManager.start
 
     // start actor that exposes consumer actors and typed actors via Camel endpoints
     consumerPublisher.start
 
     // init publishRequestor so that buffered and future events are delivered to consumerPublisher
     publishRequestor ! PublishRequestorInit(consumerPublisher)
+
+    // Register this instance as current CamelService
+    CamelServiceManager.register(this)
   }
 
   /**
    * Stops the CamelService.
    */
   abstract override def onUnload = {
+    // Unregister this instance as current CamelService
+    CamelServiceManager.unregister(this)
+
+    // Remove related listeners from registry
     ActorRegistry.removeListener(publishRequestor)
     AspectInitRegistry.removeListener(publishRequestor)
+
+    // Stop related services
     consumerPublisher.stop
-    stop
+    CamelContextManager.stop
+
     super.onUnload
   }
+
+  @deprecated("use start() instead")
+  def load: CamelService = {
+    onLoad
+    this
+  }
+
+  @deprecated("use stop() instead")
+  def unload = onUnload
 
   /**
    * Starts the CamelService.
    *
    * @see onLoad
    */
-  def load: CamelService = {
+  def start: CamelService = {
     onLoad
     this
   }
-
+  
   /**
    * Stops the CamelService.
    *
    * @see onUnload
    */
-  def unload = onUnload
+  def stop = onUnload
 
   /**
    * Sets an expectation of the number of upcoming endpoint activations and returns
@@ -99,23 +115,48 @@ trait CamelService extends Bootable with Logging {
 }
 
 /**
- * Single CamelService instance.
+ * ...
  *
  * @author Martin Krasser
  */
-object CamelService extends CamelService {
+object CamelServiceManager {
 
   /**
-   * Starts the CamelService singleton.
+   * The current (optional) CamelService. Is defined when a CamelService has been started.
    */
-  def start = load
+  private var _current: Option[CamelService] = None
 
   /**
-   * Stops the CamelService singleton.
+   * Starts a new CamelService and makes it the current CamelService.
    */
-  def stop = unload
+  def startCamelService = CamelServiceFactory.createCamelService.start
+
+  /**
+   * Stops the current CamelService.
+   */
+  def stopCamelService = service.stop
+
+  /**
+   * Returns the current CamelService.
+   *
+   * @throws IllegalStateException if there's no current CamelService.
+   */
+  def service =
+    if (_current.isDefined) _current.get
+    else throw new IllegalStateException("no current CamelService")
+
+  private[camel] def register(service: CamelService) =
+    if (_current.isDefined) throw new IllegalStateException("current CamelService already registered")
+    else _current = Some(service)
+
+  private[camel] def unregister(service: CamelService) =
+    if (_current == Some(service)) _current = None
+    else throw new IllegalStateException("only current CamelService can be unregistered")
 }
 
+/**
+ * @author Martin Krasser
+ */
 object CamelServiceFactory {
   /**
    * Creates a new CamelService instance

@@ -12,16 +12,15 @@ import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
  * @author Martin Krasser
  */
 class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWhenThen {
+  import CamelServiceManager._
   import RemoteConsumerTest._
 
-  var service: CamelService = _
   var server: RemoteServer = _
 
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
 
-    service = CamelServiceFactory.createCamelService
-    service.load
+    startCamelService
 
     server = new RemoteServer()
     server.start(host, port)
@@ -31,7 +30,8 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
 
   override protected def afterAll = {
     server.shutdown
-    service.unload
+
+    stopCamelService
 
     RemoteClient.shutdownAll
     ActorRegistry.shutdownAll

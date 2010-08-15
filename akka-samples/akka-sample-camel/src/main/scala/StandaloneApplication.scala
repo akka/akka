@@ -7,13 +7,13 @@ import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, TypedActor}
 import se.scalablesolutions.akka.camel._
-import se.scalablesolutions.akka.util.Logging
 
 /**
  * @author Martin Krasser
  */
 object StandaloneApplication extends Application {
   import CamelContextManager.context
+  import CamelServiceManager._
 
   // 'externally' register typed actors
   val registry = new SimpleRegistry
@@ -23,14 +23,13 @@ object StandaloneApplication extends Application {
   CamelContextManager.init(new DefaultCamelContext(registry))
   CamelContextManager.context.addRoutes(new StandaloneApplicationRoute)
 
-  // start CamelService
-  CamelService.start
+  startCamelService
 
   // access 'externally' registered typed actors
   assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test", "msg1"))
 
   // set expectations on upcoming endpoint activation
-  val activation = CamelService.expectEndpointActivationCount(1)
+  val activation = service.expectEndpointActivationCount(1)
 
   // 'internally' register typed actor (requires CamelService)
   TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
@@ -42,10 +41,8 @@ object StandaloneApplication extends Application {
   // (see @consume annotation value at TypedConsumer2.foo method)
   assert("default: msg3" == context.createProducerTemplate.requestBody("direct:default", "msg3"))
 
-  // shutdown CamelService
-  CamelService.stop
+  stopCamelService
 
-  // shutdown all (internally) created actors
   ActorRegistry.shutdownAll
 }
 
@@ -65,10 +62,8 @@ object StandaloneSpringApplication extends Application {
   // access 'externally' registered typed actors with typed-actor component
   assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
 
-  // destroy Spring application context
   appctx.close
 
-  // shutdown all (internally) created actors
   ActorRegistry.shutdownAll
 }
 
@@ -80,16 +75,18 @@ class StandaloneSpringApplicationRoute extends RouteBuilder {
 }
 
 object StandaloneJmsApplication extends Application {
+  import CamelServiceManager._
+
   val context = new ClassPathXmlApplicationContext("/context-jms.xml")
   val registry = new ApplicationContextRegistry(context)
 
   // Init CamelContextManager with custom CamelContext
   CamelContextManager.init(new DefaultCamelContext(registry))
 
-  // Start CamelService
-  CamelService.start
+  startCamelService
+
   // Expect two consumer endpoints to be activated
-  val completion = CamelService.expectEndpointActivationCount(2)
+  val completion = service.expectEndpointActivationCount(2)
 
   val jmsUri = "jms:topic:test"
   // Wire publisher and consumer using a JMS topic
@@ -110,9 +107,7 @@ object StandaloneJmsApplication extends Application {
     CamelContextManager.template.sendBody(jmsUri, "Camel rocks (%d)" format i)
   }
 
-  // Graceful shutdown of all endpoints/routes
-  CamelService.stop
+  stopCamelService
 
-  // Shutdown example actors
   ActorRegistry.shutdownAll
 }

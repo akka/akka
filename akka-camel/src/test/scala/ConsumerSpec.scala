@@ -31,13 +31,13 @@ class ConsumerSpec extends WordSpec with BeforeAndAfterAll with MustMatchers {
     // set expectations on publish count
     val latch = service.expectEndpointActivationCount(1)
     // start the CamelService
-    service.load
+    service.start
     // await publication of first test consumer
     latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
   }
 
   override protected def afterAll = {
-    service.unload
+    service.stop
     ActorRegistry.shutdownAll
   }
 
