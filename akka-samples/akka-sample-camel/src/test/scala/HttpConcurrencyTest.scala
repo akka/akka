@@ -5,13 +5,14 @@ import collection.mutable.Set
 import java.util.concurrent.CountDownLatch
 
 import org.junit._
+import org.scalatest.junit.JUnitSuite
 
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef, Actor}
-import se.scalablesolutions.akka.camel.{CamelService, Message, Producer, Consumer}
+import se.scalablesolutions.akka.camel._
+import se.scalablesolutions.akka.camel.CamelServiceManager._
 import se.scalablesolutions.akka.routing.CyclicIterator
 import se.scalablesolutions.akka.routing.Routing._
-import org.scalatest.junit.JUnitSuite
 
 /**
  * @author Martin Krasser
@@ -45,19 +46,19 @@ class HttpConcurrencyTest extends JUnitSuite {
 object HttpConcurrencyTest {
   @BeforeClass
   def beforeClass = {
-    CamelService.start
+    startCamelService
 
     val workers = for (i <- 1 to 8) yield actorOf[HttpServerWorker].start
     val balancer = loadBalancerActor(new CyclicIterator(workers.toList))
 
-    val completion = CamelService.expectEndpointActivationCount(1)
+    val completion = service.expectEndpointActivationCount(1)
     val server = actorOf(new HttpServerActor(balancer)).start
     completion.await
   }
 
   @AfterClass
   def afterClass = {
-    CamelService.stop
+    stopCamelService
     ActorRegistry.shutdownAll
   }
 
