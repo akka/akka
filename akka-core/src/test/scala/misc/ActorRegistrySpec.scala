@@ -81,7 +81,7 @@ class ActorRegistrySpec extends JUnitSuite {
     ActorRegistry.shutdownAll
     val actor = actorOf[TestActor]
     actor.start
-    val found = ActorRegistry.find(a => if(a.actor.isInstanceOf[TestActor]) Some(a) else None)
+    val found = ActorRegistry.find({ case a: ActorRef if a.actor.isInstanceOf[TestActor] => a })
     assert(found.isDefined)
     assert(found.get.actor.isInstanceOf[TestActor])
     assert(found.get.id === "MyID")
