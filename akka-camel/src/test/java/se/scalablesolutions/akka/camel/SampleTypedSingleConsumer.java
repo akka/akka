@@ -1,12 +1,13 @@
 package se.scalablesolutions.akka.camel;
 
-import se.scalablesolutions.akka.actor.annotation.consume;
+import se.scalablesolutions.akka.camel.consume;
 
 /**
  * @author Martin Krasser
  */
-public interface PojoSingleIntf {
+public interface SampleTypedSingleConsumer {
 
     @consume("direct:foo")
     public void foo(String b);
+    
 }

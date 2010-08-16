@@ -33,13 +33,13 @@ class CamelServiceFactoryBean extends FactoryBean[CamelService] with Initializin
       CamelContextManager.init(camelContext)
     }
     instance = CamelServiceFactory.createCamelService
-    instance.load
+    instance.start
   }
 
   /**
    * Stops the {@link CamelService} singleton.
    */
   def destroy = {
-    instance.unload
+    instance.stop
   }
 }

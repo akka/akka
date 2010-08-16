@@ -15,12 +15,24 @@ class MessageTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test def shouldConvertDoubleBodyToString = {
     assertEquals("1.4", Message(1.4, null).bodyAs[String])
+    assertEquals("1.4", Message(1.4, null).bodyAs(classOf[String]))
   }
 
   @Test def shouldThrowExceptionWhenConvertingDoubleBodyToInputStream {
     intercept[NoTypeConversionAvailableException] {
       Message(1.4, null).bodyAs[InputStream]
     }
+  }
+
+  @Test def shouldReturnDoubleHeader = {
+    val message = Message("test" , Map("test" -> 1.4))
+    assertEquals(1.4, message.header("test"))
+  }
+
+  @Test def shouldConvertDoubleHeaderToString = {
+    val message = Message("test" , Map("test" -> 1.4))
+    assertEquals("1.4", message.headerAs[String]("test"))
+    assertEquals("1.4", message.headerAs("test", classOf[String]))
   }
 
   @Test def shouldReturnSubsetOfHeaders = {

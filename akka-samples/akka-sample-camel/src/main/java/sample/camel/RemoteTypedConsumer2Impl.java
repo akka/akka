@@ -2,12 +2,12 @@ package sample.camel;
 
 import org.apache.camel.Body;
 import org.apache.camel.Header;
-import se.scalablesolutions.akka.actor.annotation.consume;
+import se.scalablesolutions.akka.camel.consume;
 
 /**
  * @author Martin Krasser
  */
-public class TypedRemoteConsumer2 {
+public class RemoteTypedConsumer2Impl {
 
     @consume("jetty:http://localhost:6644/camel/remote-typed-actor-2")
     public String foo(@Body String body, @Header("name") String header) {

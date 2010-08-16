@@ -27,7 +27,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     mockEndpoint.reset
   }
 
-  feature("Produce a message to a Camel endpoint") {
+  feature("Produce a message to a sync Camel route") {
 
     scenario("produce message and receive normal response") {
       given("a registered two-way producer")
@@ -86,9 +86,9 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     }
   }
 
-  feature("Produce a message to an async Camel endpoint") {
+  feature("Produce a message to an async Camel route") {
 
-    scenario("produce message and async receive normal response") {
+    scenario("produce message and receive normal response") {
       given("a registered two-way producer")
       val producer = actorOf(new TestProducer("direct:producer-test-3"))
       producer.start
@@ -102,7 +102,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       assert(result === Some(expected))
     }
 
-    scenario("produce message and async receive failure response") {
+    scenario("produce message and receive failure response") {
       given("a registered two-way producer")
       val producer = actorOf(new TestProducer("direct:producer-test-3"))
       producer.start
@@ -119,9 +119,9 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     }
   }
 
-  feature("Produce a message to a Camel endpoint and then forward the result") {
+  feature("Produce a message to a sync Camel route and then forward the response") {
 
-    scenario("produce message, forward and receive normal response") {
+    scenario("produce message, forward normal response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
@@ -135,7 +135,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       assert(result === Some(expected))
     }
 
-    scenario("produce message, forward and receive failure response") {
+    scenario("produce message, forward failure response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
@@ -151,7 +151,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       assert(expectedHeaders === Map(Message.MessageExchangeId -> "123", "test" -> "failure"))
     }
 
-    scenario("produce message, forward and produce normal response") {
+    scenario("produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
       val target = actorOf[ProducingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
@@ -164,7 +164,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       mockEndpoint.assertIsSatisfied
     }
 
-    scenario("produce message, forward and produce failure response") {
+    scenario("produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
       val target = actorOf[ProducingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
@@ -179,9 +179,9 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     }
   }
 
-  feature("Produce a message to an async Camel endpoint and then forward the result") {
+  feature("Produce a message to an async Camel route and then forward the response") {
 
-    scenario("produce message, forward and async receive normal response") {
+    scenario("produce message, forward normal response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
@@ -195,7 +195,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       assert(result === Some(expected))
     }
 
-    scenario("produce message, forward and async receive failure response") {
+    scenario("produce message, forward failure response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
       val target = actorOf[ReplyingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
@@ -211,7 +211,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       assert(expectedHeaders === Map(Message.MessageExchangeId -> "123", "test" -> "failure"))
     }
 
-    scenario("produce message, forward and async produce normal response") {
+    scenario("produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
       val target = actorOf[ProducingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
@@ -224,7 +224,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       mockEndpoint.assertIsSatisfied
     }
 
-    scenario("produce message, forward and async produce failure response") {
+    scenario("produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
       val target = actorOf[ProducingForwardTarget].start
       val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start

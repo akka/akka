@@ -11,9 +11,9 @@ import se.scalablesolutions.akka.util.UUID
 import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 
 object TransactionalMap {
-  def apply[K, V]() = new TransactionalMap[K, V]
+  def apply[K, V]() = new TransactionalMap[K, V]()
 
-  def apply[K, V](pairs: (K, V)*) = new TransactionalMap(Some(HashMap(pairs: _*)))
+  def apply[K, V](pairs: (K, V)*) = new TransactionalMap(HashMap(pairs: _*))
 }
 
 /**
@@ -21,12 +21,12 @@ object TransactionalMap {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class TransactionalMap[K, V](initialOpt: Option[HashMap[K, V]] = None) extends Transactional with scala.collection.mutable.Map[K, V] {
-  def this() = this(None) // Java compatibility
+class TransactionalMap[K, V](initialValue: HashMap[K, V]) extends Transactional with scala.collection.mutable.Map[K, V] {
+  def this() = this(HashMap[K, V]())
 
   val uuid = UUID.newUuid.toString
 
-  protected[this] val ref = new Ref(initialOpt.orElse(Some(HashMap[K, V]())))
+  private[this] val ref = Ref(initialValue)
 
   def -=(key: K) = {
     remove(key)

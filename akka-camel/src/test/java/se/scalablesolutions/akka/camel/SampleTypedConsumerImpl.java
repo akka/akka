@@ -5,22 +5,24 @@ import se.scalablesolutions.akka.actor.TypedActor;
 /**
  * @author Martin Krasser
  */
-public class PojoBase extends TypedActor implements PojoBaseIntf {
+public class SampleTypedConsumerImpl extends TypedActor implements SampleTypedConsumer {
 
     public String m1(String b, String h) {
-        return "m1base: " + b + " " + h;
+        return "m1: " + b + " " + h;
     }
 
+    @consume("direct:m2")
     public String m2(String b, String h) {
-        return "m2base: " + b + " " + h;
+        return "m2: " + b + " " + h;
     }
 
+    @consume("direct:m3")
     public String m3(String b, String h) {
-        return "m3base: " + b + " " + h;
+        return "m3: " + b + " " + h;
     }
 
     public String m4(String b, String h) {
-        return "m4base: " + b + " " + h;
+        return "m4: " + b + " " + h;
     }
 
     public void m5(String b, String h) {
