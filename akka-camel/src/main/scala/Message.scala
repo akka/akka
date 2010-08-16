@@ -23,7 +23,6 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    *
    * @see CamelContextManager.
    */
-  @deprecated("use bodyAs[T](implicit m: Manifest[T]): T instead")
   def bodyAs[T](clazz: Class[T]): T =
     CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](clazz, body)
 
@@ -42,6 +41,26 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    * Returns those headers from this message whose name is contained in <code>names</code>.
    */
   def headers(names: Set[String]): Map[String, Any] = headers.filter(names contains _._1)
+
+  /**
+   * Returns the header with given <code>name</code>. Throws <code>NoSuchElementException</code>
+   * if the header doesn't exist.
+   */
+  def header(name: String): Any = headers(name)
+
+  /**
+   * Returns the header with given <code>name</code> converted to type <code>T</code>. Throws
+   * <code>NoSuchElementException</code> if the header doesn't exist.
+   */
+  def headerAs[T](name: String)(implicit m: Manifest[T]): T =
+    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], header(name))
+
+  /**
+   * Returns the header with given <code>name</code> converted to type given by the <code>clazz</code>
+   * argument. Throws <code>NoSuchElementException</code> if the header doesn't exist.
+   */
+  def headerAs[T](name: String, clazz: Class[T]): T =
+    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](clazz, header(name))
 
   /**
    * Creates a Message with a new <code>body</code> using a <code>transformer</code> function.

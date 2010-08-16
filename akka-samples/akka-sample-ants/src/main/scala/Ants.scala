@@ -40,7 +40,7 @@ case class Cell(food: Int = 0, pher: Float = 0, ant: Option[Ant] = None, home: B
 
 object EmptyCell extends Cell
 
-class Place(initCell: Cell = EmptyCell) extends Ref(Some(initCell)) {
+class Place(initCell: Cell = EmptyCell) extends Ref(initCell) {
   def cell: Cell = getOrElse(EmptyCell)
   def food: Int = cell.food
   def food(i: Int) = alter(_.addFood(i))

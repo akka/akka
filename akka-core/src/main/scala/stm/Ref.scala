@@ -16,7 +16,7 @@ import org.multiverse.transactional.refs.BasicRef
 object Ref {
   def apply[T]() = new Ref[T]()
 
-  def apply[T](initialValue: T) = new Ref[T](Some(initialValue))
+  def apply[T](initialValue: T) = new Ref[T](initialValue)
 
   /**
    * An implicit conversion that converts a Ref to an Iterable value.
@@ -29,13 +29,10 @@ object Ref {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Ref[T](initialOpt: Option[T] = None)
-  extends BasicRef[T](initialOpt.getOrElse(null.asInstanceOf[T]))
-  with Transactional {
-
+class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transactional {
   self =>
 
-  def this() = this(None) // Java compatibility
+  def this() = this(null.asInstanceOf[T])
 
   val uuid = UUID.newUuid.toString
 

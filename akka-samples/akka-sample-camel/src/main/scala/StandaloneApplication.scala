@@ -7,48 +7,43 @@ import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRegistry, TypedActor}
 import se.scalablesolutions.akka.camel._
-import se.scalablesolutions.akka.util.Logging
 
 /**
  * @author Martin Krasser
  */
-object StandaloneApplication {
-  def main(args: Array[String]) {
-    import CamelContextManager.context
+object StandaloneApplication extends Application {
+  import CamelContextManager.context
+  import CamelServiceManager._
 
-    // 'externally' register typed actors
-    val registry = new SimpleRegistry
-    registry.put("sample", TypedActor.newInstance(classOf[BeanIntf], classOf[BeanImpl]))
+  // 'externally' register typed actors
+  val registry = new SimpleRegistry
+  registry.put("sample", TypedActor.newInstance(classOf[BeanIntf], classOf[BeanImpl]))
 
-    // customize CamelContext
-    CamelContextManager.init(new DefaultCamelContext(registry))
-    CamelContextManager.context.addRoutes(new StandaloneApplicationRoute)
+  // customize CamelContext
+  CamelContextManager.init(new DefaultCamelContext(registry))
+  CamelContextManager.context.addRoutes(new StandaloneApplicationRoute)
 
-    // start CamelService
-    CamelService.start
+  startCamelService
 
-    // access 'externally' registered typed actors
-    assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test", "msg1"))
+  // access 'externally' registered typed actors
+  assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test", "msg1"))
 
-    // set expectations on upcoming endpoint activation
-    val activation = CamelService.expectEndpointActivationCount(1)
+  // set expectations on upcoming endpoint activation
+  val activation = service.expectEndpointActivationCount(1)
 
-    // 'internally' register typed actor (requires CamelService)
-    TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
+  // 'internally' register typed actor (requires CamelService)
+  TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
 
-    // internal registration is done in background. Wait a bit ...
-    activation.await
+  // internal registration is done in background. Wait a bit ...
+  activation.await
 
-    // access 'internally' (automatically) registered typed-actors
-    // (see @consume annotation value at TypedConsumer2.foo method)
-    assert("default: msg3" == context.createProducerTemplate.requestBody("direct:default", "msg3"))
+  // access 'internally' (automatically) registered typed-actors
+  // (see @consume annotation value at TypedConsumer2.foo method)
+  assert("default: msg3" == context.createProducerTemplate.requestBody("direct:default", "msg3"))
 
-    // shutdown CamelService
-    CamelService.stop
+  stopCamelService
 
-    // shutdown all (internally) created actors
-    ActorRegistry.shutdownAll
-  }
+  ActorRegistry.shutdownAll
 }
 
 class StandaloneApplicationRoute extends RouteBuilder {
@@ -58,67 +53,61 @@ class StandaloneApplicationRoute extends RouteBuilder {
   }
 }
 
-object StandaloneSpringApplication {
-  def main(args: Array[String]) {
-    import CamelContextManager._
+object StandaloneSpringApplication extends Application {
+  import CamelContextManager._
 
-    // load Spring application context
-    val appctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
+  // load Spring application context
+  val appctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
 
-    // access 'externally' registered typed actors with typed-actor component
-    assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
+  // access 'externally' registered typed actors with typed-actor component
+  assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
 
-    // destroy Spring application context
-    appctx.close
+  appctx.close
 
-    // shutdown all (internally) created actors
-    ActorRegistry.shutdownAll
-  }
+  ActorRegistry.shutdownAll
 }
 
 class StandaloneSpringApplicationRoute extends RouteBuilder {
   def configure = {
     // routes to typed actor (in ApplicationContextRegistry)
-    from("direct:test3").to("typed-actor:pojo3?method=foo")
+    from("direct:test3").to("typed-actor:ta?method=foo")
   }
 }
 
-object StandaloneJmsApplication {
-  def main(args: Array[String]) = {
-    val context = new ClassPathXmlApplicationContext("/context-jms.xml")
-    val registry = new ApplicationContextRegistry(context)
+object StandaloneJmsApplication extends Application {
+  import CamelServiceManager._
 
-    // Init CamelContextManager with custom CamelContext
-    CamelContextManager.init(new DefaultCamelContext(registry))
+  val context = new ClassPathXmlApplicationContext("/context-jms.xml")
+  val registry = new ApplicationContextRegistry(context)
 
-    // Start CamelService
-    CamelService.start
-    // Expect two consumer endpoints to be activated
-    val completion = CamelService.expectEndpointActivationCount(2)
+  // Init CamelContextManager with custom CamelContext
+  CamelContextManager.init(new DefaultCamelContext(registry))
 
-    val jmsUri = "jms:topic:test"
-    // Wire publisher and consumer using a JMS topic
-    val jmsSubscriber1 = Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
-    val jmsSubscriber2 = Actor.actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
-    val jmsPublisher =   Actor.actorOf(new Publisher("jms-publisher", jmsUri)).start
+  startCamelService
 
-    // wait for the consumer (subscriber) endpoint being activated
-    completion.await
+  // Expect two consumer endpoints to be activated
+  val completion = service.expectEndpointActivationCount(2)
 
-    // Send 10 messages to via publisher actor
-    for(i <- 1 to 10) {
-      jmsPublisher ! ("Akka rocks (%d)" format i)
-    }
+  val jmsUri = "jms:topic:test"
+  // Wire publisher and consumer using a JMS topic
+  val jmsSubscriber1 = Actor.actorOf(new Subscriber("jms-subscriber-1", jmsUri)).start
+  val jmsSubscriber2 = Actor.actorOf(new Subscriber("jms-subscriber-2", jmsUri)).start
+  val jmsPublisher =   Actor.actorOf(new Publisher("jms-publisher", jmsUri)).start
 
-    // Send 10 messages to JMS topic directly
-    for(i <- 1 to 10) {
-      CamelContextManager.template.sendBody(jmsUri, "Camel rocks (%d)" format i)
-    }
+  // wait for the consumer (subscriber) endpoint being activated
+  completion.await
 
-    // Graceful shutdown of all endpoints/routes
-    CamelService.stop
-
-    // Shutdown example actors
-    ActorRegistry.shutdownAll
+  // Send 10 messages to via publisher actor
+  for(i <- 1 to 10) {
+    jmsPublisher ! ("Akka rocks (%d)" format i)
   }
+
+  // Send 10 messages to JMS topic directly
+  for(i <- 1 to 10) {
+    CamelContextManager.template.sendBody(jmsUri, "Camel rocks (%d)" format i)
+  }
+
+  stopCamelService
+
+  ActorRegistry.shutdownAll
 }
