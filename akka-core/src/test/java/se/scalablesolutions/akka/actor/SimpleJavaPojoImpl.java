@@ -1,6 +1,7 @@
 package se.scalablesolutions.akka.actor;
 
 import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.dispatch.Future;
 import se.scalablesolutions.akka.dispatch.CompletableFuture;
 
 public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
@@ -15,6 +16,11 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
   }
 
   private String name;
+
+  public Future<Integer> square(int value) {
+    System.out.println("------------------------ SQUARE");
+    return future(value * value);
+  }
 
   public Object getSender() {
     return getContext().getSender();
