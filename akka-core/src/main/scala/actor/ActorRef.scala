@@ -992,6 +992,7 @@ class LocalActorRef private[akka](
           "No message handler defined for system message [MaximumNumberOfRestartsWithinTimeRangeReached]" +
           "\n\tCan't send the message to the supervisor [%s].", sup)
       }
+
       stop
     } else {
       _isBeingRestarted = true
@@ -1182,15 +1183,16 @@ class LocalActorRef private[akka](
     clearTransaction
     if (topLevelTransaction) clearTransactionSet
 
-    notifySupervisorWithMessage(Exit(this, reason))
+    if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
+    else lifeCycle match { case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this) }
   }
 
   private def notifySupervisorWithMessage(notification: LifeCycleMessage) = {
     // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
     _supervisor.foreach { sup =>
       if (sup.isShutdown) { // if supervisor is shut down, game over for all linked actors
-        shutdownLinkedActors
-        stop
+         shutdownLinkedActors
+         stop
       } else sup ! notification // else notify supervisor
     }
   }
