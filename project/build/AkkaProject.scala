@@ -128,8 +128,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val commons_io = "commons-io" % "commons-io" % "1.4" % "compile"
 
-    lazy val commons_logging = "commons-logging" % "commons-logging" % "1.1.1" % "compile"
-
     lazy val commons_pool = "commons-pool" % "commons-pool" % "1.5.4" % "compile"
 
     lazy val configgy = "net.lag" % "configgy" % "2.8.0-1.5.5" % "compile"
@@ -166,8 +164,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val lift_util   = "net.liftweb" % "lift-util_2.8.0"   % LIFT_VERSION % "compile"
     lazy val lift_webkit = "net.liftweb" % "lift-webkit_2.8.0" % LIFT_VERSION % "compile"
-
-    lazy val log4j = "log4j" % "log4j" % "1.2.15" % "compile"
 
     lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile"
 
@@ -277,9 +273,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   override def mainResources = super.mainResources +++
                                descendents(info.projectPath / "config", "*") ---
-                               (info.projectPath / "config" / "logback-test.xml")
+                               (super.mainResources ** "logback-test.xml")
 
-  override def testResources = super.testResources +++ (info.projectPath / "config" / "logback-test.xml")
+  override def testResources = super.testResources --- (super.testResources ** "logback-test.xml")
 
   // ------------------------------------------------------------
   // publishing
@@ -394,7 +390,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val atmo_runtime     = Dependencies.atmo_runtime
     val atmo_tomcat      = Dependencies.atmo_tomcat
     val atmo_weblogic    = Dependencies.atmo_weblogic
-    val commons_logging  = Dependencies.commons_logging
     val grizzly          = Dependencies.grizzly
     val jackson_core_asl = Dependencies.jackson_core_asl
     val jersey           = Dependencies.jersey
@@ -627,7 +622,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject with CodeFellowPlugin {
-    val commons_logging = Dependencies.commons_logging
+    //val commons_logging = Dependencies.commons_logging
     val lift_util       = Dependencies.lift_util
     val lift_webkit     = Dependencies.lift_webkit
     val servlet         = Dependencies.servlet
