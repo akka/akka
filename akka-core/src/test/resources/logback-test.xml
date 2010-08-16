@@ -8,23 +8,14 @@
 <!--    http://www.qos.ch/shop/products/professionalSupport         -->
 <!--                                                                -->
 <configuration scan="false" debug="false">
+  <!-- FOR AKKA INTERNAL USE ONLY -->
   <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>[%t] [%4p] [%d{ISO8601}] %c{1}: %m%n</pattern>
+      <pattern>[%4p] [%d{ISO8601}] [%t] %c{1}: %m%n</pattern>
     </encoder>
-  </appender>
-  <appender name="R" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <File>./logs/akka.log</File>
-    <encoder>
-      <pattern>[%t] [%4p] [%d{ISO8601}] %c{1}: %m%n</pattern>
-    </encoder>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>./logs/akka.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
-    </rollingPolicy>
   </appender>
   <logger name="se.scalablesolutions" level="DEBUG"/>
-  <root level="INFO">
+  <root level="DEBUG">
     <appender-ref ref="stdout"/>
-    <appender-ref ref="R"/>
   </root>
 </configuration>

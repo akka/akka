@@ -141,6 +141,17 @@ class Logger(val logger: SLFLogger) {
  *
  */
 object Logger {
+
+  /* Uncomment to be able to debug what logging configuration will be used
+  {
+  import org.slf4j.LoggerFactory
+  import ch.qos.logback.classic.LoggerContext
+  import ch.qos.logback.core.util.StatusPrinter  
+
+  // print logback's internal status
+  StatusPrinter.print(LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext])
+  }*/
+
   def apply(logger: String)  : Logger = new Logger(SLFLoggerFactory getLogger logger)
   def apply(clazz: Class[_]) : Logger = apply(clazz.getName)
   def root                   : Logger = apply(SLFLogger.ROOT_LOGGER_NAME)

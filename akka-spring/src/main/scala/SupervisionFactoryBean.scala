@@ -7,7 +7,7 @@ import org.springframework.beans.factory.config.AbstractFactoryBean
 import se.scalablesolutions.akka.config.TypedActorConfigurator
 import se.scalablesolutions.akka.config.JavaConfig._
 import se.scalablesolutions.akka.config.ScalaConfig.{Supervise, Server, SupervisorConfig, RemoteAddress => SRemoteAddress}
-import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, UntypedActor}
+import se.scalablesolutions.akka.actor.{Supervisor, SupervisorFactory, Actor}
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
 
@@ -82,19 +82,19 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
     import StringReflect._
     val lifeCycle = if (!props.lifecycle.isEmpty && props.lifecycle.equalsIgnoreCase(VAL_LIFECYCYLE_TEMPORARY)) new LifeCycle(new Temporary()) else new LifeCycle(new Permanent())
     val isRemote = (props.host != null) && (!props.host.isEmpty)
-    val untypedActorRef = UntypedActor.actorOf(props.target.toClass)
+    val actorRef = Actor.actorOf(props.target.toClass)
     if (props.timeout > 0) {
-      untypedActorRef.setTimeout(props.timeout)
+      actorRef.setTimeout(props.timeout)
     }
     if (props.transactional) {
-      untypedActorRef.makeTransactionRequired
+      actorRef.makeTransactionRequired
     }
 
     val supervise = if (isRemote) {
       val remote = new SRemoteAddress(props.host, props.port)
-      Supervise(untypedActorRef.actorRef, lifeCycle.transform, remote)
+      Supervise(actorRef, lifeCycle.transform, remote)
     } else {
-      Supervise(untypedActorRef.actorRef, lifeCycle.transform)
+      Supervise(actorRef, lifeCycle.transform)
     }
     supervise
   }

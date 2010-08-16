@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.config
 
-import se.scalablesolutions.akka.actor.{ActorRef, UntypedActorRef}
+import se.scalablesolutions.akka.actor.{ActorRef}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
 sealed abstract class FaultHandlingStrategy
@@ -25,15 +25,11 @@ object ScalaConfig {
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
-    def this(actorRef: UntypedActorRef, lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) = 
-      this(actorRef.actorRef, lifeCycle, _remoteAddress)
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
   object Supervise {
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorRef, lifeCycle, remoteAddress)
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, null)
-    def apply(actorRef: UntypedActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorRef, lifeCycle, remoteAddress)
-    def apply(actorRef: UntypedActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, null)
     def unapply(supervise: Supervise) = Some((supervise.actorRef, supervise.lifeCycle, supervise.remoteAddress))
   }
 
@@ -218,9 +214,6 @@ object JavaConfig {
         if (remoteAddress ne null) se.scalablesolutions.akka.config.ScalaConfig.RemoteAddress(remoteAddress.hostname, remoteAddress.port) else null)
 
     def newSupervised(actorRef: ActorRef) =
-      se.scalablesolutions.akka.config.ScalaConfig.Supervise(actorRef, lifeCycle.transform)
-
-    def newSupervised(actorRef: UntypedActorRef) =
       se.scalablesolutions.akka.config.ScalaConfig.Supervise(actorRef, lifeCycle.transform)
   }
 

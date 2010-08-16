@@ -26,19 +26,19 @@ class ConsumerRegisteredTest extends JUnitSuite {
   }
 
   @Test def shouldCreateSomeNonBlockingPublishRequestFromUntypedConsumer = {
-    val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumer]).actorRef
+    val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumer])
     val event = ConsumerRegistered.forConsumer(uc)
     assert(event === Some(ConsumerRegistered(uc, "direct:test-untyped-consumer", uc.uuid, false)))
   }
 
   @Test def shouldCreateSomeBlockingPublishRequestFromUntypedConsumer = {
-    val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumerBlocking]).actorRef
+    val uc = UntypedActor.actorOf(classOf[SampleUntypedConsumerBlocking])
     val event = ConsumerRegistered.forConsumer(uc)
     assert(event === Some(ConsumerRegistered(uc, "direct:test-untyped-consumer-blocking", uc.uuid, true)))
   }
 
   @Test def shouldCreateNoneFromUntypedConsumer = {
-    val a = UntypedActor.actorOf(classOf[SampleUntypedActor]).actorRef
+    val a = UntypedActor.actorOf(classOf[SampleUntypedActor])
     val event = ConsumerRegistered.forConsumer(a)
     assert(event === None)
   }

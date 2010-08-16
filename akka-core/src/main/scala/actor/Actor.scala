@@ -50,21 +50,13 @@ case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
 
 case class Restart(reason: Throwable) extends LifeCycleMessage
 
-case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage {
-  def this(child: UntypedActorRef, killer: Throwable) = this(child.actorRef, killer)
-}
+case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage
 
-case class Link(child: ActorRef) extends LifeCycleMessage {
-  def this(child: UntypedActorRef) = this(child.actorRef)
-}
+case class Link(child: ActorRef) extends LifeCycleMessage
 
-case class Unlink(child: ActorRef) extends LifeCycleMessage {
-  def this(child: UntypedActorRef) = this(child.actorRef)
-}
+case class Unlink(child: ActorRef) extends LifeCycleMessage
 
-case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage {
-  def this(child: UntypedActorRef) = this(child.actorRef)
-}
+case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
 
 case object ReceiveTimeout extends LifeCycleMessage
 
@@ -112,7 +104,24 @@ object Actor extends Logging {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-  def actorOf[T <: Actor : Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+
+  /**
+     * Creates an ActorRef out of the Actor with type T.
+     * <pre>
+     *   import Actor._
+     *   val actor = actorOf[MyActor]
+     *   actor.start
+     *   actor ! message
+     *   actor.stop
+     * </pre>
+     * You can create and start the actor in one statement like this:
+     * <pre>
+     *   val actor = actorOf[MyActor].start
+     * </pre>
+     */
+    def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(clazz)
+
 
   /**
    * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
@@ -373,7 +382,7 @@ trait Actor extends Logging {
    * self.stop(..)
    * </pre>
    */
-  @transient val self: ActorRef = someSelf.get
+  @transient val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
