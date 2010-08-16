@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
+
 import scala.reflect.BeanProperty
 
 import com.google.protobuf.ByteString
@@ -1261,7 +1262,12 @@ class LocalActorRef private[akka](
     if (topLevelTransaction) clearTransactionSet
 
     if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
-    else lifeCycle match { case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this) }
+    else {
+      lifeCycle match { 
+        case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this)
+        case _ => 
+      }
+    }
   }
 
   private def notifySupervisorWithMessage(notification: LifeCycleMessage) = {
