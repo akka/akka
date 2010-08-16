@@ -5,28 +5,7 @@
 package se.scalablesolutions.akka.stm
 
 /**
- * For importing 'local' STM.
- */
-package object local extends LocalStm with StmUtil with StmCommon
-
-/**
- * For importing 'global' STM.
- */
-package object global extends GlobalStm with StmUtil with StmCommon
-
-trait StmCommon {
-  type TransactionConfig = se.scalablesolutions.akka.stm.TransactionConfig
-  val TransactionConfig = se.scalablesolutions.akka.stm.TransactionConfig
-
-  type TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
-  val TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
-
-  type Ref[T] = se.scalablesolutions.akka.stm.Ref[T]
-  val Ref = se.scalablesolutions.akka.stm.Ref
-}
-
-/**
- * For importing the transactional data structures, including the primitive refs
+ * For importing the transactional datastructures, including the primitive refs
  * and transactional data structures from Multiverse.
  */
 package object transactional {

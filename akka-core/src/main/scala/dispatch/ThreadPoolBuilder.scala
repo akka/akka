@@ -134,8 +134,31 @@ trait ThreadPoolBuilder extends Logging {
   def setMaxPoolSize(size: Int): ThreadPoolBuilder =
     setThreadPoolExecutorProperty(_.setMaximumPoolSize(size))
 
+
   /**
-   * Default is 60000 (one minute).
+   * Sets the core pool size to (availableProcessors * multipliers).ceil.toInt
+   */
+  def setCorePoolSizeFromFactor(multiplier: Double): ThreadPoolBuilder =
+    setThreadPoolExecutorProperty(_.setCorePoolSize(procs(multiplier)))
+
+  /**
+   * Sets the max pool size to (availableProcessors * multipliers).ceil.toInt
+   */
+  def setMaxPoolSizeFromFactor(multiplier: Double): ThreadPoolBuilder =
+    setThreadPoolExecutorProperty(_.setMaximumPoolSize(procs(multiplier)))
+
+  /**
+   * Sets the bound, -1 is unbounded
+   */
+  def setExecutorBounds(bounds: Int): Unit = synchronized {
+    this.boundedExecutorBound = bounds
+  }
+  
+  protected def procs(multiplier: Double): Int =
+    (Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt
+
+  /**
+   *  Default is 60000 (one minute).
    */
   def setKeepAliveTimeInMillis(time: Long): ThreadPoolBuilder =
     setThreadPoolExecutorProperty(_.setKeepAliveTime(time, MILLISECONDS))
