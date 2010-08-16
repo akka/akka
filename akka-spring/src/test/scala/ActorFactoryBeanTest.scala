@@ -3,7 +3,8 @@
  */
 package se.scalablesolutions.akka.spring
 
-import se.scalablesolutions.akka.actor.ActorRegistry;
+import se.scalablesolutions.akka.actor.{ActorRegistry, UntypedActorRef}
+import se.scalablesolutions.akka.spring.foo.PingActor
 
 import org.junit.runner.RunWith
 import org.springframework.context.support.ClassPathXmlApplicationContext
@@ -64,17 +65,36 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
       assert(target.getStringFromVal === entry.value)
     }
 
-    it("should create an application context and verify dependency injection") {
+    it("should create an application context and verify dependency injection for tryped") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val ta = ctx.getBean("typedActor").asInstanceOf[PojoInf];
       assert(ta.isInitInvoked)
-      assert(ta.getStringFromVal == "akka rocks")
-      assert(ta.getStringFromRef == "spring rocks")
+      assert(ta.getStringFromVal === "akka rocks")
+      assert(ta.getStringFromRef === "spring rocks")
       assert(ta.gotApplicationContext)
       ctx.close
     }
 
+    it("should create an application context and verify dependency injection for untyped actors") {
+      var ctx = new ClassPathXmlApplicationContext("appContext.xml")
+      val uta = ctx.getBean("untypedActor").asInstanceOf[UntypedActorRef]
+      val ping = uta.actorRef.actor.asInstanceOf[PingActor]
+      assert(ping.getStringFromVal === "akka rocks")
+      assert(ping.getStringFromRef === "spring rocks")
+      assert(ping.gotApplicationContext)
+      ctx.close
+    }
+
     it("should stop the created typed actor when scope is singleton and the context is closed") {
+      var ctx = new ClassPathXmlApplicationContext("appContext.xml");
+      val target = ctx.getBean("untypedActor").asInstanceOf[UntypedActorRef]
+      target.start
+      assert(target.actorRef.isRunning)
+      ctx.close
+      assert(!target.actorRef.isRunning)
+    }
+
+    it("should stop the created untyped actor when scope is singleton and the context is closed") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val target = ctx.getBean("bean-singleton").asInstanceOf[SampleBeanIntf]
       assert(!target.down)
