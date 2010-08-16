@@ -7,7 +7,7 @@
 <!-- For professional support please see                            -->
 <!--    http://www.qos.ch/shop/products/professionalSupport         -->
 <!--                                                                -->
-<configuration>
+<configuration scan="false" debug="false">
   <!-- Errors were reported during translation. -->
   <!-- Could not find transformer for org.apache.log4j.SimpleLayout -->
   <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">

@@ -8,7 +8,7 @@
 <!--    http://www.qos.ch/shop/products/professionalSupport         -->
 <!--                                                                -->
         <!-- FOR AKKA INTERNAL USE ONLY -->
-<configuration>
+<configuration scan="false" debug="false">
   <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>[%4p] [%d{ISO8601}] [%t] %c{1}: %m%n</pattern>

@@ -7,7 +7,7 @@
 <!-- For professional support please see                            -->
 <!--    http://www.qos.ch/shop/products/professionalSupport         -->
 <!--                                                                -->
-<configuration>
+<configuration scan="false" debug="false">
   <!-- FOR AKKA INTERNAL USE ONLY -->
   <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
