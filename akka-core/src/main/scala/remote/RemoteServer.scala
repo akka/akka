@@ -267,9 +267,12 @@ class RemoteServer extends Logging {
    */
   def register(id: String, actorRef: ActorRef): Unit = synchronized {
     if (_isRunning) {
-      if (!actorRef.isRunning) actorRef.start
-      log.info("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
-      RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(id, actorRef)
+      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
+      if (!actors.contains(id)) {
+        if (!actorRef.isRunning) actorRef.start
+        log.debug("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
+        actors.put(id, actorRef)
+      }
     }
   }
 
@@ -278,10 +281,10 @@ class RemoteServer extends Logging {
    */
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
-      log.info("Unregistering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
-      val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
-      server.actors.remove(actorRef.id)
-      if (actorRef.registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
+      log.debug("Unregistering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
+      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
+      actors.remove(actorRef.id)
+      if (actorRef.registeredInRemoteNodeDuringSerialization) actors.remove(actorRef.uuid)
     }
   }
 
@@ -293,10 +296,10 @@ class RemoteServer extends Logging {
   def unregister(id: String):Unit = synchronized {
     if (_isRunning) {
       log.info("Unregistering server side remote actor with id [%s]", id)
-      val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
-      val actorRef = server.actors.get(id)
-      server.actors.remove(id)
-      if (actorRef.registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
+      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
+      val actorRef = actors.get(id)
+      actors.remove(id)
+      if (actorRef.registeredInRemoteNodeDuringSerialization) actors.remove(actorRef.uuid)
     }
   }
 }
