@@ -30,6 +30,13 @@
         <property name="stringFromRef" ref="string"/>
     </akka:typed-actor>
 
+    <akka:untyped-actor id="untypedActor"
+                        implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                        scope="singleton">
+        <property name="stringFromVal" value="akka rocks"/>
+        <property name="stringFromRef" ref="string"/>
+    </akka:untyped-actor>
+
     <bean id="string" class="java.lang.String">
         <constructor-arg value="spring rocks"/>
     </bean>
