@@ -3,7 +3,7 @@
  */
 package se.scalablesolutions.akka.spring
 
-import se.scalablesolutions.akka.actor.{ActorRegistry, UntypedActorRef}
+import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef}
 import se.scalablesolutions.akka.spring.foo.PingActor
 
 import org.junit.runner.RunWith
@@ -77,8 +77,8 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
 
     it("should create an application context and verify dependency injection for untyped actors") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml")
-      val uta = ctx.getBean("untypedActor").asInstanceOf[UntypedActorRef]
-      val ping = uta.actorRef.actor.asInstanceOf[PingActor]
+      val uta = ctx.getBean("untypedActor").asInstanceOf[ActorRef]
+      val ping = uta.actor.asInstanceOf[PingActor]
       assert(ping.getStringFromVal === "akka rocks")
       assert(ping.getStringFromRef === "spring rocks")
       assert(ping.gotApplicationContext)
@@ -87,11 +87,11 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
 
     it("should stop the created typed actor when scope is singleton and the context is closed") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
-      val target = ctx.getBean("untypedActor").asInstanceOf[UntypedActorRef]
+      val target = ctx.getBean("untypedActor").asInstanceOf[ActorRef]
       target.start
-      assert(target.actorRef.isRunning)
+      assert(target.isRunning)
       ctx.close
-      assert(!target.actorRef.isRunning)
+      assert(!target.isRunning)
     }
 
     it("should stop the created untyped actor when scope is singleton and the context is closed") {
