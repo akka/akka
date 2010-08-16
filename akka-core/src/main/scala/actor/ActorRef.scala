@@ -24,13 +24,11 @@ import org.multiverse.api.exceptions.DeadTransactionException
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
 import java.util.{Map => JMap}
 import java.lang.reflect.Field
 
-import jsr166x.{Deque, ConcurrentLinkedDeque}
-
 import com.google.protobuf.ByteString
-import java.util.concurrent.{ScheduledFuture, ConcurrentHashMap, TimeUnit}
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -1191,8 +1189,8 @@ class LocalActorRef private[akka](
     // FIXME to fix supervisor restart of remote actor for oneway calls, inject a supervisor proxy that can send notification back to client
     _supervisor.foreach { sup =>
       if (sup.isShutdown) { // if supervisor is shut down, game over for all linked actors
-//        shutdownLinkedActors
-//        stop
+        shutdownLinkedActors
+        stop
       } else sup ! notification // else notify supervisor
     }
   }
@@ -1221,7 +1219,7 @@ class LocalActorRef private[akka](
   private def initializeActorInstance = {
     actor.init // run actor init and initTransactionalState callbacks
     actor.initTransactionalState
-    Actor.log.debug("[%s] has started", toString)
+    Actor.log.trace("[%s] has started", toString)
     ActorRegistry.register(this)
     if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
     clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
