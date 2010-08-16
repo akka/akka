@@ -80,7 +80,9 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
       case TYPED_ACTOR_TAG => val typedActor = createTypedInstance()
         setProperties(AspectInitRegistry.initFor(typedActor).targetInstance)
         typedActor
-      case UNTYPED_ACTOR_TAG => createUntypedInstance()
+      case UNTYPED_ACTOR_TAG => val untypedActor = createUntypedInstance()
+        setProperties(untypedActor.actor)
+        untypedActor
       case _ => throw new IllegalArgumentException("Unknown actor type")
     }
     ref

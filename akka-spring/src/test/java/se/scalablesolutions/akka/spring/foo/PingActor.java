@@ -3,10 +3,45 @@ package se.scalablesolutions.akka.spring.foo;
 import se.scalablesolutions.akka.actor.UntypedActor;
 import se.scalablesolutions.akka.actor.ActorRef;
 
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
+
 /**
  * test class
  */
-public class PingActor extends UntypedActor {
+public class PingActor extends UntypedActor implements ApplicationContextAware {
+
+  private String stringFromVal;
+  private String stringFromRef;
+
+  private boolean gotApplicationContext = false;
+
+
+  public void setApplicationContext(ApplicationContext context) {
+    gotApplicationContext = true;
+  }
+
+  public boolean gotApplicationContext() {
+    return gotApplicationContext;
+  }
+
+  public String getStringFromVal() {
+    return stringFromVal;
+  }
+
+  public void setStringFromVal(String s) {
+    stringFromVal = s;
+  }
+
+  public String getStringFromRef() {
+    return stringFromRef;
+  }
+
+  public void setStringFromRef(String s) {
+    stringFromRef = s;
+  }
+
 
   private String longRunning() {
     try {
@@ -31,3 +66,4 @@ public class PingActor extends UntypedActor {
 
 
 }
+
