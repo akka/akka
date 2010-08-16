@@ -453,22 +453,20 @@ trait Actor extends Logging {
   private[akka] def apply(msg: Any) = processingBehavior(msg)
 
   private lazy val processingBehavior: Receive = {
-   lazy val defaultBehavior = receive
-
-   val actorBehavior: Receive = {
-    case HotSwap(code)                 => become(code)
-    case Exit(dead, reason)            => self.handleTrapExit(dead, reason)
-    case Link(child)                   => self.link(child)
-    case Unlink(child)                 => self.unlink(child)
-    case UnlinkAndStop(child)          => self.unlink(child); child.stop
-    case Restart(reason)               => throw reason
-    case msg if self.hotswap.isDefined &&
-                self.hotswap.get.isDefinedAt(msg) => self.hotswap.get.apply(msg)
-    case msg if self.hotswap.isEmpty   &&
-                defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg) 
-   }
-
-   actorBehavior
+    lazy val defaultBehavior = receive
+    val actorBehavior: Receive = {
+      case HotSwap(code)                 => become(code)
+      case Exit(dead, reason)            => self.handleTrapExit(dead, reason)
+      case Link(child)                   => self.link(child)
+      case Unlink(child)                 => self.unlink(child)
+      case UnlinkAndStop(child)          => self.unlink(child); child.stop
+      case Restart(reason)               => throw reason
+      case msg if self.hotswap.isDefined &&
+                  self.hotswap.get.isDefinedAt(msg) => self.hotswap.get.apply(msg)
+      case msg if self.hotswap.isEmpty   &&
+                  defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg) 
+    }
+    actorBehavior
   }
 }
 
