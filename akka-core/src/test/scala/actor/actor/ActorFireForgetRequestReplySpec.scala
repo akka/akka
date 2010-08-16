@@ -1,6 +1,7 @@
 package se.scalablesolutions.akka.actor
 
 import java.util.concurrent.{TimeUnit, CyclicBarrier, TimeoutException}
+import se.scalablesolutions.akka.config.ScalaConfig._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
@@ -16,6 +17,16 @@ object ActorFireForgetRequestReplySpec {
         self.reply("Reply")
       case "SendImplicit" =>
         self.sender.get ! "ReplyImplicit"
+    }
+  }
+
+  class CrashingTemporaryActor extends Actor {
+    self.lifeCycle = Some(LifeCycle(Temporary))
+
+    def receive = {
+      case "Die" => 
+        state.finished.await
+        throw new Exception("Expected exception")
     }
   }
 
@@ -65,5 +76,17 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     try { state.finished.await(1L, TimeUnit.SECONDS) }
     catch { case e: TimeoutException => fail("Never got the message") }
     assert("ReplyImplicit" === state.s)
+  }
+
+  @Test
+  def shouldShutdownCrashedTemporaryActor = {
+    state.finished.reset
+    val actor = actorOf[CrashingTemporaryActor].start
+    assert(actor.isRunning)
+    actor ! "Die"
+    try { state.finished.await(1L, TimeUnit.SECONDS) }
+    catch { case e: TimeoutException => fail("Never got the message") }
+    Thread.sleep(100)
+    assert(actor.isShutdown)
   }
 }
