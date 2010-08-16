@@ -17,19 +17,19 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
   import CamelContextManager.template
 
   override protected def beforeAll = {
-    val activePojo     = TypedActor.newInstance(classOf[PojoNonConsumerIntf], classOf[PojoNonConsumer]) // not a consumer
-    val activePojoBase = TypedActor.newInstance(classOf[PojoBaseIntf], classOf[PojoBase])
-    val activePojoIntf = TypedActor.newInstance(classOf[PojoIntf], classOf[PojoImpl])
+    val typedActor     = TypedActor.newInstance(classOf[SampleTypedActor], classOf[SampleTypedActorImpl]) // not a consumer
+    val typedConsumer  = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
 
     val registry = new SimpleRegistry
-    registry.put("pojo", activePojo)
+    // external registration
+    registry.put("ta", typedActor)
 
     CamelContextManager.init(new DefaultCamelContext(registry))
     CamelContextManager.context.addRoutes(new CustomRouteBuilder)
     CamelContextManager.start
 
-    CamelContextManager.typedActorRegistry.put("base", activePojoBase)
-    CamelContextManager.typedActorRegistry.put("intf", activePojoIntf)
+    // Internal registration
+    CamelContextManager.typedActorRegistry.put("tc", typedConsumer)
   }
 
   override protected def afterAll = {
@@ -37,39 +37,36 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
     ActorRegistry.shutdownAll
   }
 
-  feature("Communicate with an typed actor from a Camel application using typed actor endpoint URIs") {
+  feature("Communicate with an internally-registered typed actor using typed-actor-internal endpoint URIs") {
     import TypedActorComponent.InternalSchema
     import ExchangePattern._
 
-    scenario("in-out exchange with proxy created from interface and method returning String") {
-      val result = template.requestBodyAndHeader("%s:intf?method=m2" format InternalSchema, "x", "test", "y")
-      assert(result === "m2impl: x y")
+    scenario("two-way communication with method returning String") {
+      val result1 = template.requestBodyAndHeader("%s:tc?method=m2" format InternalSchema, "x", "test", "y")
+      val result2 = template.requestBodyAndHeader("%s:tc?method=m4" format InternalSchema, "x", "test", "y")
+      assert(result1 === "m2: x y")
+      assert(result2 === "m4: x y")
     }
 
-    scenario("in-out exchange with proxy created from class and method returning String") {
-      val result = template.requestBodyAndHeader("%s:base?method=m2" format InternalSchema, "x", "test", "y")
-      assert(result === "m2base: x y")
-    }
-
-    scenario("in-out exchange with proxy created from class and method returning void") {
-      val result = template.requestBodyAndHeader("%s:base?method=m5" format InternalSchema, "x", "test", "y")
+    scenario("two-way communication with method returning void") {
+      val result = template.requestBodyAndHeader("%s:tc?method=m5" format InternalSchema, "x", "test", "y")
       assert(result === "x") // returns initial body
     }
 
-    scenario("in-only exchange with proxy created from class and method returning String") {
-      val result = template.send("%s:base?method=m2" format InternalSchema, InOnly, new Processor {
+    scenario("one-way communication with method returning String") {
+      val result = template.send("%s:tc?method=m2" format InternalSchema, InOnly, new Processor {
         def process(exchange: Exchange) = {
           exchange.getIn.setBody("x")
           exchange.getIn.setHeader("test", "y")
         }
       });
       assert(result.getPattern === InOnly)
-      assert(result.getIn.getBody === "m2base: x y")
+      assert(result.getIn.getBody === "m2: x y")
       assert(result.getOut.getBody === null)
     }
 
-    scenario("in-only exchange with proxy created from class and method returning void") {
-      val result = template.send("%s:base?method=m5" format InternalSchema, InOnly, new Processor {
+    scenario("one-way communication with method returning void") {
+      val result = template.send("%s:tc?method=m5" format InternalSchema, InOnly, new Processor {
         def process(exchange: Exchange) = {
           exchange.getIn.setBody("x")
           exchange.getIn.setHeader("test", "y")
@@ -79,19 +76,26 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
       assert(result.getIn.getBody === "x")
       assert(result.getOut.getBody === null)
     }
+
   }
 
-  feature("Communicate with an typed actor from a Camel application from a custom Camel route") {
+  feature("Communicate with an internally-registered typed actor using typed-actor endpoint URIs") {
+    scenario("communication not possible") {
+      intercept[ResolveEndpointFailedException] {
+        template.requestBodyAndHeader("typed-actor:tc?method=m2", "x", "test", "y")
+      }
+    }
+  }
 
-    scenario("in-out exchange with externally registered typed actor") {
-      val result = template.requestBody("direct:test", "test")
+  feature("Communicate with an externally-registered typed actor using typed-actor endpoint URIs") {
+    scenario("two-way communication with method returning String") {
+      val result = template.requestBody("typed-actor:ta?method=foo", "test")
       assert(result === "foo: test")
     }
 
-    scenario("in-out exchange with internally registered typed actor not possible") {
-      intercept[ResolveEndpointFailedException] {
-        template.requestBodyAndHeader("typed-actor:intf?method=m2", "x", "test", "y")
-      }
+    scenario("two-way communication with method returning String via custom route") {
+      val result = template.requestBody("direct:test", "test")
+      assert(result === "foo: test")
     }
   }
 }
@@ -99,7 +103,7 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
 object TypedActorComponentFeatureTest {
   class CustomRouteBuilder extends RouteBuilder {
     def configure = {
-      from("direct:test").to("typed-actor:pojo?method=foo")
+      from("direct:test").to("typed-actor:ta?method=foo")
     }
   }
 }
