@@ -51,13 +51,12 @@ object ActorRegistry extends ListenerManagement {
    * Invokes the function on all known actors until it returns Some
    * Returns None if the function never returns Some
    */
-  def find[T](f: (ActorRef) => Option[T]) : Option[T] = {
+  def find[T](f: PartialFunction[ActorRef,T]) : Option[T] = {
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
-      val result = f(elements.nextElement)
-
-      if(result.isDefined)
-        return result
+      val element = elements.nextElement
+      if(f isDefinedAt element)
+        return Some(f(element))
     }
     None
   }
@@ -93,7 +92,7 @@ object ActorRegistry extends ListenerManagement {
    * Finds any actor that matches T.
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
-    find(a => if(manifest.erasure.isAssignableFrom(a.actor.getClass)) Some(a) else None)
+    find({ case a:ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
 
   /**
    * Finds all actors of type or sub-type specified by the class passed in as the Class argument.
