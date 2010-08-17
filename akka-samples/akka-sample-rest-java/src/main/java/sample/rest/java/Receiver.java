@@ -5,5 +5,5 @@
 package sample.rest.java;
 
 public interface Receiver {
-  SimpleService receive();
+  SimpleService get();
 }

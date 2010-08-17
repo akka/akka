@@ -109,7 +109,11 @@ import scala.reflect.BeanProperty
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class TypedActor extends Logging {
+abstract class TypedActor extends Actor {
+  val DELEGATE_FIELD_NAME = "DELEGATE_0".intern
+
+  @volatile private[actor] var proxy: AnyRef = _
+  @volatile private var proxyDelegate: Field = _
 
   /**
    * Holds RTTI (runtime type information) for the TypedActor, f.e. current 'sender'
@@ -142,67 +146,7 @@ abstract class TypedActor extends Logging {
    * }
    * </pre>
    */
-  @BeanProperty protected var context: TypedActorContext = _
-
-  /**
-   * The uuid for the Typed Actor.
-   */
-  @BeanProperty @volatile var uuid = UUID.newUuid.toString
-
-  /**
-   * Identifier for actor, does not have to be a unique one. Default is the 'uuid'.
-   * <p/>
-   * This field is used for logging, AspectRegistry.actorsFor(id), identifier for remote
-   * actor in RemoteServer etc.But also as the identifier for persistence, which means
-   * that you can use a custom name to be able to retrieve the "correct" persisted state
-   * upon restart, remote restart etc.
-   * <p/>
-   * This property can be set to a custom ID.
-   */
-  @BeanProperty @volatile protected var id: String = uuid
-
-  /**
-   * Defines the default timeout for '!!' and '!!!' invocations,
-   * e.g. the timeout for the future returned by the call to '!!' and '!!!'.
-   * <p/>
-   * This property can be set to a custom timeout.
-   */
-  @BeanProperty @volatile protected var timeout: Long = Actor.TIMEOUT
-
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called when an Actor is started by invoking 'actor.start'.
-   */
-  def init {}
-
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called when 'actor.stop' is invoked.
-   */
-  def shutdown {}
-
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
-   */
-  def preRestart(reason: Throwable) {}
-
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
-   */
-  def postRestart(reason: Throwable) {}
-
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called during initialization. Can be used to initialize transactional state. Will be invoked within a transaction.
-   */
-  def initTransactionalState {}
+  @BeanProperty val context: TypedActorContext = new TypedActorContext(self)
 
   /**
    * This method is used to resolve the Future for TypedActor methods that are defined to return a
@@ -224,12 +168,67 @@ abstract class TypedActor extends Logging {
    *  Integer result = future.get();
    * </pre>
    */
-  def future[T](value: T): Future[T] = {
-    val fut = context.senderFuture
-    if (fut.isDefined) {
-      fut.get.completeWithResult(value)
-      fut.get.asInstanceOf[Future[T]]
-    } else throw new IllegalActorStateException("No sender future in scope")
+  def future[T](value: T): Future[T] =  
+    self.senderFuture
+      .map{f => f.completeWithResult(value); f }
+      .getOrElse(throw new IllegalActorStateException("No sender future in scope"))
+      .asInstanceOf[Future[T]]
+
+  def receive = {
+    case joinPoint: JoinPoint =>
+      SenderContextInfo.senderActorRef.value = self
+      SenderContextInfo.senderProxy.value    = proxy
+
+      if (Actor.SERIALIZE_MESSAGES)       serializeArguments(joinPoint)
+      if (TypedActor.isOneWay(joinPoint)) joinPoint.proceed
+      else                                self.reply(joinPoint.proceed)
+
+    case Link(proxy)   => self.link(proxy)
+    case Unlink(proxy) => self.unlink(proxy)
+    case unexpected    => throw new IllegalActorStateException(
+      "Unexpected message [" + unexpected + "] sent to [" + this + "]")
+  }
+
+  /**
+   * Rewrite target instance in AspectWerkz Proxy.
+   */
+  private[actor] def swapInstanceInProxy(newInstance: Actor) = proxyDelegate.set(proxy, newInstance)
+
+  private[akka] def initialize(typedActorProxy: AnyRef) = {
+    proxy = typedActorProxy
+    proxyDelegate = {
+      val field = proxy.getClass.getDeclaredField(DELEGATE_FIELD_NAME)
+      field.setAccessible(true)
+      field
+    }
+  }
+
+  private def serializeArguments(joinPoint: JoinPoint) = {
+    val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
+    var unserializable = false
+    var hasMutableArgument = false
+    for (arg <- args.toList) {
+      if (!arg.isInstanceOf[String] &&
+          !arg.isInstanceOf[Byte] &&
+          !arg.isInstanceOf[Int] &&
+          !arg.isInstanceOf[Long] &&
+          !arg.isInstanceOf[Float] &&
+          !arg.isInstanceOf[Double] &&
+          !arg.isInstanceOf[Boolean] &&
+          !arg.isInstanceOf[Char] &&
+          !arg.isInstanceOf[java.lang.Byte] &&
+          !arg.isInstanceOf[java.lang.Integer] &&
+          !arg.isInstanceOf[java.lang.Long] &&
+          !arg.isInstanceOf[java.lang.Float] &&
+          !arg.isInstanceOf[java.lang.Double] &&
+          !arg.isInstanceOf[java.lang.Boolean] &&
+          !arg.isInstanceOf[java.lang.Character]) hasMutableArgument = true
+      if (arg.getClass.getName.contains(TypedActor.AW_PROXY_PREFIX)) unserializable = true
+    }
+    if (!unserializable && hasMutableArgument) {
+      val copyOfArgs = Serializer.Java.deepClone(args)
+      joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
+    }
   }
 }
 
@@ -239,47 +238,8 @@ abstract class TypedActor extends Logging {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class TypedTransactor extends TypedActor
-
-/**
- * Configuration factory for TypedActors.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-final class TypedActorConfiguration {
-  private[akka] var _timeout: Long = Actor.TIMEOUT
-  private[akka] var _transactionRequired = false
-  private[akka] var _host: Option[InetSocketAddress] = None
-  private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
-  private[akka] var _threadBasedDispatcher: Option[Boolean] = None
-
-  def timeout = _timeout
-  def timeout(timeout: Duration) : TypedActorConfiguration = {
-    _timeout = timeout.toMillis
-    this
-  }
-
-  def makeTransactionRequired() : TypedActorConfiguration = {
-    _transactionRequired = true;
-    this
-  }
-
-  def makeRemote(hostname: String, port: Int) : TypedActorConfiguration = {
-    _host = Some(new InetSocketAddress(hostname, port))
-    this
-  }
-
-  def dispatcher(messageDispatcher: MessageDispatcher) : TypedActorConfiguration = {
-    if(_threadBasedDispatcher.isDefined) throw new IllegalArgumentException("Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
-    _messageDispatcher = Some(messageDispatcher)
-    this
-  }
-
-  def threadBasedDispatcher() : TypedActorConfiguration = {
-    if(_messageDispatcher.isDefined) throw new IllegalArgumentException("Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
-    _threadBasedDispatcher = Some(true)
-    this
-  }
+abstract class TypedTransactor extends TypedActor {
+  self.makeTransactionRequired
 }
 
 /**
@@ -314,10 +274,8 @@ final class TypedActorConfiguration {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class TypedActorContext {
-  private[akka] var _self: AnyRef = _
+final class TypedActorContext(private val actorRef: ActorRef) {
   private[akka] var _sender: AnyRef = _
-  private[akka] var _senderFuture: CompletableFuture[Any] = _
 
   /**
    * Returns the current sender reference.
@@ -341,14 +299,57 @@ final class TypedActorContext {
    * Returns the current sender future TypedActor reference.
    * Scala style getter.
    */
-  def senderFuture: Option[CompletableFuture[Any]] = if (_senderFuture eq null) None else Some(_senderFuture)
+  def senderFuture: Option[CompletableFuture[Any]] = actorRef.senderFuture
 
   /**
    * Returns the current sender future TypedActor reference.
    * Java style getter.
    * This method returns 'null' if the sender future is not available.
    */
-  def getSenderFuture = _senderFuture
+  def getSenderFuture = senderFuture
+}
+
+/**
+ * Configuration factory for TypedActors.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+final class TypedActorConfiguration {
+  private[akka] var _timeout: Long = Actor.TIMEOUT
+  private[akka] var _transactionRequired = false
+  private[akka] var _host: Option[InetSocketAddress] = None
+  private[akka] var _messageDispatcher: Option[MessageDispatcher] = None
+  private[akka] var _threadBasedDispatcher: Option[Boolean] = None
+
+  def timeout = _timeout
+  def timeout(timeout: Duration) : TypedActorConfiguration = {
+    _timeout = timeout.toMillis
+    this
+  }
+
+  def makeTransactionRequired() : TypedActorConfiguration = {
+    _transactionRequired = true;
+    this
+  }
+
+  def makeRemote(hostname: String, port: Int) : TypedActorConfiguration = {
+    _host = Some(new InetSocketAddress(hostname, port))
+    this
+  }
+
+  def dispatcher(messageDispatcher: MessageDispatcher) : TypedActorConfiguration = {
+    if (_threadBasedDispatcher.isDefined) throw new IllegalArgumentException(
+      "Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
+    _messageDispatcher = Some(messageDispatcher)
+    this
+  }
+
+  def threadBasedDispatcher() : TypedActorConfiguration = {
+    if (_messageDispatcher.isDefined) throw new IllegalArgumentException(
+      "Cannot specify both 'threadBasedDispatcher()' and 'dispatcher()'")
+    _threadBasedDispatcher = Some(true)
+    this
+  }
 }
 
 /**
@@ -359,47 +360,57 @@ final class TypedActorContext {
 object TypedActor extends Logging {
   import Actor.actorOf
 
+  val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
+  val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
+
   val AKKA_CAMEL_ROUTING_SCHEME = "akka".intern
   private[actor] val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
-  def newInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), None, timeout)
-  }
-
   def newInstance[T](intfClass: Class[T], targetClass: Class[_]): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), None, Actor.TIMEOUT)
-  }
-
-  def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long, hostname: String, port: Int): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), timeout)
+    newInstance(intfClass, targetClass, None, Actor.TIMEOUT)
   }
 
   def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], hostname: String, port: Int): T = {
-    newInstance(intfClass, newTypedActor(targetClass), actorOf(new Dispatcher(false)), Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)
+    newInstance(intfClass, targetClass, Some(new InetSocketAddress(hostname, port)), Actor.TIMEOUT)
+  }
+
+  def newInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long = Actor.TIMEOUT): T = {
+    newInstance(intfClass, targetClass, None, timeout)
+  }
+
+  def newRemoteInstance[T](intfClass: Class[T], targetClass: Class[_], timeout: Long = Actor.TIMEOUT, hostname: String, port: Int): T = {
+    newInstance(intfClass, targetClass, Some(new InetSocketAddress(hostname, port)), timeout)
   }
 
   def newInstance[T](intfClass: Class[T], targetClass: Class[_], config: TypedActorConfiguration): T = {
-    val actor = actorOf(new Dispatcher(config._transactionRequired))
-    if (config._messageDispatcher.isDefined) actor.dispatcher = config._messageDispatcher.get
-    if (config._threadBasedDispatcher.isDefined) actor.dispatcher = Dispatchers.newThreadBasedDispatcher(actor)
-    newInstance(intfClass, newTypedActor(targetClass), actor, config._host, config.timeout)
-  }
-
-  private[akka] def newInstance[T](intfClass: Class[T], targetInstance: TypedActor, actorRef: ActorRef,
-                                   remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    val context = injectTypedActorContext(targetInstance)
-    val proxy = Proxy.newInstance(Array(intfClass), Array(targetInstance), true, false)
-    actorRef.actor.asInstanceOf[Dispatcher].initialize(targetInstance.getClass, targetInstance, proxy, context)
-    actorRef.timeout = timeout
-    if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, targetInstance, actorRef, remoteAddress, timeout))
+    val actorRef = actorOf(newTypedActor(targetClass))
+    val typedActor = actorRef.actorInstance.get.asInstanceOf[TypedActor]
+    val proxy = Proxy.newInstance(Array(intfClass), Array(typedActor), true, false)
+    typedActor.initialize(proxy)
+    if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
+    if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, None, config.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }
 
+  private[akka] def newInstance[T](intfClass: Class[T], targetClass: Class[_],
+                                   remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+    val actorRef = actorOf(newTypedActor(targetClass))
+    val typedActor = actorRef.actorInstance.get.asInstanceOf[TypedActor]
+    val proxy = Proxy.newInstance(Array(intfClass), Array(typedActor), true, false)
+    typedActor.initialize(proxy)
+    actorRef.timeout = timeout
+    if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, remoteAddress, timeout))
+    actorRef.start
+    proxy.asInstanceOf[T]
+  }
+
+/*
   // NOTE: currently not used - but keep it around
-  private[akka] def newInstance[T <: TypedActor](
-      targetClass: Class[T], actorRef: ActorRef, remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+  private[akka] def newInstance[T <: TypedActor](targetClass: Class[T], 
+                                                 remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val proxy = {
       val instance = Proxy.newInstance(targetClass, true, false)
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
@@ -413,19 +424,20 @@ object TypedActor extends Logging {
     actorRef.start
     proxy.asInstanceOf[T]
   }
+*/
 
   /**
    * Stops the current Typed Actor.
    */
-  def stop(proxy: AnyRef): Unit = AspectInitRegistry.initFor(proxy).actorRef.stop
+  def stop(proxy: AnyRef): Unit = AspectInitRegistry.unregister(proxy)
 
   /**
    * Get the underlying dispatcher actor for the given Typed Actor.
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
     ActorRegistry
-      .actorsFor(classOf[Dispatcher])
-      .find(a => a.actor.asInstanceOf[Dispatcher].proxy == proxy)
+      .actorsFor(classOf[TypedActor])
+      .find(a => a.actor.asInstanceOf[TypedActor].proxy == proxy)
 
   /**
    * Links an other Typed Actor to this Typed Actor.
@@ -495,26 +507,10 @@ object TypedActor extends Logging {
     this
   }
 
-  private def injectTypedActorContext(typedActor: AnyRef): Option[TypedActorContext] = {
-    def injectTypedActorContext0(typedActor: AnyRef, clazz: Class[_]): Option[TypedActorContext] = {
-      val contextField = clazz.getDeclaredFields.toList.find(_.getType == classOf[TypedActorContext])
-      if (contextField.isDefined) {
-        contextField.get.setAccessible(true)
-        val context = new TypedActorContext
-        contextField.get.set(typedActor, context)
-        Some(context)
-      } else {
-        val parent = clazz.getSuperclass
-        if (parent != null) injectTypedActorContext0(typedActor, parent)
-        else {
-          log.trace("Can't set 'TypedActorContext' for TypedActor [" +
-                    typedActor.getClass.getName +
-                    "] since no field of this type could be found.")
-          None
-        }
-      }
-    }
-    injectTypedActorContext0(typedActor, typedActor.getClass)
+  def isTransactional(clazz: Class[_]): Boolean = {
+    if (clazz == null) false
+    else if (clazz.isAssignableFrom(classOf[TypedTransactor])) true
+    else isTransactional(clazz.getSuperclass)
   }
 
   private[akka] def newTypedActor(targetClass: Class[_]): TypedActor = {
@@ -530,57 +526,17 @@ object TypedActor extends Logging {
     typedActor
   }
 
+  private[akka] def isOneWay(joinPoint: JoinPoint): Boolean = 
+    isOneWay(joinPoint.getRtti.asInstanceOf[MethodRtti])
+
+  private[akka] def isOneWay(methodRtti: MethodRtti): Boolean =  
+    methodRtti.getMethod.getReturnType == java.lang.Void.TYPE
+
+  private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean = 
+    classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
+
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
     Supervisor(SupervisorConfig(restartStrategy, components))
-}
-
-/**
- * Internal helper class to help pass the contextual information between threads.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] object TypedActorContext {
-  import scala.util.DynamicVariable
-  private[actor] val sender =       new DynamicVariable[AnyRef](null)
-  private[actor] val senderFuture = new DynamicVariable[CompletableFuture[Any]](null)
-}
-
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] object AspectInitRegistry extends ListenerManagement {
-  private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
-
-  def initFor(proxy: AnyRef) = initializations.get(proxy)
-
-  def register(proxy: AnyRef, init: AspectInit) = {
-    val res = initializations.put(proxy, init)
-    foreachListener(_ ! AspectInitRegistered(proxy, init))
-    res
-  }
-
-  def unregister(proxy: AnyRef) = {
-    val res = initializations.remove(proxy)
-    foreachListener(_ ! AspectInitUnregistered(proxy, res))
-    res
-  }
-}
-
-private[akka] sealed trait AspectInitRegistryEvent
-private[akka] case class AspectInitRegistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
-private[akka] case class AspectInitUnregistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
-
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] sealed case class AspectInit(
-  val interfaceClass: Class[_],
-  val targetInstance: TypedActor,
-  val actorRef: ActorRef,
-  val remoteAddress: Option[InetSocketAddress],
-  val timeout: Long) {
-  def this(interfaceClass: Class[_], targetInstance: TypedActor, actorRef: ActorRef, timeout: Long) =
-    this(interfaceClass, targetInstance, actorRef, None, timeout)
 }
 
 /**
@@ -596,7 +552,7 @@ private[akka] sealed class TypedActorAspect {
   @volatile private var isInitialized = false
   @volatile private var isStopped = false
   private var interfaceClass: Class[_] = _
-  private var targetInstance: TypedActor = _
+  private var typedActor: TypedActor = _
   private var actorRef: ActorRef = _
   private var remoteAddress: Option[InetSocketAddress] = _
   private var timeout: Long = _
@@ -608,9 +564,9 @@ private[akka] sealed class TypedActorAspect {
     if (!isInitialized) {
       val init = AspectInitRegistry.initFor(joinPoint.getThis)
       interfaceClass = init.interfaceClass
-      targetInstance = init.targetInstance
-      uuid = targetInstance.uuid
+      typedActor = init.targetInstance
       actorRef = init.actorRef
+      uuid = actorRef.uuid
       remoteAddress = init.remoteAddress
       timeout = init.timeout
       isInitialized = true
@@ -624,42 +580,43 @@ private[akka] sealed class TypedActorAspect {
   }
 
   private def localDispatch(joinPoint: JoinPoint): AnyRef = {
-    val method = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val isOneWay = isVoid(method)
-    val sender = TypedActorContext.sender.value
-    val priorSenderFuture = TypedActorContext.senderFuture.value
+    val methodRtti     = joinPoint.getRtti.asInstanceOf[MethodRtti]
+    val isOneWay       = TypedActor.isOneWay(methodRtti)
+    val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
+    val senderProxy    = Some(SenderContextInfo.senderProxy.value)
 
+    typedActor.context._sender = senderProxy
     if (!actorRef.isRunning && !isStopped) {
       isStopped = true
       joinPoint.proceed
 
     } else if (isOneWay) {
-      actorRef ! Invocation(joinPoint, true, true, sender, priorSenderFuture)
+      actorRef.!(joinPoint)(senderActorRef)
       null.asInstanceOf[AnyRef]
 
-    } else if (returnsFuture_?(method)) {
-      actorRef !!! (Invocation(joinPoint, false, false, sender, priorSenderFuture), timeout)
+    } else if (TypedActor.returnsFuture_?(methodRtti)) {
+      actorRef.!!!(joinPoint, timeout)(senderActorRef)
 
     } else {
-      val result = (actorRef !! (Invocation(joinPoint, false, false, sender, priorSenderFuture), timeout)).as[AnyRef]
+      val result = (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[AnyRef]
       if (result.isDefined) result.get
       else throw new ActorTimeoutException("Invocation to [" + joinPoint + "] timed out.")
     }
   }
 
   private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
-    val method = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val isOneWay = isVoid(method)
-    val (message: Array[AnyRef], isEscaped) = escapeArguments(method.getParameterValues)
+    val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
+    val isOneWay = TypedActor.isOneWay(methodRtti)
+    val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
 
     val typedActorInfo = TypedActorInfoProtocol.newBuilder
         .setInterface(interfaceClass.getName)
-        .setMethod(method.getMethod.getName)
+        .setMethod(methodRtti.getMethod.getName)
         .build
 
     val actorInfo = ActorInfoProtocol.newBuilder
         .setUuid(uuid)
-        .setTarget(targetInstance.getClass.getName)
+        .setTarget(typedActor.getClass.getName)
         .setTimeout(timeout)
         .setActorType(ActorType.TYPED_ACTOR)
         .setTypedActorInfo(typedActorInfo)
@@ -693,10 +650,6 @@ private[akka] sealed class TypedActorAspect {
     if (future.exception.isDefined) throw future.exception.get
     else future.result
 
-  private def isVoid(rtti: MethodRtti) = rtti.getMethod.getReturnType == java.lang.Void.TYPE
-
-  private def returnsFuture_?(rtti: MethodRtti) = rtti.getMethod.getReturnType.isAssignableFrom(classOf[Future[_]])
-
   private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
     var isEscaped = false
     val escapedArgs = for (arg <- args) yield {
@@ -711,155 +664,55 @@ private[akka] sealed class TypedActorAspect {
 }
 
 /**
- * Represents a snapshot of the current invocation.
+ * Internal helper class to help pass the contextual information between threads.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-@serializable private[akka] case class Invocation(
-  joinPoint: JoinPoint, isOneWay: Boolean, isVoid: Boolean, sender: AnyRef, senderFuture: CompletableFuture[Any]) {
-
-  override def toString: String = synchronized {
-    "Invocation [" +
-    "\n\t\tmethod = " + joinPoint.getRtti.asInstanceOf[MethodRtti].getMethod.getName + " @ " + 
-                        joinPoint.getTarget.getClass.getName +
-    "\n\t\tisOneWay = " + isOneWay +
-    "\n\t\tisVoid = " + isVoid +
-    "\n\t\tsender = " + sender +
-    "\n\t\tsenderFuture = " + senderFuture +
-    "]"
-  }
-
-  override def hashCode: Int = synchronized {
-    var result = HashCode.SEED
-    result = HashCode.hash(result, joinPoint)
-    result = HashCode.hash(result, isOneWay)
-    result = HashCode.hash(result, isVoid)
-    result = HashCode.hash(result, sender)
-    result = HashCode.hash(result, senderFuture)
-    result
-  }
-
-  override def equals(that: Any): Boolean = synchronized {
-    that != null &&
-    that.isInstanceOf[Invocation] &&
-    that.asInstanceOf[Invocation].joinPoint == joinPoint &&
-    that.asInstanceOf[Invocation].isOneWay == isOneWay &&
-    that.asInstanceOf[Invocation].isVoid == isVoid &&
-    that.asInstanceOf[Invocation].sender == sender &&
-    that.asInstanceOf[Invocation].senderFuture == senderFuture
-  }
-}
-
-object Dispatcher {
-  val ZERO_ITEM_CLASS_ARRAY = Array[Class[_]]()
-  val ZERO_ITEM_OBJECT_ARRAY = Array[Object]()
+private[akka] object SenderContextInfo {
+  import scala.util.DynamicVariable
+  private[actor] val senderActorRef = new DynamicVariable[ActorRef](null)
+  private[actor] val senderProxy    = new DynamicVariable[AnyRef](null)
 }
 
 /**
- * Generic Actor managing Invocation dispatch, transaction and error management.
- *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class Dispatcher(transactionalRequired: Boolean) extends Actor {
-  import Dispatcher._
+private[akka] object AspectInitRegistry extends ListenerManagement {
+  private val initializations = new java.util.concurrent.ConcurrentHashMap[AnyRef, AspectInit]
 
-  private[actor] var proxy: AnyRef = _
-  private var context: Option[TypedActorContext] = None
-  private var targetClass: Class[_] = _
-  @volatile private[akka] var targetInstance: TypedActor = _
-  private var proxyDelegate: Field = _
+  def initFor(proxy: AnyRef) = initializations.get(proxy)
 
-  private[actor] def initialize(
-    targetClass: Class[_], targetInstance: TypedActor, proxy: AnyRef, ctx: Option[TypedActorContext]) = {
-    if (transactionalRequired || isTransactional(targetClass)) self.makeTransactionRequired
-
-    self.id = targetClass.getName
-    this.targetClass = targetClass
-    this.proxy = proxy
-    this.targetInstance = targetInstance
-    this.context = ctx
-
-    proxyDelegate = {
-      val field = proxy.getClass.getDeclaredField("DELEGATE_0")
-      field.setAccessible(true)
-      field
-    }
-
-    if (self.lifeCycle.isEmpty) self.lifeCycle = Some(LifeCycle(Permanent))
+  def register(proxy: AnyRef, init: AspectInit) = {
+    val res = initializations.put(proxy, init)
+    foreachListener(_ ! AspectInitRegistered(proxy, init))
+    res
   }
 
-  def receive = {
-    case invocation @ Invocation(joinPoint, isOneWay, _, sender, senderFuture) =>
-      TypedActor.log.trace("Invoking Typed Actor with message:\n" + invocation)
-      context.foreach { ctx =>
-        if (sender ne null) ctx._sender = sender
-        if (senderFuture ne null) ctx._senderFuture = senderFuture
-        else if (self.senderFuture.isDefined) ctx._senderFuture = self.senderFuture.get
-      }
-      TypedActorContext.sender.value = joinPoint.getThis // set next sender
-      self.senderFuture.foreach(TypedActorContext.senderFuture.value = _)
-      if (Actor.SERIALIZE_MESSAGES) serializeArguments(joinPoint)
-      if (isOneWay) joinPoint.proceed
-      else self.reply(joinPoint.proceed)
-
-    // Jan Kronquist: started work on issue 121
-    case Link(proxy)   => self.link(proxy)
-    case Unlink(proxy) => self.unlink(proxy)
-    case unexpected    => throw new IllegalActorStateException(
-      "Unexpected message [" + unexpected + "] sent to [" + this + "]")
-  }
-
-  override def preRestart(reason: Throwable) {
-    targetInstance.preRestart(reason)
-
-    // rewrite target instance in Dispatcher and AspectWerkz Proxy
-    targetInstance = TypedActor.newTypedActor(targetClass)
-    proxyDelegate.set(proxy, targetInstance)
-  }
-
-  override def postRestart(reason: Throwable) {
-    targetInstance.postRestart(reason)
-  }
-
-  override def shutdown {
-    targetInstance.shutdown
-    AspectInitRegistry.unregister(proxy);
-  }
-
-  override def initTransactionalState {
-    targetInstance.initTransactionalState
-  }
-
-  def isTransactional(clazz: Class[_]): Boolean =
-    if (clazz == null) false
-    else if (clazz.isAssignableFrom(classOf[TypedTransactor])) true
-    else isTransactional(clazz.getSuperclass)
-
-  private def serializeArguments(joinPoint: JoinPoint) = {
-    val args = joinPoint.getRtti.asInstanceOf[MethodRtti].getParameterValues
-    var unserializable = false
-    var hasMutableArgument = false
-    for (arg <- args.toList) {
-      if (!arg.isInstanceOf[String] &&
-          !arg.isInstanceOf[Byte] &&
-          !arg.isInstanceOf[Int] &&
-          !arg.isInstanceOf[Long] &&
-          !arg.isInstanceOf[Float] &&
-          !arg.isInstanceOf[Double] &&
-          !arg.isInstanceOf[Boolean] &&
-          !arg.isInstanceOf[Char] &&
-          !arg.isInstanceOf[java.lang.Byte] &&
-          !arg.isInstanceOf[java.lang.Integer] &&
-          !arg.isInstanceOf[java.lang.Long] &&
-          !arg.isInstanceOf[java.lang.Float] &&
-          !arg.isInstanceOf[java.lang.Double] &&
-          !arg.isInstanceOf[java.lang.Boolean] &&
-          !arg.isInstanceOf[java.lang.Character]) hasMutableArgument = true
-      if (arg.getClass.getName.contains(TypedActor.AW_PROXY_PREFIX)) unserializable = true
-    }
-    if (!unserializable && hasMutableArgument) {
-      val copyOfArgs = Serializer.Java.deepClone(args)
-      joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
-    }
+  /**
+   * Unregisters initialization and stops its ActorRef.
+   */
+  def unregister(proxy: AnyRef): AspectInit = {
+    val init = initializations.remove(proxy)
+    foreachListener(_ ! AspectInitUnregistered(proxy, init))
+    init.actorRef.stop
+    init
   }
 }
+
+private[akka] sealed trait AspectInitRegistryEvent
+private[akka] case class AspectInitRegistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
+private[akka] case class AspectInitUnregistered(proxy: AnyRef, init: AspectInit) extends AspectInitRegistryEvent
+
+/**
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+private[akka] sealed case class AspectInit(
+  val interfaceClass: Class[_],
+  val targetInstance: TypedActor,
+  val actorRef: ActorRef,
+  val remoteAddress: Option[InetSocketAddress],
+  val timeout: Long) {
+  def this(interfaceClass: Class[_], targetInstance: TypedActor, actorRef: ActorRef, timeout: Long) =
+    this(interfaceClass, targetInstance, actorRef, None, timeout)
+}
+

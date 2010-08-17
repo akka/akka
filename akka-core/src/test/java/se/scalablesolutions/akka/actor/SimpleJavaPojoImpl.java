@@ -18,7 +18,6 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
   private String name;
 
   public Future<Integer> square(int value) {
-    System.out.println("------------------------ SQUARE");
     return future(value * value);
   }
 
@@ -27,7 +26,7 @@ public class SimpleJavaPojoImpl extends TypedActor implements SimpleJavaPojo {
   }
 
   public CompletableFuture<Object> getSenderFuture() {
-    return getContext().getSenderFuture();
+    return getContext().getSenderFuture().get();
   }
 
   public void setName(String name) {
