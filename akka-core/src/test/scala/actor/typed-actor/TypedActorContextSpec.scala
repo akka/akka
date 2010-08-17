@@ -24,9 +24,10 @@ class TypedActorContextSpec extends
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])
       pojoCaller.setPojo(pojo)
-      pojoCaller.getSenderFromSimpleJavaPojo should equal (pojoCaller)
+      pojoCaller.getSenderFromSimpleJavaPojo.isInstanceOf[Option[_]] should equal (true)
+      pojoCaller.getSenderFromSimpleJavaPojo.asInstanceOf[Option[_]].isDefined should equal (true)
+      pojoCaller.getSenderFromSimpleJavaPojo.asInstanceOf[Option[_]].get should equal (pojoCaller)
     }
-
     it("context.senderFuture should return the senderFuture TypedActor reference") {
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val pojoCaller = TypedActor.newInstance(classOf[SimpleJavaPojoCaller], classOf[SimpleJavaPojoCallerImpl])

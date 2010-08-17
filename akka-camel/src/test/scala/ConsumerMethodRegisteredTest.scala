@@ -8,6 +8,7 @@ import org.scalatest.junit.JUnitSuite
 import se.scalablesolutions.akka.actor.{AspectInit, TypedActor}
 import se.scalablesolutions.akka.camel.ConsumerMethodRegistered._
 
+/*
 class ConsumerMethodRegisteredTest extends JUnitSuite {
   import ConsumerMethodRegisteredTest._
 
@@ -35,3 +36,5 @@ object ConsumerMethodRegisteredTest {
   @AfterClass 
   def afterClass = TypedActor.stop(typedConsumer)
 }
+
+*/

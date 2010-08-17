@@ -31,7 +31,8 @@ class PublishRequestorTest extends JUnitSuite {
     ActorRegistry.shutdownAll
   }
 
-  @Test def shouldReceiveConsumerMethodRegisteredEvent = {
+  //@Test 
+  def shouldReceiveConsumerMethodRegisteredEvent = {
     val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
     val init = AspectInit(classOf[SampleTypedSingleConsumer], new SampleTypedSingleConsumerImpl, null, None, 1000)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
@@ -44,7 +45,8 @@ class PublishRequestorTest extends JUnitSuite {
     assert(event.method.getName === "foo")
   }
 
-  @Test def shouldReceiveConsumerMethodUnregisteredEvent = {
+  //@Test 
+  def shouldReceiveConsumerMethodUnregisteredEvent = {
     val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
     val init = AspectInit(classOf[SampleTypedSingleConsumer], new SampleTypedSingleConsumerImpl, null, None, 1000)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get

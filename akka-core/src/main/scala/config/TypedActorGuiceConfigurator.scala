@@ -4,17 +4,19 @@
 
 package se.scalablesolutions.akka.config
 
-import com.google.inject._
-
+import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.actor.{Supervisor, TypedActor, Dispatcher, ActorRef, Actor, IllegalActorStateException}
 import se.scalablesolutions.akka.remote.RemoteServer
 import se.scalablesolutions.akka.util.Logging
+
+import org.codehaus.aspectwerkz.proxy.Proxy
 
 import scala.collection.mutable.HashMap
 
 import java.net.InetSocketAddress
 import java.lang.reflect.Method
+
+import com.google.inject._
 
 /**
  * This is an class for internal usage. Instead use the <code>se.scalablesolutions.akka.config.TypedActorConfigurator</code>
@@ -71,8 +73,9 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     this.restartStrategy = restartStrategy
     this.components = components.toArray.toList.asInstanceOf[List[Component]]
     bindings = for (component <- this.components) yield {
-      if (component.intf.isDefined) newDelegatingProxy(component)
-      else newSubclassingProxy(component)
+      newDelegatingProxy(component)
+//      if (component.intf.isDefined) newDelegatingProxy(component)
+//      else newSubclassingProxy(component)
     }
     val deps = new java.util.ArrayList[DependencyBinding](bindings.size)
     for (b <- bindings) deps.add(b)
@@ -80,6 +83,7 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     this
   }
 
+/*
   private def newSubclassingProxy(component: Component): DependencyBinding = {
     val targetClass =
       if (component.target.isInstanceOf[Class[_ <: TypedActor]]) component.target.asInstanceOf[Class[_ <: TypedActor]]
@@ -96,34 +100,41 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
     typedActorRegistry.put(targetClass, (proxy, proxy, component))
     new DependencyBinding(targetClass, proxy)
   }
-
+*/
   private def newDelegatingProxy(component: Component): DependencyBinding = {
     component.target.getConstructor(Array[Class[_]](): _*).setAccessible(true)
+    val interfaceClass = if (component.intf.isDefined) component.intf.get
+                         else throw new IllegalActorStateException("No interface for TypedActor specified")
+    val implementationClass = component.target
+    val timeout = component.timeout
 
-    val targetClass = component.intf.get
-    val instance = component.target.newInstance.asInstanceOf[AnyRef] // TODO: perhaps need to put in registry
-
-    val targetInstance =
-      if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
-      else throw new IllegalArgumentException("TypedActor [" + component.target.getName + "] must be a subclass of TypedActor")
-
-    val actorRef = Actor.actorOf(new Dispatcher(component.transactionRequired))
-
+    val actorRef = Actor.actorOf(TypedActor.newTypedActor(implementationClass))
+    actorRef.timeout = timeout
     if (component.dispatcher.isDefined) actorRef.dispatcher = component.dispatcher.get
+    val typedActor = actorRef.actorInstance.get.asInstanceOf[TypedActor]
+
+    val proxy = Proxy.newInstance(Array(interfaceClass), Array(typedActor), true, false)
 
     val remoteAddress =
       if (component.remoteAddress.isDefined)
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
 
-    val proxy = TypedActor.newInstance(
-      targetClass, targetInstance, actorRef, remoteAddress, component.timeout).asInstanceOf[AnyRef]
+    remoteAddress.foreach { address => 
+      actorRef.makeRemote(remoteAddress.get)
+      RemoteServer.registerTypedActor(address, implementationClass.getName, proxy)
+    }
 
-    remoteAddress.foreach(address => RemoteServer.registerTypedActor(address, targetClass.getName, proxy))
+    AspectInitRegistry.register(
+      proxy, 
+      AspectInit(interfaceClass, typedActor, actorRef, remoteAddress, timeout))
+    typedActor.initialize(proxy)
+    actorRef.start
+
     supervised ::= Supervise(actorRef, component.lifeCycle)
 
-    typedActorRegistry.put(targetClass, (proxy, targetInstance, component))
-    new DependencyBinding(targetClass, proxy)
+    typedActorRegistry.put(interfaceClass, (proxy, typedActor, component))
+    new DependencyBinding(interfaceClass, proxy)
   }
 
   override def inject: TypedActorConfiguratorBase = synchronized {
