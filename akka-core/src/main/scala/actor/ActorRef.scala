@@ -21,6 +21,8 @@ import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.api.exceptions.DeadTransactionException
 
+import org.codehaus.aspectwerkz.joinpoint.JoinPoint
+
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference
@@ -212,7 +214,8 @@ trait ActorRef extends ActorRefShared with TransactionManagement with java.lang.
   protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
   protected[akka] def currentMessage = guard.withGuard { _currentMessage }
 
-  /** comparison only takes uuid into account
+  /**
+   * Comparison only takes uuid into account.
    */
   def compareTo(other: ActorRef) = this.uuid.compareTo(other.uuid)
 
@@ -600,7 +603,7 @@ trait ActorRef extends ActorRefShared with TransactionManagement with java.lang.
       senderOption: Option[ActorRef],
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T]
 
-  protected[this] def actorInstance: AtomicReference[Actor]
+  protected[akka] def actorInstance: AtomicReference[Actor]
 
   protected[akka] def actor: Actor = actorInstance.get
 
@@ -668,7 +671,7 @@ class LocalActorRef private[akka](
   @volatile private var restartsWithinTimeRangeTimestamp: Long = 0L
   @volatile private var _mailbox: AnyRef = _
 
-  protected[this] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
+  protected[akka] val actorInstance = guard.withGuard { new AtomicReference[Actor](newActor) }
 
   // Needed to be able to null out the 'val self: ActorRef' member variables to make the Actor
   // instance elegible for garbage collection
@@ -1122,7 +1125,7 @@ class LocalActorRef private[akka](
 
   // ========= PRIVATE FUNCTIONS =========
 
-  private def isTypedActorDispatcher(a: Actor): Boolean = a.isInstanceOf[Dispatcher]
+  private def isTypedActorDispatcher(a: Actor): Boolean = a.isInstanceOf[TypedActor]
 
   private def restartTypedActorDispatcher(failedActor: Actor, reason: Throwable) = {
     failedActor.preRestart(reason)
@@ -1136,6 +1139,7 @@ class LocalActorRef private[akka](
     freshActor.init
     freshActor.initTransactionalState
     actorInstance.set(freshActor)
+    if (failedActor.isInstanceOf[TypedActor]) failedActor.asInstanceOf[TypedActor].swapInstanceInProxy(freshActor)
     Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
     freshActor.postRestart(reason)
   }
@@ -1425,8 +1429,7 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported
-  protected[this] def actorInstance: AtomicReference[Actor] = unsupported
-
+  protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
 
@@ -1578,8 +1581,8 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
   def !!(message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Option[Any] = {
     if (isRunning) {
       val future = postMessageToMailboxAndCreateFutureResultWithTimeout[Any](message, timeout, sender, None)
-      val isTypedActor = message.isInstanceOf[Invocation]
-      if (isTypedActor && message.asInstanceOf[Invocation].isVoid) {
+      val isTypedActor = message.isInstanceOf[JoinPoint]
+      if (isTypedActor && TypedActor.isOneWay(message.asInstanceOf[JoinPoint])) {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
       try {
@@ -1605,7 +1608,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * If you are sending messages using <code>!!!</code> then you <b>have to</b> use <code>self.reply(..)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
-  def !!![T](message: Any)(implicit sender: Option[ActorRef] = None): Future[T] = {
+  def !!![T](message: Any, timeout: Long = this.timeout)(implicit sender: Option[ActorRef] = None): Future[T] = {
     if (isRunning) postMessageToMailboxAndCreateFutureResultWithTimeout[T](message, timeout, sender, None)
     else throw new ActorInitializationException(
       "Actor has not been started, you need to invoke 'actor.start' before using it")
