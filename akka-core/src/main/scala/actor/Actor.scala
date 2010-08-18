@@ -255,7 +255,7 @@ object Actor extends Logging {
     case object Spawn
     actorOf(new Actor() {
       def receive = {
-        case Spawn => body; self.stop
+        case Spawn => try { body } finally { self.stop }
       }
     }).start ! Spawn
   }

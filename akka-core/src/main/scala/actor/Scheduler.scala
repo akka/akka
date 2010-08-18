@@ -29,6 +29,9 @@ object Scheduler extends Logging {
 
   log.info("Starting up Scheduler")
 
+  /**
+   * Schedules to send the specified message to the receiver after initialDelay and then repeated after delay
+   */
   def schedule(receiver: ActorRef, message: AnyRef, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.trace(
       "Schedule scheduled event\n\tevent = [%s]\n\treceiver = [%s]\n\tinitialDelay = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
@@ -38,19 +41,68 @@ object Scheduler extends Logging {
         new Runnable { def run = receiver ! message },
         initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
+      case e: Exception => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
   }
 
+  /**
+   * Schedules to run specified function to the receiver after initialDelay and then repeated after delay,
+   * avoid blocking operations since this is executed in the schedulers thread
+   */
+  def schedule(f: () => Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
+    schedule(new Runnable { def run = f() }, initialDelay, delay, timeUnit)
+
+  /**
+   * Schedules to run specified runnable to the receiver after initialDelay and then repeated after delay,
+   * avoid blocking operations since this is executed in the schedulers thread
+   */
+  def schedule(runnable: Runnable, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
+    log.trace(
+      "Schedule scheduled event\n\trunnable = [%s]\n\tinitialDelay = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      runnable, initialDelay, delay, timeUnit)
+
+    try {
+      service.scheduleAtFixedRate(runnable,initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
+    } catch {
+      case e: Exception => throw SchedulerException("Failed to schedule a Runnable", e)
+    }
+  }
+
+  /**
+   * Schedules to send the specified message to the receiver after delay
+   */
   def scheduleOnce(receiver: ActorRef, message: AnyRef, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
     log.trace(
       "Schedule one-time event\n\tevent = [%s]\n\treceiver = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
       message, receiver, delay, timeUnit)
     try {
       service.schedule(
-        new Runnable { def run = receiver ! message }, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
+        new Runnable { def run = receiver ! message },
+        delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e => throw SchedulerException(message + " could not be scheduled on " + receiver, e)
+      case e: Exception => throw SchedulerException( message + " could not be scheduleOnce'd on " + receiver, e)
+    }
+  }
+
+  /**
+   * Schedules a function to be run after delay,
+   * avoid blocking operations since the runnable is executed in the schedulers thread
+   */
+  def scheduleOnce(f: () => Unit, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] =
+    scheduleOnce(new Runnable { def run = f() }, delay, timeUnit)
+
+  /**
+   * Schedules a runnable to be run after delay,
+   * avoid blocking operations since the runnable is executed in the schedulers thread
+   */
+  def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef] = {
+    log.trace(
+      "Schedule one-time event\n\trunnable = [%s]\n\tdelay = [%s]\n\ttimeUnit = [%s]",
+      runnable, delay, timeUnit)
+    try {
+      service.schedule(runnable,delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
+    } catch {
+      case e: Exception => throw SchedulerException("Failed to scheduleOnce a Runnable", e)
     }
   }
 
