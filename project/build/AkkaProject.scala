@@ -620,6 +620,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
   class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
+  class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject with CodeFellowPlugin {
     //val commons_logging = Dependencies.commons_logging
@@ -680,6 +681,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleChatProject(_), akka_kernel)
     lazy val akka_sample_pubsub = project("akka-sample-pubsub", "akka-sample-pubsub",
       new AkkaSamplePubSubProject(_), akka_kernel)
+    lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
+      new AkkaSampleFSMProject(_), akka_kernel)
     lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift",
       new AkkaSampleLiftProject(_), akka_kernel)
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java",

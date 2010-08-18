@@ -257,7 +257,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
   protected[akka] def registerSupervisorAsRemoteActor = unsupported
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported
-  protected[this] def actorInstance: AtomicReference[Actor] = unsupported
+  protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)
 }
