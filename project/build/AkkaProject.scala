@@ -459,8 +459,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-        // akka-persistence-cassandra subproject
-        // -------------------------------------------------------------------------------------------------------------------
+  // akka-persistence-cassandra subproject
+  // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaCassandraProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val cassandra   = Dependencies.cassandra
@@ -474,15 +474,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
-        // -------------------------------------------------------------------------------------------------------------------
-        // akka-kernel subproject
-        // -------------------------------------------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-kernel subproject
+  // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaKernelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath)
 
-        // -------------------------------------------------------------------------------------------------------------------
-        // akka-spring subproject
-        // -------------------------------------------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-spring subproject
+  // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val spring_beans   = Dependencies.spring_beans
@@ -613,12 +613,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
-//    val scalaToolsSnapshots = ScalaToolsSnapshots
+    //val scalaToolsSnapshots = ScalaToolsSnapshots
     override def spdeSourcePath = mainSourcePath / "spde"
   }
 
   class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
   class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject {
     //val commons_logging = Dependencies.commons_logging
@@ -679,6 +680,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSampleChatProject(_), akka_kernel)
     lazy val akka_sample_pubsub = project("akka-sample-pubsub", "akka-sample-pubsub",
       new AkkaSamplePubSubProject(_), akka_kernel)
+    lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
+      new AkkaSampleFSMProject(_), akka_kernel)
     lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift",
       new AkkaSampleLiftProject(_), akka_kernel)
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java",
@@ -712,6 +715,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     mainResources +++
     mainDependencies.scalaJars +++
     descendents(info.projectPath / "scripts", "run_akka.sh") +++
+    descendents(info.projectPath / "scripts", "akka-init-script.sh") +++
     descendents(info.projectPath / "dist", "*.jar") +++
     descendents(info.projectPath / "deploy", "*.jar") +++
     descendents(path("lib") ##, "*.jar") +++

@@ -2,6 +2,8 @@ package se.scalablesolutions.akka.camel.support
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 
+import collection.mutable.Buffer
+
 import se.scalablesolutions.akka.camel.Message
 import se.scalablesolutions.akka.actor.Actor
 
@@ -54,12 +56,13 @@ trait Respond { this: Actor =>
 }
 
 trait Retain { this: Actor =>
-  var message: Any = _
+  val messages = Buffer[Any]()
 
   def retain: Handler = {
-    case GetRetainedMessage => self.reply(message)
+    case GetRetainedMessage     => self.reply(messages.last)
+    case GetRetainedMessages(p) => self.reply(messages.toList.filter(p))
     case msg => {
-      message = msg
+      messages += msg
       msg
     }
   }
@@ -73,3 +76,6 @@ trait Noop  { this: Actor =>
 
 case class SetExpectedMessageCount(num: Int)
 case class GetRetainedMessage()
+case class GetRetainedMessages(p: Any => Boolean) {
+  def this() = this(_ => true)
+}
