@@ -28,16 +28,24 @@ class SchedulerSpec extends JUnitSuite {
 
     // after max 1 second it should be executed at least the 3 times already
     assert(countDownLatch.await(1, TimeUnit.SECONDS))
+
+    val countDownLatch2 = new CountDownLatch(3)
+
+    Scheduler.schedule( () => countDownLatch2.countDown, 0, 50, TimeUnit.MILLISECONDS)
+
+    // after max 1 second it should be executed at least the 3 times already
+    assert(countDownLatch2.await(1, TimeUnit.SECONDS))
   }
 
   @Test def schedulerShouldScheduleOnce = withCleanEndState {
     case object Tick
-    val countDownLatch = new CountDownLatch(2)
+    val countDownLatch = new CountDownLatch(3)
     val tickActor = actor {
       case Tick => countDownLatch.countDown
     }
     // run every 50 millisec
     Scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS)
+    Scheduler.scheduleOnce( () => countDownLatch.countDown, 50, TimeUnit.MILLISECONDS)
 
     // after 1 second the wait should fail
     assert(countDownLatch.await(1, TimeUnit.SECONDS) == false)
