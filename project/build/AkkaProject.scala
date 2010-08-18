@@ -3,7 +3,6 @@
 \---------------------------------------------------------------------------*/
 
 import com.weiglewilczek.bnd4sbt.BNDPlugin
-import de.tuxed.codefellow.plugin.CodeFellowPlugin
 import java.io.File
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name._
@@ -330,7 +329,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-core subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
+  class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val aopalliance   = Dependencies.aopalliance
     val commons_codec = Dependencies.commons_codec
     val commons_io    = Dependencies.commons_io
@@ -367,7 +366,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-amqp subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
+  class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_io = Dependencies.commons_io
     val rabbit     = Dependencies.rabbit
     val protobuf      = Dependencies.protobuf
@@ -382,7 +381,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-http subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
+  class AkkaHttpProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val annotation       = Dependencies.annotation
     val atmo             = Dependencies.atmo
     val atmo_jbossweb    = Dependencies.atmo_jbossweb
@@ -410,7 +409,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-camel subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
+  class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val camel_core = Dependencies.camel_core
   }
 
@@ -485,7 +484,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         // akka-spring subproject
         // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
+  class AkkaSpringProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val spring_beans   = Dependencies.spring_beans
     val spring_context = Dependencies.spring_context
 
@@ -499,7 +498,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // akka-jta subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaJTAProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with CodeFellowPlugin {
+  class AkkaJTAProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val atomikos_transactions     = Dependencies.atomikos_transactions
     val atomikos_transactions_api = Dependencies.atomikos_transactions_api
     val atomikos_transactions_jta = Dependencies.atomikos_transactions_jta
@@ -613,15 +612,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Examples
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) with CodeFellowPlugin {
+  class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
 //    val scalaToolsSnapshots = ScalaToolsSnapshots
     override def spdeSourcePath = mainSourcePath / "spde"
   }
 
-  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
-  class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
+  class AkkaSampleChatProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
+  class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
-  class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject with CodeFellowPlugin {
+  class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject {
     //val commons_logging = Dependencies.commons_logging
     val lift_util       = Dependencies.lift_util
     val lift_webkit     = Dependencies.lift_webkit
@@ -635,15 +634,15 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def jarPath = warPath
   }
 
-  class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
+  class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
-  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin
+  class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
-  class AkkaSampleRestScalaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
+  class AkkaSampleRestScalaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val jsr311 = Dependencies.jsr311
   }
 
-  class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
+  class AkkaSampleCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     //Must be like this to be able to exclude the geronimo-servlet_2.4_spec which is a too old Servlet spec
     override def ivyXML =
       <dependencies>
@@ -661,7 +660,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       </dependencies>
   }
 
-  class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) with CodeFellowPlugin {
+  class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
     val commons_codec = Dependencies.commons_codec
     val jsr250        = Dependencies.jsr250
     val jsr311        = Dependencies.jsr311

@@ -561,16 +561,7 @@ private[akka] sealed class TypedActorAspect {
 
   @Around("execution(* *.*(..))")
   def invoke(joinPoint: JoinPoint): AnyRef = {
-    if (!isInitialized) {
-      val init = AspectInitRegistry.initFor(joinPoint.getThis)
-      interfaceClass = init.interfaceClass
-      typedActor = init.targetInstance
-      actorRef = init.actorRef
-      uuid = actorRef.uuid
-      remoteAddress = init.remoteAddress
-      timeout = init.timeout
-      isInitialized = true
-    }
+    if (!isInitialized) initialize(joinPoint)
     dispatch(joinPoint)
   }
 
@@ -660,6 +651,17 @@ private[akka] sealed class TypedActorAspect {
       } else arg
     }
     (escapedArgs, isEscaped)
+  }
+
+  private def initialize(joinPoint: JoinPoint): Unit = {
+    val init = AspectInitRegistry.initFor(joinPoint.getThis)
+    interfaceClass = init.interfaceClass
+    typedActor = init.targetInstance
+    actorRef = init.actorRef
+    uuid = actorRef.uuid
+    remoteAddress = init.remoteAddress
+    timeout = init.timeout
+    isInitialized = true
   }
 }
 
