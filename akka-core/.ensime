@@ -1,11 +1,11 @@
 (
 
  ;; Where you unpacked the ENSIME distribution.
- :server-root "/home/jboner/emacs-config/lib/ensime"
+ :server-root "/Users/jboner/config/emacs-config/lib/ensime"
 
  ;; The command with which to invoke the ENSIME server. Change this to 
  ;; "bin/server.bat" if your're on Windows.
- :server-cmd  "bin/server.bat"
+ :server-cmd  "bin/server.sh"
 
 
  ;; The host to connect to. Connecting to remote ENSIME servers is not
