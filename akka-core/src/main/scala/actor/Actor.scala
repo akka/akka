@@ -448,12 +448,20 @@ trait Actor extends Logging {
   def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
 
   /** One of the fundamental methods of the ActorsModel
-   * Actor assumes a new behavior
+   * Actor assumes a new behavior,
+   * None reverts the current behavior to the original behavior
    */
   def become(behavior: Option[Receive]) {
     self.hotswap = behavior
     self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
   }
+
+  /** Akka Java API
+   * One of the fundamental methods of the ActorsModel
+   * Actor assumes a new behavior,
+   * null reverts the current behavior to the original behavior
+   */
+  def become(behavior: Receive): Unit = become(Option(behavior))
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
