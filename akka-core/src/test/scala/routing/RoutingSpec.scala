@@ -94,6 +94,7 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
   @Test def testListener = {
     val latch = new CountDownLatch(2)
+    val foreachListener = new CountDownLatch(2)
     val num = new AtomicInteger(0)
     val i = actorOf(new Actor with Listeners {
       def receive = listenerManagement orElse {
@@ -104,8 +105,9 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
 
     def newListener = actor {
       case "bar" =>
-      num.incrementAndGet
-      latch.countDown
+        num.incrementAndGet
+        latch.countDown
+      case "foo" => foreachListener.countDown
     }
 
     val a1 = newListener
@@ -116,12 +118,14 @@ class RoutingSpec extends junit.framework.TestCase with Suite with MustMatchers 
     i ! Listen(a2)
     i ! Listen(a3)
     i ! Deafen(a3)
-
+    i ! WithListeners(_ ! "foo")
     i ! "foo"
 
     val done = latch.await(5,TimeUnit.SECONDS)
     done must be (true)
     num.get must be (2)
+    val withListeners = foreachListener.await(5,TimeUnit.SECONDS)
+    withListeners must be (true)
     for(a <- List(i,a1,a2,a3)) a.stop
   }
 
