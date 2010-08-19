@@ -330,6 +330,8 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
+  protected override def manageLifeCycleOfListeners = false
+
   protected[akka] override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
 }
 
