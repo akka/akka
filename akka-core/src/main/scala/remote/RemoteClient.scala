@@ -229,6 +229,8 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, val loade
 
   override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
 
+  protected override def manageLifeCycleOfListeners = false
+
   def send[T](request: RemoteRequestProtocol, senderFuture: Option[CompletableFuture[T]]): Option[CompletableFuture[T]] = if (isRunning) {
     if (request.getIsOneWay) {
       connection.getChannel.write(request)

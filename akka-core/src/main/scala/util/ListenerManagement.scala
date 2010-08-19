@@ -18,21 +18,26 @@ trait ListenerManagement extends Logging {
   private val listeners = new ConcurrentSkipListSet[ActorRef]
 
   /**
-   * Adds the <code>listener</code> this this registry's listener list.
-   * The <code>listener</code> is started by this method.
+   * Specifies whether listeners should be started when added and stopped when removed or not
    */
-  def addListener(listener: ActorRef) = {
-    listener.start
+  protected def manageLifeCycleOfListeners: Boolean = true
+
+  /**
+   * Adds the <code>listener</code> this this registry's listener list.
+   * The <code>listener</code> is started by this method if manageLifeCycleOfListeners yields true.
+   */
+  def addListener(listener: ActorRef) {
+    if (manageLifeCycleOfListeners) listener.start
     listeners add listener
   }
 
   /**
    * Removes the <code>listener</code> this this registry's listener list.
-   * The <code>listener</code> is stopped by this method.
+   * The <code>listener</code> is stopped by this method if manageLifeCycleOfListeners yields true.
    */
-  def removeListener(listener: ActorRef) = {
+  def removeListener(listener: ActorRef) {
     listeners remove listener
-    listener.stop
+    if (manageLifeCycleOfListeners) listener.stop
   }
 
   /**
