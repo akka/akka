@@ -26,7 +26,7 @@ class AkkaDeployClassLoader(urls : List[URL], parent : ClassLoader) extends URLC
   }
 
   def listClassesInPackage(jar : URL, pkg : String) = {
-        val f  = new File(jar.getFile)
+    val f  = new File(jar.getFile)
     val jf = new JarFile(f)
     try {
       val es = jf.entries
@@ -84,11 +84,14 @@ trait BootableActorLoaderService extends Bootable with Logging {
   }
 
   abstract override def onLoad = {
+    applicationLoader.foreach(_ => log.info("Creating /deploy class-loader"))
+
+    super.onLoad
+
     for (loader <- applicationLoader; clazz <- BOOT_CLASSES) {
       log.info("Loading boot class [%s]", clazz)
       loader.loadClass(clazz).newInstance
     }
-    super.onLoad
   }
 
   abstract override def onUnload = {

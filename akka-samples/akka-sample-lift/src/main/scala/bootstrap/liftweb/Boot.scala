@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
 
-import sample.lift.{PersistentSimpleService, SimpleService}
+import sample.lift._
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -35,6 +35,8 @@ class Boot extends Logging {
         true
       }
     }
+    LiftRules.statelessDispatchTable.append(SimpleRestService)
+    LiftRules.statelessDispatchTable.append(PersistentRestService)
 
     LiftRules.passNotFoundToChain = true
 
@@ -42,10 +44,10 @@ class Boot extends Logging {
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(
-          actorOf[SimpleService],
+          actorOf[SimpleServiceActor],
           LifeCycle(Permanent)) ::
         Supervise(
-          actorOf[PersistentSimpleService],
+          actorOf[PersistentServiceActor],
           LifeCycle(Permanent)) ::
         Nil))
     factory.newInstance.start

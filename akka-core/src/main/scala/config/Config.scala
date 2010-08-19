@@ -5,10 +5,11 @@
 package se.scalablesolutions.akka.config
 
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.AkkaException
 
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
-class ConfigurationException(message: String) extends RuntimeException(message)
+class ConfigurationException(message: String) extends AkkaException(message)
 
 /**
  * Loads up the configuration (from the akka.conf file).
@@ -81,6 +82,8 @@ object Config extends Logging {
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(
     "Akka JAR version [" + VERSION + "] is different than the provided config ('akka.conf') version [" + CONFIG_VERSION + "]")
+
+  val TIME_UNIT = config.getString("akka.time-unit", "seconds")
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000

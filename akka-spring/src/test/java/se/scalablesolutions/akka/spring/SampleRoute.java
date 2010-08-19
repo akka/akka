@@ -6,7 +6,6 @@ public class SampleRoute extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        from("direct:test").to("active-object:sample?method=foo");
+        from("direct:test").to("typed-actor:sample?method=foo");
     }
-
 }

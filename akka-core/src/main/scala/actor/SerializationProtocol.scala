@@ -73,9 +73,16 @@ object ActorSerialization {
   def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Format[T]): ActorRef =
     fromBinaryToLocalActorRef(bytes, format)
 
-  def toBinary[T <: Actor](a: ActorRef)(implicit format: Format[T]): Array[Byte] = {
+  def toBinary[T <: Actor](a: ActorRef)(implicit format: Format[T]): Array[Byte] = 
     toSerializedActorRefProtocol(a, format).toByteArray
-  }
+
+  // wrapper for implicits to be used by Java
+  def fromBinaryJ[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
+    fromBinary(bytes)(format)
+
+  // wrapper for implicits to be used by Java
+  def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T]): Array[Byte] = 
+    toBinary(a)(format)
 
   private def toSerializedActorRefProtocol[T <: Actor](actorRef: ActorRef, format: Format[T]): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
@@ -85,13 +92,8 @@ object ActorSerialization {
       }
       val builder = LifeCycleProtocol.newBuilder
       actorRef.lifeCycle match {
-        case Some(LifeCycle(scope, None, _)) =>
+        case Some(LifeCycle(scope)) =>
           setScope(builder, scope)
-          Some(builder.build)
-        case Some(LifeCycle(scope, Some(callbacks), _)) =>
-          setScope(builder, scope)
-          builder.setPreRestart(callbacks.preRestart)
-          builder.setPostRestart(callbacks.postRestart)
           Some(builder.build)
         case None => None
       }
@@ -122,7 +124,8 @@ object ActorSerialization {
   private def fromBinaryToLocalActorRef[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
     fromProtobufToLocalActorRef(SerializedActorRefProtocol.newBuilder.mergeFrom(bytes).build, format, None)
 
-  private def fromProtobufToLocalActorRef[T <: Actor](protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
+  private def fromProtobufToLocalActorRef[T <: Actor](
+    protocol: SerializedActorRefProtocol, format: Format[T], loader: Option[ClassLoader]): ActorRef = {
     Actor.log.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n" + protocol)
 
     val serializer =
@@ -133,12 +136,8 @@ object ActorSerialization {
     val lifeCycle =
       if (protocol.hasLifeCycle) {
         val lifeCycleProtocol = protocol.getLifeCycle
-        val restartCallbacks =
-          if (lifeCycleProtocol.hasPreRestart || lifeCycleProtocol.hasPostRestart)
-            Some(RestartCallbacks(lifeCycleProtocol.getPreRestart, lifeCycleProtocol.getPostRestart))
-          else None
-        Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent, restartCallbacks)
-             else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary, restartCallbacks)
+        Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent)
+             else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary)
              else throw new IllegalActorStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
       } else None
 
@@ -225,26 +224,30 @@ object RemoteActorSerialization {
       .build
   }
 
-  def createRemoteRequestProtocolBuilder(ar: ActorRef,
-    message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]): RemoteRequestProtocol.Builder = {
-    import ar._
-    val protocol = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
-        .setMessage(MessageSerializer.serialize(message))
+  def createRemoteRequestProtocolBuilder(actorRef: ActorRef, message: Any, isOneWay: Boolean, senderOption: Option[ActorRef]):
+    RemoteRequestProtocol.Builder = {
+    import actorRef._
+
+    val actorInfo = ActorInfoProtocol.newBuilder
+        .setUuid(uuid)
         .setTarget(actorClassName)
         .setTimeout(timeout)
-        .setUuid(uuid)
-        .setIsActor(true)
+        .setActorType(ActorType.SCALA_ACTOR)
+        .build
+
+    val request = RemoteRequestProtocol.newBuilder
+        .setId(RemoteRequestProtocolIdFactory.nextId)
+        .setMessage(MessageSerializer.serialize(message))
+        .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
-        .setIsEscaped(false)
 
     val id = registerSupervisorAsRemoteActor
-    if (id.isDefined) protocol.setSupervisorUuid(id.get)
+    if (id.isDefined) request.setSupervisorUuid(id.get)
 
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-      protocol.setSender(toRemoteActorRefProtocol(sender))
+      request.setSender(toRemoteActorRefProtocol(sender))
     }
-    protocol
+    request
   }
 }

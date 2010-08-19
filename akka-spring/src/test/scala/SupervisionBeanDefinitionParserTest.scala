@@ -26,8 +26,8 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
     val parser = new Parser()
     val builder = BeanDefinitionBuilder.genericBeanDefinition("foo.bar.Foo")
 
-    it("should be able to parse active object configuration") {
-      val props = parser.parseActiveObject(createActiveObjectElement);
+    it("should be able to parse typed actor configuration") {
+      val props = parser.parseActor(createTypedActorElement);
       assert(props != null)
       assert(props.timeout == 1000)
       assert(props.target == "foo.bar.MyPojo")
@@ -45,9 +45,9 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       expect(1000) { strategy.withinTimeRange }
     }
 
-    it("should parse the supervised active objects") {
+    it("should parse the supervised typed actors") {
       parser.parseSupervisor(createSupervisorElement, builder);
-      val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[ActiveObjectProperties]]
+      val supervised = builder.getBeanDefinition.getPropertyValues.getPropertyValue("supervised").getValue.asInstanceOf[List[ActorProperties]]
       assert(supervised != null)
       expect(4) { supervised.length }
       val iterator = supervised.iterator
@@ -59,9 +59,6 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
       expect("foo.bar.Bar") { prop2.target }
       expect("foo.bar.MyPojo") { prop3.target }
       expect("foo.bar.MyPojo") { prop4.target }
-      expect("preRestart") { prop3.preRestart }
-      expect("postRestart") { prop3.postRestart }
-      expect("shutdown") { prop4.shutdown }
       expect("permanent") { prop1.lifecycle }
       expect("temporary") { prop4.lifecycle }
     }
@@ -75,9 +72,9 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
     }
   }
 
-  private def createActiveObjectElement : Element = {
-    val xml = <akka:active-object id="active-object1"
-                                        target="foo.bar.MyPojo"
+  private def createTypedActorElement : Element = {
+    val xml = <akka:typed-actor id="typed-actor1"
+                                        implementation="foo.bar.MyPojo"
                                         timeout="1000"
                         transactional="true"/>
     dom(xml).getDocumentElement
@@ -91,16 +88,16 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
                       <akka:trap-exit>java.lang.NullPointerException</akka:trap-exit>
                   </akka:trap-exits>
                 </akka:restart-strategy>
-                <akka:active-objects>
-                          <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-                          <akka:active-object interface="foo.bar.IBar" target="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
-                          <akka:active-object target="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
+                <akka:typed-actors>
+                          <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                          <akka:typed-actor interface="foo.bar.IBar" implementation="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
+                          <akka:typed-actor implementation="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
                                   <akka:restart-callbacks pre="preRestart" post="postRestart"/>
-                          </akka:active-object>
-                          <akka:active-object target="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
+                          </akka:typed-actor>
+                          <akka:typed-actor implementation="foo.bar.MyPojo" lifecycle="temporary" timeout="1000">
                                   <akka:shutdown-callback method="shutdown"/>
-                          </akka:active-object>
-                  </akka:active-objects>
+                          </akka:typed-actor>
+                  </akka:typed-actors>
     </akka:supervision>
     dom(xml).getDocumentElement
   }
@@ -113,9 +110,9 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
                       <akka:trap-exit>java.io.IOException</akka:trap-exit>
                   </akka:trap-exits>
                 </akka:restart-strategy>
-                <akka:active-objects>
-                          <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-                  </akka:active-objects>
+                <akka:typed-actors>
+                          <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                  </akka:typed-actors>
     </akka:supervision>
     dom(xml).getDocumentElement
   }
@@ -124,10 +121,10 @@ class SupervisionBeanDefinitionParserTest extends Spec with ShouldMatchers {
     val xml = <akka:supervision id="supervision1">
                 <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
                 </akka:restart-strategy>
-                <akka:active-objects>
-                          <akka:active-object target="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
-                          <akka:active-object interface="foo.bar.IBar" target="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
-                  </akka:active-objects>
+                <akka:typed-actors>
+                          <akka:typed-actor implementation="foo.bar.Foo" lifecycle="permanent" timeout="1000"/>
+                          <akka:typed-actor interface="foo.bar.IBar" implementation="foo.bar.Bar" lifecycle="permanent" timeout="1000"/>
+                  </akka:typed-actors>
     </akka:supervision>
     dom(xml).getDocumentElement
   }

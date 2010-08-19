@@ -29,19 +29,15 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends ListenerManagement {
-  
-  private val refComparator = new java.util.Comparator[ActorRef]{
-    def compare(a: ActorRef,b: ActorRef) = a.uuid.compareTo(b.uuid)
-  }
-  
   private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
   private val actorsById =            new ConcurrentHashMap[String, JSet[ActorRef]]
-  private val actorsByClassName =     new ConcurrentHashMap[String, JSet[ActorRef]]
+
+  private val Naught = Array[ActorRef]() //Nil for Arrays
 
   /**
    * Returns all actors in the system.
    */
-  def actors: List[ActorRef] = filter(_ => true)
+  def actors: Array[ActorRef] = filter(_ => true)
 
   /**
    * Invokes a function for all actors.
@@ -52,15 +48,29 @@ object ActorRegistry extends ListenerManagement {
   }
 
   /**
+   * Invokes the function on all known actors until it returns Some
+   * Returns None if the function never returns Some
+   */
+  def find[T](f: PartialFunction[ActorRef,T]) : Option[T] = {
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val element = elements.nextElement
+      if(f isDefinedAt element)
+        return Some(f(element))
+    }
+    None
+  }
+
+  /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument and supproting passed message.
    */
-  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): List[ActorRef] =
+  def actorsFor[T <: Actor](message: Any)(implicit manifest: Manifest[T] ): Array[ActorRef] =
     filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass) && a.isDefinedAt(message))
 
   /**
    * Finds all actors that satisfy a predicate.
    */
-  def filter(p: ActorRef => Boolean): List[ActorRef] = {
+  def filter(p: ActorRef => Boolean): Array[ActorRef] = {
    val all = new ListBuffer[ActorRef]
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
@@ -69,37 +79,34 @@ object ActorRegistry extends ListenerManagement {
         all += actorId
       }
     }
-    all.toList
+    all.toArray
   }
 
   /**
    * Finds all actors that are subtypes of the class passed in as the Manifest argument.
    */
-  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): List[ActorRef] =
-    filter(a => manifest.erasure.isAssignableFrom(a.actor.getClass))
+  def actorsFor[T <: Actor](implicit manifest: Manifest[T]): Array[ActorRef] =
+    actorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
 
   /**
    * Finds any actor that matches T.
    */
   def actorFor[T <: Actor](implicit manifest: Manifest[T]): Option[ActorRef] =
-    actorsFor[T](manifest).headOption
+    find({ case a:ActorRef if manifest.erasure.isAssignableFrom(a.actor.getClass) => a })
 
   /**
-   * Finds all actors of the exact type specified by the class passed in as the Class argument.
+   * Finds all actors of type or sub-type specified by the class passed in as the Class argument.
    */
-  def actorsFor[T <: Actor](clazz: Class[T]): List[ActorRef] = {
-    if (actorsByClassName.containsKey(clazz.getName)) {
-      actorsByClassName.get(clazz.getName).toArray.toList.asInstanceOf[List[ActorRef]]
-    } else Nil
-  }
+  def actorsFor[T <: Actor](clazz: Class[T]): Array[ActorRef] =
+    filter(a => clazz.isAssignableFrom(a.actor.getClass))
 
   /**
    * Finds all actors that has a specific id.
    */
-  def actorsFor(id: String): List[ActorRef] = {
+  def actorsFor(id: String): Array[ActorRef] = {
     if (actorsById.containsKey(id)) {
-      actorsById.get(id).toArray.toList.asInstanceOf[List[ActorRef]]
-    } else Nil
+      actorsById.get(id).toArray(Naught)
+    } else Naught
   }
 
    /**
@@ -114,27 +121,22 @@ object ActorRegistry extends ListenerManagement {
    * Registers an actor in the ActorRegistry.
    */
   def register(actor: ActorRef) = {
-    // UUID
-    actorsByUUID.put(actor.uuid, actor)
-
     // ID
     val id = actor.id
     if (id eq null) throw new IllegalActorStateException("Actor.id is null " + actor)
-    if (actorsById.containsKey(id)) actorsById.get(id).add(actor)
+
+    val set = actorsById get id
+    if (set ne null) set add actor
     else {
-      val set = new ConcurrentSkipListSet[ActorRef](refComparator)
-      set.add(actor)
-      actorsById.put(id, set)
+      val newSet = new ConcurrentSkipListSet[ActorRef]
+      newSet add actor
+      val oldSet = actorsById.putIfAbsent(id,newSet)
+      // Parry for two simultaneous putIfAbsent(id,newSet)
+      if (oldSet ne null) oldSet add actor
     }
 
-    // Class name
-    val className = actor.actorClassName
-    if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).add(actor)
-    else {
-      val set = new ConcurrentSkipListSet[ActorRef](refComparator)
-      set.add(actor)
-      actorsByClassName.put(className, set)
-    }
+    // UUID
+    actorsByUUID.put(actor.uuid, actor)
 
     // notify listeners
     foreachListener(_ ! ActorRegistered(actor))
@@ -146,11 +148,10 @@ object ActorRegistry extends ListenerManagement {
   def unregister(actor: ActorRef) = {
     actorsByUUID remove actor.uuid
 
-    val id = actor.id
-    if (actorsById.containsKey(id)) actorsById.get(id).remove(actor)
+    val set = actorsById get actor.id
+    if (set ne null) set remove actor
 
-    val className = actor.actorClassName
-    if (actorsByClassName.containsKey(className)) actorsByClassName.get(className).remove(actor)
+    //FIXME: safely remove set if empty, leaks memory
 
     // notify listeners
     foreachListener(_ ! ActorUnregistered(actor))
@@ -159,12 +160,11 @@ object ActorRegistry extends ListenerManagement {
   /**
    * Shuts down and unregisters all actors in the system.
    */
-  def shutdownAll = {
+  def shutdownAll() {
     log.info("Shutting down all actors in the system...")
     foreach(_.stop)
     actorsByUUID.clear
     actorsById.clear
-    actorsByClassName.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
   }
 }

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.config.AbstractFactoryBean
 import se.scalablesolutions.akka.config.JavaConfig._
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
+import se.scalablesolutions.akka.actor.ActorRef
 import se.scalablesolutions.akka.dispatch.{ThreadPoolBuilder, Dispatchers, MessageDispatcher}
 import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor.{DiscardPolicy, DiscardOldestPolicy, CallerRunsPolicy, AbortPolicy}
@@ -15,17 +16,30 @@ import java.util.concurrent.ThreadPoolExecutor.{DiscardPolicy, DiscardOldestPoli
  * Reusable factory method for dispatchers.
  */
 object DispatcherFactoryBean {
-  def createNewInstance(properties: DispatcherProperties): MessageDispatcher = {
+
+  /**
+   * factory method for dispatchers
+   * @param properties dispatcher properties
+   * @param actorRef actorRef needed for thread based dispatcher
+   */
+  def createNewInstance(properties: DispatcherProperties, actorRef: Option[ActorRef] = None): MessageDispatcher = {
     var dispatcher = properties.dispatcherType match {
       case EXECUTOR_BASED_EVENT_DRIVEN => Dispatchers.newExecutorBasedEventDrivenDispatcher(properties.name)
+      case EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING => Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher(properties.name)
       case REACTOR_BASED_THREAD_POOL_EVENT_DRIVEN => Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(properties.name)
       case REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN => Dispatchers.newReactorBasedSingleThreadEventDrivenDispatcher(properties.name)
-      case THREAD_BASED => throw new IllegalArgumentException("not implemented yet") //FIXME
+      case THREAD_BASED => if (!actorRef.isDefined) {
+        throw new IllegalArgumentException("Need an ActorRef to create a thread based dispatcher.")
+      } else {
+        Dispatchers.newThreadBasedDispatcher(actorRef.get)
+      }
+      case HAWT => Dispatchers.newHawtDispatcher(properties.aggregate)
       case _ => throw new IllegalArgumentException("unknown dispatcher type")
     }
-   if ((properties.threadPool != null) && (properties.threadPool.queue != null)) {
-        var threadPoolBuilder = dispatcher.asInstanceOf[ThreadPoolBuilder]
-        threadPoolBuilder = properties.threadPool.queue match {
+    // build threadpool
+    if ((properties.threadPool != null) && (properties.threadPool.queue != null)) {
+      var threadPoolBuilder = dispatcher.asInstanceOf[ThreadPoolBuilder]
+      threadPoolBuilder = properties.threadPool.queue match {
         case VAL_BOUNDED_ARRAY_BLOCKING_QUEUE => threadPoolBuilder.withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(properties.threadPool.capacity, properties.threadPool.fairness)
         case VAL_UNBOUNDED_LINKED_BLOCKING_QUEUE => if (properties.threadPool.capacity > -1)
           threadPoolBuilder.withNewThreadPoolWithLinkedBlockingQueueWithCapacity(properties.threadPool.capacity)

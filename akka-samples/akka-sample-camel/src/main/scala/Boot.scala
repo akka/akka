@@ -7,7 +7,7 @@ import org.apache.camel.spring.spi.ApplicationContextRegistry
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import se.scalablesolutions.akka.actor.Actor._
-import se.scalablesolutions.akka.actor.{ActiveObject, Supervisor}
+import se.scalablesolutions.akka.actor.{TypedActor, Supervisor}
 import se.scalablesolutions.akka.camel.CamelContextManager
 import se.scalablesolutions.akka.config.ScalaConfig._
 
@@ -15,16 +15,6 @@ import se.scalablesolutions.akka.config.ScalaConfig._
  * @author Martin Krasser
  */
 class Boot {
-
-  // -----------------------------------------------------------------------
-  // Create CamelContext with Spring-based registry and custom route builder
-  // -----------------------------------------------------------------------
-
-  val context = new ClassPathXmlApplicationContext("/context-boot.xml", getClass)
-  val registry = new ApplicationContextRegistry(context)
-
-  CamelContextManager.init(new DefaultCamelContext(registry))
-  CamelContextManager.context.addRoutes(new CustomRouteBuilder)
 
   // -----------------------------------------------------------------------
   // Basic example
@@ -41,8 +31,16 @@ class Boot {
   //    Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
 
   // -----------------------------------------------------------------------
-  // Tranformer example
+  // Custom Camel route example
   // -----------------------------------------------------------------------
+
+  // Create CamelContext and a Spring-based registry
+  val context = new ClassPathXmlApplicationContext("/context-jms.xml", getClass)
+  val registry = new ApplicationContextRegistry(context)
+
+  // Use a custom Camel context and a custom touter builder
+  CamelContextManager.init(new DefaultCamelContext(registry))
+  CamelContextManager.context.addRoutes(new CustomRouteBuilder)
 
   val producer = actorOf[Producer1]
   val mediator = actorOf(new Transformer(producer))
@@ -53,11 +51,19 @@ class Boot {
   consumer.start
 
   // -----------------------------------------------------------------------
+  // Asynchronous consumer-producer example (Akka homepage transformation)
+  // -----------------------------------------------------------------------
+
+  val httpTransformer = actorOf(new HttpTransformer).start
+  val httpProducer = actorOf(new HttpProducer(httpTransformer)).start
+  val httpConsumer = actorOf(new HttpConsumer(httpProducer)).start
+
+  // -----------------------------------------------------------------------
   // Publish subscribe examples
   // -----------------------------------------------------------------------
 
   //
-  // Cometd example commented out because camel-cometd is broken in Camel 2.3
+  // Cometd example commented out because camel-cometd is broken since Camel 2.3
   //
 
   //val cometdUri = "cometd://localhost:8111/test/abc?baseResource=file:target"
@@ -80,18 +86,10 @@ class Boot {
   actorOf[Consumer5].start // POSTing any msg to http://0.0.0.0:8877/camel/start starts and published Consumer4 again.
 
   // -----------------------------------------------------------------------
-  // Non-blocking consumer-producer example (Akka homepage transformation)
-  // -----------------------------------------------------------------------
-
-  val nbResponder = actorOf(new HttpTransformer).start
-  val nbProducer = actorOf(new HttpProducer(nbResponder)).start
-  val nbConsumer = actorOf(new HttpConsumer(nbProducer)).start
-
-  // -----------------------------------------------------------------------
   // Active object example
   // -----------------------------------------------------------------------
 
-  ActiveObject.newInstance(classOf[ConsumerPojo1])
+  TypedActor.newInstance(classOf[TypedConsumer1], classOf[TypedConsumer1Impl])
 }
 
 /**

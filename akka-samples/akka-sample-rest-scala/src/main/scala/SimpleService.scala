@@ -16,7 +16,7 @@ import java.lang.Integer
 import java.nio.ByteBuffer
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.{GET, POST, Path, Produces, WebApplicationException, Consumes,PathParam}
-import se.scalablesolutions.akka.actor.ActorRegistry.actorsFor
+import se.scalablesolutions.akka.actor.ActorRegistry.actorFor
 import org.atmosphere.annotation.{Broadcast, Suspend,Cluster}
 import org.atmosphere.util.XSSHtmlFilter
 import org.atmosphere.cpr.{Broadcaster, BroadcastFilter}
@@ -53,7 +53,7 @@ class SimpleService {
   def count = {
     //Fetch the first actor of type SimpleServiceActor
     //Send it the "Tick" message and expect a NodeSeq back
-    val result = for{a <- actorsFor(classOf[SimpleServiceActor]).headOption
+    val result = for{a <- actorFor[SimpleServiceActor]
                      r <- (a !! "Tick").as[NodeSeq]} yield r
     //Return either the resulting NodeSeq or a default one
     result getOrElse <error>Error in counter</error>
@@ -108,7 +108,7 @@ class PersistentSimpleService {
   def count = {
     //Fetch the first actor of type PersistentSimpleServiceActor
     //Send it the "Tick" message and expect a NodeSeq back
-    val result = for{a <- actorsFor(classOf[PersistentSimpleServiceActor]).headOption
+    val result = for{a <- actorFor[PersistentSimpleServiceActor]
                      r <- (a !! "Tick").as[NodeSeq]} yield r
     //Return either the resulting NodeSeq or a default one
     result getOrElse <error>Error in counter</error>
@@ -155,7 +155,7 @@ class Chat {
     val msg = ChatMsg(form.getFirst("name"),form.getFirst("action"),form.getFirst("message"))
     //Fetch the first actor of type ChatActor
     //Send it the "Tick" message and expect a NodeSeq back
-    val result = for{a <- actorsFor(classOf[ChatActor]).headOption
+    val result = for{a <- actorFor[ChatActor]
                      r <- (a !! msg).as[String]} yield r
     //Return either the resulting String or a default one
     result getOrElse "System__error"

@@ -9,10 +9,15 @@ import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
-import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.util.{Logging, Duration}
+import se.scalablesolutions.akka.AkkaException
 
 import com.google.protobuf.Message
+
 import java.util.concurrent.TimeUnit
+import java.net.InetSocketAddress
+
+import scala.reflect.BeanProperty
 
 /**
  * Implements the Transactor abstraction. E.g. a transactional actor.
@@ -32,29 +37,42 @@ trait Transactor extends Actor {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class RemoteActor(hostname: String, port: Int) extends Actor {
-  self.makeRemote(hostname, port)
+abstract class RemoteActor(address: InetSocketAddress) extends Actor {
+  def this(hostname: String, port: Int) = this(new InetSocketAddress(hostname, port))
+  self.makeRemote(address)
 }
 
 /**
  * Life-cycle messages for the Actors
  */
 @serializable sealed trait LifeCycleMessage
+
 case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
+
 case class Restart(reason: Throwable) extends LifeCycleMessage
+
 case class Exit(dead: ActorRef, killer: Throwable) extends LifeCycleMessage
+
 case class Link(child: ActorRef) extends LifeCycleMessage
+
 case class Unlink(child: ActorRef) extends LifeCycleMessage
+
 case class UnlinkAndStop(child: ActorRef) extends LifeCycleMessage
+
 case object ReceiveTimeout extends LifeCycleMessage
+
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
-  victim: ActorRef, maxNrOfRetries: Int, withinTimeRange: Int, lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
+  @BeanProperty val victim: ActorRef,
+  @BeanProperty val maxNrOfRetries: Int,
+  @BeanProperty val withinTimeRange: Int,
+  @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException private[akka](message: String) extends RuntimeException(message)
-class IllegalActorStateException private[akka](message: String) extends RuntimeException(message)
-class ActorKilledException private[akka](message: String) extends RuntimeException(message)
-class ActorInitializationException private[akka](message: String) extends RuntimeException(message)
+class ActorStartException private[akka](message: String) extends AkkaException(message)
+class IllegalActorStateException private[akka](message: String) extends AkkaException(message)
+class ActorKilledException private[akka](message: String) extends AkkaException(message)
+class ActorInitializationException private[akka](message: String) extends AkkaException(message)
+class ActorTimeoutException private[akka](message: String) extends AkkaException(message)
 
 /**
  * Actor factory module with factory methods for creating various kinds of Actors.
@@ -62,7 +80,7 @@ class ActorInitializationException private[akka](message: String) extends Runtim
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Actor extends Logging {
-  val TIMEOUT = config.getInt("akka.actor.timeout", 5000)
+  val TIMEOUT = Duration(config.getInt("akka.actor.timeout", 5), TIME_UNIT).toMillis
   val SERIALIZE_MESSAGES = config.getBool("akka.actor.serialize-messages", false)
 
   /**
@@ -74,7 +92,7 @@ object Actor extends Logging {
   private[actor] val actorRefInCreation = new scala.util.DynamicVariable[Option[ActorRef]](None)
 
   /**
-   * Creates a Actor.actorOf out of the Actor with type T.
+   * Creates an ActorRef out of the Actor with type T.
    * <pre>
    *   import Actor._
    *   val actor = actorOf[MyActor]
@@ -87,10 +105,27 @@ object Actor extends Logging {
    *   val actor = actorOf[MyActor].start
    * </pre>
    */
-  def actorOf[T <: Actor : Manifest]: ActorRef = new LocalActorRef(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor : Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
-   * Creates a Actor.actorOf out of the Actor. Allows you to pass in a factory function
+     * Creates an ActorRef out of the Actor with type T.
+     * <pre>
+     *   import Actor._
+     *   val actor = actorOf[MyActor]
+     *   actor.start
+     *   actor ! message
+     *   actor.stop
+     * </pre>
+     * You can create and start the actor in one statement like this:
+     * <pre>
+     *   val actor = actorOf[MyActor].start
+     * </pre>
+     */
+    def actorOf(clazz: Class[_ <: Actor]): ActorRef = new LocalActorRef(clazz)
+
+
+  /**
+   * Creates an ActorRef out of the Actor. Allows you to pass in a factory function
    * that creates the Actor. Please note that this function can be invoked multiple
    * times if for example the Actor is supervised and needs to be restarted.
    * <p/>
@@ -221,7 +256,7 @@ object Actor extends Logging {
     case object Spawn
     actorOf(new Actor() {
       def receive = {
-        case Spawn => body; self.stop
+        case Spawn => try { body } finally { self.stop }
       }
     }).start ! Spawn
   }
@@ -292,15 +327,14 @@ trait Actor extends Logging {
   type Receive = Actor.Receive
 
   /*
-  * Option[ActorRef] representation of the 'self' ActorRef reference.
-  * <p/>
-  * Mainly for internal use, functions as the implicit sender references when invoking
-  * one of the message send functions ('!', '!!' and '!!!').
-  */
-  @transient implicit val optionSelf: Option[ActorRef] = {
-    val ref = Actor.actorRefInCreation.value
-    Actor.actorRefInCreation.value = None
-    if (ref.isEmpty) throw new ActorInitializationException(
+   * Some[ActorRef] representation of the 'self' ActorRef reference.
+   * <p/>
+   * Mainly for internal use, functions as the implicit sender references when invoking
+   * the 'forward' function.
+   */
+  @transient implicit val someSelf: Some[ActorRef] = {
+    val optRef = Actor.actorRefInCreation.value
+    if (optRef.isEmpty) throw new ActorInitializationException(
       "ActorRef for instance of actor [" + getClass.getName + "] is not in scope." +
       "\n\tYou can not create an instance of an actor explicitly using 'new MyActor'." +
       "\n\tYou have to use one of the factory methods in the 'Actor' object to create a new actor." +
@@ -308,16 +342,19 @@ trait Actor extends Logging {
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
       "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
-    else ref
+    
+     val ref = optRef.asInstanceOf[Some[ActorRef]].get
+     ref.id = getClass.getName //FIXME: Is this needed?
+     optRef.asInstanceOf[Some[ActorRef]]
   }
 
-  /*
-   * Some[ActorRef] representation of the 'self' ActorRef reference.
+   /*
+   * Option[ActorRef] representation of the 'self' ActorRef reference.
    * <p/>
    * Mainly for internal use, functions as the implicit sender references when invoking
-   * the 'forward' function.
+   * one of the message send functions ('!', '!!' and '!!!').
    */
-  @transient implicit val someSelf: Some[ActorRef] = optionSelf.asInstanceOf[Some[ActorRef]]
+  implicit def optionSelf: Option[ActorRef] = someSelf
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -346,11 +383,7 @@ trait Actor extends Logging {
    * self.stop(..)
    * </pre>
    */
-  @transient val self: ActorRef = {
-    val zelf = optionSelf.get
-    zelf.id = getClass.getName
-    zelf
-  }
+  @transient val self: ScalaActorRef = someSelf.get
 
   /**
    * User overridable callback/setting.
@@ -413,26 +446,45 @@ trait Actor extends Logging {
   /**
    * Is the actor able to handle the message passed in as arguments?
    */
-  def isDefinedAt(message: Any): Boolean = base.isDefinedAt(message)
+  def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
+
+  /** One of the fundamental methods of the ActorsModel
+   * Actor assumes a new behavior,
+   * None reverts the current behavior to the original behavior
+   */
+  def become(behavior: Option[Receive]) {
+    self.hotswap = behavior
+    self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
+  }
+
+  /** Akka Java API
+   * One of the fundamental methods of the ActorsModel
+   * Actor assumes a new behavior,
+   * null reverts the current behavior to the original behavior
+   */
+  def become(behavior: Receive): Unit = become(Option(behavior))
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
+  
+  private[akka] def apply(msg: Any) = processingBehavior(msg)
 
-  private[akka] def base: Receive = try {
-    lifeCycles orElse (self.hotswap getOrElse receive)
-  } catch {
-    case e: NullPointerException => throw new IllegalActorStateException(
-      "The 'self' ActorRef reference for [" + getClass.getName + "] is NULL, error in the ActorRef initialization process.")
-  }
-
-  private val lifeCycles: Receive = {
-    case HotSwap(code) => self.hotswap = code; self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
-    case Exit(dead, reason) => self.handleTrapExit(dead, reason)
-    case Link(child) => self.link(child)
-    case Unlink(child) => self.unlink(child)
-    case UnlinkAndStop(child) => self.unlink(child); child.stop
-    case Restart(reason) => throw reason
+  private lazy val processingBehavior: Receive = {
+    lazy val defaultBehavior = receive
+    val actorBehavior: Receive = {
+      case HotSwap(code)                 => become(code)
+      case Exit(dead, reason)            => self.handleTrapExit(dead, reason)
+      case Link(child)                   => self.link(child)
+      case Unlink(child)                 => self.unlink(child)
+      case UnlinkAndStop(child)          => self.unlink(child); child.stop
+      case Restart(reason)               => throw reason
+      case msg if self.hotswap.isDefined &&
+                  self.hotswap.get.isDefinedAt(msg) => self.hotswap.get.apply(msg)
+      case msg if self.hotswap.isEmpty   &&
+                  defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg) 
+    }
+    actorBehavior
   }
 }
 

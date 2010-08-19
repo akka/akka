@@ -13,19 +13,19 @@ object AkkaSpringConfigurationTags {
   // --- TAGS
   //
   // top level tags
-  val ACTIVE_OBJECT_TAG = "active-object"
+  val TYPED_ACTOR_TAG = "typed-actor"
+  val UNTYPED_ACTOR_TAG = "untyped-actor"
   val SUPERVISION_TAG = "supervision"
   val DISPATCHER_TAG = "dispatcher"
   val PROPERTYENTRY_TAG = "property"
   val CAMEL_SERVICE_TAG = "camel-service"
 
-  // active-object sub tags
-  val RESTART_CALLBACKS_TAG = "restart-callbacks"
-  val SHUTDOWN_CALLBACK_TAG = "shutdown-callback"
+  // actor sub tags
   val REMOTE_TAG = "remote"
 
   // superivision sub tags
-  val ACTIVE_OBJECTS_TAG = "active-objects"
+  val TYPED_ACTORS_TAG = "typed-actors"
+  val UNTYPED_ACTORS_TAG = "untyped-actors"
   val STRATEGY_TAG = "restart-strategy"
   val TRAP_EXISTS_TAG = "trap-exits"
   val TRAP_EXIT_TAG = "trap-exit"
@@ -38,16 +38,13 @@ object AkkaSpringConfigurationTags {
 
   // --- ATTRIBUTES
   //
-  // active object attributes
+  // actor attributes
   val TIMEOUT = "timeout"
-  val TARGET = "target"
+  val IMPLEMENTATION = "implementation"
   val INTERFACE = "interface"
   val TRANSACTIONAL = "transactional"
   val HOST = "host"
   val PORT = "port"
-  val PRE_RESTART = "pre"
-  val POST_RESTART = "post"
-  val SHUTDOWN = "shutdown"
   val LIFECYCLE = "lifecycle"
   val SCOPE = "scope"
 
@@ -60,6 +57,7 @@ object AkkaSpringConfigurationTags {
   val NAME = "name"
   val REF = "ref"
   val TYPE = "type"
+  val AGGREGATE = "aggregate"  // HawtDispatcher
 
   // thread pool attributes
   val QUEUE = "queue"
@@ -98,8 +96,10 @@ object AkkaSpringConfigurationTags {
 
   // dispatcher types
   val EXECUTOR_BASED_EVENT_DRIVEN = "executor-based-event-driven"
+  val EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING = "executor-based-event-driven-work-stealing"
   val REACTOR_BASED_THREAD_POOL_EVENT_DRIVEN = "reactor-based-thread-pool-event-driven"
   val REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN = "reactor-based-single-thread-event-driven"
   val THREAD_BASED = "thread-based"
+  val HAWT = "hawt"
 
 }

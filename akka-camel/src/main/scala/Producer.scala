@@ -9,14 +9,14 @@ import CamelMessageConversion.toExchangeAdapter
 import org.apache.camel._
 import org.apache.camel.processor.SendProcessor
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, UntypedActor}
 
 /**
- * Mixed in by Actor implementations that produce messages to Camel endpoints.
+ * Support trait for producing messages to Camel endpoints.
  *
  * @author Martin Krasser
  */
-trait Producer { this: Actor =>
+trait ProducerSupport { this: Actor =>
 
   /**
    * Message headers to copy by default from request message to response-message.
@@ -142,11 +142,6 @@ trait Producer { this: Actor =>
   }
 
   /**
-   * Default implementation of Actor.receive
-   */
-  protected def receive = produce
-
-  /**
    * Creates a new Exchange with given <code>pattern</code> from the endpoint specified by
    * <code>endpointUri</code>.
    */
@@ -161,6 +156,78 @@ trait Producer { this: Actor =>
     sendProcessor
   }
 }
+
+/**
+ * Mixed in by Actor implementations that produce messages to Camel endpoints.
+ */
+trait Producer extends ProducerSupport { this: Actor =>
+
+  /**
+   * Default implementation of Actor.receive
+   */
+  protected def receive = produce
+}
+
+/**
+ * Java-friendly {@link ProducerSupport} inherited by {@link UntypedProducerActor} implementations.
+ * 
+ * @author Martin Krasser
+ */
+trait UntypedProducer extends ProducerSupport { this: UntypedActor =>
+
+  final override def endpointUri = getEndpointUri
+
+  final override def oneway = isOneway
+
+  final override def receiveBeforeProduce = {
+    case msg => onReceiveBeforeProduce(msg)
+  }
+
+  final override def receiveAfterProduce = {
+    case msg => onReceiveAfterProduce(msg)
+  }
+
+  /**
+   * Default implementation of UntypedActor.onReceive
+   */
+  def onReceive(message: Any) = produce(message)
+
+  /**
+   * Returns the Camel endpoint URI to produce messages to.
+   */
+  def getEndpointUri(): String
+
+  /**
+   * If set to false (default), this producer expects a response message from the Camel endpoint.
+   * If set to true, this producer communicates with the Camel endpoint with an in-only message
+   * exchange pattern (fire and forget).
+   */
+  def isOneway() = super.oneway
+
+  /**
+   * Called before the message is sent to the endpoint specified by <code>getEndpointUri</code>. The original
+   * message is passed as argument. By default, this method simply returns the argument but may be overridden
+   * by subclasses.
+   */
+  @throws(classOf[Exception])
+  def onReceiveBeforeProduce(message: Any): Any = super.receiveBeforeProduce(message)
+
+  /**
+   * Called after the a result was received from the endpoint specified by <code>getEndpointUri</code>. The
+   * result is passed as argument. By default, this method replies the result back to the original sender
+   * if <code>isOneway</code> returns false. If <code>isOneway</code> returns true then nothing is done. This
+   * method may be overridden by subclasses.
+   */
+  @throws(classOf[Exception])
+  def onReceiveAfterProduce(message: Any): Unit = super.receiveAfterProduce(message)
+}
+
+/**
+ * Subclass this abstract class to create an untyped producer actor. This class is meant to be used from Java.
+ *
+ * @author Martin Krasser
+ */
+abstract class UntypedProducerActor extends UntypedActor with UntypedProducer
 
 /**
  * @author Martin Krasser
