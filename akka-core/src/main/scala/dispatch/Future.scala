@@ -4,11 +4,12 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import java.util.concurrent.locks.ReentrantLock
+import se.scalablesolutions.akka.AkkaException
 
+import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
 
-class FutureTimeoutException(message: String) extends RuntimeException(message)
+class FutureTimeoutException(message: String) extends AkkaException(message)
 
 object Futures {
 

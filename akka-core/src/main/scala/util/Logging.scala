@@ -35,13 +35,13 @@ trait Logging {
  * http://download-llnw.oracle.com/javase/6/docs/api/java/lang/String.html#format(java.lang.String,%20java.lang.Object...)
  */
 class Logger(val logger: SLFLogger) {
-  def name       = logger.getName
+  def name      = logger.getName
 
-  def trace_?    = logger.isTraceEnabled
-  def debug_?    = logger.isDebugEnabled
-  def info_?     = logger.isInfoEnabled
-  def warning_?  = logger.isWarnEnabled
-  def error_?    = logger.isErrorEnabled
+  def trace_?   = logger.isTraceEnabled
+  def debug_?   = logger.isDebugEnabled
+  def info_?    = logger.isInfoEnabled
+  def warning_? = logger.isWarnEnabled
+  def error_?   = logger.isErrorEnabled
 
   //Trace
   def trace(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
@@ -59,6 +59,7 @@ class Logger(val logger: SLFLogger) {
   def trace(msg: => String) {
      if (trace_?) logger trace msg
   }
+
   //Debug
   def debug(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     debug(t,message(fmt,arg,argN:_*))
@@ -75,6 +76,7 @@ class Logger(val logger: SLFLogger) {
   def debug(msg: => String) {
      if (debug_?) logger debug msg
   }
+
   //Info
   def info(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     info(t,message(fmt,arg,argN:_*))
@@ -91,6 +93,7 @@ class Logger(val logger: SLFLogger) {
   def info(msg: => String) {
      if (info_?) logger info msg
   }
+
   //Warning
   def warning(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     warning(t,message(fmt,arg,argN:_*))
@@ -107,6 +110,7 @@ class Logger(val logger: SLFLogger) {
   def warning(msg: => String) {
      if (warning_?) logger warn msg
   }
+
   //Error
   def error(t: Throwable, fmt: => String, arg: Any, argN: Any*) {
     error(t,message(fmt,arg,argN:_*))
@@ -155,54 +159,4 @@ object Logger {
   def apply(logger: String)  : Logger = new Logger(SLFLoggerFactory getLogger logger)
   def apply(clazz: Class[_]) : Logger = apply(clazz.getName)
   def root                   : Logger = apply(SLFLogger.ROOT_LOGGER_NAME)
-}
-
-/**
- * LoggableException is a subclass of Exception and can be used as the base exception
- * for application specific exceptions.
- * <p/>
- * It keeps track of the exception is logged or not and also stores the unique id,
- * so that it can be carried all along to the client tier and displayed to the end user.
- * The end user can call up the customer support using this number.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
- // FIXME make use of LoggableException
-class LoggableException extends Exception with Logging {
-  private val uniqueId = getExceptionID
-  private var originalException: Option[Exception] = None
-  private var isLogged = false
-
-  def this(baseException: Exception) = {
-    this()
-    originalException = Some(baseException)
-  }
-
-  def logException = synchronized {
-    if (!isLogged) {
-      originalException match {
-        case Some(e) => log.error("Logged Exception [%s] %s", uniqueId, getStackTraceAsString(e))
-        case None => log.error("Logged Exception [%s] %s", uniqueId, getStackTraceAsString(this))
-      }
-      isLogged = true
-    }
-  }
-
-  private def getExceptionID: String = {
-    val hostname: String = try {
-      InetAddress.getLocalHost.getHostName
-    } catch {
-      case e: UnknownHostException =>
-        log.error("Could not get hostname to generate loggable exception")
-        "N/A"
-    }
-    hostname + "_" + System.currentTimeMillis
-  }
-
-  private def getStackTraceAsString(exception: Throwable): String = {
-    val sw = new StringWriter
-    val pw = new PrintWriter(sw)
-    exception.printStackTrace(pw)
-    sw.toString
-  }
 }

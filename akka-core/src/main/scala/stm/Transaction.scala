@@ -13,15 +13,16 @@ import scala.collection.mutable.HashMap
 
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.AkkaException
 
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.api.{TraceLevel => MultiverseTraceLevel}
 
-class NoTransactionInScopeException extends RuntimeException
-class TransactionRetryException(message: String) extends RuntimeException(message)
-class StmConfigurationException(message: String) extends RuntimeException(message)
+class NoTransactionInScopeException extends AkkaException("No transaction in scope")
+class TransactionRetryException(message: String) extends AkkaException(message)
+class StmConfigurationException(message: String) extends AkkaException(message)
 
 object Transaction {
   val idFactory = new AtomicLong(-1L)

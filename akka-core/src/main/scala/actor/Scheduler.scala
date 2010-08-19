@@ -15,10 +15,11 @@
  */
 package se.scalablesolutions.akka.actor
 
-import _root_.scala.collection.JavaConversions
+import scala.collection.JavaConversions
 import java.util.concurrent._
 
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.AkkaException
 
 object Scheduler extends Logging {
   import Actor._

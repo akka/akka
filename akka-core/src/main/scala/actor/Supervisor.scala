@@ -8,12 +8,13 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.remote.RemoteServer
+import se.scalablesolutions.akka.AkkaException
 import Actor._
 
 import java.util.concurrent.{CopyOnWriteArrayList, ConcurrentHashMap}
 import java.net.InetSocketAddress
 
-class SupervisorException private[akka](message: String) extends RuntimeException(message)
+class SupervisorException private[akka](message: String) extends AkkaException(message)
 
 /**
  * Factory object for creating supervisors declarative. It creates instances of the 'Supervisor' class.

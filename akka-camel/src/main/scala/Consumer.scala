@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.camel
 
 import se.scalablesolutions.akka.actor._
+
 import java.net.InetSocketAddress
 
 /**

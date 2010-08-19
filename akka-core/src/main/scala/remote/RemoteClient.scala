@@ -8,6 +8,7 @@ import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, RemoteActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.AkkaException
 
 import org.jboss.netty.channel._
 import group.DefaultChannelGroup
@@ -55,7 +56,7 @@ case class RemoteClientConnected(
   @BeanProperty val host: String, 
   @BeanProperty val port: Int) extends RemoteClientLifeCycleEvent
 
-class RemoteClientException private[akka](message: String) extends RuntimeException(message)
+class RemoteClientException private[akka](message: String) extends AkkaException(message)
 
 /**
  * The RemoteClient object manages RemoteClient instances and gives you an API to lookup remote actor handles.
