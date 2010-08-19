@@ -5,6 +5,8 @@
 package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.ActorRef
+import se.scalablesolutions.akka.AkkaException
+
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.ShutdownSignalException
 

@@ -15,14 +15,13 @@ import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
 import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message}
+import CamelMessageConversion.toExchangeAdapter
 import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 import se.scalablesolutions.akka.stm.TransactionConfig
+import se.scalablesolutions.akka.actor.{ScalaActorRef, ActorRegistry, Actor, ActorRef}
+import se.scalablesolutions.akka.AkkaException
 
 import scala.reflect.BeanProperty
-
-import CamelMessageConversion.toExchangeAdapter
-import java.lang.Throwable
-import se.scalablesolutions.akka.actor.{ScalaActorRef, ActorRegistry, Actor, ActorRef}
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.

@@ -18,6 +18,7 @@ deploy/*.jar
 data
 out
 logs
+.#*
 .codefellow
 storage
 .codefellow
