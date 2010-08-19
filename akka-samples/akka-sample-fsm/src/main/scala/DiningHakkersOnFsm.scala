@@ -21,7 +21,7 @@ case class TakenBy(hakker: Option[ActorRef])
 /*
  * A chopstick is an actor, it can be taken, and put back
  */
-class Blade(name: String) extends Actor with Fsm[TakenBy] {
+class Chopstick(name: String) extends Actor with Fsm[TakenBy] {
   self.id = name
 
   // A chopstick begins its existence as available and taken by no one
@@ -141,7 +141,7 @@ class FsmHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
 object DiningHakkersOnFsm {
   def run {
     // Create 5 chopsticks
-    val chopsticks = for (i <- 1 to 5) yield actorOf(new Blade("Chopstick " + i)).start
+    val chopsticks = for (i <- 1 to 5) yield actorOf(new Chopstick("Chopstick " + i)).start
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for{
       (name, i) <- List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
