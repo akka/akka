@@ -11,6 +11,7 @@ import javax.naming.{InitialContext, Context, NamingException}
 
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.AkkaException
 
 /**
  * Detects if there is a UserTransaction or TransactionManager available in the JNDI.

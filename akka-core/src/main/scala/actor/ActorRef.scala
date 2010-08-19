@@ -15,6 +15,7 @@ import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.{RemoteNode, RemoteServer, RemoteClient, MessageSerializer, RemoteRequestProtocolIdFactory}
 import se.scalablesolutions.akka.serialization.{Serializer, BinaryString}
 import se.scalablesolutions.akka.util.{HashCode, Logging, UUID, ReentrantGuard}
+import se.scalablesolutions.akka.AkkaException
 import RemoteActorSerialization._
 
 import org.multiverse.api.ThreadLocalTransaction._

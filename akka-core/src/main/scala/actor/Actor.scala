@@ -10,6 +10,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.serialization.Serializer
 import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
 import se.scalablesolutions.akka.util.{Logging, Duration}
+import se.scalablesolutions.akka.AkkaException
 
 import com.google.protobuf.Message
 
@@ -67,11 +68,11 @@ case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors
-class ActorStartException private[akka](message: String) extends RuntimeException(message)
-class IllegalActorStateException private[akka](message: String) extends RuntimeException(message)
-class ActorKilledException private[akka](message: String) extends RuntimeException(message)
-class ActorInitializationException private[akka](message: String) extends RuntimeException(message)
-class ActorTimeoutException private[akka](message: String) extends RuntimeException(message)
+class ActorStartException private[akka](message: String) extends AkkaException(message)
+class IllegalActorStateException private[akka](message: String) extends AkkaException(message)
+class ActorKilledException private[akka](message: String) extends AkkaException(message)
+class ActorInitializationException private[akka](message: String) extends AkkaException(message)
+class ActorTimeoutException private[akka](message: String) extends AkkaException(message)
 
 /**
  * Actor factory module with factory methods for creating various kinds of Actors.

@@ -5,10 +5,11 @@
 package se.scalablesolutions.akka.config
 
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.AkkaException
 
 import net.lag.configgy.{Config => CConfig, Configgy, ParseException}
 
-class ConfigurationException(message: String) extends RuntimeException(message)
+class ConfigurationException(message: String) extends AkkaException(message)
 
 /**
  * Loads up the configuration (from the akka.conf file).

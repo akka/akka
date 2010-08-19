@@ -6,8 +6,6 @@ package se.scalablesolutions.akka.util
 
 import java.security.MessageDigest
 
-class SystemFailure(cause: Throwable) extends RuntimeException(cause)
-
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
