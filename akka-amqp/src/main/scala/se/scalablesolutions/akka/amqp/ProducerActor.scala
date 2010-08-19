@@ -5,7 +5,9 @@
 package se.scalablesolutions.akka.amqp
 
 import com.rabbitmq.client._
+
 import se.scalablesolutions.akka.amqp.AMQP.ProducerParameters
+import se.scalablesolutions.akka.AkkaException
 
 private[amqp] class ProducerActor(producerParameters: ProducerParameters)
     extends FaultTolerantChannelActor(

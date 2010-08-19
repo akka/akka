@@ -4,18 +4,15 @@
 
 package se.scalablesolutions.akka.stm
 
+import se.scalablesolutions.akka.AkkaException
+
 import org.multiverse.api.{StmUtils => MultiverseStmUtils}
 import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.templates.OrElseTemplate
 
-class TransactionSetAbortedException(msg: String) extends RuntimeException(msg)
-
-// TODO Should we remove TransactionAwareWrapperException? Not used anywhere yet.
-class TransactionAwareWrapperException(val cause: Throwable, val tx: Option[Transaction]) extends RuntimeException(cause) {
-  override def toString = "TransactionAwareWrapperException[" + cause + ", " + tx + "]"
-}
+class TransactionSetAbortedException(msg: String) extends AkkaException(msg)
 
 /**
  * Internal helper methods and properties for transaction management.

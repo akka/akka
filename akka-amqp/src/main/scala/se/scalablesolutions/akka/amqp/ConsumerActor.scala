@@ -4,13 +4,15 @@
 
 package se.scalablesolutions.akka.amqp
 
-import com.rabbitmq.client.AMQP.Queue.DeclareOk
 import collection.JavaConversions
+
 import se.scalablesolutions.akka.amqp.AMQP.ConsumerParameters
 import se.scalablesolutions.akka.util.Logging
-import com.rabbitmq.client.{Channel, Envelope, DefaultConsumer}
+import se.scalablesolutions.akka.AkkaException
+
+import com.rabbitmq.client.AMQP.Queue.DeclareOk
 import com.rabbitmq.client.AMQP.BasicProperties
-import java.lang.Throwable
+import com.rabbitmq.client.{Channel, Envelope, DefaultConsumer}
 
 private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     extends FaultTolerantChannelActor(
