@@ -77,7 +77,7 @@ object RemoteServer {
   }
 
   val SECURE = {
-    if (config.getBool("akka.remote.ssl.service",false)) {
+    /*if (config.getBool("akka.remote.ssl.service",false)) {
       val properties = List(
         ("key-store-type"  , "keyStoreType"),
         ("key-store"       , "keyStore"),
@@ -95,7 +95,7 @@ object RemoteServer {
       
       if (config.getBool("akka.remote.ssl.debug", false)) System.setProperty("javax.net.debug","ssl")
       true
-    } else false
+    } else */false
   }
 
   object Address {
