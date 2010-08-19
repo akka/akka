@@ -20,6 +20,8 @@ http://camel.apache.org/schema/spring/camel-spring.xsd">
     <akka:camel-context ref="camelContext" />
   </akka:camel-service>
 
-  <akka:active-object id="sample" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000" />
-
+  <akka:typed-actor id="sample" 
+                      interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
+                      implementation="se.scalablesolutions.akka.spring.SampleBean" 
+                      timeout="1000" />
 </beans>

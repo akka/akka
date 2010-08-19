@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
-import se.scalablesolutions.akka.config.Config.config
+import se.scalablesolutions.akka.config.Config._
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -22,8 +22,11 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
+import org.jboss.netty.handler.ssl.SslHandler
+
 
 import scala.collection.mutable.Map
+import reflect.BeanProperty
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -55,7 +58,7 @@ object RemoteNode extends RemoteServer
 
 /**
  * For internal use only.
- * Holds configuration variables, remote actors, remote active objects and remote servers.
+ * Holds configuration variables, remote actors, remote typed actors and remote servers.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -63,7 +66,7 @@ object RemoteServer {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 9999)
 
-  val CONNECTION_TIMEOUT_MILLIS = config.getInt("akka.remote.server.connection-timeout", 1000)
+  val CONNECTION_TIMEOUT_MILLIS = Duration(config.getInt("akka.remote.server.connection-timeout", 1), TIME_UNIT)
 
   val COMPRESSION_SCHEME = config.getString("akka.remote.compression-scheme", "zlib")
   val ZLIB_COMPRESSION_LEVEL = {
@@ -73,9 +76,32 @@ object RemoteServer {
     level
   }
 
+  val SECURE = {
+    /*if (config.getBool("akka.remote.ssl.service",false)) {
+      val properties = List(
+        ("key-store-type"  , "keyStoreType"),
+        ("key-store"       , "keyStore"),
+        ("key-store-pass"  , "keyStorePassword"),
+        ("trust-store-type", "trustStoreType"),
+        ("trust-store"     , "trustStore"),
+        ("trust-store-pass", "trustStorePassword")
+        ).map(x => ("akka.remote.ssl." + x._1, "javax.net.ssl." + x._2))
+
+      // If property is not set, and we have a value from our akka.conf, use that value
+      for { 
+        p <- properties if System.getProperty(p._2) eq null
+        c <- config.getString(p._1)
+      } System.setProperty(p._2, c)
+      
+      if (config.getBool("akka.remote.ssl.debug", false)) System.setProperty("javax.net.debug","ssl")
+      true
+    } else */false
+  }
+
   object Address {
     def apply(hostname: String, port: Int) = new Address(hostname, port)
   }
+  
   class Address(val hostname: String, val port: Int) {
     override def hashCode: Int = {
       var result = HashCode.SEED
@@ -92,8 +118,8 @@ object RemoteServer {
   }
 
   private class RemoteActorSet {
-    private[RemoteServer] val actors =        new ConcurrentHashMap[String, ActorRef]
-    private[RemoteServer] val activeObjects = new ConcurrentHashMap[String, AnyRef]
+    private[RemoteServer] val actors = new ConcurrentHashMap[String, ActorRef]
+    private[RemoteServer] val typedActors = new ConcurrentHashMap[String, AnyRef]
   }
 
   private val guard = new ReadWriteGuard
@@ -104,8 +130,8 @@ object RemoteServer {
     actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
   }
 
-  private[akka] def registerActiveObject(address: InetSocketAddress, name: String, activeObject: AnyRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).activeObjects.put(name, activeObject)
+  private[akka] def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef) = guard.withWriteGuard {
+    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(name, typedActor)
   }
 
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
@@ -136,6 +162,28 @@ object RemoteServer {
 }
 
 /**
+ * Life-cycle events for RemoteServer.
+ */
+sealed trait RemoteServerLifeCycleEvent
+case class RemoteServerError(
+  @BeanProperty val cause: Throwable,
+  @BeanProperty val host: String,
+  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
+case class RemoteServerShutdown(
+  @BeanProperty val host: String,
+  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
+case class RemoteServerStarted(
+  @BeanProperty val host: String,
+  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
+/*FIXME NOT SUPPORTED YET
+  case class RemoteServerClientConnected(
+  @BeanProperty val host: String,
+  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientDisconnected(
+  @BeanProperty val host: String,
+  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent*/
+
+/**
  * Use this class if you need a more than one remote server on a specific node.
  *
  * <pre>
@@ -151,11 +199,11 @@ object RemoteServer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteServer extends Logging {
+class RemoteServer extends Logging with ListenerManagement {
   val name = "RemoteServer@" + hostname + ":" + port
 
-  private var hostname = RemoteServer.HOSTNAME
-  private var port =     RemoteServer.PORT
+  private[akka] var hostname = RemoteServer.HOSTNAME
+  private[akka] var port =     RemoteServer.PORT
 
   @volatile private var _isRunning = false
 
@@ -197,18 +245,21 @@ class RemoteServer extends Logging {
         RemoteServer.register(hostname, port, this)
         val remoteActorSet = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
         val pipelineFactory = new RemoteServerPipelineFactory(
-          name, openChannels, loader, remoteActorSet.actors, remoteActorSet.activeObjects)
+          name, openChannels, loader, remoteActorSet.actors, remoteActorSet.typedActors,this)
         bootstrap.setPipelineFactory(pipelineFactory)
         bootstrap.setOption("child.tcpNoDelay", true)
         bootstrap.setOption("child.keepAlive", true)
         bootstrap.setOption("child.reuseAddress", true)
-        bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS)
+        bootstrap.setOption("child.connectTimeoutMillis", RemoteServer.CONNECTION_TIMEOUT_MILLIS.toMillis)
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         _isRunning = true
         Cluster.registerLocalNode(hostname, port)
+        foreachListener(_ ! RemoteServerStarted(hostname,port))
       }
     } catch {
-      case e => log.error(e, "Could not start up remote server")
+      case e =>
+        log.error(e, "Could not start up remote server")
+        foreachListener(_ ! RemoteServerError(e,hostname,port))
     }
     this
   }
@@ -221,47 +272,46 @@ class RemoteServer extends Logging {
         openChannels.close.awaitUninterruptibly
         bootstrap.releaseExternalResources
         Cluster.deregisterLocalNode(hostname, port)
+        foreachListener(_ ! RemoteServerShutdown(hostname,port))
       } catch {
+        case e: java.nio.channels.ClosedChannelException =>  {}
         case e => log.warning("Could not close remote server channel in a graceful way")
       }
     }
   }
 
-  // TODO: register active object in RemoteServer as well
+  // TODO: register typed actor in RemoteServer as well
 
   /**
    * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
-  def register(actorRef: ActorRef) = synchronized {
-    if (_isRunning) {
-      if (!actorRef.isRunning) actorRef.start
-      log.info("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
-      RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(actorRef.id, actorRef)
-    }
-  }
+  def register(actorRef: ActorRef): Unit = register(actorRef.id,actorRef)
 
   /**
    * Register Remote Actor by a specific 'id' passed as argument.
    * <p/>
    * NOTE: If you use this method to register your remote actor then you must unregister the actor by this ID yourself.
    */
-  def register(id: String, actorRef: ActorRef) = synchronized {
+  def register(id: String, actorRef: ActorRef): Unit = synchronized {
     if (_isRunning) {
-      if (!actorRef.isRunning) actorRef.start
-      log.info("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
-      RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors.put(id, actorRef)
+      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
+      if (!actors.contains(id)) {
+        if (!actorRef.isRunning) actorRef.start
+        log.debug("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
+        actors.put(id, actorRef)
+      }
     }
   }
 
   /**
    * Unregister Remote Actor that is registered using its 'id' field (not custom ID).
    */
-  def unregister(actorRef: ActorRef) = synchronized {
+  def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
-      log.info("Unregistering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
-      val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
-      server.actors.remove(actorRef.id)
-      if (actorRef.registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
+      log.debug("Unregistering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
+      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
+      actors.remove(actorRef.id)
+      if (actorRef.registeredInRemoteNodeDuringSerialization) actors.remove(actorRef.uuid)
     }
   }
 
@@ -270,18 +320,33 @@ class RemoteServer extends Logging {
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
-  def unregister(id: String) = synchronized {
+  def unregister(id: String):Unit = synchronized {
     if (_isRunning) {
       log.info("Unregistering server side remote actor with id [%s]", id)
-      val server = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
-      val actorRef = server.actors.get(id)
-      server.actors.remove(id)
-      if (actorRef.registeredInRemoteNodeDuringSerialization) server.actors.remove(actorRef.uuid)
+      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
+      val actorRef = actors.get(id)
+      actors.remove(id)
+      if (actorRef.registeredInRemoteNodeDuringSerialization) actors.remove(actorRef.uuid)
     }
   }
+
+  protected[akka] override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
 }
 
-case class Codec(encoder: ChannelHandler, decoder: ChannelHandler)
+object RemoteServerSslContext {
+  import javax.net.ssl.SSLContext
+
+  val (client, server) = {
+    val protocol  = "TLS"
+    //val algorithm = Option(Security.getProperty("ssl.KeyManagerFactory.algorithm")).getOrElse("SunX509")
+    //val store = KeyStore.getInstance("JKS")
+    val s = SSLContext.getInstance(protocol)
+    s.init(null, null, null)
+    val c = SSLContext.getInstance(protocol)
+    c.init(null, null, null)
+    (c, s)
+  }
+}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -291,24 +356,29 @@ class RemoteServerPipelineFactory(
     val openChannels: ChannelGroup,
     val loader: Option[ClassLoader],
     val actors: JMap[String, ActorRef],
-    val activeObjects: JMap[String, AnyRef]) extends ChannelPipelineFactory {
+    val typedActors: JMap[String, AnyRef],
+    val server: RemoteServer) extends ChannelPipelineFactory {
   import RemoteServer._
 
   def getPipeline: ChannelPipeline = {
-    val lenDec       = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
-    val lenPrep      = new LengthFieldPrepender(4)
-    val protobufDec  = new ProtobufDecoder(RemoteRequestProtocol.getDefaultInstance)
-    val protobufEnc  = new ProtobufEncoder
-    val zipCodec = RemoteServer.COMPRESSION_SCHEME match {
-      case "zlib"  => Some(Codec(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL), new ZlibDecoder))
-      //case "lzf" => Some(Codec(new LzfEncoder, new LzfDecoder))
-      case _ => None
-    }
-    val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, activeObjects)
+    def join(ch: ChannelHandler*) = Array[ChannelHandler](ch:_*)
 
-    val stages: Array[ChannelHandler] =
-      zipCodec.map(codec => Array(codec.decoder, lenDec, protobufDec, codec.encoder, lenPrep, protobufEnc, remoteServer))
-              .getOrElse(Array(lenDec, protobufDec, lenPrep, protobufEnc, remoteServer))
+    val engine = RemoteServerSslContext.server.createSSLEngine()
+    engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
+    engine.setUseClientMode(false)
+
+    val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
+    val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
+    val lenPrep     = new LengthFieldPrepender(4)
+    val protobufDec = new ProtobufDecoder(RemoteRequestProtocol.getDefaultInstance)
+    val protobufEnc = new ProtobufEncoder
+    val (enc,dec)   = RemoteServer.COMPRESSION_SCHEME match {
+      case "zlib"  => (join(new ZlibEncoder(RemoteServer.ZLIB_COMPRESSION_LEVEL)), join(new ZlibDecoder))
+      case       _ => (join(), join())
+    }
+
+    val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, typedActors,server)
+    val stages = ssl ++ dec ++ join(lenDec, protobufDec) ++ enc ++ join(lenPrep, protobufEnc, remoteServer)
     new StaticChannelPipeline(stages: _*)
   }
 }
@@ -322,7 +392,8 @@ class RemoteServerHandler(
     val openChannels: ChannelGroup,
     val applicationLoader: Option[ClassLoader],
     val actors: JMap[String, ActorRef],
-    val activeObjects: JMap[String, AnyRef]) extends SimpleChannelUpstreamHandler with Logging {
+    val typedActors: JMap[String, AnyRef],
+    val server: RemoteServer) extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
@@ -333,6 +404,20 @@ class RemoteServerHandler(
    */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
     openChannels.add(ctx.getChannel)
+  }
+
+  override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
+    if (RemoteServer.SECURE) {
+      val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
+
+      // Begin handshake.
+      sslHandler.handshake().addListener( new ChannelFutureListener {
+        def operationComplete(future: ChannelFuture): Unit = {
+          if (future.isSuccess) openChannels.add(future.getChannel)
+          else future.getChannel.close
+        }
+      })
+    }
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
@@ -352,147 +437,106 @@ class RemoteServerHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    event.getCause.printStackTrace
     log.error(event.getCause, "Unexpected exception from remote downstream")
     event.getChannel.close
+    server.foreachListener(_ ! RemoteServerError(event.getCause,server.hostname,server.port))
   }
 
   private def handleRemoteRequestProtocol(request: RemoteRequestProtocol, channel: Channel) = {
     log.debug("Received RemoteRequestProtocol[\n%s]", request.toString)
-    if (request.getIsActor) dispatchToActor(request, channel)
-    else dispatchToActiveObject(request, channel)
+    val actorType = request.getActorInfo.getActorType
+    if (actorType == ActorType.SCALA_ACTOR) dispatchToActor(request, channel)
+    else if (actorType == ActorType.JAVA_ACTOR)  throw new IllegalActorStateException("ActorType JAVA_ACTOR is currently not supported")
+    else if (actorType == ActorType.TYPED_ACTOR) dispatchToTypedActor(request, channel)
+    else throw new IllegalActorStateException("Unknown ActorType [" + actorType + "]")
   }
 
   private def dispatchToActor(request: RemoteRequestProtocol, channel: Channel) = {
-    log.debug("Dispatching to remote actor [%s:%s]", request.getTarget, request.getUuid)
-    val actorRef = createActor(request.getTarget, request.getUuid, request.getTimeout)
-    actorRef.start
+    val actorInfo = request.getActorInfo
+    log.debug("Dispatching to remote actor [%s:%s]", actorInfo.getTarget, actorInfo.getUuid)
+
+    val actorRef = createActor(actorInfo).start
+
     val message = MessageSerializer.deserialize(request.getMessage)
     val sender =
       if (request.hasSender) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
       else None
-    if (request.getIsOneWay) actorRef.!(message)(sender)
-    else {
-      try {
-        val resultOrNone = (actorRef.!!(message)(sender)).as[AnyRef]
-        val result = if (resultOrNone.isDefined) resultOrNone.get else null
-        log.debug("Returning result from actor invocation [%s]", result)
-        val replyBuilder = RemoteReplyProtocol.newBuilder
-            .setId(request.getId)
-            .setMessage(MessageSerializer.serialize(result))
-            .setIsSuccessful(true)
-            .setIsActor(true)
-        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        val replyMessage = replyBuilder.build
-        channel.write(replyMessage)
-      } catch {
-        case e: Throwable =>
-          log.error(e, "Could not invoke remote actor [%s]", request.getTarget)
-          val replyBuilder = RemoteReplyProtocol.newBuilder
-              .setId(request.getId)
-              .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
-              .setIsSuccessful(false)
-              .setIsActor(true)
-          if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-          val replyMessage = replyBuilder.build
-          channel.write(replyMessage)
-      }
+
+    message match { // first match on system messages
+      case RemoteActorSystemMessage.Stop => actorRef.stop
+      case _ =>     // then match on user defined messages
+        if (request.getIsOneWay) actorRef.!(message)(sender)
+        else {
+          try {
+            val resultOrNone = (actorRef.!!(message)(sender)).as[AnyRef]
+            val result = if (resultOrNone.isDefined) resultOrNone.get else null
+
+            log.debug("Returning result from actor invocation [%s]", result)
+            val replyBuilder = RemoteReplyProtocol.newBuilder
+                .setId(request.getId)
+                .setMessage(MessageSerializer.serialize(result))
+                .setIsSuccessful(true)
+                .setIsActor(true)
+
+            if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
+            channel.write(replyBuilder.build)
+
+          } catch {
+            case e: Throwable =>
+              channel.write(createErrorReplyMessage(e, request, true))
+              server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+          }
+        }
     }
   }
 
-  private def dispatchToActiveObject(request: RemoteRequestProtocol, channel: Channel) = {
-    log.debug("Dispatching to remote active object [%s :: %s]", request.getMethod, request.getTarget)
-    val activeObject = createActiveObject(request.getTarget, request.getTimeout)
+  private def dispatchToTypedActor(request: RemoteRequestProtocol, channel: Channel) = {
+    val actorInfo = request.getActorInfo
+    val typedActorInfo = actorInfo.getTypedActorInfo
+    log.debug("Dispatching to remote typed actor [%s :: %s]", typedActorInfo.getMethod, typedActorInfo.getInterface)
+    val typedActor = createTypedActor(actorInfo)
 
     val args = MessageSerializer.deserialize(request.getMessage).asInstanceOf[Array[AnyRef]].toList
     val argClasses = args.map(_.getClass)
-    val (unescapedArgs, unescapedArgClasses) = unescapeArgs(args, argClasses, request.getTimeout)
 
     try {
-      val messageReceiver = activeObject.getClass.getDeclaredMethod(
-        request.getMethod, unescapedArgClasses: _*)
-      if (request.getIsOneWay) messageReceiver.invoke(activeObject, unescapedArgs: _*)
+      val messageReceiver = typedActor.getClass.getDeclaredMethod(typedActorInfo.getMethod, argClasses: _*)
+      if (request.getIsOneWay) messageReceiver.invoke(typedActor, args: _*)
       else {
-        val result = messageReceiver.invoke(activeObject, unescapedArgs: _*)
-        log.debug("Returning result from remote active object invocation [%s]", result)
+        val result = messageReceiver.invoke(typedActor, args: _*)
+        log.debug("Returning result from remote typed actor invocation [%s]", result)
         val replyBuilder = RemoteReplyProtocol.newBuilder
             .setId(request.getId)
             .setMessage(MessageSerializer.serialize(result))
             .setIsSuccessful(true)
             .setIsActor(false)
         if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        val replyMessage = replyBuilder.build
-        channel.write(replyMessage)
+        channel.write(replyBuilder.build)
       }
     } catch {
       case e: InvocationTargetException =>
-        log.error(e.getCause, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
-        val replyBuilder = RemoteReplyProtocol.newBuilder
-            .setId(request.getId)
-            .setException(ExceptionProtocol.newBuilder.setClassname(e.getCause.getClass.getName).setMessage(e.getCause.getMessage).build)
-            .setIsSuccessful(false)
-            .setIsActor(false)
-        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        val replyMessage = replyBuilder.build
-        channel.write(replyMessage)
-      case e: Throwable =>
-        log.error(e, "Could not invoke remote active object [%s :: %s]", request.getMethod, request.getTarget)
-        val replyBuilder = RemoteReplyProtocol.newBuilder
-            .setId(request.getId)
-            .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
-            .setIsSuccessful(false)
-            .setIsActor(false)
-        if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-        val replyMessage = replyBuilder.build
-        channel.write(replyMessage)
+        channel.write(createErrorReplyMessage(e.getCause, request, false))
+        server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+      case e: Throwable                 =>
+        channel.write(createErrorReplyMessage(e, request, false))
+        server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
     }
-  }
-
-  private def unescapeArgs(args: scala.List[AnyRef], argClasses: scala.List[Class[_]], timeout: Long) = {
-    val unescapedArgs = new Array[AnyRef](args.size)
-    val unescapedArgClasses = new Array[Class[_]](args.size)
-
-    val escapedArgs = for (i <- 0 until args.size) {
-      val arg = args(i)
-      if (arg.isInstanceOf[String] && arg.asInstanceOf[String].startsWith(AW_PROXY_PREFIX)) {
-        val argString = arg.asInstanceOf[String]
-        val proxyName = argString.replace(AW_PROXY_PREFIX, "")
-        val activeObject = createActiveObject(proxyName, timeout)
-        unescapedArgs(i) = activeObject
-        unescapedArgClasses(i) = Class.forName(proxyName)
-      } else {
-        unescapedArgs(i) = args(i)
-        unescapedArgClasses(i) = argClasses(i)
-      }
-    }
-    (unescapedArgs, unescapedArgClasses)
-  }
-
-  private def createActiveObject(name: String, timeout: Long): AnyRef = {
-    val activeObjectOrNull = activeObjects.get(name)
-    if (activeObjectOrNull eq null) {
-      try {
-        log.info("Creating a new remote active object [%s]", name)
-        val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
-        else Class.forName(name)
-        val newInstance = ActiveObject.newInstance(clazz, timeout).asInstanceOf[AnyRef]
-        activeObjects.put(name, newInstance)
-        newInstance
-      } catch {
-        case e =>
-          log.error(e, "Could not create remote active object instance")
-          throw e
-      }
-    } else activeObjectOrNull
   }
 
   /**
    * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
+   *
    * If actor already created then just return it from the registry.
+   *
    * Does not start the actor.
    */
-  private def createActor(name: String, uuid: String, timeout: Long): ActorRef = {
-    val actorRefOrNull = actors.get(uuid)
+  private def createActor(actorInfo: ActorInfoProtocol): ActorRef = {
+    val uuid = actorInfo.getUuid
+    val name = actorInfo.getTarget
+    val timeout = actorInfo.getTimeout
+
+    val actorRefOrNull = actors get uuid
+
     if (actorRefOrNull eq null) {
       try {
         log.info("Creating a new remote actor [%s:%s]", name, uuid)
@@ -507,8 +551,51 @@ class RemoteServerHandler(
       } catch {
         case e =>
           log.error(e, "Could not create remote actor instance")
+          server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
           throw e
       }
     } else actorRefOrNull
+  }
+
+  private def createTypedActor(actorInfo: ActorInfoProtocol): AnyRef = {
+    val uuid = actorInfo.getUuid
+    val typedActorOrNull = typedActors get uuid
+
+    if (typedActorOrNull eq null) {
+      val typedActorInfo = actorInfo.getTypedActorInfo
+      val interfaceClassname = typedActorInfo.getInterface
+      val targetClassname = actorInfo.getTarget
+
+      try {
+        log.info("Creating a new remote typed actor:\n\t[%s :: %s]", interfaceClassname, targetClassname)
+
+        val (interfaceClass, targetClass) =
+          if (applicationLoader.isDefined) (applicationLoader.get.loadClass(interfaceClassname),
+                                            applicationLoader.get.loadClass(targetClassname))
+          else (Class.forName(interfaceClassname), Class.forName(targetClassname))
+
+        val newInstance = TypedActor.newInstance(
+          interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
+        typedActors.put(uuid, newInstance)
+        newInstance
+      } catch {
+        case e =>
+          log.error(e, "Could not create remote typed actor instance")
+          server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+          throw e
+      }
+    } else typedActorOrNull
+  }
+
+  private def createErrorReplyMessage(e: Throwable, request: RemoteRequestProtocol, isActor: Boolean): RemoteReplyProtocol = {
+    val actorInfo = request.getActorInfo
+    log.error(e, "Could not invoke remote typed actor [%s :: %s]", actorInfo.getTypedActorInfo.getMethod, actorInfo.getTarget)
+    val replyBuilder = RemoteReplyProtocol.newBuilder
+        .setId(request.getId)
+        .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
+        .setIsSuccessful(false)
+        .setIsActor(isActor)
+    if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
+    replyBuilder.build
   }
 }

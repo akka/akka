@@ -14,6 +14,7 @@ class DispatcherProperties {
   var dispatcherType: String = ""
   var name: String = ""
   var threadPool: ThreadPoolProperties = _
+  var aggregate = true
 
   /**
    * Sets the properties to the given builder.

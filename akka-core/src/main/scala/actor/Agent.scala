@@ -5,11 +5,12 @@
 package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.stm.Ref
+import se.scalablesolutions.akka.AkkaException
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
 
-class AgentException private[akka](message: String) extends RuntimeException(message)
+class AgentException private[akka](message: String) extends AkkaException(message)
 
 /**
 * The Agent class was strongly inspired by the agent principle in Clojure.

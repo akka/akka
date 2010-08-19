@@ -18,9 +18,11 @@ deploy/*.jar
 data
 out
 logs
+.#*
 .codefellow
 storage
 .codefellow
+.ensime
 _dump
 .manager
 manifest.mf
@@ -40,3 +42,4 @@ run-codefellow
 .idea
 .scala_dependencies
 multiverse.log
+.eprj

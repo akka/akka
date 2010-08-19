@@ -16,7 +16,10 @@ class PublishRequestorTest extends JUnitSuite {
   var requestor: ActorRef = _
   var consumer: ActorRef = _
 
-  @Before def setUp = {
+  val ascendingMethodName = (r1: ConsumerMethodRegistered, r2: ConsumerMethodRegistered) =>
+    r1.method.getName < r2.method.getName
+
+  @Before def setUp: Unit = {
     publisher = actorOf[PublisherMock].start
     requestor = actorOf[PublishRequestor].start
     requestor ! PublishRequestorInit(publisher)
@@ -24,40 +27,58 @@ class PublishRequestorTest extends JUnitSuite {
       def endpointUri = "mock:test"
       protected def receive = null
     }).start
-
   }
 
   @After def tearDown = {
+    AspectInitRegistry.removeListener(requestor);
     ActorRegistry.shutdownAll
   }
 
-  @Test def shouldReceiveConsumerMethodRegisteredEvent = {
-    val obj = ActiveObject.newInstance(classOf[PojoSingle])
-    val init = AspectInit(classOf[PojoSingle], null, None, 1000)
+  @Test def shouldReceiveOneConsumerMethodRegisteredEvent = {
+    AspectInitRegistry.addListener(requestor)
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
-    requestor ! AspectInitRegistered(obj, init)
+    val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
-    val event = (publisher !! GetRetainedMessage).get.asInstanceOf[ConsumerMethodRegistered]
-    assert(event.init === init)
+    val event = (publisher !! GetRetainedMessage).as[ConsumerMethodRegistered].get
     assert(event.uri === "direct:foo")
-    assert(event.activeObject === obj)
+    assert(event.typedActor === obj)
     assert(event.method.getName === "foo")
   }
 
-  @Test def shouldReceiveConsumerMethodUnregisteredEvent = {
-    val obj = ActiveObject.newInstance(classOf[PojoSingle])
-    val init = AspectInit(classOf[PojoSingle], null, None, 1000)
+  @Test def shouldReceiveOneConsumerMethodUnregisteredEvent = {
+    val obj = TypedActor.newInstance(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl])
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
-    requestor ! AspectInitUnregistered(obj, init)
+    AspectInitRegistry.addListener(requestor)
+    TypedActor.stop(obj)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
-    val event = (publisher !! GetRetainedMessage).get.asInstanceOf[ConsumerMethodUnregistered]
-    assert(event.init === init)
+    val event = (publisher !! GetRetainedMessage).as[ConsumerMethodUnregistered].get
     assert(event.uri === "direct:foo")
-    assert(event.activeObject === obj)
+    assert(event.typedActor === obj)
     assert(event.method.getName === "foo")
   }
 
-  @Test def shouldReceiveConsumerRegisteredEvent = {
+  @Test def shouldReceiveThreeConsumerMethodRegisteredEvents = {
+    AspectInitRegistry.addListener(requestor)
+    val latch = (publisher !! SetExpectedTestMessageCount(3)).as[CountDownLatch].get
+    val obj = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
+    assert(latch.await(5000, TimeUnit.MILLISECONDS))
+    val request = GetRetainedMessages(_.isInstanceOf[ConsumerMethodRegistered])
+    val events = (publisher !! request).as[List[ConsumerMethodRegistered]].get
+    assert(events.map(_.method.getName).sortWith(_ < _) === List("m2", "m3", "m4"))
+  }
+
+  @Test def shouldReceiveThreeConsumerMethodUnregisteredEvents = {
+    val obj = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
+    val latch = (publisher !! SetExpectedTestMessageCount(3)).as[CountDownLatch].get
+    AspectInitRegistry.addListener(requestor)
+    TypedActor.stop(obj)
+    assert(latch.await(5000, TimeUnit.MILLISECONDS))
+    val request = GetRetainedMessages(_.isInstanceOf[ConsumerMethodUnregistered])
+    val events = (publisher !! request).as[List[ConsumerMethodUnregistered]].get
+    assert(events.map(_.method.getName).sortWith(_ < _) === List("m2", "m3", "m4"))
+  }
+
+  @Test def shouldReceiveOneConsumerRegisteredEvent = {
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     requestor ! ActorRegistered(consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
@@ -65,7 +86,7 @@ class PublishRequestorTest extends JUnitSuite {
       Some(ConsumerRegistered(consumer, "mock:test", consumer.uuid, false)))
   }
 
-  @Test def shouldReceiveConsumerUnregisteredEvent = {
+  @Test def shouldReceiveOneConsumerUnregisteredEvent = {
     val latch = (publisher !! SetExpectedTestMessageCount(1)).as[CountDownLatch].get
     requestor ! ActorUnregistered(consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))

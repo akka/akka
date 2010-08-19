@@ -1,48 +1,14 @@
 package se.scalablesolutions.akka.actor;
 
-import se.scalablesolutions.akka.actor.annotation.prerestart;
-import se.scalablesolutions.akka.actor.annotation.postrestart;
-import se.scalablesolutions.akka.actor.ActiveObjectContext;
+import se.scalablesolutions.akka.dispatch.Future;
 import se.scalablesolutions.akka.dispatch.CompletableFuture;
+import se.scalablesolutions.akka.dispatch.Future;
 
-public class SimpleJavaPojo {
-
-  ActiveObjectContext context;
-  
-  public boolean pre = false;
-  public boolean post = false;
-
-  private String name;
-
-  public Object getSender() {
-    return context.getSender();
-  }
-
-  public CompletableFuture<Object> getSenderFuture() {
-    return context.getSenderFuture();
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  @prerestart
-  public void pre() {
-    System.out.println("** pre()");
-    pre = true;
-  }
-
-  @postrestart
-  public void post() {
-    System.out.println("** post()");
-    post = true;
-  }
-
-  public void throwException() {
-    throw new RuntimeException();
-  }
+public interface SimpleJavaPojo {
+  public Object getSender();
+  public Object getSenderFuture();
+  public Future<Integer> square(int value);
+  public void setName(String name);
+  public String getName();
+  public void throwException();
 }

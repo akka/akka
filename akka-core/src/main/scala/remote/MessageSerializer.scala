@@ -25,7 +25,6 @@ object MessageSerializer extends Logging {
   }
 
   def deserialize(messageProtocol: MessageProtocol): Any = {
-    log.debug("scheme = " + messageProtocol.getSerializationScheme)
     messageProtocol.getSerializationScheme match {
       case SerializationSchemeType.JAVA =>
         unbox(SERIALIZER_JAVA.fromBinary(messageProtocol.getMessage.toByteArray, None))

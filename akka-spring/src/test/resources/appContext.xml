@@ -7,27 +7,37 @@
        http://www.akkasource.org/schema/akka
        http://scalablesolutions.se/akka/akka-0.10.xsd">
 
-    <akka:active-object id="sample" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000" />
-    <akka:active-object id="bean-singleton" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000"/>
-    <akka:active-object id="bean-prototype" target="se.scalablesolutions.akka.spring.SampleBean" timeout="1000" scope="prototype"/>
+    <akka:typed-actor id="sample" 
+                        interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
+                        implementation="se.scalablesolutions.akka.spring.SampleBean" 
+                        timeout="1000" />
+    <akka:typed-actor id="bean-singleton" 
+                        interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
+                        implementation="se.scalablesolutions.akka.spring.SampleBean" 
+                        timeout="1000"/>
+    <akka:typed-actor id="bean-prototype" 
+                        interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
+                        implementation="se.scalablesolutions.akka.spring.SampleBean" 
+                        timeout="1000" 
+                        scope="prototype"/>
     
-    <akka:active-object id="bean"
-                        target="org.springframework.core.io.ResourceEditor"
-                        transactional="true"
-                        timeout="1000"
-                        scope="prototype">
-        <property name="source" ref="string"/>
-    </akka:active-object>
+    <akka:typed-actor id="typedActor"
+                        interface="se.scalablesolutions.akka.spring.PojoInf"
+                        implementation="se.scalablesolutions.akka.spring.Pojo" 
+                        scope="singleton"
+                        timeout="1000">
+        <property name="stringFromVal" value="akka rocks"/>
+        <property name="stringFromRef" ref="string"/>
+    </akka:typed-actor>
+
+    <akka:untyped-actor id="untypedActor"
+                        implementation="se.scalablesolutions.akka.spring.foo.PingActor"
+                        scope="singleton">
+        <property name="stringFromVal" value="akka rocks"/>
+        <property name="stringFromRef" ref="string"/>
+    </akka:untyped-actor>
 
     <bean id="string" class="java.lang.String">
-        <constructor-arg value="someString"/>
+        <constructor-arg value="spring rocks"/>
     </bean>
-     <akka:active-object id="pojoInf" 
-	       target="se.scalablesolutions.akka.spring.Pojo" 
-           interface="se.scalablesolutions.akka.spring.PojoInf"
-		   scope="singleton"
-	       timeout="1000">
-	     <property name="string" value="akka rocks"/>
-	</akka:active-object>
-	
  </beans>

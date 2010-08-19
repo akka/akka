@@ -12,7 +12,7 @@ import org.springframework.beans.factory.xml.{ParserContext, AbstractSingleBeanD
  * Parser for custom namespace configuration.
  * @author michaelkober
  */
-class DispatcherBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActiveObjectParser with DispatcherParser {
+class DispatcherBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActorParser with DispatcherParser {
   /*
    * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
    */

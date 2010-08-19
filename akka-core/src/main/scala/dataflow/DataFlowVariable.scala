@@ -10,6 +10,7 @@ import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.CompletableFuture
+import se.scalablesolutions.akka.AkkaException
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.
@@ -155,7 +156,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  class DataFlowVariableException(msg: String) extends RuntimeException(msg)
+  class DataFlowVariableException(msg: String) extends AkkaException(msg)
 }
 
 

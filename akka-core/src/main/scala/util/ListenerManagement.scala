@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.util
 
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentSkipListSet
 
 import se.scalablesolutions.akka.actor.ActorRef
 
@@ -15,7 +15,7 @@ import se.scalablesolutions.akka.actor.ActorRef
  */
 trait ListenerManagement extends Logging {
 
-  private val listeners = new CopyOnWriteArrayList[ActorRef]
+  private val listeners = new ConcurrentSkipListSet[ActorRef]
 
   /**
    * Adds the <code>listener</code> this this registry's listener list.
@@ -23,7 +23,7 @@ trait ListenerManagement extends Logging {
    */
   def addListener(listener: ActorRef) = {
     listener.start
-    listeners.add(listener)
+    listeners add listener
   }
 
   /**
@@ -31,8 +31,8 @@ trait ListenerManagement extends Logging {
    * The <code>listener</code> is stopped by this method.
    */
   def removeListener(listener: ActorRef) = {
+    listeners remove listener
     listener.stop
-    listeners.remove(listener)
   }
 
   /**
