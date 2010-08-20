@@ -21,7 +21,7 @@ class TransactionConfigBuilder {
   var timeout: Duration        = TransactionConfig.DefaultTimeout
   var trackReads: JBoolean     = TransactionConfig.TRACK_READS
   var writeSkew: Boolean       = TransactionConfig.WRITE_SKEW
-  var explicitRetries: Boolean = TransactionConfig.EXPLICIT_RETRIES
+  var blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED
   var interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE
   var speculative: Boolean     = TransactionConfig.SPECULATIVE
   var quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE
@@ -35,7 +35,7 @@ class TransactionConfigBuilder {
   def setTimeout(timeout: Duration) = { this.timeout = timeout; this }
   def setTrackReads(trackReads: JBoolean) = { this.trackReads = trackReads; this }
   def setWriteSkew(writeSkew: Boolean) = { this.writeSkew = writeSkew; this }
-  def setExplicitRetries(explicitRetries: Boolean) = { this.explicitRetries = explicitRetries; this }
+  def setBlockingAllowed(blockingAllowed: Boolean) = { this.blockingAllowed = blockingAllowed; this }
   def setInterruptible(interruptible: Boolean) = { this.interruptible = interruptible; this }
   def setSpeculative(speculative: Boolean) = { this.speculative = speculative; this }
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
@@ -44,7 +44,7 @@ class TransactionConfigBuilder {
   def setHooks(hooks: Boolean) = { this.hooks = hooks; this }
 
   def build() = new TransactionConfig(
-    familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+    familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
     interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
 }
 
@@ -58,7 +58,7 @@ class TransactionFactoryBuilder {
   var timeout: Duration        = TransactionConfig.DefaultTimeout
   var trackReads: JBoolean     = TransactionConfig.TRACK_READS
   var writeSkew: Boolean       = TransactionConfig.WRITE_SKEW
-  var explicitRetries: Boolean = TransactionConfig.EXPLICIT_RETRIES
+  var blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED
   var interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE
   var speculative: Boolean     = TransactionConfig.SPECULATIVE
   var quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE
@@ -72,7 +72,7 @@ class TransactionFactoryBuilder {
   def setTimeout(timeout: Duration) = { this.timeout = timeout; this }
   def setTrackReads(trackReads: JBoolean) = { this.trackReads = trackReads; this }
   def setWriteSkew(writeSkew: Boolean) = { this.writeSkew = writeSkew; this }
-  def setExplicitRetries(explicitRetries: Boolean) = { this.explicitRetries = explicitRetries; this }
+  def setBlockingAllowed(blockingAllowed: Boolean) = { this.blockingAllowed = blockingAllowed; this }
   def setInterruptible(interruptible: Boolean) = { this.interruptible = interruptible; this }
   def setSpeculative(speculative: Boolean) = { this.speculative = speculative; this }
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
@@ -82,7 +82,7 @@ class TransactionFactoryBuilder {
 
   def build() = {
     val config = new TransactionConfig(
-      familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+      familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
       interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
     new TransactionFactory(config)
   }
