@@ -12,6 +12,7 @@ import se.scalablesolutions.akka.util.Duration
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.stms.alpha.AlphaStm
 import org.multiverse.templates.TransactionBoilerplate
+import org.multiverse.api.{PropagationLevel => Propagation}
 import org.multiverse.api.TraceLevel
 
 /**
@@ -29,10 +30,19 @@ object TransactionConfig {
   val INTERRUPTIBLE    = config.getBool("akka.stm.interruptible", false)
   val SPECULATIVE      = config.getBool("akka.stm.speculative", true)
   val QUICK_RELEASE    = config.getBool("akka.stm.quick-release", true)
+  val PROPAGATION      = propagation(config.getString("akka.stm.propagation", "requires"))
   val TRACE_LEVEL      = traceLevel(config.getString("akka.stm.trace-level", "none"))
   val HOOKS            = config.getBool("akka.stm.hooks", true)
 
   val DefaultTimeout = Duration(TIMEOUT, TIME_UNIT)
+
+  def propagation(level: String) = level.toLowerCase match {
+    case "requiresnew" => Transaction.Propagation.RequiresNew
+    case "fine"        => Transaction.Propagation.Mandatory
+    case "supports"    => Transaction.Propagation.Supports
+    case "never"       => Transaction.Propagation.Never
+    case _             => Transaction.Propagation.Requires
+  }
 
   def traceLevel(level: String) = level.toLowerCase match {
     case "coarse" | "course" => Transaction.TraceLevel.Coarse
@@ -53,6 +63,7 @@ object TransactionConfig {
    * @param interruptible    Whether a blocking transaction can be interrupted.
    * @param speculative      Whether speculative configuration should be enabled.
    * @param quickRelease     Whether locks should be released as quickly as possible (before whole commit).
+   * @param propagation      For controlling how nested transactions behave.
    * @param traceLevel       Transaction trace level.
    * @param hooks            Whether hooks for persistence modules and JTA should be added to the transaction.
    */
@@ -66,10 +77,11 @@ object TransactionConfig {
             interruptible: Boolean   = INTERRUPTIBLE,
             speculative: Boolean     = SPECULATIVE,
             quickRelease: Boolean    = QUICK_RELEASE,
+            propagation: Propagation = PROPAGATION,
             traceLevel: TraceLevel   = TRACE_LEVEL,
             hooks: Boolean           = HOOKS) = {
-    new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-                          explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+    new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+                          interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
   }
 }
 
@@ -86,6 +98,7 @@ object TransactionConfig {
  * <p>interruptible   - Whether a blocking transaction can be interrupted.
  * <p>speculative     - Whether speculative configuration should be enabled.
  * <p>quickRelease    - Whether locks should be released as quickly as possible (before whole commit).
+ * <p>propagation     - For controlling how nested transactions behave.
  * <p>traceLevel      - Transaction trace level.
  * <p>hooks           - Whether hooks for persistence modules and JTA should be added to the transaction.
  */
@@ -99,6 +112,7 @@ class TransactionConfig(val familyName: String       = TransactionConfig.FAMILY_
                         val interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE,
                         val speculative: Boolean     = TransactionConfig.SPECULATIVE,
                         val quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
+                        val propagation: Propagation = TransactionConfig.PROPAGATION,
                         val traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
                         val hooks: Boolean           = TransactionConfig.HOOKS)
 
@@ -122,11 +136,12 @@ object TransactionFactory {
             interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE,
             speculative: Boolean     = TransactionConfig.SPECULATIVE,
             quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
+            propagation: Propagation = TransactionConfig.PROPAGATION,
             traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
             hooks: Boolean           = TransactionConfig.HOOKS) = {
     val config = new TransactionConfig(
-      familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-      explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+      familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+      interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
     new TransactionFactory(config)
   }
 }
@@ -169,6 +184,7 @@ class TransactionFactory(
                    .setInterruptible(config.interruptible)
                    .setSpeculativeConfigurationEnabled(config.speculative)
                    .setQuickReleaseEnabled(config.quickRelease)
+                   .setPropagationLevel(config.propagation)
                    .setTraceLevel(config.traceLevel))
 
     if (config.readonly ne null) {

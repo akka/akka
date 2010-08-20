@@ -9,6 +9,7 @@ import java.lang.{Boolean => JBoolean}
 import se.scalablesolutions.akka.util.Duration
 
 import org.multiverse.api.TraceLevel
+import org.multiverse.api.{PropagationLevel => Propagation}
 
 /**
  * For more easily creating TransactionConfig from Java.
@@ -24,6 +25,7 @@ class TransactionConfigBuilder {
   var interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE
   var speculative: Boolean     = TransactionConfig.SPECULATIVE
   var quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE
+  var propagation: Propagation = TransactionConfig.PROPAGATION
   var traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL
   var hooks: Boolean           = TransactionConfig.HOOKS
 
@@ -37,12 +39,13 @@ class TransactionConfigBuilder {
   def setInterruptible(interruptible: Boolean) = { this.interruptible = interruptible; this }
   def setSpeculative(speculative: Boolean) = { this.speculative = speculative; this }
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
+  def setPropagation(propagation: Propagation) = { this.propagation = propagation; this }
   def setTraceLevel(traceLevel: TraceLevel) = { this.traceLevel = traceLevel; this }
   def setHooks(hooks: Boolean) = { this.hooks = hooks; this }
 
-  def build = new TransactionConfig(
-    familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-    explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+  def build() = new TransactionConfig(
+    familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+    interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
 }
 
 /**
@@ -59,6 +62,7 @@ class TransactionFactoryBuilder {
   var interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE
   var speculative: Boolean     = TransactionConfig.SPECULATIVE
   var quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE
+  var propagation: Propagation = TransactionConfig.PROPAGATION
   var traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL
   var hooks: Boolean           = TransactionConfig.HOOKS
 
@@ -72,13 +76,14 @@ class TransactionFactoryBuilder {
   def setInterruptible(interruptible: Boolean) = { this.interruptible = interruptible; this }
   def setSpeculative(speculative: Boolean) = { this.speculative = speculative; this }
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
+  def setPropagation(propagation: Propagation) = { this.propagation = propagation; this }
   def setTraceLevel(traceLevel: TraceLevel) = { this.traceLevel = traceLevel; this }
   def setHooks(hooks: Boolean) = { this.hooks = hooks; this }
 
-  def build = {
+  def build() = {
     val config = new TransactionConfig(
-      familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-      explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+      familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+      interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
     new TransactionFactory(config)
   }
 }
