@@ -365,9 +365,12 @@ class RemoteServerPipelineFactory(
   def getPipeline: ChannelPipeline = {
     def join(ch: ChannelHandler*) = Array[ChannelHandler](ch:_*)
 
-    val engine = RemoteServerSslContext.server.createSSLEngine()
-    engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
-    engine.setUseClientMode(false)
+    lazy val engine = {
+      val e = RemoteServerSslContext.server.createSSLEngine()
+      e.setEnabledCipherSuites(e.getSupportedCipherSuites) //TODO is this sensible?
+      e.setUseClientMode(false)
+      e
+    }
 
     val ssl         = if(RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val lenDec      = new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4)
