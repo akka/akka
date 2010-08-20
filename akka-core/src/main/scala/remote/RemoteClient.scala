@@ -276,9 +276,12 @@ class RemoteClientPipelineFactory(
   def getPipeline: ChannelPipeline = {
     def join(ch: ChannelHandler*) = Array[ChannelHandler](ch: _*)
 
-    val engine = RemoteServerSslContext.client.createSSLEngine()
-    engine.setEnabledCipherSuites(engine.getSupportedCipherSuites) //TODO is this sensible?
-    engine.setUseClientMode(true)
+    lazy val engine = {
+      val e = RemoteServerSslContext.client.createSSLEngine()
+      e.setEnabledCipherSuites(e.getSupportedCipherSuites) //TODO is this sensible?
+      e.setUseClientMode(true)
+      e
+    }
 
     val ssl         = if (RemoteServer.SECURE) join(new SslHandler(engine)) else join()
     val timeout     = new ReadTimeoutHandler(timer, RemoteClient.READ_TIMEOUT.toMillis.toInt)
