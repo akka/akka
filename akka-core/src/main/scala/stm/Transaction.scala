@@ -18,6 +18,7 @@ import se.scalablesolutions.akka.AkkaException
 import org.multiverse.api.{Transaction => MultiverseTransaction}
 import org.multiverse.api.lifecycle.{TransactionLifecycleListener, TransactionLifecycleEvent}
 import org.multiverse.api.ThreadLocalTransaction._
+import org.multiverse.api.{PropagationLevel => MultiversePropagationLevel}
 import org.multiverse.api.{TraceLevel => MultiverseTraceLevel}
 
 class NoTransactionInScopeException extends AkkaException("No transaction in scope")
@@ -55,13 +56,24 @@ object Transaction {
   }
 
   /**
+   * Mapping to Multiverse PropagationLevel.
+   */
+  object Propagation {
+    val RequiresNew = MultiversePropagationLevel.RequiresNew
+    val Mandatory   = MultiversePropagationLevel.Mandatory
+    val Requires    = MultiversePropagationLevel.Requires
+    val Supports    = MultiversePropagationLevel.Supports
+    val Never       = MultiversePropagationLevel.Never
+  }
+
+  /**
    * Mapping to Multiverse TraceLevel.
    */
   object TraceLevel {
-    val None = MultiverseTraceLevel.none
+    val None   = MultiverseTraceLevel.none
     val Coarse = MultiverseTraceLevel.course // mispelling?
     val Course = MultiverseTraceLevel.course
-    val Fine = MultiverseTraceLevel.fine
+    val Fine   = MultiverseTraceLevel.fine
   }
 }
 
