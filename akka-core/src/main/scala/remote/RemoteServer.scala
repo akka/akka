@@ -200,7 +200,7 @@ case class RemoteServerClientDisconnected(
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteServer extends Logging with ListenerManagement {
-  val name = "RemoteServer@" + hostname + ":" + port
+  def name = "RemoteServer@" + hostname + ":" + port
 
   private[akka] var hostname = RemoteServer.HOSTNAME
   private[akka] var port =     RemoteServer.PORT
