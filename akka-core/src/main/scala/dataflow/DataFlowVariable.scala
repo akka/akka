@@ -36,7 +36,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
   private class IsolatedEventBasedThread(body: => Unit) extends Actor {
     def receive = {
       case Start => body
-      case Exit => exit
+      case Exit => self.stop
     }
   }
 
@@ -46,7 +46,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
   private class ReactiveEventBasedThread[A <: AnyRef, T <: AnyRef](body: A => T)
     extends Actor {
     def receive = {
-      case Exit => exit
+      case Exit => self.stop
       case message => self.reply(body(message.asInstanceOf[A]))
     }
   }
@@ -74,7 +74,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
             dataFlow.blockedReaders.clear
           } else throw new DataFlowVariableException(
             "Attempt to change data flow variable (from [" + dataFlow.value.get + "] to [" + v + "])")
-        case Exit =>  exit
+        case Exit =>  self.stop
       }
     }
 
@@ -87,7 +87,7 @@ import se.scalablesolutions.akka.dispatch.CompletableFuture
           if (ref.isDefined) self.reply(ref.get)
           else readerFuture = self.senderFuture.asInstanceOf[Option[CompletableFuture[T]]]
         case Set(v:T) => if (readerFuture.isDefined) readerFuture.get.completeWithResult(v)
-        case Exit =>  exit
+        case Exit =>  self.stop
       }
     }
 
