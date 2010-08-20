@@ -26,7 +26,7 @@ object TransactionConfig {
   val TIMEOUT          = config.getLong("akka.stm.timeout", 10)
   val TRACK_READS      = null.asInstanceOf[JBoolean]
   val WRITE_SKEW       = config.getBool("akka.stm.write-skew", true)
-  val EXPLICIT_RETRIES = config.getBool("akka.stm.explicit-retries", false)
+  val BLOCKING_ALLOWED = config.getBool("akka.stm.blocking-allowed", false)
   val INTERRUPTIBLE    = config.getBool("akka.stm.interruptible", false)
   val SPECULATIVE      = config.getBool("akka.stm.speculative", true)
   val QUICK_RELEASE    = config.getBool("akka.stm.quick-release", true)
@@ -59,7 +59,7 @@ object TransactionConfig {
    * @param timeout          The maximum time a transaction will block for.
    * @param trackReads       Whether all reads should be tracked. Needed for blocking operations.
    * @param writeSkew        Whether writeskew is allowed. Disable with care.
-   * @param explicitRetries  Whether explicit retries are allowed.
+   * @param blockingAllowed  Whether explicit retries are allowed.
    * @param interruptible    Whether a blocking transaction can be interrupted.
    * @param speculative      Whether speculative configuration should be enabled.
    * @param quickRelease     Whether locks should be released as quickly as possible (before whole commit).
@@ -73,14 +73,14 @@ object TransactionConfig {
             timeout: Duration        = DefaultTimeout,
             trackReads: JBoolean     = TRACK_READS,
             writeSkew: Boolean       = WRITE_SKEW,
-            explicitRetries: Boolean = EXPLICIT_RETRIES,
+            blockingAllowed: Boolean = BLOCKING_ALLOWED,
             interruptible: Boolean   = INTERRUPTIBLE,
             speculative: Boolean     = SPECULATIVE,
             quickRelease: Boolean    = QUICK_RELEASE,
             propagation: Propagation = PROPAGATION,
             traceLevel: TraceLevel   = TRACE_LEVEL,
             hooks: Boolean           = HOOKS) = {
-    new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+    new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
                           interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
   }
 }
@@ -94,7 +94,7 @@ object TransactionConfig {
  * <p>timeout         - The maximum time a transaction will block for.
  * <p>trackReads      - Whether all reads should be tracked. Needed for blocking operations.
  * <p>writeSkew       - Whether writeskew is allowed. Disable with care.
- * <p>explicitRetries - Whether explicit retries are allowed.
+ * <p>blockingAllowed - Whether explicit retries are allowed.
  * <p>interruptible   - Whether a blocking transaction can be interrupted.
  * <p>speculative     - Whether speculative configuration should be enabled.
  * <p>quickRelease    - Whether locks should be released as quickly as possible (before whole commit).
@@ -108,7 +108,7 @@ class TransactionConfig(val familyName: String       = TransactionConfig.FAMILY_
                         val timeout: Duration        = TransactionConfig.DefaultTimeout,
                         val trackReads: JBoolean     = TransactionConfig.TRACK_READS,
                         val writeSkew: Boolean       = TransactionConfig.WRITE_SKEW,
-                        val explicitRetries: Boolean = TransactionConfig.EXPLICIT_RETRIES,
+                        val blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED,
                         val interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE,
                         val speculative: Boolean     = TransactionConfig.SPECULATIVE,
                         val quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
@@ -132,7 +132,7 @@ object TransactionFactory {
             timeout: Duration        = TransactionConfig.DefaultTimeout,
             trackReads: JBoolean     = TransactionConfig.TRACK_READS,
             writeSkew: Boolean       = TransactionConfig.WRITE_SKEW,
-            explicitRetries: Boolean = TransactionConfig.EXPLICIT_RETRIES,
+            blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED,
             interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE,
             speculative: Boolean     = TransactionConfig.SPECULATIVE,
             quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
@@ -140,7 +140,7 @@ object TransactionFactory {
             traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
             hooks: Boolean           = TransactionConfig.HOOKS) = {
     val config = new TransactionConfig(
-      familyName, readonly, maxRetries, timeout, trackReads, writeSkew, explicitRetries,
+      familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
       interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
     new TransactionFactory(config)
   }
@@ -180,7 +180,7 @@ class TransactionFactory(
                    .setMaxRetries(config.maxRetries)
                    .setTimeoutNs(config.timeout.toNanos)
                    .setWriteSkewAllowed(config.writeSkew)
-                   .setExplicitRetryAllowed(config.explicitRetries)
+                   .setExplicitRetryAllowed(config.blockingAllowed)
                    .setInterruptible(config.interruptible)
                    .setSpeculativeConfigurationEnabled(config.speculative)
                    .setQuickReleaseEnabled(config.quickRelease)
