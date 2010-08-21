@@ -41,7 +41,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   object Repositories {
     lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-    lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
+    lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
     lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
     lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
@@ -71,7 +71,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
   lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsReleases)
-  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausSnapshotRepo)
+  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
@@ -89,7 +89,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val JacksonVersion     = "1.2.1"
   lazy val JERSEY_VERSION     = "1.2"
   lazy val LIFT_VERSION       = "2.1-M1"
-  lazy val MULTIVERSE_VERSION = "0.6-SNAPSHOT"
+  lazy val MULTIVERSE_VERSION = "0.6"
   lazy val SCALATEST_VERSION  = "1.2-for-scala-2.8.0.final-SNAPSHOT"
   lazy val LOGBACK_VERSION    = "0.9.24"
   lazy val SLF4J_VERSION      = "1.6.0"
