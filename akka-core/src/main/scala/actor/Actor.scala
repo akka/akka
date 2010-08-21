@@ -342,7 +342,7 @@ trait Actor extends Logging {
       "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
       "\n\t\t'val actor = Actor.actorOf(new MyActor(..))', or" +
       "\n\t\t'val actor = Actor.actor { case msg => .. } }'")
-    
+
      val ref = optRef.asInstanceOf[Some[ActorRef]].get
      ref.id = getClass.getName //FIXME: Is this needed?
      optRef.asInstanceOf[Some[ActorRef]]
@@ -467,7 +467,7 @@ trait Actor extends Logging {
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
-  
+
   private[akka] def apply(msg: Any) = processingBehavior(msg)
 
   private lazy val processingBehavior: Receive = {
@@ -482,7 +482,7 @@ trait Actor extends Logging {
       case msg if self.hotswap.isDefined &&
                   self.hotswap.get.isDefinedAt(msg) => self.hotswap.get.apply(msg)
       case msg if self.hotswap.isEmpty   &&
-                  defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg) 
+                  defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg)
     }
     actorBehavior
   }

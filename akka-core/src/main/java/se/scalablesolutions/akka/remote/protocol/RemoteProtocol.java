@@ -14,10 +14,10 @@ public final class RemoteProtocol {
     JAVA_ACTOR(1, 2),
     TYPED_ACTOR(2, 3),
     ;
-    
-    
+
+
     public final int getNumber() { return value; }
-    
+
     public static ActorType valueOf(int value) {
       switch (value) {
         case 1: return SCALA_ACTOR;
@@ -26,7 +26,7 @@ public final class RemoteProtocol {
         default: return null;
       }
     }
-    
+
     public static com.google.protobuf.Internal.EnumLiteMap<ActorType>
         internalGetValueMap() {
       return internalValueMap;
@@ -38,7 +38,7 @@ public final class RemoteProtocol {
               return ActorType.valueOf(number)
     ;        }
           };
-    
+
     public final com.google.protobuf.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
       return getDescriptor().getValues().get(index);
@@ -51,9 +51,9 @@ public final class RemoteProtocol {
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(0);
     }
-    
+
     private static final ActorType[] VALUES = {
-      SCALA_ACTOR, JAVA_ACTOR, TYPED_ACTOR, 
+      SCALA_ACTOR, JAVA_ACTOR, TYPED_ACTOR,
     };
     public static ActorType valueOf(
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
@@ -69,14 +69,14 @@ public final class RemoteProtocol {
       this.index = index;
       this.value = value;
     }
-    
+
     static {
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.getDescriptor();
     }
-    
+
     // @@protoc_insertion_point(enum_scope:ActorType)
   }
-  
+
   public enum SerializationSchemeType
       implements com.google.protobuf.ProtocolMessageEnum {
     JAVA(0, 1),
@@ -85,10 +85,10 @@ public final class RemoteProtocol {
     JAVA_JSON(3, 4),
     PROTOBUF(4, 5),
     ;
-    
-    
+
+
     public final int getNumber() { return value; }
-    
+
     public static SerializationSchemeType valueOf(int value) {
       switch (value) {
         case 1: return JAVA;
@@ -99,7 +99,7 @@ public final class RemoteProtocol {
         default: return null;
       }
     }
-    
+
     public static com.google.protobuf.Internal.EnumLiteMap<SerializationSchemeType>
         internalGetValueMap() {
       return internalValueMap;
@@ -111,7 +111,7 @@ public final class RemoteProtocol {
               return SerializationSchemeType.valueOf(number)
     ;        }
           };
-    
+
     public final com.google.protobuf.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
       return getDescriptor().getValues().get(index);
@@ -124,9 +124,9 @@ public final class RemoteProtocol {
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(1);
     }
-    
+
     private static final SerializationSchemeType[] VALUES = {
-      JAVA, SBINARY, SCALA_JSON, JAVA_JSON, PROTOBUF, 
+      JAVA, SBINARY, SCALA_JSON, JAVA_JSON, PROTOBUF,
     };
     public static SerializationSchemeType valueOf(
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
@@ -142,23 +142,23 @@ public final class RemoteProtocol {
       this.index = index;
       this.value = value;
     }
-    
+
     static {
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.getDescriptor();
     }
-    
+
     // @@protoc_insertion_point(enum_scope:SerializationSchemeType)
   }
-  
+
   public enum LifeCycleType
       implements com.google.protobuf.ProtocolMessageEnum {
     PERMANENT(0, 1),
     TEMPORARY(1, 2),
     ;
-    
-    
+
+
     public final int getNumber() { return value; }
-    
+
     public static LifeCycleType valueOf(int value) {
       switch (value) {
         case 1: return PERMANENT;
@@ -166,7 +166,7 @@ public final class RemoteProtocol {
         default: return null;
       }
     }
-    
+
     public static com.google.protobuf.Internal.EnumLiteMap<LifeCycleType>
         internalGetValueMap() {
       return internalValueMap;
@@ -178,7 +178,7 @@ public final class RemoteProtocol {
               return LifeCycleType.valueOf(number)
     ;        }
           };
-    
+
     public final com.google.protobuf.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
       return getDescriptor().getValues().get(index);
@@ -191,9 +191,9 @@ public final class RemoteProtocol {
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.getDescriptor().getEnumTypes().get(2);
     }
-    
+
     private static final LifeCycleType[] VALUES = {
-      PERMANENT, TEMPORARY, 
+      PERMANENT, TEMPORARY,
     };
     public static LifeCycleType valueOf(
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
@@ -209,14 +209,14 @@ public final class RemoteProtocol {
       this.index = index;
       this.value = value;
     }
-    
+
     static {
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.getDescriptor();
     }
-    
+
     // @@protoc_insertion_point(enum_scope:LifeCycleType)
   }
-  
+
   public static final class RemoteActorRefProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use RemoteActorRefProtocol.newBuilder() to construct.
@@ -224,54 +224,54 @@ public final class RemoteProtocol {
       initFields();
     }
     private RemoteActorRefProtocol(boolean noInit) {}
-    
+
     private static final RemoteActorRefProtocol defaultInstance;
     public static RemoteActorRefProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public RemoteActorRefProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteActorRefProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteActorRefProtocol_fieldAccessorTable;
     }
-    
+
     // required string uuid = 1;
     public static final int UUID_FIELD_NUMBER = 1;
     private boolean hasUuid;
     private java.lang.String uuid_ = "";
     public boolean hasUuid() { return hasUuid; }
     public java.lang.String getUuid() { return uuid_; }
-    
+
     // required string actorClassname = 2;
     public static final int ACTORCLASSNAME_FIELD_NUMBER = 2;
     private boolean hasActorClassname;
     private java.lang.String actorClassname_ = "";
     public boolean hasActorClassname() { return hasActorClassname; }
     public java.lang.String getActorClassname() { return actorClassname_; }
-    
+
     // required .AddressProtocol homeAddress = 3;
     public static final int HOMEADDRESS_FIELD_NUMBER = 3;
     private boolean hasHomeAddress;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol homeAddress_;
     public boolean hasHomeAddress() { return hasHomeAddress; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol getHomeAddress() { return homeAddress_; }
-    
+
     // optional uint64 timeout = 4;
     public static final int TIMEOUT_FIELD_NUMBER = 4;
     private boolean hasTimeout;
     private long timeout_ = 0L;
     public boolean hasTimeout() { return hasTimeout; }
     public long getTimeout() { return timeout_; }
-    
+
     private void initFields() {
       homeAddress_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
     }
@@ -282,7 +282,7 @@ public final class RemoteProtocol {
       if (!getHomeAddress().isInitialized()) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -300,12 +300,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasUuid()) {
         size += com.google.protobuf.CodedOutputStream
@@ -327,7 +327,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -394,31 +394,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -427,20 +427,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -450,7 +450,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -459,7 +459,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -469,7 +469,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol)other);
@@ -478,7 +478,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance()) return this;
         if (other.hasUuid()) {
@@ -496,7 +496,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -542,8 +542,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required string uuid = 1;
       public boolean hasUuid() {
         return result.hasUuid();
@@ -564,7 +564,7 @@ public final class RemoteProtocol {
         result.uuid_ = getDefaultInstance().getUuid();
         return this;
       }
-      
+
       // required string actorClassname = 2;
       public boolean hasActorClassname() {
         return result.hasActorClassname();
@@ -585,7 +585,7 @@ public final class RemoteProtocol {
         result.actorClassname_ = getDefaultInstance().getActorClassname();
         return this;
       }
-      
+
       // required .AddressProtocol homeAddress = 3;
       public boolean hasHomeAddress() {
         return result.hasHomeAddress();
@@ -622,7 +622,7 @@ public final class RemoteProtocol {
         result.homeAddress_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // optional uint64 timeout = 4;
       public boolean hasTimeout() {
         return result.hasTimeout();
@@ -640,19 +640,19 @@ public final class RemoteProtocol {
         result.timeout_ = 0L;
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:RemoteActorRefProtocol)
     }
-    
+
     static {
       defaultInstance = new RemoteActorRefProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:RemoteActorRefProtocol)
   }
-  
+
   public static final class SerializedActorRefProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use SerializedActorRefProtocol.newBuilder() to construct.
@@ -660,110 +660,110 @@ public final class RemoteProtocol {
       initFields();
     }
     private SerializedActorRefProtocol(boolean noInit) {}
-    
+
     private static final SerializedActorRefProtocol defaultInstance;
     public static SerializedActorRefProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public SerializedActorRefProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_SerializedActorRefProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_SerializedActorRefProtocol_fieldAccessorTable;
     }
-    
+
     // required string uuid = 1;
     public static final int UUID_FIELD_NUMBER = 1;
     private boolean hasUuid;
     private java.lang.String uuid_ = "";
     public boolean hasUuid() { return hasUuid; }
     public java.lang.String getUuid() { return uuid_; }
-    
+
     // required string id = 2;
     public static final int ID_FIELD_NUMBER = 2;
     private boolean hasId;
     private java.lang.String id_ = "";
     public boolean hasId() { return hasId; }
     public java.lang.String getId() { return id_; }
-    
+
     // required string actorClassname = 3;
     public static final int ACTORCLASSNAME_FIELD_NUMBER = 3;
     private boolean hasActorClassname;
     private java.lang.String actorClassname_ = "";
     public boolean hasActorClassname() { return hasActorClassname; }
     public java.lang.String getActorClassname() { return actorClassname_; }
-    
+
     // required .AddressProtocol originalAddress = 4;
     public static final int ORIGINALADDRESS_FIELD_NUMBER = 4;
     private boolean hasOriginalAddress;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol originalAddress_;
     public boolean hasOriginalAddress() { return hasOriginalAddress; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol getOriginalAddress() { return originalAddress_; }
-    
+
     // optional bytes actorInstance = 5;
     public static final int ACTORINSTANCE_FIELD_NUMBER = 5;
     private boolean hasActorInstance;
     private com.google.protobuf.ByteString actorInstance_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasActorInstance() { return hasActorInstance; }
     public com.google.protobuf.ByteString getActorInstance() { return actorInstance_; }
-    
+
     // optional string serializerClassname = 6;
     public static final int SERIALIZERCLASSNAME_FIELD_NUMBER = 6;
     private boolean hasSerializerClassname;
     private java.lang.String serializerClassname_ = "";
     public boolean hasSerializerClassname() { return hasSerializerClassname; }
     public java.lang.String getSerializerClassname() { return serializerClassname_; }
-    
+
     // optional bool isTransactor = 7;
     public static final int ISTRANSACTOR_FIELD_NUMBER = 7;
     private boolean hasIsTransactor;
     private boolean isTransactor_ = false;
     public boolean hasIsTransactor() { return hasIsTransactor; }
     public boolean getIsTransactor() { return isTransactor_; }
-    
+
     // optional uint64 timeout = 8;
     public static final int TIMEOUT_FIELD_NUMBER = 8;
     private boolean hasTimeout;
     private long timeout_ = 0L;
     public boolean hasTimeout() { return hasTimeout; }
     public long getTimeout() { return timeout_; }
-    
+
     // optional uint64 receiveTimeout = 9;
     public static final int RECEIVETIMEOUT_FIELD_NUMBER = 9;
     private boolean hasReceiveTimeout;
     private long receiveTimeout_ = 0L;
     public boolean hasReceiveTimeout() { return hasReceiveTimeout; }
     public long getReceiveTimeout() { return receiveTimeout_; }
-    
+
     // optional .LifeCycleProtocol lifeCycle = 10;
     public static final int LIFECYCLE_FIELD_NUMBER = 10;
     private boolean hasLifeCycle;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol lifeCycle_;
     public boolean hasLifeCycle() { return hasLifeCycle; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol getLifeCycle() { return lifeCycle_; }
-    
+
     // optional .RemoteActorRefProtocol supervisor = 11;
     public static final int SUPERVISOR_FIELD_NUMBER = 11;
     private boolean hasSupervisor;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol supervisor_;
     public boolean hasSupervisor() { return hasSupervisor; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol getSupervisor() { return supervisor_; }
-    
+
     // optional bytes hotswapStack = 12;
     public static final int HOTSWAPSTACK_FIELD_NUMBER = 12;
     private boolean hasHotswapStack;
     private com.google.protobuf.ByteString hotswapStack_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasHotswapStack() { return hasHotswapStack; }
     public com.google.protobuf.ByteString getHotswapStack() { return hotswapStack_; }
-    
+
     // repeated .RemoteRequestProtocol messages = 13;
     public static final int MESSAGES_FIELD_NUMBER = 13;
     private java.util.List<se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol> messages_ =
@@ -775,7 +775,7 @@ public final class RemoteProtocol {
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol getMessages(int index) {
       return messages_.get(index);
     }
-    
+
     private void initFields() {
       originalAddress_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
       lifeCycle_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.getDefaultInstance();
@@ -798,7 +798,7 @@ public final class RemoteProtocol {
       }
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -843,12 +843,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasUuid()) {
         size += com.google.protobuf.CodedOutputStream
@@ -906,7 +906,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -973,31 +973,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -1006,20 +1006,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -1029,7 +1029,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -1038,7 +1038,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -1052,7 +1052,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol)other);
@@ -1061,7 +1061,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.getDefaultInstance()) return this;
         if (other.hasUuid()) {
@@ -1109,7 +1109,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1203,8 +1203,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required string uuid = 1;
       public boolean hasUuid() {
         return result.hasUuid();
@@ -1225,7 +1225,7 @@ public final class RemoteProtocol {
         result.uuid_ = getDefaultInstance().getUuid();
         return this;
       }
-      
+
       // required string id = 2;
       public boolean hasId() {
         return result.hasId();
@@ -1246,7 +1246,7 @@ public final class RemoteProtocol {
         result.id_ = getDefaultInstance().getId();
         return this;
       }
-      
+
       // required string actorClassname = 3;
       public boolean hasActorClassname() {
         return result.hasActorClassname();
@@ -1267,7 +1267,7 @@ public final class RemoteProtocol {
         result.actorClassname_ = getDefaultInstance().getActorClassname();
         return this;
       }
-      
+
       // required .AddressProtocol originalAddress = 4;
       public boolean hasOriginalAddress() {
         return result.hasOriginalAddress();
@@ -1304,7 +1304,7 @@ public final class RemoteProtocol {
         result.originalAddress_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // optional bytes actorInstance = 5;
       public boolean hasActorInstance() {
         return result.hasActorInstance();
@@ -1325,7 +1325,7 @@ public final class RemoteProtocol {
         result.actorInstance_ = getDefaultInstance().getActorInstance();
         return this;
       }
-      
+
       // optional string serializerClassname = 6;
       public boolean hasSerializerClassname() {
         return result.hasSerializerClassname();
@@ -1346,7 +1346,7 @@ public final class RemoteProtocol {
         result.serializerClassname_ = getDefaultInstance().getSerializerClassname();
         return this;
       }
-      
+
       // optional bool isTransactor = 7;
       public boolean hasIsTransactor() {
         return result.hasIsTransactor();
@@ -1364,7 +1364,7 @@ public final class RemoteProtocol {
         result.isTransactor_ = false;
         return this;
       }
-      
+
       // optional uint64 timeout = 8;
       public boolean hasTimeout() {
         return result.hasTimeout();
@@ -1382,7 +1382,7 @@ public final class RemoteProtocol {
         result.timeout_ = 0L;
         return this;
       }
-      
+
       // optional uint64 receiveTimeout = 9;
       public boolean hasReceiveTimeout() {
         return result.hasReceiveTimeout();
@@ -1400,7 +1400,7 @@ public final class RemoteProtocol {
         result.receiveTimeout_ = 0L;
         return this;
       }
-      
+
       // optional .LifeCycleProtocol lifeCycle = 10;
       public boolean hasLifeCycle() {
         return result.hasLifeCycle();
@@ -1437,7 +1437,7 @@ public final class RemoteProtocol {
         result.lifeCycle_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // optional .RemoteActorRefProtocol supervisor = 11;
       public boolean hasSupervisor() {
         return result.hasSupervisor();
@@ -1474,7 +1474,7 @@ public final class RemoteProtocol {
         result.supervisor_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // optional bytes hotswapStack = 12;
       public boolean hasHotswapStack() {
         return result.hasHotswapStack();
@@ -1495,7 +1495,7 @@ public final class RemoteProtocol {
         result.hotswapStack_ = getDefaultInstance().getHotswapStack();
         return this;
       }
-      
+
       // repeated .RemoteRequestProtocol messages = 13;
       public java.util.List<se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol> getMessagesList() {
         return java.util.Collections.unmodifiableList(result.messages_);
@@ -1546,19 +1546,19 @@ public final class RemoteProtocol {
         result.messages_ = java.util.Collections.emptyList();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:SerializedActorRefProtocol)
     }
-    
+
     static {
       defaultInstance = new SerializedActorRefProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:SerializedActorRefProtocol)
   }
-  
+
   public static final class MessageProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use MessageProtocol.newBuilder() to construct.
@@ -1566,47 +1566,47 @@ public final class RemoteProtocol {
       initFields();
     }
     private MessageProtocol(boolean noInit) {}
-    
+
     private static final MessageProtocol defaultInstance;
     public static MessageProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public MessageProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_MessageProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_MessageProtocol_fieldAccessorTable;
     }
-    
+
     // required .SerializationSchemeType serializationScheme = 1;
     public static final int SERIALIZATIONSCHEME_FIELD_NUMBER = 1;
     private boolean hasSerializationScheme;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializationSchemeType serializationScheme_;
     public boolean hasSerializationScheme() { return hasSerializationScheme; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializationSchemeType getSerializationScheme() { return serializationScheme_; }
-    
+
     // required bytes message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
     private boolean hasMessage;
     private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasMessage() { return hasMessage; }
     public com.google.protobuf.ByteString getMessage() { return message_; }
-    
+
     // optional bytes messageManifest = 3;
     public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
     private boolean hasMessageManifest;
     private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
     public boolean hasMessageManifest() { return hasMessageManifest; }
     public com.google.protobuf.ByteString getMessageManifest() { return messageManifest_; }
-    
+
     private void initFields() {
       serializationScheme_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializationSchemeType.JAVA;
     }
@@ -1615,7 +1615,7 @@ public final class RemoteProtocol {
       if (!hasMessage) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -1630,12 +1630,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasSerializationScheme()) {
         size += com.google.protobuf.CodedOutputStream
@@ -1653,7 +1653,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1720,31 +1720,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -1753,20 +1753,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -1776,7 +1776,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -1785,7 +1785,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -1795,7 +1795,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol)other);
@@ -1804,7 +1804,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance()) return this;
         if (other.hasSerializationScheme()) {
@@ -1819,7 +1819,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1862,8 +1862,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required .SerializationSchemeType serializationScheme = 1;
       public boolean hasSerializationScheme() {
         return result.hasSerializationScheme();
@@ -1884,7 +1884,7 @@ public final class RemoteProtocol {
         result.serializationScheme_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializationSchemeType.JAVA;
         return this;
       }
-      
+
       // required bytes message = 2;
       public boolean hasMessage() {
         return result.hasMessage();
@@ -1905,7 +1905,7 @@ public final class RemoteProtocol {
         result.message_ = getDefaultInstance().getMessage();
         return this;
       }
-      
+
       // optional bytes messageManifest = 3;
       public boolean hasMessageManifest() {
         return result.hasMessageManifest();
@@ -1926,19 +1926,19 @@ public final class RemoteProtocol {
         result.messageManifest_ = getDefaultInstance().getMessageManifest();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:MessageProtocol)
     }
-    
+
     static {
       defaultInstance = new MessageProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:MessageProtocol)
   }
-  
+
   public static final class ActorInfoProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use ActorInfoProtocol.newBuilder() to construct.
@@ -1946,61 +1946,61 @@ public final class RemoteProtocol {
       initFields();
     }
     private ActorInfoProtocol(boolean noInit) {}
-    
+
     private static final ActorInfoProtocol defaultInstance;
     public static ActorInfoProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public ActorInfoProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_ActorInfoProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_ActorInfoProtocol_fieldAccessorTable;
     }
-    
+
     // required string uuid = 1;
     public static final int UUID_FIELD_NUMBER = 1;
     private boolean hasUuid;
     private java.lang.String uuid_ = "";
     public boolean hasUuid() { return hasUuid; }
     public java.lang.String getUuid() { return uuid_; }
-    
+
     // required string target = 2;
     public static final int TARGET_FIELD_NUMBER = 2;
     private boolean hasTarget;
     private java.lang.String target_ = "";
     public boolean hasTarget() { return hasTarget; }
     public java.lang.String getTarget() { return target_; }
-    
+
     // required uint64 timeout = 3;
     public static final int TIMEOUT_FIELD_NUMBER = 3;
     private boolean hasTimeout;
     private long timeout_ = 0L;
     public boolean hasTimeout() { return hasTimeout; }
     public long getTimeout() { return timeout_; }
-    
+
     // required .ActorType actorType = 4;
     public static final int ACTORTYPE_FIELD_NUMBER = 4;
     private boolean hasActorType;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType actorType_;
     public boolean hasActorType() { return hasActorType; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType getActorType() { return actorType_; }
-    
+
     // optional .TypedActorInfoProtocol typedActorInfo = 5;
     public static final int TYPEDACTORINFO_FIELD_NUMBER = 5;
     private boolean hasTypedActorInfo;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol typedActorInfo_;
     public boolean hasTypedActorInfo() { return hasTypedActorInfo; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol getTypedActorInfo() { return typedActorInfo_; }
-    
+
     private void initFields() {
       actorType_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType.SCALA_ACTOR;
       typedActorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDefaultInstance();
@@ -2015,7 +2015,7 @@ public final class RemoteProtocol {
       }
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -2036,12 +2036,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasUuid()) {
         size += com.google.protobuf.CodedOutputStream
@@ -2067,7 +2067,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -2134,31 +2134,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -2167,20 +2167,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -2190,7 +2190,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -2199,7 +2199,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -2209,7 +2209,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol)other);
@@ -2218,7 +2218,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDefaultInstance()) return this;
         if (other.hasUuid()) {
@@ -2239,7 +2239,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2295,8 +2295,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required string uuid = 1;
       public boolean hasUuid() {
         return result.hasUuid();
@@ -2317,7 +2317,7 @@ public final class RemoteProtocol {
         result.uuid_ = getDefaultInstance().getUuid();
         return this;
       }
-      
+
       // required string target = 2;
       public boolean hasTarget() {
         return result.hasTarget();
@@ -2338,7 +2338,7 @@ public final class RemoteProtocol {
         result.target_ = getDefaultInstance().getTarget();
         return this;
       }
-      
+
       // required uint64 timeout = 3;
       public boolean hasTimeout() {
         return result.hasTimeout();
@@ -2356,7 +2356,7 @@ public final class RemoteProtocol {
         result.timeout_ = 0L;
         return this;
       }
-      
+
       // required .ActorType actorType = 4;
       public boolean hasActorType() {
         return result.hasActorType();
@@ -2377,7 +2377,7 @@ public final class RemoteProtocol {
         result.actorType_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType.SCALA_ACTOR;
         return this;
       }
-      
+
       // optional .TypedActorInfoProtocol typedActorInfo = 5;
       public boolean hasTypedActorInfo() {
         return result.hasTypedActorInfo();
@@ -2414,19 +2414,19 @@ public final class RemoteProtocol {
         result.typedActorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:ActorInfoProtocol)
     }
-    
+
     static {
       defaultInstance = new ActorInfoProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:ActorInfoProtocol)
   }
-  
+
   public static final class TypedActorInfoProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use TypedActorInfoProtocol.newBuilder() to construct.
@@ -2434,40 +2434,40 @@ public final class RemoteProtocol {
       initFields();
     }
     private TypedActorInfoProtocol(boolean noInit) {}
-    
+
     private static final TypedActorInfoProtocol defaultInstance;
     public static TypedActorInfoProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public TypedActorInfoProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_TypedActorInfoProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_TypedActorInfoProtocol_fieldAccessorTable;
     }
-    
+
     // required string interface = 1;
     public static final int INTERFACE_FIELD_NUMBER = 1;
     private boolean hasInterface;
     private java.lang.String interface_ = "";
     public boolean hasInterface() { return hasInterface; }
     public java.lang.String getInterface() { return interface_; }
-    
+
     // required string method = 2;
     public static final int METHOD_FIELD_NUMBER = 2;
     private boolean hasMethod;
     private java.lang.String method_ = "";
     public boolean hasMethod() { return hasMethod; }
     public java.lang.String getMethod() { return method_; }
-    
+
     private void initFields() {
     }
     public final boolean isInitialized() {
@@ -2475,7 +2475,7 @@ public final class RemoteProtocol {
       if (!hasMethod) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -2487,12 +2487,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasInterface()) {
         size += com.google.protobuf.CodedOutputStream
@@ -2506,7 +2506,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -2573,31 +2573,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -2606,20 +2606,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -2629,7 +2629,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -2638,7 +2638,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -2648,7 +2648,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol)other);
@@ -2657,7 +2657,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDefaultInstance()) return this;
         if (other.hasInterface()) {
@@ -2669,7 +2669,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2702,8 +2702,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required string interface = 1;
       public boolean hasInterface() {
         return result.hasInterface();
@@ -2724,7 +2724,7 @@ public final class RemoteProtocol {
         result.interface_ = getDefaultInstance().getInterface();
         return this;
       }
-      
+
       // required string method = 2;
       public boolean hasMethod() {
         return result.hasMethod();
@@ -2745,19 +2745,19 @@ public final class RemoteProtocol {
         result.method_ = getDefaultInstance().getMethod();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:TypedActorInfoProtocol)
     }
-    
+
     static {
       defaultInstance = new TypedActorInfoProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:TypedActorInfoProtocol)
   }
-  
+
   public static final class RemoteRequestProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use RemoteRequestProtocol.newBuilder() to construct.
@@ -2765,68 +2765,68 @@ public final class RemoteProtocol {
       initFields();
     }
     private RemoteRequestProtocol(boolean noInit) {}
-    
+
     private static final RemoteRequestProtocol defaultInstance;
     public static RemoteRequestProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public RemoteRequestProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteRequestProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteRequestProtocol_fieldAccessorTable;
     }
-    
+
     // required uint64 id = 1;
     public static final int ID_FIELD_NUMBER = 1;
     private boolean hasId;
     private long id_ = 0L;
     public boolean hasId() { return hasId; }
     public long getId() { return id_; }
-    
+
     // required .MessageProtocol message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
     private boolean hasMessage;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol message_;
     public boolean hasMessage() { return hasMessage; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol getMessage() { return message_; }
-    
+
     // required .ActorInfoProtocol actorInfo = 3;
     public static final int ACTORINFO_FIELD_NUMBER = 3;
     private boolean hasActorInfo;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol actorInfo_;
     public boolean hasActorInfo() { return hasActorInfo; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol getActorInfo() { return actorInfo_; }
-    
+
     // required bool isOneWay = 4;
     public static final int ISONEWAY_FIELD_NUMBER = 4;
     private boolean hasIsOneWay;
     private boolean isOneWay_ = false;
     public boolean hasIsOneWay() { return hasIsOneWay; }
     public boolean getIsOneWay() { return isOneWay_; }
-    
+
     // optional string supervisorUuid = 5;
     public static final int SUPERVISORUUID_FIELD_NUMBER = 5;
     private boolean hasSupervisorUuid;
     private java.lang.String supervisorUuid_ = "";
     public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
     public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
-    
+
     // optional .RemoteActorRefProtocol sender = 6;
     public static final int SENDER_FIELD_NUMBER = 6;
     private boolean hasSender;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol sender_;
     public boolean hasSender() { return hasSender; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol getSender() { return sender_; }
-    
+
     private void initFields() {
       message_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance();
       actorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDefaultInstance();
@@ -2844,7 +2844,7 @@ public final class RemoteProtocol {
       }
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -2868,12 +2868,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasId()) {
         size += com.google.protobuf.CodedOutputStream
@@ -2903,7 +2903,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -2970,31 +2970,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -3003,20 +3003,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -3026,7 +3026,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -3035,7 +3035,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -3045,7 +3045,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol)other);
@@ -3054,7 +3054,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol.getDefaultInstance()) return this;
         if (other.hasId()) {
@@ -3078,7 +3078,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -3142,8 +3142,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required uint64 id = 1;
       public boolean hasId() {
         return result.hasId();
@@ -3161,7 +3161,7 @@ public final class RemoteProtocol {
         result.id_ = 0L;
         return this;
       }
-      
+
       // required .MessageProtocol message = 2;
       public boolean hasMessage() {
         return result.hasMessage();
@@ -3198,7 +3198,7 @@ public final class RemoteProtocol {
         result.message_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // required .ActorInfoProtocol actorInfo = 3;
       public boolean hasActorInfo() {
         return result.hasActorInfo();
@@ -3235,7 +3235,7 @@ public final class RemoteProtocol {
         result.actorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // required bool isOneWay = 4;
       public boolean hasIsOneWay() {
         return result.hasIsOneWay();
@@ -3253,7 +3253,7 @@ public final class RemoteProtocol {
         result.isOneWay_ = false;
         return this;
       }
-      
+
       // optional string supervisorUuid = 5;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
@@ -3274,7 +3274,7 @@ public final class RemoteProtocol {
         result.supervisorUuid_ = getDefaultInstance().getSupervisorUuid();
         return this;
       }
-      
+
       // optional .RemoteActorRefProtocol sender = 6;
       public boolean hasSender() {
         return result.hasSender();
@@ -3311,19 +3311,19 @@ public final class RemoteProtocol {
         result.sender_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:RemoteRequestProtocol)
     }
-    
+
     static {
       defaultInstance = new RemoteRequestProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:RemoteRequestProtocol)
   }
-  
+
   public static final class RemoteReplyProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use RemoteReplyProtocol.newBuilder() to construct.
@@ -3331,68 +3331,68 @@ public final class RemoteProtocol {
       initFields();
     }
     private RemoteReplyProtocol(boolean noInit) {}
-    
+
     private static final RemoteReplyProtocol defaultInstance;
     public static RemoteReplyProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public RemoteReplyProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteReplyProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteReplyProtocol_fieldAccessorTable;
     }
-    
+
     // required uint64 id = 1;
     public static final int ID_FIELD_NUMBER = 1;
     private boolean hasId;
     private long id_ = 0L;
     public boolean hasId() { return hasId; }
     public long getId() { return id_; }
-    
+
     // optional .MessageProtocol message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
     private boolean hasMessage;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol message_;
     public boolean hasMessage() { return hasMessage; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol getMessage() { return message_; }
-    
+
     // optional .ExceptionProtocol exception = 3;
     public static final int EXCEPTION_FIELD_NUMBER = 3;
     private boolean hasException;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol exception_;
     public boolean hasException() { return hasException; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol getException() { return exception_; }
-    
+
     // optional string supervisorUuid = 4;
     public static final int SUPERVISORUUID_FIELD_NUMBER = 4;
     private boolean hasSupervisorUuid;
     private java.lang.String supervisorUuid_ = "";
     public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
     public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
-    
+
     // required bool isActor = 5;
     public static final int ISACTOR_FIELD_NUMBER = 5;
     private boolean hasIsActor;
     private boolean isActor_ = false;
     public boolean hasIsActor() { return hasIsActor; }
     public boolean getIsActor() { return isActor_; }
-    
+
     // required bool isSuccessful = 6;
     public static final int ISSUCCESSFUL_FIELD_NUMBER = 6;
     private boolean hasIsSuccessful;
     private boolean isSuccessful_ = false;
     public boolean hasIsSuccessful() { return hasIsSuccessful; }
     public boolean getIsSuccessful() { return isSuccessful_; }
-    
+
     private void initFields() {
       message_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance();
       exception_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol.getDefaultInstance();
@@ -3409,7 +3409,7 @@ public final class RemoteProtocol {
       }
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -3433,12 +3433,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasId()) {
         size += com.google.protobuf.CodedOutputStream
@@ -3468,7 +3468,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -3535,31 +3535,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -3568,20 +3568,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -3591,7 +3591,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -3600,7 +3600,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -3610,7 +3610,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol)other);
@@ -3619,7 +3619,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol.getDefaultInstance()) return this;
         if (other.hasId()) {
@@ -3643,7 +3643,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -3702,8 +3702,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required uint64 id = 1;
       public boolean hasId() {
         return result.hasId();
@@ -3721,7 +3721,7 @@ public final class RemoteProtocol {
         result.id_ = 0L;
         return this;
       }
-      
+
       // optional .MessageProtocol message = 2;
       public boolean hasMessage() {
         return result.hasMessage();
@@ -3758,7 +3758,7 @@ public final class RemoteProtocol {
         result.message_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // optional .ExceptionProtocol exception = 3;
       public boolean hasException() {
         return result.hasException();
@@ -3795,7 +3795,7 @@ public final class RemoteProtocol {
         result.exception_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol.getDefaultInstance();
         return this;
       }
-      
+
       // optional string supervisorUuid = 4;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
@@ -3816,7 +3816,7 @@ public final class RemoteProtocol {
         result.supervisorUuid_ = getDefaultInstance().getSupervisorUuid();
         return this;
       }
-      
+
       // required bool isActor = 5;
       public boolean hasIsActor() {
         return result.hasIsActor();
@@ -3834,7 +3834,7 @@ public final class RemoteProtocol {
         result.isActor_ = false;
         return this;
       }
-      
+
       // required bool isSuccessful = 6;
       public boolean hasIsSuccessful() {
         return result.hasIsSuccessful();
@@ -3852,19 +3852,19 @@ public final class RemoteProtocol {
         result.isSuccessful_ = false;
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:RemoteReplyProtocol)
     }
-    
+
     static {
       defaultInstance = new RemoteReplyProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:RemoteReplyProtocol)
   }
-  
+
   public static final class LifeCycleProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use LifeCycleProtocol.newBuilder() to construct.
@@ -3872,61 +3872,61 @@ public final class RemoteProtocol {
       initFields();
     }
     private LifeCycleProtocol(boolean noInit) {}
-    
+
     private static final LifeCycleProtocol defaultInstance;
     public static LifeCycleProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public LifeCycleProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_LifeCycleProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_LifeCycleProtocol_fieldAccessorTable;
     }
-    
+
     // required .LifeCycleType lifeCycle = 1;
     public static final int LIFECYCLE_FIELD_NUMBER = 1;
     private boolean hasLifeCycle;
     private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleType lifeCycle_;
     public boolean hasLifeCycle() { return hasLifeCycle; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleType getLifeCycle() { return lifeCycle_; }
-    
+
     // optional string preRestart = 2;
     public static final int PRERESTART_FIELD_NUMBER = 2;
     private boolean hasPreRestart;
     private java.lang.String preRestart_ = "";
     public boolean hasPreRestart() { return hasPreRestart; }
     public java.lang.String getPreRestart() { return preRestart_; }
-    
+
     // optional string postRestart = 3;
     public static final int POSTRESTART_FIELD_NUMBER = 3;
     private boolean hasPostRestart;
     private java.lang.String postRestart_ = "";
     public boolean hasPostRestart() { return hasPostRestart; }
     public java.lang.String getPostRestart() { return postRestart_; }
-    
+
     // optional string init = 4;
     public static final int INIT_FIELD_NUMBER = 4;
     private boolean hasInit;
     private java.lang.String init_ = "";
     public boolean hasInit() { return hasInit; }
     public java.lang.String getInit() { return init_; }
-    
+
     // optional string shutdown = 5;
     public static final int SHUTDOWN_FIELD_NUMBER = 5;
     private boolean hasShutdown;
     private java.lang.String shutdown_ = "";
     public boolean hasShutdown() { return hasShutdown; }
     public java.lang.String getShutdown() { return shutdown_; }
-    
+
     private void initFields() {
       lifeCycle_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleType.PERMANENT;
     }
@@ -3934,7 +3934,7 @@ public final class RemoteProtocol {
       if (!hasLifeCycle) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -3955,12 +3955,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasLifeCycle()) {
         size += com.google.protobuf.CodedOutputStream
@@ -3986,7 +3986,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -4053,31 +4053,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -4086,20 +4086,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -4109,7 +4109,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -4118,7 +4118,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -4128,7 +4128,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol)other);
@@ -4137,7 +4137,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.getDefaultInstance()) return this;
         if (other.hasLifeCycle()) {
@@ -4158,7 +4158,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -4209,8 +4209,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required .LifeCycleType lifeCycle = 1;
       public boolean hasLifeCycle() {
         return result.hasLifeCycle();
@@ -4231,7 +4231,7 @@ public final class RemoteProtocol {
         result.lifeCycle_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleType.PERMANENT;
         return this;
       }
-      
+
       // optional string preRestart = 2;
       public boolean hasPreRestart() {
         return result.hasPreRestart();
@@ -4252,7 +4252,7 @@ public final class RemoteProtocol {
         result.preRestart_ = getDefaultInstance().getPreRestart();
         return this;
       }
-      
+
       // optional string postRestart = 3;
       public boolean hasPostRestart() {
         return result.hasPostRestart();
@@ -4273,7 +4273,7 @@ public final class RemoteProtocol {
         result.postRestart_ = getDefaultInstance().getPostRestart();
         return this;
       }
-      
+
       // optional string init = 4;
       public boolean hasInit() {
         return result.hasInit();
@@ -4294,7 +4294,7 @@ public final class RemoteProtocol {
         result.init_ = getDefaultInstance().getInit();
         return this;
       }
-      
+
       // optional string shutdown = 5;
       public boolean hasShutdown() {
         return result.hasShutdown();
@@ -4315,19 +4315,19 @@ public final class RemoteProtocol {
         result.shutdown_ = getDefaultInstance().getShutdown();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:LifeCycleProtocol)
     }
-    
+
     static {
       defaultInstance = new LifeCycleProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:LifeCycleProtocol)
   }
-  
+
   public static final class AddressProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use AddressProtocol.newBuilder() to construct.
@@ -4335,40 +4335,40 @@ public final class RemoteProtocol {
       initFields();
     }
     private AddressProtocol(boolean noInit) {}
-    
+
     private static final AddressProtocol defaultInstance;
     public static AddressProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public AddressProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_AddressProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_AddressProtocol_fieldAccessorTable;
     }
-    
+
     // required string hostname = 1;
     public static final int HOSTNAME_FIELD_NUMBER = 1;
     private boolean hasHostname;
     private java.lang.String hostname_ = "";
     public boolean hasHostname() { return hasHostname; }
     public java.lang.String getHostname() { return hostname_; }
-    
+
     // required uint32 port = 2;
     public static final int PORT_FIELD_NUMBER = 2;
     private boolean hasPort;
     private int port_ = 0;
     public boolean hasPort() { return hasPort; }
     public int getPort() { return port_; }
-    
+
     private void initFields() {
     }
     public final boolean isInitialized() {
@@ -4376,7 +4376,7 @@ public final class RemoteProtocol {
       if (!hasPort) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -4388,12 +4388,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasHostname()) {
         size += com.google.protobuf.CodedOutputStream
@@ -4407,7 +4407,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -4474,31 +4474,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -4507,20 +4507,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -4530,7 +4530,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -4539,7 +4539,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -4549,7 +4549,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol)other);
@@ -4558,7 +4558,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance()) return this;
         if (other.hasHostname()) {
@@ -4570,7 +4570,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -4603,8 +4603,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required string hostname = 1;
       public boolean hasHostname() {
         return result.hasHostname();
@@ -4625,7 +4625,7 @@ public final class RemoteProtocol {
         result.hostname_ = getDefaultInstance().getHostname();
         return this;
       }
-      
+
       // required uint32 port = 2;
       public boolean hasPort() {
         return result.hasPort();
@@ -4643,19 +4643,19 @@ public final class RemoteProtocol {
         result.port_ = 0;
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:AddressProtocol)
     }
-    
+
     static {
       defaultInstance = new AddressProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:AddressProtocol)
   }
-  
+
   public static final class ExceptionProtocol extends
       com.google.protobuf.GeneratedMessage {
     // Use ExceptionProtocol.newBuilder() to construct.
@@ -4663,40 +4663,40 @@ public final class RemoteProtocol {
       initFields();
     }
     private ExceptionProtocol(boolean noInit) {}
-    
+
     private static final ExceptionProtocol defaultInstance;
     public static ExceptionProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public ExceptionProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_ExceptionProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_ExceptionProtocol_fieldAccessorTable;
     }
-    
+
     // required string classname = 1;
     public static final int CLASSNAME_FIELD_NUMBER = 1;
     private boolean hasClassname;
     private java.lang.String classname_ = "";
     public boolean hasClassname() { return hasClassname; }
     public java.lang.String getClassname() { return classname_; }
-    
+
     // required string message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
     private boolean hasMessage;
     private java.lang.String message_ = "";
     public boolean hasMessage() { return hasMessage; }
     public java.lang.String getMessage() { return message_; }
-    
+
     private void initFields() {
     }
     public final boolean isInitialized() {
@@ -4704,7 +4704,7 @@ public final class RemoteProtocol {
       if (!hasMessage) return false;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -4716,12 +4716,12 @@ public final class RemoteProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (hasClassname()) {
         size += com.google.protobuf.CodedOutputStream
@@ -4735,7 +4735,7 @@ public final class RemoteProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     public static se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -4802,31 +4802,31 @@ public final class RemoteProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> {
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol result;
-      
+
       // Construct using se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol.newBuilder()
       private Builder() {}
-      
+
       private static Builder create() {
         Builder builder = new Builder();
         builder.result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol();
         return builder;
       }
-      
+
       protected se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol internalGetResult() {
         return result;
       }
-      
+
       public Builder clear() {
         if (result == null) {
           throw new IllegalStateException(
@@ -4835,20 +4835,20 @@ public final class RemoteProtocol {
         result = new se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol();
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(result);
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol.getDescriptor();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol getDefaultInstanceForType() {
         return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol.getDefaultInstance();
       }
-      
+
       public boolean isInitialized() {
         return result.isInitialized();
       }
@@ -4858,7 +4858,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         if (!isInitialized()) {
@@ -4867,7 +4867,7 @@ public final class RemoteProtocol {
         }
         return buildPartial();
       }
-      
+
       public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol buildPartial() {
         if (result == null) {
           throw new IllegalStateException(
@@ -4877,7 +4877,7 @@ public final class RemoteProtocol {
         result = null;
         return returnMe;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol) {
           return mergeFrom((se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol)other);
@@ -4886,7 +4886,7 @@ public final class RemoteProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol.getDefaultInstance()) return this;
         if (other.hasClassname()) {
@@ -4898,7 +4898,7 @@ public final class RemoteProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -4931,8 +4931,8 @@ public final class RemoteProtocol {
           }
         }
       }
-      
-      
+
+
       // required string classname = 1;
       public boolean hasClassname() {
         return result.hasClassname();
@@ -4953,7 +4953,7 @@ public final class RemoteProtocol {
         result.classname_ = getDefaultInstance().getClassname();
         return this;
       }
-      
+
       // required string message = 2;
       public boolean hasMessage() {
         return result.hasMessage();
@@ -4974,19 +4974,19 @@ public final class RemoteProtocol {
         result.message_ = getDefaultInstance().getMessage();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:ExceptionProtocol)
     }
-    
+
     static {
       defaultInstance = new ExceptionProtocol(true);
       se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internalForceInit();
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:ExceptionProtocol)
   }
-  
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_RemoteActorRefProtocol_descriptor;
   private static
@@ -5037,7 +5037,7 @@ public final class RemoteProtocol {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ExceptionProtocol_fieldAccessorTable;
-  
+
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -5183,8 +5183,8 @@ public final class RemoteProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
+
   public static void internalForceInit() {}
-  
+
   // @@protoc_insertion_point(outer_class_scope)
 }

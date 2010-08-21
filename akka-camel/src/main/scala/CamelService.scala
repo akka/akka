@@ -89,7 +89,7 @@ trait CamelService extends Bootable with Logging {
     onLoad
     this
   }
-  
+
   /**
    * Stops the CamelService.
    *

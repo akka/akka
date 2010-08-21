@@ -16,16 +16,16 @@ import java.net.{InetAddress, UnknownHostException}
  *   <li>a message including exception name, uuid, original message and the stacktrace</li>
  *   <li>a method 'log' that will log the exception once and only once</li>
  * </ul>
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable abstract class AkkaException(message: String) extends RuntimeException(message) {
   @volatile private var isLogged = false
   val exceptionName = getClass.getName
-  
+
   val uuid = String.format("%s_%s", AkkaException.hostname, UUID.newUuid.toString)
 
-  override val toString = 
+  override val toString =
     String.format("%s\n\t[%s]\n\t%s\n\t%s", exceptionName, uuid, message, stackTrace)
 
   val stackTrace = {
@@ -42,7 +42,7 @@ import java.net.{InetAddress, UnknownHostException}
 }
 
 object AkkaException extends Logging {
-  val hostname = try { 
+  val hostname = try {
     InetAddress.getLocalHost.getHostName
   } catch {
     case e: UnknownHostException => "unknown"

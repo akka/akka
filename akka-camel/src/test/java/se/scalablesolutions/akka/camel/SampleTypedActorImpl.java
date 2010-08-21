@@ -10,5 +10,5 @@ public class SampleTypedActorImpl extends TypedActor implements SampleTypedActor
     public String foo(String s) {
         return String.format("foo: %s", s);
     }
-    
+
 }

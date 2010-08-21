@@ -46,7 +46,7 @@ import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, D
 object Dispatchers extends Logging {
   val THROUGHPUT       = config.getInt("akka.actor.throughput", 5)
   val MAILBOX_CAPACITY = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
-  
+
   lazy val defaultGlobalDispatcher = {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
   }
@@ -138,7 +138,7 @@ object Dispatchers extends Logging {
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
    */
-  def fromConfig(key: String, default: => MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher = 
+  def fromConfig(key: String, default: => MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher =
     config.getConfigMap(key).flatMap(from).getOrElse(default)
 
   /*
@@ -177,20 +177,20 @@ object Dispatchers extends Logging {
       case "GlobalReactorBasedThreadPoolEventDriven"   => globalReactorBasedThreadPoolEventDrivenDispatcher
       case "GlobalExecutorBasedEventDriven"            => globalExecutorBasedEventDrivenDispatcher
       case "GlobalHawt"                                => globalHawtDispatcher
-    
+
       case unknown => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
     }
 
     dispatcher foreach {
       case d: ThreadPoolBuilder => d.configureIfPossible( builder => {
-      
+
         cfg.getInt("keep-alive-ms").foreach(builder.setKeepAliveTimeInMillis(_))
         cfg.getDouble("core-pool-size-factor").foreach(builder.setCorePoolSizeFromFactor(_))
         cfg.getDouble("max-pool-size-factor").foreach(builder.setMaxPoolSizeFromFactor(_))
         cfg.getInt("executor-bounds").foreach(builder.setExecutorBounds(_))
         cfg.getBool("allow-core-timeout").foreach(builder.setAllowCoreThreadTimeout(_))
         cfg.getInt("mailbox-capacity").foreach(builder.setMailboxCapacity(_))
-        
+
         cfg.getString("rejection-policy").map({
           case "abort"          => new AbortPolicy()
           case "caller-runs"    => new CallerRunsPolicy()

@@ -63,15 +63,15 @@ import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
  *                   Larger values (or zero or negative) increase througput, smaller values increase fairness
  */
 class ExecutorBasedEventDrivenDispatcher(
-  _name: String, 
-  throughput: Int = Dispatchers.THROUGHPUT, 
+  _name: String,
+  throughput: Int = Dispatchers.THROUGHPUT,
   capacity: Int = Dispatchers.MAILBOX_CAPACITY) extends MessageDispatcher with ThreadPoolBuilder {
 
   def this(_name: String, throughput: Int) = this(_name, throughput, Dispatchers.MAILBOX_CAPACITY) // Needed for Java API usage
   def this(_name: String) = this(_name, Dispatchers.THROUGHPUT) // Needed for Java API usage
 
   mailboxCapacity = capacity
-  
+
   @volatile private var active: Boolean = false
 
   val name = "akka:event-driven:dispatcher:" + _name

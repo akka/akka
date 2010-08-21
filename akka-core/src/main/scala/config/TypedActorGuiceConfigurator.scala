@@ -120,13 +120,13 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
         Some(new InetSocketAddress(component.remoteAddress.get.hostname, component.remoteAddress.get.port))
       else None
 
-    remoteAddress.foreach { address => 
+    remoteAddress.foreach { address =>
       actorRef.makeRemote(remoteAddress.get)
       RemoteServer.registerTypedActor(address, implementationClass.getName, proxy)
     }
 
     AspectInitRegistry.register(
-      proxy, 
+      proxy,
       AspectInit(interfaceClass, typedActor, actorRef, remoteAddress, timeout))
     typedActor.initialize(proxy)
     actorRef.start

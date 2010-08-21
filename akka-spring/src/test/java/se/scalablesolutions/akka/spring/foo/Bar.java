@@ -9,7 +9,7 @@ public class Bar extends TypedActor implements IBar {
         public String getBar() {
                 return "bar";
         }
-        
+
         public void throwsIOException() throws IOException {
           throw new IOException("some IO went wrong");
         }
