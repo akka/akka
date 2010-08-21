@@ -29,13 +29,17 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateExcept
  *
  * @author Jan Van Besien
  */
-class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends MessageDispatcher with ThreadPoolBuilder {
+class ExecutorBasedEventDrivenWorkStealingDispatcher(
+  _name: String,
+  capacity: Int = Dispatchers.MAILBOX_CAPACITY) extends MessageDispatcher with ThreadPoolBuilder {
+  mailboxCapacity = capacity
+
   @volatile private var active: Boolean = false
 
   implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
 
   /** Type of the actors registered in this dispatcher. */
-  private var actorType:Option[Class[_]] = None
+  private var actorType: Option[Class[_]] = None
 
   private val pooledActors = new CopyOnWriteArrayList[ActorRef]
 
@@ -44,7 +48,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
 
   val name = "akka:event-driven-work-stealing:dispatcher:" + _name
   init
-
 
   /**
    * @return the mailbox associated with the actor
@@ -75,6 +78,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   private def tryProcessMailbox(receiver: ActorRef): Boolean = {
     var lockAcquiredOnce = false
     val lock = receiver.dispatcherLock
+
     // this do-wile loop is required to prevent missing new messages between the end of processing
     // the mailbox and releasing the lock
     do {
@@ -87,8 +91,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
         }
       }
     } while ((lockAcquiredOnce && !getMailbox(receiver).isEmpty))
-
-    return lockAcquiredOnce
+    
+    lockAcquiredOnce
   }
 
   /**
@@ -181,8 +185,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   override def register(actorRef: ActorRef) = {
     verifyActorsAreOfSameType(actorRef)
     // The actor will need a ConcurrentLinkedDeque based mailbox
-    if( actorRef.mailbox == null ) {
-      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]()
+    if (actorRef.mailbox == null) {
+      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]
       else actorRef.mailbox = new LinkedBlockingDeque[MessageInvocation](mailboxCapacity)
     }
     pooledActors.add(actorRef)

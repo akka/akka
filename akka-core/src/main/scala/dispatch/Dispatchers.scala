@@ -44,8 +44,9 @@ import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, D
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers extends Logging {
-  val THROUGHPUT = config.getInt("akka.actor.throughput", 5)
-
+  val THROUGHPUT       = config.getInt("akka.actor.throughput", 5)
+  val MAILBOX_CAPACITY = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
+  
   lazy val defaultGlobalDispatcher = {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
   }
@@ -73,11 +74,18 @@ object Dispatchers extends Logging {
   def newHawtDispatcher(aggregate: Boolean) = new HawtDispatcher(aggregate)
 
   /**
-   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * Creates an thread based dispatcher serving a single actor through the same single thread.
    * <p/>
-   * Has a fluent builder interface for configuring its semantics.
+   * E.g. each actor consumes its own thread.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int = THROUGHPUT) = new ExecutorBasedEventDrivenDispatcher(name, throughput)
+  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
+
+  /**
+   * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * <p/>
+   * E.g. each actor consumes its own thread.
+   */
+  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int) = new ThreadBasedDispatcher(actor, mailboxCapacity)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -87,11 +95,32 @@ object Dispatchers extends Logging {
   def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name, THROUGHPUT)
 
   /**
+   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int) = new ExecutorBasedEventDrivenDispatcher(name, throughput)
+
+  /**
+   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxCapacity: Int) = new ExecutorBasedEventDrivenDispatcher(name, throughput, mailboxCapacity)
+
+  /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
   def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String) = new ExecutorBasedEventDrivenWorkStealingDispatcher(name)
+
+  /**
+   * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxCapacity: Int) = new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxCapacity)
 
   /**
    * Creates a reactor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -104,13 +133,6 @@ object Dispatchers extends Logging {
    * Creates a reactor-based event-driven dispatcher serving multiple (millions) of actors through a single thread.
    */
   def newReactorBasedSingleThreadEventDrivenDispatcher(name: String) = new ReactorBasedSingleThreadEventDrivenDispatcher(name)
-
-  /**
-   * Creates an thread based dispatcher serving a single actor through the same single thread.
-   * <p/>
-   * E.g. each actor consumes its own thread.
-   */
-  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
 
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
@@ -156,7 +178,7 @@ object Dispatchers extends Logging {
       case "GlobalExecutorBasedEventDriven"            => globalExecutorBasedEventDrivenDispatcher
       case "GlobalHawt"                                => globalHawtDispatcher
     
-      case unknown => throw new IllegalArgumentException("Unknown dispatcher type %s" format unknown)
+      case unknown => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
     }
 
     dispatcher foreach {
@@ -168,7 +190,7 @@ object Dispatchers extends Logging {
         cfg.getInt("executor-bounds").foreach(builder.setExecutorBounds(_))
         cfg.getBool("allow-core-timeout").foreach(builder.setAllowCoreThreadTimeout(_))
         cfg.getInt("mailbox-capacity").foreach(builder.setMailboxCapacity(_))
-
+        
         cfg.getString("rejection-policy").map({
           case "abort"          => new AbortPolicy()
           case "caller-runs"    => new CallerRunsPolicy()
