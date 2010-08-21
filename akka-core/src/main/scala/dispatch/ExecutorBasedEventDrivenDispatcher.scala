@@ -62,9 +62,16 @@ import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
  *                   always continues until the mailbox is empty.
  *                   Larger values (or zero or negative) increase througput, smaller values increase fairness
  */
-class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispatchers.THROUGHPUT) extends MessageDispatcher with ThreadPoolBuilder {
+class ExecutorBasedEventDrivenDispatcher(
+  _name: String, 
+  throughput: Int = Dispatchers.THROUGHPUT, 
+  capacity: Int = Dispatchers.MAILBOX_CAPACITY) extends MessageDispatcher with ThreadPoolBuilder {
+
+  def this(_name: String, throughput: Int) = this(_name, throughput, Dispatchers.MAILBOX_CAPACITY) // Needed for Java API usage
   def this(_name: String) = this(_name, Dispatchers.THROUGHPUT) // Needed for Java API usage
 
+  mailboxCapacity = capacity
+  
   @volatile private var active: Boolean = false
 
   val name = "akka:event-driven:dispatcher:" + _name
@@ -83,8 +90,8 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
   override def register(actorRef: ActorRef) = {
-    if( actorRef.mailbox eq null ) {
-      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedQueue[MessageInvocation]()
+    if (actorRef.mailbox eq null ) {
+      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedQueue[MessageInvocation]
       else actorRef.mailbox = new LinkedBlockingQueue[MessageInvocation](mailboxCapacity)
     }
     super.register(actorRef)
