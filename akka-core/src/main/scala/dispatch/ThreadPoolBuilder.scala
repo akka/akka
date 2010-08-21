@@ -22,6 +22,7 @@ trait ThreadPoolBuilder extends Logging {
 
   private var threadPoolBuilder: ThreadPoolExecutor = _
   private var boundedExecutorBound = -1
+  protected var mailboxCapacity = -1
   @volatile private var inProcessOfBuilding = false
   private var blockingQueue: BlockingQueue[Runnable] = _
 
@@ -154,6 +155,13 @@ trait ThreadPoolBuilder extends Logging {
     this.boundedExecutorBound = bounds
   }
   
+  /**
+   * Sets the mailbox capacity, -1 is unbounded
+   */
+  def setMailboxCapacity(capacity: Int): Unit = synchronized {
+    this.mailboxCapacity = capacity
+  }
+
   protected def procs(multiplier: Double): Int =
     (Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt
 

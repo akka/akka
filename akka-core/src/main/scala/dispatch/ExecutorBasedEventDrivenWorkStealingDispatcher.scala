@@ -5,9 +5,9 @@
 package se.scalablesolutions.akka.dispatch
 
 import java.util.concurrent.CopyOnWriteArrayList
+import jsr166x.{Deque, ConcurrentLinkedDeque, LinkedBlockingDeque}
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateException}
-import jsr166x.ConcurrentLinkedDeque
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -49,7 +49,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[ConcurrentLinkedDeque[MessageInvocation]]
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[Deque[MessageInvocation]]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
@@ -182,7 +182,8 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(_name: String) extends Mess
     verifyActorsAreOfSameType(actorRef)
     // The actor will need a ConcurrentLinkedDeque based mailbox
     if( actorRef.mailbox == null ) {
-      actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]()
+      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]()
+      else actorRef.mailbox = new LinkedBlockingDeque[MessageInvocation](mailboxCapacity)
     }
     pooledActors.add(actorRef)
     super.register(actorRef)
