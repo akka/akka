@@ -24,9 +24,8 @@ import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
 import org.jboss.netty.handler.codec.compression.{ZlibEncoder, ZlibDecoder}
 import org.jboss.netty.handler.ssl.SslHandler
 
-
 import scala.collection.mutable.Map
-import reflect.BeanProperty
+import scala.reflect.BeanProperty
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -165,23 +164,11 @@ object RemoteServer {
  * Life-cycle events for RemoteServer.
  */
 sealed trait RemoteServerLifeCycleEvent
-case class RemoteServerError(
-  @BeanProperty val cause: Throwable,
-  @BeanProperty val host: String,
-  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
-case class RemoteServerShutdown(
-  @BeanProperty val host: String,
-  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
-case class RemoteServerStarted(
-  @BeanProperty val host: String,
-  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
-/*FIXME NOT SUPPORTED YET
-  case class RemoteServerClientConnected(
-  @BeanProperty val host: String,
-  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent
-case class RemoteServerClientDisconnected(
-  @BeanProperty val host: String,
-  @BeanProperty val port: Int) extends RemoteServerLifeCycleEvent*/
+case class RemoteServerError(@BeanProperty val cause: Throwable, @BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerShutdown(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerStarted(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientConnected(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientDisconnected(@BeanProperty val server: RemoteServer) extends RemoteServerLifeCycleEvent
 
 /**
  * Use this class if you need a more than one remote server on a specific node.
@@ -254,12 +241,12 @@ class RemoteServer extends Logging with ListenerManagement {
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         _isRunning = true
         Cluster.registerLocalNode(hostname, port)
-        foreachListener(_ ! RemoteServerStarted(hostname,port))
+        foreachListener(_ ! RemoteServerStarted(this))
       }
     } catch {
       case e =>
         log.error(e, "Could not start up remote server")
-        foreachListener(_ ! RemoteServerError(e,hostname,port))
+        foreachListener(_ ! RemoteServerError(e, this))
     }
     this
   }
@@ -272,7 +259,7 @@ class RemoteServer extends Logging with ListenerManagement {
         openChannels.close.awaitUninterruptibly
         bootstrap.releaseExternalResources
         Cluster.deregisterLocalNode(hostname, port)
-        foreachListener(_ ! RemoteServerShutdown(hostname,port))
+        foreachListener(_ ! RemoteServerShutdown(this))
       } catch {
         case e: java.nio.channels.ClosedChannelException =>  {}
         case e => log.warning("Could not close remote server channel in a graceful way")
@@ -407,22 +394,28 @@ class RemoteServerHandler(
    * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer.
    * If a channel is closed before, it is automatically removed from the open channels group.
    */
-  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
-    openChannels.add(ctx.getChannel)
-  }
+  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = openChannels.add(ctx.getChannel)
 
-  override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
+  override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
+    log.debug("Remote client connected to [%s]", server.name)
     if (RemoteServer.SECURE) {
-      val sslHandler : SslHandler = ctx.getPipeline.get(classOf[SslHandler])
+      val sslHandler: SslHandler = ctx.getPipeline.get(classOf[SslHandler])
 
       // Begin handshake.
-      sslHandler.handshake().addListener( new ChannelFutureListener {
+      sslHandler.handshake().addListener(new ChannelFutureListener {
         def operationComplete(future: ChannelFuture): Unit = {
-          if (future.isSuccess) openChannels.add(future.getChannel)
-          else future.getChannel.close
+          if (future.isSuccess) {
+            openChannels.add(future.getChannel)
+            server.foreachListener(_ ! RemoteServerClientConnected(server))            
+          } else future.getChannel.close
         }
       })
     }
+  }
+
+  override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
+    log.debug("Remote client disconnected from [%s]", server.name)
+    server.foreachListener(_ ! RemoteServerClientDisconnected(server))            
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
@@ -444,7 +437,7 @@ class RemoteServerHandler(
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     log.error(event.getCause, "Unexpected exception from remote downstream")
     event.getChannel.close
-    server.foreachListener(_ ! RemoteServerError(event.getCause,server.hostname,server.port))
+    server.foreachListener(_ ! RemoteServerError(event.getCause, server))
   }
 
   private def handleRemoteRequestProtocol(request: RemoteRequestProtocol, channel: Channel) = {
@@ -489,7 +482,7 @@ class RemoteServerHandler(
           } catch {
             case e: Throwable =>
               channel.write(createErrorReplyMessage(e, request, true))
-              server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+              server.foreachListener(_ ! RemoteServerError(e, server))
           }
         }
     }
@@ -521,10 +514,10 @@ class RemoteServerHandler(
     } catch {
       case e: InvocationTargetException =>
         channel.write(createErrorReplyMessage(e.getCause, request, false))
-        server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+        server.foreachListener(_ ! RemoteServerError(e, server))
       case e: Throwable                 =>
         channel.write(createErrorReplyMessage(e, request, false))
-        server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+        server.foreachListener(_ ! RemoteServerError(e, server))
     }
   }
 
@@ -556,7 +549,7 @@ class RemoteServerHandler(
       } catch {
         case e =>
           log.error(e, "Could not create remote actor instance")
-          server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+          server.foreachListener(_ ! RemoteServerError(e, server))
           throw e
       }
     } else actorRefOrNull
@@ -586,7 +579,7 @@ class RemoteServerHandler(
       } catch {
         case e =>
           log.error(e, "Could not create remote typed actor instance")
-          server.foreachListener(_ ! RemoteServerError(e,server.hostname,server.port))
+          server.foreachListener(_ ! RemoteServerError(e, server))
           throw e
       }
     } else typedActorOrNull

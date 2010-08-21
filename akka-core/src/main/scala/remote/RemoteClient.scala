@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.remote
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, RemoteActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
+import se.scalablesolutions.akka.util.{ListenerManagement, UUID, Logging, Duration}
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.AkkaException
 
@@ -27,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.mutable.{HashSet, HashMap}
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.util.{ListenerManagement, UUID, Logging, Duration}
 
 /**
  * Atomic remote request/reply message id generator.
