@@ -406,7 +406,7 @@ class RemoteServerHandler(
         def operationComplete(future: ChannelFuture): Unit = {
           if (future.isSuccess) {
             openChannels.add(future.getChannel)
-            server.foreachListener(_ ! RemoteServerClientConnected(server))            
+            server.foreachListener(_ ! RemoteServerClientConnected(server))
           } else future.getChannel.close
         }
       })
@@ -415,7 +415,7 @@ class RemoteServerHandler(
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     log.debug("Remote client disconnected from [%s]", server.name)
-    server.foreachListener(_ ! RemoteServerClientDisconnected(server))            
+    server.foreachListener(_ ! RemoteServerClientDisconnected(server))
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {

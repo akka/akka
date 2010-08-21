@@ -52,7 +52,9 @@ case class RemoteClientDisconnected(
   @BeanProperty val client: RemoteClient) extends RemoteClientLifeCycleEvent
 case class RemoteClientConnected(
   @BeanProperty val client: RemoteClient) extends RemoteClientLifeCycleEvent
-case class RemoteClientStopped(
+case class RemoteClientStarted(
+  @BeanProperty val client: RemoteClient) extends RemoteClientLifeCycleEvent
+case class RemoteClientShutdown(
   @BeanProperty val client: RemoteClient) extends RemoteClientLifeCycleEvent
 
 /**
@@ -213,6 +215,7 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, val loade
         foreachListener(l => l ! RemoteClientError(connection.getCause, this))
         log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
       }
+      foreachListener(l => l ! RemoteClientStarted(this))
       isRunning = true
     }
   }
@@ -221,11 +224,11 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, val loade
     log.info("Shutting down %s", name)
     if (isRunning) {
       isRunning = false
+      foreachListener(l => l ! RemoteClientShutdown(this))
       timer.stop
       openChannels.close.awaitUninterruptibly
       bootstrap.releaseExternalResources
       log.info("%s has been shut down", name)
-      foreachListener(l => l ! RemoteClientStopped(this))
     }
   }
 

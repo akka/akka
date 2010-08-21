@@ -45,33 +45,30 @@ class AkkaLoader extends Logging {
   }
 
   private def printBanner = {
-    log.info(
-"""
-                       t
-             t       t t
-            t       t tt   t
-        tt  t   t  tt       t
-       t ttttttt  t      ttt t
-      t   tt ttt t       ttt  t
-     t     t ttt    t    ttt   t      t
-    tt    t  ttt         ttt    ttt    t
-   t     t   ttt         ttt     t tt  t
-   t         ttt         ttt      t     t
- tt          ttt         ttt              t
-             ttt         ttt
-   tttttttt  ttt    ttt  ttt    ttt  tttttttt
-  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt
-  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt
-  ttt    ttt ttt    ttt  ttt    tt  ttt    ttt
-        tttt ttttttttt   tttttttt         tttt
-   ttttttttt ttt    ttt  ttt   ttt   ttttttttt
-  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt
-  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt
-  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt
-   tttttttt  ttt    ttt  ttt    ttt  tttttttt
-
-==================================================
-""")
+    log.info("==================================================")
+    log.info("                       t")
+    log.info("             t       t t")
+    log.info("            t       t tt   t")
+    log.info("        tt  t   t  tt       t")
+    log.info("       t ttttttt  t      ttt t")
+    log.info("      t   tt ttt t       ttt  t")
+    log.info("     t     t ttt    t    ttt   t      t")
+    log.info("    tt    t  ttt         ttt    ttt    t")
+    log.info("   t     t   ttt         ttt     t tt  t")
+    log.info("   t         ttt         ttt      t     t")
+    log.info(" tt          ttt         ttt              t")
+    log.info("             ttt         ttt")
+    log.info("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
+    log.info("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
+    log.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
+    log.info("  ttt    ttt ttt    ttt  ttt    tt  ttt    ttt")
+    log.info("        tttt ttttttttt   tttttttt         tttt")
+    log.info("   ttttttttt ttt    ttt  ttt   ttt   ttttttttt")
+    log.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
+    log.info("  ttt    ttt ttt    ttt  ttt    ttt ttt    ttt")
+    log.info("  ttt    tt  ttt    ttt  ttt    ttt ttt    ttt")
+    log.info("   tttttttt  ttt    ttt  ttt    ttt  tttttttt")
+    log.info("==================================================")
     log.info("            Running version %s", Config.VERSION)
     log.info("==================================================")
   }
