@@ -32,7 +32,7 @@ import scala.reflect.BeanProperty
  * Here is an example of usage (in Java):
  * <pre>
  * class TestActorImpl extends TypedActor implements TestActor {
- * 
+ *
  *   public void hit(int count) {
  *     Pong pong = (Pong) getContext().getSender();
  *     pong.hit(count++);
@@ -41,7 +41,7 @@ import scala.reflect.BeanProperty
  *   public Future<Integer> square(int x) {
  *     return future(x * x);
  *   }
- * 
+ *
  *   @Override
  *   public void init() {
  *     ... // optional initialization on start
@@ -65,7 +65,7 @@ import scala.reflect.BeanProperty
  * Future<Integer> future = actor.square(10);
  * future.await();
  * Integer result = future.get();
- * 
+ *
  * // stop the actor
  * TypedActor.stop(actor);
  * </pre>
@@ -73,14 +73,14 @@ import scala.reflect.BeanProperty
  * Here is an example of usage (in Scala):
  * <pre>
  * class TestActorImpl extends TypedActor with TestActor {
- * 
+ *
  *   def hit(count: Int) = {
  *     val pong = context.sender.asInstanceOf[Pong]
  *     pong.hit(count += 1)
  *   }
  *
  *   def square(x: Int): Future[Integer] = future(x * x)
- * 
+ *
  *   override def init = {
  *     ... // optional initialization on start
  *   }
@@ -102,7 +102,7 @@ import scala.reflect.BeanProperty
  * val future = actor.square(10)
  * future.await
  * val result: Int = future.get
- * 
+ *
  * // stop the actor
  * TypedActor.stop(ping)
  * </pre>
@@ -168,7 +168,7 @@ abstract class TypedActor extends Actor {
    *  Integer result = future.get();
    * </pre>
    */
-  def future[T](value: T): Future[T] =  
+  def future[T](value: T): Future[T] =
     self.senderFuture
       .map{f => f.completeWithResult(value); f }
       .getOrElse(throw new IllegalActorStateException("No sender future in scope"))
@@ -234,7 +234,7 @@ abstract class TypedActor extends Actor {
 
 /**
  * Transactional TypedActor. All messages send to this actor as sent in a transaction. If an enclosing transaction
- * exists it will be joined, if not then a new transaction will be created. 
+ * exists it will be joined, if not then a new transaction will be created.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -409,7 +409,7 @@ object TypedActor extends Logging {
 
 /*
   // NOTE: currently not used - but keep it around
-  private[akka] def newInstance[T <: TypedActor](targetClass: Class[T], 
+  private[akka] def newInstance[T <: TypedActor](targetClass: Class[T],
                                                  remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
     val proxy = {
       val instance = Proxy.newInstance(targetClass, true, false)
@@ -526,13 +526,13 @@ object TypedActor extends Logging {
     typedActor
   }
 
-  private[akka] def isOneWay(joinPoint: JoinPoint): Boolean = 
+  private[akka] def isOneWay(joinPoint: JoinPoint): Boolean =
     isOneWay(joinPoint.getRtti.asInstanceOf[MethodRtti])
 
-  private[akka] def isOneWay(methodRtti: MethodRtti): Boolean =  
+  private[akka] def isOneWay(methodRtti: MethodRtti): Boolean =
     methodRtti.getMethod.getReturnType == java.lang.Void.TYPE
 
-  private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean = 
+  private[akka] def returnsFuture_?(methodRtti: MethodRtti): Boolean =
     classOf[Future[_]].isAssignableFrom(methodRtti.getMethod.getReturnType)
 
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =

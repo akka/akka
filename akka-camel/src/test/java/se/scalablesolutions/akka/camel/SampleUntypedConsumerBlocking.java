@@ -19,5 +19,5 @@ public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
         String header = msg.headerAs("test", String.class);
         getContext().replySafe(String.format("%s %s", body, header));
    }
-    
+
 }

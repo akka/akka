@@ -256,7 +256,7 @@ object ExampleSession {
     def protobufRequestHandler(request: AddressProtocol): AddressProtocol = {
       AddressProtocol.newBuilder.setHostname(request.getHostname.reverse).setPort(request.getPort).build
     }
-    
+
     RPC.newProtobufRpcServer(connection, exchangeName, protobufRequestHandler)
 
     val protobufRpcClient = RPC.newProtobufRpcClient[AddressProtocol, AddressProtocol](connection, exchangeName)

@@ -9,5 +9,5 @@ public class BeanImpl extends TypedActor implements BeanIntf {
     public String foo(String s) {
         return "hello " + s;
     }
-    
+
 }

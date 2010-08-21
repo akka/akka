@@ -56,13 +56,13 @@ case class RemoteClientStopped(
   @BeanProperty val client: RemoteClient) extends RemoteClientLifeCycleEvent
 
 /**
- * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down. 
+ * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
  */
 class RemoteClientException private[akka](message: String, @BeanProperty val client: RemoteClient) extends AkkaException(message)
 
 /**
  * The RemoteClient object manages RemoteClient instances and gives you an API to lookup remote actor handles.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RemoteClient extends Logging {
@@ -172,10 +172,10 @@ object RemoteClient extends Logging {
 
 /**
  * RemoteClient represents a connection to a RemoteServer. Is used to send messages to remote actors on the RemoteServer.
- * 
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteClient private[akka] (val hostname: String, val port: Int, val loader: Option[ClassLoader] = None) 
+class RemoteClient private[akka] (val hostname: String, val port: Int, val loader: Option[ClassLoader] = None)
   extends Logging with ListenerManagement {
   val name = "RemoteClient@" + hostname + "::" + port
 
@@ -194,7 +194,7 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, val loade
   private[remote] var connection: ChannelFuture = _
   private[remote] val openChannels = new DefaultChannelGroup(classOf[RemoteClient].getName);
 
-  private val reconnectionTimeWindow = 
+  private val reconnectionTimeWindow =
     Duration(config.getInt("akka.remote.client.reconnection-time-window", 600), TIME_UNIT).toMillis
   @volatile private var reconnectionTimeWindowStart = 0L
 
@@ -267,7 +267,7 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, val loade
     if (!actorRef.supervisor.isDefined) throw new IllegalActorStateException(
       "Can't unregister supervisor for " + actorRef + " since it is not under supervision")
     else supervisors.remove(actorRef.supervisor.get.uuid)
-    
+
   private[akka] def isWithinReconnectionTimeWindow: Boolean = {
     if (reconnectionTimeWindowStart == 0L) {
       reconnectionTimeWindowStart = System.currentTimeMillis

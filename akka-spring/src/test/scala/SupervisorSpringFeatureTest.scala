@@ -26,7 +26,7 @@ import java.util.concurrent._
  */
 @RunWith(classOf[JUnitRunner])
 class SupervisorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
-  
+
   feature("Spring configuration") {
 
     scenario("get a supervisor for typed actors from context") {

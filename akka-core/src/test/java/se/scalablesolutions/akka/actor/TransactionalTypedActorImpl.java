@@ -8,8 +8,8 @@ public class TransactionalTypedActorImpl extends TypedTransactor implements Tran
   private TransactionalVector<String> vectorState;
   private Ref<String> refState;
   private boolean isInitialized = false;
-  
-  @Override  
+
+  @Override
   public void initTransactionalState() {
     if (!isInitialized) {
       mapState = new TransactionalMap();
@@ -18,7 +18,7 @@ public class TransactionalTypedActorImpl extends TypedTransactor implements Tran
       isInitialized = true;
     }
   }
-  
+
   public String getMapState(String key) {
     return (String)mapState.get(key).get();
   }

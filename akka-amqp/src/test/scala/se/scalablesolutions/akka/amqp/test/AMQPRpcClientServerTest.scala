@@ -18,7 +18,7 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers {
 
   @Test
   def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
-    
+
     val connection = AMQP.newConnection()
 
     val countDown = new CountDownLatch(3)

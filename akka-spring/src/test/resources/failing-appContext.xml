@@ -6,13 +6,13 @@
        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
        http://www.akkasource.org/schema/akka
        classpath:se/scalablesolutions/akka/spring/akka-0.10.xsd">
-       
+
     <akka:typed-actor id="bean"
                         implementation="org.springframework.core.io.ResourceEditor"
                         transactional="true"
                         timeout="1000"
                         scope="prototype">
-        <property name="source" ref="nonExistentRef"/>                      
+        <property name="source" ref="nonExistentRef"/>
     </akka:typed-actor>
 
     <bean id="string" class="java.lang.String">

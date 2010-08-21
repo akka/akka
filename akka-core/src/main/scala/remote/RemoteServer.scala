@@ -88,11 +88,11 @@ object RemoteServer {
         ).map(x => ("akka.remote.ssl." + x._1, "javax.net.ssl." + x._2))
 
       // If property is not set, and we have a value from our akka.conf, use that value
-      for { 
+      for {
         p <- properties if System.getProperty(p._2) eq null
         c <- config.getString(p._1)
       } System.setProperty(p._2, c)
-      
+
       if (config.getBool("akka.remote.ssl.debug", false)) System.setProperty("javax.net.debug","ssl")
       true
     } else */false
@@ -101,7 +101,7 @@ object RemoteServer {
   object Address {
     def apply(hostname: String, port: Int) = new Address(hostname, port)
   }
-  
+
   class Address(val hostname: String, val port: Int) {
     override def hashCode: Int = {
       var result = HashCode.SEED

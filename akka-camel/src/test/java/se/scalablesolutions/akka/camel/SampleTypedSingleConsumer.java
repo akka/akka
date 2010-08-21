@@ -9,5 +9,5 @@ public interface SampleTypedSingleConsumer {
 
     @consume("direct:foo")
     public void foo(String b);
-    
+
 }

@@ -150,7 +150,7 @@ object Logger {
   {
   import org.slf4j.LoggerFactory
   import ch.qos.logback.classic.LoggerContext
-  import ch.qos.logback.core.util.StatusPrinter  
+  import ch.qos.logback.core.util.StatusPrinter
 
   // print logback's internal status
   StatusPrinter.print(LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext])

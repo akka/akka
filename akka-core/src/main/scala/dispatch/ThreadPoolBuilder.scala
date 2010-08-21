@@ -154,7 +154,7 @@ trait ThreadPoolBuilder extends Logging {
   def setExecutorBounds(bounds: Int): Unit = synchronized {
     this.boundedExecutorBound = bounds
   }
-  
+
   /**
    * Sets the mailbox capacity, -1 is unbounded
    */

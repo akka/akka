@@ -91,7 +91,7 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
         }
       }
     } while ((lockAcquiredOnce && !getMailbox(receiver).isEmpty))
-    
+
     lockAcquiredOnce
   }
 

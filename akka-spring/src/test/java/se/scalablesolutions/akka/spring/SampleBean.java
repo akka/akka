@@ -10,7 +10,7 @@ public class SampleBean extends TypedActor implements SampleBeanIntf {
         down = false;
     }
 
-    public boolean down() { 
+    public boolean down() {
       return down;
     }
 

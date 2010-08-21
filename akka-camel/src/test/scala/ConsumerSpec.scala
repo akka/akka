@@ -193,7 +193,7 @@ object ConsumerSpec {
     @consume("direct:publish-test-4")
     def bar(s: String) = "bar: %s" format s
   }
-  
+
   class TestBlocker(uri: String) extends Actor with Consumer {
     self.timeout = 1000
     def endpointUri = uri
