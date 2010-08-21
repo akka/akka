@@ -5,7 +5,9 @@
 package se.scalablesolutions.akka.dispatch
 
 import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
-import jsr166x.ConcurrentLinkedDeque
+
+import java.util.Queue
+import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 
 /**
  * Default settings are:
@@ -76,14 +78,14 @@ class ExecutorBasedEventDrivenDispatcher(_name: String, throughput: Int = Dispat
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[ConcurrentLinkedDeque[MessageInvocation]]
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[Queue[MessageInvocation]]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
   override def register(actorRef: ActorRef) = {
-    // The actor will need a ConcurrentLinkedDeque based mailbox
     if( actorRef.mailbox eq null ) {
-      actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]()
+      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedQueue[MessageInvocation]()
+      else actorRef.mailbox = new LinkedBlockingQueue[MessageInvocation](mailboxCapacity)
     }
     super.register(actorRef)
   }

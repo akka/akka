@@ -143,7 +143,7 @@ object Dispatchers extends Logging {
    * Throws: IllegalArgumentException if the value of "type" is not valid
    */
   def from(cfg: ConfigMap): Option[MessageDispatcher] = {
-    lazy val name = cfg.getString("name",UUID.newUuid.toString)
+    lazy val name = cfg.getString("name", UUID.newUuid.toString)
 
     val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
       case "ReactorBasedSingleThreadEventDriven"       => newReactorBasedSingleThreadEventDrivenDispatcher(name)
@@ -167,6 +167,7 @@ object Dispatchers extends Logging {
         cfg.getDouble("max-pool-size-factor").foreach(builder.setMaxPoolSizeFromFactor(_))
         cfg.getInt("executor-bounds").foreach(builder.setExecutorBounds(_))
         cfg.getBool("allow-core-timeout").foreach(builder.setAllowCoreThreadTimeout(_))
+        cfg.getInt("mailbox-capacity").foreach(builder.setMailboxCapacity(_))
 
         cfg.getString("rejection-policy").map({
           case "abort"          => new AbortPolicy()
