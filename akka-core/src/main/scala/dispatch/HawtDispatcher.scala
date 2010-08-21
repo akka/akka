@@ -1,29 +1,18 @@
 /**
- * Copyright (C) 2010, Progress Software Corporation and/or its
- * subsidiaries or affiliates.  All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
+
 package se.scalablesolutions.akka.dispatch
 
 import se.scalablesolutions.akka.actor.ActorRef
+
 import org.fusesource.hawtdispatch.DispatchQueue
 import org.fusesource.hawtdispatch.ScalaDispatch._
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.CountDownLatch
 import org.fusesource.hawtdispatch.DispatchQueue.QueueType
 import org.fusesource.hawtdispatch.ListEventAggregator
+
+import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
+import java.util.concurrent.CountDownLatch
 
 /**
  * Holds helper methods for working with actors that are using
@@ -44,7 +33,6 @@ object HawtDispatcher {
           } catch {
             case _ =>
           }
-          println("done");
         }
       }.start()
     }
@@ -70,7 +58,6 @@ object HawtDispatcher {
   def queue(actorRef: ActorRef) = {
     mailbox(actorRef).queue
   }
-
 
   /**
    * <p>
@@ -107,7 +94,6 @@ object HawtDispatcher {
   def unpin(actorRef: ActorRef) = {
     target(actorRef, globalQueue)
   }
-
 
   /**
    * @return true if the actor was pinned to a thread.
@@ -212,7 +198,6 @@ class HawtDispatcher(val aggregate:Boolean=true, val parent:DispatchQueue=global
   }
 
   override def toString = "HawtDispatchEventDrivenDispatcher"
-
 }
 
 class HawtDispatcherMailbox(val queue:DispatchQueue) {
