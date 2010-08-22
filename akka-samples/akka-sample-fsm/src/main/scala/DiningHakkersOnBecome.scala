@@ -1,4 +1,4 @@
-package dining.hakkers
+package sample.fsm.dining.become
 
 //Akka adaptation of
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/

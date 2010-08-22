@@ -1,7 +1,6 @@
-package dining.hakkerz
+package sample.fsm.dining.fsm
 
-import actor.Fsm
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
+import se.scalablesolutions.akka.actor.{ActorRef, Actor, FSM}
 import Actor._
 
 /*
@@ -21,7 +20,7 @@ case class TakenBy(hakker: Option[ActorRef])
 /*
  * A chopstick is an actor, it can be taken, and put back
  */
-class Chopstick(name: String) extends Actor with Fsm[TakenBy] {
+class Chopstick(name: String) extends Actor with FSM[TakenBy] {
   self.id = name
 
   // A chopstick begins its existence as available and taken by no one
@@ -47,8 +46,8 @@ class Chopstick(name: String) extends Actor with Fsm[TakenBy] {
 /**
  * Some fsm hakker messages
  */
-sealed trait FsmHakkerMessage
-object Think extends FsmHakkerMessage
+sealed trait FSMHakkerMessage
+object Think extends FSMHakkerMessage
 
 /**
  * Some state container to keep track of which chopsticks we have
@@ -58,7 +57,7 @@ case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
 /*
  * A fsm hakker is an awesome dude or dudette who either thinks about hacking or has to eat ;-)
  */
-class FsmHakker(name: String, left: ActorRef, right: ActorRef) extends Actor with Fsm[TakenChopsticks] {
+class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor with FSM[TakenChopsticks] {
   self.id = name
 
   //All hakkers start waiting
@@ -138,14 +137,14 @@ class FsmHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
 /*
  * Alright, here's our test-harness
  */
-object DiningHakkersOnFsm {
+object DiningHakkersOnFSM {
   def run {
     // Create 5 chopsticks
     val chopsticks = for (i <- 1 to 5) yield actorOf(new Chopstick("Chopstick " + i)).start
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for{
       (name, i) <- List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield actorOf(new FsmHakker(name, chopsticks(i), chopsticks((i + 1) % 5))).start
+    } yield actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5))).start
 
     hakkers.foreach(_ ! Think)
   }
