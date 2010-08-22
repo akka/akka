@@ -170,7 +170,7 @@ trait Producer extends ProducerSupport { this: Actor =>
 
 /**
  * Java-friendly {@link ProducerSupport} inherited by {@link UntypedProducerActor} implementations.
- * 
+ *
  * @author Martin Krasser
  */
 trait UntypedProducer extends ProducerSupport { this: UntypedActor =>

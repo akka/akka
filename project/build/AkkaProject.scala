@@ -41,7 +41,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   object Repositories {
     lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-    lazy val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
+    lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
     lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
     lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
@@ -71,7 +71,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
   lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsReleases)
-  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausSnapshotRepo)
+  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
@@ -81,20 +81,20 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val ATMO_VERSION       = "0.6.1"
-  lazy val CAMEL_VERSION      = "2.4.0"
-  lazy val CASSANDRA_VERSION  = "0.6.1"
-  lazy val DispatchVersion    = "0.7.4"
-  lazy val HAWTDISPATCH_VERSION = "1.0"
-  lazy val JacksonVersion     = "1.2.1"
-  lazy val JERSEY_VERSION     = "1.2"
-  lazy val LIFT_VERSION       = "2.1-M1"
-  lazy val MULTIVERSE_VERSION = "0.6-SNAPSHOT"
-  lazy val SCALATEST_VERSION  = "1.2-for-scala-2.8.0.final-SNAPSHOT"
-  lazy val LOGBACK_VERSION    = "0.9.24"
-  lazy val SLF4J_VERSION      = "1.6.0"
-  lazy val SPRING_VERSION     = "3.0.3.RELEASE"
-  lazy val WerkzVersion       = "2.2.1"
+  lazy val ATMO_VERSION          = "0.6.1"
+  lazy val CAMEL_VERSION         = "2.4.0"
+  lazy val CASSANDRA_VERSION     = "0.6.1"
+  lazy val DISPATCH_VERSION      = "0.7.4"
+  lazy val HAWT_DISPATCH_VERSION = "1.0"
+  lazy val JACKSON_VERSION       = "1.2.1"
+  lazy val JERSEY_VERSION        = "1.2"
+  lazy val LIFT_VERSION          = "2.1-M1"
+  lazy val MULTIVERSE_VERSION    = "0.6"
+  lazy val SCALATEST_VERSION     = "1.2-for-scala-2.8.0.final-SNAPSHOT"
+  lazy val LOGBACK_VERSION       = "0.9.24"
+  lazy val SLF4J_VERSION         = "1.6.0"
+  lazy val SPRING_VERSION        = "3.0.3.RELEASE"
+  lazy val ASPECTWERKZ_VERSION   = "2.2.1"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -131,8 +131,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val configgy = "net.lag" % "configgy" % "2.8.0-1.5.5" % "compile"
 
-    lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DispatchVersion % "compile"
-    lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DispatchVersion % "compile"
+    lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile"
+    lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile"
 
     lazy val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
 
@@ -140,11 +140,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
 
-    lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWTDISPATCH_VERSION % "compile"
+    lazy val hawtdispatch = "org.fusesource.hawtdispatch" % "hawtdispatch-scala" % HAWT_DISPATCH_VERSION % "compile"
 
-    lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JacksonVersion % "compile"
-    lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JacksonVersion % "compile"
-    lazy val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl"   % JacksonVersion % "compile"
+    lazy val jackson          = "org.codehaus.jackson" % "jackson-mapper-asl" % JACKSON_VERSION % "compile"
+    lazy val jackson_core     = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile"
+    lazy val jackson_core_asl = "org.codehaus.jackson" % "jackson-core-asl"   % JACKSON_VERSION % "compile"
 
     lazy val jersey         = "com.sun.jersey"          % "jersey-core"   % JERSEY_VERSION % "compile"
     lazy val jersey_json    = "com.sun.jersey"          % "jersey-json"   % JERSEY_VERSION % "compile"
@@ -196,8 +196,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile"
 
-    lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % WerkzVersion % "compile"
-    lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % WerkzVersion % "compile"
+    lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile"
+    lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile"
 
     // Test
 

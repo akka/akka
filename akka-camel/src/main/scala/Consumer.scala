@@ -66,7 +66,7 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
 abstract class UntypedConsumerActor extends UntypedActor with UntypedConsumer
 
 /**
- * Subclass this abstract class to create an MDB-style transacted untyped consumer 
+ * Subclass this abstract class to create an MDB-style transacted untyped consumer
  * actor. This class is meant to be used from Java.
  */
 abstract class UntypedConsumerTransactor extends UntypedTransactor with UntypedConsumer

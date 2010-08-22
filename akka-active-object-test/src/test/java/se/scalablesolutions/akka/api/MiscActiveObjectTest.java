@@ -11,13 +11,13 @@ import junit.framework.TestCase;
 
 /**
  * <p>Small misc tests that do not fit anywhere else and does not require a separate testcase</p>
- * 
+ *
  * @author johanrask
  *
  */
 public class MiscTypedActorTest extends TestCase {
 
-        
+
         /**
          * Verifies that both preRestart and postRestart methods are invoked when
          * an actor is restarted
@@ -31,5 +31,5 @@ public class MiscTypedActorTest extends TestCase {
                 Assert.assertTrue(pojo.pre);
                 Assert.assertTrue(pojo.post);
         }
-        
+
 }

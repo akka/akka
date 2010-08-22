@@ -26,7 +26,7 @@ public class Foo extends se.scalablesolutions.akka.serialization.Serializable.Ja
     if (true) throw new RuntimeException("Expected exception; to test fault-tolerance");
     return "test";
   }
-  
+
   public int $tag() throws java.rmi.RemoteException
   {
     return 0;

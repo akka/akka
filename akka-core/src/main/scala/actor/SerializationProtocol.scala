@@ -73,7 +73,7 @@ object ActorSerialization {
   def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Format[T]): ActorRef =
     fromBinaryToLocalActorRef(bytes, format)
 
-  def toBinary[T <: Actor](a: ActorRef)(implicit format: Format[T]): Array[Byte] = 
+  def toBinary[T <: Actor](a: ActorRef)(implicit format: Format[T]): Array[Byte] =
     toSerializedActorRefProtocol(a, format).toByteArray
 
   // wrapper for implicits to be used by Java
@@ -81,7 +81,7 @@ object ActorSerialization {
     fromBinary(bytes)(format)
 
   // wrapper for implicits to be used by Java
-  def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T]): Array[Byte] = 
+  def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T]): Array[Byte] =
     toBinary(a)(format)
 
   private def toSerializedActorRefProtocol[T <: Actor](actorRef: ActorRef, format: Format[T]): SerializedActorRefProtocol = {

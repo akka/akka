@@ -23,9 +23,9 @@ class AMQPStringProducerConsumerTest extends JUnitSuite with MustMatchers {
     RPC.newStringRpcServer(connection, "stringexchange", requestHandler)
 
     val request = "somemessage"
-    
+
     def responseHandler(response: String) = {
-      
+
       assert(response == request.reverse)
       responseLatch.open
     }

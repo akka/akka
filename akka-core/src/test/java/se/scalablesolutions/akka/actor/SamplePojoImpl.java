@@ -16,7 +16,7 @@ public class SamplePojoImpl extends TypedActor implements SamplePojo {
       _post = false;
       _down = false;
     }
-    
+
     public String greet(String s) {
         return "hello " + s;
     }
@@ -36,7 +36,7 @@ public class SamplePojoImpl extends TypedActor implements SamplePojo {
       _post = true;
       latch.countDown();
     }
-    
+
     @Override
     public void shutdown() {
         _down = true;

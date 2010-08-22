@@ -11,7 +11,7 @@ public class InMemStatefulNested {
   private Ref<String> refState;
   private boolean isInitialized = false;
 
-  @inittransactionalstate 
+  @inittransactionalstate
   public void init() {
     if (!isInitialized) {
       mapState = new TransactionalMap();

@@ -8,7 +8,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 
-/**                                
+/**
  * Try service out by invoking (multiple times):
  * <pre>
  * curl http://localhost:9998/javacount

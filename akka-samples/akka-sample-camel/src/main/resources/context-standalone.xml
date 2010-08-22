@@ -11,7 +11,7 @@ http://camel.apache.org/schema/spring
 http://camel.apache.org/schema/spring/camel-spring.xsd">
 
   <bean id="routeBuilder" class="sample.camel.StandaloneSpringApplicationRoute" />
-    
+
   <camel:camelContext id="camelContext">
     <camel:routeBuilder ref="routeBuilder" />
   </camel:camelContext>

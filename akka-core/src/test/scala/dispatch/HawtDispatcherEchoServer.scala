@@ -1,22 +1,11 @@
 /**
- * Copyright (C) 2010, Progress Software Corporation and/or its
- * subsidiaries or affiliates.  All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
+
 package se.scalablesolutions.akka.actor.dispatch
 
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
+
 import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 import java.io.IOException
@@ -26,13 +15,13 @@ import java.nio.channels.{SocketChannel, SelectionKey, ServerSocketChannel}
 import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.HawtDispatcher
+
 import org.fusesource.hawtdispatch.DispatchSource
 import org.fusesource.hawtdispatch.ScalaDispatch._
 
 /**
  * This is an example of how to crate an Akka actor based TCP echo server using
  * the HawtDispatch dispatcher and NIO event sources.
- *
  */
 object HawtDispatcherEchoServer {
 
@@ -203,7 +192,6 @@ object HawtDispatcherEchoServer {
       }
     }
 
-
     def close() = {
       if( !closed ) {
         closed = true
@@ -215,7 +203,5 @@ object HawtDispatcherEchoServer {
       case DisplayStats =>
         println("connection to %s reads: %,d bytes, writes: %,d".format(remote_address, readCounter, writeCounter))
     }
-
   }
-
 }
