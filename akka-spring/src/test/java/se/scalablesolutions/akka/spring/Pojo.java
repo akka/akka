@@ -15,11 +15,11 @@ public class Pojo extends TypedActor implements PojoInf, ApplicationContextAware
 
     private boolean gotApplicationContext = false;
     private boolean initInvoked = false;
-    
+
     public boolean gotApplicationContext() {
       return gotApplicationContext;
     }
-    
+
     public void setApplicationContext(ApplicationContext context) {
       gotApplicationContext = true;
     }

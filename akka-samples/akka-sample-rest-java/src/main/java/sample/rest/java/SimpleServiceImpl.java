@@ -14,7 +14,7 @@ public class SimpleServiceImpl extends TypedTransactor implements SimpleService 
   private boolean hasStartedTicking = false;
   private TransactionalMap<String, Integer> storage;
   private Receiver receiver = TypedActor.newInstance(Receiver.class, ReceiverImpl.class);
-  
+
   public String count() {
     if (storage == null) storage = new TransactionalMap<String, Integer>();
     if (!hasStartedTicking) {

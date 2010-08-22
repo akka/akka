@@ -68,7 +68,7 @@ http://scalablesolutions.se/akka/akka-0.10.xsd">
 
   <!-- executor-based-event-driven-work-stealing-dispatcher -->
   <akka:dispatcher id="executor-based-event-driven-work-stealing-dispatcher" type="executor-based-event-driven-work-stealing" name="workStealingDispatcher" />
-  
+
   <!-- hawt-dispatcher -->
   <akka:dispatcher id="hawt-dispatcher" type="hawt" aggregate="false" name="test" />
 

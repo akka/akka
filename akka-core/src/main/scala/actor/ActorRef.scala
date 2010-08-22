@@ -1268,9 +1268,9 @@ class LocalActorRef private[akka](
 
     if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
     else {
-      lifeCycle match { 
+      lifeCycle match {
         case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this)
-        case _ => 
+        case _ =>
       }
     }
   }
@@ -1360,7 +1360,7 @@ private[akka] case class RemoteActorRef private[akka] (
   uuuid: String, val className: String, val hostname: String, val port: Int, _timeout: Long, loader: Option[ClassLoader])
   //  uuid: String, className: String, hostname: String, port: Int, timeOut: Long, isOnRemoteHost: Boolean) extends ActorRef {
   extends ActorRef with ScalaActorRef {
-  
+
   _uuid = uuuid
   timeout = _timeout
 
@@ -1522,7 +1522,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * </pre>
    */
   @volatile var faultHandler: Option[FaultHandlingStrategy] = None
-  
+
 
   /**
    * The reference sender Actor of the last received message.

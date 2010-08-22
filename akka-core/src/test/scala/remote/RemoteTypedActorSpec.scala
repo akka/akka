@@ -65,7 +65,7 @@ class RemoteTypedActorSpec extends
           classOf[RemoteTypedActorTwoImpl],
           new LifeCycle(new Permanent),
           10000,
-          new RemoteAddress("localhost", 9995)) 
+          new RemoteAddress("localhost", 9995))
       ).toArray).supervise
     Thread.sleep(1000)
   }
@@ -93,7 +93,7 @@ class RemoteTypedActorSpec extends
         oneWayLog.poll(5, TimeUnit.SECONDS)
       }
     }
-    
+
     it("should respond to request-reply message") {
       clearMessageLogs
       val ta = conf.getInstance(classOf[RemoteTypedActorOne])

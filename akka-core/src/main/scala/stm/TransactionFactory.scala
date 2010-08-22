@@ -12,6 +12,7 @@ import se.scalablesolutions.akka.util.Duration
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.stms.alpha.AlphaStm
 import org.multiverse.templates.TransactionBoilerplate
+import org.multiverse.api.{PropagationLevel => Propagation}
 import org.multiverse.api.TraceLevel
 
 /**
@@ -25,14 +26,23 @@ object TransactionConfig {
   val TIMEOUT          = config.getLong("akka.stm.timeout", 10)
   val TRACK_READS      = null.asInstanceOf[JBoolean]
   val WRITE_SKEW       = config.getBool("akka.stm.write-skew", true)
-  val EXPLICIT_RETRIES = config.getBool("akka.stm.explicit-retries", false)
+  val BLOCKING_ALLOWED = config.getBool("akka.stm.blocking-allowed", false)
   val INTERRUPTIBLE    = config.getBool("akka.stm.interruptible", false)
   val SPECULATIVE      = config.getBool("akka.stm.speculative", true)
   val QUICK_RELEASE    = config.getBool("akka.stm.quick-release", true)
+  val PROPAGATION      = propagation(config.getString("akka.stm.propagation", "requires"))
   val TRACE_LEVEL      = traceLevel(config.getString("akka.stm.trace-level", "none"))
   val HOOKS            = config.getBool("akka.stm.hooks", true)
 
   val DefaultTimeout = Duration(TIMEOUT, TIME_UNIT)
+
+  def propagation(level: String) = level.toLowerCase match {
+    case "requiresnew" => Transaction.Propagation.RequiresNew
+    case "fine"        => Transaction.Propagation.Mandatory
+    case "supports"    => Transaction.Propagation.Supports
+    case "never"       => Transaction.Propagation.Never
+    case _             => Transaction.Propagation.Requires
+  }
 
   def traceLevel(level: String) = level.toLowerCase match {
     case "coarse" | "course" => Transaction.TraceLevel.Coarse
@@ -49,10 +59,11 @@ object TransactionConfig {
    * @param timeout          The maximum time a transaction will block for.
    * @param trackReads       Whether all reads should be tracked. Needed for blocking operations.
    * @param writeSkew        Whether writeskew is allowed. Disable with care.
-   * @param explicitRetries  Whether explicit retries are allowed.
+   * @param blockingAllowed  Whether explicit retries are allowed.
    * @param interruptible    Whether a blocking transaction can be interrupted.
    * @param speculative      Whether speculative configuration should be enabled.
    * @param quickRelease     Whether locks should be released as quickly as possible (before whole commit).
+   * @param propagation      For controlling how nested transactions behave.
    * @param traceLevel       Transaction trace level.
    * @param hooks            Whether hooks for persistence modules and JTA should be added to the transaction.
    */
@@ -62,14 +73,15 @@ object TransactionConfig {
             timeout: Duration        = DefaultTimeout,
             trackReads: JBoolean     = TRACK_READS,
             writeSkew: Boolean       = WRITE_SKEW,
-            explicitRetries: Boolean = EXPLICIT_RETRIES,
+            blockingAllowed: Boolean = BLOCKING_ALLOWED,
             interruptible: Boolean   = INTERRUPTIBLE,
             speculative: Boolean     = SPECULATIVE,
             quickRelease: Boolean    = QUICK_RELEASE,
+            propagation: Propagation = PROPAGATION,
             traceLevel: TraceLevel   = TRACE_LEVEL,
             hooks: Boolean           = HOOKS) = {
-    new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-                          explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+    new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
+                          interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
   }
 }
 
@@ -82,10 +94,11 @@ object TransactionConfig {
  * <p>timeout         - The maximum time a transaction will block for.
  * <p>trackReads      - Whether all reads should be tracked. Needed for blocking operations.
  * <p>writeSkew       - Whether writeskew is allowed. Disable with care.
- * <p>explicitRetries - Whether explicit retries are allowed.
+ * <p>blockingAllowed - Whether explicit retries are allowed.
  * <p>interruptible   - Whether a blocking transaction can be interrupted.
  * <p>speculative     - Whether speculative configuration should be enabled.
  * <p>quickRelease    - Whether locks should be released as quickly as possible (before whole commit).
+ * <p>propagation     - For controlling how nested transactions behave.
  * <p>traceLevel      - Transaction trace level.
  * <p>hooks           - Whether hooks for persistence modules and JTA should be added to the transaction.
  */
@@ -95,10 +108,11 @@ class TransactionConfig(val familyName: String       = TransactionConfig.FAMILY_
                         val timeout: Duration        = TransactionConfig.DefaultTimeout,
                         val trackReads: JBoolean     = TransactionConfig.TRACK_READS,
                         val writeSkew: Boolean       = TransactionConfig.WRITE_SKEW,
-                        val explicitRetries: Boolean = TransactionConfig.EXPLICIT_RETRIES,
+                        val blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED,
                         val interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE,
                         val speculative: Boolean     = TransactionConfig.SPECULATIVE,
                         val quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
+                        val propagation: Propagation = TransactionConfig.PROPAGATION,
                         val traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
                         val hooks: Boolean           = TransactionConfig.HOOKS)
 
@@ -118,15 +132,16 @@ object TransactionFactory {
             timeout: Duration        = TransactionConfig.DefaultTimeout,
             trackReads: JBoolean     = TransactionConfig.TRACK_READS,
             writeSkew: Boolean       = TransactionConfig.WRITE_SKEW,
-            explicitRetries: Boolean = TransactionConfig.EXPLICIT_RETRIES,
+            blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED,
             interruptible: Boolean   = TransactionConfig.INTERRUPTIBLE,
             speculative: Boolean     = TransactionConfig.SPECULATIVE,
             quickRelease: Boolean    = TransactionConfig.QUICK_RELEASE,
+            propagation: Propagation = TransactionConfig.PROPAGATION,
             traceLevel: TraceLevel   = TransactionConfig.TRACE_LEVEL,
             hooks: Boolean           = TransactionConfig.HOOKS) = {
     val config = new TransactionConfig(
-      familyName, readonly, maxRetries, timeout, trackReads, writeSkew,
-      explicitRetries, interruptible, speculative, quickRelease, traceLevel, hooks)
+      familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
+      interruptible, speculative, quickRelease, propagation, traceLevel, hooks)
     new TransactionFactory(config)
   }
 }
@@ -165,10 +180,11 @@ class TransactionFactory(
                    .setMaxRetries(config.maxRetries)
                    .setTimeoutNs(config.timeout.toNanos)
                    .setWriteSkewAllowed(config.writeSkew)
-                   .setExplicitRetryAllowed(config.explicitRetries)
+                   .setExplicitRetryAllowed(config.blockingAllowed)
                    .setInterruptible(config.interruptible)
                    .setSpeculativeConfigurationEnabled(config.speculative)
                    .setQuickReleaseEnabled(config.quickRelease)
+                   .setPropagationLevel(config.propagation)
                    .setTraceLevel(config.traceLevel))
 
     if (config.readonly ne null) {

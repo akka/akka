@@ -12,8 +12,8 @@ public class InMemStateful {
   private TransactionalVector<String> vectorState;
   private Ref<String> refState;
   private boolean isInitialized = false;
-    
-  @inittransactionalstate 
+
+  @inittransactionalstate
   public void init() {
     if (!isInitialized) {
       mapState = new TransactionalMap();
@@ -22,7 +22,7 @@ public class InMemStateful {
       isInitialized = true;
     }
   }
-  
+
   public String getMapState(String key) {
     return (String)mapState.get(key).get();
   }

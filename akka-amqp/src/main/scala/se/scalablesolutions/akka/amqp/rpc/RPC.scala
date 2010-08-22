@@ -113,7 +113,7 @@ object RPC {
                         queueName: Option[String] = None,
                         durable: Boolean = false,
                         autoDelete: Boolean = true): RpcServerHandle = {
-    
+
     val serializer = new RpcServerSerializer[String, String](
       new FromBinary[String] {
         def fromBinary(bytes: Array[Byte]): String = {

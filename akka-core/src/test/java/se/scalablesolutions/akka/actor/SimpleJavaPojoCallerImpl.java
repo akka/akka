@@ -6,7 +6,7 @@ import se.scalablesolutions.akka.dispatch.Future;
 public class SimpleJavaPojoCallerImpl extends TypedActor implements SimpleJavaPojoCaller {
 
   SimpleJavaPojo pojo;
-  
+
   public void setPojo(SimpleJavaPojo pojo) {
     this.pojo = pojo;
   }

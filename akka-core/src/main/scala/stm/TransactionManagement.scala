@@ -132,6 +132,10 @@ trait StmCommon {
   type TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
   val TransactionFactory = se.scalablesolutions.akka.stm.TransactionFactory
 
+  val Propagation = se.scalablesolutions.akka.stm.Transaction.Propagation
+
+  val TraceLevel = se.scalablesolutions.akka.stm.Transaction.TraceLevel
+
   type Ref[T] = se.scalablesolutions.akka.stm.Ref[T]
   val Ref = se.scalablesolutions.akka.stm.Ref
 }

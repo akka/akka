@@ -24,7 +24,7 @@ object ActorFireForgetRequestReplySpec {
     self.lifeCycle = Some(LifeCycle(Temporary))
 
     def receive = {
-      case "Die" => 
+      case "Die" =>
         state.finished.await
         throw new Exception("Expected exception")
     }
