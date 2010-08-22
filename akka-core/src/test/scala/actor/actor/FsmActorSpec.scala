@@ -6,16 +6,17 @@ package se.scalablesolutions.akka.actor
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+
 import org.multiverse.api.latches.StandardLatch
-import actor.Fsm
+
 import java.util.concurrent.TimeUnit
 
-object FsmActorSpec {
+object FSMActorSpec {
 
   class Lock(code: String,
              timeout: Int,
              unlockedLatch: StandardLatch,
-             lockedLatch: StandardLatch) extends Actor with Fsm[CodeState] {
+             lockedLatch: StandardLatch) extends Actor with FSM[CodeState] {
 
     def initialState = State(NextState, locked, CodeState("", code))
 
@@ -57,8 +58,8 @@ object FsmActorSpec {
   case class CodeState(soFar: String, code: String)
 }
 
-class FsmActorSpec extends JUnitSuite {
-  import FsmActorSpec._
+class FSMActorSpec extends JUnitSuite {
+  import FSMActorSpec._
 
   @Test
   def unlockTheLock = {

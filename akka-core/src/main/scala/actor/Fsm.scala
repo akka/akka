@@ -1,11 +1,10 @@
-package actor
+package se.scalablesolutions.akka.actor
 
-import se.scalablesolutions.akka.actor.{Scheduler, Actor}
 import se.scalablesolutions.akka.stm.Ref
 import se.scalablesolutions.akka.stm.local._
 import java.util.concurrent.{ScheduledFuture, TimeUnit}
 
-trait Fsm[S] {
+trait FSM[S] {
   this: Actor =>
 
   type StateFunction = scala.PartialFunction[Event, State]
