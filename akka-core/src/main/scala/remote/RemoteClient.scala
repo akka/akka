@@ -10,7 +10,7 @@ import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, Completable
 import se.scalablesolutions.akka.util.{ListenerManagement, UUID, Logging, Duration}
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.AkkaException
-
+import Actor._
 import org.jboss.netty.channel._
 import group.DefaultChannelGroup
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
@@ -399,7 +399,7 @@ class RemoteClientHandler(
           }
         }
       }, RemoteClient.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
-    } else client.shutdown
+    } else spawn { client.shutdown }
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
