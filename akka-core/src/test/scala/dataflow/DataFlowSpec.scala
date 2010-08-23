@@ -20,7 +20,7 @@ import se.scalablesolutions.akka.actor.ActorRegistry
 @RunWith(classOf[JUnitRunner])
 class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
     describe("DataflowVariable") {
-      it("should work and generate correct results") {
+      it("should be able to set the value of one variable from other variables") {
         import DataFlow._
 
         val latch = new CountDownLatch(1)
@@ -34,13 +34,12 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
         thread { x << 40 }
         thread { y << 2 }
 
-        latch.await(3,TimeUnit.SECONDS) should equal (true)
-        List(x,y,z).foreach(_.shutdown)
+        latch.await(10,TimeUnit.SECONDS) should equal (true)
         result.get should equal (42)
-        ActorRegistry.shutdownAll
+        List(x,y,z).foreach(_.shutdown)
       }
 
-      it("should be able to transform a stream") {
+      it("should be able to sum a sequence of ints") {
         import DataFlow._
 
         def ints(n: Int, max: Int): List[Int] =
@@ -66,106 +65,9 @@ class DataFlowTest extends Spec with ShouldMatchers with BeforeAndAfterAll {
           latch.countDown
         }
 
-        latch.await(3,TimeUnit.SECONDS) should equal (true)
-        List(x,y,z).foreach(_.shutdown)
+        latch.await(10,TimeUnit.SECONDS) should equal (true)
         result.get should equal (sum(0,ints(0,1000)))
-        ActorRegistry.shutdownAll
+        List(x,y,z).foreach(_.shutdown)
       }
     }
-
-    /*it("should be able to join streams") {
-      import DataFlow._
-
-      def ints(n: Int, max: Int, stream: DataFlowStream[Int]): Unit = if (n != max) {
-        stream <<< n
-        ints(n + 1, max, stream)
-      }
-
-      def sum(s: Int, in: DataFlowStream[Int], out: DataFlowStream[Int]): Unit = {
-        out <<< s
-        sum(in() + s, in, out)
-      }
-
-      val producer = new DataFlowStream[Int]
-      val consumer = new DataFlowStream[Int]
-      val latch = new CountDownLatch(1)
-      val result = new AtomicInteger(0)
-
-      thread { ints(0, 1000, producer) }
-      thread {
-        Thread.sleep(1000)
-        result.set(producer.map(x => x * x).foldLeft(0)(_ + _))
-        latch.countDown
-      }
-      
-      latch.await(3,TimeUnit.SECONDS) should equal (true)
-      result.get should equal (332833500)
-      ActorRegistry.shutdownAll
-    }
-
-    it("should be able to sum streams recursively") {
-      import DataFlow._
-
-      def ints(n: Int, max: Int, stream: DataFlowStream[Int]): Unit = if (n != max) {
-        stream <<< n
-        ints(n + 1, max, stream)
-      }
-
-      def sum(s: Int, in: DataFlowStream[Int], out: DataFlowStream[Int]): Unit = {
-        out <<< s
-        sum(in() + s, in, out)
-      }
-
-      val result = new AtomicLong(0)
-
-      val producer = new DataFlowStream[Int]
-      val consumer = new DataFlowStream[Int]
-      val latch = new CountDownLatch(1)
-
-      @tailrec def recurseSum(stream: DataFlowStream[Int]): Unit = {
-        val x = stream()
-
-        if(result.addAndGet(x) == 166666500)
-          latch.countDown
-
-        recurseSum(stream)
-      }
-
-      thread { ints(0, 1000, producer) }
-      thread { sum(0, producer, consumer) }
-      thread { recurseSum(consumer) }
-      
-      latch.await(15,TimeUnit.SECONDS) should equal (true)
-      ActorRegistry.shutdownAll
-    }*/
-
-  /* Test not ready for prime time, causes some sort of deadlock */
-  /*  it("should be able to conditionally set variables") {
-
-    import DataFlow._
-
-    val latch  = new CountDownLatch(1)
-    val x, y, z, v = new DataFlowVariable[Int]
-
-    val main = thread {
-      x << 1
-      z << Math.max(x(),y())
-      latch.countDown
-    }
-
-    val setY = thread {
-      Thread sleep 2000
-      y << 2
-    }
-
-    val setV = thread {
-      v << y
-    }
-
-    latch.await(2,TimeUnit.SECONDS) should equal (true)
-    List(x,y,z,v) foreach (_.shutdown)
-    List(main,setY,setV) foreach (_ ! Exit)
-    println("Foo")
-    ActorRegistry.shutdownAll
-  }*/
 }
