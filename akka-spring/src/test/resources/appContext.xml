@@ -5,7 +5,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
        http://www.akkasource.org/schema/akka
-       http://scalablesolutions.se/akka/akka-0.10.xsd">
+       http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
 
     <akka:typed-actor id="sample"
                         interface="se.scalablesolutions.akka.spring.SampleBeanIntf"
