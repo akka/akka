@@ -70,11 +70,10 @@ object DataFlow {
       self.timeout = TIME_OUT
       private var readerFuture: Option[CompletableFuture[Any]] = None
       def receive = {
-        case Get =>
-          dataFlow.value.get match {
-            case Some(value) => self reply value
-            case None        => readerFuture = self.senderFuture
-          }
+        case Get => dataFlow.value.get match {
+          case Some(value) => self reply value
+          case None        => readerFuture = self.senderFuture
+        }
         case Set(v:T) => readerFuture.map(_ completeWithResult v)
         case Exit     => self.stop
       }
@@ -82,7 +81,7 @@ object DataFlow {
 
     private[this] val in = actorOf(new In(this)).start
 
-    def <<(ref: DataFlowVariable[T]) = if(this.value.get.isEmpty) in ! Set(ref())
+    def <<(ref: DataFlowVariable[T]): Unit = if(this.value.get.isEmpty) in ! Set(ref())
 
     def <<(value: T): Unit = if(this.value.get.isEmpty) in ! Set(value)
 
