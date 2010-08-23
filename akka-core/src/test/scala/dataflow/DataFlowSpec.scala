@@ -11,10 +11,12 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import se.scalablesolutions.akka.dispatch.DefaultCompletableFuture
 import java.util.concurrent.{TimeUnit, CountDownLatch}
-import annotation.tailrec
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference, AtomicInteger}
+
+import scala.annotation.tailrec
+
+import se.scalablesolutions.akka.dispatch.DefaultCompletableFuture
 import se.scalablesolutions.akka.actor.ActorRegistry
 
 @RunWith(classOf[JUnitRunner])

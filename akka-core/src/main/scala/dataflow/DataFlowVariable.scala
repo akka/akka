@@ -21,11 +21,7 @@ object DataFlow {
   object Start
   object Exit
 
-  import java.util.concurrent.atomic.AtomicReference
-  import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
   import scala.collection.JavaConversions._
-  import se.scalablesolutions.akka.actor.Actor
-  import se.scalablesolutions.akka.dispatch.CompletableFuture
 
   def thread(body: => Unit): Unit = spawn(body)
 
@@ -81,9 +77,9 @@ object DataFlow {
 
     private[this] val in = actorOf(new In(this)).start
 
-    def <<(ref: DataFlowVariable[T]): Unit = if(this.value.get.isEmpty) in ! Set(ref())
+    def <<(ref: DataFlowVariable[T]): Unit = if (this.value.get.isEmpty) in ! Set(ref())
 
-    def <<(value: T): Unit = if(this.value.get.isEmpty) in ! Set(value)
+    def <<(value: T): Unit = if (this.value.get.isEmpty) in ! Set(value)
 
     def apply(): T = {
       value.get getOrElse {
@@ -91,7 +87,8 @@ object DataFlow {
         blockedReaders offer out
         val result = (out !! Get).as[T]
         out ! Exit
-        result.getOrElse(throw new DataFlowVariableException("Timed out (after " + TIME_OUT + " milliseconds) while waiting for result"))
+        result.getOrElse(throw new DataFlowVariableException(
+          "Timed out (after " + TIME_OUT + " milliseconds) while waiting for result"))
       }
     }
 
