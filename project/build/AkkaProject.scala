@@ -282,14 +282,14 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   //override def defaultPublishRepository = Some(Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile))
   val publishTo = Resolver.file("maven-local", Path.userHome / ".m2" / "repository" asFile)
 
-  val sourceArtifact = Artifact(artifactID, "source", "jar", Some("source"), Nil, None)
+  val sourceArtifact = Artifact(artifactID, "sources", "jar", Some("sources"), Nil, None)
   val docsArtifact = Artifact(artifactID, "docs", "jar", Some("docs"), Nil, None)
 
   // Credentials(Path.userHome / ".akka_publish_credentials", log)
 
   //override def documentOptions = encodingUtf8.map(SimpleDocOption(_))
   override def packageDocsJar = defaultJarPath("-docs.jar")
-  override def packageSrcJar= defaultJarPath("-source.jar")
+  override def packageSrcJar= defaultJarPath("-sources.jar")
   override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageDocs, packageSrc)
 
   override def pomExtra =
