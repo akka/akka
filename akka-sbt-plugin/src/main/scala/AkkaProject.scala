@@ -1,12 +1,13 @@
 import sbt._
 
 object AkkaRepositories {
-  val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-  val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-  val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
-  val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-  val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
-  val CodehausSnapshotRepo = MavenRepository("Codehaus Snapshots", "http://snapshots.repository.codehaus.org")
+  val AkkaRepo               = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+  val CodehausRepo           = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
+  val GuiceyFruitRepo        = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
+  val JBossRepo              = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+  val JavaNetRepo            = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+  val SonatypeSnapshotRepo   = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
+  val SunJDMKRepo            = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
 }
 
 trait AkkaBaseProject extends BasicScalaProject {
@@ -17,27 +18,30 @@ trait AkkaBaseProject extends BasicScalaProject {
 
   // for development version resolve to .ivy2/local
   // val akkaModuleConfig        = ModuleConfiguration("se.scalablesolutions.akka", AkkaRepo)
-  val netLagModuleConfig      = ModuleConfiguration("net.lag", AkkaRepo)
-  val sbinaryModuleConfig     = ModuleConfiguration("sbinary", AkkaRepo)
-  val redisModuleConfig       = ModuleConfiguration("com.redis", AkkaRepo)
-  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", AkkaRepo)
+
+  val aspectwerkzModuleConfig = ModuleConfiguration("org.codehaus.aspectwerkz", AkkaRepo)
+  val cassandraModuleConfig   = ModuleConfiguration("org.apache.cassandra", AkkaRepo)
   val facebookModuleConfig    = ModuleConfiguration("com.facebook", AkkaRepo)
   val jsr166xModuleConfig     = ModuleConfiguration("jsr166x", AkkaRepo)
+  val netLagModuleConfig      = ModuleConfiguration("net.lag", AkkaRepo)
+  val redisModuleConfig       = ModuleConfiguration("com.redis", AkkaRepo)
+  val sbinaryModuleConfig     = ModuleConfiguration("sbinary", AkkaRepo)
   val sjsonModuleConfig       = ModuleConfiguration("sjson.json", AkkaRepo)
   val voldemortModuleConfig   = ModuleConfiguration("voldemort.store.compress", AkkaRepo)
-  val cassandraModuleConfig   = ModuleConfiguration("org.apache.cassandra", AkkaRepo)
+  val vscaladocModuleConfig   = ModuleConfiguration("org.scala-tools", "vscaladoc", "1.1-md-3", AkkaRepo)
+
+  val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
+  val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
   val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
-  val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-  val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
-  val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
   val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
+  val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
   val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
-  val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
-  val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
-  val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausSnapshotRepo) // only while snapshot version
-  val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsSnapshots)
+  val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
+  val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
+  val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
+  val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
 }
 
 trait AkkaProject extends AkkaBaseProject {
