@@ -181,11 +181,13 @@ class RemoteClient private[akka] (val hostname: String, val port: Int, val loade
   extends Logging with ListenerManagement {
   val name = "RemoteClient@" + hostname + "::" + port
 
+  //FIXME Should these be clear:ed on shutdown?
   private val futures = new ConcurrentHashMap[Long, CompletableFuture[_]]
   private val supervisors = new ConcurrentHashMap[String, ActorRef]
 
   private val remoteAddress = new InetSocketAddress(hostname, port)
 
+  //FIXME rewrite to a wrapper object (minimize volatile access and maximize encapsulation)
   @volatile private[remote] var isRunning = false
   @volatile private var bootstrap: ClientBootstrap = _
   @volatile private var reconnectionTimeWindowStart = 0L
