@@ -14,8 +14,8 @@ object Compression {
    */
   object LZF {
     import voldemort.store.compress.lzf._
-    def compress(bytes: Array[Byte]): Array[Byte] = LZFEncoder.encode(bytes)
-    def uncompress(bytes: Array[Byte]): Array[Byte] = LZFDecoder.decode(bytes)
+    def compress(bytes: Array[Byte]): Array[Byte]   = LZFEncoder encode bytes
+    def uncompress(bytes: Array[Byte]): Array[Byte] = LZFDecoder decode bytes
   }
 }
 

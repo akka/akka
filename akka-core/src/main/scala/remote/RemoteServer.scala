@@ -63,7 +63,7 @@ object RemoteNode extends RemoteServer
  */
 object RemoteServer {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
-  val PORT = config.getInt("akka.remote.server.port", 9999)
+  val PORT     = config.getInt("akka.remote.server.port", 9999)
 
   val CONNECTION_TIMEOUT_MILLIS = Duration(config.getInt("akka.remote.server.connection-timeout", 1), TIME_UNIT)
 

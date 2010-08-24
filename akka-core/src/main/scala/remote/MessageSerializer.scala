@@ -6,9 +6,9 @@ package se.scalablesolutions.akka.remote
 
 import se.scalablesolutions.akka.serialization.{Serializer, Serializable}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
+import se.scalablesolutions.akka.util._
 
 import com.google.protobuf.{Message, ByteString}
-import se.scalablesolutions.akka.util._
 
 object MessageSerializer extends Logging {
   private var SERIALIZER_JAVA:       Serializer.Java      = Serializer.Java
