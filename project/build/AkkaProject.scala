@@ -216,17 +216,19 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Subprojects
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val akka_core        = project("akka-core", "akka-core", new AkkaCoreProject(_))
-  lazy val akka_amqp        = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
-  lazy val akka_http        = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
-  lazy val akka_camel       = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
-  lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_spring      = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core, akka_camel)
-  lazy val akka_jta         = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
-  lazy val akka_kernel      = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
-                                      akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
-  lazy val akka_osgi        = project("akka-osgi", "akka-osgi", new AkkaOSGiParentProject(_))
-  lazy val akka_samples     = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
+  lazy val akka_actors       = project("akka-actors", "akka-actors", new AkkaCoreProject(_))
+  lazy val akka_typed_actors = project("akka-typed-actors", "akka-typed-actors", new AkkaCoreProject(_), akka_actors)
+  lazy val akka_core         = project("akka-core", "akka-core", new AkkaCoreProject(_), akka_typed_actors)
+  lazy val akka_amqp         = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
+  lazy val akka_http         = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
+  lazy val akka_camel        = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
+  lazy val akka_persistence  = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
+  lazy val akka_spring       = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core, akka_camel)
+  lazy val akka_jta          = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
+  lazy val akka_kernel       = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
+                                       akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
+  lazy val akka_osgi         = project("akka-osgi", "akka-osgi", new AkkaOSGiParentProject(_))
+  lazy val akka_samples      = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Miscellaneous
@@ -307,53 +309,71 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       </license>
     </licenses>
 
-    // publish to local mvn
-    import Process._
-    lazy val publishLocalMvn = runMvnInstall
-    def runMvnInstall = task {
-        for (absPath <- akkaArtifacts.getPaths) {
-          val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
-          val artifactRE(path, artifactId, artifactVersion) = absPath
-          val command = "mvn install:install-file" +
-                        " -Dfile=" + absPath +
-                        " -DgroupId=se.scalablesolutions.akka" +
-                        " -DartifactId=" + artifactId +
-                        " -Dversion=" + version +
-                        " -Dpackaging=jar -DgeneratePom=true"
-          command ! log
-        }
-       None
-    } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
+  // publish to local mvn
+  import Process._
+  lazy val publishLocalMvn = runMvnInstall
+  def runMvnInstall = task {
+    for (absPath <- akkaArtifacts.getPaths) {
+      val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
+      val artifactRE(path, artifactId, artifactVersion) = absPath
+      val command = "mvn install:install-file" +
+                    " -Dfile=" + absPath +
+                    " -DgroupId=se.scalablesolutions.akka" +
+                    " -DartifactId=" + artifactId +
+                    " -Dversion=" + version +
+                    " -Dpackaging=jar -DgeneratePom=true"
+      command ! log
+    }
+    None
+  } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-actors subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaActorsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val configgy      = Dependencies.configgy
+    val hawtdispatch  = Dependencies.hawtdispatch
+    val multiverse    = Dependencies.multiverse
+    val jsr166x       = Dependencies.jsr166x
+    val slf4j         = Dependencies.slf4j
+    val logback       = Dependencies.logback
+    val logback_core  = Dependencies.logback_core
+
+    // testing
+    val junit     = Dependencies.junit
+    val scalatest = Dependencies.scalatest
+  }
+
+  class AkkaTypedActorsProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val aopalliance   = Dependencies.aopalliance
+    val werkz         = Dependencies.werkz
+    val werkz_core    = Dependencies.werkz_core
+
+    // testing
+    val junit     = Dependencies.junit
+    val scalatest = Dependencies.scalatest
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-core subproject
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val aopalliance   = Dependencies.aopalliance
     val commons_codec = Dependencies.commons_codec
     val commons_io    = Dependencies.commons_io
-    val configgy      = Dependencies.configgy
     val dispatch_http = Dependencies.dispatch_http
     val dispatch_json = Dependencies.dispatch_json
     val guicey        = Dependencies.guicey
     val h2_lzf        = Dependencies.h2_lzf
-    val hawtdispatch  = Dependencies.hawtdispatch
     val jackson       = Dependencies.jackson
     val jackson_core  = Dependencies.jackson_core
     val jgroups       = Dependencies.jgroups
-    val jsr166x       = Dependencies.jsr166x
     val jta_1_1       = Dependencies.jta_1_1
-    val multiverse    = Dependencies.multiverse
     val netty         = Dependencies.netty
     val protobuf      = Dependencies.protobuf
     val sbinary       = Dependencies.sbinary
     val sjson         = Dependencies.sjson
-    val werkz         = Dependencies.werkz
-    val werkz_core    = Dependencies.werkz_core
-    val slf4j         = Dependencies.slf4j
-    val logback       = Dependencies.logback
-    val logback_core  = Dependencies.logback_core
 
     // testing
     val junit     = Dependencies.junit
