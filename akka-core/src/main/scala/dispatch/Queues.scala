@@ -11,17 +11,14 @@ import se.scalablesolutions.akka.util.Logger
 
 class BoundedTransferQueue[E <: AnyRef](
         val capacity: Int,
-        val defaultTimeout: Long,
-        val defaultTimeUnit: TimeUnit)
+        val pushTimeout: Long,
+        val pushTimeUnit: TimeUnit)
       extends LinkedTransferQueue[E] {
   
   protected val guard = new Semaphore(capacity)
   
-  protected def enq(
-          f: => Boolean,
-          timeout: Long = defaultTimeout,
-          unit: TimeUnit = defaultTimeUnit): Boolean = {
-    if (guard.tryAcquire(timeout,unit)) {
+  protected def enq(f: => Boolean): Boolean = {
+    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
       val result = try {
         f
       } catch {
@@ -54,7 +51,7 @@ class BoundedTransferQueue[E <: AnyRef](
     enq(super.offer(e))
 
   override def offer(e: E, timeout: Long, unit: TimeUnit): Boolean =
-    enq(super.offer(e,timeout,unit), timeout, unit)
+    enq(super.offer(e,timeout,unit))
 
   override def add(e: E): Boolean =
     enq(super.add(e))
@@ -66,7 +63,7 @@ class BoundedTransferQueue[E <: AnyRef](
     enq(super.tryTransfer(e))
 
   override def tryTransfer(e: E, timeout: Long, unit: TimeUnit): Boolean =
-    enq(super.tryTransfer(e,timeout,unit),timeout,unit)
+    enq(super.tryTransfer(e,timeout,unit))
   
   override def transfer(e: E): Unit =
     enq({ super.transfer(e); true })
@@ -78,7 +75,7 @@ class BoundedTransferQueue[E <: AnyRef](
       def next = it.next
       def remove {
         it.remove
-        guard.release
+        guard.release //Assume remove worked if no exception was thrown
       }
     }
   }
