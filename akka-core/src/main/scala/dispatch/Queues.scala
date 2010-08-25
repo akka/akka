@@ -14,6 +14,9 @@ class BoundedTransferQueue[E <: AnyRef](
         val pushTimeout: Long,
         val pushTimeUnit: TimeUnit)
       extends LinkedTransferQueue[E] {
+  require(capacity > 0)
+  require(pushTimeout > 0)
+  require(pushTimeUnit ne null)
   
   protected val guard = new Semaphore(capacity)
   
