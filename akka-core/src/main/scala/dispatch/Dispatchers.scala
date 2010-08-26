@@ -44,8 +44,8 @@ import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, D
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers extends Logging {
-  val THROUGHPUT       = config.getInt("akka.actor.throughput", 5)
-  val MAILBOX_CAPACITY = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
+  val THROUGHPUT          = config.getInt("akka.actor.throughput", 5)
+  val MAILBOX_CAPACITY    = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
 
   lazy val defaultGlobalDispatcher = {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
