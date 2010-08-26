@@ -729,7 +729,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
 
   // ------------------------------------------------------------
-  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject
+  class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
+    override def packageDocsJar = this.defaultJarPath("-docs.jar")
+    override def packageSrcJar  = this.defaultJarPath("-sources.jar")
+  }
 }
 
 trait DeployProject { self: BasicScalaProject =>
