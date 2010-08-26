@@ -1141,6 +1141,7 @@ class LocalActorRef private[akka](
     freshActor.initTransactionalState
     actorInstance.set(freshActor)
     if (failedActor.isInstanceOf[TypedActor]) failedActor.asInstanceOf[TypedActor].swapInstanceInProxy(freshActor)
+    if (dispatcher.isShutdown) dispatcher.start
     Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
     freshActor.postRestart(reason)
   }
