@@ -12,6 +12,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationExce
 import java.util.concurrent.ConcurrentHashMap
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
+import se.scalablesolutions.akka.AkkaException
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -56,6 +57,8 @@ final class MessageInvocation(val receiver: ActorRef,
      "]"
   }
 }
+
+class MessageQueueAppendFailedException(message: String) extends AkkaException(message)
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
