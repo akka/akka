@@ -9,10 +9,9 @@ import java.util.List
 import se.scalablesolutions.akka.util.{HashCode, Logging}
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
 
-import java.util.concurrent.ConcurrentHashMap
-
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import se.scalablesolutions.akka.AkkaException
+import java.util.concurrent.{ConcurrentSkipListSet}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -71,16 +70,16 @@ trait MessageQueue {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageDispatcher extends Logging {
-  protected val references = new ConcurrentHashMap[String, ActorRef]
+  protected val uuids = new ConcurrentSkipListSet[String]
   def dispatch(invocation: MessageInvocation)
   def start
   def shutdown
-  def register(actorRef: ActorRef) = references.put(actorRef.uuid, actorRef)
+  def register(actorRef: ActorRef) = uuids add actorRef.uuid
   def unregister(actorRef: ActorRef) = {
-    references.remove(actorRef.uuid)
+    uuids remove actorRef.uuid
     if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
   }
-  def canBeShutDown: Boolean = references.isEmpty
+  def canBeShutDown: Boolean = uuids.isEmpty
   def isShutdown: Boolean
   def mailboxSize(actorRef: ActorRef):Int = 0
 }
