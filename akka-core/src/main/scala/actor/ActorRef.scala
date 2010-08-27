@@ -741,7 +741,7 @@ class LocalActorRef private[akka](
   /**
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
-  def dispatcher_=(md: MessageDispatcher): Unit = {
+  def dispatcher_=(md: MessageDispatcher): Unit = guard.withGuard {
     if (!isRunning || isBeingRestarted) _dispatcher = md
     else throw new ActorInitializationException(
       "Can not swap dispatcher for " + toString + " after it has been started")
