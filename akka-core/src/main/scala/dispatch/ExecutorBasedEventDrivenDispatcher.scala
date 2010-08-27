@@ -157,7 +157,7 @@ class ExecutorBasedEventDrivenDispatcher(
     log.debug("Shutting down %s", toString)
     executor.shutdownNow
     active = false
-    references.clear
+    uuids.clear
   }
 
   def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
