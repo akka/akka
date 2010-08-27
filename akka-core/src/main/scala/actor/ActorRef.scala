@@ -742,9 +742,11 @@ class LocalActorRef private[akka](
    * Sets the dispatcher for this actor. Needs to be invoked before the actor is started.
    */
   def dispatcher_=(md: MessageDispatcher): Unit = guard.withGuard {
-    if (!isRunning || isBeingRestarted) _dispatcher = md
-    else throw new ActorInitializationException(
+    if (!isBeingRestarted) {
+      if (!isRunning) _dispatcher = md
+      else throw new ActorInitializationException(
       "Can not swap dispatcher for " + toString + " after it has been started")
+    }
   }
 
   /**
@@ -1141,7 +1143,6 @@ class LocalActorRef private[akka](
     freshActor.initTransactionalState
     actorInstance.set(freshActor)
     if (failedActor.isInstanceOf[TypedActor]) failedActor.asInstanceOf[TypedActor].swapInstanceInProxy(freshActor)
-    if (dispatcher.isShutdown) dispatcher.start
     Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
     freshActor.postRestart(reason)
   }
