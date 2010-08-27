@@ -47,7 +47,7 @@ class ThreadBasedDispatcher(private val actor: ActorRef, val mailboxCapacity: In
     log.debug("Shutting down %s", toString)
     active = false
     selectorThread.interrupt
-    references.clear
+    uuids.clear
   }
 
   override def toString = "ThreadBasedDispatcher[" + threadName + "]"
