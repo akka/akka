@@ -250,6 +250,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     .filter(!_.getName.contains("scala-library"))
     .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") +
+    " config/" +
     " scala-library.jar" +
     " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
@@ -271,10 +272,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   override def mainResources = super.mainResources +++
-                               descendents(info.projectPath / "config", "*") ---
-                               (super.mainResources ** "logback-test.xml")
+          (info.projectPath / "config").descendentsExcept("*", "logback-test.xml")
 
-  override def testResources = super.testResources --- (super.testResources ** "logback-test.xml")
+  override def runClasspath = super.runClasspath +++ "config"
 
   // ------------------------------------------------------------
   // publishing
@@ -730,6 +730,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
+    override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
+    override def testClasspath = super.testClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
     override def packageDocsJar = this.defaultJarPath("-docs.jar")
     override def packageSrcJar  = this.defaultJarPath("-sources.jar")
   }
