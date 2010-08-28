@@ -155,7 +155,7 @@ object ActorSerialization {
       else None
 
     val classLoader = loader.getOrElse(getClass.getClassLoader)
-    
+
     val factory = () => {
       val actorClass = classLoader.loadClass(protocol.getActorClassname)
       if (format.isInstanceOf[SerializerBasedActorFormat[_]])
@@ -180,7 +180,7 @@ object ActorSerialization {
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteRequestProtocol]]
     messages.foreach(message => ar ! MessageSerializer.deserialize(message.getMessage))
-    
+
     if (format.isInstanceOf[SerializerBasedActorFormat[_]] == false)
       format.fromBinary(protocol.getActorInstance.toByteArray, ar.actor.asInstanceOf[T])
     ar
@@ -252,7 +252,7 @@ object RemoteActorSerialization {
         .setTarget(actorClassName)
         .setTimeout(timeout)
 
-    typedActorInfo.foreach { typedActor => 
+    typedActorInfo.foreach { typedActor =>
       actorInfoBuilder.setTypedActorInfo(
         TypedActorInfoProtocol.newBuilder
           .setInterface(typedActor._1)

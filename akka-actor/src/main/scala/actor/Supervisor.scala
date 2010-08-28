@@ -162,7 +162,7 @@ sealed class Supervisor private[akka] (
             _childActors.put(className, actorRef :: currentActors)
             actorRef.lifeCycle = Some(lifeCycle)
             supervisor.link(actorRef)
-            remoteAddress.foreach { address => 
+            remoteAddress.foreach { address =>
               RemoteServerModule.registerActor(
                 new InetSocketAddress(address.hostname, address.port), actorRef.uuid, actorRef)
             }

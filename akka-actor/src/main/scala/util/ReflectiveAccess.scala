@@ -14,7 +14,7 @@ import java.net.InetSocketAddress
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */ 
+ */
 object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
@@ -26,15 +26,15 @@ object ReflectiveAccess {
   def ensureTypedActorEnabled = TypedActorModule.ensureTypedActorEnabled
 
   /**
-   * Reflective access to the RemoteClient module. 
+   * Reflective access to the RemoteClient module.
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object RemoteClientModule {
 
-    type RemoteClient = { 
+    type RemoteClient = {
       def send[T](
-        message: Any, 
+        message: Any,
         senderOption: Option[ActorRef],
         senderFuture: Option[CompletableFuture[_]],
         remoteAddress: InetSocketAddress,
@@ -43,18 +43,18 @@ object ReflectiveAccess {
         actorRef: ActorRef,
         typedActorInfo: Option[Tuple2[String, String]],
         actorType: ActorType): Option[CompletableFuture[T]]
-      def registerSupervisorForActor(actorRef: ActorRef) 
+      def registerSupervisorForActor(actorRef: ActorRef)
     }
-    
-    type RemoteClientObject = { 
-      def register(hostname: String, port: Int, uuid: String): Unit 
+
+    type RemoteClientObject = {
+      def register(hostname: String, port: Int, uuid: String): Unit
       def unregister(hostname: String, port: Int, uuid: String): Unit
       def clientFor(address: InetSocketAddress): RemoteClient
       def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient
     }
-    
+
     lazy val isRemotingEnabled = remoteClientObjectInstance.isDefined
-    
+
     def ensureRemotingEnabled = if (!isRemotingEnabled) throw new ModuleNotAvailableException(
       "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
 
@@ -87,9 +87,9 @@ object ReflectiveAccess {
       ensureRemotingEnabled
       remoteClientObjectInstance.get.clientFor(hostname, port, loader)
     }
-    
+
     def send[T](
-      message: Any, 
+      message: Any,
       senderOption: Option[ActorRef],
       senderFuture: Option[CompletableFuture[_]],
       remoteAddress: InetSocketAddress,
@@ -101,11 +101,11 @@ object ReflectiveAccess {
       ensureRemotingEnabled
       clientFor(remoteAddress.getHostName, remoteAddress.getPort, None).send[T](
         message, senderOption, senderFuture, remoteAddress, timeout, isOneWay, actorRef, typedActorInfo, actorType)
-    } 
+    }
   }
 
   /**
-   * Reflective access to the RemoteServer module. 
+   * Reflective access to the RemoteServer module.
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
@@ -113,15 +113,15 @@ object ReflectiveAccess {
     val HOSTNAME = Config.config.getString("akka.remote.server.hostname", "localhost")
     val PORT     = Config.config.getInt("akka.remote.server.port", 9999)
 
-    type RemoteServerObject = { 
+    type RemoteServerObject = {
       def registerActor(address: InetSocketAddress, uuid: String, actor: ActorRef): Unit
       def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef): Unit
     }
-    
-    type RemoteNodeObject = { 
-      def unregister(actorRef: ActorRef): Unit 
+
+    type RemoteNodeObject = {
+      def unregister(actorRef: ActorRef): Unit
     }
-    
+
     val remoteServerObjectInstance: Option[RemoteServerObject] = {
       try {
         val clazz = loader.loadClass("se.scalablesolutions.akka.remote.RemoteServer$")
@@ -157,7 +157,7 @@ object ReflectiveAccess {
   }
 
   /**
-   * Reflective access to the TypedActors module. 
+   * Reflective access to the TypedActors module.
    *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
@@ -167,7 +167,7 @@ object ReflectiveAccess {
       def isJoinPoint(message: Any): Boolean
       def isJoinPointAndOneWay(message: Any): Boolean
     }
-    
+
     lazy val isTypedActorEnabled = typedActorObjectInstance.isDefined
 
     def ensureTypedActorEnabled = if (!isTypedActorEnabled) throw new ModuleNotAvailableException(
@@ -185,7 +185,7 @@ object ReflectiveAccess {
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
       ensureTypedActorEnabled
       if (typedActorObjectInstance.get.isJoinPointAndOneWay(message)) {
-        future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)        
+        future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
       typedActorObjectInstance.get.isJoinPoint(message)
     }

@@ -506,7 +506,7 @@ private[actor] class AnyOptionAsTypedOption(anyOption: Option[Any]) {
  * Marker interface for proxyable actors (such as typed actor).
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */ 
+ */
 trait Proxyable {
   private[actor] def swapProxiedActor(newInstance: Actor)
 }
@@ -515,9 +515,9 @@ trait Proxyable {
  * Represents the different Actor types.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */ 
+ */
 sealed trait ActorType
 object ActorType {
   case object ScalaActor extends ActorType
-  case object TypedActor extends ActorType  
+  case object TypedActor extends ActorType
 }

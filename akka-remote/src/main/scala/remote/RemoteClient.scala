@@ -248,7 +248,7 @@ class RemoteClient private[akka] (
   protected override def manageLifeCycleOfListeners = false
 
   def send[T](
-    message: Any, 
+    message: Any,
     senderOption: Option[ActorRef],
     senderFuture: Option[CompletableFuture[T]],
     remoteAddress: InetSocketAddress,
@@ -262,8 +262,8 @@ class RemoteClient private[akka] (
  }
 
   def send[T](
-    request: RemoteRequestProtocol, 
-    senderFuture: Option[CompletableFuture[T]]): 
+    request: RemoteRequestProtocol,
+    senderFuture: Option[CompletableFuture[T]]):
     Option[CompletableFuture[T]] = if (isRunning) {
     if (request.getIsOneWay) {
       connection.getChannel.write(request)
@@ -462,27 +462,5 @@ class RemoteClientHandler(
     exceptionClass
         .getConstructor(Array[Class[_]](classOf[String]): _*)
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
-  }
-}
-
-object RemoteDisconnectTest {
-import se.scalablesolutions.akka.actor.{Actor,ActorRef}
-
-  class TestClientActor extends Actor {
-    def receive = {
-     case ("send ping",akt:ActorRef) => akt ! "ping"
-     case "pong" => {
-       log.debug("got pong")
-     }
-   }
-  }
-
-  class TestServerActor extends Actor {
-    def receive = {
-     case "ping" => {
-       log.debug("got ping")
-       self reply "pong"
-     }
-   }
   }
 }

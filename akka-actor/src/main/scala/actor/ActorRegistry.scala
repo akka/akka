@@ -16,7 +16,7 @@ import se.scalablesolutions.akka.util.ListenerManagement
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */ 
+ */
 sealed trait ActorRegistryEvent
 case class ActorRegistered(actor: ActorRef) extends ActorRegistryEvent
 case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent

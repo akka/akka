@@ -62,9 +62,9 @@ import scala.reflect.BeanProperty
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-trait ActorRef extends 
-  ActorRefShared with 
-  TransactionManagement with 
+trait ActorRef extends
+  ActorRefShared with
+  TransactionManagement with
   Logging with
   java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
 
@@ -78,7 +78,7 @@ trait ActorRef extends
   @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
   protected[akka] val guard = new ReentrantGuard
-   
+
   /**
    * User overridable callback/setting.
    * <p/>
@@ -746,7 +746,7 @@ class LocalActorRef private[akka](
     ensureRemotingEnabled
     if (!isRunning || isBeingRestarted) makeRemote(new InetSocketAddress(hostname, port))
     else throw new ActorInitializationException(
-      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")    
+      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
   }
 
   /**
@@ -759,7 +759,7 @@ class LocalActorRef private[akka](
       RemoteClientModule.register(address, uuid)
       homeAddress = (RemoteServerModule.HOSTNAME, RemoteServerModule.PORT)
     } else throw new ActorInitializationException(
-      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")    
+      "Can't make a running actor remote. Make sure you call 'makeRemote' before 'start'.")
   }
 
   /**
@@ -830,10 +830,10 @@ class LocalActorRef private[akka](
       actor.shutdown
       ActorRegistry.unregister(this)
       if (isRemotingEnabled) {
-        remoteAddress.foreach { address => 
+        remoteAddress.foreach { address =>
           RemoteClientModule.unregister(address, uuid)
         }
-        RemoteServerModule.unregister(this)        
+        RemoteServerModule.unregister(this)
       }
       nullOutActorRefReferencesFor(actorInstance.get)
     } //else if (isBeingRestarted) throw new ActorKilledException("Actor [" + toString + "] is being restarted.")
@@ -1137,7 +1137,7 @@ class LocalActorRef private[akka](
     freshActor.init
     freshActor.initTransactionalState
     actorInstance.set(freshActor)
-    if (failedActor.isInstanceOf[Proxyable]) 
+    if (failedActor.isInstanceOf[Proxyable])
       failedActor.asInstanceOf[Proxyable].swapProxiedActor(freshActor)
     Actor.log.debug("Invoking 'postRestart' for new actor instance [%s].", id)
     freshActor.postRestart(reason)
@@ -1357,16 +1357,16 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  uuuid: String, 
-  val className: String, 
-  val hostname: String, 
-  val port: Int, 
-  _timeout: Long, 
+  uuuid: String,
+  val className: String,
+  val hostname: String,
+  val port: Int,
+  _timeout: Long,
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
   ensureRemotingEnabled
-  
+
   _uuid = uuuid
   timeout = _timeout
 
@@ -1480,7 +1480,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
   * upon restart, remote restart etc.
  */
  def id: String
- 
+
  def id_=(id: String): Unit
 
  /**

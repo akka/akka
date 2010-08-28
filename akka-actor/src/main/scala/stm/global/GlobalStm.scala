@@ -31,7 +31,7 @@ class GlobalStm extends TransactionManagement {
   val DefaultGlobalTransactionFactory = TransactionFactory(
     DefaultGlobalTransactionConfig, "DefaultGlobalTransaction")
 
-  def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultGlobalTransactionFactory): T = 
+  def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultGlobalTransactionFactory): T =
     atomic(factory)(body)
 
   def atomic[T](factory: TransactionFactory)(body: => T): T = {
