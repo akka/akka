@@ -224,7 +224,7 @@ abstract class TypedActor extends Actor with Proxyable {
       if (arg.getClass.getName.contains(TypedActor.AW_PROXY_PREFIX)) unserializable = true
     }
     if (!unserializable && hasMutableArgument) {
-      
+
       //FIXME serializeArguments
   //    val copyOfArgs = Serializer.Java.deepClone(args)
   //    joinPoint.getRtti.asInstanceOf[MethodRtti].setParameterValues(copyOfArgs.asInstanceOf[Array[AnyRef]])
@@ -539,11 +539,11 @@ object TypedActor extends Logging {
   private[akka] def supervise(restartStrategy: RestartStrategy, components: List[Supervise]): Supervisor =
     Supervisor(SupervisorConfig(restartStrategy, components))
 
-  def isJoinPointAndOneWay(message: Any): Boolean = if (isJoinPoint(message)) 
+  def isJoinPointAndOneWay(message: Any): Boolean = if (isJoinPoint(message))
     isOneWay(message.asInstanceOf[JoinPoint].getRtti.asInstanceOf[MethodRtti])
   else false
 
-  private[akka] def isJoinPoint(message: Any): Boolean = message.isInstanceOf[JoinPoint]    
+  private[akka] def isJoinPoint(message: Any): Boolean = message.isInstanceOf[JoinPoint]
 }
 
 /**
@@ -607,11 +607,11 @@ private[akka] sealed class TypedActorAspect {
     val isOneWay = TypedActor.isOneWay(methodRtti)
 
     val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
-    
+
     val future = RemoteClientModule.send[AnyRef](
-      message, None, None, remoteAddress.get, 
-      timeout, isOneWay, actorRef, 
-      Some((interfaceClass.getName, methodRtti.getMethod.getName)), 
+      message, None, None, remoteAddress.get,
+      timeout, isOneWay, actorRef,
+      Some((interfaceClass.getName, methodRtti.getMethod.getName)),
       ActorType.TypedActor)
 
     if (isOneWay) null // for void methods

@@ -32,7 +32,7 @@ class LocalStm extends TransactionManagement with Logging {
   val DefaultLocalTransactionFactory = TransactionFactory(
     DefaultLocalTransactionConfig, "DefaultLocalTransaction")
 
-  def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultLocalTransactionFactory): T = 
+  def atomic[T](body: => T)(implicit factory: TransactionFactory = DefaultLocalTransactionFactory): T =
     atomic(factory)(body)
 
   def atomic[T](factory: TransactionFactory)(body: => T): T = {

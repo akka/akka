@@ -24,7 +24,7 @@ object ConfigLogger extends Logging
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Config { 
+object Config {
   val VERSION = "1.0-SNAPSHOT"
 
   // Set Multiverse options for max speed
