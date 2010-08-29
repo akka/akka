@@ -20,13 +20,12 @@ import java.net.{InetAddress, UnknownHostException}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @serializable abstract class AkkaException(message: String) extends RuntimeException(message) {
-  @volatile private var isLogged = false
+  import AkkaException._
   val exceptionName = getClass.getName
 
-  val uuid = String.format("%s_%s", AkkaException.hostname, UUID.newUuid.toString)
+  val uuid = "%s_%s".format(hostname, UUID.newUuid.toString)
 
-  override val toString =
-    String.format("%s\n\t[%s]\n\t%s\n\t%s", exceptionName, uuid, message, stackTrace)
+  override val toString = "%s\n\t[%s]\n\t%s\n\t%s".format(exceptionName, uuid, message, stackTrace)
 
   val stackTrace = {
     val sw = new StringWriter
@@ -35,10 +34,12 @@ import java.net.{InetAddress, UnknownHostException}
     sw.toString
   }
 
-  def log = if (!isLogged) {
-    isLogged = true
+  private lazy val _log = {
     AkkaException.log.error(toString)
+    ()
   }
+
+  def log: Unit = _log
 }
 
 object AkkaException extends Logging {

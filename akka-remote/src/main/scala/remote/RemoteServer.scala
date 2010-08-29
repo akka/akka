@@ -411,6 +411,8 @@ class RemoteServerHandler(
           } else future.getChannel.close
         }
       })
+    } else {
+       server.foreachListener(_ ! RemoteServerClientConnected(server))
     }
   }
 
