@@ -169,7 +169,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive
 
-    lazy val netty = "org.jboss.netty" % "netty" % "3.2.1.Final" % "compile"
+    lazy val netty = "org.jboss.netty" % "netty" % "3.2.2.Final" % "compile"
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.3.0" % "compile"
 
