@@ -216,15 +216,17 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Subprojects
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val akka_core        = project("akka-core", "akka-core", new AkkaCoreProject(_))
-  lazy val akka_amqp        = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_core)
-  lazy val akka_http        = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_core, akka_camel)
-  lazy val akka_camel       = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_core)
+  lazy val akka_actor       = project("akka-actor", "akka-actor", new AkkaActorProject(_))
+  lazy val akka_typed_actor = project("akka-typed-actor", "akka-typed-actor", new AkkaTypedActorProject(_), akka_actor)
+  lazy val akka_remote      = project("akka-remote", "akka-remote", new AkkaRemoteProject(_), akka_typed_actor)
+  lazy val akka_amqp        = project("akka-amqp", "akka-amqp", new AkkaAMQPProject(_), akka_remote)
+  lazy val akka_http        = project("akka-http", "akka-http", new AkkaHttpProject(_), akka_remote, akka_camel)
+  lazy val akka_camel       = project("akka-camel", "akka-camel", new AkkaCamelProject(_), akka_remote)
   lazy val akka_persistence = project("akka-persistence", "akka-persistence", new AkkaPersistenceParentProject(_))
-  lazy val akka_spring      = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_core, akka_camel)
-  lazy val akka_jta         = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_core)
+  lazy val akka_spring      = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_remote, akka_camel)
+  lazy val akka_jta         = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_remote)
   lazy val akka_kernel      = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
-                                      akka_core, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
+                                       akka_remote, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
   lazy val akka_osgi        = project("akka-osgi", "akka-osgi", new AkkaOSGiParentProject(_))
   lazy val akka_samples     = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
@@ -250,8 +252,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     .filter(!_.getName.contains("scala-library"))
     .map("lib_managed/scala_%s/compile/".format(buildScalaVersion) + _.getName)
     .mkString(" ") +
+    " config/" +
     " scala-library.jar" +
-    " dist/akka-core_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-actor_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-typed-actor_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-remote_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-http_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-camel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-amqp_%s-%s.jar".format(buildScalaVersion, version) +
@@ -271,10 +276,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   override def mainResources = super.mainResources +++
-                               descendents(info.projectPath / "config", "*") ---
-                               (super.mainResources ** "logback-test.xml")
+          (info.projectPath / "config").descendentsExcept("*", "logback-test.xml")
 
-  override def testResources = super.testResources --- (super.testResources ** "logback-test.xml")
+  override def runClasspath = super.runClasspath +++ "config"
 
   // ------------------------------------------------------------
   // publishing
@@ -307,53 +311,75 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       </license>
     </licenses>
 
-    // publish to local mvn
-    import Process._
-    lazy val publishLocalMvn = runMvnInstall
-    def runMvnInstall = task {
-        for (absPath <- akkaArtifacts.getPaths) {
-          val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
-          val artifactRE(path, artifactId, artifactVersion) = absPath
-          val command = "mvn install:install-file" +
-                        " -Dfile=" + absPath +
-                        " -DgroupId=se.scalablesolutions.akka" +
-                        " -DartifactId=" + artifactId +
-                        " -Dversion=" + version +
-                        " -Dpackaging=jar -DgeneratePom=true"
-          command ! log
-        }
-       None
-    } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
+  // publish to local mvn
+  import Process._
+  lazy val publishLocalMvn = runMvnInstall
+  def runMvnInstall = task {
+    for (absPath <- akkaArtifacts.getPaths) {
+      val artifactRE = """(.*)/dist/(.*)-(.*).jar""".r
+      val artifactRE(path, artifactId, artifactVersion) = absPath
+      val command = "mvn install:install-file" +
+                    " -Dfile=" + absPath +
+                    " -DgroupId=se.scalablesolutions.akka" +
+                    " -DartifactId=" + artifactId +
+                    " -Dversion=" + version +
+                    " -Dpackaging=jar -DgeneratePom=true"
+      command ! log
+    }
+    None
+  } dependsOn(dist) describedAs("Run mvn install for artifacts in dist.")
 
   // -------------------------------------------------------------------------------------------------------------------
-  // akka-core subproject
+  // akka-actor subproject
   // -------------------------------------------------------------------------------------------------------------------
 
-  class AkkaCoreProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+  class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val configgy      = Dependencies.configgy
+    val hawtdispatch  = Dependencies.hawtdispatch
+    val multiverse    = Dependencies.multiverse
+    val jsr166x       = Dependencies.jsr166x
+    val slf4j         = Dependencies.slf4j
+    val logback       = Dependencies.logback
+    val logback_core  = Dependencies.logback_core
+
+    // testing
+    val junit     = Dependencies.junit
+    val scalatest = Dependencies.scalatest
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-typed-actor subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaTypedActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val aopalliance   = Dependencies.aopalliance
+    val werkz         = Dependencies.werkz
+    val werkz_core    = Dependencies.werkz_core
+
+    // testing
+    val junit     = Dependencies.junit
+    val scalatest = Dependencies.scalatest
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-remote subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_codec = Dependencies.commons_codec
     val commons_io    = Dependencies.commons_io
-    val configgy      = Dependencies.configgy
     val dispatch_http = Dependencies.dispatch_http
     val dispatch_json = Dependencies.dispatch_json
     val guicey        = Dependencies.guicey
     val h2_lzf        = Dependencies.h2_lzf
-    val hawtdispatch  = Dependencies.hawtdispatch
     val jackson       = Dependencies.jackson
     val jackson_core  = Dependencies.jackson_core
     val jgroups       = Dependencies.jgroups
-    val jsr166x       = Dependencies.jsr166x
     val jta_1_1       = Dependencies.jta_1_1
-    val multiverse    = Dependencies.multiverse
     val netty         = Dependencies.netty
     val protobuf      = Dependencies.protobuf
     val sbinary       = Dependencies.sbinary
     val sjson         = Dependencies.sjson
-    val werkz         = Dependencies.werkz
-    val werkz_core    = Dependencies.werkz_core
-    val slf4j         = Dependencies.slf4j
-    val logback       = Dependencies.logback
-    val logback_core  = Dependencies.logback_core
 
     // testing
     val junit     = Dependencies.junit
@@ -419,7 +445,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaPersistenceParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_persistence_common = project("akka-persistence-common", "akka-persistence-common",
-      new AkkaPersistenceCommonProject(_), akka_core)
+      new AkkaPersistenceCommonProject(_), akka_remote)
     lazy val akka_persistence_redis = project("akka-persistence-redis", "akka-persistence-redis",
       new AkkaRedisProject(_), akka_persistence_common)
     lazy val akka_persistence_mongo = project("akka-persistence-mongo", "akka-persistence-mongo",
@@ -514,7 +540,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val akka_osgi_dependencies_bundle = project("akka-osgi-dependencies-bundle", "akka-osgi-dependencies-bundle",
       new AkkaOSGiDependenciesBundleProject(_), akka_kernel, akka_jta) // akka_kernel does not depend on akka_jta (why?) therefore we list akka_jta here
     lazy val akka_osgi_assembly = project("akka-osgi-assembly", "akka-osgi-assembly",
-      new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_core, akka_amqp, akka_http,
+      new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_remote, akka_amqp, akka_http,
         akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
         akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
         akka_persistence.akka_persistence_cassandra)
@@ -675,7 +701,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaSamplesParentProject(info: ProjectInfo) extends ParentProject(info) {
     lazy val akka_sample_ants = project("akka-sample-ants", "akka-sample-ants",
-      new AkkaSampleAntsProject(_), akka_core)
+      new AkkaSampleAntsProject(_), akka_remote)
     lazy val akka_sample_chat = project("akka-sample-chat", "akka-sample-chat",
       new AkkaSampleChatProject(_), akka_kernel)
     lazy val akka_sample_pubsub = project("akka-sample-pubsub", "akka-sample-pubsub",
@@ -695,7 +721,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val akka_sample_remote = project("akka-sample-remote", "akka-sample-remote",
       new AkkaSampleRemoteProject(_), akka_kernel)
     lazy val akka_sample_osgi = project("akka-sample-osgi", "akka-sample-osgi",
-      new AkkaSampleOSGiProject(_), akka_core)
+      new AkkaSampleOSGiProject(_), akka_remote)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -730,6 +756,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
+    override def runClasspath = super.runClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
+    override def testClasspath = super.testClasspath +++ (AkkaParentProject.this.info.projectPath / "config")
     override def packageDocsJar = this.defaultJarPath("-docs.jar")
     override def packageSrcJar  = this.defaultJarPath("-sources.jar")
   }
