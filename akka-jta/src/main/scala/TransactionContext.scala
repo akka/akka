@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.jta
 
 import javax.transaction.{Transaction, Status, TransactionManager, Synchronization}
 
-import se.scalablesolutions.akka.stm.{TransactionService, TransactionContainer}
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
 

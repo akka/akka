@@ -23,9 +23,11 @@ object ReflectiveAccess {
 
   lazy val isRemotingEnabled   = RemoteClientModule.isRemotingEnabled
   lazy val isTypedActorEnabled = TypedActorModule.isTypedActorEnabled
+  lazy val isJtaEnabled        = JtaModule.isJtaEnabled
 
   def ensureRemotingEnabled   = RemoteClientModule.ensureRemotingEnabled
   def ensureTypedActorEnabled = TypedActorModule.ensureTypedActorEnabled
+  def ensureJtaEnabled        = JtaModule.ensureJtaEnabled
 
   /**
    * Reflective access to the RemoteClient module.
@@ -193,7 +195,11 @@ object ReflectiveAccess {
     }
   }
 
-  object JTAModule {
+  object JtaModule {
+
+    type TransactionContainerObject = {
+      def apply(): TransactionContainer
+    }
 
     type TransactionContainer = {
       def beginWithStmSynchronization(transaction: Transaction): Unit
@@ -201,15 +207,23 @@ object ReflectiveAccess {
       def rollback: Unit
     }
 
-    def createTransactionContainer: TransactionContainer = {
-      try {
-        val clazz = Class.forName("se.scalablesolutions.akka.stm.TransactionContainer$")
-        val instance = clazz.getDeclaredField("MODULE$")
-        val applyMethod = clazz.getDeclaredMethod("apply")
-        applyMethod.invoke(instance.get(null)).asInstanceOf[TransactionContainer]
-      } catch {
-        case cnfe: ClassNotFoundException => throw new IllegalStateException("Couldn't locale akka-jta, make sure you have it on your classpath")
+    lazy val isJtaEnabled = transactionContainerObjectInstance.isDefined
+
+    def ensureJtaEnabled = if (!isJtaEnabled) throw new ModuleNotAvailableException(
+      "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
+
+      val transactionContainerObjectInstance: Option[TransactionContainerObject] = {
+        try {
+          val clazz = loader.loadClass("se.scalablesolutions.akka.actor.TransactionContainer$")
+          val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
+          ctor.setAccessible(true)
+          Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[TransactionContainerObject])
+        } catch { case e: Exception => None }
       }
+
+    def createTransactionContainer: TransactionContainer = {
+      ensureJtaEnabled
+      transactionContainerObjectInstance.get.apply.asInstanceOf[TransactionContainer]
     }
   }
 }
