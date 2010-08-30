@@ -17,7 +17,7 @@ import java.net.UnknownHostException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Logging {
-  @sjson.json.JSONProperty(ignore = true) @transient lazy val log = Logger(this.getClass.getName)
+  @transient lazy val log = Logger(this.getClass.getName)
 }
 
 /**

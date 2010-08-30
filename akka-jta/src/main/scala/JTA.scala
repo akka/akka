@@ -123,6 +123,11 @@ class TransactionContainer private (
     }
   }
 
+  def beginWithStmSynchronization(transaction: Transaction) = {
+    begin
+    registerSynchronization(new StmSynchronization(this, transaction))
+  }
+
   def begin = {
     TransactionContainer.log.trace("Starting JTA transaction")
     tm match {
