@@ -9,6 +9,8 @@ import se.scalablesolutions.akka.dispatch.{Future, CompletableFuture}
 import se.scalablesolutions.akka.config.{Config, ModuleNotAvailableException}
 
 import java.net.InetSocketAddress
+import se.scalablesolutions.akka.stm.Transaction
+import se.scalablesolutions.akka.AkkaException
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
@@ -64,7 +66,7 @@ object ReflectiveAccess {
         val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
         ctor.setAccessible(true)
         Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[RemoteClientObject])
-      } catch { case e => None }
+      } catch { case e: Exception => None }
     }
 
     def register(address: InetSocketAddress, uuid: String) = {
@@ -128,7 +130,7 @@ object ReflectiveAccess {
         val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
         ctor.setAccessible(true)
         Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[RemoteServerObject])
-      } catch { case e => None }
+      } catch { case e: Exception => None }
     }
 
     val remoteNodeObjectInstance: Option[RemoteNodeObject] = {
@@ -137,7 +139,7 @@ object ReflectiveAccess {
         val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
         ctor.setAccessible(true)
         Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[RemoteNodeObject])
-      } catch { case e => None }
+      } catch { case e: Exception => None }
     }
 
     def registerActor(address: InetSocketAddress, uuid: String, actorRef: ActorRef) = {
@@ -179,7 +181,7 @@ object ReflectiveAccess {
         val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
         ctor.setAccessible(true)
         Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[TypedActorObject])
-      } catch { case e => None }
+      } catch { case e: Exception => None }
     }
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
@@ -188,6 +190,26 @@ object ReflectiveAccess {
         future.asInstanceOf[CompletableFuture[Option[_]]].completeWithResult(None)
       }
       typedActorObjectInstance.get.isJoinPoint(message)
+    }
+  }
+
+  object JTAModule {
+
+    type TransactionContainer = {
+      def beginWithStmSynchronization(transaction: Transaction): Unit
+      def commit: Unit
+      def rollback: Unit
+    }
+
+    def createTransactionContainer: TransactionContainer = {
+      try {
+        val clazz = Class.forName("se.scalablesolutions.akka.stm.TransactionContainer$")
+        val instance = clazz.getDeclaredField("MODULE$")
+        val applyMethod = clazz.getDeclaredMethod("apply")
+        applyMethod.invoke(instance.get(null)).asInstanceOf[TransactionContainer]
+      } catch {
+        case cnfe: ClassNotFoundException => throw new IllegalStateException("Couldn't locale akka-jta, make sure you have it on your classpath")
+      }
     }
   }
 }

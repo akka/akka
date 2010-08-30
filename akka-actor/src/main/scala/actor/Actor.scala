@@ -11,8 +11,6 @@ import se.scalablesolutions.akka.util.Helpers.{narrow, narrowSilently}
 import se.scalablesolutions.akka.util.{Logging, Duration}
 import se.scalablesolutions.akka.AkkaException
 
-import com.google.protobuf.Message
-
 import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 

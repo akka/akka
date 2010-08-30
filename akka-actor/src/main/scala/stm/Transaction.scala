@@ -7,9 +7,9 @@ package se.scalablesolutions.akka.stm
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 
-import javax.transaction.{TransactionManager, UserTransaction, Status, TransactionSynchronizationRegistry}
-
 import scala.collection.mutable.HashMap
+
+import se.scalablesolutions.akka.util.ReflectiveAccess.JTAModule._
 
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
@@ -92,8 +92,8 @@ object Transaction {
   private[this] val persistentStateMap = new HashMap[String, Committable with Abortable]
   private[akka] val depth = new AtomicInteger(0)
 
-  val jta: Option[TransactionContainer] =
-    if (JTA_AWARE) Some(TransactionContainer())
+  val jta: Option[TransactionContainer] = 
+    if (JTA_AWARE) Some(createTransactionContainer)
     else None
 
   log.trace("Creating transaction " + toString)
@@ -102,10 +102,7 @@ object Transaction {
 
   def begin = synchronized {
     log.trace("Starting transaction " + toString)
-    jta.foreach { txContainer =>
-      txContainer.begin
-      txContainer.registerSynchronization(new StmSynchronization(txContainer, this))
-    }
+    jta.foreach { _.beginWithStmSynchronization(this) }
   }
 
   def commit = synchronized {
@@ -132,7 +129,7 @@ object Transaction {
 
   // --- internal methods ---------
 
-  private def isJtaTxActive(status: Int) = status == Status.STATUS_ACTIVE
+  //private def isJtaTxActive(status: Int) = status == Status.STATUS_ACTIVE
 
   private[akka] def status_? = status
 
