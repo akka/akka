@@ -7,7 +7,7 @@ repositories.remote << "http://www.ibiblio.org/maven2/"
 repositories.remote << "http://www.lag.net/repo"
 repositories.remote << "http://multiverse.googlecode.com/svn/maven-repository/releases"
  
-AKKA = group('akka-core', 'akka-comet', 'akka-util','akka-kernel', 'akka-rest', 'akka-util-java',
+AKKA = group('akka-remote', 'akka-comet', 'akka-util','akka-kernel', 'akka-rest', 'akka-util-java',
               'akka-security','akka-persistence-common', 'akka-persistence-redis',
               'akka-amqp',
               :under=> 'se.scalablesolutions.akka',

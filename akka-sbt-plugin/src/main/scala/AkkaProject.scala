@@ -50,6 +50,6 @@ trait AkkaProject extends AkkaBaseProject {
   // convenience method
   def akkaModule(module: String) = "se.scalablesolutions.akka" %% ("akka-" + module) % akkaVersion
 
-  // akka core dependency by default
-  val akkaCore = akkaModule("core")
+  // akka remote dependency by default
+  val akkaRemote = akkaModule("remote")
 }
