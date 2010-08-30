@@ -19,8 +19,6 @@ import org.multiverse.api.ThreadLocalTransaction._
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import org.multiverse.api.exceptions.DeadTransactionException
 
-import org.codehaus.aspectwerkz.joinpoint.JoinPoint
-
 import java.net.InetSocketAddress
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.atomic.AtomicReference

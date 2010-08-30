@@ -75,6 +75,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
+  lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -226,7 +227,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val akka_spring      = project("akka-spring", "akka-spring", new AkkaSpringProject(_), akka_remote, akka_camel)
   lazy val akka_jta         = project("akka-jta", "akka-jta", new AkkaJTAProject(_), akka_remote)
   lazy val akka_kernel      = project("akka-kernel", "akka-kernel", new AkkaKernelProject(_),
-                                       akka_remote, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
+                                       akka_remote, akka_jta, akka_http, akka_spring, akka_camel, akka_persistence, akka_amqp)
   lazy val akka_osgi        = project("akka-osgi", "akka-osgi", new AkkaOSGiParentProject(_))
   lazy val akka_samples     = project("akka-samples", "akka-samples", new AkkaSamplesParentProject(_))
 
@@ -355,6 +356,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val aopalliance   = Dependencies.aopalliance
     val werkz         = Dependencies.werkz
     val werkz_core    = Dependencies.werkz_core
+    val guicey        = Dependencies.guicey
 
     // testing
     val junit     = Dependencies.junit
@@ -528,7 +530,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions     = Dependencies.atomikos_transactions
     val atomikos_transactions_api = Dependencies.atomikos_transactions_api
     val atomikos_transactions_jta = Dependencies.atomikos_transactions_jta
-    val jta_1_1                   = Dependencies.jta_1_1
+    //val jta_1_1                   = Dependencies.jta_1_1
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
   }
 
