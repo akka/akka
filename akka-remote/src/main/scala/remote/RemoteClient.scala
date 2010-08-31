@@ -32,18 +32,6 @@ import scala.collection.mutable.{HashSet, HashMap}
 import scala.reflect.BeanProperty
 
 /**
- * Atomic remote request/reply message id generator.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object RemoteRequestProtocolIdFactory {
-  private val nodeId = UUID.newUuid
-  private val id = new AtomicLong
-
-  def nextId: Long = id.getAndIncrement + nodeId
-}
-
-/**
  * Life-cycle events for RemoteClient.
  */
 sealed trait RemoteClientLifeCycleEvent

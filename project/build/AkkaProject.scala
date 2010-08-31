@@ -140,6 +140,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jetty_util = "org.eclipse.jetty" % "jetty-util"   % JETTY_VERSION % "compile"
     lazy val jetty_xml  = "org.eclipse.jetty" % "jetty-xml"    % JETTY_VERSION % "compile"
 
+    lazy val uuid       = "com.eaio" % "uuid" % "3.2" % "compile"
+
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
 
     lazy val h2_lzf = "voldemort.store.compress" % "h2-lzf" % "1.0" % "compile"
@@ -340,6 +342,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaActorProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val uuid          = Dependencies.uuid
     val configgy      = Dependencies.configgy
     val hawtdispatch  = Dependencies.hawtdispatch
     val multiverse    = Dependencies.multiverse

@@ -10,11 +10,12 @@ import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
-import se.scalablesolutions.akka.remote.{RemoteServer, RemoteRequestProtocolIdFactory, MessageSerializer}
+import se.scalablesolutions.akka.remote.{RemoteServer, MessageSerializer}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType._
 import se.scalablesolutions.akka.serialization.Serializer
 
 import com.google.protobuf.ByteString
+import se.scalablesolutions.akka.util.UUID
 
 /**
  * Type class definition for Actor Serialization
@@ -267,7 +268,7 @@ object RemoteActorSerialization {
     val actorInfo = actorInfoBuilder.build
 
     val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
+        .setId(UUID.newUuid)
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
