@@ -60,7 +60,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   import Repositories._
   lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
-  lazy val grizzlyModuleConfig     = ModuleConfiguration("com.sun.grizzly", JavaNetRepo)
+  lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   // lazy val hawtdispatchModuleConfig  = ModuleConfiguration("org.fusesource.hawtdispatch", FusesourceSnapshotRepo)
   lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
@@ -96,6 +96,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val SPRING_VERSION        = "3.0.3.RELEASE"
   lazy val ASPECTWERKZ_VERSION   = "2.2.1"
+  lazy val JETTY_VERSION         = "7.1.6.v20100715"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -135,7 +136,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile"
     lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile"
 
-    lazy val grizzly = "com.sun.grizzly" % "grizzly-comet-webserver" % "1.9.18-i" % "compile"
+    lazy val jetty      = "org.eclipse.jetty" % "jetty-server" % JETTY_VERSION % "compile"
+    lazy val jetty_xml  = "org.eclipse.jetty" % "jetty-xml"    % JETTY_VERSION % "compile"
 
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
 
@@ -207,7 +209,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val commons_coll   = "commons-collections"    % "commons-collections" % "3.2.1"           % "test"
     lazy val google_coll    = "com.google.collections" % "google-collections"  % "1.0"             % "test"
     lazy val high_scale     = "org.apache.cassandra"   % "high-scale-lib"      % CASSANDRA_VERSION % "test"
-    lazy val jettyServer    = "org.mortbay.jetty"      % "jetty"               % "6.1.22"          % "test"
+    lazy val testJetty      = "org.eclipse.jetty"      % "jetty-server"        % JETTY_VERSION     % "test"
+    lazy val testJettyWebApp= "org.eclipse.jetty"      % "jetty-webapp"        % JETTY_VERSION     % "test"
+
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test"
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test"
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test"
@@ -417,7 +421,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val atmo_runtime     = Dependencies.atmo_runtime
     val atmo_tomcat      = Dependencies.atmo_tomcat
     val atmo_weblogic    = Dependencies.atmo_weblogic
-    val grizzly          = Dependencies.grizzly
+    val jetty            = Dependencies.jetty
+    val jetty_xml        = Dependencies.jetty_xml
     val jackson_core_asl = Dependencies.jackson_core_asl
     val jersey           = Dependencies.jersey
     val jersey_contrib   = Dependencies.jersey_contrib
@@ -656,8 +661,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val servlet         = Dependencies.servlet
 
     // testing
-    val jettyServer = Dependencies.jettyServer
-    val junit       = Dependencies.junit
+    val testJetty         = Dependencies.testJetty
+    val testJettyWebApp   = Dependencies.testJettyWebApp
+    val junit             = Dependencies.junit
 
     def deployPath = AkkaParentProject.this.deployPath
     override def jarPath = warPath
