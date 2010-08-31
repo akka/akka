@@ -18,7 +18,7 @@ import concurrent.forkjoin.{TransferQueue, LinkedTransferQueue}
  */
 class ThreadBasedDispatcher(private val actor: ActorRef,
                             val mailboxCapacity: Int = Dispatchers.MAILBOX_CAPACITY,
-                            val pushTimeout: Long = 1000,
+                            val pushTimeout: Long = 10000,
                             val pushTimeoutUnit: TimeUnit = TimeUnit.MILLISECONDS
                             ) extends MessageDispatcher {
   def this(actor: ActorRef) = this(actor, Dispatchers.MAILBOX_CAPACITY)// For Java
