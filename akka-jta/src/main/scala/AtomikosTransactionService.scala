@@ -11,7 +11,6 @@ import com.atomikos.icatch.config.{TSInitInfo, UserTransactionService, UserTrans
 
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.util.Duration
-import se.scalablesolutions.akka.stm.{TransactionService, TransactionContainer}
 
 object AtomikosTransactionService extends AtomikosTransactionService
 
