@@ -86,14 +86,7 @@ class AkkaServlet extends AtmosphereServlet with Logging {
       import scala.collection.JavaConversions._
 
       new DefaultCometSupportResolver(config) {
-         type CS = CometSupport[_ <: AtmosphereResource[_,_]]
-         override def resolveMultipleNativeSupportConflict(available : JList[Class[_ <: CS]]) : CS = {
-             available.filter(_ != classOf[GrizzlyCometSupport]).toList match {
-                 case Nil => new GrizzlyCometSupport(config)
-                 case x :: Nil => newCometSupport(x.asInstanceOf[Class[_ <: CS]])
-                 case _ => super.resolveMultipleNativeSupportConflict(available)
-             }
-        }
+        type CS = CometSupport[_ <: AtmosphereResource[_,_]]
 
         override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CS = {
            val predef = config.getInitParameter("cometSupport")
