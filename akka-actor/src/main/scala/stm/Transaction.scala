@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable.HashMap
 
-import se.scalablesolutions.akka.util.ReflectiveAccess.JTAModule._
+import se.scalablesolutions.akka.util.ReflectiveAccess.JtaModule
 
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config._
@@ -92,8 +92,8 @@ object Transaction {
   private[this] val persistentStateMap = new HashMap[String, Committable with Abortable]
   private[akka] val depth = new AtomicInteger(0)
 
-  val jta: Option[TransactionContainer] = 
-    if (JTA_AWARE) Some(createTransactionContainer)
+  val jta: Option[JtaModule.TransactionContainer] = 
+    if (JTA_AWARE) Some(JtaModule.createTransactionContainer)
     else None
 
   log.trace("Creating transaction " + toString)

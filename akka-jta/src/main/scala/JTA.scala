@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.stm
+package se.scalablesolutions.akka.jta
 
 import javax.transaction.{TransactionManager, UserTransaction,
                           Transaction => JtaTransaction, SystemException,
@@ -11,7 +11,10 @@ import javax.naming.{InitialContext, Context, NamingException}
 
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.stm.Transaction
 import se.scalablesolutions.akka.AkkaException
+
+class JtaConfigurationException(message: String) extends AkkaException(message)
 
 /**
  * Detects if there is a UserTransaction or TransactionManager available in the JNDI.
@@ -47,12 +50,12 @@ object TransactionContainer extends Logging {
                .transactionContainer
         } catch {
           case e: ClassNotFoundException =>
-            throw new StmConfigurationException(
+            throw new JtaConfigurationException(
               "JTA provider defined as 'atomikos', but the AtomikosTransactionService classes can not be found." +
               "\n\tPlease make sure you have 'akka-jta' JAR and its dependencies on your classpath.")
         }
       case _ =>
-        throw new StmConfigurationException(
+        throw new JtaConfigurationException(
         "No UserTransaction on TransactionManager could be found in scope." +
         "\n\tEither add 'akka-jta' to the classpath or make sure there is a" +
         "\n\tTransactionManager or UserTransaction defined in the JNDI.")
@@ -133,7 +136,7 @@ class TransactionContainer private (
     tm match {
       case Left(Some(userTx)) => userTx.begin
       case Right(Some(txMan)) => txMan.begin
-      case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+      case _ => throw new JtaConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
     }
   }
 
@@ -142,7 +145,7 @@ class TransactionContainer private (
     tm match {
       case Left(Some(userTx)) => userTx.commit
       case Right(Some(txMan)) => txMan.commit
-      case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+      case _ => throw new JtaConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
     }
   }
 
@@ -151,42 +154,42 @@ class TransactionContainer private (
     tm match {
       case Left(Some(userTx)) => userTx.rollback
       case Right(Some(txMan)) => txMan.rollback
-      case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+      case _ => throw new JtaConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
     }
   }
 
   def getStatus = tm match {
     case Left(Some(userTx)) => userTx.getStatus
     case Right(Some(txMan)) => txMan.getStatus
-    case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+    case _ => throw new JtaConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
 
   def isInExistingTransaction = tm match {
     case Left(Some(userTx)) => userTx.getStatus == Status.STATUS_ACTIVE
     case Right(Some(txMan)) => txMan.getStatus == Status.STATUS_ACTIVE
-    case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+    case _ => throw new JtaConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
 
   def isRollbackOnly = tm match {
     case Left(Some(userTx)) => userTx.getStatus == Status.STATUS_MARKED_ROLLBACK
     case Right(Some(txMan)) => txMan.getStatus == Status.STATUS_MARKED_ROLLBACK
-    case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+    case _ => throw new JtaConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
 
   def setRollbackOnly = tm match {
     case Left(Some(userTx)) => userTx.setRollbackOnly
     case Right(Some(txMan)) => txMan.setRollbackOnly
-    case _ => throw new StmConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
+    case _ => throw new JtaConfigurationException("Does not have a UserTransaction or TransactionManager in scope")
   }
 
   def suspend = tm match {
     case Right(Some(txMan)) => txMan.suspend
-    case _ => throw new StmConfigurationException("Does not have a TransactionManager in scope")
+    case _ => throw new JtaConfigurationException("Does not have a TransactionManager in scope")
   }
 
   def resume(tx: JtaTransaction) = tm match {
     case Right(Some(txMan)) => txMan.resume(tx)
-    case _ => throw new StmConfigurationException("Does not have a TransactionManager in scope")
+    case _ => throw new JtaConfigurationException("Does not have a TransactionManager in scope")
   }
 }
 

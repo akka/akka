@@ -5,7 +5,6 @@
 package se.scalablesolutions.akka.jta
 
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.stm.TransactionContainer
 
 import java.util.{List => JList}
 import java.util.concurrent.CopyOnWriteArrayList
