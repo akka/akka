@@ -109,18 +109,15 @@ object ActorRegistry extends ListenerManagement {
    * Finds all actors that has a specific id.
    */
   def actorsFor(id: String): Array[ActorRef] = {
-    if (actorsById.containsKey(id)) {
-      actorsById.get(id).toArray(Naught)
-    } else Naught
+    val set = actorsById get id
+    if (set ne null) set toArray Naught
+    else Naught
   }
 
    /**
    * Finds the actor that has a specific UUID.
    */
-  def actorFor(uuid: String): Option[ActorRef] = {
-    if (actorsByUUID.containsKey(uuid)) Some(actorsByUUID.get(uuid))
-    else None
-  }
+  def actorFor(uuid: String): Option[ActorRef] = Option(actorsByUUID get uuid)
 
   /**
    * Registers an actor in the ActorRegistry.
