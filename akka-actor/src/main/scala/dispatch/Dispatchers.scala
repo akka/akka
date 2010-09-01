@@ -10,6 +10,7 @@ import se.scalablesolutions.akka.config.Config.config
 import net.lag.configgy.ConfigMap
 import se.scalablesolutions.akka.util.UUID
 import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
+import java.util.concurrent.TimeUnit
 
 /**
  * Scala API. Dispatcher factory.
@@ -44,8 +45,8 @@ import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, D
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers extends Logging {
-  val THROUGHPUT       = config.getInt("akka.actor.throughput", 5)
-  val MAILBOX_CAPACITY = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
+  val THROUGHPUT          = config.getInt("akka.actor.throughput", 5)
+  val MAILBOX_CAPACITY    = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
 
   lazy val defaultGlobalDispatcher = {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
@@ -75,6 +76,7 @@ object Dispatchers extends Logging {
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * Uses the default timeout
    * <p/>
    * E.g. each actor consumes its own thread.
    */
@@ -82,10 +84,18 @@ object Dispatchers extends Logging {
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * Uses the default timeout
    * <p/>
    * E.g. each actor consumes its own thread.
    */
   def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int) = new ThreadBasedDispatcher(actor, mailboxCapacity)
+
+  /**
+   * Creates an thread based dispatcher serving a single actor through the same single thread.
+   * <p/>
+   * E.g. each actor consumes its own thread.
+   */
+  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeout: Long, pushTimeUnit: TimeUnit) = new ThreadBasedDispatcher(actor, mailboxCapacity, pushTimeout, pushTimeUnit)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
