@@ -182,13 +182,13 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
 
+  protected override def createMailbox(actorRef: ActorRef): AnyRef = {
+    if (mailboxCapacity <= 0) new ConcurrentLinkedDeque[MessageInvocation]
+    else new LinkedBlockingDeque[MessageInvocation](mailboxCapacity)
+  }
+
   override def register(actorRef: ActorRef) = {
     verifyActorsAreOfSameType(actorRef)
-    // The actor will need a ConcurrentLinkedDeque based mailbox
-    if (actorRef.mailbox == null) {
-      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedDeque[MessageInvocation]
-      else actorRef.mailbox = new LinkedBlockingDeque[MessageInvocation](mailboxCapacity)
-    }
     pooledActors.add(actorRef)
     super.register(actorRef)
   }

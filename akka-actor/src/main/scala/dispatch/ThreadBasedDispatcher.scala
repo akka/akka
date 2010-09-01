@@ -28,11 +28,11 @@ class ThreadBasedDispatcher(private val actor: ActorRef,
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
 
-  if (actor.mailbox eq null) {
-    actor.mailbox = if (mailboxCapacity > 0)
-                         new BoundedTransferQueue[MessageInvocation](mailboxCapacity,pushTimeout,pushTimeoutUnit) with ThreadMessageQueue
-                       else
-                         new LinkedTransferQueue[MessageInvocation] with ThreadMessageQueue
+  override def createMailbox(actorRef: ActorRef): AnyRef = {
+    if (mailboxCapacity > 0)
+      new BoundedTransferQueue[MessageInvocation](mailboxCapacity,pushTimeout,pushTimeoutUnit) with ThreadMessageQueue
+    else
+      new LinkedTransferQueue[MessageInvocation] with ThreadMessageQueue
   }
 
   override def register(actorRef: ActorRef) = {

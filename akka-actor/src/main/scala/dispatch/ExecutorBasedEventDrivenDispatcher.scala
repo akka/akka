@@ -89,12 +89,9 @@ class ExecutorBasedEventDrivenDispatcher(
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  override def register(actorRef: ActorRef) = {
-    if (actorRef.mailbox eq null ) {
-      if (mailboxCapacity <= 0) actorRef.mailbox = new ConcurrentLinkedQueue[MessageInvocation]
-      else actorRef.mailbox = new LinkedBlockingQueue[MessageInvocation](mailboxCapacity)
-    }
-    super.register(actorRef)
+  override def createMailbox(actorRef: ActorRef): AnyRef = {
+    if (mailboxCapacity <= 0) new ConcurrentLinkedQueue[MessageInvocation]
+    else new LinkedBlockingQueue[MessageInvocation](mailboxCapacity)
   }
 
   def dispatch(receiver: ActorRef): Unit = if (active) {
