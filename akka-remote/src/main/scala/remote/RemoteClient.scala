@@ -4,14 +4,14 @@
 
 package se.scalablesolutions.akka.remote
 
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
-import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, ActorType, RemoteActorRef, RemoteActorSerialization, IllegalActorStateException}
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
+import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, ActorType, RemoteActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.util.{ListenerManagement, UUID, Logging, Duration}
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
 import se.scalablesolutions.akka.AkkaException
 import Actor._
-import RemoteActorSerialization._
 
 import org.jboss.netty.channel._
 import group.DefaultChannelGroup
