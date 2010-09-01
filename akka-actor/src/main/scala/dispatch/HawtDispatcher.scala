@@ -185,16 +185,10 @@ class HawtDispatcher(val aggregate:Boolean=true, val parent:DispatchQueue=global
   // TODO: figure out if this can be optional in akka
   override def mailboxSize(actorRef: ActorRef) = 0
 
-  override def register(actorRef: ActorRef) = {
-    if( actorRef.mailbox == null ) {
-      val queue = parent.createSerialQueue(actorRef.toString)
-      if( aggregate ) {
-        actorRef.mailbox = new AggregatingHawtDispatcherMailbox(queue)
-      } else {
-        actorRef.mailbox = new HawtDispatcherMailbox(queue)
-      }
-    }
-    super.register(actorRef)
+  override def createMailbox(actorRef: ActorRef): AnyRef = {
+    val queue = parent.createSerialQueue(actorRef.toString)
+    if (aggregate) new AggregatingHawtDispatcherMailbox(queue)
+    else new HawtDispatcherMailbox(queue)
   }
 
   override def toString = "HawtDispatchEventDrivenDispatcher"

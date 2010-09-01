@@ -12,21 +12,10 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) extends MessageDispatcher {
   @volatile protected var active: Boolean = false
   protected val queue = new ReactiveMessageQueue(name)
-  protected val messageInvokers = new HashMap[ActorRef, ActorRef]
   protected var selectorThread: Thread = _
   protected val guard = new Object
 
   def dispatch(invocation: MessageInvocation) = queue.append(invocation)
-
-  override def register(actorRef: ActorRef) = synchronized {
-    messageInvokers.put(actorRef, actorRef)
-    super.register(actorRef)
-  }
-
-  override def unregister(actorRef: ActorRef) = synchronized {
-    messageInvokers.remove(actorRef)
-    super.unregister(actorRef)
-  }
 
   def shutdown = if (active) {
     log.debug("Shutting down %s", toString)
