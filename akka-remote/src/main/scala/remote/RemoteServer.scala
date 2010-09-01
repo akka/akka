@@ -9,12 +9,15 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
-import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.actor.{
+  Actor, TypedActor, ActorRef, LocalActorRef, RemoteActorRef, IllegalActorStateException, RemoteActorSystemMessage}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType._
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.serialization.RemoteActorSerialization
+import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
