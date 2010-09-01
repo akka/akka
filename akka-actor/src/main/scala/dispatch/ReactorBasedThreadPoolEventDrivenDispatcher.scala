@@ -103,14 +103,14 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
 
   private def process(selectedInvocations: List[MessageInvocation]) = synchronized {
     var nrOfBusyMessages = 0
-    val totalNrOfActors = messageInvokers.size
+    val totalNrOfActors = uuids.size
     val totalNrOfBusyActors = busyActors.size
     val invocations = selectedInvocations.iterator
     while (invocations.hasNext && totalNrOfActors > totalNrOfBusyActors && passFairnessCheck(nrOfBusyMessages)) {
       val invocation = invocations.next
       if (invocation eq null) throw new IllegalActorStateException("Message invocation is null [" + invocation + "]")
       if (!busyActors.contains(invocation.receiver)) {
-        val invoker = messageInvokers.get(invocation.receiver)
+        val invoker = invocation.receiver
         if (invoker eq null) throw new IllegalActorStateException(
           "Message invoker for invocation [" + invocation + "] is null")
         resume(invocation.receiver)

@@ -10,6 +10,7 @@ import se.scalablesolutions.akka.util.{HashCode, Logging}
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
+import se.scalablesolutions.akka.AkkaException
 import java.util.concurrent.{ConcurrentSkipListSet}
 
 /**
@@ -56,6 +57,8 @@ final class MessageInvocation(val receiver: ActorRef,
   }
 }
 
+class MessageQueueAppendFailedException(message: String) extends AkkaException(message)
+
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -68,21 +71,41 @@ trait MessageQueue {
  */
 trait MessageDispatcher extends Logging {
   protected val uuids = new ConcurrentSkipListSet[String]
+
   def dispatch(invocation: MessageInvocation)
+
   def start
+
   def shutdown
-  def register(actorRef: ActorRef) = uuids add actorRef.uuid
+
+  def register(actorRef: ActorRef) {
+    if(actorRef.mailbox eq null)
+      actorRef.mailbox = createMailbox(actorRef)
+    uuids add actorRef.uuid
+  }
   def unregister(actorRef: ActorRef) = {
     uuids remove actorRef.uuid
+    //actorRef.mailbox = null //FIXME should we null out the mailbox here?
     if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
   }
+  
   def canBeShutDown: Boolean = uuids.isEmpty
+
   def isShutdown: Boolean
+
+  /**
+   * Returns the size of the mailbox for the specified actor
+   */
   def mailboxSize(actorRef: ActorRef):Int = 0
+
+  /**
+   *  Creates and returns a mailbox for the given actor
+   */
+  protected def createMailbox(actorRef: ActorRef): AnyRef = null
 }
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageDemultiplexer {
   def select
