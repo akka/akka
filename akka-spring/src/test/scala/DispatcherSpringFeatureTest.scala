@@ -6,8 +6,6 @@ package se.scalablesolutions.akka.spring
 
 import foo.{IMyPojo, MyPojo, PingActor}
 import se.scalablesolutions.akka.dispatch._
-import se.scalablesolutions.akka.actor.ActorRef
-
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
@@ -18,6 +16,10 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.springframework.core.io.{ClassPathResource, Resource}
 import java.util.concurrent._
+import se.scalablesolutions.akka.actor.{UntypedActor, Actor, ActorRef}
+
+
+
 
 /**
  * Tests for spring configuration of typed actors.
@@ -41,6 +43,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(executor.getQueue().remainingCapacity() === 100)
     }
 
+
     scenario("get a dispatcher via ref from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val pojo = context.getBean("typed-actor-with-dispatcher-ref").asInstanceOf[IMyPojo]
@@ -54,6 +57,17 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(executor.getQueue().isInstanceOf[LinkedBlockingQueue[Runnable]])
       assert(executor.getQueue().remainingCapacity() === Integer.MAX_VALUE)
       assert(dispatcher.name === EVENT_DRIVEN_PREFIX + "dispatcher-2")
+    }
+
+    scenario("get a executor-event-driven-dispatcher with bounded-blocking-queue and with bounded mailbox capacity") {
+      val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
+      val dispatcher = context.getBean("executor-event-driven-dispatcher-mc").asInstanceOf[ExecutorBasedEventDrivenDispatcher]
+      assert(dispatcher.name === EVENT_DRIVEN_PREFIX + "dispatcher-mc")
+      val actorRef = UntypedActor.actorOf(classOf[PingActor])
+      actorRef.dispatcher = dispatcher
+      actorRef.start
+      assert(actorRef.mailbox.isInstanceOf[LinkedBlockingQueue[MessageInvocation]])
+      assert((actorRef.mailbox.asInstanceOf[LinkedBlockingQueue[MessageInvocation]]).remainingCapacity === 1000)
     }
 
     scenario("get a executor-event-driven-dispatcher with unbounded-linked-blocking-queue with bounded capacity from context") {
