@@ -58,6 +58,9 @@ object DispatcherFactoryBean {
       if (properties.threadPool.keepAlive > -1) {
         threadPoolBuilder.setKeepAliveTimeInMillis(properties.threadPool.keepAlive)
       }
+      if (properties.threadPool.mailboxCapacity > -1) {
+        threadPoolBuilder.setMailboxCapacity(properties.threadPool.mailboxCapacity)
+      }
       if ((properties.threadPool.rejectionPolicy != null) && (!properties.threadPool.rejectionPolicy.isEmpty)) {
         val policy: RejectedExecutionHandler = properties.threadPool.rejectionPolicy match {
           case "abort-policy" => new AbortPolicy()
