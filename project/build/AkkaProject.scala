@@ -96,7 +96,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val SPRING_VERSION        = "3.0.3.RELEASE"
   lazy val ASPECTWERKZ_VERSION   = "2.2.1"
-  lazy val JETTY_VERSION         = "7.1.6.v20100715"
+  lazy val JETTY_VERSION         = "7.1.4.v20100610"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -136,9 +136,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile"
     lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile"
 
-    lazy val jetty      = "org.eclipse.jetty" % "jetty-server" % JETTY_VERSION % "compile"
-    lazy val jetty_util = "org.eclipse.jetty" % "jetty-util"   % JETTY_VERSION % "compile"
-    lazy val jetty_xml  = "org.eclipse.jetty" % "jetty-xml"    % JETTY_VERSION % "compile"
+    lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile"
+    lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile"
+    lazy val jetty_xml     = "org.eclipse.jetty" % "jetty-xml"     % JETTY_VERSION % "compile"
+    lazy val jetty_servlet = "org.eclipse.jetty" % "jetty-servlet" % JETTY_VERSION % "compile"
 
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
 
@@ -183,8 +184,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val redis = "com.redis" % "redisclient" % "2.8.0-1.4" % "compile"
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
-
-    lazy val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
 
     lazy val sjson = "sjson.json" % "sjson" % "0.7-2.8.0" % "compile"
 
@@ -425,13 +424,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jetty            = Dependencies.jetty
     val jetty_util       = Dependencies.jetty_util
     val jetty_xml        = Dependencies.jetty_xml
+    val jetty_servlet    = Dependencies.jetty_servlet
     val jackson_core_asl = Dependencies.jackson_core_asl
     val jersey           = Dependencies.jersey
     val jersey_contrib   = Dependencies.jersey_contrib
     val jersey_json      = Dependencies.jersey_json
     val jersey_server    = Dependencies.jersey_server
     val jsr311           = Dependencies.jsr311
-    val servlet          = Dependencies.servlet
     val stax_api         = Dependencies.stax_api
 
     // testing
@@ -660,7 +659,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     //val commons_logging = Dependencies.commons_logging
     val lift_util       = Dependencies.lift_util
     val lift_webkit     = Dependencies.lift_webkit
-    val servlet         = Dependencies.servlet
 
     // testing
     val testJetty         = Dependencies.testJetty
