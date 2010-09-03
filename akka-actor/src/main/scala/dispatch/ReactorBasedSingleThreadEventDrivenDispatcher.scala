@@ -11,6 +11,7 @@
 package se.scalablesolutions.akka.dispatch
 
 import java.util.{LinkedList, List}
+import se.scalablesolutions.akka.actor.ActorRef
 
 class ReactorBasedSingleThreadEventDrivenDispatcher(_name: String)
   extends AbstractReactorBasedEventDrivenDispatcher("akka:event-driven:reactor:single-thread:dispatcher:" + _name) {
@@ -38,6 +39,8 @@ class ReactorBasedSingleThreadEventDrivenDispatcher(_name: String)
     }
     selectorThread.start
   }
+
+  def mailboxSize(a: ActorRef) = 0
 
   def isShutdown = !active
 

@@ -7,8 +7,7 @@ package se.scalablesolutions.akka.dispatch
 import java.util.concurrent.locks.ReentrantLock
 
 import java.util.{HashSet, HashMap, LinkedList, List}
-
-import se.scalablesolutions.akka.actor.IllegalActorStateException
+import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
 
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
@@ -138,6 +137,8 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
     if (fair) true
     else nrOfBusyMessages < 100
   }
+
+  def mailboxSize(a: ActorRef) = 0
 
   def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
