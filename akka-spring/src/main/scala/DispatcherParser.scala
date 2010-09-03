@@ -87,6 +87,9 @@ trait DispatcherParser extends BeanParser {
     if (element.hasAttribute(REJECTION_POLICY)) {
       properties.rejectionPolicy = element.getAttribute(REJECTION_POLICY)
     }
+    if (element.hasAttribute(MAILBOX_CAPACITY)) {
+      properties.mailboxCapacity = element.getAttribute(MAILBOX_CAPACITY).toInt
+    }
     properties
   }
 
