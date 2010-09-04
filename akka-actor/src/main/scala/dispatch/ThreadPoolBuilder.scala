@@ -56,7 +56,6 @@ trait ThreadPoolBuilder extends Logging {
   def withNewThreadPoolWithCustomBlockingQueue(queue: BlockingQueue[Runnable]): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    inProcessOfBuilding = false
     blockingQueue = queue
     threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, queue)
     this

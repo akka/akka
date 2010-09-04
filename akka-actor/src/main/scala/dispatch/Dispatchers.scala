@@ -177,23 +177,8 @@ object Dispatchers extends Logging {
   def from(cfg: ConfigMap): Option[MessageDispatcher] = {
     lazy val name = cfg.getString("name", UUID.newUuid.toString)
 
-    val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
-      case "ReactorBasedSingleThreadEventDriven"       => newReactorBasedSingleThreadEventDrivenDispatcher(name)
-      case "ExecutorBasedEventDrivenWorkStealing"      => newExecutorBasedEventDrivenWorkStealingDispatcher(name)
-      case "ExecutorBasedEventDriven"                  => newExecutorBasedEventDrivenDispatcher(name,cfg.getInt("throughput",THROUGHPUT))
-      case "ReactorBasedThreadPoolEventDriven"         => newReactorBasedThreadPoolEventDrivenDispatcher(name)
-      case "Hawt"                                      => newHawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
-      case "GlobalReactorBasedSingleThreadEventDriven" => globalReactorBasedSingleThreadEventDrivenDispatcher
-      case "GlobalReactorBasedThreadPoolEventDriven"   => globalReactorBasedThreadPoolEventDrivenDispatcher
-      case "GlobalExecutorBasedEventDriven"            => globalExecutorBasedEventDrivenDispatcher
-      case "GlobalHawt"                                => globalHawtDispatcher
-
-      case unknown => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
-    }
-
-    dispatcher foreach {
-      case d: ThreadPoolBuilder => d.configureIfPossible( builder => {
-
+    def threadPoolConfig(b: ThreadPoolBuilder) {
+      b.configureIfPossible( builder => {
         cfg.getInt("keep-alive-ms").foreach(builder.setKeepAliveTimeInMillis(_))
         cfg.getDouble("core-pool-size-factor").foreach(builder.setCorePoolSizeFromFactor(_))
         cfg.getDouble("max-pool-size-factor").foreach(builder.setMaxPoolSizeFromFactor(_))
@@ -209,7 +194,20 @@ object Dispatchers extends Logging {
           case x => throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy!" format x)
         }).foreach(builder.setRejectionPolicy(_))
       })
-      case _ =>
+    }
+
+    val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
+      case "ReactorBasedSingleThreadEventDriven"       => new ReactorBasedSingleThreadEventDrivenDispatcher(name)
+      case "ExecutorBasedEventDrivenWorkStealing"      => new ExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_CAPACITY,threadPoolConfig)
+      case "ExecutorBasedEventDriven"                  => new ExecutorBasedEventDrivenDispatcher(name, cfg.getInt("throughput",THROUGHPUT),MAILBOX_CAPACITY,threadPoolConfig)
+      case "ReactorBasedThreadPoolEventDriven"         => new ReactorBasedThreadPoolEventDrivenDispatcher(name,threadPoolConfig)
+      case "Hawt"                                      => new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
+      case "GlobalReactorBasedSingleThreadEventDriven" => globalReactorBasedSingleThreadEventDrivenDispatcher
+      case "GlobalReactorBasedThreadPoolEventDriven"   => globalReactorBasedThreadPoolEventDrivenDispatcher
+      case "GlobalExecutorBasedEventDriven"            => globalExecutorBasedEventDrivenDispatcher
+      case "GlobalHawt"                                => globalHawtDispatcher
+
+      case unknown => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
     }
 
     dispatcher
