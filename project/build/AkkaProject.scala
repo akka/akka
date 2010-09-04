@@ -70,7 +70,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
-  lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsReleases)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
@@ -165,9 +164,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jsr311 = "javax.ws.rs" % "jsr311-api" % "1.1" % "compile"
 
     lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive
-
-    lazy val lift_util   = "net.liftweb" % "lift-util_2.8.0"   % LIFT_VERSION % "compile"
-    lazy val lift_webkit = "net.liftweb" % "lift-webkit_2.8.0" % LIFT_VERSION % "compile"
 
     lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile"
 
@@ -563,7 +559,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
       // Provided by other bundles
       "!se.scalablesolutions.akka.*",
-      "!net.liftweb.*",
       "!com.google.inject.*",
       "!javax.transaction.*",
       "!javax.ws.rs.*",
@@ -584,12 +579,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     // Scala bundle
     val scala_bundle = "com.weiglewilczek.scala-lang-osgi" % "scala-library" % buildScalaVersion % "compile" intransitive
-
-    // Lift bundles
-//    val lift_util   = Dependencies.lift_util.intransitive
-//    val lift_actor  = "net.liftweb" % "lift-actor"  % LIFT_VERSION % "compile" intransitive
-//    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile" intransitive
-//    val lift_json   = "net.liftweb" % "lift-json"   % LIFT_VERSION % "compile" intransitive
 
     // Camel bundles
     val camel_core           = Dependencies.camel_core.intransitive
@@ -655,20 +644,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
-  class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject {
-    //val commons_logging = Dependencies.commons_logging
-    val lift_util       = Dependencies.lift_util
-    val lift_webkit     = Dependencies.lift_webkit
-
-    // testing
-    val testJetty         = Dependencies.testJetty
-    val testJettyWebApp   = Dependencies.testJettyWebApp
-    val junit             = Dependencies.junit
-
-    def deployPath = AkkaParentProject.this.deployPath
-    override def jarPath = warPath
-  }
-
   class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
@@ -716,8 +691,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSamplePubSubProject(_), akka_kernel)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_kernel)
-    lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift",
-      new AkkaSampleLiftProject(_), akka_kernel)
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java",
       new AkkaSampleRestJavaProject(_), akka_kernel)
     lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala",
