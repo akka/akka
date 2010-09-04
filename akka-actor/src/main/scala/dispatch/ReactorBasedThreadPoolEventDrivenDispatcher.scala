@@ -62,16 +62,18 @@ import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
+class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String,config: (ThreadPoolBuilder) => Unit)
     extends AbstractReactorBasedEventDrivenDispatcher("akka:event-driven:reactor:dispatcher:" + _name)
     with ThreadPoolBuilder {
 
+  def this(_name: String) = this(_name,_ => ())
+  
   private var fair = true
   private val busyActors = new HashSet[AnyRef]
   private val messageDemultiplexer = new Demultiplexer(queue)
 
   // build default thread pool
-  withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
+  init
 
   def start = if (!active) {
     log.debug("Starting up %s", toString)
@@ -164,5 +166,11 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
     def releaseSelectedInvocations = selectedInvocationsLock.unlock
 
     def wakeUp = messageQueue.interrupt
+  }
+
+  private[akka] def init = {
+    withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
+    config(this)
+    buildThreadPool
   }
 }

@@ -31,7 +31,11 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateExcept
  */
 class ExecutorBasedEventDrivenWorkStealingDispatcher(
   _name: String,
-  capacity: Int = Dispatchers.MAILBOX_CAPACITY) extends MessageDispatcher with ThreadPoolBuilder {
+  capacity: Int = Dispatchers.MAILBOX_CAPACITY,
+  config: (ThreadPoolBuilder) => Unit = _ => ()) extends MessageDispatcher with ThreadPoolBuilder {
+
+  def this(_name: String, capacity: Int) = this(_name,capacity, _ => ())
+  
   mailboxCapacity = capacity
 
   @volatile private var active: Boolean = false
@@ -180,7 +184,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
 
   override def toString = "ExecutorBasedEventDrivenWorkStealingDispatcher[" + name + "]"
 
-  private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
+  private[akka] def init = {
+    withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
+    config(this)
+    buildThreadPool
+  }
 
   protected override def createMailbox(actorRef: ActorRef): AnyRef = {
     if (mailboxCapacity <= 0) new ConcurrentLinkedDeque[MessageInvocation]
