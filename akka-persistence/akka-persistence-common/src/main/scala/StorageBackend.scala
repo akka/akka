@@ -38,7 +38,7 @@ trait RefStorageBackend[T] extends StorageBackend {
 // for Queue
 trait QueueStorageBackend[T] extends StorageBackend {
   // add to the end of the queue
-  def enqueue(name: String, item: T): Boolean
+  def enqueue(name: String, item: T): Option[Int]
 
   // pop from the front of the queue
   def dequeue(name: String): Option[T]
