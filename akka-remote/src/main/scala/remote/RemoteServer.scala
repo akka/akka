@@ -10,7 +10,7 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor.{
-  Actor, TypedActor, ActorRef, LocalActorRef, RemoteActorRef, IllegalActorStateException, RemoteActorSystemMessage}
+  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
@@ -120,12 +120,9 @@ object RemoteServer {
     }
   }
 
-  // FIXME private
-  class RemoteActorSet {
-    //private[RemoteServer] val actors = new ConcurrentHashMap[String, ActorRef]
-    val actors = new ConcurrentHashMap[String, ActorRef]
-    //private[RemoteServer] val typedActors = new ConcurrentHashMap[String, AnyRef]
-    val typedActors = new ConcurrentHashMap[String, AnyRef]
+  private class RemoteActorSet {
+    private[RemoteServer] val actors = new ConcurrentHashMap[String, ActorRef]
+    private[RemoteServer] val typedActors = new ConcurrentHashMap[String, AnyRef]
   }
 
   private val guard = new ReadWriteGuard
@@ -133,13 +130,10 @@ object RemoteServer {
   private val remoteServers =   Map[Address, RemoteServer]()
 
   private[akka] def registerActor(address: InetSocketAddress, uuid: String, actor: ActorRef) = guard.withWriteGuard {
-     // FIXME
-    //actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
-    val actors = actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors
-    actors.put(uuid, actor)
+    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
   }
 
-  private[akka] def registerTypedActor(address: InetSocketAddress, uuid: String, typedActor: TypedActor) = guard.withWriteGuard {
+  private[akka] def registerTypedActor(address: InetSocketAddress, uuid: String, typedActor: AnyRef) = guard.withWriteGuard {
     actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(uuid, typedActor)
   }
 
@@ -165,9 +159,7 @@ object RemoteServer {
     remoteServers.remove(Address(hostname, port))
   }
 
-  // FIXME
-  def actorsFor(remoteServerAddress: RemoteServer.Address): RemoteActorSet = {
-    println("##### actorsFor SIZE=" + remoteActorSets.size)
+  private def actorsFor(remoteServerAddress: RemoteServer.Address): RemoteActorSet = {
     remoteActorSets.getOrElseUpdate(remoteServerAddress,new RemoteActorSet)
   }
 }
@@ -278,21 +270,17 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  // FIXME: register typed actor in RemoteServer as well
-  def registerTypedActor(id: String, actorRef: AnyRef): Unit = synchronized {
+  /**
+   * Register remote typed actor by a specific id.
+   * @param id custom actor id
+   * @param typedActor typed actor to register
+   */
+  def registerTypedActor(id: String, typedActor: AnyRef): Unit = synchronized {
     val typedActors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).typedActors
     if (!typedActors.contains(id)) {
-      log.debug("Registering server side remote actor [%s] with id [%s] on [%s:%d]", actorRef.getClass.getName, id, hostname, port)
-      typedActors.put(id, actorRef)
+      log.debug("Registering server side remote actor [%s] with id [%s] on [%s:%d]", typedActor.getClass.getName, id, hostname, port)
+      typedActors.put(id, typedActor)
     }
-  }
-
-  private def actors() : ConcurrentHashMap[String, ActorRef] = {
-    RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
-  }
-
-  private def typedActors() : ConcurrentHashMap[String, AnyRef] = {
-    RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).typedActors
   }
 
   /**
@@ -308,7 +296,6 @@ class RemoteServer extends Logging with ListenerManagement {
   def register(id: String, actorRef: ActorRef): Unit = synchronized {
     if (_isRunning) {
       val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
-      println("___ register ___ " + actors.hashCode + " hostname=" + hostname + "  port="+ port)
       if (!actors.contains(id)) {
         if (!actorRef.isRunning) actorRef.start
         log.debug("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
@@ -344,16 +331,27 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  //FIXME: unregister typed Actor
+  /**
+   * Unregister Remote Typed Actor by specific 'id'.
+   * <p/>
+   * NOTE: You need to call this method if you have registered an actor by a custom ID.
+   */
+  def unregisterTypedActor(id: String):Unit = synchronized {
+    if (_isRunning) {
+      log.info("Unregistering server side remote typed actor with id [%s]", id)
+      val registeredTypedActors = typedActors()
+      registeredTypedActors.remove(id)
+    }
+  }
 
   protected override def manageLifeCycleOfListeners = false
 
   protected[akka] override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
 
-  private def actors() : ConcurrentHashMap[String, ActorRef] = {
+  private[akka] def actors() : ConcurrentHashMap[String, ActorRef] = {
     RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
   }
-  private def typedActors() : ConcurrentHashMap[String, AnyRef] = {
+  private[akka] def typedActors() : ConcurrentHashMap[String, AnyRef] = {
     RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).typedActors
   }
 }

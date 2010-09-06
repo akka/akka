@@ -182,7 +182,6 @@ abstract class TypedActor extends Actor with Proxyable {
 
     case Link(proxy)   => self.link(proxy)
     case Unlink(proxy) => self.unlink(proxy)
-    case method: String => println("### got method")
     case unexpected    => throw new IllegalActorStateException(
       "Unexpected message [" + unexpected + "] sent to [" + this + "]")
   }
@@ -408,8 +407,11 @@ object TypedActor extends Logging {
     proxy.asInstanceOf[T]
   }
 
-  // FIXME
-  def createProxyForRemoteActorRef[T](intfClass: Class[T], actorRef: ActorRef): T = {
+  /**
+   * Create a proxy for a RemoteActorRef representing a server managed remote typed actor.
+   * 
+   */
+  private[akka] def createProxyForRemoteActorRef[T](intfClass: Class[T], actorRef: ActorRef): T = {
 
     class MyInvocationHandler extends InvocationHandler {
       def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = {
@@ -423,9 +425,6 @@ object TypedActor extends Logging {
     val jProxy = JProxy.newProxyInstance(intfClass.getClassLoader(), interfaces, handler)
     val awProxy = Proxy.newInstance(interfaces, Array(jProxy, jProxy), true, false)
 
-    // TODO: needed?
-    //typedActor.initialize(proxy)
-    // TODO: timeout??
     AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, None, 5000L))
     awProxy.asInstanceOf[T]
   }
@@ -569,6 +568,7 @@ object TypedActor extends Logging {
   private[akka] def isJoinPoint(message: Any): Boolean = message.isInstanceOf[JoinPoint]
 }
 
+
 /**
  * AspectWerkz Aspect that is turning POJO into proxy to a server managed remote TypedActor.
  * <p/>
@@ -578,103 +578,18 @@ object TypedActor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @Aspect("perInstance")
-private[akka] sealed class ServerManagedTypedActorAspect {
-  @volatile private var isInitialized = false
-  @volatile private var isStopped = false
-  private var interfaceClass: Class[_] = _
-  private var actorRef: ActorRef = _
-  private var timeout: Long = _
-  private var uuid: String = _
-  private var remoteAddress: Option[InetSocketAddress] = _
-
-  //FIXME
-
+private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
+  
   @Around("execution(* *.*(..)) && this(se.scalablesolutions.akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
-    println("### MyAspect intercepted " + joinPoint.getSignature)
     if (!isInitialized) initialize(joinPoint)
     remoteDispatch(joinPoint)
   }
 
-
-  private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
-    val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val isOneWay = TypedActor.isOneWay(methodRtti)
-
-    val (message: Array[AnyRef], isEscaped) = escapeArguments(methodRtti.getParameterValues)
-
-    println("### remote dispatch...")
-
-    val future = RemoteClientModule.send[AnyRef](
-      message, None, None, remoteAddress.get,
-      timeout, isOneWay, actorRef,
-      Some((interfaceClass.getName, methodRtti.getMethod.getName)),
-      ActorType.TypedActor)
-
-    if (isOneWay) null // for void methods
-    else {
-      if (future.isDefined) {
-        future.get.await
-        val result = getResultOrThrowException(future.get)
-        if (result.isDefined) result.get
-        else throw new IllegalActorStateException("No result returned from call to [" + joinPoint + "]")
-      } else throw new IllegalActorStateException("No future returned from call to [" + joinPoint + "]")
-    }
-  }
-
-  /*
-  private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
-    val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val isOneWay = TypedActor.isOneWay(methodRtti)
-    val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
-
-
-    if (!actorRef.isRunning && !isStopped) {
-      isStopped = true
-      // FIXME - what to do?
-      // joinPoint.proceed
-      null
-    } else if (isOneWay) {
-      actorRef.!("joinPoint")
-      //actorRef.!(joinPoint)(senderActorRef)
-      null.asInstanceOf[AnyRef]
-    } else if (TypedActor.returnsFuture_?(methodRtti)) {
-      actorRef.!!!(joinPoint, timeout)(senderActorRef)
-    } else {
-      val result = (actorRef.!!(joinPoint, timeout)(senderActorRef)).as[AnyRef]
-      if (result.isDefined) result.get
-      else throw new ActorTimeoutException("Invocation to [" + joinPoint + "] timed out.")
-    }
-  }
-    */
-  private def getResultOrThrowException[T](future: Future[T]): Option[T] =
-    if (future.exception.isDefined) throw future.exception.get
-    else future.result
-
-  private def escapeArguments(args: Array[AnyRef]): Tuple2[Array[AnyRef], Boolean] = {
-    var isEscaped = false
-    val escapedArgs = for (arg <- args) yield {
-      val clazz = arg.getClass
-      if (clazz.getName.contains(TypedActor.AW_PROXY_PREFIX)) {
-        isEscaped = true
-        TypedActor.AW_PROXY_PREFIX + clazz.getSuperclass.getName
-      } else arg
-    }
-    (escapedArgs, isEscaped)
-  }
-
-
-  private def initialize(joinPoint: JoinPoint): Unit = {
-    val init = AspectInitRegistry.initFor(joinPoint.getThis)
-    interfaceClass = init.interfaceClass
-    actorRef = init.actorRef
-    uuid = actorRef.uuid
+  override def initialize(joinPoint: JoinPoint): Unit = {
+    super.initialize(joinPoint)
     remoteAddress = actorRef.remoteAddress
-    println("### address= " + remoteAddress.get)
-    timeout = init.timeout
-    isInitialized = true
   }
-
 }
 
 /**
@@ -686,16 +601,8 @@ private[akka] sealed class ServerManagedTypedActorAspect {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @Aspect("perInstance")
-private[akka] sealed class TypedActorAspect {
-  @volatile private var isInitialized = false
-  @volatile private var isStopped = false
-  private var interfaceClass: Class[_] = _
-  private var typedActor: TypedActor = _
-  private var actorRef: ActorRef = _
-  private var remoteAddress: Option[InetSocketAddress] = _
-  private var timeout: Long = _
-  private var uuid: String = _
-  
+private[akka] sealed class TypedActorAspect extends ActorAspect {
+
   @Around("execution(* *.*(..)) && !this(se.scalablesolutions.akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
     if (!isInitialized) initialize(joinPoint)
@@ -706,12 +613,26 @@ private[akka] sealed class TypedActorAspect {
     if (remoteAddress.isDefined) remoteDispatch(joinPoint)
     else localDispatch(joinPoint)
   }
+}
 
-  private def localDispatch(joinPoint: JoinPoint): AnyRef = {
-    val methodRtti     = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val isOneWay       = TypedActor.isOneWay(methodRtti)
+/**
+ * Base class for TypedActorAspect and ServerManagedTypedActorAspect to reduce code duplication.
+ */
+private[akka] abstract class ActorAspect {
+  @volatile protected var isInitialized = false
+  @volatile protected var isStopped = false
+  protected var interfaceClass: Class[_] = _
+  protected var typedActor: TypedActor = _
+  protected var actorRef: ActorRef = _
+  protected var timeout: Long = _
+  protected var uuid: String = _
+  protected var remoteAddress: Option[InetSocketAddress] = _
+
+  protected def localDispatch(joinPoint: JoinPoint): AnyRef = {
+    val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
+    val isOneWay = TypedActor.isOneWay(methodRtti)
     val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
-    val senderProxy    = Some(SenderContextInfo.senderProxy.value)
+    val senderProxy = Some(SenderContextInfo.senderProxy.value)
 
     typedActor.context._sender = senderProxy
     if (!actorRef.isRunning && !isStopped) {
@@ -732,7 +653,7 @@ private[akka] sealed class TypedActorAspect {
     }
   }
 
-  private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
+  protected def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
 
@@ -771,7 +692,7 @@ private[akka] sealed class TypedActorAspect {
     (escapedArgs, isEscaped)
   }
 
-  private def initialize(joinPoint: JoinPoint): Unit = {
+  protected def initialize(joinPoint: JoinPoint): Unit = {
     val init = AspectInitRegistry.initFor(joinPoint.getThis)
     interfaceClass = init.interfaceClass
     typedActor = init.targetInstance
@@ -839,4 +760,7 @@ private[akka] sealed case class AspectInit(
 }
 
 
+/**
+ * Marker interface for server manager typed actors.
+ */
 private[akka] sealed trait ServerManagedTypedActor extends TypedActor

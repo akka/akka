@@ -1363,7 +1363,7 @@ private[akka] case class RemoteActorRef private[akka] (
   val port: Int,
   _timeout: Long,
   loader: Option[ClassLoader],
-  val actorType: ActorType =  ActorType.ScalaActor )
+  val actorType: ActorType =  ActorType.ScalaActor)
   extends ActorRef with ScalaActorRef {
 
   ensureRemotingEnabled

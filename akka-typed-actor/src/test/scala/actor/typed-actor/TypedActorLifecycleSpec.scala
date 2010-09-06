@@ -45,7 +45,6 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
         fail("expected exception not thrown")
       } catch {
         case e: RuntimeException => {
-          println("#failed")
           cdl.await
           assert(SamplePojoImpl._pre)
           assert(SamplePojoImpl._post)

@@ -4,42 +4,46 @@
 
 package se.scalablesolutions.akka.actor.remote
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-import org.scalatest.junit.JUnitSuite
-import org.junit.{Test, Before, After}
+import org.scalatest.Spec
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.junit.JUnitRunner
+import org.junit.runner.RunWith
+
+import java.util.concurrent.TimeUnit
 
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 import se.scalablesolutions.akka.actor._
+import RemoteTypedActorLog._
 
 object ServerInitiatedRemoteTypedActorSpec {
   val HOSTNAME = "localhost"
   val PORT = 9990
   var server: RemoteServer = null
-
-  class SimpleActor extends Actor {
-    def receive = {
-      case _ => println("received message")
-    }
-  }
-
-
 }
 
-class ServerInitiatedRemoteTypedActorSpec extends JUnitSuite {
+@RunWith(classOf[JUnitRunner])
+class ServerInitiatedRemoteTypedActorSpec extends
+  Spec with
+  ShouldMatchers with
+  BeforeAndAfterAll {
   import ServerInitiatedRemoteTypedActorSpec._
+
   private val unit = TimeUnit.MILLISECONDS
 
 
-  @Before
-  def init {
+  override def beforeAll = {
     server = new RemoteServer()
     server.start(HOSTNAME, PORT)
+
+    val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
+    server.registerTypedActor("typed-actor-service", typedActor)
+
     Thread.sleep(1000)
   }
 
   // make sure the servers shutdown cleanly after the test has finished
-  @After
-  def finished {
+  override def afterAll = {
     try {
       server.shutdown
       RemoteClient.shutdownAll
@@ -49,38 +53,60 @@ class ServerInitiatedRemoteTypedActorSpec extends JUnitSuite {
     }
   }
 
+  describe("Server managed remote typed Actor ") {
 
-  @Test
-  def shouldSendWithBang  {
+    it("should receive one-way message") {
+      clearMessageLogs
+      val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
+      expect("oneway") {
+        actor.oneWay
+        oneWayLog.poll(5, TimeUnit.SECONDS)
+      }
+    }
 
-   /*
-    val clientManangedTypedActor = TypedActor.newRemoteInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000, HOSTNAME, PORT)
-    clientManangedTypedActor.requestReply("test-string")
-    Thread.sleep(2000)
-    println("###########")
-     */
-    /*
-    trace()
-    val actor = Actor.actorOf[SimpleActor].start
-    server.register("simple-actor", actor)
-    val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
-    server.registerTypedActor("typed-actor-service", typedActor)
-    println("### registered actor")
-    trace()
+    it("should respond to request-reply message") {
+      clearMessageLogs
+      val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
+      expect("pong") {
+        actor.requestReply("ping")
+      }
+    }
 
-    //val actorRef = RemoteActorRef("typed-actor-service", classOf[RemoteTypedActorOneImpl].getName,  HOSTNAME, PORT, 5000L, None)
-    //val myActor = TypedActor.createProxyForRemoteActorRef(classOf[RemoteTypedActorOne], actorRef)
-    val myActor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", classOf[RemoteTypedActorOneImpl].getName, 5000L, HOSTNAME, PORT)
-    println("### call one way")
-    myActor.oneWay()
-    Thread.sleep(3000)
-    println("### call one way - done")
-       */
-    //assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
-    //actor.stop
-    /*  */
+    it("should not recreate registered actors") {
+      val actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
+      val numberOfActorsInRegistry = ActorRegistry.actors.length
+      expect("oneway") {
+        actor.oneWay
+        oneWayLog.poll(5, TimeUnit.SECONDS)
+      }
+      assert(numberOfActorsInRegistry === ActorRegistry.actors.length)
+    }
+
+    it("should support multiple variants to get the actor from client side") {
+      var actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT)
+      expect("oneway") {
+        actor.oneWay
+        oneWayLog.poll(5, TimeUnit.SECONDS)
+      }
+      actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", HOSTNAME, PORT)
+      expect("oneway") {
+        actor.oneWay
+        oneWayLog.poll(5, TimeUnit.SECONDS)
+      }
+      actor = RemoteClient.typedActorFor(classOf[RemoteTypedActorOne], "typed-actor-service", 5000L, HOSTNAME, PORT, this.getClass().getClassLoader)
+      expect("oneway") {
+        actor.oneWay
+        oneWayLog.poll(5, TimeUnit.SECONDS)
+      }
+    }
+
+    it("should register and unregister typed actors") {
+      val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
+      server.registerTypedActor("my-test-service", typedActor)
+      assert(server.typedActors().get("my-test-service") != null)
+      server.unregisterTypedActor("my-test-service")
+      assert(server.typedActors().get("my-test-service") == null)
+    }
   }
-
-
 }
 

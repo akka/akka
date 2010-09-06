@@ -18,11 +18,8 @@ public class RemoteTypedActorOneImpl extends TypedActor implements RemoteTypedAc
     }
 
     public void oneWay() throws Exception {
-      System.out.println("--------> got it!!!!!!");
       RemoteTypedActorLog.oneWayLog().put("oneway");
     }
-
-
 
     @Override
     public void preRestart(Throwable e) {
