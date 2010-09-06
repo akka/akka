@@ -73,7 +73,6 @@ trait ActorRef extends
   @volatile protected[akka] var _isBeingRestarted = false
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServerModule.HOSTNAME, RemoteServerModule.PORT)
   @volatile protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
-  @volatile protected[akka] var startOnCreation = false
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
   protected[akka] val guard = new ReentrantGuard
 
