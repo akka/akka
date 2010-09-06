@@ -67,7 +67,7 @@ trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
 }
 
 /**
- * Module for local actor serialization
+ * Module for local actor serialization.
  */
 object ActorSerialization {
 
