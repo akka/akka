@@ -80,16 +80,6 @@ object RemoteClient extends Logging {
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
 
-  // FIXME:
-  def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int) : T = {
-
-    println("### create RemoteActorRef")
-    val actorRef = RemoteActorRef(serviceId, implClassName, hostname, port, timeout, None, ActorType.TypedActor)
-    val proxy = TypedActor.createProxyForRemoteActorRef(intfClass, actorRef)
-    proxy
-
-  } 
-
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, Some(loader))
 
@@ -108,8 +98,26 @@ object RemoteClient extends Logging {
   def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     RemoteActorRef(serviceId, className, hostname, port, timeout, None)
 
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int) : T = {
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, 5000L, hostname, port, None)
+  }
 
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int) : T = {
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, None)
+  }
 
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader) : T = {
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, Some(loader))
+  }
+
+  def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader) : T = {
+    typedActorFor(intfClass, serviceId, implClassName, timeout, hostname, port, Some(loader))
+  }
+
+  private[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]) : T = {
+    val actorRef = RemoteActorRef(serviceId, implClassName, hostname, port, timeout, loader, ActorType.TypedActor)
+    TypedActor.createProxyForRemoteActorRef(intfClass, actorRef)
+  }
 
   private[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
     RemoteActorRef(serviceId, className, hostname, port, timeout, Some(loader))
