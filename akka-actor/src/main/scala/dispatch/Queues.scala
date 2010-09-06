@@ -17,7 +17,7 @@ class BoundedTransferQueue[E <: AnyRef](
   require(capacity > 0)
   require(pushTimeout > 0)
   require(pushTimeUnit ne null)
-  
+
   protected val guard = new Semaphore(capacity)
 
   override def take(): E = {
