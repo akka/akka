@@ -55,8 +55,8 @@ trait BootableActorLoaderService extends Bootable with Logging {
   protected def createApplicationClassLoader : Option[ClassLoader] = {
     Some(
     if (HOME.isDefined) {
-      val CONFIG = HOME.get + "/config"
-      val DEPLOY = HOME.get + "/deploy"
+      val CONFIG = HOME.getOrElse(throwNoAkkaHomeException) + "/config"
+      val DEPLOY = HOME.getOrElse(throwNoAkkaHomeException) + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
         log.error("Could not find a deploy directory at [%s]", DEPLOY)
