@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.mutable.{HashSet, HashMap}
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.actor._
 
 /**
  * Atomic remote request/reply message id generator.
@@ -76,10 +77,18 @@ object RemoteClient extends Logging {
   private val remoteClients = new HashMap[String, RemoteClient]
   private val remoteActors =  new HashMap[RemoteServer.Address, HashSet[String]]
 
-  // FIXME: simplify overloaded methods when we have Scala 2.8
-
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
+
+  // FIXME:
+  def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int) : T = {
+
+    println("### create RemoteActorRef")
+    val actorRef = RemoteActorRef(serviceId, implClassName, hostname, port, timeout, None, ActorType.TypedActor)
+    val proxy = TypedActor.createProxyForRemoteActorRef(intfClass, actorRef)
+    proxy
+
+  } 
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, Some(loader))
@@ -98,6 +107,9 @@ object RemoteClient extends Logging {
 
   def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     RemoteActorRef(serviceId, className, hostname, port, timeout, None)
+
+
+
 
   private[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
     RemoteActorRef(serviceId, className, hostname, port, timeout, Some(loader))
