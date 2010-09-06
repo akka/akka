@@ -96,7 +96,7 @@ trait MessageDispatcher extends Logging {
   /**
    * Returns the size of the mailbox for the specified actor
    */
-  def mailboxSize(actorRef: ActorRef):Int = 0
+  def mailboxSize(actorRef: ActorRef):Int
 
   /**
    *  Creates and returns a mailbox for the given actor

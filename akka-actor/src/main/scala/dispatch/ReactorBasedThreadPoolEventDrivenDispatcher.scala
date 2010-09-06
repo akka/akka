@@ -7,8 +7,7 @@ package se.scalablesolutions.akka.dispatch
 import java.util.concurrent.locks.ReentrantLock
 
 import java.util.{HashSet, HashMap, LinkedList, List}
-
-import se.scalablesolutions.akka.actor.IllegalActorStateException
+import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException}
 
 /**
  * Implements the Reactor pattern as defined in: [http://www.cs.wustl.edu/~schmidt/PDF/reactor-siemens.pdf].<br/>
@@ -63,16 +62,18 @@ import se.scalablesolutions.akka.actor.IllegalActorStateException
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
+class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String,config: (ThreadPoolBuilder) => Unit)
     extends AbstractReactorBasedEventDrivenDispatcher("akka:event-driven:reactor:dispatcher:" + _name)
     with ThreadPoolBuilder {
 
+  def this(_name: String) = this(_name,_ => ())
+  
   private var fair = true
   private val busyActors = new HashSet[AnyRef]
   private val messageDemultiplexer = new Demultiplexer(queue)
 
   // build default thread pool
-  withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
+  init
 
   def start = if (!active) {
     log.debug("Starting up %s", toString)
@@ -139,6 +140,8 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
     else nrOfBusyMessages < 100
   }
 
+  def mailboxSize(a: ActorRef) = 0
+
   def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
 
@@ -163,5 +166,11 @@ class ReactorBasedThreadPoolEventDrivenDispatcher(_name: String)
     def releaseSelectedInvocations = selectedInvocationsLock.unlock
 
     def wakeUp = messageQueue.interrupt
+  }
+
+  private[akka] def init = {
+    withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
+    config(this)
+    buildThreadPool
   }
 }

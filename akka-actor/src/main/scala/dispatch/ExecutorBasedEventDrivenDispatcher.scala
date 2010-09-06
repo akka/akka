@@ -65,10 +65,12 @@ import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 class ExecutorBasedEventDrivenDispatcher(
   _name: String,
   throughput: Int = Dispatchers.THROUGHPUT,
-  capacity: Int = Dispatchers.MAILBOX_CAPACITY) extends MessageDispatcher with ThreadPoolBuilder {
+  capacity: Int = Dispatchers.MAILBOX_CAPACITY,
+  config: (ThreadPoolBuilder) => Unit = _ => ()) extends MessageDispatcher with ThreadPoolBuilder {
 
   def this(_name: String, throughput: Int) = this(_name, throughput, Dispatchers.MAILBOX_CAPACITY) // Needed for Java API usage
-  def this(_name: String) = this(_name, Dispatchers.THROUGHPUT) // Needed for Java API usage
+  def this(_name: String) = this(_name,Dispatchers.THROUGHPUT,Dispatchers.MAILBOX_CAPACITY) // Needed for Java API usage
+
 
   mailboxCapacity = capacity
 
@@ -163,5 +165,9 @@ class ExecutorBasedEventDrivenDispatcher(
   override def toString = "ExecutorBasedEventDrivenDispatcher[" + name + "]"
 
   // FIXME: should we have an unbounded queue and not bounded as default ????
-  private[akka] def init = withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity.buildThreadPool
+  private[akka] def init = {
+    withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
+    config(this)
+    buildThreadPool
+  }
 }

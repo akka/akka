@@ -5,8 +5,8 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
-import Actor._
+import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef, Actor}
 
 object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
@@ -130,6 +130,18 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
       case e =>
         assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
+    actor.stop
+  }
+
+
+  @Test
+  def shouldNotRecreateRegisteredActor {
+    server.register(actorOf[RemoteActorSpecActorUnidirectional])
+    val actor = RemoteClient.actorFor("se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
+    val numberOfActorsInRegistry = ActorRegistry.actors.length
+    val result = actor ! "OneWay"
+    assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
+    assert(numberOfActorsInRegistry === ActorRegistry.actors.length)
     actor.stop
   }
 }

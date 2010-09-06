@@ -42,6 +42,13 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
                       bound="10" />
   </akka:dispatcher>
 
+  <!-- executor-event-driven-dispatcher with bounded-linked-blocking-queue with bounded actor mailbox capacity-->
+  <akka:dispatcher id="executor-event-driven-dispatcher-mc" type="executor-based-event-driven" name="dispatcher-mc">
+    <akka:thread-pool queue="bounded-linked-blocking-queue"
+                      bound="100"
+                      mailbox-capacity="1000"/>
+  </akka:dispatcher>
+
   <!-- executor-event-driven-dispatcher with unbounded-linked-blocking-queue with bounded capacity-->
   <akka:dispatcher id="executor-event-driven-dispatcher-4" type="executor-based-event-driven" name="dispatcher-4">
     <akka:thread-pool queue="unbounded-linked-blocking-queue"
