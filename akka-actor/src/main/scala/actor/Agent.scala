@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.stm.Ref
 import se.scalablesolutions.akka.AkkaException
-
+import se.scalablesolutions.akka.util.{ Function => JFunc, Procedure => JProc }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
 
@@ -137,6 +137,13 @@ sealed class Agent[T] private (initialValue: T) {
   final def apply(message: (T => T)): Unit = dispatcher ! Function(message)
 
   /**
+   * Submits the provided function for execution against the internal agent's state.
+   * Java API
+   */
+  final def apply(message: JFunc[T,T]): Unit = dispatcher ! Function((t: T) => message(t))
+
+
+  /**
    * Submits a new value to be set as the new agent's internal state.
    */
   final def apply(message: T): Unit = dispatcher ! Value(message)
@@ -145,6 +152,12 @@ sealed class Agent[T] private (initialValue: T) {
    * Submits the provided function of type 'T => T' for execution against the internal agent's state.
    */
   final def send(message: (T) => T): Unit = dispatcher ! Function(message)
+
+  /**
+   * Submits the provided function of type 'T => T' for execution against the internal agent's state.
+   * Java API
+   */
+  final def send(message: JFunc[T,T]): Unit = dispatcher ! Function((t: T) => message(t))
 
   /**
    * Submits a new value to be set as the new agent's internal state.
@@ -158,6 +171,15 @@ sealed class Agent[T] private (initialValue: T) {
    * Does not change the value of the agent (this).
    */
   final def sendProc(f: (T) => Unit): Unit = dispatcher ! Procedure(f)
+
+  /**
+   * Asynchronously submits a procedure of type 'T => Unit' to read the internal state.
+   * The supplied procedure will be executed on the returned internal state value. A copy
+   * of the internal state will be used, depending on the underlying effective copyStrategy.
+   * Does not change the value of the agent (this).
+   * Java API
+   */
+  final def sendProc(f: JProc[T]): Unit = dispatcher ! Procedure((t:T) => f(t))
 
   /**
    * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
@@ -176,6 +198,27 @@ sealed class Agent[T] private (initialValue: T) {
    * Does not change the value of the agent (this).
    */
   final def foreach(f: (T) => Unit): Unit = f(get)
+
+  /**
+   * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
+   * Does not change the value of the agent (this).
+   * Java API
+   */
+  final def map[B](f: JFunc[T,B]): Agent[B] = Agent(f(get))
+
+  /**
+   * Applies function with type 'T => B' to the agent's internal state and then returns a new agent with the result.
+   * Does not change the value of the agent (this).
+   * Java API
+   */
+  final def flatMap[B](f: JFunc[T,Agent[B]]): Agent[B] = Agent(f(get)())
+
+  /**
+   * Applies procedure with type T to the agent's internal state.
+   * Does not change the value of the agent (this).
+   * Java API
+   */
+  final def foreach(f: JProc[T]): Unit = f(get)
 
   /**
    * Closes the agents and makes it eligable for garbage collection.
