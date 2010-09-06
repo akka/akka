@@ -27,16 +27,17 @@ trait Dispatcher { this: Actor =>
 }
 
 /**
- * An UntypedDispatcher is a trait whose purpose is to route incoming messages to actors.
+ * An UntypedDispatcher is an abstract class whose purpose is to route incoming messages to actors.
  */
 abstract class UntypedDispatcher extends UntypedActor {
   protected def transform(msg: Any): Any = msg
 
-  protected def route(msg: Any) : ActorRef
+  protected def route(msg: Any): ActorRef
 
   private def isSenderDefined = self.senderFuture.isDefined || self.sender.isDefined
 
-  def onMessage(msg: Any) : Unit = {
+  @throws(classOf[Exception])
+  def onReceive(msg: Any): Unit = {
     val r = route(msg)
     if(r eq null)
       throw new IllegalStateException("No route for " + msg + " defined!")
