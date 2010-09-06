@@ -1154,7 +1154,9 @@ class LocalActorRef private[akka](
     val actor = actorFactory match {
       case Left(Some(clazz)) =>
         try {
-          clazz.newInstance
+          val ctor = clazz.getConstructor()
+          ctor.setAccessible(true)
+          ctor.newInstance()
         } catch {
           case e: InstantiationException => throw new ActorInitializationException(
             "Could not instantiate Actor due to:\n" + e +
