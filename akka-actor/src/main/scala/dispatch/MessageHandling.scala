@@ -6,12 +6,12 @@ package se.scalablesolutions.akka.dispatch
 
 import java.util.List
 
-import se.scalablesolutions.akka.util.{HashCode, Logging}
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import se.scalablesolutions.akka.AkkaException
 import java.util.concurrent.{ConcurrentSkipListSet}
+import se.scalablesolutions.akka.util.{Duration, HashCode, Logging}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -65,6 +65,10 @@ class MessageQueueAppendFailedException(message: String) extends AkkaException(m
 trait MessageQueue {
   def append(handle: MessageInvocation)
 }
+
+/* Tells the dispatcher that it should create a bounded mailbox with the specified push timeout
+ */
+case class BoundedMailbox(capacity: Int, pushTimeOut: Option[Duration])
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
