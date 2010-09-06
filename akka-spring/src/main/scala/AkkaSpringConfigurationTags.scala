@@ -68,6 +68,7 @@ object AkkaSpringConfigurationTags {
   val KEEP_ALIVE = "keep-alive"
   val BOUND ="bound"
   val REJECTION_POLICY ="rejection-policy"
+  val MAILBOX_CAPACITY ="mailbox-capacity"
 
   // --- VALUES
   //

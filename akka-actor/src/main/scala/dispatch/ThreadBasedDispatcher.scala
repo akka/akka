@@ -44,6 +44,8 @@ class ThreadBasedDispatcher(private val actor: ActorRef,
 
   def mailbox = actor.mailbox.asInstanceOf[ThreadMessageQueue]
 
+  def mailboxSize(a: ActorRef) = mailbox.size
+
   def dispatch(invocation: MessageInvocation) = mailbox append invocation
 
   def start = if (!active) {
@@ -73,14 +75,13 @@ class ThreadBasedDispatcher(private val actor: ActorRef,
   override def toString = "ThreadBasedDispatcher[" + threadName + "]"
 }
 
-trait ThreadMessageQueue extends MessageQueue { self: TransferQueue[MessageInvocation] =>
-
+trait ThreadMessageQueue extends MessageQueue with TransferQueue[MessageInvocation] {
   final def append(invocation: MessageInvocation): Unit = {
-    if(!self.tryTransfer(invocation)) { //First, try to send the invocation to a waiting consumer
-      if(!self.offer(invocation))       //If no consumer found, append it to the queue, if that fails, we're aborting
+    if(!tryTransfer(invocation)) { //First, try to send the invocation to a waiting consumer
+      if(!offer(invocation))       //If no consumer found, append it to the queue, if that fails, we're aborting
         throw new MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out")
     }
   }
 
-  final def next: MessageInvocation = self.take
+  final def next: MessageInvocation = take
 }

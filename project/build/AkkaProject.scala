@@ -70,7 +70,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
   lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
   lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
-  lazy val liftModuleConfig        = ModuleConfiguration("net.liftweb", ScalaToolsReleases)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
@@ -89,14 +88,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val HAWT_DISPATCH_VERSION = "1.0"
   lazy val JACKSON_VERSION       = "1.2.1"
   lazy val JERSEY_VERSION        = "1.2"
-  lazy val LIFT_VERSION          = "2.1-M1"
   lazy val MULTIVERSE_VERSION    = "0.6.1"
   lazy val SCALATEST_VERSION     = "1.2-for-scala-2.8.0.final-SNAPSHOT"
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val SPRING_VERSION        = "3.0.3.RELEASE"
   lazy val ASPECTWERKZ_VERSION   = "2.2.1"
-  lazy val JETTY_VERSION         = "7.1.6.v20100715"
+  lazy val JETTY_VERSION         = "7.1.4.v20100610"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Dependencies
@@ -136,9 +134,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val dispatch_http = "net.databinder" % "dispatch-http_2.8.0" % DISPATCH_VERSION % "compile"
     lazy val dispatch_json = "net.databinder" % "dispatch-json_2.8.0" % DISPATCH_VERSION % "compile"
 
-    lazy val jetty      = "org.eclipse.jetty" % "jetty-server" % JETTY_VERSION % "compile"
-    lazy val jetty_util = "org.eclipse.jetty" % "jetty-util"   % JETTY_VERSION % "compile"
-    lazy val jetty_xml  = "org.eclipse.jetty" % "jetty-xml"    % JETTY_VERSION % "compile"
+    lazy val jetty         = "org.eclipse.jetty" % "jetty-server"  % JETTY_VERSION % "compile"
+    lazy val jetty_util    = "org.eclipse.jetty" % "jetty-util"    % JETTY_VERSION % "compile"
+    lazy val jetty_xml     = "org.eclipse.jetty" % "jetty-xml"     % JETTY_VERSION % "compile"
+    lazy val jetty_servlet = "org.eclipse.jetty" % "jetty-servlet" % JETTY_VERSION % "compile"
 
     lazy val guicey = "org.guiceyfruit" % "guice-all" % "2.0" % "compile"
 
@@ -165,9 +164,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val jta_1_1 = "org.apache.geronimo.specs" % "geronimo-jta_1.1_spec" % "1.1.1" % "compile" intransitive
 
-    lazy val lift_util   = "net.liftweb" % "lift-util_2.8.0"   % LIFT_VERSION % "compile"
-    lazy val lift_webkit = "net.liftweb" % "lift-webkit_2.8.0" % LIFT_VERSION % "compile"
-
     lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile"
 
     lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive
@@ -180,11 +176,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile"
 
-    lazy val redis = "com.redis" % "redisclient" % "2.8.0-1.4" % "compile"
+    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0" % "compile"
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
-
-    lazy val servlet = "javax.servlet" % "servlet-api" % "2.5" % "compile"
 
     lazy val sjson = "sjson.json" % "sjson" % "0.7-2.8.0" % "compile"
 
@@ -425,13 +419,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jetty            = Dependencies.jetty
     val jetty_util       = Dependencies.jetty_util
     val jetty_xml        = Dependencies.jetty_xml
+    val jetty_servlet    = Dependencies.jetty_servlet
     val jackson_core_asl = Dependencies.jackson_core_asl
     val jersey           = Dependencies.jersey
     val jersey_contrib   = Dependencies.jersey_contrib
     val jersey_json      = Dependencies.jersey_json
     val jersey_server    = Dependencies.jersey_server
     val jsr311           = Dependencies.jsr311
-    val servlet          = Dependencies.servlet
     val stax_api         = Dependencies.stax_api
 
     // testing
@@ -564,7 +558,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
       // Provided by other bundles
       "!se.scalablesolutions.akka.*",
-      "!net.liftweb.*",
       "!com.google.inject.*",
       "!javax.transaction.*",
       "!javax.ws.rs.*",
@@ -585,12 +578,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     // Scala bundle
     val scala_bundle = "com.weiglewilczek.scala-lang-osgi" % "scala-library" % buildScalaVersion % "compile" intransitive
-
-    // Lift bundles
-//    val lift_util   = Dependencies.lift_util.intransitive
-//    val lift_actor  = "net.liftweb" % "lift-actor"  % LIFT_VERSION % "compile" intransitive
-//    val lift_common = "net.liftweb" % "lift-common" % LIFT_VERSION % "compile" intransitive
-//    val lift_json   = "net.liftweb" % "lift-json"   % LIFT_VERSION % "compile" intransitive
 
     // Camel bundles
     val camel_core           = Dependencies.camel_core.intransitive
@@ -656,21 +643,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaSamplePubSubProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
   class AkkaSampleFSMProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
-  class AkkaSampleLiftProject(info: ProjectInfo) extends DefaultWebProject(info) with DeployProject {
-    //val commons_logging = Dependencies.commons_logging
-    val lift_util       = Dependencies.lift_util
-    val lift_webkit     = Dependencies.lift_webkit
-    val servlet         = Dependencies.servlet
-
-    // testing
-    val testJetty         = Dependencies.testJetty
-    val testJettyWebApp   = Dependencies.testJettyWebApp
-    val junit             = Dependencies.junit
-
-    def deployPath = AkkaParentProject.this.deployPath
-    override def jarPath = warPath
-  }
-
   class AkkaSampleRestJavaProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
 
   class AkkaSampleRemoteProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath)
@@ -718,8 +690,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaSamplePubSubProject(_), akka_kernel)
     lazy val akka_sample_fsm = project("akka-sample-fsm", "akka-sample-fsm",
       new AkkaSampleFSMProject(_), akka_kernel)
-    lazy val akka_sample_lift = project("akka-sample-lift", "akka-sample-lift",
-      new AkkaSampleLiftProject(_), akka_kernel)
     lazy val akka_sample_rest_java = project("akka-sample-rest-java", "akka-sample-rest-java",
       new AkkaSampleRestJavaProject(_), akka_kernel)
     lazy val akka_sample_rest_scala = project("akka-sample-rest-scala", "akka-sample-rest-scala",
