@@ -267,7 +267,9 @@ object Cluster extends Cluster with Logging {
 
   def foreach(f: (RemoteAddress) => Unit): Unit = clusterActor.foreach(_.foreach(f))
 
-  def endpoints: Array[RemoteAddress] = clusterActor.end
+  def endpoints: Array[RemoteAddress] = clusterActor
+  .getOrElse(throw new IllegalStateException("No cluster actor is defined"))
+  .endpoints
 
   def start(): Unit = start(None)
 
