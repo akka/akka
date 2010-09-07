@@ -144,5 +144,6 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     assert(numberOfActorsInRegistry === ActorRegistry.actors.length)
     actor.stop
   }
+
 }
 

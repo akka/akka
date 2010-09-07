@@ -10,7 +10,7 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor.{
-  Actor, TypedActor, ActorRef, LocalActorRef, RemoteActorRef, IllegalActorStateException, RemoteActorSystemMessage}
+  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
@@ -133,8 +133,8 @@ object RemoteServer {
     actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
   }
 
-  private[akka] def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(name, typedActor)
+  private[akka] def registerTypedActor(address: InetSocketAddress, uuid: String, typedActor: AnyRef) = guard.withWriteGuard {
+    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(uuid, typedActor)
   }
 
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
@@ -271,7 +271,18 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  // TODO: register typed actor in RemoteServer as well
+  /**
+   * Register remote typed actor by a specific id.
+   * @param id custom actor id
+   * @param typedActor typed actor to register
+   */
+  def registerTypedActor(id: String, typedActor: AnyRef): Unit = synchronized {
+    val typedActors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).typedActors
+    if (!typedActors.contains(id)) {
+      log.debug("Registering server side remote actor [%s] with id [%s] on [%s:%d]", typedActor.getClass.getName, id, hostname, port)
+      typedActors.put(id, typedActor)
+    }
+  }
 
   /**
    * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
@@ -321,11 +332,24 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
+  /**
+   * Unregister Remote Typed Actor by specific 'id'.
+   * <p/>
+   * NOTE: You need to call this method if you have registered an actor by a custom ID.
+   */
+  def unregisterTypedActor(id: String):Unit = synchronized {
+    if (_isRunning) {
+      log.info("Unregistering server side remote typed actor with id [%s]", id)
+      val registeredTypedActors = typedActors()
+      registeredTypedActors.remove(id)
+    }
+  }
+
   protected override def manageLifeCycleOfListeners = false
 
   protected[akka] override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
 
-  private[akka] def actors() = RemoteServer.actorsFor(address).actors
+  private[akka] def actors()      = RemoteServer.actorsFor(address).actors
   private[akka] def typedActors() = RemoteServer.actorsFor(address).typedActors
 }
 
