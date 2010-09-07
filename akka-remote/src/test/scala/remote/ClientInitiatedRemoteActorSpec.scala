@@ -103,7 +103,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendTo = actor
     sender.start
     sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendOff
-    assert(SendOneWayAndReplySenderActor.latch.await(1, TimeUnit.SECONDS))
+    assert(SendOneWayAndReplySenderActor.latch.await(3, TimeUnit.SECONDS))
     assert(sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].state.isDefined === true)
     assert("World" === sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].state.get.asInstanceOf[String])
     actor.stop

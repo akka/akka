@@ -274,9 +274,9 @@ class RemoteServer extends Logging with ListenerManagement {
   // TODO: register typed actor in RemoteServer as well
 
   /**
-   * Register Remote Actor by the Actor's 'uuid' field. It starts the Actor if it is not started already.
+   * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
-  def register(actorRef: ActorRef): Unit = register(actorRef.uuid,actorRef)
+  def register(actorRef: ActorRef): Unit = register(actorRef.id,actorRef)
 
   /**
    * Register Remote Actor by a specific 'id' passed as argument.
@@ -295,13 +295,13 @@ class RemoteServer extends Logging with ListenerManagement {
   }
 
   /**
-   * Unregister Remote Actor that is registered using its 'uuid' field (not custom ID).
+   * Unregister Remote Actor that is registered using its 'id' field (not custom ID).
    */
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
       log.debug("Unregistering server side remote actor [%s] with id [%s:%s]", actorRef.actorClass.getName, actorRef.id, actorRef.uuid)
       val actorMap = actors()
-      actorMap remove actorRef.uuid
+      actorMap remove actorRef.id
       if (actorRef.registeredInRemoteNodeDuringSerialization) actorMap remove actorRef.uuid
     }
   }
@@ -325,12 +325,8 @@ class RemoteServer extends Logging with ListenerManagement {
 
   protected[akka] override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
 
-  private[akka] def actors() : ConcurrentHashMap[String, ActorRef] = {
-    RemoteServer.actorsFor(address).actors
-  }
-  private[akka] def typedActors() : ConcurrentHashMap[String, AnyRef] = {
-    RemoteServer.actorsFor(address).typedActors
-  }
+  private[akka] def actors() = RemoteServer.actorsFor(address).actors
+  private[akka] def typedActors() = RemoteServer.actorsFor(address).typedActors
 }
 
 object RemoteServerSslContext {
