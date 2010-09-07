@@ -67,6 +67,7 @@ trait MessageQueue {
 }
 
 /* Tells the dispatcher that it should create a bounded mailbox with the specified push timeout
+ * (If capacity > 0)
  */
 case class BoundedMailbox(capacity: Int, pushTimeOut: Option[Duration])
 

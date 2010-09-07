@@ -85,9 +85,7 @@ trait ThreadMessageBlockingQueue extends MessageQueue with BlockingQueue[Message
 
 trait ThreadMessageTransferQueue extends ThreadMessageBlockingQueue with TransferQueue[MessageInvocation] {
   final override def append(invocation: MessageInvocation): Unit = {
-    if(!tryTransfer(invocation)) { //First, try to send the invocation to a waiting consumer
-      if(!offer(invocation))       //If no consumer found, append it to the queue, if that fails, we're aborting
-        throw new MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out")
-    }
+    if(!offer(invocation))       //If no consumer found, append it to the queue, if that fails, we're aborting
+      throw new MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out")
   }
 }
