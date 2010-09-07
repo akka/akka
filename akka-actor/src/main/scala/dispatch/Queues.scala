@@ -9,14 +9,8 @@ import java.util.concurrent.{TimeUnit, Semaphore}
 import java.util.Iterator
 import se.scalablesolutions.akka.util.Logger
 
-class BoundedTransferQueue[E <: AnyRef](
-        val capacity: Int,
-        val pushTimeout: Long,
-        val pushTimeUnit: TimeUnit)
-      extends LinkedTransferQueue[E] {
+class BoundedTransferQueue[E <: AnyRef](val capacity: Int) extends LinkedTransferQueue[E] {
   require(capacity > 0)
-  require(pushTimeout > 0)
-  require(pushTimeUnit ne null)
 
   protected val guard = new Semaphore(capacity)
 
@@ -50,7 +44,7 @@ class BoundedTransferQueue[E <: AnyRef](
   }
 
   override def offer(e: E): Boolean = {
-    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
+    if (guard.tryAcquire) {
       val result = try {
         super.offer(e)
       } catch {
@@ -63,9 +57,9 @@ class BoundedTransferQueue[E <: AnyRef](
   }
 
   override def offer(e: E, timeout: Long, unit: TimeUnit): Boolean = {
-    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
+    if (guard.tryAcquire(timeout,unit)) {
       val result = try {
-        super.offer(e,timeout,unit)
+        super.offer(e)
       } catch {
         case e => guard.release; throw e
       }
@@ -76,7 +70,7 @@ class BoundedTransferQueue[E <: AnyRef](
   }
 
   override def add(e: E): Boolean = {
-    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
+    if (guard.tryAcquire) {
       val result = try {
         super.add(e)
       } catch {
@@ -89,17 +83,16 @@ class BoundedTransferQueue[E <: AnyRef](
   }
 
   override def put(e :E): Unit = {
-    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
-      try {
-        super.put(e)
-      } catch {
-        case e => guard.release; throw e
-      }
+    guard.acquire
+    try {
+      super.put(e)
+    } catch {
+      case e => guard.release; throw e
     }
   }
 
   override def tryTransfer(e: E): Boolean = {
-    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
+    if (guard.tryAcquire) {
       val result = try {
         super.tryTransfer(e)
       } catch {
@@ -112,9 +105,9 @@ class BoundedTransferQueue[E <: AnyRef](
   }
 
   override def tryTransfer(e: E, timeout: Long, unit: TimeUnit): Boolean = {
-    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
+    if (guard.tryAcquire(timeout,unit)) {
       val result = try {
-        super.tryTransfer(e,timeout,unit)
+        super.tryTransfer(e)
       } catch {
         case e => guard.release; throw e
       }
@@ -125,7 +118,7 @@ class BoundedTransferQueue[E <: AnyRef](
   }
   
   override def transfer(e: E): Unit = {
-    if (guard.tryAcquire(pushTimeout,pushTimeUnit)) {
+    if (guard.tryAcquire) {
       try {
         super.transfer(e)
       } catch {

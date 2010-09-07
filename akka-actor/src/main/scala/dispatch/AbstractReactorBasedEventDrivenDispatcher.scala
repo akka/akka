@@ -15,7 +15,7 @@ abstract class AbstractReactorBasedEventDrivenDispatcher(val name: String) exten
   protected var selectorThread: Thread = _
   protected val guard = new Object
 
-  def dispatch(invocation: MessageInvocation) = queue.append(invocation)
+  def dispatch(invocation: MessageInvocation) = queue enqueue invocation
 
   def shutdown = if (active) {
     log.debug("Shutting down %s", toString)
@@ -34,14 +34,20 @@ class ReactiveMessageQueue(name: String) extends MessageQueue {
   private[akka] val queue: Queue[MessageInvocation] = new LinkedList[MessageInvocation]
   @volatile private var interrupted = false
 
-  def append(handle: MessageInvocation) = queue.synchronized {
-    queue.offer(handle)
+  def enqueue(handle: MessageInvocation) = queue.synchronized {
+    queue offer handle
     queue.notifyAll
+  }
+
+  def dequeue(): MessageInvocation = queue.synchronized {
+    val result = queue.poll
+    queue.notifyAll
+    result
   }
 
   def read(destination: List[MessageInvocation]) = queue.synchronized {
     while (queue.isEmpty && !interrupted) queue.wait
-    if (!interrupted) while (!queue.isEmpty) destination.add(queue.remove)
+    if (!interrupted) while (!queue.isEmpty) destination add queue.remove
     else interrupted = false
   }
 
