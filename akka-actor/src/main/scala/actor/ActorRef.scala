@@ -829,9 +829,8 @@ class LocalActorRef private[akka](
       actor.shutdown
       ActorRegistry.unregister(this)
       if (isRemotingEnabled) {
-        remoteAddress.foreach { address =>
-          RemoteClientModule.unregister(address, uuid)
-        }
+        if(remoteAddress.isDefined)
+           RemoteClientModule.unregister(remoteAddress.get, uuid)
         RemoteServerModule.unregister(this)
       }
       nullOutActorRefReferencesFor(actorInstance.get)
