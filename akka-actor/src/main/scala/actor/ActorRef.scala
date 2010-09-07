@@ -1363,7 +1363,8 @@ private[akka] case class RemoteActorRef private[akka] (
   val hostname: String,
   val port: Int,
   _timeout: Long,
-  loader: Option[ClassLoader])
+  loader: Option[ClassLoader],
+  val actorType: ActorType =  ActorType.ScalaActor)
   extends ActorRef with ScalaActorRef {
 
   ensureRemotingEnabled
@@ -1376,7 +1377,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
     RemoteClientModule.send[Any](
-      message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
+      message, senderOption, None, remoteAddress.get, timeout, true, this, None, actorType)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
       message: Any,
@@ -1384,7 +1385,7 @@ private[akka] case class RemoteActorRef private[akka] (
       senderOption: Option[ActorRef],
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     val future = RemoteClientModule.send[T](
-      message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, ActorType.ScalaActor)
+      message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, actorType)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
