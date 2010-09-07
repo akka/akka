@@ -46,10 +46,10 @@ import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
 object Dispatchers extends Logging {
   val THROUGHPUT          = config.getInt("akka.actor.throughput", 5)
   val MAILBOX_CAPACITY    = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
-  val MAILBOX_BOUNDS      = BoundedMailbox(
-    Dispatchers.MAILBOX_CAPACITY,
-    config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-ms").
-    map(Duration(_,TimeUnit.MILLISECONDS))
+  val MAILBOX_CONFIG      = MailboxConfig(
+    capacity = Dispatchers.MAILBOX_CAPACITY,
+    pushTimeOut = config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS)),
+    blockingDequeue = false
   )
 
   lazy val defaultGlobalDispatcher = {
@@ -58,7 +58,7 @@ object Dispatchers extends Logging {
 
   object globalHawtDispatcher extends HawtDispatcher
 
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global",THROUGHPUT,MAILBOX_BOUNDS) {
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global",THROUGHPUT,MAILBOX_CONFIG) {
     override def register(actor: ActorRef) = {
       if (isShutdown) init
       super.register(actor)
@@ -99,7 +99,7 @@ object Dispatchers extends Logging {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) = new ThreadBasedDispatcher(actor, BoundedMailbox(mailboxCapacity,Option(pushTimeOut)))
+  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) = new ThreadBasedDispatcher(actor, MailboxConfig(mailboxCapacity,Option(pushTimeOut),true))
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -200,10 +200,10 @@ object Dispatchers extends Logging {
       })
     }
 
-    lazy val mailboxBounds: BoundedMailbox = {
+    lazy val mailboxBounds: MailboxConfig = {
       val capacity = cfg.getInt("mailbox-capacity",Dispatchers.MAILBOX_CAPACITY)
       val timeout  = cfg.getInt("mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS))
-      BoundedMailbox(capacity,timeout)
+      MailboxConfig(capacity,timeout,false)
     }
 
     val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
