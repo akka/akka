@@ -24,7 +24,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext
 class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
   feature("parse Spring application context") {
 
-    scenario("get a untyped actor") {
+    scenario("get an untyped actor") {
       val context = new ClassPathXmlApplicationContext("/untyped-actor-config.xml")
       val myactor = context.getBean("simple-untyped-actor").asInstanceOf[ActorRef]
       assert(myactor.getActorClassName() === "se.scalablesolutions.akka.spring.foo.PingActor")
