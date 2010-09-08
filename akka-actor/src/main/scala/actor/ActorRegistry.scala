@@ -157,6 +157,7 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
   
   private val Naught = Array[V]() //Nil for Arrays
   private val container = new ConcurrentHashMap[K, JSet[V]]
+  private val emptySet = new ConcurrentSkipListSet[V]
 
   def put(key: K, value: V) {
 
@@ -213,9 +214,10 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
     val set = container get key
     if (set ne null) {
       set.synchronized {
-        set remove value
-        if (set.isEmpty)
-          container remove key
+        if (set.remove(value)) {
+          if (set.isEmpty)
+            container.remove(key,emptySet)
+        }
       }
     }
   }
