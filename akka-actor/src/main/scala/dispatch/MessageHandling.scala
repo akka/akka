@@ -83,7 +83,7 @@ case class MailboxConfig(capacity: Int, pushTimeOut: Option[Duration], blockingD
   def newMailbox(bounds: Int = capacity,
                  pushTime: Option[Duration] = pushTimeOut,
                  blockDequeue: Boolean = blockingDequeue) : MessageQueue = {
-    if (bounds <= 0) {
+    if (bounds <= 0) { //UNBOUNDED: Will never block enqueue and optionally blocking dequeue
       new LinkedTransferQueue[MessageInvocation] with MessageQueue {
         def enqueue(handle: MessageInvocation): Unit = this add handle
         def dequeue(): MessageInvocation = {
@@ -92,7 +92,7 @@ case class MailboxConfig(capacity: Int, pushTimeOut: Option[Duration], blockingD
         }
       }
     }
-    else if (pushTime.isDefined) {
+    else if (pushTime.isDefined) { //BOUNDED: Timeouted enqueue with MessageQueueAppendFailedException and optionally blocking dequeue
       val time = pushTime.get
       new BoundedTransferQueue[MessageInvocation](bounds) with MessageQueue {
         def enqueue(handle: MessageInvocation) {
@@ -106,7 +106,7 @@ case class MailboxConfig(capacity: Int, pushTimeOut: Option[Duration], blockingD
         }
       }
     }
-    else {
+    else { //BOUNDED: Blocking enqueue and optionally blocking dequeue
       new LinkedBlockingQueue[MessageInvocation](bounds) with MessageQueue {
         def enqueue(handle: MessageInvocation): Unit = this put handle
         def dequeue(): MessageInvocation = {
