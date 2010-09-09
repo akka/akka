@@ -57,7 +57,7 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
 
     it("should be able to parse the dispatcher with a thread pool configuration") {
       val xml = <akka:dispatcher id="dispatcher"
-                                 type="reactor-based-thread-pool-event-driven"
+                                 type="executor-based-event-driven"
                                  name="myDispatcher">
           <akka:thread-pool queue="linked-blocking-queue"
                             capacity="50"
@@ -67,7 +67,7 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
       </akka:dispatcher>
       val props = parser.parseDispatcher(dom(xml).getDocumentElement);
       assert(props != null)
-      assert(props.dispatcherType == "reactor-based-thread-pool-event-driven")
+      assert(props.dispatcherType == "executor-based-event-driven")
       assert(props.name == "myDispatcher")
       assert(props.threadPool.corePoolSize == 2)
       assert(props.threadPool.maxPoolSize == 10)
@@ -85,16 +85,6 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                  name="myDispatcher"/>
       evaluating {parser.parseDispatcher(dom(xml).getDocumentElement)} should produce[IllegalArgumentException]
     }
-
-    it("should throw IllegalArgumentException when configuring a single thread dispatcher with a thread pool") {
-      val xml = <akka:dispatcher id="reactor-based-single-thread-event-driven-dispatcher"
-                                 type="reactor-based-single-thread-event-driven"
-                                 name="myDispatcher">
-          <akka:thread-pool queue="synchronous-queue" fairness="true"/>
-      </akka:dispatcher>
-      evaluating {parser.parseDispatcher(dom(xml).getDocumentElement)} should produce[IllegalArgumentException]
-    }
-
 
     it("should throw IllegalArgumentException when configuring a thread based dispatcher without TypedActor or UntypedActor") {
       val xml = <akka:dispatcher id="dispatcher" type="thread-based" name="myDispatcher"/>
