@@ -205,6 +205,14 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
      set foreach fun
   }
 
+  def findValue(key: K)(f: (V) => Boolean): Option[V] = {
+    val set = container get key
+    if (set ne null)
+     set.iterator.find(f)
+    else
+     None
+  }
+
   def foreach(fun: (K,V) => Unit) {
     container.entrySet foreach {
       (e) => e.getValue.foreach(fun(e.getKey,_))
