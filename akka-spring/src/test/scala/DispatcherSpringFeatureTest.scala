@@ -96,19 +96,6 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(executor.getQueue().isInstanceOf[SynchronousQueue[Runnable]])
     }
 
-    scenario("get a reactor-based-thread-pool-event-driven-dispatcher with synchronous-queue from context") {
-      val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
-      val dispatcher = context.getBean("reactor-based-thread-pool-event-driven-dispatcher").asInstanceOf[ReactorBasedThreadPoolEventDrivenDispatcher]
-      val executor = getThreadPoolExecutorAndAssert(dispatcher)
-      assert(executor.getQueue().isInstanceOf[SynchronousQueue[Runnable]])
-    }
-
-    scenario("get a reactor-based-single-thread-event-driven-dispatcher with synchronous-queue from context") {
-      val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
-      val dispatcher = context.getBean("reactor-based-single-thread-event-driven-dispatcher").asInstanceOf[ReactorBasedSingleThreadEventDrivenDispatcher]
-      assert(dispatcher != null)
-    }
-
     scenario("get a executor-based-event-driven-work-stealing-dispatcher from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val dispatcher = context.getBean("executor-based-event-driven-work-stealing-dispatcher").asInstanceOf[ExecutorBasedEventDrivenWorkStealingDispatcher]
