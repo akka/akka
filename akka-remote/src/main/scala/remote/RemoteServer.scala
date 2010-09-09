@@ -272,6 +272,11 @@ class RemoteServer extends Logging with ListenerManagement {
   }
 
   /**
+   * Register typed actor by interface name.
+   */
+  def registerTypedActor(intfClass: Class[_], typedActor: AnyRef) : Unit = registerTypedActor(intfClass.getName, typedActor)
+
+  /**
    * Register remote typed actor by a specific id.
    * @param id custom actor id
    * @param typedActor typed actor to register

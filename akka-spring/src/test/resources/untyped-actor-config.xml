@@ -24,7 +24,7 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
   <akka:untyped-actor id="remote-untyped-actor"
                       implementation="se.scalablesolutions.akka.spring.foo.PingActor"
                       timeout="2000">
-    <akka:remote host="localhost" port="9999"/>
+    <akka:remote host="localhost" port="9992"/>
   </akka:untyped-actor>
 
    <akka:untyped-actor id="untyped-actor-with-dispatcher"
