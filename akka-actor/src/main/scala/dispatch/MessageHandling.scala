@@ -65,6 +65,8 @@ class MessageQueueAppendFailedException(message: String) extends AkkaException(m
 trait MessageQueue {
   def enqueue(handle: MessageInvocation)
   def dequeue(): MessageInvocation
+  def size: Int
+  def isEmpty: Boolean
 }
 
 /* Tells the dispatcher that it should create a bounded mailbox with the specified push timeout
