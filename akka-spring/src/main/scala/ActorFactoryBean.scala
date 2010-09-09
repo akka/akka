@@ -55,7 +55,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   @BeanProperty var property: PropertyEntries = _
   @BeanProperty var applicationContext: ApplicationContext = _
 
-  // Holds info about if deps has been set or not. Depends on
+  // Holds info about if deps have been set or not. Depends on
   // if interface is specified or not. We must set deps on
   // target instance if interface is specified
   var hasSetDependecies = false

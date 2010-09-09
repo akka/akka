@@ -39,8 +39,6 @@
     <xsd:restriction base="xsd:token">
       <xsd:enumeration value="executor-based-event-driven"/>
       <xsd:enumeration value="executor-based-event-driven-work-stealing"/>
-      <xsd:enumeration value="reactor-based-thread-pool-event-driven"/>
-      <xsd:enumeration value="reactor-based-single-thread-event-driven"/>
       <xsd:enumeration value="thread-based"/>
       <xsd:enumeration value="hawt"/>
     </xsd:restriction>
