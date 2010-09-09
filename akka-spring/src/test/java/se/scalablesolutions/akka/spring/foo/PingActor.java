@@ -6,6 +6,8 @@ import se.scalablesolutions.akka.actor.ActorRef;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
+import java.util.concurrent.CountDownLatch;
+
 
 /**
  * test class
@@ -14,6 +16,9 @@ public class PingActor extends UntypedActor implements ApplicationContextAware {
 
   private String stringFromVal;
   private String stringFromRef;
+  public static String lastMessage = null;
+  public static CountDownLatch latch = new CountDownLatch(1);
+
 
   private boolean gotApplicationContext = false;
 
@@ -42,7 +47,6 @@ public class PingActor extends UntypedActor implements ApplicationContextAware {
     stringFromRef = s;
   }
 
-
   private String longRunning() {
     try {
       Thread.sleep(6000);
@@ -53,12 +57,12 @@ public class PingActor extends UntypedActor implements ApplicationContextAware {
 
   public void onReceive(Object message) throws Exception {
     if (message instanceof String) {
-      System.out.println("Ping received String message: " + message);
+      lastMessage = (String) message;
       if (message.equals("longRunning")) {
-        System.out.println("### starting pong");
         ActorRef pongActor = UntypedActor.actorOf(PongActor.class).start();
         pongActor.sendRequestReply("longRunning", getContext());
       }
+    latch.countDown();
     } else {
       throw new IllegalArgumentException("Unknown message: " + message);
     }

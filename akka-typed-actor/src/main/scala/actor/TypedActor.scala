@@ -389,7 +389,8 @@ object TypedActor extends Logging {
     typedActor.initialize(proxy)
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, None, config.timeout))
+    if (config._host.isDefined) actorRef.makeRemote(config._host.get)
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, config._host, config.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }

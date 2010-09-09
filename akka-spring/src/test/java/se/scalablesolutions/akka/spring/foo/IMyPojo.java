@@ -8,14 +8,12 @@ package se.scalablesolutions.akka.spring.foo;
  * To change this template use File | Settings | File Templates.
  */
 public interface IMyPojo {
+  public void oneWay(String message);
+
   public String getFoo();
 
-  public String getBar();
-
-  public void preRestart();
-
-  public void postRestart();
-
   public String longRunning();
+
+
 
 }
