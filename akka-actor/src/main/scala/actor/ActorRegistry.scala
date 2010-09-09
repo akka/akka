@@ -164,10 +164,11 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
     //Returns whether it needs to be retried or not
     def tryPut(set: JSet[V], v: V): Boolean = {
       set.synchronized {
-          if (!set.isEmpty) {
+          if (set.isEmpty) true //IF the set is empty then it has been removed, so signal retry
+          else { //Else add the value to the set and signal that retry is not needed
             set add v
             false
-          } else true
+          }
       }
     }
 
@@ -214,13 +215,13 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
     val set = container get key
     if (set ne null) {
       set.synchronized {
-        if (set.remove(value)) {
-          if (set.isEmpty)
-            container.remove(key,emptySet)
+        if (set.remove(value)) { //If we can remove the value
+          if (set.isEmpty)       //and the set becomes empty
+            container.remove(key,emptySet) //We try to remove the key if it's mapped to an empty set
         }
       }
     }
   }
 
-  def clear = container.clear
+  def clear = { foreach(remove _) }
 }
