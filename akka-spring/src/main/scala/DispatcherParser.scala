@@ -48,8 +48,7 @@ trait DispatcherParser extends BeanParser {
 
     val threadPoolElement = DomUtils.getChildElementByTagName(dispatcherElement, THREAD_POOL_TAG);
     if (threadPoolElement != null) {
-      if (properties.dispatcherType == REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN ||
-          properties.dispatcherType == THREAD_BASED) {
+      if (properties.dispatcherType == THREAD_BASED) {
         throw new IllegalArgumentException("Element 'thread-pool' not allowed for this dispatcher type.")
       }
       val threadPoolProperties = parseThreadPool(threadPoolElement)

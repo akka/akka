@@ -66,13 +66,6 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
       <akka:thread-pool queue="synchronous-queue" fairness="true" />
   </akka:dispatcher>
 
-  <!-- reactor-based-thread-pool-event-driven-dispatcher with synchronous-queue -->
-  <akka:dispatcher id="reactor-based-thread-pool-event-driven-dispatcher" type="reactor-based-thread-pool-event-driven" name="myDispatcher">
-      <akka:thread-pool queue="synchronous-queue" fairness="true" />
-  </akka:dispatcher>
-
-  <akka:dispatcher id="reactor-based-single-thread-event-driven-dispatcher" type="reactor-based-single-thread-event-driven" name="myDispatcher" />
-
   <!-- executor-based-event-driven-work-stealing-dispatcher -->
   <akka:dispatcher id="executor-based-event-driven-work-stealing-dispatcher" type="executor-based-event-driven-work-stealing" name="workStealingDispatcher" />
 

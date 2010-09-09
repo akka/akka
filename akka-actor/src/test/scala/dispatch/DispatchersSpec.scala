@@ -28,13 +28,9 @@ object DispatchersSpec {
   def ofType[T <: MessageDispatcher : Manifest]: (MessageDispatcher) => Boolean = _.getClass == manifest[T].erasure
 
   def typesAndValidators: Map[String,(MessageDispatcher) => Boolean] = Map(
-    "ReactorBasedSingleThreadEventDriven"       -> ofType[ReactorBasedSingleThreadEventDrivenDispatcher],
     "ExecutorBasedEventDrivenWorkStealing"      -> ofType[ExecutorBasedEventDrivenWorkStealingDispatcher],
     "ExecutorBasedEventDriven"                  -> ofType[ExecutorBasedEventDrivenDispatcher],
-    "ReactorBasedThreadPoolEventDriven"         -> ofType[ReactorBasedThreadPoolEventDrivenDispatcher],
     "Hawt"                                      -> ofType[HawtDispatcher],
-    "GlobalReactorBasedSingleThreadEventDriven" -> instance(globalReactorBasedSingleThreadEventDrivenDispatcher),
-    "GlobalReactorBasedThreadPoolEventDriven"   -> instance(globalReactorBasedThreadPoolEventDrivenDispatcher),
     "GlobalExecutorBasedEventDriven"            -> instance(globalExecutorBasedEventDrivenDispatcher),
     "GlobalHawt"                                -> instance(globalHawtDispatcher)
   )
