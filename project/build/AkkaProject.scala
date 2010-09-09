@@ -49,6 +49,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
+    lazy val CasbahRepoSnapshots  = MavenRepository("Casbah Snapshot Repo", "http://repo.bumnetworks.com/snapshots/")
+    lazy val CasbahRepoReleases   = MavenRepository("Casbah Snapshot Repo", "http://repo.bumnetworks.com/releases/")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -75,6 +77,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
   lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
+  lazy val casbahSnapshot          = ModuleConfiguration("com.novus",CasbahRepoSnapshots)
+  lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -166,6 +170,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val mongo = "org.mongodb" % "mongo-java-driver" % "2.0" % "compile"
 
+    lazy val casbah = "com.novus" % "casbah_2.8.0" % "1.0.8.5" % "compile"
+
+    lazy val time = "org.scala-tools" % "time" % "2.8.0-SNAPSHOT-0.2-SNAPSHOT" % "compile"
+
     lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive
 
     lazy val netty = "org.jboss.netty" % "netty" % "3.2.2.Final" % "compile"
@@ -180,7 +188,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
-    lazy val sjson = "sjson.json" % "sjson" % "0.7-2.8.0" % "compile"
+    lazy val sjson = "sjson.json" % "sjson" % "0.8-SNAPSHOT-2.8.0" % "compile"
 
     lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile"
 
@@ -483,8 +491,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaMongoProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val mongo = Dependencies.mongo
+    val casbah = Dependencies.casbah
 
-    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    // override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
   // -------------------------------------------------------------------------------------------------------------------
