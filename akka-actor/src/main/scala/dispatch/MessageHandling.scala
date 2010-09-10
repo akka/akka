@@ -8,10 +8,10 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationExce
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.util.{Duration, HashCode, Logging}
 import java.util.{Queue, List}
 import java.util.concurrent._
 import concurrent.forkjoin.LinkedTransferQueue
+import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -63,6 +63,7 @@ class MessageQueueAppendFailedException(message: String) extends AkkaException(m
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageQueue {
+  val dispatcherLock = new SimpleLock
   def enqueue(handle: MessageInvocation)
   def dequeue(): MessageInvocation
   def size: Int
@@ -84,39 +85,27 @@ case class MailboxConfig(capacity: Int, pushTimeOut: Option[Duration], blockingD
    */
   def newMailbox(bounds: Int = capacity,
                  pushTime: Option[Duration] = pushTimeOut,
-                 blockDequeue: Boolean = blockingDequeue) : MessageQueue = {
-    if (bounds <= 0) { //UNBOUNDED: Will never block enqueue and optionally blocking dequeue
-      new LinkedTransferQueue[MessageInvocation] with MessageQueue {
-        def enqueue(handle: MessageInvocation): Unit = this add handle
-        def dequeue(): MessageInvocation = {
-          if(blockDequeue) this.take()
-          else this.poll()
-        }
-      }
-    }
-    else if (pushTime.isDefined) { //BOUNDED: Timeouted enqueue with MessageQueueAppendFailedException and optionally blocking dequeue
-      val time = pushTime.get
-      new BoundedTransferQueue[MessageInvocation](bounds) with MessageQueue {
-        def enqueue(handle: MessageInvocation) {
-          if (!this.offer(handle,time.length,time.unit))
-            throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + this.toString)
-        }
+                 blockDequeue: Boolean = blockingDequeue) : MessageQueue = new DefaultMessageQueue(bounds,pushTime,blockDequeue)
+}
 
-        def dequeue(): MessageInvocation = {
-          if (blockDequeue) this.take()
-          else this.poll()
-        }
+class DefaultMessageQueue(override val capacity: Int, pushTimeOut: Option[Duration], blockDequeue: Boolean) extends BoundableTransferQueue[MessageInvocation](capacity) with MessageQueue {
+  def enqueue(handle: MessageInvocation) {
+    if(bounded) {
+      if (pushTimeOut.isDefined) {
+        if(!this.offer(handle,pushTimeOut.get.length,pushTimeOut.get.unit))
+          throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + this.toString)
       }
-    }
-    else { //BOUNDED: Blocking enqueue and optionally blocking dequeue
-      new LinkedBlockingQueue[MessageInvocation](bounds) with MessageQueue {
-        def enqueue(handle: MessageInvocation): Unit = this put handle
-        def dequeue(): MessageInvocation = {
-          if(blockDequeue) this.take()
-          else this.poll()
-        }
+      else {
+        this.put(handle)
       }
+    } else {
+      this.add(handle)
     }
+  }
+  
+  def dequeue(): MessageInvocation = {
+    if (blockDequeue) this.take()
+    else this.poll()
   }
 }
 
@@ -156,14 +145,4 @@ trait MessageDispatcher extends Logging {
    *  Creates and returns a mailbox for the given actor
    */
   protected def createMailbox(actorRef: ActorRef): AnyRef = null
-}
-
-/**
- *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait MessageDemultiplexer {
-  def select
-  def wakeUp
-  def acquireSelectedInvocations: List[MessageInvocation]
-  def releaseSelectedInvocations
 }

@@ -56,21 +56,14 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[Deque[MessageInvocation]]
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[Deque[MessageInvocation] with MessageQueue with Runnable]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
   def dispatch(invocation: MessageInvocation) = if (active) {
-    getMailbox(invocation.receiver).add(invocation)
-    executor.execute(new Runnable() {
-      def run = {
-        if (!tryProcessMailbox(invocation.receiver)) {
-          // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
-          // to another actor and then process his mailbox in stead.
-          findThief(invocation.receiver).foreach( tryDonateAndProcessMessages(invocation.receiver,_) )
-        }
-      }
-    })
+    val mbox = getMailbox(invocation.receiver)
+    mbox enqueue invocation
+    executor execute mbox
   } else throw new IllegalActorStateException("Can't submit invocations to dispatcher since it's not started")
 
   /**
@@ -79,22 +72,21 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    *
    * @return true if the mailbox was processed, false otherwise
    */
-  private def tryProcessMailbox(receiver: ActorRef): Boolean = {
+  private def tryProcessMailbox(mailbox: MessageQueue): Boolean = {
     var lockAcquiredOnce = false
-    val lock = receiver.dispatcherLock
 
     // this do-wile loop is required to prevent missing new messages between the end of processing
     // the mailbox and releasing the lock
     do {
-      if (lock.tryLock) {
+      if (mailbox.dispatcherLock.tryLock) {
         lockAcquiredOnce = true
         try {
-          processMailbox(receiver)
+          processMailbox(mailbox)
         } finally {
-          lock.unlock
+          mailbox.dispatcherLock.unlock
         }
       }
-    } while ((lockAcquiredOnce && !getMailbox(receiver).isEmpty))
+    } while ((lockAcquiredOnce && !mailbox.isEmpty))
 
     lockAcquiredOnce
   }
@@ -102,12 +94,11 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   /**
    * Process the messages in the mailbox of the given actor.
    */
-  private def processMailbox(receiver: ActorRef) = {
-    val mailbox = getMailbox(receiver)
-    var messageInvocation = mailbox.poll
-    while (messageInvocation != null) {
+  private def processMailbox(mailbox: MessageQueue) = {
+    var messageInvocation = mailbox.dequeue
+    while (messageInvocation ne null) {
       messageInvocation.invoke
-      messageInvocation = mailbox.poll
+      messageInvocation = mailbox.dequeue
     }
   }
 
@@ -145,11 +136,12 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * the thiefs dispatching lock, because in that case another thread is already processing the thiefs mailbox.
    */
   private def tryDonateAndProcessMessages(receiver: ActorRef, thief: ActorRef) = {
-    if (thief.dispatcherLock.tryLock) {
+    val mailbox = getMailbox(thief)
+    if (mailbox.dispatcherLock.tryLock) {
       try {
-        while(donateMessage(receiver, thief)) processMailbox(thief)
+        while(donateMessage(receiver, thief)) processMailbox(mailbox)
       } finally {
-        thief.dispatcherLock.unlock
+        mailbox.dispatcherLock.unlock
       }
     }
   }
@@ -191,18 +183,45 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
   }
 
   protected override def createMailbox(actorRef: ActorRef): AnyRef = {
-    if (mailboxCapacity <= 0) new ConcurrentLinkedDeque[MessageInvocation]
-    else new LinkedBlockingDeque[MessageInvocation](mailboxCapacity)
+    if (mailboxCapacity <= 0) {
+      new ConcurrentLinkedDeque[MessageInvocation] with MessageQueue with Runnable {
+        def enqueue(handle: MessageInvocation): Unit = this.add(handle)
+        def dequeue: MessageInvocation = this.poll()
+
+        def run = {
+          if (!tryProcessMailbox(this)) {
+            // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
+            // to another actor and then process his mailbox in stead.
+            findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
+          }
+        }
+      }
+    }
+    else {
+      new LinkedBlockingDeque[MessageInvocation](mailboxCapacity) with MessageQueue with Runnable {
+        def enqueue(handle: MessageInvocation): Unit = this.add(handle)
+
+        def dequeue: MessageInvocation = this.poll()
+
+        def run = {
+          if (!tryProcessMailbox(this)) {
+            // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
+            // to another actor and then process his mailbox in stead.
+            findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
+          }
+        }
+      }
+    }
   }
 
   override def register(actorRef: ActorRef) = {
     verifyActorsAreOfSameType(actorRef)
-    pooledActors.add(actorRef)
+    pooledActors add actorRef
     super.register(actorRef)
   }
 
   override def unregister(actorRef: ActorRef) = {
-    pooledActors.remove(actorRef)
+    pooledActors remove actorRef
     super.unregister(actorRef)
   }
 
