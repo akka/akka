@@ -46,7 +46,7 @@ class MongoStorageSpec extends
       new String(getMapStorageEntryFor("t1", "odersky".getBytes).get) should equal("scala")
       getMapStorageEntryFor("t1", "torvalds".getBytes) should equal(None)
 
-      evaluating { getMapStorageEntryFor("t2", "torvalds".getBytes) } should produce [NoSuchElementException]
+      getMapStorageEntryFor("t2", "torvalds".getBytes) should equal(None)
 
       getMapStorageFor("t1").map { case (k, v) => (new String(k), new String(v)) } should equal (l)
 
@@ -54,7 +54,7 @@ class MongoStorageSpec extends
       getMapStorageSizeFor("t1") should equal(2)
 
       removeMapStorageFor("t1")
-      evaluating { getMapStorageSizeFor("t1") } should produce [NoSuchElementException]
+      getMapStorageSizeFor("t1") should equal(0)
     }
 
     it("should do proper range queries") {

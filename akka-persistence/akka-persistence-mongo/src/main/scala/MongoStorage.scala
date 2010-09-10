@@ -29,7 +29,7 @@ object MongoStorage extends Storage {
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class MongoPersistentMap(id: String) extends PersistentMap[Array[Byte], Array[Byte]] {
+class MongoPersistentMap(id: String) extends PersistentMapBinary {
   val uuid = id
   val storage = MongoStorageBackend
 }

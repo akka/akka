@@ -29,7 +29,7 @@ object CassandraStorage extends Storage {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class CassandraPersistentMap(id: String) extends PersistentMap[Array[Byte], Array[Byte]] {
+class CassandraPersistentMap(id: String) extends PersistentMapBinary {
   val uuid = id
   val storage = CassandraStorageBackend
 }
