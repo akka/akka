@@ -197,12 +197,6 @@ trait ActorRef extends
   @volatile private[akka] var _transactionFactory: Option[TransactionFactory] = None
 
   /**
-   * This lock ensures thread safety in the dispatching: only one message can
-   * be dispatched at once on the actor.
-   */
-  protected[akka] val dispatcherLock = new ReentrantLock
-
-  /**
    * This is a reference to the message currently being processed by the actor
    */
   protected[akka] var _currentMessage: Option[MessageInvocation] = None

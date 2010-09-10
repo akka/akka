@@ -81,72 +81,70 @@ class ExecutorBasedEventDrivenDispatcher(
   init
 
   def dispatch(invocation: MessageInvocation) = {
-    getMailbox(invocation.receiver) enqueue invocation
-    dispatch(invocation.receiver)
+    val mbox = getMailbox(invocation.receiver)
+    mbox enqueue invocation
+    dispatch(mbox)
   }
 
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue]
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with Runnable]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  override def createMailbox(actorRef: ActorRef): AnyRef = mailboxConfig.newMailbox(bounds = mailboxCapacity, blockDequeue = false)
-
-  def dispatch(receiver: ActorRef): Unit = if (active) {
-
-    executor.execute(new Runnable() {
-      def run = {
-        var lockAcquiredOnce = false
-        var finishedBeforeMailboxEmpty = false
-        val lock = receiver.dispatcherLock
-        val mailbox = getMailbox(receiver)
-        // this do-while loop is required to prevent missing new messages between the end of the inner while
-        // loop and releasing the lock
-        do {
-          if (lock.tryLock) {
-            // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
-            lockAcquiredOnce = true
-            try {
-              finishedBeforeMailboxEmpty = processMailbox(receiver,mailbox)
-            } finally {
-              lock.unlock
-              if (finishedBeforeMailboxEmpty) dispatch(receiver)
-            }
+  override def createMailbox(actorRef: ActorRef): AnyRef = new DefaultMessageQueue(mailboxCapacity,mailboxConfig.pushTimeOut,false) with Runnable {
+    def run = {
+      var lockAcquiredOnce = false
+      var finishedBeforeMailboxEmpty = false
+      // this do-while loop is required to prevent missing new messages between the end of the inner while
+      // loop and releasing the lock
+      do {
+        if (dispatcherLock.tryLock()) {
+          // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
+          lockAcquiredOnce = true
+          try {
+            finishedBeforeMailboxEmpty = processMailbox()
+          } finally {
+            dispatcherLock.unlock()
+            if (finishedBeforeMailboxEmpty)
+              dispatch(this)
           }
-        } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !mailbox.isEmpty))
-      }
-    })
-  } else {
-    log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, receiver)
-  }
-
+        }
+      } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !this.isEmpty))
+    }
 
   /**
-   * Process the messages in the mailbox of the given actor.
+   * Process the messages in the mailbox
    *
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
-  def processMailbox(receiver: ActorRef,mailbox: MessageQueue): Boolean = {
-    val throttle = throughput > 0
-    var processedMessages = 0
-    var nextMessage = mailbox.dequeue
-    if (nextMessage ne null) {
-      do {
-        nextMessage.invoke
+    def processMailbox(): Boolean = {
+      val throttle = throughput > 0
+      var processedMessages = 0
+      var nextMessage = this.dequeue
+      if (nextMessage ne null) {
+        do {
+          nextMessage.invoke
 
-        if(throttle) { //Will be JIT:Ed away when false
-          processedMessages += 1
-          if (processedMessages >= throughput) //If we're throttled, break out
-            return !mailbox.isEmpty
+          if(throttle) { //Will be JIT:Ed away when false
+            processedMessages += 1
+            if (processedMessages >= throughput) //If we're throttled, break out
+              return !this.isEmpty
+          }
+          nextMessage = this.dequeue
         }
-        nextMessage = mailbox.dequeue
+        while (nextMessage ne null)
       }
-      while (nextMessage ne null)
-    }
 
-    false
+      false
+    }
+  }
+
+  def dispatch(mailbox: MessageQueue with Runnable): Unit = if (active) {
+    executor.execute(mailbox)
+  } else {
+    log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, mailbox)
   }
 
   def start = if (!active) {

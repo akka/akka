@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.util
 
 import java.util.concurrent.locks.{ReentrantReadWriteLock, ReentrantLock}
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -58,3 +59,50 @@ class ReadWriteGuard {
   }
 }
 
+/**
+ * A very simple lock that uses CCAS (Compare Compare-And-Swap)
+ * Does not keep track of the owner and isn't Reentrant, so don't nest and try to stick to the if*-methods
+ */
+class SimpleLock {
+  val acquired = new AtomicBoolean(false)
+
+  def ifPossible(perform: () => Unit): Boolean = {
+    if (tryLock()) {
+      try {
+        perform
+      } finally {
+        unlock()
+      }
+      true
+    } else false
+  }
+
+  def ifPossibleYield[T](perform: () => T): Option[T] = {
+    if (tryLock()) {
+      try {
+        Some(perform())
+      } finally {
+        unlock()
+      }
+    } else None
+  }
+  
+  def ifPossibleApply[T,R](value: T)(function: (T) => R): Option[R] = {
+    if (tryLock()) {
+      try {
+        Some(function(value))
+      } finally {
+        unlock()
+      }
+    } else None
+  }
+
+  def tryLock() = {
+    if (acquired.get) false
+    else acquired.compareAndSet(false,true)
+  }
+
+  def unlock() {
+    acquired.set(false)
+  }
+}
