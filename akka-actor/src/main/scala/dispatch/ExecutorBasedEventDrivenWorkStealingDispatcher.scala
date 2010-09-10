@@ -200,7 +200,6 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     else {
       new LinkedBlockingDeque[MessageInvocation](mailboxCapacity) with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
-
         def dequeue: MessageInvocation = this.poll()
 
         def run = {
