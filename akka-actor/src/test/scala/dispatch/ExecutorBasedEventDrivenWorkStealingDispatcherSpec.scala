@@ -5,11 +5,10 @@ import org.scalatest.junit.JUnitSuite
 
 import org.junit.Test
 
-import se.scalablesolutions.akka.dispatch.Dispatchers
-
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 import se.scalablesolutions.akka.actor.{IllegalActorStateException, Actor}
 import Actor._
+import se.scalablesolutions.akka.dispatch.{MessageQueue, Dispatchers}
 
 object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
   val delayableActorDispatcher = Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher("pooled-dispatcher")
@@ -18,7 +17,7 @@ object ExecutorBasedEventDrivenWorkStealingDispatcherSpec {
 
   class DelayableActor(name: String, delay: Int, finishedCounter: CountDownLatch) extends Actor {
     self.dispatcher = delayableActorDispatcher
-    var invocationCount = 0
+    @volatile var invocationCount = 0
     self.id = name
 
     def receive = {
@@ -61,10 +60,14 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     val slow = actorOf(new DelayableActor("slow", 50, finishedCounter)).start
     val fast = actorOf(new DelayableActor("fast", 10, finishedCounter)).start
 
+    var sentToFast = 0
+
     for (i <- 1 to 100) {
       // send most work to slow actor
-      if (i % 20 == 0)
+      if (i % 20 == 0) {
         fast ! i
+        sentToFast += 1
+      }
       else
         slow ! i
     }
@@ -72,13 +75,18 @@ class ExecutorBasedEventDrivenWorkStealingDispatcherSpec extends JUnitSuite with
     // now send some messages to actors to keep the dispatcher dispatching messages
     for (i <- 1 to 10) {
       Thread.sleep(150)
-      if (i % 2 == 0)
+      if (i % 2 == 0) {
         fast ! i
+        sentToFast += 1
+      }
       else
         slow ! i
     }
 
     finishedCounter.await(5, TimeUnit.SECONDS)
+    fast.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
+    slow.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
+    fast.actor.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
     fast.actor.asInstanceOf[DelayableActor].invocationCount must be >
     (slow.actor.asInstanceOf[DelayableActor].invocationCount)
     slow.stop
