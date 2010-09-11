@@ -81,7 +81,7 @@ private[akka] object MongoStorageBackend extends
 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = queryFor(name) { (q, dbo) =>
     dbo.map { d => 
-      Option(d.get(new String(key))).asInstanceOf[Option[Array[Byte]]]
+      d.getAs[Array[Byte]](new String(key))
     }.getOrElse(None)
   }
 
@@ -118,7 +118,7 @@ private[akka] object MongoStorageBackend extends
 
       // slice from keys: both ends inclusive
       val ks = keys.slice(keys.indexOf(s), scala.math.min(count, keys.indexOf(f) + 1))
-      ks.map(k => (k.getBytes, d.get(k).asInstanceOf[Array[Byte]]))
+      ks.map(k => (k.getBytes, d.getAs[Array[Byte]](k).get))
     }.getOrElse(List.empty[(Array[Byte], Array[Byte])])
   }
 
@@ -224,7 +224,7 @@ private[akka] object MongoStorageBackend extends
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = queryFor(name) { (q, dbo) =>
     dbo.map { d => 
-      Option(d.get(REF)).asInstanceOf[Option[Array[Byte]]]
+      d.getAs[Array[Byte]](REF)
     }.getOrElse(None)
   }
 }
