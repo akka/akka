@@ -102,6 +102,12 @@ class SimpleLock {
     else acquired.compareAndSet(false,true)
   }
 
+  def tryUnlock() = {
+    acquired.compareAndSet(true,false)
+  }
+
+  def locked = acquired.get
+
   def unlock() {
     acquired.set(false)
   }
