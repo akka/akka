@@ -85,28 +85,36 @@ case class MailboxConfig(capacity: Int, pushTimeOut: Option[Duration], blockingD
    */
   def newMailbox(bounds: Int = capacity,
                  pushTime: Option[Duration] = pushTimeOut,
-                 blockDequeue: Boolean = blockingDequeue) : MessageQueue = new DefaultMessageQueue(bounds,pushTime,blockDequeue)
+                 blockDequeue: Boolean = blockingDequeue) : MessageQueue =
+    if (capacity > 0) new DefaultBoundedMessageQueue(bounds,pushTime,blockDequeue)
+    else new DefaultUnboundedMessageQueue(blockDequeue)
 }
 
-class DefaultMessageQueue(override val capacity: Int, pushTimeOut: Option[Duration], blockDequeue: Boolean) extends BoundableTransferQueue[MessageInvocation](capacity) with MessageQueue {
-  def enqueue(handle: MessageInvocation) {
-    if(bounded) {
-      if (pushTimeOut.isDefined) {
-        if(!this.offer(handle,pushTimeOut.get.length,pushTimeOut.get.unit))
-          throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + this.toString)
-      }
-      else {
-        this.put(handle)
-      }
-    } else {
-      this.add(handle)
-    }
+class DefaultUnboundedMessageQueue(blockDequeue: Boolean) extends LinkedBlockingQueue[MessageInvocation] with MessageQueue {
+  final def enqueue(handle: MessageInvocation) {
+    this add handle
   }
-  
-  def dequeue(): MessageInvocation = {
+
+  final def dequeue(): MessageInvocation =
     if (blockDequeue) this.take()
     else this.poll()
+}
+
+class DefaultBoundedMessageQueue(capacity: Int, pushTimeOut: Option[Duration], blockDequeue: Boolean) extends LinkedBlockingQueue[MessageInvocation](capacity) with MessageQueue {
+  final def enqueue(handle: MessageInvocation) {
+    if (pushTimeOut.isDefined) {
+      if(!this.offer(handle,pushTimeOut.get.length,pushTimeOut.get.unit))
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
+    }
+    else {
+      this put handle
+    }
   }
+
+  final def dequeue(): MessageInvocation =
+    if (blockDequeue) this.take()
+    else this.poll()
+
 }
 
 /**
@@ -128,7 +136,7 @@ trait MessageDispatcher extends Logging {
   }
   def unregister(actorRef: ActorRef) = {
     uuids remove actorRef.uuid
-    //actorRef.mailbox = null //FIXME should we null out the mailbox here?
+    actorRef.mailbox = null
     if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
   }
   
