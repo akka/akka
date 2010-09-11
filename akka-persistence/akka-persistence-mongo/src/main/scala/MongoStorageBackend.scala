@@ -46,22 +46,24 @@ private[akka] object MongoStorageBackend extends
   }
 
   def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) {
-    val q: DBObject = MongoDBObject(KEY -> name)
-    coll.findOne(q) match {
-      case Some(dbo) => 
-        entries.foreach { case (k, v) => dbo += new String(k) -> v }
-        coll.update(q, dbo, true, false)
-      case None => 
-        val builder = MongoDBObject.newBuilder
-        builder += KEY -> name
-        entries.foreach { case (k, v) => builder += new String(k) -> v }
-        coll += builder.result.asDBObject
+    db.safely { db =>
+      val q: DBObject = MongoDBObject(KEY -> name)
+      coll.findOne(q) match {
+        case Some(dbo) => 
+          entries.foreach { case (k, v) => dbo += new String(k) -> v }
+          db.safely { db => coll.update(q, dbo, true, false) }
+        case None => 
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          entries.foreach { case (k, v) => builder += new String(k) -> v }
+          coll += builder.result.asDBObject
+      }
     }
   }
 
   def removeMapStorageFor(name: String): Unit = {
     val q: DBObject = MongoDBObject(KEY -> name)
-    coll.remove(q)
+    db.safely { db => coll.remove(q) }
   }
 
 
@@ -73,7 +75,7 @@ private[akka] object MongoStorageBackend extends
   def removeMapStorageFor(name: String, key: Array[Byte]): Unit = queryFor(name) { (q, dbo) =>
     dbo.foreach { d =>
       d -= new String(key)
-      coll.update(q, d, true, false)
+      db.safely { db => coll.update(q, d, true, false) }
     }
   }
 
@@ -128,37 +130,39 @@ private[akka] object MongoStorageBackend extends
     // lookup with name
     val q: DBObject = MongoDBObject(KEY -> name)
 
-    coll.findOne(q) match {
-      // exists : need to update
-      case Some(dbo) => 
-        dbo -= KEY
-        dbo -= "_id"
-        val listBuilder = MongoDBList.newBuilder
+    db.safely { db =>
+      coll.findOne(q) match {
+        // exists : need to update
+        case Some(dbo) => 
+          dbo -= KEY
+          dbo -= "_id"
+          val listBuilder = MongoDBList.newBuilder
 
-        // expensive!
-        listBuilder ++= (elements ++ dbo.toSeq.sortWith((e1, e2) => (e1._1.toInt < e2._1.toInt)).map(_._2))
+          // expensive!
+          listBuilder ++= (elements ++ dbo.toSeq.sortWith((e1, e2) => (e1._1.toInt < e2._1.toInt)).map(_._2))
 
-        val builder = MongoDBObject.newBuilder
-        builder += KEY -> name
-        builder ++= listBuilder.result
-        coll.update(q, builder.result.asDBObject, true, false)
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          builder ++= listBuilder.result
+          coll.update(q, builder.result.asDBObject, true, false)
 
-      // new : just add
-      case None => 
-        val listBuilder = MongoDBList.newBuilder
-        listBuilder ++= elements
+        // new : just add
+        case None => 
+          val listBuilder = MongoDBList.newBuilder
+          listBuilder ++= elements
 
-        val builder = MongoDBObject.newBuilder
-        builder += KEY -> name
-        builder ++= listBuilder.result
-        coll += builder.result.asDBObject
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          builder ++= listBuilder.result
+          coll += builder.result.asDBObject
+      }
     }
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = queryFor(name) { (q, dbo) =>
     dbo.foreach { d =>
       d += ((index.toString, elem))
-      coll.update(q, d, true, false)
+      db.safely { db => coll.update(q, d, true, false) }
     }
   }
 
@@ -201,18 +205,20 @@ private[akka] object MongoStorageBackend extends
     // lookup with name
     val q: DBObject = MongoDBObject(KEY -> name)
 
-    coll.findOne(q) match {
-      // exists : need to update
-      case Some(dbo) => 
-        dbo += ((REF, element))
-        coll.update(q, dbo, true, false)
+    db.safely { db =>
+      coll.findOne(q) match {
+        // exists : need to update
+        case Some(dbo) => 
+          dbo += ((REF, element))
+          coll.update(q, dbo, true, false)
 
-      // not found : make one
-      case None => 
-        val builder = MongoDBObject.newBuilder
-        builder += KEY -> name
-        builder += REF -> element
-        coll += builder.result.asDBObject
+        // not found : make one
+        case None => 
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          builder += REF -> element
+          coll += builder.result.asDBObject
+      }
     }
   }
 
