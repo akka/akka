@@ -45,7 +45,7 @@ import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
  */
 object Dispatchers extends Logging {
   val THROUGHPUT          = config.getInt("akka.actor.throughput", 5)
-  val MAILBOX_CAPACITY    = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
+  val MAILBOX_CAPACITY    = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
   val MAILBOX_CONFIG      = MailboxConfig(
     capacity = Dispatchers.MAILBOX_CAPACITY,
     pushTimeOut = config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS)),
