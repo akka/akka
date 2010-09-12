@@ -83,20 +83,32 @@ class ExecutorBasedEventDrivenDispatcher(
   /**
    * This is the behavior of an ExecutorBasedEventDrivenDispatchers mailbox
    */
-  trait ExecutableMailbox { self: MessageQueue with Runnable =>
+  trait ExecutableMailbox extends Runnable { self: MessageQueue =>
     def run = {
-      try {
-        val reDispatch = processMailbox()//Returns true if we need to reschedule the processing
-        self.dispatcherLock.unlock() //Unlock to give a chance for someone else to schedule processing
-        if (reDispatch)
-          dispatch(self)
-      } catch {
-        case e =>
-          dispatcherLock.unlock() //Unlock to give a chance for someone else to schedule processing
-          if(!self.isEmpty) //If the mailbox isn't empty, try to re-schedule processing, equivalent to reDispatch
-            dispatch(self)
-          throw e //Can't just swallow exceptions or errors
-      }
+      var lockAcquiredOnce = false
+      var finishedBeforeMailboxEmpty = false
+      // this do-while loop is required to prevent missing new messages between the end of the inner while
+      // loop and releasing the lock
+      do {
+        finishedBeforeMailboxEmpty = false
+        if (dispatcherLock.tryLock()) {
+          // Only dispatch if we got the lock. Otherwise another thread is already dispatching.
+          lockAcquiredOnce = true
+          try {
+            finishedBeforeMailboxEmpty = processMailbox()
+          } catch {
+            case e =>
+              dispatcherLock.unlock()
+              if (!self.isEmpty)
+                registerForExecution(self)
+            throw e
+          }
+
+          dispatcherLock.unlock()
+          if (finishedBeforeMailboxEmpty)
+            registerForExecution(self)
+        }
+      } while ((lockAcquiredOnce && !finishedBeforeMailboxEmpty && !self.isEmpty))
     }
 
   /**
@@ -129,28 +141,25 @@ class ExecutorBasedEventDrivenDispatcher(
   def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
-    dispatch(mbox)
+    registerForExecution(mbox)
   }
 
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with Runnable]
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue with ExecutableMailbox]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  override def createMailbox(actorRef: ActorRef): AnyRef =
-    if (mailboxCapacity > 0) new DefaultBoundedMessageQueue(mailboxCapacity,mailboxConfig.pushTimeOut,blockDequeue = false) with Runnable with ExecutableMailbox
-    else new DefaultUnboundedMessageQueue(blockDequeue = false) with Runnable with ExecutableMailbox
+  override def createMailbox(actorRef: ActorRef): AnyRef = {
+    if (mailboxCapacity > 0)
+      new DefaultBoundedMessageQueue(mailboxCapacity,mailboxConfig.pushTimeOut,blockDequeue = false) with ExecutableMailbox
+    else
+      new DefaultUnboundedMessageQueue(blockDequeue = false) with ExecutableMailbox
+  }
 
-  def dispatch(mailbox: MessageQueue with Runnable): Unit = if (active) {
-    if (mailbox.dispatcherLock.tryLock()) {//Ensure that only one runnable can be in the executor pool at the same time
-      try {
-        executor execute mailbox
-      } catch {
-        case e: RejectedExecutionException => mailbox.dispatcherLock.unlock()
-      }
-    }
+  protected def registerForExecution(mailbox: MessageQueue with ExecutableMailbox): Unit = if (active) {
+    executor execute mailbox
   } else {
     log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, mailbox)
   }
@@ -167,8 +176,10 @@ class ExecutorBasedEventDrivenDispatcher(
     uuids.clear
   }
 
-  def ensureNotActive(): Unit = if (active) throw new IllegalActorStateException(
+  def ensureNotActive(): Unit = if (active) {
+    throw new IllegalActorStateException(
     "Can't build a new thread pool for a dispatcher that is already up and running")
+  }
 
   override def toString = "ExecutorBasedEventDrivenDispatcher[" + name + "]"
 
