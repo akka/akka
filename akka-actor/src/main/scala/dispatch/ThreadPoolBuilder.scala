@@ -11,7 +11,6 @@ import ThreadPoolExecutor.CallerRunsPolicy
 
 import se.scalablesolutions.akka.actor.IllegalActorStateException
 import se.scalablesolutions.akka.util.{Logger, Logging}
-import concurrent.forkjoin.LinkedTransferQueue
 
 trait ThreadPoolBuilder extends Logging {
   val name: String
@@ -70,7 +69,7 @@ trait ThreadPoolBuilder extends Logging {
   def withNewBoundedThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity(bound: Int): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    blockingQueue = new LinkedTransferQueue[Runnable]
+    blockingQueue = new LinkedBlockingQueue[Runnable]
     threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory)
     boundedExecutorBound = bound
     this
@@ -79,7 +78,7 @@ trait ThreadPoolBuilder extends Logging {
   def withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity: ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    blockingQueue = new LinkedTransferQueue[Runnable]
+    blockingQueue = new LinkedBlockingQueue[Runnable]
     threadPoolBuilder = new ThreadPoolExecutor(
       NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this
@@ -88,7 +87,7 @@ trait ThreadPoolBuilder extends Logging {
   def withNewThreadPoolWithLinkedBlockingQueueWithCapacity(capacity: Int): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    blockingQueue = new BoundableTransferQueue[Runnable](capacity)
+    blockingQueue = new LinkedBlockingQueue[Runnable](capacity)
     threadPoolBuilder = new ThreadPoolExecutor(
       NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, blockingQueue, threadFactory, new CallerRunsPolicy)
     this
