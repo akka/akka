@@ -125,7 +125,7 @@ object ActorRegistry extends ListenerManagement {
     actorsByUUID.put(actor.uuid, actor)
 
     // notify listeners
-    foreachListener(_ ! ActorRegistered(actor))
+    notifyListeners(ActorRegistered(actor))
   }
 
   /**
@@ -137,7 +137,7 @@ object ActorRegistry extends ListenerManagement {
     actorsById.remove(actor.id,actor)
 
     // notify listeners
-    foreachListener(_ ! ActorUnregistered(actor))
+    notifyListeners(ActorUnregistered(actor))
   }
 
   /**

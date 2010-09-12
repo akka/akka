@@ -245,12 +245,12 @@ class RemoteServer extends Logging with ListenerManagement {
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         _isRunning = true
         Cluster.registerLocalNode(hostname, port)
-        foreachListener(_ ! RemoteServerStarted(this))
+        notifyListeners(RemoteServerStarted(this))
       }
     } catch {
       case e =>
         log.error(e, "Could not start up remote server")
-        foreachListener(_ ! RemoteServerError(e, this))
+        notifyListeners(RemoteServerError(e, this))
     }
     this
   }
@@ -263,7 +263,7 @@ class RemoteServer extends Logging with ListenerManagement {
         openChannels.close.awaitUninterruptibly
         bootstrap.releaseExternalResources
         Cluster.deregisterLocalNode(hostname, port)
-        foreachListener(_ ! RemoteServerShutdown(this))
+        notifyListeners(RemoteServerShutdown(this))
       } catch {
         case e: java.nio.channels.ClosedChannelException =>  {}
         case e => log.warning("Could not close remote server channel in a graceful way")
@@ -323,7 +323,7 @@ class RemoteServer extends Logging with ListenerManagement {
 
   protected override def manageLifeCycleOfListeners = false
 
-  protected[akka] override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
+  protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
   private[akka] def actors() : ConcurrentHashMap[String, ActorRef] = {
     RemoteServer.actorsFor(address).actors
@@ -413,18 +413,18 @@ class RemoteServerHandler(
         def operationComplete(future: ChannelFuture): Unit = {
           if (future.isSuccess) {
             openChannels.add(future.getChannel)
-            server.foreachListener(_ ! RemoteServerClientConnected(server))
+            server.notifyListeners(RemoteServerClientConnected(server))
           } else future.getChannel.close
         }
       })
     } else {
-       server.foreachListener(_ ! RemoteServerClientConnected(server))
+       server.notifyListeners(RemoteServerClientConnected(server))
     }
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     log.debug("Remote client disconnected from [%s]", server.name)
-    server.foreachListener(_ ! RemoteServerClientDisconnected(server))
+    server.notifyListeners(RemoteServerClientDisconnected(server))
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
@@ -446,7 +446,7 @@ class RemoteServerHandler(
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     log.error(event.getCause, "Unexpected exception from remote downstream")
     event.getChannel.close
-    server.foreachListener(_ ! RemoteServerError(event.getCause, server))
+    server.notifyListeners(RemoteServerError(event.getCause, server))
   }
 
   private def handleRemoteRequestProtocol(request: RemoteRequestProtocol, channel: Channel) = {
@@ -491,7 +491,7 @@ class RemoteServerHandler(
           } catch {
             case e: Throwable =>
               channel.write(createErrorReplyMessage(e, request, true))
-              server.foreachListener(_ ! RemoteServerError(e, server))
+              server.notifyListeners(RemoteServerError(e, server))
           }
         }
     }
@@ -523,10 +523,10 @@ class RemoteServerHandler(
     } catch {
       case e: InvocationTargetException =>
         channel.write(createErrorReplyMessage(e.getCause, request, false))
-        server.foreachListener(_ ! RemoteServerError(e, server))
+        server.notifyListeners(RemoteServerError(e, server))
       case e: Throwable                 =>
         channel.write(createErrorReplyMessage(e, request, false))
-        server.foreachListener(_ ! RemoteServerError(e, server))
+        server.notifyListeners(RemoteServerError(e, server))
     }
   }
 
@@ -559,7 +559,7 @@ class RemoteServerHandler(
       } catch {
         case e =>
           log.error(e, "Could not create remote actor instance")
-          server.foreachListener(_ ! RemoteServerError(e, server))
+          server.notifyListeners(RemoteServerError(e, server))
           throw e
       }
     } else actorRefOrNull
@@ -590,7 +590,7 @@ class RemoteServerHandler(
       } catch {
         case e =>
           log.error(e, "Could not create remote typed actor instance")
-          server.foreachListener(_ ! RemoteServerError(e, server))
+          server.notifyListeners(RemoteServerError(e, server))
           throw e
       }
     } else typedActorOrNull
