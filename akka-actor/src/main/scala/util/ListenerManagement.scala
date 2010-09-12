@@ -40,6 +40,23 @@ trait ListenerManagement extends Logging {
     if (manageLifeCycleOfListeners) listener.stop
   }
 
+  /*
+   * Returns whether there are any listeners currently
+   */
+  def hasListeners: Boolean = !listeners.isEmpty
+
+  protected def notifyListeners(message: => Any) {
+    if (hasListeners) {
+      val msg = message
+      val iterator = listeners.iterator
+      while (iterator.hasNext) {
+        val listener = iterator.next
+        if (listener.isRunning) listener ! msg
+        else log.warning("Can't notify [%s] since it is not running.", listener)
+      }
+    }
+  }
+
   /**
    * Execute <code>f</code> with each listener as argument.
    */
