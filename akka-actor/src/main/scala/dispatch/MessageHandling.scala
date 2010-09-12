@@ -30,8 +30,6 @@ final class MessageInvocation(val receiver: ActorRef,
       "Don't call 'self ! message' in the Actor's constructor (e.g. body of the class).")
   }
 
-  def send = receiver.dispatcher.dispatch(this)
-
   override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
     result = HashCode.hash(result, receiver.actor)

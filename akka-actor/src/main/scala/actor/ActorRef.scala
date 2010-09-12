@@ -972,12 +972,12 @@ class LocalActorRef private[akka](
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
     joinTransaction(message)
 
-    if (isRemotingEnabled && remoteAddress.isDefined) {
+    if (remoteAddress.isDefined && isRemotingEnabled) {
       RemoteClientModule.send[Any](
         message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
     } else {
       val invocation = new MessageInvocation(this, message, senderOption, None, transactionSet.get)
-      invocation.send
+      dispatcher dispatch invocation
     }
   }
 
@@ -988,7 +988,7 @@ class LocalActorRef private[akka](
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     joinTransaction(message)
 
-    if (isRemotingEnabled && remoteAddress.isDefined) {
+    if (remoteAddress.isDefined && isRemotingEnabled) {
       val future = RemoteClientModule.send[T](
         message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, ActorType.ScalaActor)
       if (future.isDefined) future.get
@@ -998,7 +998,7 @@ class LocalActorRef private[akka](
                    else new DefaultCompletableFuture[T](timeout)
       val invocation = new MessageInvocation(
         this, message, senderOption, Some(future.asInstanceOf[CompletableFuture[Any]]), transactionSet.get)
-      invocation.send
+      dispatcher dispatch invocation
       future
     }
   }
