@@ -199,10 +199,7 @@ trait ActorRef extends
   /**
    * This is a reference to the message currently being processed by the actor
    */
-  protected[akka] var _currentMessage: Option[MessageInvocation] = None
-
-  protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
-  protected[akka] def currentMessage = guard.withGuard { _currentMessage }
+  @volatile protected[akka] var currentMessage: MessageInvocation = null
 
   /**
    * Comparison only takes uuid into account.
@@ -1010,7 +1007,7 @@ class LocalActorRef private[akka](
     if (isShutdown)
       Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
     else {
-      currentMessage = Option(messageHandle)
+      currentMessage = messageHandle
       try {
         dispatch(messageHandle)
       } catch {
@@ -1018,7 +1015,7 @@ class LocalActorRef private[akka](
           Actor.log.error(e, "Could not invoke actor [%s]", this)
           throw e
       } finally {
-        currentMessage = None //TODO: Don't reset this, we might want to resend the message
+        currentMessage = null //TODO: Don't reset this, we might want to resend the message
       }
     }
   }
@@ -1182,7 +1179,7 @@ class LocalActorRef private[akka](
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    Actor.log.trace("Invoking actor with message:\n" + messageHandle)
+    Actor.log.trace("Invoking actor with message: %s\n",messageHandle)
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     var topLevelTransaction = false
     val txSet: Option[CountDownCommitBarrier] =
@@ -1529,10 +1526,9 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * Is defined if the message was sent from another Actor, else None.
    */
   def sender: Option[ActorRef] = {
-    // Five lines of map-performance-avoidance, could be just: currentMessage map { _.sender }
     val msg = currentMessage
-    if (msg.isEmpty) None
-    else msg.get.sender
+    if (msg eq null) None
+    else msg.sender
   }
 
   /**
@@ -1540,10 +1536,9 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
   def senderFuture(): Option[CompletableFuture[Any]] = {
-    // Five lines of map-performance-avoidance, could be just: currentMessage map { _.senderFuture }
     val msg = currentMessage
-    if (msg.isEmpty) None
-    else msg.get.senderFuture
+    if (msg eq null) None
+    else msg.senderFuture
   }
 
 
