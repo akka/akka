@@ -84,7 +84,7 @@ class ExecutorBasedEventDrivenDispatcher(
    * This is the behavior of an ExecutorBasedEventDrivenDispatchers mailbox
    */
   trait ExecutableMailbox extends Runnable { self: MessageQueue =>
-    def run = {
+    final def run = {
       var lockAcquiredOnce = false
       var finishedBeforeMailboxEmpty = false
       // this do-while loop is required to prevent missing new messages between the end of the inner while
@@ -103,7 +103,7 @@ class ExecutorBasedEventDrivenDispatcher(
                 registerForExecution(self)
             throw e
           }
-          
+
           dispatcherLock.unlock()
           if (finishedBeforeMailboxEmpty)
             registerForExecution(self)
@@ -116,7 +116,7 @@ class ExecutorBasedEventDrivenDispatcher(
    *
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
-    def processMailbox(): Boolean = {
+   final def processMailbox(): Boolean = {
       val throttle = throughput > 0
       var processedMessages = 0
       var nextMessage = self.dequeue
