@@ -103,7 +103,7 @@ class ExecutorBasedEventDrivenDispatcher(
                 registerForExecution(self)
             throw e
           }
-          
+
           dispatcherLock.unlock()
           if (finishedBeforeMailboxEmpty)
             registerForExecution(self)
