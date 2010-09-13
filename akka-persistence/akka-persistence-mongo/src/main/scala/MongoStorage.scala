@@ -9,7 +9,7 @@ import se.scalablesolutions.akka.persistence.common._
 import se.scalablesolutions.akka.util.UUID
 
 object MongoStorage extends Storage {
-  type ElementType = AnyRef
+  type ElementType = Array[Byte]
 
   def newMap: PersistentMap[ElementType, ElementType] = newMap(UUID.newUuid.toString)
   def newVector: PersistentVector[ElementType] = newVector(UUID.newUuid.toString)
@@ -29,7 +29,7 @@ object MongoStorage extends Storage {
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class MongoPersistentMap(id: String) extends PersistentMap[AnyRef, AnyRef] {
+class MongoPersistentMap(id: String) extends PersistentMapBinary {
   val uuid = id
   val storage = MongoStorageBackend
 }
@@ -40,12 +40,12 @@ class MongoPersistentMap(id: String) extends PersistentMap[AnyRef, AnyRef] {
  *
  * @author <a href="http://debasishg.blogspot.com">Debaissh Ghosh</a>
  */
-class MongoPersistentVector(id: String) extends PersistentVector[AnyRef] {
+class MongoPersistentVector(id: String) extends PersistentVector[Array[Byte]] {
   val uuid = id
   val storage = MongoStorageBackend
 }
 
-class MongoPersistentRef(id: String) extends PersistentRef[AnyRef] {
+class MongoPersistentRef(id: String) extends PersistentRef[Array[Byte]] {
   val uuid = id
   val storage = MongoStorageBackend
 }
