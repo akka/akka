@@ -230,7 +230,7 @@ object RemoteActorSerialization {
     }
 
     RemoteActorRefProtocol.newBuilder
-      .setUuid(uuid)
+      .setUuid(uuid + ":" + id)
       .setActorClassname(actorClass.getName)
       .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
       .setTimeout(timeout)
@@ -248,7 +248,7 @@ object RemoteActorSerialization {
     import actorRef._
 
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
-        .setUuid(uuid)
+        .setUuid(uuid + ":" + actorRef.id)
         .setTarget(actorClassName)
         .setTimeout(timeout)
 
