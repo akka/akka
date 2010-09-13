@@ -3920,7 +3920,7 @@ public final class RemoteProtocol {
     public boolean hasInit() { return hasInit; }
     public java.lang.String getInit() { return init_; }
 
-    // optional string shutdown = 5;
+    // optional string postStop = 5;
     public static final int SHUTDOWN_FIELD_NUMBER = 5;
     private boolean hasShutdown;
     private java.lang.String shutdown_ = "";
@@ -4295,7 +4295,7 @@ public final class RemoteProtocol {
         return this;
       }
 
-      // optional string shutdown = 5;
+      // optional string postStop = 5;
       public boolean hasShutdown() {
         return result.hasShutdown();
       }

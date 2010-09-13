@@ -8,6 +8,6 @@ public interface PojoInf {
   public String getStringFromVal();
   public String getStringFromRef();
   public boolean gotApplicationContext();
-  public boolean isInitInvoked();
+  public boolean isPreStartInvoked();
 
 }

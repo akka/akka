@@ -68,7 +68,7 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
     it("should create an application context and verify dependency injection for typed") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val ta = ctx.getBean("typedActor").asInstanceOf[PojoInf];
-      assert(ta.isInitInvoked)
+      assert(ta.isPreStartInvoked)
       assert(ta.getStringFromVal === "akka rocks")
       assert(ta.getStringFromRef === "spring rocks")
       assert(ta.gotApplicationContext)

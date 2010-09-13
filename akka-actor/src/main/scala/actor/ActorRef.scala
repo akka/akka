@@ -826,7 +826,7 @@ class LocalActorRef private[akka](
       _transactionFactory = None
       _isRunning = false
       _isShutDown = true
-      actor.shutdown
+      actor.postStop
       ActorRegistry.unregister(this)
       if (isRemotingEnabled) {
         if(remoteAddress.isDefined)
@@ -1132,8 +1132,7 @@ class LocalActorRef private[akka](
     failedActor.preRestart(reason)
     nullOutActorRefReferencesFor(failedActor)
     val freshActor = newActor
-    freshActor.init
-    freshActor.initTransactionalState
+    freshActor.preStart
     actorInstance.set(freshActor)
     if (failedActor.isInstanceOf[Proxyable])
       failedActor.asInstanceOf[Proxyable].swapProxiedActor(freshActor)
@@ -1301,8 +1300,7 @@ class LocalActorRef private[akka](
   }
 
   private def initializeActorInstance = {
-    actor.init // run actor init and initTransactionalState callbacks
-    actor.initTransactionalState
+    actor.preStart // run actor preStart
     Actor.log.trace("[%s] has started", toString)
     ActorRegistry.register(this)
     if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)

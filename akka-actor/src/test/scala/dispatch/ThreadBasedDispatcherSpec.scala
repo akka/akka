@@ -85,7 +85,7 @@ class ThreadBasedDispatcherSpec extends JUnitSuite {
     }
     assert(handleLatch.await(5, TimeUnit.SECONDS))
     assert(!threadingIssueDetected.get)
-    dispatcher.shutdown
+    dispatcher.postStop
   }
 }
 */

@@ -42,7 +42,7 @@ class RestartStrategySpec extends JUnitSuite {
         restartLatch.open
       }
 
-      override def shutdown = {
+      override def postStop = {
         if (restartLatch.isOpen) {
           secondRestartLatch.open
         }

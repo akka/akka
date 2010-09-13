@@ -54,8 +54,8 @@ class JGroupsClusterActor extends BasicClusterActor {
   protected def toAllNodes(msg : Array[Byte]): Unit =
     for (c <- channel) c.send(new JG_MSG(null, null, msg))
 
-  override def shutdown = {
-    super.shutdown
+  override def postStop = {
+    super.postStop
     log info ("Shutting down %s", toString)
     isActive = false
     channel.foreach(Util shutdown _)
