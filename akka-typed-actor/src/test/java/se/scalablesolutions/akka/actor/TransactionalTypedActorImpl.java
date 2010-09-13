@@ -2,6 +2,8 @@ package se.scalablesolutions.akka.actor;
 
 import se.scalablesolutions.akka.actor.*;
 import se.scalablesolutions.akka.stm.*;
+import se.scalablesolutions.akka.stm.local.*;
+import se.scalablesolutions.akka.stm.local.Atomic;
 
 public class TransactionalTypedActorImpl extends TypedTransactor implements TransactionalTypedActor {
   private TransactionalMap<String, String> mapState;
@@ -10,12 +12,16 @@ public class TransactionalTypedActorImpl extends TypedTransactor implements Tran
   private boolean isInitialized = false;
 
   @Override
-  public void initTransactionalState() {
+  public void preStart() {
     if (!isInitialized) {
-      mapState = new TransactionalMap();
-      vectorState = new TransactionalVector();
-      refState = new Ref();
-      isInitialized = true;
+      isInitialized = new Atomic<Boolean>() {
+        public Boolean atomically() {
+          mapState = new TransactionalMap();
+          vectorState = new TransactionalVector();
+          refState = new Ref();
+          return true;
+        }
+      }.execute();
     }
   }
 

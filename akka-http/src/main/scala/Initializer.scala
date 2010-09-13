@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.util.{Logging, Bootable}
 import javax.servlet.{ServletContextListener, ServletContextEvent}
 
  /**
-  * This class can be added to web.xml mappings as a listener to start and shutdown Akka.
+  * This class can be added to web.xml mappings as a listener to start and postStop Akka.
   *
   *<web-app>
   * ...

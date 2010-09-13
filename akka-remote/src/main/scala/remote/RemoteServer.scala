@@ -398,7 +398,7 @@ class RemoteServerHandler(
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
   /**
-   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer.
+   * ChannelOpen overridden to store open channels for a clean postStop of a RemoteServer.
    * If a channel is closed before, it is automatically removed from the open channels group.
    */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = openChannels.add(ctx.getChannel)

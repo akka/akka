@@ -46,7 +46,7 @@ object ExampleSession {
 
     printTopic("Happy hAkking :-)")
 
-    // shutdown everything the amqp tree except the main AMQP supervisor
+    // postStop everything the amqp tree except the main AMQP supervisor
     // all connections/consumers/producers will be stopped
     AMQP.shutdownAll
 

@@ -15,7 +15,7 @@ object Main {
 }
 
 /**
- * The Akka Kernel, is used to start And shutdown Akka in standalone/kernel mode.
+ * The Akka Kernel, is used to start And postStop Akka in standalone/kernel mode.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

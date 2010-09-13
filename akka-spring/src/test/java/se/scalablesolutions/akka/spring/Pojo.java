@@ -14,7 +14,7 @@ public class Pojo extends TypedActor implements PojoInf, ApplicationContextAware
     private String stringFromRef;
 
     private boolean gotApplicationContext = false;
-    private boolean initInvoked = false;
+    private boolean preStartInvoked = false;
 
     public boolean gotApplicationContext() {
       return gotApplicationContext;
@@ -41,11 +41,11 @@ public class Pojo extends TypedActor implements PojoInf, ApplicationContextAware
     }
 
     @Override
-    public void init() {
-      initInvoked = true;
+    public void preStart() {
+      preStartInvoked = true;
     }
 
-    public boolean isInitInvoked() {
-      return initInvoked;
+    public boolean isPreStartInvoked() {
+      return preStartInvoked;
     }
 }

@@ -67,7 +67,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     Thread.sleep(1000)
   }
 
-  // make sure the servers shutdown cleanly after the test has finished
+  // make sure the servers postStop cleanly after the test has finished
   @After
   def finished {
     try {

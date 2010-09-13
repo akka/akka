@@ -19,7 +19,7 @@ public class SampleBean extends TypedActor implements SampleBeanIntf {
     }
 
     @Override
-    public void shutdown() {
+    public void postStop() {
         down = true;
     }
  }

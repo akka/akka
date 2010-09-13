@@ -40,9 +40,9 @@ class RpcClientActor[I,O](
   }
 
 
-  override def shutdown = {
+  override def postStop = {
     rpcClient.foreach(rpc => rpc.close)
-    super.shutdown
+    super.postStop
   }
 
   override def toString = "AMQP.RpcClient[exchange=" +exchangeName + ", routingKey=" + routingKey+ "]"
