@@ -292,7 +292,7 @@ class RemoteServer extends Logging with ListenerManagement {
   /**
    * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
-  def register(actorRef: ActorRef): Unit = register(actorRef.id,actorRef)
+  def register(actorRef: ActorRef): Unit = register(actorRef.id, actorRef)
 
   /**
    * Register Remote Actor by a specific 'id' passed as argument.
@@ -556,6 +556,32 @@ class RemoteServerHandler(
   }
 
   /**
+   * Find a registered actor by ID (default) or UUID.
+   * Actors are registered by id apart from registering during serialization see SerializationProtocol.
+   */
+  private def findActorByIdOrUuid(id: String, uuid: String) : ActorRef = {
+    val registeredActors = server.actors()
+    var actorRefOrNull = registeredActors get id
+    if (actorRefOrNull eq null) {
+      actorRefOrNull = registeredActors get uuid
+    }
+    actorRefOrNull
+  }
+
+  /**
+   * Find a registered typed actor by ID (default) or UUID.
+   * Actors are registered by id apart from registering during serialization see SerializationProtocol.
+   */
+  private def findTypedActorByIdOrUUid(id: String, uuid: String) : AnyRef = {
+    val registeredActors = server.typedActors()
+    var actorRefOrNull = registeredActors get id
+    if (actorRefOrNull eq null) {
+      actorRefOrNull = registeredActors get uuid
+    }
+    actorRefOrNull
+  }
+
+  /**
    * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
    *
    * If actor already created then just return it from the registry.
@@ -563,12 +589,14 @@ class RemoteServerHandler(
    * Does not start the actor.
    */
   private def createActor(actorInfo: ActorInfoProtocol): ActorRef = {
-    val uuid = actorInfo.getUuid
+    val ids = actorInfo.getUuid.split(':')
+    val uuid = ids(0)
+    val id = ids(1)
+
     val name = actorInfo.getTarget
     val timeout = actorInfo.getTimeout
 
-    val registeredActors = server.actors()
-    val actorRefOrNull = registeredActors get uuid
+    val actorRefOrNull = findActorByIdOrUuid(id, uuid)
 
     if (actorRefOrNull eq null) {
       try {
@@ -577,9 +605,10 @@ class RemoteServerHandler(
                     else Class.forName(name)
         val actorRef = Actor.actorOf(clazz.newInstance.asInstanceOf[Actor])
         actorRef.uuid = uuid
+        actorRef.id = id
         actorRef.timeout = timeout
         actorRef.remoteAddress = None
-        registeredActors.put(uuid, actorRef)
+        server.actors.put(id, actorRef) // register by id
         actorRef
       } catch {
         case e =>
@@ -591,9 +620,11 @@ class RemoteServerHandler(
   }
 
   private def createTypedActor(actorInfo: ActorInfoProtocol): AnyRef = {
-    val uuid = actorInfo.getUuid
-    val registeredTypedActors = server.typedActors()
-    val typedActorOrNull = registeredTypedActors get uuid
+    val ids = actorInfo.getUuid.split(':')
+    val uuid = ids(0)
+    val id = ids(1)
+
+    val typedActorOrNull = findTypedActorByIdOrUUid(id, uuid)
 
     if (typedActorOrNull eq null) {
       val typedActorInfo = actorInfo.getTypedActorInfo
@@ -610,7 +641,7 @@ class RemoteServerHandler(
 
         val newInstance = TypedActor.newInstance(
           interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
-        registeredTypedActors.put(uuid, newInstance)
+        server.typedActors.put(id, newInstance) // register by id
         newInstance
       } catch {
         case e =>

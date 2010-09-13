@@ -93,6 +93,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     actor.stop
   }
 
+
   @Test
   def shouldSendOneWayAndReceiveReply = {
     val actor = actorOf[SendOneWayAndReplyReceiverActor]
@@ -134,6 +135,6 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
         assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
     actor.stop
-  }
+  }  
 }
 
