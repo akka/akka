@@ -64,6 +64,14 @@
     </xsd:restriction>
   </xsd:simpleType>
 
+  <!-- management type for remote actors: client managed / server managed -->
+  <xsd:simpleType name="managed-by-type">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="client"/>
+      <xsd:enumeration value="server"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
 
   <!-- dispatcher type -->
   <xsd:complexType name="dispatcher-type">
@@ -105,6 +113,20 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
+    <xsd:attribute name="managed-by" type="managed-by-type">
+      <xsd:annotation>
+        <xsd:documentation>
+          Management type for remote actors: client managed or server managed.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="service-name" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          Custom service name for server managed actor.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
   </xsd:complexType>
 
   <!-- typed actor -->
@@ -133,7 +155,7 @@
     <xsd:attribute name="timeout" type="xsd:long" use="required">
       <xsd:annotation>
         <xsd:documentation>
-          Theh default timeout for '!!' invocations.
+          The default timeout for '!!' invocations.
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
@@ -227,6 +249,41 @@
     </xsd:choice>
   </xsd:complexType>
 
+  <!-- actor-for -->
+   <!-- typed actor -->
+  <xsd:complexType name="actor-for-type">
+    <xsd:attribute name="id" type="xsd:ID"/>
+     <xsd:attribute name="host" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>
+          Name of the remote host.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="port" type="xsd:integer" use="required">
+      <xsd:annotation>
+        <xsd:documentation>
+          Port of the remote host.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="service-name" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>
+          Custom service name or class name for the server managed actor.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="interface" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          Name of the interface the typed actor implements.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+
+  </xsd:complexType>
+
   <!-- Supervisor strategy -->
   <xsd:complexType name="strategy-type">
     <xsd:sequence>
@@ -291,5 +348,8 @@
 
   <!-- CamelService -->
   <xsd:element name="camel-service" type="camel-service-type"/>
+
+  <!-- ActorFor -->
+  <xsd:element name="actor-for" type="actor-for-type"/>
 
 </xsd:schema>
