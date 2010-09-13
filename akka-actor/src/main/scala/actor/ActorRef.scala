@@ -1358,7 +1358,7 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  uuuid: String,
+  classOrServiceName: String,
   val className: String,
   val hostname: String,
   val port: Int,
@@ -1369,7 +1369,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   ensureRemotingEnabled
 
-  _uuid = uuuid
+  id = classOrServiceName
   timeout = _timeout
 
   start

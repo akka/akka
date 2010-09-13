@@ -79,6 +79,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     }
   }
 
+  
   @Test
   def shouldSendWithBang  {
     val actor = RemoteClient.actorFor(
@@ -139,10 +140,28 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     server.register(actorOf[RemoteActorSpecActorUnidirectional])
     val actor = RemoteClient.actorFor("se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
     val numberOfActorsInRegistry = ActorRegistry.actors.length
-    val result = actor ! "OneWay"
+    actor ! "OneWay"
     assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
     assert(numberOfActorsInRegistry === ActorRegistry.actors.length)
     actor.stop
+  }
+
+  @Test
+  def shouldUseServiceNameAsIdForRemoteActorRef {
+    server.register(actorOf[RemoteActorSpecActorUnidirectional])
+    server.register("my-service", actorOf[RemoteActorSpecActorUnidirectional])
+    val actor1 = RemoteClient.actorFor("se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
+    val actor2 = RemoteClient.actorFor("my-service", HOSTNAME, PORT)
+    val actor3 = RemoteClient.actorFor("my-service", HOSTNAME, PORT)
+
+    actor1 ! "OneWay"
+    actor2 ! "OneWay"
+    actor3 ! "OneWay"
+
+    assert(actor1.uuid != actor2.uuid)
+    assert(actor1.uuid != actor3.uuid)
+    assert(actor1.id != actor2.id)
+    assert(actor2.id == actor3.id)
   }
 
 }

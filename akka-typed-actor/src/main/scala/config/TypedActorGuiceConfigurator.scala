@@ -122,7 +122,6 @@ private[akka] class TypedActorGuiceConfigurator extends TypedActorConfiguratorBa
 
     remoteAddress.foreach { address =>
       actorRef.makeRemote(remoteAddress.get)
-      RemoteServerModule.registerTypedActor(address, implementationClass.getName, proxy)
     }
 
     AspectInitRegistry.register(
