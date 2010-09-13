@@ -180,6 +180,7 @@ class ExecutorBasedEventDrivenDispatcher(
   // FIXME: should we have an unbounded queue and not bounded as default ????
   private[akka] def init = {
     withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
+    //withNewThreadPoolWithLinkedBlockingQueueWithCapacity(16)
     config(this)
     buildThreadPool
   }
