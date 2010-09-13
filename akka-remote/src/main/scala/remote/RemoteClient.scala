@@ -220,10 +220,10 @@ class RemoteClient private[akka] (
       val channel = connection.awaitUninterruptibly.getChannel
       openChannels.add(channel)
       if (!connection.isSuccess) {
-        foreachListener(_ ! RemoteClientError(connection.getCause, this))
+        notifyListeners(RemoteClientError(connection.getCause, this))
         log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
       }
-      foreachListener(_ ! RemoteClientStarted(this))
+      notifyListeners(RemoteClientStarted(this))
       isRunning = true
     }
   }
@@ -232,7 +232,7 @@ class RemoteClient private[akka] (
     log.info("Shutting down %s", name)
     if (isRunning) {
       isRunning = false
-      foreachListener(_ ! RemoteClientShutdown(this))
+      notifyListeners(RemoteClientShutdown(this))
       timer.stop
       timer = null
       openChannels.close.awaitUninterruptibly
@@ -250,7 +250,7 @@ class RemoteClient private[akka] (
   @deprecated("Use removeListener instead")
   def deregisterListener(actorRef: ActorRef) = removeListener(actorRef)
 
-  override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
+  override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
   protected override def manageLifeCycleOfListeners = false
 
@@ -287,7 +287,7 @@ class RemoteClient private[akka] (
   } else {
     val exception = new RemoteClientException(
       "Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", this)
-    foreachListener(l => l ! RemoteClientError(exception, this))
+    notifyListeners(RemoteClientError(exception, this))
     throw exception
   }
 
@@ -403,12 +403,12 @@ class RemoteClientHandler(
         futures.remove(reply.getId)
       } else {
         val exception = new RemoteClientException("Unknown message received in remote client handler: " + result, client)
-        client.foreachListener(_ ! RemoteClientError(exception, client))
+        client.notifyListeners(RemoteClientError(exception, client))
         throw exception
       }
     } catch {
       case e: Exception =>
-        client.foreachListener(_ ! RemoteClientError(e, client))
+        client.notifyListeners(RemoteClientError(e, client))
         log.error("Unexpected exception in remote client handler: %s", e)
         throw e
     }
@@ -423,7 +423,7 @@ class RemoteClientHandler(
           client.connection = bootstrap.connect(remoteAddress)
           client.connection.awaitUninterruptibly // Wait until the connection attempt succeeds or fails.
           if (!client.connection.isSuccess) {
-            client.foreachListener(_ ! RemoteClientError(client.connection.getCause, client))
+            client.notifyListeners(RemoteClientError(client.connection.getCause, client))
             log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)
           }
         }
@@ -433,7 +433,7 @@ class RemoteClientHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     def connect = {
-      client.foreachListener(_ ! RemoteClientConnected(client))
+      client.notifyListeners(RemoteClientConnected(client))
       log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
       client.resetReconnectionTimeWindow
     }
@@ -450,12 +450,12 @@ class RemoteClientHandler(
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.foreachListener(_ ! RemoteClientDisconnected(client))
+    client.notifyListeners(RemoteClientDisconnected(client))
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    client.foreachListener(_ ! RemoteClientError(event.getCause, client))
+    client.notifyListeners(RemoteClientError(event.getCause, client))
     log.error(event.getCause, "Unexpected exception from downstream in remote client")
     event.getChannel.close
   }

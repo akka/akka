@@ -674,7 +674,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
 
   def register(proxy: AnyRef, init: AspectInit) = {
     val res = initializations.put(proxy, init)
-    foreachListener(_ ! AspectInitRegistered(proxy, init))
+    notifyListeners(AspectInitRegistered(proxy, init))
     res
   }
 
@@ -683,7 +683,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
    */
   def unregister(proxy: AnyRef): AspectInit = {
     val init = initializations.remove(proxy)
-    foreachListener(_ ! AspectInitUnregistered(proxy, init))
+    notifyListeners(AspectInitUnregistered(proxy, init))
     init.actorRef.stop
     init
   }
