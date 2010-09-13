@@ -134,6 +134,20 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     actor.stop
   }
 
+  @Test
+  def reflectiveAccessShouldNotCreateNewRemoteServerObject {
+      val server1 = new RemoteServer()
+      server1.start("localhost", 9990)
+
+      var found = RemoteServer.serverFor("localhost", 9990)
+      assert(found.isDefined, "sever not found")
+
+      val a = actor { case _ => }
+
+      found = RemoteServer.serverFor("localhost", 9990)
+      assert(found.isDefined, "sever not found after creating an actor")
+    }
+
 
   @Test
   def shouldNotRecreateRegisteredActor {

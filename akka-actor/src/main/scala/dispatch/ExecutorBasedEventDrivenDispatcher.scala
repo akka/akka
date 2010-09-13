@@ -65,15 +65,15 @@ import java.util.concurrent.{ConcurrentLinkedQueue, LinkedBlockingQueue}
 class ExecutorBasedEventDrivenDispatcher(
   _name: String,
   throughput: Int = Dispatchers.THROUGHPUT,
-  mailboxBounds: BoundedMailbox = Dispatchers.MAILBOX_BOUNDS,
+  mailboxConfig: MailboxConfig = Dispatchers.MAILBOX_CONFIG,
   config: (ThreadPoolBuilder) => Unit = _ => ()) extends MessageDispatcher with ThreadPoolBuilder {
 
-  def this(_name: String, throughput: Int, capacity: Int) = this(_name,throughput,BoundedMailbox(capacity,None))
+  def this(_name: String, throughput: Int, capacity: Int) = this(_name,throughput,MailboxConfig(capacity,None,false))
   def this(_name: String, throughput: Int) = this(_name, throughput, Dispatchers.MAILBOX_CAPACITY) // Needed for Java API usage
   def this(_name: String) = this(_name,Dispatchers.THROUGHPUT,Dispatchers.MAILBOX_CAPACITY) // Needed for Java API usage
 
-
-  mailboxCapacity = mailboxBounds.capacity
+  //FIXME remove this from ThreadPoolBuilder
+  mailboxCapacity = mailboxConfig.capacity
 
   @volatile private var active: Boolean = false
 
@@ -81,27 +81,18 @@ class ExecutorBasedEventDrivenDispatcher(
   init
 
   def dispatch(invocation: MessageInvocation) = {
-    getMailbox(invocation.receiver).add(invocation)
+    getMailbox(invocation.receiver) enqueue invocation
     dispatch(invocation.receiver)
   }
 
   /**
    * @return the mailbox associated with the actor
    */
-  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[Queue[MessageInvocation]]
+  private def getMailbox(receiver: ActorRef) = receiver.mailbox.asInstanceOf[MessageQueue]
 
   override def mailboxSize(actorRef: ActorRef) = getMailbox(actorRef).size
 
-  override def createMailbox(actorRef: ActorRef): AnyRef = {
-    if (mailboxCapacity <= 0)
-      new ConcurrentLinkedQueue[MessageInvocation]
-    else if (mailboxBounds.pushTimeOut.isDefined) {
-      val timeout = mailboxBounds.pushTimeOut.get
-      new BoundedTransferQueue[MessageInvocation](mailboxCapacity,timeout.length,timeout.unit)
-    }
-    else
-      new LinkedBlockingQueue[MessageInvocation](mailboxCapacity)
-  }
+  override def createMailbox(actorRef: ActorRef): AnyRef = mailboxConfig.newMailbox(bounds = mailboxCapacity, blockDequeue = false)
 
   def dispatch(receiver: ActorRef): Unit = if (active) {
 
@@ -140,12 +131,12 @@ class ExecutorBasedEventDrivenDispatcher(
   def processMailbox(receiver: ActorRef): Boolean = {
     var processedMessages = 0
     val mailbox = getMailbox(receiver)
-    var messageInvocation = mailbox.poll
+    var messageInvocation = mailbox.dequeue
     while (messageInvocation != null) {
       messageInvocation.invoke
       processedMessages += 1
       // check if we simply continue with other messages, or reached the throughput limit
-      if (throughput <= 0 || processedMessages < throughput) messageInvocation = mailbox.poll
+      if (throughput <= 0 || processedMessages < throughput) messageInvocation = mailbox.dequeue
       else {
         messageInvocation = null
         return !mailbox.isEmpty

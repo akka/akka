@@ -59,6 +59,7 @@ class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with
 
   feature("parse Spring application context") {
 
+<<<<<<< HEAD
     scenario("get a untyped actor") {
       val myactor = getPingActorFromContext("/untyped-actor-config.xml", "simple-untyped-actor")
       myactor.sendOneWay("Hello")

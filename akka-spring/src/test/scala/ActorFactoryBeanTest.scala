@@ -34,7 +34,7 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
       assert(bean.isRemote)
     }
 
-    it("should create an typed actor with dispatcher if dispatcher is set") {
+    it("should create a typed actor with dispatcher if dispatcher is set") {
       val props = new DispatcherProperties()
       props.dispatcherType = "executor-based-event-driven"
       bean.setDispatcher(props);
@@ -60,12 +60,12 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
       bean.setProperty(entries)
       assert(classOf[PojoInf].isAssignableFrom(bean.getObjectType))
 
-      // Check that we have injected the depencency correctly
+      // Check that we have injected the dependency correctly
       val target = bean.createInstance.asInstanceOf[PojoInf]
       assert(target.getStringFromVal === entry.value)
     }
 
-    it("should create an application context and verify dependency injection for tryped") {
+    it("should create an application context and verify dependency injection for typed") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val ta = ctx.getBean("typedActor").asInstanceOf[PojoInf];
       assert(ta.isInitInvoked)

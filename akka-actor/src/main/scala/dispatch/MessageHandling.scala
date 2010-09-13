@@ -4,14 +4,14 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import java.util.List
-
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import se.scalablesolutions.akka.AkkaException
-import java.util.concurrent.{ConcurrentSkipListSet}
 import se.scalablesolutions.akka.util.{Duration, HashCode, Logging}
+import java.util.{Queue, List}
+import java.util.concurrent._
+import concurrent.forkjoin.LinkedTransferQueue
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -63,16 +63,65 @@ class MessageQueueAppendFailedException(message: String) extends AkkaException(m
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageQueue {
-  def append(handle: MessageInvocation)
+  def enqueue(handle: MessageInvocation)
+  def dequeue(): MessageInvocation
+  def size: Int
+  def isEmpty: Boolean
 }
 
 /* Tells the dispatcher that it should create a bounded mailbox with the specified push timeout
  * (If capacity > 0)
  */
-case class BoundedMailbox(capacity: Int, pushTimeOut: Option[Duration])
+case class MailboxConfig(capacity: Int, pushTimeOut: Option[Duration], blockingDequeue: Boolean) {
+
+  /**
+   * Creates a MessageQueue (Mailbox) with the specified properties
+   * bounds = whether the mailbox should be bounded (< 0 means unbounded)
+   * pushTime = only used if bounded, indicates if and how long an enqueue should block
+   * blockDequeue = whether dequeues should block or not
+   *
+   * The bounds + pushTime generates a MessageQueueAppendFailedException if enqueue times out
+   */
+  def newMailbox(bounds: Int = capacity,
+                 pushTime: Option[Duration] = pushTimeOut,
+                 blockDequeue: Boolean = blockingDequeue) : MessageQueue = {
+    if (bounds <= 0) { //UNBOUNDED: Will never block enqueue and optionally blocking dequeue
+      new LinkedTransferQueue[MessageInvocation] with MessageQueue {
+        def enqueue(handle: MessageInvocation): Unit = this add handle
+        def dequeue(): MessageInvocation = {
+          if(blockDequeue) this.take()
+          else this.poll()
+        }
+      }
+    }
+    else if (pushTime.isDefined) { //BOUNDED: Timeouted enqueue with MessageQueueAppendFailedException and optionally blocking dequeue
+      val time = pushTime.get
+      new BoundedTransferQueue[MessageInvocation](bounds) with MessageQueue {
+        def enqueue(handle: MessageInvocation) {
+          if (!this.offer(handle,time.length,time.unit))
+            throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + this.toString)
+        }
+
+        def dequeue(): MessageInvocation = {
+          if (blockDequeue) this.take()
+          else this.poll()
+        }
+      }
+    }
+    else { //BOUNDED: Blocking enqueue and optionally blocking dequeue
+      new LinkedBlockingQueue[MessageInvocation](bounds) with MessageQueue {
+        def enqueue(handle: MessageInvocation): Unit = this put handle
+        def dequeue(): MessageInvocation = {
+          if(blockDequeue) this.take()
+          else this.poll()
+        }
+      }
+    }
+  }
+}
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageDispatcher extends Logging {
   protected val uuids = new ConcurrentSkipListSet[String]
