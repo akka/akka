@@ -46,10 +46,10 @@ import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
 object Dispatchers extends Logging {
   val THROUGHPUT          = config.getInt("akka.actor.throughput", 5)
   val MAILBOX_CAPACITY    = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", 1000)
-  val MAILBOX_BOUNDS      = BoundedMailbox(
-    Dispatchers.MAILBOX_CAPACITY,
-    config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-ms").
-    map(Duration(_,TimeUnit.MILLISECONDS))
+  val MAILBOX_CONFIG      = MailboxConfig(
+    capacity = Dispatchers.MAILBOX_CAPACITY,
+    pushTimeOut = config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS)),
+    blockingDequeue = false
   )
 
   lazy val defaultGlobalDispatcher = {
@@ -58,16 +58,12 @@ object Dispatchers extends Logging {
 
   object globalHawtDispatcher extends HawtDispatcher
 
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global",THROUGHPUT,MAILBOX_BOUNDS) {
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global",THROUGHPUT,MAILBOX_CONFIG) {
     override def register(actor: ActorRef) = {
       if (isShutdown) init
       super.register(actor)
     }
   }
-
-  object globalReactorBasedSingleThreadEventDrivenDispatcher extends ReactorBasedSingleThreadEventDrivenDispatcher("global")
-
-  object globalReactorBasedThreadPoolEventDrivenDispatcher extends ReactorBasedThreadPoolEventDrivenDispatcher("global")
 
   /**
    * Creates an event-driven dispatcher based on the excellent HawtDispatch library.
@@ -99,7 +95,7 @@ object Dispatchers extends Logging {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) = new ThreadBasedDispatcher(actor, BoundedMailbox(mailboxCapacity,Option(pushTimeOut)))
+  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) = new ThreadBasedDispatcher(actor, MailboxConfig(mailboxCapacity,Option(pushTimeOut),true))
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -123,6 +119,14 @@ object Dispatchers extends Logging {
   def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxCapacity: Int) = new ExecutorBasedEventDrivenDispatcher(name, throughput, mailboxCapacity)
 
   /**
+   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
+   * <p/>
+   * Has a fluent builder interface for configuring its semantics.
+   */
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxCapacity: Int, pushTimeOut: Duration) = new ExecutorBasedEventDrivenDispatcher(name, throughput, MailboxConfig(mailboxCapacity,Some(pushTimeOut),false))
+
+
+  /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
@@ -137,18 +141,6 @@ object Dispatchers extends Logging {
   def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxCapacity: Int) = new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxCapacity)
 
   /**
-   * Creates a reactor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
-   * <p/>
-   * Has a fluent builder interface for configuring its semantics.
-   */
-  def newReactorBasedThreadPoolEventDrivenDispatcher(name: String) = new ReactorBasedThreadPoolEventDrivenDispatcher(name)
-
-  /**
-   * Creates a reactor-based event-driven dispatcher serving multiple (millions) of actors through a single thread.
-   */
-  def newReactorBasedSingleThreadEventDrivenDispatcher(name: String) = new ReactorBasedSingleThreadEventDrivenDispatcher(name)
-
-  /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
    */
@@ -160,9 +152,8 @@ object Dispatchers extends Logging {
    *
    * default-dispatcher {
    *   type = "GlobalExecutorBasedEventDriven" # Must be one of the following, all "Global*" are non-configurable
-   *                               # ReactorBasedSingleThreadEventDriven, (ExecutorBasedEventDrivenWorkStealing), ExecutorBasedEventDriven,
-   *                               # ReactorBasedThreadPoolEventDriven, Hawt, GlobalReactorBasedSingleThreadEventDriven,
-   *                               # GlobalReactorBasedThreadPoolEventDriven, GlobalExecutorBasedEventDriven, GlobalHawt
+   *                               # (ExecutorBasedEventDrivenWorkStealing), ExecutorBasedEventDriven,
+   *                               # Hawt, GlobalExecutorBasedEventDriven, GlobalHawt
    *   keep-alive-ms = 60000       # Keep alive time for threads
    *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
@@ -200,20 +191,16 @@ object Dispatchers extends Logging {
       })
     }
 
-    lazy val mailboxBounds: BoundedMailbox = {
+    lazy val mailboxBounds: MailboxConfig = {
       val capacity = cfg.getInt("mailbox-capacity",Dispatchers.MAILBOX_CAPACITY)
       val timeout  = cfg.getInt("mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS))
-      BoundedMailbox(capacity,timeout)
+      MailboxConfig(capacity,timeout,false)
     }
 
     val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
-      case "ReactorBasedSingleThreadEventDriven"       => new ReactorBasedSingleThreadEventDrivenDispatcher(name)
       case "ExecutorBasedEventDrivenWorkStealing"      => new ExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_CAPACITY,threadPoolConfig)
       case "ExecutorBasedEventDriven"                  => new ExecutorBasedEventDrivenDispatcher(name, cfg.getInt("throughput",THROUGHPUT),mailboxBounds,threadPoolConfig)
-      case "ReactorBasedThreadPoolEventDriven"         => new ReactorBasedThreadPoolEventDrivenDispatcher(name,threadPoolConfig)
       case "Hawt"                                      => new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
-      case "GlobalReactorBasedSingleThreadEventDriven" => globalReactorBasedSingleThreadEventDrivenDispatcher
-      case "GlobalReactorBasedThreadPoolEventDriven"   => globalReactorBasedThreadPoolEventDrivenDispatcher
       case "GlobalExecutorBasedEventDriven"            => globalExecutorBasedEventDrivenDispatcher
       case "GlobalHawt"                                => globalHawtDispatcher
 

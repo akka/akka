@@ -829,9 +829,8 @@ class LocalActorRef private[akka](
       actor.shutdown
       ActorRegistry.unregister(this)
       if (isRemotingEnabled) {
-        remoteAddress.foreach { address =>
-          RemoteClientModule.unregister(address, uuid)
-        }
+        if(remoteAddress.isDefined)
+           RemoteClientModule.unregister(remoteAddress.get, uuid)
         RemoteServerModule.unregister(this)
       }
       nullOutActorRefReferencesFor(actorInstance.get)
@@ -1153,17 +1152,13 @@ class LocalActorRef private[akka](
     isInInitialization = true
     val actor = actorFactory match {
       case Left(Some(clazz)) =>
-        try {
-          val ctor = clazz.getConstructor()
-          ctor.setAccessible(true)
-          ctor.newInstance()
-        } catch {
-          case e: InstantiationException => throw new ActorInitializationException(
-            "Could not instantiate Actor due to:\n" + e +
+        import ReflectiveAccess.{createInstance,noParams,noArgs}
+        createInstance(clazz.asInstanceOf[Class[_]],noParams,noArgs).
+          getOrElse(throw new ActorInitializationException(
+            "Could not instantiate Actor" +
             "\nMake sure Actor is NOT defined inside a class/trait," +
             "\nif so put it outside the class/trait, f.e. in a companion object," +
-            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.")
-        }
+            "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'."))
       case Right(Some(factory)) =>
         factory()
       case _ =>
