@@ -29,9 +29,6 @@ object ReflectiveAccess {
   def ensureTypedActorEnabled = TypedActorModule.ensureTypedActorEnabled
   def ensureJtaEnabled        = JtaModule.ensureJtaEnabled
 
-  private val noParams = Array[Class[_]]()
-  private val noArgs   = Array[AnyRef]()
-
   /**
    * Reflective access to the RemoteClient module.
    *
