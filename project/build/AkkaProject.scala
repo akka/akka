@@ -49,8 +49,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-    lazy val CasbahRepoSnapshots  = MavenRepository("Casbah Snapshot Repo", "http://repo.bumnetworks.com/snapshots/")
-    lazy val CasbahRepoReleases   = MavenRepository("Casbah Snapshot Repo", "http://repo.bumnetworks.com/releases/")
+    lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -77,7 +76,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
   lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
-  lazy val casbahSnapshot          = ModuleConfiguration("com.novus",CasbahRepoSnapshots)
   lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
