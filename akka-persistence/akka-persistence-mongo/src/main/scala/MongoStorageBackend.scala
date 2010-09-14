@@ -9,13 +9,8 @@ import se.scalablesolutions.akka.persistence.common._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config.config
 
-import sjson.json.Serializer._
-
 import java.util.NoSuchElementException
-
-import com.mongodb._
-
-import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
+import com.novus.casbah.mongodb.Imports._
 
 /**
  * A module for supporting MongoDB based persistence.
@@ -28,294 +23,208 @@ import java.util.{Map=>JMap, List=>JList, ArrayList=>JArrayList}
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
 private[akka] object MongoStorageBackend extends
-  MapStorageBackend[AnyRef, AnyRef] with
-  VectorStorageBackend[AnyRef] with
-  RefStorageBackend[AnyRef] with
+  MapStorageBackend[Array[Byte], Array[Byte]] with
+  VectorStorageBackend[Array[Byte]] with
+  RefStorageBackend[Array[Byte]] with
   Logging {
 
-  // enrich with null safe findOne
-  class RichDBCollection(value: DBCollection) {
-    def findOneNS(o: DBObject): Option[DBObject] = {
-      value.findOne(o) match {
-        case null => None
-        case x => Some(x)
-      }
-    }
-  }
-
-  implicit def enrichDBCollection(c: DBCollection) = new RichDBCollection(c)
-
-  val KEY = "key"
-  val VALUE = "value"
+  val KEY = "__key"
+  val REF = "__ref"
   val COLLECTION = "akka_coll"
 
-  val MONGODB_SERVER_HOSTNAME = config.getString("akka.storage.mongodb.hostname", "127.0.0.1")
-  val MONGODB_SERVER_DBNAME = config.getString("akka.storage.mongodb.dbname", "testdb")
-  val MONGODB_SERVER_PORT = config.getInt("akka.storage.mongodb.port", 27017)
+  val HOSTNAME = config.getString("akka.storage.mongodb.hostname", "127.0.0.1")
+  val DBNAME = config.getString("akka.storage.mongodb.dbname", "testdb")
+  val PORT = config.getInt("akka.storage.mongodb.port", 27017)
 
-  val db = new Mongo(MONGODB_SERVER_HOSTNAME, MONGODB_SERVER_PORT)
-  val coll = db.getDB(MONGODB_SERVER_DBNAME).getCollection(COLLECTION)
+  val db: MongoDB = MongoConnection(HOSTNAME, PORT)(DBNAME)
+  val coll: MongoCollection = db(COLLECTION)
 
-  private[this] val serializer = SJSON
+  def drop() { db.dropDatabase() }
 
-  def insertMapStorageEntryFor(name: String, key: AnyRef, value: AnyRef) {
+  def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte]) {
     insertMapStorageEntriesFor(name, List((key, value)))
   }
 
-  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[AnyRef, AnyRef]]) {
-    import java.util.{Map, HashMap}
-
-    val m: Map[AnyRef, AnyRef] = new HashMap
-    for ((k, v) <- entries) {
-      m.put(k, serializer.out(v))
-    }
-
-    nullSafeFindOne(name) match {
-      case None =>
-        coll.insert(new BasicDBObject().append(KEY, name).append(VALUE, m))
-      case Some(dbo) => {
-        // collate the maps
-        val o = dbo.get(VALUE).asInstanceOf[Map[AnyRef, AnyRef]]
-        o.putAll(m)
-
-        val newdbo = new BasicDBObject().append(KEY, name).append(VALUE, o)
-        coll.update(new BasicDBObject().append(KEY, name), newdbo, true, false)
+  def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) {
+    db.safely { db =>
+      val q: DBObject = MongoDBObject(KEY -> name)
+      coll.findOne(q) match {
+        case Some(dbo) => 
+          entries.foreach { case (k, v) => dbo += new String(k) -> v }
+          db.safely { db => coll.update(q, dbo, true, false) }
+        case None => 
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          entries.foreach { case (k, v) => builder += new String(k) -> v }
+          coll += builder.result.asDBObject
       }
     }
   }
 
   def removeMapStorageFor(name: String): Unit = {
-    val q = new BasicDBObject
-    q.put(KEY, name)
-    coll.remove(q)
+    val q: DBObject = MongoDBObject(KEY -> name)
+    db.safely { db => coll.remove(q) }
   }
 
-  def removeMapStorageFor(name: String, key: AnyRef): Unit = {
-    nullSafeFindOne(name) match {
-      case None =>
-      case Some(dbo) => {
-        val orig = dbo.get(VALUE).asInstanceOf[DBObject].toMap
-        if (key.isInstanceOf[List[_]]) {
-          val keys = key.asInstanceOf[List[_]]
-          keys.foreach(k => orig.remove(k.asInstanceOf[String]))
-        } else {
-          orig.remove(key.asInstanceOf[String])
-        }
 
-        // remove existing reference
-        removeMapStorageFor(name)
-        // and insert
-        coll.insert(new BasicDBObject().append(KEY, name).append(VALUE, orig))
-      }
+  private def queryFor[T](name: String)(body: (MongoDBObject, Option[DBObject]) => T): T = {
+    val q = MongoDBObject(KEY -> name)
+    body(q, coll.findOne(q))
+  }
+
+  def removeMapStorageFor(name: String, key: Array[Byte]): Unit = queryFor(name) { (q, dbo) =>
+    dbo.foreach { d =>
+      d -= new String(key)
+      db.safely { db => coll.update(q, d, true, false) }
     }
   }
 
-  def getMapStorageEntryFor(name: String, key: AnyRef): Option[AnyRef] =
-    getValueForKey(name, key.asInstanceOf[String])
-
-  def getMapStorageSizeFor(name: String): Int = {
-    nullSafeFindOne(name) match {
-      case None => 0
-      case Some(dbo) =>
-        dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]].keySet.size
-    }
+  def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = queryFor(name) { (q, dbo) =>
+    dbo.map { d => 
+      d.getAs[Array[Byte]](new String(key))
+    }.getOrElse(None)
   }
 
-  def getMapStorageFor(name: String): List[Tuple2[AnyRef, AnyRef]]  = {
-    val m =
-      nullSafeFindOne(name) match {
-        case None =>
-          throw new NoSuchElementException(name + " not present")
-        case Some(dbo) =>
-          dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
-      }
-    val n =
-      List(m.keySet.toArray: _*).asInstanceOf[List[String]]
-    val vals =
-      for(s <- n)
-        yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
-    vals.asInstanceOf[List[Tuple2[String, AnyRef]]]
+  def getMapStorageSizeFor(name: String): Int = queryFor(name) { (q, dbo) =>
+    dbo.map { d =>
+      d.size - 2 // need to exclude object id and our KEY
+    }.getOrElse(0)
   }
 
-  def getMapStorageRangeFor(name: String, start: Option[AnyRef],
-                            finish: Option[AnyRef],
-                            count: Int): List[Tuple2[AnyRef, AnyRef]] = {
-    val m =
-      nullSafeFindOne(name) match {
-        case None =>
-          throw new NoSuchElementException(name + " not present")
-        case Some(dbo) =>
-          dbo.get(VALUE).asInstanceOf[JMap[String, AnyRef]]
-      }
-
-    /**
-     * <tt>count</tt> is the max number of results to return. Start with
-     * <tt>start</tt> or 0 (if <tt>start</tt> is not defined) and go until
-     * you hit <tt>finish</tt> or <tt>count</tt>.
-     */
-    val s = if (start.isDefined) start.get.asInstanceOf[Int] else 0
-    val cnt =
-      if (finish.isDefined) {
-        val f = finish.get.asInstanceOf[Int]
-        if (f >= s) math.min(count, (f - s)) else count
-      }
-      else count
-
-    val n =
-      List(m.keySet.toArray: _*).asInstanceOf[List[String]].sortWith((e1, e2) => (e1 compareTo e2) < 0).slice(s, s + cnt)
-    val vals =
-      for(s <- n)
-        yield (s, serializer.in[AnyRef](m.get(s).asInstanceOf[Array[Byte]]))
-    vals.asInstanceOf[List[Tuple2[String, AnyRef]]]
+  def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])]  = queryFor(name) { (q, dbo) =>
+    dbo.map { d =>
+      for {
+        (k, v) <- d.toList
+        if k != "_id" && k != KEY
+      } yield (k.getBytes, v.asInstanceOf[Array[Byte]])
+    }.getOrElse(List.empty[(Array[Byte], Array[Byte])])
   }
 
-  private def getValueForKey(name: String, key: String): Option[AnyRef] = {
-    try {
-      nullSafeFindOne(name) match {
-        case None => None
-        case Some(dbo) =>
-          Some(serializer.in[AnyRef](
-            dbo.get(VALUE)
-               .asInstanceOf[JMap[String, AnyRef]]
-               .get(key).asInstanceOf[Array[Byte]]))
-      }
-    } catch {
-      case e =>
-        throw new NoSuchElementException(e.getMessage)
-    }
+  def getMapStorageRangeFor(name: String, start: Option[Array[Byte]],
+                            finish: Option[Array[Byte]],
+                            count: Int): List[(Array[Byte], Array[Byte])] = queryFor(name) { (q, dbo) =>
+    dbo.map { d =>
+      // get all keys except the special ones
+      val keys = d.keys
+                  .filter(k => k != "_id" && k != KEY)
+                  .toList
+                  .sortWith(_ < _)
+
+      // if the supplied start is not defined, get the head of keys
+      val s = start.map(new String(_)).getOrElse(keys.head)
+
+      // if the supplied finish is not defined, get the last element of keys
+      val f = finish.map(new String(_)).getOrElse(keys.last)
+
+      // slice from keys: both ends inclusive
+      val ks = keys.slice(keys.indexOf(s), scala.math.min(count, keys.indexOf(f) + 1))
+      ks.map(k => (k.getBytes, d.getAs[Array[Byte]](k).get))
+    }.getOrElse(List.empty[(Array[Byte], Array[Byte])])
   }
 
-  def insertVectorStorageEntriesFor(name: String, elements: List[AnyRef]) = {
-    val q = new BasicDBObject
-    q.put(KEY, name)
-
-    val currentList =
-      coll.findOneNS(q) match {
-        case None =>
-          new JArrayList[AnyRef]
-        case Some(dbo) =>
-          dbo.get(VALUE).asInstanceOf[JArrayList[AnyRef]]
-      }
-    if (!currentList.isEmpty) {
-      // record exists
-      // remove before adding
-      coll.remove(q)
-    }
-
-    // add to the current list
-    elements.map(serializer.out(_)).foreach(currentList.add(_))
-
-    coll.insert(
-      new BasicDBObject()
-        .append(KEY, name)
-        .append(VALUE, currentList)
-    )
-  }
-
-  def insertVectorStorageEntryFor(name: String, element: AnyRef) = {
+  def insertVectorStorageEntryFor(name: String, element: Array[Byte]) = {
     insertVectorStorageEntriesFor(name, List(element))
   }
 
-  def getVectorStorageEntryFor(name: String, index: Int): AnyRef = {
-    try {
-      val o =
-      nullSafeFindOne(name) match {
-        case None =>
-          throw new NoSuchElementException(name + " not present")
+  def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = {
+    // lookup with name
+    val q: DBObject = MongoDBObject(KEY -> name)
 
-        case Some(dbo) =>
-          dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
+    db.safely { db =>
+      coll.findOne(q) match {
+        // exists : need to update
+        case Some(dbo) => 
+          dbo -= KEY
+          dbo -= "_id"
+          val listBuilder = MongoDBList.newBuilder
+
+          // expensive!
+          listBuilder ++= (elements ++ dbo.toSeq.sortWith((e1, e2) => (e1._1.toInt < e2._1.toInt)).map(_._2))
+
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          builder ++= listBuilder.result
+          coll.update(q, builder.result.asDBObject, true, false)
+
+        // new : just add
+        case None => 
+          val listBuilder = MongoDBList.newBuilder
+          listBuilder ++= elements
+
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          builder ++= listBuilder.result
+          coll += builder.result.asDBObject
       }
-      serializer.in[AnyRef](
-        o.get(index).asInstanceOf[Array[Byte]])
-    } catch {
-      case e =>
-        throw new NoSuchElementException(e.getMessage)
     }
   }
 
-  def getVectorStorageRangeFor(name: String,
-    start: Option[Int], finish: Option[Int], count: Int): List[AnyRef] = {
-    try {
-      val o =
-      nullSafeFindOne(name) match {
-        case None =>
-          throw new NoSuchElementException(name + " not present")
+  def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = queryFor(name) { (q, dbo) =>
+    dbo.foreach { d =>
+      d += ((index.toString, elem))
+      db.safely { db => coll.update(q, d, true, false) }
+    }
+  }
 
-        case Some(dbo) =>
-          dbo.get(VALUE).asInstanceOf[JList[AnyRef]]
-      }
+  def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = queryFor(name) { (q, dbo) =>
+    dbo.map { d => 
+      d(index.toString).asInstanceOf[Array[Byte]]
+    }.getOrElse(Array.empty[Byte])
+  }
 
-      val s = if (start.isDefined) start.get else 0
+  /**
+   * if <tt>start</tt> and <tt>finish</tt> both are defined, ignore <tt>count</tt> and
+   * report the range [start, finish)
+   * if <tt>start</tt> is not defined, assume <tt>start</tt> = 0
+   * if <tt>start</tt> == 0 and <tt>finish</tt> == 0, return an empty collection
+   */
+  def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = queryFor(name) { (q, dbo) =>
+    dbo.map { d =>
+      val ls = d.filter { case (k, v) => k != KEY && k != "_id" }
+                .toSeq
+                .sortWith((e1, e2) => (e1._1.toInt < e2._1.toInt))
+                .map(_._2)
+
+      val st = start.getOrElse(0)
       val cnt =
         if (finish.isDefined) {
           val f = finish.get
-          if (f >= s) (f - s) else count
+          if (f >= st) (f - st) else count
         }
         else count
-
-      // pick the subrange and make a Scala list
-      val l =
-        List(o.subList(s, s + cnt).toArray: _*)
-
-      for(e <- l)
-        yield serializer.in[AnyRef](e.asInstanceOf[Array[Byte]])
-    } catch {
-      case e =>
-        throw new NoSuchElementException(e.getMessage)
-    }
+      if (st == 0 && cnt == 0) List()
+      ls.slice(st, st + cnt).asInstanceOf[List[Array[Byte]]]
+    }.getOrElse(List.empty[Array[Byte]])
   }
 
-  def updateVectorStorageEntryFor(name: String, index: Int, elem: AnyRef) = {
-    val q = new BasicDBObject
-    q.put(KEY, name)
-
-    val dbobj =
-      coll.findOneNS(q) match {
-        case None =>
-          throw new NoSuchElementException(name + " not present")
-        case Some(dbo) => dbo
-      }
-    val currentList = dbobj.get(VALUE).asInstanceOf[JArrayList[AnyRef]]
-    currentList.set(index, serializer.out(elem))
-    coll.update(q,
-      new BasicDBObject().append(KEY, name).append(VALUE, currentList))
+  def getVectorStorageSizeFor(name: String): Int = queryFor(name) { (q, dbo) =>
+    dbo.map { d => d.size - 2 }.getOrElse(0)
   }
 
-  def getVectorStorageSizeFor(name: String): Int = {
-    nullSafeFindOne(name) match {
-      case None => 0
-      case Some(dbo) =>
-        dbo.get(VALUE).asInstanceOf[JList[AnyRef]].size
-    }
-  }
+  def insertRefStorageFor(name: String, element: Array[Byte]) = {
+    // lookup with name
+    val q: DBObject = MongoDBObject(KEY -> name)
 
-  private def nullSafeFindOne(name: String): Option[DBObject] = {
-    val o = new BasicDBObject
-    o.put(KEY, name)
-    coll.findOneNS(o)
-  }
+    db.safely { db =>
+      coll.findOne(q) match {
+        // exists : need to update
+        case Some(dbo) => 
+          dbo += ((REF, element))
+          coll.update(q, dbo, true, false)
 
-  def insertRefStorageFor(name: String, element: AnyRef) = {
-    nullSafeFindOne(name) match {
-      case None =>
-      case Some(dbo) => {
-        val q = new BasicDBObject
-        q.put(KEY, name)
-        coll.remove(q)
+        // not found : make one
+        case None => 
+          val builder = MongoDBObject.newBuilder
+          builder += KEY -> name
+          builder += REF -> element
+          coll += builder.result.asDBObject
       }
     }
-    coll.insert(
-      new BasicDBObject()
-        .append(KEY, name)
-        .append(VALUE, serializer.out(element)))
   }
 
-  def getRefStorageFor(name: String): Option[AnyRef] = {
-    nullSafeFindOne(name) match {
-      case None => None
-      case Some(dbo) =>
-        Some(serializer.in[AnyRef](dbo.get(VALUE).asInstanceOf[Array[Byte]]))
-    }
+  def getRefStorageFor(name: String): Option[Array[Byte]] = queryFor(name) { (q, dbo) =>
+    dbo.map { d => 
+      d.getAs[Array[Byte]](REF)
+    }.getOrElse(None)
   }
 }

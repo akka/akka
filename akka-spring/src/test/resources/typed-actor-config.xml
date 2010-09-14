@@ -37,7 +37,7 @@ http://scalablesolutions.se/akka/akka-1.0-SNAPSHOT.xsd">
                       implementation="se.scalablesolutions.akka.spring.foo.MyPojo"
                       timeout="2000"
                       transactional="true">
-    <akka:remote host="localhost" port="9999"/>
+    <akka:remote host="localhost" port="9990"/>
   </akka:typed-actor>
 
   <akka:typed-actor id="remote-service1"

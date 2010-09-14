@@ -197,18 +197,9 @@ trait ActorRef extends
   @volatile private[akka] var _transactionFactory: Option[TransactionFactory] = None
 
   /**
-   * This lock ensures thread safety in the dispatching: only one message can
-   * be dispatched at once on the actor.
-   */
-  protected[akka] val dispatcherLock = new ReentrantLock
-
-  /**
    * This is a reference to the message currently being processed by the actor
    */
-  protected[akka] var _currentMessage: Option[MessageInvocation] = None
-
-  protected[akka] def currentMessage_=(msg: Option[MessageInvocation]) = guard.withGuard { _currentMessage = msg }
-  protected[akka] def currentMessage = guard.withGuard { _currentMessage }
+  @volatile protected[akka] var currentMessage: MessageInvocation = null
 
   /**
    * Comparison only takes uuid into account.
@@ -978,12 +969,12 @@ class LocalActorRef private[akka](
   protected[akka] def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit = {
     joinTransaction(message)
 
-    if (isRemotingEnabled && remoteAddress.isDefined) {
+    if (remoteAddress.isDefined && isRemotingEnabled) {
       RemoteClientModule.send[Any](
         message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
     } else {
       val invocation = new MessageInvocation(this, message, senderOption, None, transactionSet.get)
-      invocation.send
+      dispatcher dispatch invocation
     }
   }
 
@@ -994,7 +985,7 @@ class LocalActorRef private[akka](
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     joinTransaction(message)
 
-    if (isRemotingEnabled && remoteAddress.isDefined) {
+    if (remoteAddress.isDefined && isRemotingEnabled) {
       val future = RemoteClientModule.send[T](
         message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, ActorType.ScalaActor)
       if (future.isDefined) future.get
@@ -1004,7 +995,7 @@ class LocalActorRef private[akka](
                    else new DefaultCompletableFuture[T](timeout)
       val invocation = new MessageInvocation(
         this, message, senderOption, Some(future.asInstanceOf[CompletableFuture[Any]]), transactionSet.get)
-      invocation.send
+      dispatcher dispatch invocation
       future
     }
   }
@@ -1016,7 +1007,7 @@ class LocalActorRef private[akka](
     if (isShutdown)
       Actor.log.warning("Actor [%s] is shut down,\n\tignoring message [%s]", toString, messageHandle)
     else {
-      currentMessage = Option(messageHandle)
+      currentMessage = messageHandle
       try {
         dispatch(messageHandle)
       } catch {
@@ -1024,7 +1015,7 @@ class LocalActorRef private[akka](
           Actor.log.error(e, "Could not invoke actor [%s]", this)
           throw e
       } finally {
-        currentMessage = None //TODO: Don't reset this, we might want to resend the message
+        currentMessage = null //TODO: Don't reset this, we might want to resend the message
       }
     }
   }
@@ -1187,7 +1178,7 @@ class LocalActorRef private[akka](
   }
 
   private def dispatch[T](messageHandle: MessageInvocation) = {
-    Actor.log.trace("Invoking actor with message:\n" + messageHandle)
+    Actor.log.trace("Invoking actor with message: %s\n",messageHandle)
     val message = messageHandle.message //serializeMessage(messageHandle.message)
     var topLevelTransaction = false
     val txSet: Option[CountDownCommitBarrier] =
@@ -1351,17 +1342,18 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  uuuid: String,
+  classOrServiceName: String,
   val className: String,
   val hostname: String,
   val port: Int,
   _timeout: Long,
-  loader: Option[ClassLoader])
+  loader: Option[ClassLoader],
+  val actorType: ActorType =  ActorType.ScalaActor)
   extends ActorRef with ScalaActorRef {
 
   ensureRemotingEnabled
 
-  _uuid = uuuid
+  id = classOrServiceName
   timeout = _timeout
 
   start
@@ -1369,7 +1361,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
     RemoteClientModule.send[Any](
-      message, senderOption, None, remoteAddress.get, timeout, true, this, None, ActorType.ScalaActor)
+      message, senderOption, None, remoteAddress.get, timeout, true, this, None, actorType)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout[T](
       message: Any,
@@ -1377,7 +1369,7 @@ private[akka] case class RemoteActorRef private[akka] (
       senderOption: Option[ActorRef],
       senderFuture: Option[CompletableFuture[T]]): CompletableFuture[T] = {
     val future = RemoteClientModule.send[T](
-      message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, ActorType.ScalaActor)
+      message, senderOption, senderFuture, remoteAddress.get, timeout, false, this, None, actorType)
     if (future.isDefined) future.get
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
@@ -1533,10 +1525,9 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * Is defined if the message was sent from another Actor, else None.
    */
   def sender: Option[ActorRef] = {
-    // Five lines of map-performance-avoidance, could be just: currentMessage map { _.sender }
     val msg = currentMessage
-    if (msg.isEmpty) None
-    else msg.get.sender
+    if (msg eq null) None
+    else msg.sender
   }
 
   /**
@@ -1544,10 +1535,9 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * Is defined if the message was sent with sent with '!!' or '!!!', else None.
    */
   def senderFuture(): Option[CompletableFuture[Any]] = {
-    // Five lines of map-performance-avoidance, could be just: currentMessage map { _.senderFuture }
     val msg = currentMessage
-    if (msg.isEmpty) None
-    else msg.get.senderFuture
+    if (msg eq null) None
+    else msg.senderFuture
   }
 
 
