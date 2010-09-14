@@ -96,12 +96,12 @@ private [akka] object RedisStorageBackend extends
    * <li>both parts of the key need to be based64 encoded since there can be spaces within each of them</li>
    */
   private [this] def makeRedisKey(name: String, key: Array[Byte]): String = withErrorHandling {
-    "%s:%s".format(name, byteArrayToString(key))
+    "%s:%s".format(name, new String(key))
   }
 
   private [this] def makeKeyFromRedisKey(redisKey: String) = withErrorHandling {
     val nk = redisKey.split(':')
-    (nk(0), stringToByteArray(nk(1)))
+    (nk(0), nk(1).getBytes)
   }
 
   private [this] def mset(entries: List[(String, String)]): Unit = withErrorHandling {
@@ -124,27 +124,22 @@ private [akka] object RedisStorageBackend extends
   }
 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = withErrorHandling {
-    db.get(makeRedisKey(name, key)) match {
-      case None =>
-        throw new NoSuchElementException(new String(key) + " not present")
-      case Some(s) => Some(stringToByteArray(s))
+    db.get(makeRedisKey(name, key))
+      .map(stringToByteArray(_))
+      .orElse(throw new NoSuchElementException(new String(key) + " not present"))
     }
-  }
 
   def getMapStorageSizeFor(name: String): Int = withErrorHandling {
-    db.keys("%s:*".format(name)) match {
-      case None => 0
-      case Some(keys) => keys.length
-    }
+    db.keys("%s:*".format(name)).map(_.length).getOrElse(0)
   }
 
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = withErrorHandling {
-    db.keys("%s:*".format(name)) match {
-      case None =>
-        throw new NoSuchElementException(name + " not present")
-      case Some(keys) =>
+    db.keys("%s:*".format(name))
+      .map { keys => 
         keys.map(key => (makeKeyFromRedisKey(key.get)._2, stringToByteArray(db.get(key.get).get))).toList
-    }
+      }.getOrElse {
+        throw new NoSuchElementException(name + " not present")
+      }
   }
 
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]],
@@ -207,12 +202,11 @@ private [akka] object RedisStorageBackend extends
   }
 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = withErrorHandling {
-    db.lindex(name, index) match {
-      case None =>
+    db.lindex(name, index)
+      .map(stringToByteArray(_))
+      .getOrElse {
         throw new NoSuchElementException(name + " does not have element at " + index)
-      case Some(e) =>
-        stringToByteArray(e)
-    }
+      }
   }
 
   /**
@@ -252,11 +246,11 @@ private [akka] object RedisStorageBackend extends
   }
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = withErrorHandling {
-    db.get(name) match {
-      case None =>
+    db.get(name)
+      .map(stringToByteArray(_))
+      .orElse {
         throw new NoSuchElementException(name + " not present")
-      case Some(s) => Some(stringToByteArray(s))
-    }
+      }
   }
 
   // add to the end of the queue
@@ -266,11 +260,11 @@ private [akka] object RedisStorageBackend extends
 
   // pop from the front of the queue
   def dequeue(name: String): Option[Array[Byte]] = withErrorHandling {
-    db.lpop(name) match {
-      case None =>
+    db.lpop(name)
+      .map(stringToByteArray(_))
+      .orElse {
         throw new NoSuchElementException(name + " not present")
-      case Some(s) => Some(stringToByteArray(s))
-    }
+      }
   }
 
   // get the size of the queue
@@ -302,26 +296,19 @@ private [akka] object RedisStorageBackend extends
 
   // completely delete the queue
   def remove(name: String): Boolean = withErrorHandling {
-    db.del(name) match {
-      case Some(1) => true
-      case _ => false
-    }
+    db.del(name).map { case 1 => true }.getOrElse(false)
   }
 
   // add item to sorted set identified by name
   def zadd(name: String, zscore: String, item: Array[Byte]): Boolean = withErrorHandling {
-    db.zadd(name, zscore, byteArrayToString(item)) match {
-      case Some(1) => true
-      case _ => false
-    }
+    db.zadd(name, zscore, byteArrayToString(item))
+      .map { case 1 => true }.getOrElse(false)
   }
 
   // remove item from sorted set identified by name
   def zrem(name: String, item: Array[Byte]): Boolean = withErrorHandling {
-    db.zrem(name, byteArrayToString(item)) match {
-      case Some(1) => true
-      case _ => false
-    }
+    db.zrem(name, byteArrayToString(item))
+      .map { case 1 => true }.getOrElse(false)
   }
 
   // cardinality of the set identified by name
@@ -330,29 +317,23 @@ private [akka] object RedisStorageBackend extends
   }
 
   def zscore(name: String, item: Array[Byte]): Option[Float] = withErrorHandling {
-    db.zscore(name, byteArrayToString(item)) match {
-      case Some(s) => Some(s.toFloat)
-      case None => None
-    }
+    db.zscore(name, byteArrayToString(item)).map(_.toFloat)
   }
 
   def zrange(name: String, start: Int, end: Int): List[Array[Byte]] = withErrorHandling {
-    db.zrange(name, start.toString, end.toString, RedisClient.ASC, false) match {
-      case None =>
+    db.zrange(name, start.toString, end.toString, RedisClient.ASC, false) 
+      .map(_.map(e => stringToByteArray(e.get)))
+      .getOrElse {
         throw new NoSuchElementException(name + " not present")
-      case Some(s) =>
-        s.map(e => stringToByteArray(e.get))
-    }
+      }
   }
 
   def zrangeWithScore(name: String, start: Int, end: Int): List[(Array[Byte], Float)] = withErrorHandling {
-    db.zrangeWithScore(
-      name, start.toString, end.toString, RedisClient.ASC) match {
-        case None =>
-          throw new NoSuchElementException(name + " not present")
-        case Some(l) =>
-          l.map{ case (elem, score) => (stringToByteArray(elem.get), score.get.toFloat) }
-    }
+    db.zrangeWithScore(name, start.toString, end.toString, RedisClient.ASC)
+      .map(_.map { case (elem, score) => (stringToByteArray(elem.get), score.get.toFloat) })
+      .getOrElse {
+        throw new NoSuchElementException(name + " not present")
+      }
   }
 
   def flushDB = withErrorHandling(db.flushdb)

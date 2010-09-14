@@ -93,6 +93,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     actor.stop
   }
 
+
   @Test
   def shouldSendOneWayAndReceiveReply = {
     val actor = actorOf[SendOneWayAndReplyReceiverActor]
@@ -103,7 +104,7 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
     sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendTo = actor
     sender.start
     sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].sendOff
-    assert(SendOneWayAndReplySenderActor.latch.await(1, TimeUnit.SECONDS))
+    assert(SendOneWayAndReplySenderActor.latch.await(3, TimeUnit.SECONDS))
     assert(sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].state.isDefined === true)
     assert("World" === sender.actor.asInstanceOf[SendOneWayAndReplySenderActor].state.get.asInstanceOf[String])
     actor.stop
@@ -134,6 +135,6 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
         assert("Expected exception; to test fault-tolerance" === e.getMessage())
     }
     actor.stop
-  }
+  }  
 }
 

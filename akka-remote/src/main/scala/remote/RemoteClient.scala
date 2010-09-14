@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.mutable.{HashSet, HashMap}
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.actor._
 
 /**
  * Atomic remote request/reply message id generator.
@@ -76,8 +77,6 @@ object RemoteClient extends Logging {
   private val remoteClients = new HashMap[String, RemoteClient]
   private val remoteActors =  new HashMap[RemoteServer.Address, HashSet[String]]
 
-  // FIXME: simplify overloaded methods when we have Scala 2.8
-
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
 
@@ -98,6 +97,27 @@ object RemoteClient extends Logging {
 
   def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
     RemoteActorRef(serviceId, className, hostname, port, timeout, None)
+
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, hostname: String, port: Int) : T = {
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, 5000L, hostname, port, None)
+  }
+
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int) : T = {
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, None)
+  }
+
+  def typedActorFor[T](intfClass: Class[T], serviceIdOrClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader) : T = {
+    typedActorFor(intfClass, serviceIdOrClassName, serviceIdOrClassName, timeout, hostname, port, Some(loader))
+  }
+
+  def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader) : T = {
+    typedActorFor(intfClass, serviceId, implClassName, timeout, hostname, port, Some(loader))
+  }
+
+  private[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]) : T = {
+    val actorRef = RemoteActorRef(serviceId, implClassName, hostname, port, timeout, loader, ActorType.TypedActor)
+    TypedActor.createProxyForRemoteActorRef(intfClass, actorRef)
+  }
 
   private[akka] def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
     RemoteActorRef(serviceId, className, hostname, port, timeout, Some(loader))
@@ -220,10 +240,10 @@ class RemoteClient private[akka] (
       val channel = connection.awaitUninterruptibly.getChannel
       openChannels.add(channel)
       if (!connection.isSuccess) {
-        foreachListener(_ ! RemoteClientError(connection.getCause, this))
+        notifyListeners(RemoteClientError(connection.getCause, this))
         log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
       }
-      foreachListener(_ ! RemoteClientStarted(this))
+      notifyListeners(RemoteClientStarted(this))
       isRunning = true
     }
   }
@@ -232,7 +252,7 @@ class RemoteClient private[akka] (
     log.info("Shutting down %s", name)
     if (isRunning) {
       isRunning = false
-      foreachListener(_ ! RemoteClientShutdown(this))
+      notifyListeners(RemoteClientShutdown(this))
       timer.stop
       timer = null
       openChannels.close.awaitUninterruptibly
@@ -250,7 +270,7 @@ class RemoteClient private[akka] (
   @deprecated("Use removeListener instead")
   def deregisterListener(actorRef: ActorRef) = removeListener(actorRef)
 
-  override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
+  override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
   protected override def manageLifeCycleOfListeners = false
 
@@ -287,7 +307,7 @@ class RemoteClient private[akka] (
   } else {
     val exception = new RemoteClientException(
       "Remote client is not running, make sure you have invoked 'RemoteClient.connect' before using it.", this)
-    foreachListener(l => l ! RemoteClientError(exception, this))
+    notifyListeners(RemoteClientError(exception, this))
     throw exception
   }
 
@@ -403,12 +423,12 @@ class RemoteClientHandler(
         futures.remove(reply.getId)
       } else {
         val exception = new RemoteClientException("Unknown message received in remote client handler: " + result, client)
-        client.foreachListener(_ ! RemoteClientError(exception, client))
+        client.notifyListeners(RemoteClientError(exception, client))
         throw exception
       }
     } catch {
       case e: Exception =>
-        client.foreachListener(_ ! RemoteClientError(e, client))
+        client.notifyListeners(RemoteClientError(e, client))
         log.error("Unexpected exception in remote client handler: %s", e)
         throw e
     }
@@ -423,7 +443,7 @@ class RemoteClientHandler(
           client.connection = bootstrap.connect(remoteAddress)
           client.connection.awaitUninterruptibly // Wait until the connection attempt succeeds or fails.
           if (!client.connection.isSuccess) {
-            client.foreachListener(_ ! RemoteClientError(client.connection.getCause, client))
+            client.notifyListeners(RemoteClientError(client.connection.getCause, client))
             log.error(client.connection.getCause, "Reconnection to [%s] has failed", remoteAddress)
           }
         }
@@ -433,7 +453,7 @@ class RemoteClientHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     def connect = {
-      client.foreachListener(_ ! RemoteClientConnected(client))
+      client.notifyListeners(RemoteClientConnected(client))
       log.debug("Remote client connected to [%s]", ctx.getChannel.getRemoteAddress)
       client.resetReconnectionTimeWindow
     }
@@ -450,12 +470,12 @@ class RemoteClientHandler(
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    client.foreachListener(_ ! RemoteClientDisconnected(client))
+    client.notifyListeners(RemoteClientDisconnected(client))
     log.debug("Remote client disconnected from [%s]", ctx.getChannel.getRemoteAddress)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    client.foreachListener(_ ! RemoteClientError(event.getCause, client))
+    client.notifyListeners(RemoteClientError(event.getCause, client))
     log.error(event.getCause, "Unexpected exception from downstream in remote client")
     event.getChannel.close
   }

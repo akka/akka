@@ -4,10 +4,7 @@
 
 package se.scalablesolutions.akka.actor.remote
 
-import org.scalatest.Spec
-import org.scalatest.Assertions
 import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
@@ -19,6 +16,7 @@ import se.scalablesolutions.akka.actor._
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, BlockingQueue}
+import org.scalatest.{BeforeAndAfterEach, Spec, Assertions, BeforeAndAfterAll}
 
 object RemoteTypedActorSpec {
   val HOSTNAME = "localhost"
@@ -40,7 +38,7 @@ object RemoteTypedActorLog {
 class RemoteTypedActorSpec extends
   Spec with
   ShouldMatchers with
-  BeforeAndAfterAll {
+  BeforeAndAfterEach with BeforeAndAfterAll {
 
   import RemoteTypedActorLog._
   import RemoteTypedActorSpec._
@@ -80,6 +78,10 @@ class RemoteTypedActorSpec extends
       case e => ()
     }
     ActorRegistry.shutdownAll
+  }
+
+   override def afterEach() {
+    server.typedActors.clear
   }
 
   describe("Remote Typed Actor ") {

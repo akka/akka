@@ -16,9 +16,8 @@ import org.codehaus.aspectwerkz.proxy.Proxy
 import org.codehaus.aspectwerkz.annotation.{Aspect, Around}
 
 import java.net.InetSocketAddress
-import java.lang.reflect.{InvocationTargetException, Method, Field}
-
 import scala.reflect.BeanProperty
+import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
 
 /**
  * TypedActor is a type-safe actor made out of a POJO with interface.
@@ -390,7 +389,8 @@ object TypedActor extends Logging {
     typedActor.initialize(proxy)
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
-    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, None, config.timeout))
+    if (config._host.isDefined) actorRef.makeRemote(config._host.get)
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, config._host, config.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }
@@ -408,24 +408,47 @@ object TypedActor extends Logging {
     proxy.asInstanceOf[T]
   }
 
-/*
-  // NOTE: currently not used - but keep it around
-  private[akka] def newInstance[T <: TypedActor](targetClass: Class[T],
-                                                 remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
-    val proxy = {
-      val instance = Proxy.newInstance(targetClass, true, false)
-      if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
-      else throw new IllegalActorStateException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
+  /**
+   * Create a proxy for a RemoteActorRef representing a server managed remote typed actor.
+   * 
+   */
+  private[akka] def createProxyForRemoteActorRef[T](intfClass: Class[T], actorRef: ActorRef): T = {
+
+    class MyInvocationHandler extends InvocationHandler {
+      def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = {
+        // do nothing, this is just a dummy
+        null
+      }
     }
-    val context = injectTypedActorContext(proxy)
-    actorRef.actor.asInstanceOf[Dispatcher].initialize(targetClass, proxy, proxy, context)
-    actorRef.timeout = timeout
-    if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
-    AspectInitRegistry.register(proxy, AspectInit(targetClass, proxy, actorRef, remoteAddress, timeout))
-    actorRef.start
-    proxy.asInstanceOf[T]
+    val handler = new MyInvocationHandler()
+
+    val interfaces = Array(intfClass, classOf[ServerManagedTypedActor]).asInstanceOf[Array[java.lang.Class[_]]]
+    val jProxy = JProxy.newProxyInstance(intfClass.getClassLoader(), interfaces, handler)
+    val awProxy = Proxy.newInstance(interfaces, Array(jProxy, jProxy), true, false)
+
+    AspectInitRegistry.register(awProxy, AspectInit(intfClass, null, actorRef, None, 5000L))
+    awProxy.asInstanceOf[T]
   }
-*/
+
+
+  /*
+    // NOTE: currently not used - but keep it around
+    private[akka] def newInstance[T <: TypedActor](targetClass: Class[T],
+                                                   remoteAddress: Option[InetSocketAddress], timeout: Long): T = {
+      val proxy = {
+        val instance = Proxy.newInstance(targetClass, true, false)
+        if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
+        else throw new IllegalActorStateException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
+      }
+      val context = injectTypedActorContext(proxy)
+      actorRef.actor.asInstanceOf[Dispatcher].initialize(targetClass, proxy, proxy, context)
+      actorRef.timeout = timeout
+      if (remoteAddress.isDefined) actorRef.makeRemote(remoteAddress.get)
+      AspectInitRegistry.register(proxy, AspectInit(targetClass, proxy, actorRef, remoteAddress, timeout))
+      actorRef.start
+      proxy.asInstanceOf[T]
+    }
+  */
 
   /**
    * Stops the current Typed Actor.
@@ -542,6 +565,30 @@ object TypedActor extends Logging {
   private[akka] def isJoinPoint(message: Any): Boolean = message.isInstanceOf[JoinPoint]
 }
 
+
+/**
+ * AspectWerkz Aspect that is turning POJO into proxy to a server managed remote TypedActor.
+ * <p/>
+ * Is deployed on a 'perInstance' basis with the pointcut 'execution(* *.*(..))',
+ * e.g. all methods on the instance.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+@Aspect("perInstance")
+private[akka] sealed class ServerManagedTypedActorAspect extends ActorAspect {
+  
+  @Around("execution(* *.*(..)) && this(se.scalablesolutions.akka.actor.ServerManagedTypedActor)")
+  def invoke(joinPoint: JoinPoint): AnyRef = {
+    if (!isInitialized) initialize(joinPoint)
+    remoteDispatch(joinPoint)
+  }
+
+  override def initialize(joinPoint: JoinPoint): Unit = {
+    super.initialize(joinPoint)
+    remoteAddress = actorRef.remoteAddress
+  }
+}
+
 /**
  * AspectWerkz Aspect that is turning POJO into TypedActor.
  * <p/>
@@ -551,18 +598,9 @@ object TypedActor extends Logging {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 @Aspect("perInstance")
-private[akka] sealed class TypedActorAspect {
-  @volatile private var isInitialized = false
-  @volatile private var isStopped = false
-  private var interfaceClass: Class[_] = _
-  private var typedActor: TypedActor = _
-  private var actorRef: ActorRef = _
-  private var remoteAddress: Option[InetSocketAddress] = _
-  private var timeout: Long = _
-  private var uuid: String = _
-  @volatile private var instance: TypedActor = _
+private[akka] sealed class TypedActorAspect extends ActorAspect {
 
-  @Around("execution(* *.*(..))")
+  @Around("execution(* *.*(..)) && !this(se.scalablesolutions.akka.actor.ServerManagedTypedActor)")
   def invoke(joinPoint: JoinPoint): AnyRef = {
     if (!isInitialized) initialize(joinPoint)
     dispatch(joinPoint)
@@ -572,12 +610,26 @@ private[akka] sealed class TypedActorAspect {
     if (remoteAddress.isDefined) remoteDispatch(joinPoint)
     else localDispatch(joinPoint)
   }
+}
 
-  private def localDispatch(joinPoint: JoinPoint): AnyRef = {
-    val methodRtti     = joinPoint.getRtti.asInstanceOf[MethodRtti]
-    val isOneWay       = TypedActor.isOneWay(methodRtti)
+/**
+ * Base class for TypedActorAspect and ServerManagedTypedActorAspect to reduce code duplication.
+ */
+private[akka] abstract class ActorAspect {
+  @volatile protected var isInitialized = false
+  @volatile protected var isStopped = false
+  protected var interfaceClass: Class[_] = _
+  protected var typedActor: TypedActor = _
+  protected var actorRef: ActorRef = _
+  protected var timeout: Long = _
+  protected var uuid: String = _
+  protected var remoteAddress: Option[InetSocketAddress] = _
+
+  protected def localDispatch(joinPoint: JoinPoint): AnyRef = {
+    val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
+    val isOneWay = TypedActor.isOneWay(methodRtti)
     val senderActorRef = Some(SenderContextInfo.senderActorRef.value)
-    val senderProxy    = Some(SenderContextInfo.senderProxy.value)
+    val senderProxy = Some(SenderContextInfo.senderProxy.value)
 
     typedActor.context._sender = senderProxy
     if (!actorRef.isRunning && !isStopped) {
@@ -598,7 +650,7 @@ private[akka] sealed class TypedActorAspect {
     }
   }
 
-  private def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
+  protected def remoteDispatch(joinPoint: JoinPoint): AnyRef = {
     val methodRtti = joinPoint.getRtti.asInstanceOf[MethodRtti]
     val isOneWay = TypedActor.isOneWay(methodRtti)
 
@@ -637,7 +689,7 @@ private[akka] sealed class TypedActorAspect {
     (escapedArgs, isEscaped)
   }
 
-  private def initialize(joinPoint: JoinPoint): Unit = {
+  protected def initialize(joinPoint: JoinPoint): Unit = {
     val init = AspectInitRegistry.initFor(joinPoint.getThis)
     interfaceClass = init.interfaceClass
     typedActor = init.targetInstance
@@ -648,6 +700,7 @@ private[akka] sealed class TypedActorAspect {
     isInitialized = true
   }
 }
+
 
 /**
  * Internal helper class to help pass the contextual information between threads.
@@ -670,7 +723,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
 
   def register(proxy: AnyRef, init: AspectInit) = {
     val res = initializations.put(proxy, init)
-    foreachListener(_ ! AspectInitRegistered(proxy, init))
+    notifyListeners(AspectInitRegistered(proxy, init))
     res
   }
 
@@ -679,7 +732,7 @@ private[akka] object AspectInitRegistry extends ListenerManagement {
    */
   def unregister(proxy: AnyRef): AspectInit = {
     val init = initializations.remove(proxy)
-    foreachListener(_ ! AspectInitUnregistered(proxy, init))
+    notifyListeners(AspectInitUnregistered(proxy, init))
     init.actorRef.stop
     init
   }
@@ -700,5 +753,11 @@ private[akka] sealed case class AspectInit(
   val timeout: Long) {
   def this(interfaceClass: Class[_], targetInstance: TypedActor, actorRef: ActorRef, timeout: Long) =
     this(interfaceClass, targetInstance, actorRef, None, timeout)
+
 }
 
+
+/**
+ * Marker interface for server manager typed actors.
+ */
+private[akka] sealed trait ServerManagedTypedActor extends TypedActor

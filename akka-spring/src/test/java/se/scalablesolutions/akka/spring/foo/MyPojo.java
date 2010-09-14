@@ -1,42 +1,34 @@
 package se.scalablesolutions.akka.spring.foo;
 
-import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.actor.TypedActor;
 
-public class MyPojo extends TypedActor implements IMyPojo{
+import java.util.concurrent.CountDownLatch;
 
-        private String foo;
-        private String bar;
+public class MyPojo extends TypedActor implements IMyPojo {
 
-
-        public MyPojo() {
-                this.foo = "foo";
-                this.bar = "bar";
-        }
+  public static CountDownLatch latch = new CountDownLatch(1);
+  public static String lastOneWayMessage = null;
+  private String foo = "foo";
 
 
-        public String getFoo() {
-                return foo;
-        }
+  public MyPojo() {
+  }
 
+  public String getFoo() {
+    return foo;
+  }
 
-        public String getBar() {
-                return bar;
-        }
+  public void oneWay(String message) {
+    lastOneWayMessage = message;
+    latch.countDown();
+  }
 
-        public void preRestart() {
-                System.out.println("pre restart");
-        }
-
-        public void postRestart() {
-                System.out.println("post restart");
-        }
-
-    public String longRunning() {
-      try {
-          Thread.sleep(6000);
-      } catch (InterruptedException e) {
-      }
-      return "this took long";
+  public String longRunning() {
+    try {
+      Thread.sleep(6000);
+    } catch (InterruptedException e) {
     }
+    return "this took long";
+  }
 
 }

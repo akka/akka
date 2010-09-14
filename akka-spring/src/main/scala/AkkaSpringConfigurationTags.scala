@@ -19,6 +19,7 @@ object AkkaSpringConfigurationTags {
   val DISPATCHER_TAG = "dispatcher"
   val PROPERTYENTRY_TAG = "property"
   val CAMEL_SERVICE_TAG = "camel-service"
+  val ACTOR_FOR_TAG = "actor-for"
 
   // actor sub tags
   val REMOTE_TAG = "remote"
@@ -45,6 +46,8 @@ object AkkaSpringConfigurationTags {
   val TRANSACTIONAL = "transactional"
   val HOST = "host"
   val PORT = "port"
+  val MANAGED_BY = "managed-by"
+  val SERVICE_NAME = "service-name"
   val LIFECYCLE = "lifecycle"
   val SCOPE = "scope"
 
@@ -100,5 +103,9 @@ object AkkaSpringConfigurationTags {
   val EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING = "executor-based-event-driven-work-stealing"
   val THREAD_BASED = "thread-based"
   val HAWT = "hawt"
+
+  // managed by types
+  val SERVER_MANAGED = "server"
+  val CLIENT_MANAGED = "client"
 
 }
