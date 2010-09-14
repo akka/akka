@@ -480,7 +480,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_codec = Dependencies.commons_codec
     val redis         = Dependencies.redis
 
-    // override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -491,7 +491,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val mongo = Dependencies.mongo
     val casbah = Dependencies.casbah
 
-    // override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
   // -------------------------------------------------------------------------------------------------------------------
