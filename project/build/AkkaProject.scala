@@ -50,6 +50,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
     lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
+    lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -77,6 +78,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
   lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
   lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
+  lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -199,6 +201,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
 
     lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile"
+
+    lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile" 
+    lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile" 
 
     lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile"
     lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile"
@@ -461,6 +466,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaMongoProject(_), akka_persistence_common)
     lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra",
       new AkkaCassandraProject(_), akka_persistence_common)
+    lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
+      new AkkaVoldemortProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -509,6 +516,23 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
+
+
+    // -------------------------------------------------------------------------------------------------------------------
+    // akka-persistence-voldemort subproject
+    // -------------------------------------------------------------------------------------------------------------------
+
+    class AkkaVoldemortProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+      val voldemort   = Dependencies.voldemort
+      val voldemort_contrib = Dependencies.voldemort_contrib
+
+      //testing
+      val scalatest = Dependencies.scalatest
+      override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    }
+
+
+
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-kernel subproject
