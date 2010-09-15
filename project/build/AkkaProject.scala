@@ -51,6 +51,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
     lazy val CasbahRepoSnapshots  = MavenRepository("Casbah Snapshot Repo", "http://repo.bumnetworks.com/snapshots/")
     lazy val CasbahRepoReleases   = MavenRepository("Casbah Snapshot Repo", "http://repo.bumnetworks.com/releases/")
+    lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -79,6 +80,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
   lazy val casbahSnapshot          = ModuleConfiguration("com.novus",CasbahRepoSnapshots)
   lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
+  lazy val zookeeperRelease        = ModuleConfiguration("org.apache.hadoop.zookeeper",ZookeeperRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -205,6 +207,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile"
     lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile"
 
+    lazy val zookeeper  = "org.apache.hadoop.zookeeper" % "zookeeper" % "3.2.2" % "compile"
+
+    lazy val hadoop_core = "org.apache.hadoop" % "hadoop-core" % "0.20.2" % "compile"
+
+    lazy val hbase_core = "org.apache.hbase" % "hbase-core" % "0.20.6" % "compile"
+
     // Test
 
     lazy val camel_spring   = "org.apache.camel"       % "camel-spring"        % CAMEL_VERSION     % "test"
@@ -218,6 +226,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test"
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test"
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test"
+    lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test"
+    lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -463,6 +473,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaMongoProject(_), akka_persistence_common)
     lazy val akka_persistence_cassandra = project("akka-persistence-cassandra", "akka-persistence-cassandra",
       new AkkaCassandraProject(_), akka_persistence_common)
+    lazy val akka_persistence_hbase = project("akka-persistence-hbase", "akka-persistence-hbase",
+      new AkkaHbaseProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -509,6 +521,21 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val google_coll    = Dependencies.google_coll
     val high_scale     = Dependencies.high_scale
 
+    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // akka-persistence-hbase subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaHbaseProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val zookeeper   = Dependencies.zookeeper
+    val hadoop_core = Dependencies.hadoop_core
+
+    // testing
+    val hadoop_test = Dependencies.hadoop_test
+    val hbase_test  = Dependencies.hbase_test
+    
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
