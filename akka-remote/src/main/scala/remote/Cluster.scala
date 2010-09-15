@@ -86,11 +86,11 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
   @volatile private var local: Node = Node(Nil)
   @volatile private var remotes: Map[ADDR_T, Node] = Map()
 
-  override def init = {
+  override def preStart = {
     remotes = new HashMap[ADDR_T, Node]
   }
 
-  override def shutdown = {
+  override def postStop = {
     remotes = Map()
   }
 

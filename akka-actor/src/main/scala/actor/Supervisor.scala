@@ -187,7 +187,7 @@ final class SupervisorActor private[akka] (
   trapExit = trapExceptions
   faultHandler = Some(handler)
 
-  override def shutdown(): Unit = shutdownLinkedActors
+  override def postStop(): Unit = shutdownLinkedActors
 
   def receive = {
     // FIXME add a way to respond to MaximumNumberOfRestartsWithinTimeRangeReached in declaratively configured Supervisor

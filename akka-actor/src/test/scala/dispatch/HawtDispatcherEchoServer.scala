@@ -53,7 +53,7 @@ object HawtDispatcherEchoServer {
     var accept_source:DispatchSource = _
     var sessions = ListBuffer[ActorRef]()
 
-    override def init = {
+    override def preStart = {
       channel = ServerSocketChannel.open();
       channel.socket().bind(new InetSocketAddress(port));
       channel.configureBlocking(false);
@@ -122,7 +122,7 @@ object HawtDispatcherEchoServer {
     var writeCounter = 0L
     var closed = false
 
-    override def init = {
+    override def preStart = {
 
       if(useReactorPattern) {
         // Then we will be using the reactor pattern for handling IO:
@@ -154,7 +154,7 @@ object HawtDispatcherEchoServer {
       println("Accepted connection from: "+remote_address);
     }
 
-    override def shutdown = {
+    override def postStop = {
       closed = true
       read_source.release
       write_source.release

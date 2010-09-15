@@ -104,9 +104,9 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     connectionCallback.foreach(cb => if (cb.isRunning) cb ! message)
   }
 
-  override def shutdown = {
+  override def postStop = {
     reconnectionTimer.cancel
-    // make sure shutdown is called on all linked actors so they can do channel cleanup before connection is killed
+    // make sure postStop is called on all linked actors so they can do channel cleanup before connection is killed
     self.shutdownLinkedActors
     disconnect
   }

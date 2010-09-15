@@ -302,13 +302,23 @@ private [akka] object RedisStorageBackend extends
   // add item to sorted set identified by name
   def zadd(name: String, zscore: String, item: Array[Byte]): Boolean = withErrorHandling {
     db.zadd(name, zscore, byteArrayToString(item))
-      .map { case 1 => true }.getOrElse(false)
+      .map { e => 
+        e match {
+          case 1 => true
+          case _ => false 
+        }
+      }.getOrElse(false)
   }
 
   // remove item from sorted set identified by name
   def zrem(name: String, item: Array[Byte]): Boolean = withErrorHandling {
     db.zrem(name, byteArrayToString(item))
-      .map { case 1 => true }.getOrElse(false)
+      .map { e => 
+        e match {
+          case 1 => true
+          case _ => false 
+        }
+      }.getOrElse(false)
   }
 
   // cardinality of the set identified by name
@@ -349,6 +359,7 @@ private [akka] object RedisStorageBackend extends
       case e: java.lang.NullPointerException =>
         throw new StorageException("Could not connect to Redis server")
       case e =>
+        e.printStackTrace
         throw new StorageException("Error in Redis: " + e.getMessage)
     }
   }

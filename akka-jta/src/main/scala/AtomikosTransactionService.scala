@@ -36,6 +36,6 @@ class AtomikosTransactionService extends TransactionService with TransactionProt
         "Could not create a new Atomikos J2EE Transaction Manager, due to: " + e.toString)
     }
   )))
-  // TODO: gracefully shutdown of the TM
-  //txService.shutdown(false)
+  // TODO: gracefully postStop of the TM
+  //txService.postStop(false)
 }

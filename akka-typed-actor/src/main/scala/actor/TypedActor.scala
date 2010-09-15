@@ -40,12 +40,12 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
  *   }
  *
  *   @Override
- *   public void init() {
+ *   public void preStart() {
  *     ... // optional initialization on start
  *   }
  *
  *   @Override
- *   public void shutdown() {
+ *   public void postStop() {
  *     ... // optional cleanup on stop
  *   }
  *
@@ -78,11 +78,11 @@ import java.lang.reflect.{Method, Field, InvocationHandler, Proxy => JProxy}
  *
  *   def square(x: Int): Future[Integer] = future(x * x)
  *
- *   override def init = {
+ *   override def preStart = {
  *     ... // optional initialization on start
  *   }
  *
- *   override def shutdown = {
+ *   override def postStop = {
  *     ... // optional cleanup on stop
  *   }
  *
@@ -542,11 +542,7 @@ object TypedActor extends Logging {
     val typedActor =
       if (instance.isInstanceOf[TypedActor]) instance.asInstanceOf[TypedActor]
       else throw new IllegalArgumentException("Actor [" + targetClass.getName + "] is not a sub class of 'TypedActor'")
-    typedActor.init
-    import se.scalablesolutions.akka.stm.local.atomic
-    atomic {
-      typedActor.initTransactionalState
-    }
+    typedActor.preStart
     typedActor
   }
 

@@ -38,7 +38,7 @@ public class SamplePojoImpl extends TypedActor implements SamplePojo {
     }
 
     @Override
-    public void shutdown() {
+    public void postStop() {
         _down = true;
         latch.countDown();
     }
