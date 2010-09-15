@@ -6,7 +6,7 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>memory</persistence>
+        <persistence>bdb</persistence>
         <routing>client</routing>
         <key-serializer>
             <type>string</type>
@@ -23,7 +23,7 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>memory</persistence>
+        <persistence>bdb</persistence>
         <routing>client</routing>
         <key-serializer>
             <type>identity</type>
@@ -39,7 +39,7 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>memory</persistence>
+        <persistence>bdb</persistence>
         <routing>client</routing>
         <key-serializer>
             <type>string</type>
@@ -56,7 +56,7 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>memory</persistence>
+        <persistence>bdb</persistence>
         <routing>client</routing>
         <key-serializer>
             <type>identity</type>
@@ -72,7 +72,7 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>memory</persistence>
+        <persistence>bdb</persistence>
         <routing>client</routing>
         <key-serializer>
             <type>string</type>
