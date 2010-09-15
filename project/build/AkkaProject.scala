@@ -209,7 +209,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile"
     lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile"
-    lazy val voldemort_needs_log4j = "log4j" % "log4j" % "1.2.16" % "compile"
+    lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile"
 
     lazy val werkz = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile"
     lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5" % ASPECTWERKZ_VERSION % "compile"
