@@ -21,6 +21,7 @@ import collection.mutable.{Map, Set, HashSet, ArrayBuffer}
 import java.util.{Map => JMap}
 
 
+
 private[akka] object VoldemortStorageBackend extends
 MapStorageBackend[Array[Byte], Array[Byte]] with
         VectorStorageBackend[Array[Byte]] with
@@ -229,7 +230,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
   def getIndexFromVectorValueKey(owner: String, key: Array[Byte]): Int = {
     val indexBytes = new Array[Byte](IntSerializer.bytesPerInt)
-    System.arraycopy(key, key.length - IntSerializer.bytesPerInt - 1, indexBytes, 0, IntSerializer.bytesPerInt)
+    System.arraycopy(key, key.length - IntSerializer.bytesPerInt , indexBytes, 0, IntSerializer.bytesPerInt)
     IntSerializer.fromBytes(indexBytes)
   }
 
