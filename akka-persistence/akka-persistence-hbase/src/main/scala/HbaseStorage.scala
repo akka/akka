@@ -8,20 +8,20 @@ import se.scalablesolutions.akka.util.UUID
 import se.scalablesolutions.akka.stm._
 import se.scalablesolutions.akka.persistence.common._
 
-object HbaseStorage /*extends Storage*/ {
+object HbaseStorage extends Storage {
   type ElementType = Array[Byte]
 
-  //def newMap: PersistentMap[ElementType, ElementType] = newMap(UUID.newUuid.toString)
-  //def newVector: PersistentVector[ElementType] = newVector(UUID.newUuid.toString)
-  //def newRef: PersistentRef[ElementType] = newRef(UUID.newUuid.toString)
+  def newMap: PersistentMap[ElementType, ElementType] = newMap(UUID.newUuid.toString)
+  def newVector: PersistentVector[ElementType] = newVector(UUID.newUuid.toString)
+  def newRef: PersistentRef[ElementType] = newRef(UUID.newUuid.toString)
 
-  //def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
-  //def getVector(id: String): PersistentVector[ElementType] = newVector(id)
-  //def getRef(id: String): PersistentRef[ElementType] = newRef(id)
+  def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
+  def getVector(id: String): PersistentVector[ElementType] = newVector(id)
+  def getRef(id: String): PersistentRef[ElementType] = newRef(id)
 
-  //def newMap(id: String): PersistentMap[ElementType, ElementType] = new HbasePersistentMap(id)
-  //def newVector(id: String): PersistentVector[ElementType] = new HbasePersistentVector(id)
-  //def newRef(id: String): PersistentRef[ElementType] = new HbasePersistentRef(id)
+  def newMap(id: String): PersistentMap[ElementType, ElementType] = new HbasePersistentMap(id)
+  def newVector(id: String): PersistentVector[ElementType] = new HbasePersistentVector(id)
+  def newRef(id: String): PersistentRef[ElementType] = new HbasePersistentRef(id)
 }
 
 /**
@@ -29,9 +29,9 @@ object HbaseStorage /*extends Storage*/ {
  *
  * @author <a href="http://www.davidgreco.it">David Greco</a>
  */
-class HbasePersistentMap(id: String) /*extends PersistentMapBinary*/ {
+class HbasePersistentMap(id: String) extends PersistentMapBinary {
   val uuid = id
-  //val storage = HbaseStorageBackend
+  val storage = HbaseStorageBackend
 }
 
 /**
@@ -39,12 +39,12 @@ class HbasePersistentMap(id: String) /*extends PersistentMapBinary*/ {
  *
  * @author <a href="http://www.davidgreco.it">David Greco</a>
  */
-class HbasePersistentVector(id: String) /*extends PersistentVector[Array[Byte]]*/ {
+class HbasePersistentVector(id: String) extends PersistentVector[Array[Byte]] {
   val uuid = id
-  //val storage = HbaseStorageBackend
+  val storage = HbaseStorageBackend
 }
 
-class HbasePersistentRef(id: String) /*extends PersistentRef[Array[Byte]]*/ {
+class HbasePersistentRef(id: String) extends PersistentRef[Array[Byte]] {
   val uuid = id
-  //val storage = HbaseStorageBackend
+  val storage = HbaseStorageBackend
 }
