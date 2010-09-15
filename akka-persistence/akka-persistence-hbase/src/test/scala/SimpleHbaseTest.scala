@@ -38,26 +38,25 @@ class PersistenceSpec extends Spec with BeforeAndAfterAll with ShouldMatchers {
       val admin = new HBaseAdmin(testUtil.getConfiguration)
       admin.createTable(descriptor)
       val table = new HTable(testUtil.getConfiguration, Bytes.toBytes("ATable"))
- 
-      table should not equal(null)
+
+      table should not equal (null)
     }
 
-    it("should use the quorum read from the akka configuration") {
+    it("should use the quorum read from the akka configuration and access the table") {
       import se.scalablesolutions.akka.config.Config.config
       import org.apache.hadoop.hbase.HBaseConfiguration
       import org.apache.hadoop.hbase.client.HBaseAdmin
       import org.apache.hadoop.hbase.client.HTable
 
       val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.storage.hbase.zookeeper.quorum", "0")
-      HBASE_ZOOKEEPER_QUORUM should not equal("0")
+      HBASE_ZOOKEEPER_QUORUM should not equal ("0")
       HBASE_ZOOKEEPER_QUORUM should equal("localhost")
-      
+
       val configuration = new HBaseConfiguration
       configuration.set("hbase.zookeeper.quorum", HBASE_ZOOKEEPER_QUORUM)
       val admin = new HBaseAdmin(configuration)
       admin.tableExists("ATable") should equal(true)
-   }
-
+    }
   }
 
 }

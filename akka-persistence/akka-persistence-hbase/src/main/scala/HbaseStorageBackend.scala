@@ -9,6 +9,9 @@ import se.scalablesolutions.akka.persistence.common._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.util.Helpers._
 import se.scalablesolutions.akka.config.Config.config
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.client.HBaseAdmin
+import org.apache.hadoop.hbase.client.HTable
 
 /**
  * @author <a href="http://www.davidgreco.it">David Greco</a>
@@ -21,7 +24,11 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   val REF_KEY = "item".getBytes("UTF-8")
   val EMPTY_BYTE_ARRAY = new Array[Byte](0)
 
-  val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.storage.hbase.zookeeper.quorum", "127.0.0.1")
+  val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.storage.hbase.zookeeper.quorum", "localhost")
+
+  val CONFIGURATION = new HBaseConfiguration
+  CONFIGURATION.set("hbase.zookeeper.quorum", HBASE_ZOOKEEPER_QUORUM)
+  val ADMIN = new HBaseAdmin(CONFIGURATION)
 
   // ===============================================================
   // For Ref
