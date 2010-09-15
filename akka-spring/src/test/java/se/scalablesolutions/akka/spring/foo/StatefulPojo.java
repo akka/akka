@@ -5,6 +5,7 @@ import se.scalablesolutions.akka.stm.TransactionalMap;
 import se.scalablesolutions.akka.stm.TransactionalVector;
 import se.scalablesolutions.akka.stm.Ref;
 import se.scalablesolutions.akka.actor.*;
+import se.scalablesolutions.akka.stm.local.Atomic;
 
 public class StatefulPojo extends TypedActor {
     private TransactionalMap<String, String> mapState;
@@ -13,12 +14,16 @@ public class StatefulPojo extends TypedActor {
     private boolean isInitialized = false;
 
   @Override
-  public void initTransactionalState() {
-      if (!isInitialized) {
-        mapState = new TransactionalMap();
-        vectorState = new TransactionalVector();
-        refState = new Ref();
-        isInitialized = true;
+  public void preStart() {
+      if(!isInitialized) {
+          isInitialized = new Atomic<Boolean>() {
+            public Boolean atomically() {
+              mapState = new TransactionalMap();
+              vectorState = new TransactionalVector();
+              refState = new Ref();
+              return true;
+            }
+          }.execute();
       }
     }
 

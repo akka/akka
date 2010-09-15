@@ -205,7 +205,7 @@ class RemoteClient private[akka] (
   extends Logging with ListenerManagement {
   val name = "RemoteClient@" + hostname + "::" + port
 
-  //FIXME Should these be clear:ed on shutdown?
+  //FIXME Should these be clear:ed on postStop?
   private val futures = new ConcurrentHashMap[Long, CompletableFuture[_]]
   private val supervisors = new ConcurrentHashMap[String, ActorRef]
 

@@ -81,6 +81,7 @@ message RemoteRequestProtocol {
   required bool isOneWay = 4;
   optional string supervisorUuid = 5;
   optional RemoteActorRefProtocol sender = 6;
+  repeated MetadataEntryProtocol metadata = 7;
 }
 
 /**
@@ -93,6 +94,23 @@ message RemoteReplyProtocol {
   optional string supervisorUuid = 4;
   required bool isActor = 5;
   required bool isSuccessful = 6;
+  repeated MetadataEntryProtocol metadata = 7;
+}
+
+/**
+ * Defines a UUID.
+ */
+message UuidProtocol {
+  required uint64 high = 1;
+  required uint64 low = 2;
+}
+
+/**
+ * Defines a meta data entry.
+ */
+message MetadataEntryProtocol {
+  required string key = 1;
+  required bytes value = 2;
 }
 
 /**

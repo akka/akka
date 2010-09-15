@@ -24,6 +24,11 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter {
   @BeanProperty var clusterName = ""
   @BeanProperty var broadcaster : Broadcaster = null
 
+  def init() {
+    //Since this class is instantiated by Atmosphere, we need to make sure it's started
+    self.start
+  }
+
   /**
    * Stops the actor
    */
@@ -48,7 +53,4 @@ class AkkaClusterBroadcastFilter extends Actor with ClusterBroadcastFilter {
     case b @ ClusterCometBroadcast(c, _) if (c == clusterName) && (broadcaster ne null) => broadcaster broadcast b
     case _ =>
   }
-
-  //Since this class is instantiated by Atmosphere, we need to make sure it's started
-  self.start
 }

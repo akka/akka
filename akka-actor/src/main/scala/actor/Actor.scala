@@ -410,14 +410,14 @@ trait Actor extends Logging {
    * <p/>
    * Is called when an Actor is started by invoking 'actor.start'.
    */
-  def init {}
+  def preStart {}
 
   /**
    * User overridable callback.
    * <p/>
    * Is called when 'actor.stop' is invoked.
    */
-  def shutdown {}
+  def postStop {}
 
   /**
    * User overridable callback.
@@ -432,13 +432,6 @@ trait Actor extends Logging {
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
   def postRestart(reason: Throwable) {}
-
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called during initialization. Can be used to initialize transactional state. Will be invoked within a transaction.
-   */
-  def initTransactionalState {}
 
   /**
    * Is the actor able to handle the message passed in as arguments?

@@ -95,7 +95,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
     }
 
     /*
-        it("should shutdown non-supervised, annotated typed actor on TypedActor.stop") {
+        it("should postStop non-supervised, annotated typed actor on TypedActor.stop") {
           val obj = TypedActor.newInstance(classOf[SamplePojoAnnotated])
           assert(AspectInitRegistry.initFor(obj) ne null)
           assert("hello akka" === obj.greet("akka"))
@@ -112,7 +112,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
           }
         }
 
-        it("should shutdown non-supervised, annotated typed actor on ActorRegistry.shutdownAll") {
+        it("should postStop non-supervised, annotated typed actor on ActorRegistry.shutdownAll") {
           val obj = TypedActor.newInstance(classOf[SamplePojoAnnotated])
           assert(AspectInitRegistry.initFor(obj) ne null)
           assert("hello akka" === obj.greet("akka"))
@@ -147,7 +147,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
           }
         }
 
-        it("should shutdown supervised, annotated typed actor on failure") {
+        it("should postStop supervised, annotated typed actor on failure") {
           val obj = conf2.getInstance[SamplePojoAnnotated](classOf[SamplePojoAnnotated])
           val cdl = obj.newCountdownLatch(1)
           assert(AspectInitRegistry.initFor(obj) ne null)
