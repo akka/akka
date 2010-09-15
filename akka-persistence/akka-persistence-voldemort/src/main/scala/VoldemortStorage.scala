@@ -34,10 +34,10 @@ class VoldemortPersistentMap(id: String) extends PersistentMapBinary {
 
 class VoldemortPersistentVector(id: String) extends PersistentVector[Array[Byte]] {
   val uuid = id
-  val storage = VoldemortStoragebackend
+  val storage = VoldemortStorageBackend
 }
 
 class VoldemortPersistentRef(id: String) extends PersistentRef[Array[Byte]] {
   val uuid = id
-  val storage = VoldemortStoragebackend
+  val storage = VoldemortStorageBackend
 }
