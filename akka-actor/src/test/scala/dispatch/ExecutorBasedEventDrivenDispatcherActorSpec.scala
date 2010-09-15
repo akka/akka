@@ -3,9 +3,10 @@ package se.scalablesolutions.akka.actor.dispatch
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import se.scalablesolutions.akka.dispatch.Dispatchers
+import se.scalablesolutions.akka.dispatch.{Dispatchers,ExecutorBasedEventDrivenDispatcher}
 import se.scalablesolutions.akka.actor.Actor
 import Actor._
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 object ExecutorBasedEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
@@ -65,4 +66,70 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
     }
     actor.stop
   }
+
+ @Test def shouldRespectThroughput {
+   val throughputDispatcher = new ExecutorBasedEventDrivenDispatcher("THROUGHPUT",101,0,Dispatchers.MAILBOX_CONFIG, (e) => {
+      e.setCorePoolSize(1)
+   })
+
+   val works   = new AtomicBoolean(true)
+   val latch   = new CountDownLatch(100)
+   val start   = new CountDownLatch(1)
+   val fastOne = actorOf(
+                   new Actor {
+                     self.dispatcher = throughputDispatcher
+                     def receive = { case "sabotage" => works.set(false)  }
+                   }).start
+
+   val slowOne = actorOf(
+                   new Actor {
+                     self.dispatcher = throughputDispatcher
+                     def receive = {
+                       case "hogexecutor" => start.await
+                       case "ping"        => if (works.get) latch.countDown
+                     }
+                   }).start
+
+   slowOne ! "hogexecutor"
+   (1 to 100) foreach { _ => slowOne ! "ping"}
+   fastOne ! "sabotage"
+   start.countDown
+   val result = latch.await(3,TimeUnit.SECONDS)
+   fastOne.stop
+   slowOne.stop
+   throughputDispatcher.shutdown
+   assert(result === true)
+ }
+
+ @Test def shouldRespectThroughputDeadline {
+   val deadlineMs = 100
+   val throughputDispatcher = new ExecutorBasedEventDrivenDispatcher("THROUGHPUT",2,deadlineMs,Dispatchers.MAILBOX_CONFIG, (e) => {
+      e.setCorePoolSize(1)
+   })
+
+   val works   = new AtomicBoolean(true)
+   val latch   = new CountDownLatch(1)
+   val start   = new CountDownLatch(1)
+   val fastOne = actorOf(
+                   new Actor {
+                     self.dispatcher = throughputDispatcher
+                     def receive = { case "ping" => if(works.get) latch.countDown; self.stop  }
+                   }).start
+
+   val slowOne = actorOf(
+                   new Actor {
+                     self.dispatcher = throughputDispatcher
+                     def receive = {
+                       case "hogexecutor" => start.await
+                       case "ping"        => works.set(false); self.stop
+                     }
+                   }).start
+
+   slowOne ! "hogexecutor"
+   slowOne ! "ping"
+   fastOne ! "ping"
+   Thread.sleep(deadlineMs)
+   start.countDown
+   assert(latch.await(10,TimeUnit.SECONDS) === true)
+ }
 }
