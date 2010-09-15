@@ -6,7 +6,7 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>bdb</persistence>
+        <persistence>memory</persistence>
         <routing>client</routing>
         <key-serializer>
             <type>string</type>
@@ -23,10 +23,10 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>bdb</persistence>
+        <persistence>memory</persistence>
         <routing>client</routing>
         <key-serializer>
-
+            <type>identity</type>
         </key-serializer>
         <value-serializer>
             <type>identity</type>
@@ -39,7 +39,40 @@
         <required-reads>1</required-reads>
         <preferred-writes>1</preferred-writes>
         <required-writes>1</required-writes>
-        <persistence>bdb</persistence>
+        <persistence>memory</persistence>
+        <routing>client</routing>
+        <key-serializer>
+            <type>string</type>
+            <schema-info>utf8</schema-info>
+        </key-serializer>
+        <value-serializer>
+            <type>java-serialization</type>
+        </value-serializer>
+    </store>
+    <store>
+        <name>VectorValues</name>
+        <replication-factor>1</replication-factor>
+        <preferred-reads>1</preferred-reads>
+        <required-reads>1</required-reads>
+        <preferred-writes>1</preferred-writes>
+        <required-writes>1</required-writes>
+        <persistence>memory</persistence>
+        <routing>client</routing>
+        <key-serializer>
+            <type>identity</type>
+        </key-serializer>
+        <value-serializer>
+            <type>identity</type>
+        </value-serializer>
+    </store>
+    <store>
+       <name>VectorSizes</name>
+        <replication-factor>1</replication-factor>
+        <preferred-reads>1</preferred-reads>
+        <required-reads>1</required-reads>
+        <preferred-writes>1</preferred-writes>
+        <required-writes>1</required-writes>
+        <persistence>memory</persistence>
         <routing>client</routing>
         <key-serializer>
             <type>string</type>
