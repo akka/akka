@@ -44,9 +44,10 @@ import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers extends Logging {
-  val THROUGHPUT          = config.getInt("akka.actor.throughput", 5)
-  val MAILBOX_CAPACITY    = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
-  val MAILBOX_CONFIG      = MailboxConfig(
+  val THROUGHPUT             = config.getInt("akka.actor.throughput", 5)
+  val THROUGHPUT_DEADLINE_MS = config.getInt("akka.actor.throughput-deadline-ms",-1)
+  val MAILBOX_CAPACITY       = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
+  val MAILBOX_CONFIG         = MailboxConfig(
     capacity = Dispatchers.MAILBOX_CAPACITY,
     pushTimeOut = config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS)),
     blockingDequeue = false
@@ -58,7 +59,7 @@ object Dispatchers extends Logging {
 
   object globalHawtDispatcher extends HawtDispatcher
 
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global",THROUGHPUT,MAILBOX_CONFIG) {
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global",THROUGHPUT,THROUGHPUT_DEADLINE_MS,MAILBOX_CONFIG) {
     override def register(actor: ActorRef) = {
       if (isShutdown) init
       super.register(actor)
@@ -116,14 +117,14 @@ object Dispatchers extends Logging {
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxCapacity: Int) = new ExecutorBasedEventDrivenDispatcher(name, throughput, mailboxCapacity)
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxCapacity: Int) = new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxCapacity)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxCapacity: Int, pushTimeOut: Duration) = new ExecutorBasedEventDrivenDispatcher(name, throughput, MailboxConfig(mailboxCapacity,Some(pushTimeOut),false))
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxCapacity: Int, pushTimeOut: Duration) = new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, MailboxConfig(mailboxCapacity,Some(pushTimeOut),false))
 
 
   /**
@@ -198,13 +199,28 @@ object Dispatchers extends Logging {
     }
 
     val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
-      case "ExecutorBasedEventDrivenWorkStealing"      => new ExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_CAPACITY,threadPoolConfig)
-      case "ExecutorBasedEventDriven"                  => new ExecutorBasedEventDrivenDispatcher(name, cfg.getInt("throughput",THROUGHPUT),mailboxBounds,threadPoolConfig)
-      case "Hawt"                                      => new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
-      case "GlobalExecutorBasedEventDriven"            => globalExecutorBasedEventDrivenDispatcher
-      case "GlobalHawt"                                => globalHawtDispatcher
+      case "ExecutorBasedEventDrivenWorkStealing" =>
+        new ExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_CAPACITY,threadPoolConfig)
+      
+      case "ExecutorBasedEventDriven" =>
+        new ExecutorBasedEventDrivenDispatcher(
+          name,
+          cfg.getInt("throughput",THROUGHPUT),
+          cfg.getInt("throughput-deadline-ms",THROUGHPUT_DEADLINE_MS),
+          mailboxBounds,
+          threadPoolConfig)
 
-      case unknown => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
+      case "Hawt" =>
+        new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
+
+      case "GlobalExecutorBasedEventDriven" =>
+        globalExecutorBasedEventDrivenDispatcher
+
+      case "GlobalHawt" =>
+        globalHawtDispatcher
+
+      case unknown =>
+        throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
     }
 
     dispatcher
