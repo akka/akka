@@ -11,6 +11,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 import se.scalablesolutions.akka.AkkaException
+import se.scalablesolutions.akka.util.{ Function, SideEffect }
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.
@@ -27,8 +28,21 @@ object DataFlow {
    */
   def thread(body: => Unit): Unit = spawn(body)
 
+  /** Executes the supplied SideEffect in another thread
+   * JavaAPI
+   */
+  def thread(body: SideEffect): Unit = spawn(body.apply)
+
+  /** Executes the supplied function in another thread
+   */
   def thread[A <: AnyRef, R <: AnyRef](body: A => R) =
     actorOf(new ReactiveEventBasedThread(body)).start
+
+  /** Executes the supplied Function in another thread
+   * JavaAPI
+   */
+  def thread[A <: AnyRef, R <: AnyRef](body: Function[A,R]) =
+    actorOf(new ReactiveEventBasedThread(body.apply)).start
 
   private class ReactiveEventBasedThread[A <: AnyRef, T <: AnyRef](body: A => T)
     extends Actor {
@@ -91,6 +105,11 @@ object DataFlow {
             "Attempt to change data flow variable (from [" + this.value.get + "] to [" + ref() + "])")
     }
 
+    /** Sets the value of this variable (if unset) with the value of the supplied variable
+     * JavaAPI
+     */
+    def set(ref: DataFlowVariable[T]) { this << ref }
+
     /** Sets the value of this variable (if unset)
      */
     def <<(value: T) {
@@ -98,6 +117,16 @@ object DataFlow {
       else throw new DataFlowVariableException(
             "Attempt to change data flow variable (from [" + this.value.get + "] to [" + value + "])")
     }
+
+    /** Sets the value of this variable (if unset) with the value of the supplied variable
+     * JavaAPI
+     */
+    def set(value: T) { this << value }
+
+    /** Retrieves the value of variable
+     *  throws a DataFlowVariableException if it times out
+     */
+    def get(): T = this()
 
     /** Retrieves the value of variable
      *  throws a DataFlowVariableException if it times out
