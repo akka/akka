@@ -42,7 +42,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     }
   }
   var refClient: StoreClient[String, Array[Byte]] = storeClientFactory.getStoreClient(refStore)
-  var mapKeyClient: StoreClient[String, SortedSet[Array[Byte]]] = storeClientFactory.getStoreClient(mapKeyStore)
+  var mapKeyClient: StoreClient[String, Array[Byte]] = storeClientFactory.getStoreClient(mapKeyStore)
   var mapValueClient: StoreClient[Array[Byte], Array[Byte]] = storeClientFactory.getStoreClient(mapValueStore)
   var vectorSizeClient: StoreClient[String, Array[Byte]] = storeClientFactory.getStoreClient(vectorSizeStore)
   var vectorValueClient: StoreClient[Array[Byte], Array[Byte]] = storeClientFactory.getStoreClient(vectorValueStore)
@@ -65,13 +65,13 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = {
-    val allkeys: SortedSet[Array[Byte]] = mapKeyClient.getValue(name, new TreeSet[Array[Byte]])
+    val allkeys: SortedSet[Array[Byte]] = getMapKeys(name)
     val range = allkeys.rangeImpl(start, finish).take(count)
     getKeyValues(name, range)
   }
 
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = {
-    val keys = mapKeyClient.getValue(name, new TreeSet[Array[Byte]]())
+    val keys = getMapKeys(name)
     getKeyValues(name, keys)
   }
 
@@ -95,7 +95,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def getMapStorageSizeFor(name: String): Int = {
-    val keys = mapKeyClient.getValue(name, new TreeSet[Array[Byte]]())
+    val keys = getMapKeys(name)
     keys.size
   }
 
@@ -108,15 +108,15 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def removeMapStorageFor(name: String, key: Array[Byte]) = {
-    var keys = mapKeyClient.getValue(name, new TreeSet[Array[Byte]]())
+    var keys = getMapKeys(name)
     keys -= key
-    mapKeyClient.put(name, keys)
+    putMapKeys(name, keys)
     mapValueClient.delete(getKey(name, key))
   }
 
 
   def removeMapStorageFor(name: String) = {
-    val keys = mapKeyClient.getValue(name, new TreeSet[Array[Byte]]())
+    val keys = getMapKeys(name)
     keys.foreach {
       key =>
         mapValueClient.delete(getKey(name, key))
@@ -126,9 +126,9 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
   def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte]) = {
     mapValueClient.put(getKey(name, key), value)
-    var keys = mapKeyClient.getValue(name, new TreeSet[Array[Byte]]())
+    var keys = getMapKeys(name)
     keys += key
-    mapKeyClient.put(name, keys)
+    putMapKeys(name, keys)
   }
 
   def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) = {
@@ -138,9 +138,17 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
         key
       }
     }
-    var keys = mapKeyClient.getValue(name, new TreeSet[Array[Byte]]())
+    var keys = getMapKeys(name)
     keys ++= newKeys
-    mapKeyClient.put(name, keys)
+    putMapKeys(name, keys)
+  }
+
+  def putMapKeys(name: String, keys: SortedSet[Array[Byte]]) = {
+    mapKeyClient.put(name, SortedSetSerializer.toBytes(keys))
+  }
+
+  def getMapKeys(name: String): SortedSet[Array[Byte]] = {
+    SortedSetSerializer.fromBytes(mapKeyClient.getValue(name, Array.empty[Byte]))
   }
 
 
@@ -176,8 +184,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
         idx += 1
       }
     }
-    log.info("StorageSize:" + storage.size)
-    log.info("SeqSize:" + seq.size)
+
     storage.toList
   }
 
@@ -248,6 +255,46 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     def toString(obj: Int) = obj.toString
 
     def fromString(str: String) = str.toInt
+  }
+
+  object SortedSetSerializer {
+    def toBytes(set: SortedSet[Array[Byte]]): Array[Byte] = {
+      val length = set.foldLeft(0) {
+        (total, bytes) => {
+          total + bytes.length + IntSerializer.bytesPerInt
+        }
+      }
+      val allBytes = new Array[Byte](length)
+      val written = set.foldLeft(0) {
+        (total, bytes) => {
+          val sizeBytes = IntSerializer.toBytes(bytes.length)
+          System.arraycopy(sizeBytes, 0, allBytes, total, sizeBytes.length)
+          System.arraycopy(bytes, 0, allBytes, total + sizeBytes.length, bytes.length)
+          total + sizeBytes.length + bytes.length
+        }
+      }
+      require(length == written, "Bytes Written Did not equal Calculated Length, written %d, length %d".format(written, length))
+      allBytes
+    }
+
+    def fromBytes(bytes: Array[Byte]): SortedSet[Array[Byte]] = {
+      var set = new TreeSet[Array[Byte]]
+      if (bytes.length > IntSerializer.bytesPerInt) {
+        var pos = 0
+        while (pos < bytes.length) {
+          val lengthBytes = new Array[Byte](IntSerializer.bytesPerInt)
+          System.arraycopy(bytes, pos, lengthBytes, 0, IntSerializer.bytesPerInt)
+          pos += IntSerializer.bytesPerInt
+          val length = IntSerializer.fromBytes(lengthBytes)
+          val item = new Array[Byte](length)
+          System.arraycopy(bytes, pos, item, 0, length)
+          set = set + item
+          pos += length
+        }
+      }
+      set
+    }
+
   }
 
 }

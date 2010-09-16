@@ -46,7 +46,7 @@
             <schema-info>utf8</schema-info>
         </key-serializer>
         <value-serializer>
-            <type>java-serialization</type>
+            <type>identity</type>
         </value-serializer>
     </store>
     <store>
