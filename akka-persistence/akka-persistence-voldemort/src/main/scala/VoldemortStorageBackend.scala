@@ -21,7 +21,6 @@ import collection.mutable.{Map, Set, HashSet, ArrayBuffer}
 import java.util.{Map => JMap}
 
 
-
 private[akka] object VoldemortStorageBackend extends
 MapStorageBackend[Array[Byte], Array[Byte]] with
         VectorStorageBackend[Array[Byte]] with
@@ -78,16 +77,17 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
   private def getKeyValues(keys: SortedSet[Array[Byte]]): List[(Array[Byte], Array[Byte])] = {
     val all: JMap[Array[Byte], Versioned[Array[Byte]]] = mapValueClient.getAll(JavaConversions.asIterable(keys))
-    JavaConversions.asMap(all).foldLeft(new ArrayBuffer[(Array[Byte], Array[Byte])](all.size)) {
-      (buf, keyVal) => {
-        keyVal match {
-          case (key, versioned) => {
+    val buf = new ArrayBuffer[(Array[Byte], Array[Byte])](all.size)
+    JavaConversions.asMap(all).foreach {
+      (entry) => {
+        entry match {
+          case (key: Array[Byte], versioned: Versioned[Array[Byte]]) => {
             buf += key -> versioned.getValue
           }
         }
-        buf
       }
-    }.toList
+    }
+    buf.toList
   }
 
   def getMapStorageSizeFor(name: String): Int = {
@@ -230,7 +230,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
   def getIndexFromVectorValueKey(owner: String, key: Array[Byte]): Int = {
     val indexBytes = new Array[Byte](IntSerializer.bytesPerInt)
-    System.arraycopy(key, key.length - IntSerializer.bytesPerInt , indexBytes, 0, IntSerializer.bytesPerInt)
+    System.arraycopy(key, key.length - IntSerializer.bytesPerInt, indexBytes, 0, IntSerializer.bytesPerInt)
     IntSerializer.fromBytes(indexBytes)
   }
 
