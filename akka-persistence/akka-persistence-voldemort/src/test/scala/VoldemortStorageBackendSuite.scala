@@ -35,10 +35,9 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = "testmapKey"
     val mapKeys = new TreeSet[Array[Byte]] + bytes("key1")
     mapKeyClient.delete(key)
-    mapKeyClient.getValue(key, emptySet) should equal(emptySet)
-    mapKeyClient.put(key, mapKeys)
-    mapKeyClient.getValue(key, emptySet) should equal(mapKeys)
-
+    mapKeyClient.getValue(key, SortedSetSerializer.toBytes(emptySet)) should equal(SortedSetSerializer.toBytes(emptySet))
+    putMapKeys(key, mapKeys)
+    getMapKeys(key) should equal(mapKeys)
   }
 
   test("that map value storage and retrieval works") {
