@@ -53,18 +53,33 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val name = "theMap"
     val key = bytes("mapkey")
     val value = bytes("mapValue")
-    removeMapStorageFor(name,key)
+    removeMapStorageFor(name, key)
     removeMapStorageFor(name)
-    getMapStorageEntryFor(name,key) should be (None)
-    getMapStorageSizeFor(name) should be (0)
+    getMapStorageEntryFor(name, key) should be(None)
+    getMapStorageSizeFor(name) should be(0)
     getMapStorageFor(name).length should be(0)
-    getMapStorageRangeFor(name,None,None,100).length should be (0)
-    insertMapStorageEntryFor(name,key,value)
-    getMapStorageEntryFor(name,key).get should equal(value)
-    getMapStorageSizeFor(name) should be (1)
-    getMapStorageFor(name).length should be(1)
-    getMapStorageRangeFor(name,None,None,100).length should be (1)
+    getMapStorageRangeFor(name, None, None, 100).length should be(0)
 
+    insertMapStorageEntryFor(name, key, value)
+
+    getMapStorageEntryFor(name, key).get should equal(value)
+    getMapStorageSizeFor(name) should be(1)
+    getMapStorageFor(name).length should be(1)
+    getMapStorageRangeFor(name, None, None, 100).length should be(1)
+
+    removeMapStorageFor(name, key)
+    removeMapStorageFor(name)
+    getMapStorageEntryFor(name, key) should be(None)
+    getMapStorageSizeFor(name) should be(0)
+    getMapStorageFor(name).length should be(0)
+    getMapStorageRangeFor(name, None, None, 100).length should be(0)
+
+    insertMapStorageEntriesFor(name, List(key -> value))
+
+    getMapStorageEntryFor(name, key).get should equal(value)
+    getMapStorageSizeFor(name) should be(1)
+    getMapStorageFor(name).length should be(1)
+    getMapStorageRangeFor(name, None, None, 100).length should be(1)
 
   }
 
@@ -87,6 +102,37 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     vectorValueClient.getValue(vecKey, empty) should equal(empty)
     vectorValueClient.put(vecKey, value)
     vectorValueClient.getValue(vecKey) should equal(value)
+  }
+
+  test("PersistentVector apis function as expected") {
+    val key = "vectorApiKey"
+    val value = bytes("Some bytes we want to store in a vector")
+    val updatedValue = bytes("Some updated bytes we want to store in a vector")
+    vectorSizeClient.delete(key)
+    vectorValueClient.delete(getVectorValueKey(key, 0))
+    vectorValueClient.delete(getVectorValueKey(key, 1))
+    getVectorStorageEntryFor(key, 0) should be(empty)
+    getVectorStorageEntryFor(key, 1) should be(empty)
+    getVectorStorageRangeFor(key, None, None, 1).head should be(empty)
+
+    insertVectorStorageEntryFor(key, value)
+    //again
+    insertVectorStorageEntryFor(key, value)
+
+    getVectorStorageEntryFor(key, 0) should be(value)
+    getVectorStorageEntryFor(key, 1) should be(value)
+    getVectorStorageRangeFor(key, None, None, 1).head should be(value)
+    getVectorStorageRangeFor(key, Some(1), None, 1).head should be(value)
+    getVectorStorageSizeFor(key) should be(2)
+
+    updateVectorStorageEntryFor(key, 1, updatedValue)
+
+    getVectorStorageEntryFor(key, 0) should be(value)
+    getVectorStorageEntryFor(key, 1) should be(updatedValue)
+    getVectorStorageRangeFor(key, None, None, 1).head should be(value)
+    getVectorStorageRangeFor(key, Some(1), None, 1).head should be(updatedValue)
+    getVectorStorageSizeFor(key) should be(2)
+
   }
 
 }

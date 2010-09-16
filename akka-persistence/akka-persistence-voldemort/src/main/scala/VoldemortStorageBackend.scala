@@ -67,16 +67,20 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = {
     val allkeys: SortedSet[Array[Byte]] = mapKeyClient.getValue(name, new TreeSet[Array[Byte]])
     val range = allkeys.rangeImpl(start, finish).take(count)
-    getKeyValues(range)
+    getKeyValues(name, range)
   }
 
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = {
     val keys = mapKeyClient.getValue(name, new TreeSet[Array[Byte]]())
-    getKeyValues(keys)
+    getKeyValues(name, keys)
   }
 
-  private def getKeyValues(keys: SortedSet[Array[Byte]]): List[(Array[Byte], Array[Byte])] = {
-    val all: JMap[Array[Byte], Versioned[Array[Byte]]] = mapValueClient.getAll(JavaConversions.asIterable(keys))
+  private def getKeyValues(name: String, keys: SortedSet[Array[Byte]]): List[(Array[Byte], Array[Byte])] = {
+    val all: JMap[Array[Byte], Versioned[Array[Byte]]] =
+    mapValueClient.getAll(JavaConversions.asIterable(keys.map {
+      mapKey => getKey(name, mapKey)
+    }))
+
     val buf = new ArrayBuffer[(Array[Byte], Array[Byte])](all.size)
     JavaConversions.asMap(all).foreach {
       (entry) => {
@@ -155,26 +159,26 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     } else {
       count
     }
-    val seq: IndexedSeq[Array[Byte]] = (st to st + cnt).map {
+    val seq: IndexedSeq[Array[Byte]] = (st until st + cnt).map {
       index => getVectorValueKey(name, index)
     }
 
     val all: JMap[Array[Byte], Versioned[Array[Byte]]] = vectorValueClient.getAll(JavaConversions.asIterable(seq))
 
-    val buf = new ArrayBuffer[Array[Byte]](seq.size)
+    var storage = new ArrayBuffer[Array[Byte]](seq.size)
+    storage = storage.padTo(seq.size, Array.empty[Byte])
+    var idx = 0;
     seq.foreach {
       key => {
-        val index = getIndexFromVectorValueKey(name, key)
-        var value: Array[Byte] = null
         if (all.containsKey(key)) {
-          value = all.get(key).getValue
-        } else {
-          value = Array.empty[Byte]
+          storage.update(idx, all.get(key).getValue)
         }
-        buf.update(index, value)
+        idx += 1
       }
     }
-    buf.toList
+    log.info("StorageSize:" + storage.size)
+    log.info("SeqSize:" + seq.size)
+    storage.toList
   }
 
 
