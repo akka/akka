@@ -87,7 +87,7 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
       SamplePojoImpl.reset
       val pojo = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
       val supervisor = TypedActor.newInstance(classOf[SimpleJavaPojo], classOf[SimpleJavaPojoImpl])
-      link(supervisor, pojo, new OneForOneStrategy(3, 2000), Array(classOf[Throwable]))
+      link(supervisor, pojo, OneForOneStrategy(3, 2000), Array(classOf[Throwable]))
       pojo.throwException
       Thread.sleep(500)
       SimpleJavaPojoImpl._pre should be(true)
