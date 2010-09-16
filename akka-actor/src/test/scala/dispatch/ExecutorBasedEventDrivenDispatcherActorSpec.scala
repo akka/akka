@@ -110,6 +110,8 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    val works   = new AtomicBoolean(true)
    val latch   = new CountDownLatch(1)
    val start   = new CountDownLatch(1)
+   val ready   = new CountDownLatch(1)
+
    val fastOne = actorOf(
                    new Actor {
                      self.dispatcher = throughputDispatcher
@@ -120,7 +122,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
                    new Actor {
                      self.dispatcher = throughputDispatcher
                      def receive = {
-                       case "hogexecutor" => start.await
+                       case "hogexecutor" => ready.countDown; start.await
                        case "ping"        => works.set(false); self.stop
                      }
                    }).start
@@ -128,6 +130,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    slowOne ! "hogexecutor"
    slowOne ! "ping"
    fastOne ! "ping"
+   assert(ready.await(5,TimeUnit.SECONDS) === true)
    Thread.sleep(deadlineMs)
    start.countDown
    assert(latch.await(10,TimeUnit.SECONDS) === true)
