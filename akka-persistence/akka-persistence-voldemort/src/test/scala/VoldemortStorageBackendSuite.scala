@@ -21,6 +21,16 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     refClient.getValue(key) should be(valueBytes)
   }
 
+  test("PersistentRef apis function as expected") {
+    val key = "apiTestRef"
+    val value = "apiTestRefValue"
+    val valueBytes = bytes(value)
+    refClient.delete(key)
+    getRefStorageFor(key) should be(None)
+    insertRefStorageFor(key, valueBytes)
+    getRefStorageFor(key).get should equal(valueBytes)
+  }
+
   test("that map key storage and retrieval works") {
     val key = "testmapKey"
     val mapKeys = new TreeSet[Array[Byte]] + bytes("key1")
@@ -36,6 +46,26 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val value = bytes("value for testing map value client")
     mapValueClient.put(key, value)
     mapValueClient.getValue(key, empty) should equal(value)
+  }
+
+
+  test("PersistentMap apis function as expected") {
+    val name = "theMap"
+    val key = bytes("mapkey")
+    val value = bytes("mapValue")
+    removeMapStorageFor(name,key)
+    removeMapStorageFor(name)
+    getMapStorageEntryFor(name,key) should be (None)
+    getMapStorageSizeFor(name) should be (0)
+    getMapStorageFor(name).length should be(0)
+    getMapStorageRangeFor(name,None,None,100).length should be (0)
+    insertMapStorageEntryFor(name,key,value)
+    getMapStorageEntryFor(name,key).get should equal(value)
+    getMapStorageSizeFor(name) should be (1)
+    getMapStorageFor(name).length should be(1)
+    getMapStorageRangeFor(name,None,None,100).length should be (1)
+
+
   }
 
   test("that vector size storage and retrieval works") {
