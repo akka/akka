@@ -589,9 +589,8 @@ class RemoteServerHandler(
    * Does not start the actor.
    */
   private def createActor(actorInfo: ActorInfoProtocol): ActorRef = {
-    val ids = actorInfo.getUuid.split(':')
-    val uuid = ids(0)
-    val id = ids(1)
+    val uuid = actorInfo.getUuid
+    val id = actorInfo.getId
 
     val name = actorInfo.getTarget
     val timeout = actorInfo.getTimeout
@@ -620,9 +619,8 @@ class RemoteServerHandler(
   }
 
   private def createTypedActor(actorInfo: ActorInfoProtocol): AnyRef = {
-    val ids = actorInfo.getUuid.split(':')
-    val uuid = ids(0)
-    val id = ids(1)
+    val uuid = actorInfo.getUuid
+    val id = actorInfo.getId
 
     val typedActorOrNull = findTypedActorByIdOrUUid(id, uuid)
 
