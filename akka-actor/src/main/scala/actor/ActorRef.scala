@@ -864,11 +864,11 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def startLink(actorRef: ActorRef) = guard.withGuard {
+  def startLink(actorRef: ActorRef):Unit = guard.withGuard {
     try {
-      actorRef.start
-    } finally {
       link(actorRef)
+    } finally {
+      actorRef.start
     }
   }
 
@@ -877,13 +877,13 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int) = guard.withGuard {
+  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = guard.withGuard {
     ensureRemotingEnabled
     try {
       actorRef.makeRemote(hostname, port)
-      actorRef.start
-    } finally {
       link(actorRef)
+    } finally {
+      actorRef.start
     }
   }
 
@@ -893,9 +893,7 @@ class LocalActorRef private[akka](
    * To be invoked from within the actor itself.
    */
   def spawn(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actorRef = spawnButDoNotStart(clazz)
-    actorRef.start
-    actorRef
+    spawnButDoNotStart(clazz).start
   }
 
   /**
@@ -919,9 +917,9 @@ class LocalActorRef private[akka](
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
     val actor = spawnButDoNotStart(clazz)
     try {
-      actor.start
-    } finally {
       link(actor)
+    } finally {
+      actor.start
     }
     actor
   }
@@ -936,10 +934,11 @@ class LocalActorRef private[akka](
     val actor = spawnButDoNotStart(clazz)
     try {
       actor.makeRemote(hostname, port)
-      actor.start
-    } finally {
       link(actor)
+    } finally {
+      actor.start
     }
+    actor
   }
 
   /**
@@ -1131,11 +1130,7 @@ class LocalActorRef private[akka](
     freshActor.postRestart(reason)
   }
 
-  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actorRef = Actor.actorOf(clazz.newInstance)
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actorRef.dispatcher = dispatcher
-    actorRef
-  }
+  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = Actor.actorOf(clazz.newInstance)
 
   private[this] def newActor: Actor = {
     Actor.actorRefInCreation.withValue(Some(this)){
