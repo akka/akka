@@ -190,7 +190,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
-    lazy val sjson = "sjson.json" % "sjson" % "0.8-SNAPSHOT-2.8.0" % "compile"
+    lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile"
 
     lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile"
 
