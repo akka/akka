@@ -61,6 +61,7 @@ message ActorInfoProtocol {
   required uint64 timeout = 3;
   required ActorType actorType = 4;
   optional TypedActorInfoProtocol typedActorInfo = 5;
+  optional string id = 6;
 }
 
 /**
