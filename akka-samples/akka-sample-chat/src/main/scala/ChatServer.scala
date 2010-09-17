@@ -185,7 +185,7 @@ trait ChatServer extends Actor {
   protected def sessionManagement: Receive
   protected def shutdownSessions(): Unit
 
-  override def shutdown = {
+  override def postStop = {
     log.info("Chat server is shutting down...")
     shutdownSessions
     self.unlink(storage)
@@ -205,7 +205,7 @@ class ChatService extends
   SessionManagement with
   ChatManagement with
   RedisChatStorageFactory {
-  override def init = {
+  override def preStart = {
     RemoteNode.start("localhost", 9999)
     RemoteNode.register("chat:service", self)
   }

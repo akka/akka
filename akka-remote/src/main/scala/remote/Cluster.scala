@@ -35,6 +35,11 @@ trait Cluster {
    * The order of application is undefined and may vary
    */
   def foreach(f: (RemoteAddress) => Unit): Unit
+
+  /**
+   * Returns all the endpoints in the cluster.
+   */
+  def endpoints: Array[RemoteAddress]
 }
 
 /**
@@ -81,11 +86,11 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
   @volatile private var local: Node = Node(Nil)
   @volatile private var remotes: Map[ADDR_T, Node] = Map()
 
-  override def init = {
+  override def preStart = {
     remotes = new HashMap[ADDR_T, Node]
   }
 
-  override def shutdown = {
+  override def postStop = {
     remotes = Map()
   }
 
@@ -196,6 +201,11 @@ abstract class BasicClusterActor extends ClusterActor with Logging {
    * Applies the given function to all remote addresses known
    */
   def foreach(f: (RemoteAddress) => Unit): Unit = remotes.valuesIterator.toList.flatMap(_.endpoints).foreach(f)
+
+  /**
+   * Returns all the endpoints in the cluster.
+   */
+  def endpoints: Array[RemoteAddress] = remotes.toArray.asInstanceOf[Array[RemoteAddress]]
 }
 
 /**
@@ -211,7 +221,7 @@ object Cluster extends Cluster with Logging {
   lazy val DEFAULT_CLUSTER_ACTOR_CLASS_NAME = classOf[JGroupsClusterActor].getName
 
   @volatile private[remote] var clusterActorRef: Option[ActorRef] = None
-  @volatile private[akka]   var classLoader : Option[ClassLoader] = Some(getClass.getClassLoader)
+  @volatile private[akka] var classLoader: Option[ClassLoader] = Some(getClass.getClassLoader)
 
   private[remote] def createClusterActor(): Option[ActorRef] = {
     val name = config.getString("akka.remote.cluster.actor", DEFAULT_CLUSTER_ACTOR_CLASS_NAME)
@@ -233,7 +243,7 @@ object Cluster extends Cluster with Logging {
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
         Supervise(actor, LifeCycle(Permanent)) :: Nil)))
 
-  private[this] def clusterActor = if(clusterActorRef.isEmpty) None else Some(clusterActorRef.get.actor.asInstanceOf[ClusterActor])
+  private[this] def clusterActor = if (clusterActorRef.isEmpty) None else Some(clusterActorRef.get.actor.asInstanceOf[ClusterActor])
 
   def name = clusterActor.map(_.name).getOrElse("No cluster")
 
@@ -256,6 +266,10 @@ object Cluster extends Cluster with Logging {
   def relayMessage(to: Class[_ <: Actor], msg: AnyRef): Unit = clusterActorRef.foreach(_ ! RelayedMessage(to.getName, msg))
 
   def foreach(f: (RemoteAddress) => Unit): Unit = clusterActor.foreach(_.foreach(f))
+
+  def endpoints: Array[RemoteAddress] = clusterActor
+  .getOrElse(throw new IllegalStateException("No cluster actor is defined"))
+  .endpoints
 
   def start(): Unit = start(None)
 

@@ -8,8 +8,8 @@ import java.util.Queue
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.config.Config.config
-import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 import concurrent.forkjoin.{TransferQueue, LinkedTransferQueue}
+import java.util.concurrent.{ConcurrentLinkedQueue, BlockingQueue, TimeUnit, LinkedBlockingQueue}
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
@@ -17,10 +17,9 @@ import concurrent.forkjoin.{TransferQueue, LinkedTransferQueue}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ThreadBasedDispatcher(private val actor: ActorRef,
-                            val mailboxCapacity: Int = Dispatchers.MAILBOX_CAPACITY,
-                            val pushTimeout: Long = 10000,
-                            val pushTimeoutUnit: TimeUnit = TimeUnit.MILLISECONDS
+                            val mailboxConfig: MailboxConfig
                             ) extends MessageDispatcher {
+  def this(actor: ActorRef, capacity: Int) = this(actor,MailboxConfig(capacity,None,true))
   def this(actor: ActorRef) = this(actor, Dispatchers.MAILBOX_CAPACITY)// For Java
 
   private val name = actor.getClass.getName + ":" + actor.uuid
@@ -28,13 +27,8 @@ class ThreadBasedDispatcher(private val actor: ActorRef,
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
 
-  if (actor.mailbox eq null) {
-    actor.mailbox = if (mailboxCapacity > 0)
-                         new BoundedTransferQueue[MessageInvocation](mailboxCapacity,pushTimeout,pushTimeoutUnit) with ThreadMessageQueue
-                       else
-                         new LinkedTransferQueue[MessageInvocation] with ThreadMessageQueue
-  }
-
+  override def createMailbox(actorRef: ActorRef): AnyRef = mailboxConfig.newMailbox(blockDequeue = true)
+  
   override def register(actorRef: ActorRef) = {
     if(actorRef != actor)
       throw new IllegalArgumentException("Cannot register to anyone but " + actor)
@@ -42,9 +36,11 @@ class ThreadBasedDispatcher(private val actor: ActorRef,
     super.register(actorRef)
   }
 
-  def mailbox = actor.mailbox.asInstanceOf[ThreadMessageQueue]
+  def mailbox = actor.mailbox.asInstanceOf[Queue[MessageInvocation] with MessageQueue]
 
-  def dispatch(invocation: MessageInvocation) = mailbox append invocation
+  def mailboxSize(a: ActorRef) = mailbox.size
+
+  def dispatch(invocation: MessageInvocation) = mailbox enqueue invocation
 
   def start = if (!active) {
     log.debug("Starting up %s", toString)
@@ -53,7 +49,7 @@ class ThreadBasedDispatcher(private val actor: ActorRef,
       override def run = {
         while (active) {
           try {
-            actor.invoke(mailbox.next)
+            actor.invoke(mailbox.dequeue)
           } catch { case e: InterruptedException => active = false }
         }
       }
@@ -71,16 +67,4 @@ class ThreadBasedDispatcher(private val actor: ActorRef,
   }
 
   override def toString = "ThreadBasedDispatcher[" + threadName + "]"
-}
-
-trait ThreadMessageQueue extends MessageQueue { self: TransferQueue[MessageInvocation] =>
-
-  final def append(invocation: MessageInvocation): Unit = {
-    if(!self.tryTransfer(invocation)) { //First, try to send the invocation to a waiting consumer
-      if(!self.offer(invocation))       //If no consumer found, append it to the queue, if that fails, we're aborting
-        throw new MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out")
-    }
-  }
-
-  final def next: MessageInvocation = self.take
 }

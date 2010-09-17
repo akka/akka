@@ -4,10 +4,8 @@
 package se.scalablesolutions.akka.spring
 
 
-import foo.{IMyPojo, MyPojo}
+import foo.{PingActor, IMyPojo, MyPojo}
 import se.scalablesolutions.akka.dispatch.FutureTimeoutException
-import se.scalablesolutions.akka.remote.RemoteNode
-import org.scalatest.FeatureSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
@@ -16,13 +14,52 @@ import org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.springframework.core.io.{ClassPathResource, Resource}
+import org.scalatest.{BeforeAndAfterAll, FeatureSpec}
+import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer, RemoteNode}
+import java.util.concurrent.CountDownLatch
+import se.scalablesolutions.akka.actor.{TypedActor, RemoteTypedActorOne, Actor}
+import se.scalablesolutions.akka.actor.remote.RemoteTypedActorOneImpl
 
 /**
  * Tests for spring configuration of typed actors.
  * @author michaelkober
  */
 @RunWith(classOf[JUnitRunner])
-class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
+class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with BeforeAndAfterAll {
+
+  var server1: RemoteServer = null
+  var server2: RemoteServer = null
+
+  override def beforeAll = {
+    val actor = Actor.actorOf[PingActor] // FIXME: remove this line when ticket 425 is fixed
+    server1 = new RemoteServer()
+    server1.start("localhost", 9990)
+    server2 = new RemoteServer()
+    server2.start("localhost", 9992)
+
+    val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
+    server1.registerTypedActor("typed-actor-service", typedActor)
+  }
+
+  // make sure the servers shutdown cleanly after the test has finished
+  override def afterAll = {
+    try {
+      server1.shutdown
+      server2.shutdown
+      RemoteClient.shutdownAll
+      Thread.sleep(1000)
+    } catch {
+      case e => ()
+    }
+  }
+
+  def getTypedActorFromContext(config: String, id: String) : IMyPojo = {
+    MyPojo.latch = new CountDownLatch(1)
+    val context = new ClassPathXmlApplicationContext(config)
+    val myPojo: IMyPojo = context.getBean(id).asInstanceOf[IMyPojo]
+    myPojo
+  }
+
   feature("parse Spring application context") {
 
     scenario("akka:typed-actor and akka:supervision and akka:dispatcher can be used as top level elements") {
@@ -37,41 +74,79 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
     }
 
     scenario("get a typed actor") {
-      val context = new ClassPathXmlApplicationContext("/typed-actor-config.xml")
-      val myPojo = context.getBean("simple-typed-actor").asInstanceOf[IMyPojo]
-      var msg = myPojo.getFoo()
-      msg += myPojo.getBar()
-      assert(msg === "foobar")
+      val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "simple-typed-actor")
+      assert(myPojo.getFoo() === "foo")
+      myPojo.oneWay("hello 1")
+      MyPojo.latch.await
+      assert(MyPojo.lastOneWayMessage === "hello 1")
     }
 
     scenario("FutureTimeoutException when timed out") {
-      val context = new ClassPathXmlApplicationContext("/typed-actor-config.xml")
-      val myPojo = context.getBean("simple-typed-actor").asInstanceOf[IMyPojo]
+      val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "simple-typed-actor")
       evaluating {myPojo.longRunning()} should produce[FutureTimeoutException]
-
     }
 
     scenario("typed-actor with timeout") {
-      val context = new ClassPathXmlApplicationContext("/typed-actor-config.xml")
-      val myPojo = context.getBean("simple-typed-actor-long-timeout").asInstanceOf[IMyPojo]
+      val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "simple-typed-actor-long-timeout")
       assert(myPojo.longRunning() === "this took long");
     }
 
     scenario("transactional typed-actor") {
-      val context = new ClassPathXmlApplicationContext("/typed-actor-config.xml")
-      val myPojo = context.getBean("transactional-typed-actor").asInstanceOf[IMyPojo]
-      var msg = myPojo.getFoo()
-      msg += myPojo.getBar()
-      assert(msg === "foobar")
+      val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "transactional-typed-actor")
+      assert(myPojo.getFoo() === "foo")
+      myPojo.oneWay("hello 2")
+      MyPojo.latch.await
+      assert(MyPojo.lastOneWayMessage === "hello 2")
     }
 
     scenario("get a remote typed-actor") {
-      RemoteNode.start
-      Thread.sleep(1000)
-      val context = new ClassPathXmlApplicationContext("/typed-actor-config.xml")
-      val myPojo = context.getBean("remote-typed-actor").asInstanceOf[IMyPojo]
-      assert(myPojo.getFoo === "foo")
+      val myPojo = getTypedActorFromContext("/typed-actor-config.xml", "remote-typed-actor")
+      assert(myPojo.getFoo() === "foo")
+      myPojo.oneWay("hello 3")
+      MyPojo.latch.await
+      assert(MyPojo.lastOneWayMessage === "hello 3")
     }
+
+    scenario("get a client-managed-remote-typed-actor") {
+      val myPojo = getTypedActorFromContext("/server-managed-config.xml", "client-managed-remote-typed-actor")
+      assert(myPojo.getFoo() === "foo")
+      myPojo.oneWay("hello client-managed-remote-typed-actor")
+      MyPojo.latch.await
+      assert(MyPojo.lastOneWayMessage === "hello client-managed-remote-typed-actor")
+    }
+
+    scenario("get a server-managed-remote-typed-actor") {
+      val serverPojo = getTypedActorFromContext("/server-managed-config.xml", "server-managed-remote-typed-actor")
+      //
+      val myPojoProxy = RemoteClient.typedActorFor(classOf[IMyPojo], classOf[IMyPojo].getName, 5000L, "localhost", 9990)
+      assert(myPojoProxy.getFoo() === "foo")
+      myPojoProxy.oneWay("hello server-managed-remote-typed-actor")
+      MyPojo.latch.await
+      assert(MyPojo.lastOneWayMessage === "hello server-managed-remote-typed-actor")
+    }
+
+    scenario("get a server-managed-remote-typed-actor-custom-id") {
+      val serverPojo = getTypedActorFromContext("/server-managed-config.xml", "server-managed-remote-typed-actor-custom-id")
+      //
+      val myPojoProxy = RemoteClient.typedActorFor(classOf[IMyPojo], "mypojo-service", 5000L, "localhost", 9990)
+      assert(myPojoProxy.getFoo() === "foo")
+      myPojoProxy.oneWay("hello server-managed-remote-typed-actor 2")
+      MyPojo.latch.await
+      assert(MyPojo.lastOneWayMessage === "hello server-managed-remote-typed-actor 2")
+    } 
+
+    scenario("get a client proxy for server-managed-remote-typed-actor") {
+      MyPojo.latch = new CountDownLatch(1)
+      val context = new ClassPathXmlApplicationContext("/server-managed-config.xml")
+      val myPojo: IMyPojo = context.getBean("server-managed-remote-typed-actor-custom-id").asInstanceOf[IMyPojo]
+      // get client proxy from spring context
+      val myPojoProxy = context.getBean("typed-client-1").asInstanceOf[IMyPojo]
+      assert(myPojoProxy.getFoo() === "foo")
+      myPojoProxy.oneWay("hello")
+      MyPojo.latch.await
+    } 
+
+
   }
 
 }

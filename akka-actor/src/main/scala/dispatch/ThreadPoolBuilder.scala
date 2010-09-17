@@ -46,7 +46,7 @@ trait ThreadPoolBuilder extends Logging {
 
     if (boundedExecutorBound > 0) {
       val boundedExecutor = new BoundedExecutorDecorator(threadPoolBuilder, boundedExecutorBound)
-      boundedExecutorBound = -1
+      boundedExecutorBound = -1 //Why is this here?
       executor = boundedExecutor
     } else {
       executor = threadPoolBuilder
@@ -56,7 +56,6 @@ trait ThreadPoolBuilder extends Logging {
   def withNewThreadPoolWithCustomBlockingQueue(queue: BlockingQueue[Runnable]): ThreadPoolBuilder = synchronized {
     ensureNotActive
     verifyNotInConstructionPhase
-    inProcessOfBuilding = false
     blockingQueue = queue
     threadPoolBuilder = new ThreadPoolExecutor(NR_START_THREADS, NR_MAX_THREADS, KEEP_ALIVE_TIME, MILLISECONDS, queue)
     this
@@ -209,7 +208,7 @@ trait ThreadPoolBuilder extends Logging {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extends ExecutorService {
+  class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extends ExecutorService with Logging {
     protected val semaphore = new Semaphore(bound)
 
     def execute(command: Runnable) = {
@@ -227,6 +226,9 @@ trait ThreadPoolBuilder extends Logging {
       } catch {
         case e: RejectedExecutionException =>
           semaphore.release
+        case e =>
+          log.error(e,"Unexpected exception")
+          throw e
       }
     }
 

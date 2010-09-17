@@ -219,37 +219,35 @@ class ActorRegistrySpec extends JUnitSuite {
   @Test def shouldBeAbleToRegisterActorsConcurrently {
     ActorRegistry.shutdownAll
 
-    val latch = new CountDownLatch(3)
-    val barrier = new CyclicBarrier(3)
-
-    def mkTestActor(i:Int) = actorOf( new Actor {
+    def mkTestActors = for(i <- (1 to 10).toList;j <- 1 to 3000) yield actorOf( new Actor {
       self.id = i.toString
       def receive = { case _ => }
     })
 
-    def mkTestActors = for(i <- 1 to 10;j <- 1 to 1000) yield mkTestActor(i)
+    val latch = new CountDownLatch(3)
+    val barrier = new CyclicBarrier(3)
 
     def mkThread(actors: Iterable[ActorRef]) = new Thread {
-      start
+      this.start
       override def run {
         barrier.await
         actors foreach { _.start }
         latch.countDown
       }
     }
+    val a1,a2,a3 = mkTestActors
+    val t1 = mkThread(a1)
+    val t2 = mkThread(a2)
+    val t3 = mkThread(a3)
 
-    val testActors1 = mkTestActors
-    val testActors2 = mkTestActors
-    val testActors3 = mkTestActors
-
-    mkThread(testActors1)
-    mkThread(testActors2)
-    mkThread(testActors3)
 
     assert(latch.await(30,TimeUnit.SECONDS) === true)
 
     for(i <- 1 to 10) {
-      assert(ActorRegistry.actorsFor(i.toString).length === 3000)
+      val theId = i.toString
+      val actors = ActorRegistry.actorsFor(theId).toSet
+      for(a <- actors if a.id == theId) assert(actors contains a)
+      assert(actors.size === 9000)
     }
   }
 }

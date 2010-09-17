@@ -54,10 +54,10 @@ trait ProducerSupport { this: Actor =>
   def headersToCopy: Set[String] = headersToCopyDefault
 
   /**
-   * Default implementation of <code>Actor.shutdown</code> for freeing resources needed
+   * Default implementation of <code>Actor.postStop</code> for freeing resources needed
    * to actually send messages to <code>endpointUri</code>.
    */
-  override def shutdown {
+  override def postStop {
     processor.stop
   }
 

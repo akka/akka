@@ -62,14 +62,8 @@ object ReflectiveAccess {
     def ensureRemotingEnabled = if (!isRemotingEnabled) throw new ModuleNotAvailableException(
       "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
 
-    val remoteClientObjectInstance: Option[RemoteClientObject] = {
-      try {
-        val clazz = loader.loadClass("se.scalablesolutions.akka.remote.RemoteClient$")
-        val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
-        ctor.setAccessible(true)
-        Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[RemoteClientObject])
-      } catch { case e: Exception => None }
-    }
+    val remoteClientObjectInstance: Option[RemoteClientObject] =
+      getObject("se.scalablesolutions.akka.remote.RemoteClient$")
 
     def register(address: InetSocketAddress, uuid: String) = {
       ensureRemotingEnabled
@@ -126,23 +120,11 @@ object ReflectiveAccess {
       def unregister(actorRef: ActorRef): Unit
     }
 
-    val remoteServerObjectInstance: Option[RemoteServerObject] = {
-      try {
-        val clazz = loader.loadClass("se.scalablesolutions.akka.remote.RemoteServer$")
-        val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
-        ctor.setAccessible(true)
-        Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[RemoteServerObject])
-      } catch { case e: Exception => None }
-    }
+    val remoteServerObjectInstance: Option[RemoteServerObject] =
+      getObject("se.scalablesolutions.akka.remote.RemoteServer$")
 
-    val remoteNodeObjectInstance: Option[RemoteNodeObject] = {
-      try {
-        val clazz = loader.loadClass("se.scalablesolutions.akka.remote.RemoteNode$")
-        val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
-        ctor.setAccessible(true)
-        Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[RemoteNodeObject])
-      } catch { case e: Exception => None }
-    }
+    val remoteNodeObjectInstance: Option[RemoteNodeObject] =
+      getObject("se.scalablesolutions.akka.remote.RemoteNode$")
 
     def registerActor(address: InetSocketAddress, uuid: String, actorRef: ActorRef) = {
       ensureRemotingEnabled
@@ -177,14 +159,8 @@ object ReflectiveAccess {
     def ensureTypedActorEnabled = if (!isTypedActorEnabled) throw new ModuleNotAvailableException(
       "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
 
-    val typedActorObjectInstance: Option[TypedActorObject] = {
-      try {
-        val clazz = loader.loadClass("se.scalablesolutions.akka.actor.TypedActor$")
-        val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
-        ctor.setAccessible(true)
-        Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[TypedActorObject])
-      } catch { case e: Exception => None }
-    }
+    val typedActorObjectInstance: Option[TypedActorObject] =
+      getObject("se.scalablesolutions.akka.actor.TypedActor$")
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
       ensureTypedActorEnabled
@@ -212,18 +188,46 @@ object ReflectiveAccess {
     def ensureJtaEnabled = if (!isJtaEnabled) throw new ModuleNotAvailableException(
       "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
 
-      val transactionContainerObjectInstance: Option[TransactionContainerObject] = {
-        try {
-          val clazz = loader.loadClass("se.scalablesolutions.akka.actor.TransactionContainer$")
-          val ctor = clazz.getDeclaredConstructor(Array[Class[_]](): _*)
-          ctor.setAccessible(true)
-          Some(ctor.newInstance(Array[AnyRef](): _*).asInstanceOf[TransactionContainerObject])
-        } catch { case e: Exception => None }
-      }
+    val transactionContainerObjectInstance: Option[TransactionContainerObject] =
+      getObject("se.scalablesolutions.akka.actor.TransactionContainer$")
 
     def createTransactionContainer: TransactionContainer = {
       ensureJtaEnabled
       transactionContainerObjectInstance.get.apply.asInstanceOf[TransactionContainer]
     }
+  }
+
+  val noParams = Array[Class[_]]()
+  val noArgs   = Array[AnyRef]()
+
+  def createInstance[T](clazz: Class[_],
+                        params: Array[Class[_]],
+                        args: Array[AnyRef]): Option[T] = try {
+    val ctor = clazz.getDeclaredConstructor(params: _*)
+    ctor.setAccessible(true)
+    Some(ctor.newInstance(args: _*).asInstanceOf[T])
+  } catch {
+    case e: Exception => None
+  }
+
+  def createInstance[T](fqn: String,
+                        params: Array[Class[_]],
+                        args: Array[AnyRef],
+                        classloader: ClassLoader = loader): Option[T] = try {
+    val clazz = classloader.loadClass(fqn)
+    val ctor = clazz.getDeclaredConstructor(params: _*)
+    ctor.setAccessible(true)
+    Some(ctor.newInstance(args: _*).asInstanceOf[T])
+  } catch {
+    case e: Exception => None
+  }
+
+  def getObject[T](fqn: String, classloader: ClassLoader = loader): Option[T] = try {//Obtains a reference to $MODULE$
+    val clazz = classloader.loadClass(fqn)
+    val instance = clazz.getDeclaredField("MODULE$")
+    instance.setAccessible(true)
+    Option(instance.get(null).asInstanceOf[T])
+  } catch {
+    case e: Exception => None
   }
 }

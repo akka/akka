@@ -45,6 +45,7 @@ class ThreadPoolProperties {
   var maxPoolSize = -1
   var keepAlive = -1L
   var rejectionPolicy = ""
+  var mailboxCapacity = -1
 
   override def toString : String = {
     "ThreadPoolProperties[queue=" + queue +
@@ -54,6 +55,7 @@ class ThreadPoolProperties {
           ", corePoolSize=" + corePoolSize +
           ", maxPoolSize=" + maxPoolSize +
           ", keepAlive=" + keepAlive +
-          ", policy=" + rejectionPolicy + "]"
+          ", policy=" + rejectionPolicy + 
+          ", mailboxCapacity=" + mailboxCapacity + "]"
   }
 }

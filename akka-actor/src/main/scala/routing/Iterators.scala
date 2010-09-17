@@ -5,6 +5,7 @@
 package se.scalablesolutions.akka.routing
 
 import se.scalablesolutions.akka.actor.ActorRef
+import scala.collection.JavaConversions._
 
 /**
  * An Iterator that is either always empty or yields an infinite number of Ts.
@@ -15,6 +16,8 @@ trait InfiniteIterator[T] extends Iterator[T]
  * CyclicIterator is a round-robin style InfiniteIterator that cycles the supplied List.
  */
 class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
+  def this(items: java.util.List[T]) = this(items.toList)
+  
   @volatile private[this] var current: List[T] = items
 
   def hasNext = items != Nil
@@ -34,6 +37,7 @@ class CyclicIterator[T](items: List[T]) extends InfiniteIterator[T] {
  * useful for work-stealing.
  */
 class SmallestMailboxFirstIterator(items : List[ActorRef]) extends InfiniteIterator[ActorRef] {
+  def this(items: java.util.List[ActorRef]) = this(items.toList)
   def hasNext = items != Nil
 
   def next = items.reduceLeft((a1, a2) => if (a1.mailboxSize < a2.mailboxSize) a1 else a2)

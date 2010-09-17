@@ -6,12 +6,13 @@ package se.scalablesolutions.akka.kernel
 
 import javax.ws.rs.core.UriBuilder
 import javax.servlet.ServletConfig
+import java.io.File
 
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.util.{Bootable, Logging}
-import se.scalablesolutions.akka.comet.{ AkkaServlet }
+import se.scalablesolutions.akka.comet.AkkaServlet
+
 import org.eclipse.jetty.xml.XmlConfiguration
-import java.io.File
 import org.eclipse.jetty.server.{Handler, Server}
 import org.eclipse.jetty.server.handler.{HandlerList, HandlerCollection, ContextHandler}
 
@@ -28,16 +29,17 @@ trait EmbeddedAppServer extends Bootable with Logging {
 
   protected var server: Option[Server] = None
 
-  abstract override def onLoad   = {
+  abstract override def onLoad = {
     super.onLoad
     if (config.getBool("akka.rest.service", true)) {
       log.info("Attempting to start Akka REST service (Jersey)")
       
       System.setProperty("jetty.port",REST_PORT.toString)
       System.setProperty("jetty.host",REST_HOSTNAME)
-      System.setProperty("jetty.home",HOME.get + "/deploy/root")
+      System.setProperty("jetty.home",HOME.getOrElse(throwNoAkkaHomeException) + "/deploy/root")
 
-      val configuration = new XmlConfiguration(new File(HOME.get + "/config/microkernel-server.xml").toURI.toURL)
+      val configuration = new XmlConfiguration(
+        new File(HOME.getOrElse(throwNoAkkaHomeException) + "/config/microkernel-server.xml").toURI.toURL)
       
       server = Option(configuration.configure.asInstanceOf[Server]) map { s => //Set the correct classloader to our contexts
          applicationLoader foreach { loader =>

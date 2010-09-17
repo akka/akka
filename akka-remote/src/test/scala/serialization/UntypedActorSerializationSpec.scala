@@ -7,6 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
+import se.scalablesolutions.akka.serialization._
 import se.scalablesolutions.akka.actor._
 import ActorSerialization._
 import Actor._
@@ -16,8 +17,6 @@ class UntypedActorSerializationSpec extends
   Spec with
   ShouldMatchers with
   BeforeAndAfterAll {
-
-  import se.scalablesolutions.akka.serialization.Serializer
 
   class MyUntypedActorFormat extends Format[MyUntypedActor] {
     def fromBinary(bytes: Array[Byte], act: MyUntypedActor) = {

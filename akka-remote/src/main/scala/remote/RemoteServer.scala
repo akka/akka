@@ -9,12 +9,15 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
-import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.actor.{
+  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType._
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.serialization.RemoteActorSerialization
+import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
 
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel._
@@ -27,6 +30,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -130,8 +134,8 @@ object RemoteServer {
     actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
   }
 
-  private[akka] def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(name, typedActor)
+  private[akka] def registerTypedActor(address: InetSocketAddress, uuid: String, typedActor: AnyRef) = guard.withWriteGuard {
+    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(uuid, typedActor)
   }
 
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
@@ -190,8 +194,10 @@ case class RemoteServerClientDisconnected(@BeanProperty val server: RemoteServer
 class RemoteServer extends Logging with ListenerManagement {
   def name = "RemoteServer@" + hostname + ":" + port
 
-  private[akka] var hostname = RemoteServer.HOSTNAME
-  private[akka] var port =     RemoteServer.PORT
+  private[akka] var address  = RemoteServer.Address(RemoteServer.HOSTNAME,RemoteServer.PORT)
+
+  def hostname = address.hostname
+  def port     = address.port
 
   @volatile private var _isRunning = false
 
@@ -227,13 +233,11 @@ class RemoteServer extends Logging with ListenerManagement {
   private def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): RemoteServer = synchronized {
     try {
       if (!_isRunning) {
-        hostname = _hostname
-        port = _port
+        address = RemoteServer.Address(_hostname,_port)
         log.info("Starting remote server at [%s:%s]", hostname, port)
         RemoteServer.register(hostname, port, this)
-        val remoteActorSet = RemoteServer.actorsFor(RemoteServer.Address(hostname, port))
         val pipelineFactory = new RemoteServerPipelineFactory(
-          name, openChannels, loader, remoteActorSet.actors, remoteActorSet.typedActors,this)
+          name, openChannels, loader, this)
         bootstrap.setPipelineFactory(pipelineFactory)
         bootstrap.setOption("child.tcpNoDelay", true)
         bootstrap.setOption("child.keepAlive", true)
@@ -242,12 +246,12 @@ class RemoteServer extends Logging with ListenerManagement {
         openChannels.add(bootstrap.bind(new InetSocketAddress(hostname, port)))
         _isRunning = true
         Cluster.registerLocalNode(hostname, port)
-        foreachListener(_ ! RemoteServerStarted(this))
+        notifyListeners(RemoteServerStarted(this))
       }
     } catch {
       case e =>
         log.error(e, "Could not start up remote server")
-        foreachListener(_ ! RemoteServerError(e, this))
+        notifyListeners(RemoteServerError(e, this))
     }
     this
   }
@@ -260,7 +264,7 @@ class RemoteServer extends Logging with ListenerManagement {
         openChannels.close.awaitUninterruptibly
         bootstrap.releaseExternalResources
         Cluster.deregisterLocalNode(hostname, port)
-        foreachListener(_ ! RemoteServerShutdown(this))
+        notifyListeners(RemoteServerShutdown(this))
       } catch {
         case e: java.nio.channels.ClosedChannelException =>  {}
         case e => log.warning("Could not close remote server channel in a graceful way")
@@ -268,12 +272,28 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  // TODO: register typed actor in RemoteServer as well
+  /**
+   * Register typed actor by interface name.
+   */
+  def registerTypedActor(intfClass: Class[_], typedActor: AnyRef) : Unit = registerTypedActor(intfClass.getName, typedActor)
+
+  /**
+   * Register remote typed actor by a specific id.
+   * @param id custom actor id
+   * @param typedActor typed actor to register
+   */
+  def registerTypedActor(id: String, typedActor: AnyRef): Unit = synchronized {
+    val typedActors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).typedActors
+    if (!typedActors.contains(id)) {
+      log.debug("Registering server side remote actor [%s] with id [%s] on [%s:%d]", typedActor.getClass.getName, id, hostname, port)
+      typedActors.put(id, typedActor)
+    }
+  }
 
   /**
    * Register Remote Actor by the Actor's 'id' field. It starts the Actor if it is not started already.
    */
-  def register(actorRef: ActorRef): Unit = register(actorRef.id,actorRef)
+  def register(actorRef: ActorRef): Unit = register(actorRef.id, actorRef)
 
   /**
    * Register Remote Actor by a specific 'id' passed as argument.
@@ -282,11 +302,11 @@ class RemoteServer extends Logging with ListenerManagement {
    */
   def register(id: String, actorRef: ActorRef): Unit = synchronized {
     if (_isRunning) {
-      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
-      if (!actors.contains(id)) {
+      val actorMap = actors()
+      if (!actorMap.contains(id)) {
         if (!actorRef.isRunning) actorRef.start
         log.debug("Registering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, id)
-        actors.put(id, actorRef)
+        actorMap.put(id, actorRef)
       }
     }
   }
@@ -296,10 +316,10 @@ class RemoteServer extends Logging with ListenerManagement {
    */
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
-      log.debug("Unregistering server side remote actor [%s] with id [%s]", actorRef.actorClass.getName, actorRef.id)
-      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
-      actors.remove(actorRef.id)
-      if (actorRef.registeredInRemoteNodeDuringSerialization) actors.remove(actorRef.uuid)
+      log.debug("Unregistering server side remote actor [%s] with id [%s:%s]", actorRef.actorClass.getName, actorRef.id, actorRef.uuid)
+      val actorMap = actors()
+      actorMap remove actorRef.id
+      if (actorRef.registeredInRemoteNodeDuringSerialization) actorMap remove actorRef.uuid
     }
   }
 
@@ -311,16 +331,32 @@ class RemoteServer extends Logging with ListenerManagement {
   def unregister(id: String):Unit = synchronized {
     if (_isRunning) {
       log.info("Unregistering server side remote actor with id [%s]", id)
-      val actors = RemoteServer.actorsFor(RemoteServer.Address(hostname, port)).actors
-      val actorRef = actors.get(id)
-      actors.remove(id)
-      if (actorRef.registeredInRemoteNodeDuringSerialization) actors.remove(actorRef.uuid)
+      val actorMap = actors()
+      val actorRef = actorMap get id
+      actorMap remove id
+      if (actorRef.registeredInRemoteNodeDuringSerialization) actorMap remove actorRef.uuid
+    }
+  }
+
+  /**
+   * Unregister Remote Typed Actor by specific 'id'.
+   * <p/>
+   * NOTE: You need to call this method if you have registered an actor by a custom ID.
+   */
+  def unregisterTypedActor(id: String):Unit = synchronized {
+    if (_isRunning) {
+      log.info("Unregistering server side remote typed actor with id [%s]", id)
+      val registeredTypedActors = typedActors()
+      registeredTypedActors.remove(id)
     }
   }
 
   protected override def manageLifeCycleOfListeners = false
 
-  protected[akka] override def foreachListener(f: (ActorRef) => Unit): Unit = super.foreachListener(f)
+  protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
+
+  private[akka] def actors()      = RemoteServer.actorsFor(address).actors
+  private[akka] def typedActors() = RemoteServer.actorsFor(address).typedActors
 }
 
 object RemoteServerSslContext {
@@ -345,8 +381,6 @@ class RemoteServerPipelineFactory(
     val name: String,
     val openChannels: ChannelGroup,
     val loader: Option[ClassLoader],
-    val actors: JMap[String, ActorRef],
-    val typedActors: JMap[String, AnyRef],
     val server: RemoteServer) extends ChannelPipelineFactory {
   import RemoteServer._
 
@@ -370,7 +404,7 @@ class RemoteServerPipelineFactory(
       case       _ => (join(), join())
     }
 
-    val remoteServer = new RemoteServerHandler(name, openChannels, loader, actors, typedActors,server)
+    val remoteServer = new RemoteServerHandler(name, openChannels, loader, server)
     val stages = ssl ++ dec ++ join(lenDec, protobufDec) ++ enc ++ join(lenPrep, protobufEnc, remoteServer)
     new StaticChannelPipeline(stages: _*)
   }
@@ -384,15 +418,13 @@ class RemoteServerHandler(
     val name: String,
     val openChannels: ChannelGroup,
     val applicationLoader: Option[ClassLoader],
-    val actors: JMap[String, ActorRef],
-    val typedActors: JMap[String, AnyRef],
     val server: RemoteServer) extends SimpleChannelUpstreamHandler with Logging {
   val AW_PROXY_PREFIX = "$$ProxiedByAW".intern
 
   applicationLoader.foreach(MessageSerializer.setClassLoader(_))
 
   /**
-   * ChannelOpen overridden to store open channels for a clean shutdown of a RemoteServer.
+   * ChannelOpen overridden to store open channels for a clean postStop of a RemoteServer.
    * If a channel is closed before, it is automatically removed from the open channels group.
    */
   override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = openChannels.add(ctx.getChannel)
@@ -407,18 +439,18 @@ class RemoteServerHandler(
         def operationComplete(future: ChannelFuture): Unit = {
           if (future.isSuccess) {
             openChannels.add(future.getChannel)
-            server.foreachListener(_ ! RemoteServerClientConnected(server))
+            server.notifyListeners(RemoteServerClientConnected(server))
           } else future.getChannel.close
         }
       })
     } else {
-       server.foreachListener(_ ! RemoteServerClientConnected(server))
+       server.notifyListeners(RemoteServerClientConnected(server))
     }
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     log.debug("Remote client disconnected from [%s]", server.name)
-    server.foreachListener(_ ! RemoteServerClientDisconnected(server))
+    server.notifyListeners(RemoteServerClientDisconnected(server))
   }
 
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
@@ -440,7 +472,7 @@ class RemoteServerHandler(
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     log.error(event.getCause, "Unexpected exception from remote downstream")
     event.getChannel.close
-    server.foreachListener(_ ! RemoteServerError(event.getCause, server))
+    server.notifyListeners(RemoteServerError(event.getCause, server))
   }
 
   private def handleRemoteRequestProtocol(request: RemoteRequestProtocol, channel: Channel) = {
@@ -467,27 +499,36 @@ class RemoteServerHandler(
       case RemoteActorSystemMessage.Stop => actorRef.stop
       case _ =>     // then match on user defined messages
         if (request.getIsOneWay) actorRef.!(message)(sender)
-        else {
-          try {
-            val resultOrNone = (actorRef.!!(message)(sender)).as[AnyRef]
-            val result = if (resultOrNone.isDefined) resultOrNone.get else null
+        else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message,request.getActorInfo.getTimeout,None,Some(
+          new DefaultCompletableFuture[AnyRef](request.getActorInfo.getTimeout){
+            override def onComplete(result: AnyRef) {
+              log.debug("Returning result from actor invocation [%s]", result)
+              val replyBuilder = RemoteReplyProtocol.newBuilder
+                  .setId(request.getId)
+                  .setMessage(MessageSerializer.serialize(result))
+                  .setIsSuccessful(true)
+                  .setIsActor(true)
 
-            log.debug("Returning result from actor invocation [%s]", result)
-            val replyBuilder = RemoteReplyProtocol.newBuilder
-                .setId(request.getId)
-                .setMessage(MessageSerializer.serialize(result))
-                .setIsSuccessful(true)
-                .setIsActor(true)
+              if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
-            if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-            channel.write(replyBuilder.build)
+              try {
+                channel.write(replyBuilder.build)
+              } catch {
+                case e: Throwable =>
+                  server.notifyListeners(RemoteServerError(e, server))
+              }
+            }
 
-          } catch {
-            case e: Throwable =>
-              channel.write(createErrorReplyMessage(e, request, true))
-              server.foreachListener(_ ! RemoteServerError(e, server))
-          }
+            override def onCompleteException(exception: Throwable) {
+              try {
+                channel.write(createErrorReplyMessage(exception, request, true))
+              } catch {
+                case e: Throwable =>
+                  server.notifyListeners(RemoteServerError(e, server))
+              }
+            }
         }
+     ))
     }
   }
 
@@ -517,11 +558,37 @@ class RemoteServerHandler(
     } catch {
       case e: InvocationTargetException =>
         channel.write(createErrorReplyMessage(e.getCause, request, false))
-        server.foreachListener(_ ! RemoteServerError(e, server))
+        server.notifyListeners(RemoteServerError(e, server))
       case e: Throwable                 =>
         channel.write(createErrorReplyMessage(e, request, false))
-        server.foreachListener(_ ! RemoteServerError(e, server))
+        server.notifyListeners(RemoteServerError(e, server))
     }
+  }
+
+  /**
+   * Find a registered actor by ID (default) or UUID.
+   * Actors are registered by id apart from registering during serialization see SerializationProtocol.
+   */
+  private def findActorByIdOrUuid(id: String, uuid: String) : ActorRef = {
+    val registeredActors = server.actors()
+    var actorRefOrNull = registeredActors get id
+    if (actorRefOrNull eq null) {
+      actorRefOrNull = registeredActors get uuid
+    }
+    actorRefOrNull
+  }
+
+  /**
+   * Find a registered typed actor by ID (default) or UUID.
+   * Actors are registered by id apart from registering during serialization see SerializationProtocol.
+   */
+  private def findTypedActorByIdOrUUid(id: String, uuid: String) : AnyRef = {
+    val registeredActors = server.typedActors()
+    var actorRefOrNull = registeredActors get id
+    if (actorRefOrNull eq null) {
+      actorRefOrNull = registeredActors get uuid
+    }
+    actorRefOrNull
   }
 
   /**
@@ -533,10 +600,12 @@ class RemoteServerHandler(
    */
   private def createActor(actorInfo: ActorInfoProtocol): ActorRef = {
     val uuid = actorInfo.getUuid
+    val id = actorInfo.getId
+
     val name = actorInfo.getTarget
     val timeout = actorInfo.getTimeout
 
-    val actorRefOrNull = actors get uuid
+    val actorRefOrNull = findActorByIdOrUuid(id, uuid)
 
     if (actorRefOrNull eq null) {
       try {
@@ -545,14 +614,15 @@ class RemoteServerHandler(
                     else Class.forName(name)
         val actorRef = Actor.actorOf(clazz.newInstance.asInstanceOf[Actor])
         actorRef.uuid = uuid
+        actorRef.id = id
         actorRef.timeout = timeout
         actorRef.remoteAddress = None
-        actors.put(uuid, actorRef)
+        server.actors.put(id, actorRef) // register by id
         actorRef
       } catch {
         case e =>
           log.error(e, "Could not create remote actor instance")
-          server.foreachListener(_ ! RemoteServerError(e, server))
+          server.notifyListeners(RemoteServerError(e, server))
           throw e
       }
     } else actorRefOrNull
@@ -560,7 +630,9 @@ class RemoteServerHandler(
 
   private def createTypedActor(actorInfo: ActorInfoProtocol): AnyRef = {
     val uuid = actorInfo.getUuid
-    val typedActorOrNull = typedActors get uuid
+    val id = actorInfo.getId
+
+    val typedActorOrNull = findTypedActorByIdOrUUid(id, uuid)
 
     if (typedActorOrNull eq null) {
       val typedActorInfo = actorInfo.getTypedActorInfo
@@ -577,12 +649,12 @@ class RemoteServerHandler(
 
         val newInstance = TypedActor.newInstance(
           interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
-        typedActors.put(uuid, newInstance)
+        server.typedActors.put(id, newInstance) // register by id
         newInstance
       } catch {
         case e =>
           log.error(e, "Could not create remote typed actor instance")
-          server.foreachListener(_ ! RemoteServerError(e, server))
+          server.notifyListeners(RemoteServerError(e, server))
           throw e
       }
     } else typedActorOrNull

@@ -5,8 +5,8 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{Test, Before, After}
 
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteClient}
-import se.scalablesolutions.akka.actor.{ActorRef, Actor}
-import Actor._
+import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.actor.{ActorRegistry, ActorRef, Actor}
 
 object ServerInitiatedRemoteActorSpec {
   val HOSTNAME = "localhost"
@@ -67,7 +67,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     Thread.sleep(1000)
   }
 
-  // make sure the servers shutdown cleanly after the test has finished
+  // make sure the servers postStop cleanly after the test has finished
   @After
   def finished {
     try {
@@ -79,6 +79,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     }
   }
 
+  
   @Test
   def shouldSendWithBang  {
     val actor = RemoteClient.actorFor(
@@ -132,5 +133,50 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     }
     actor.stop
   }
+
+  @Test
+  def reflectiveAccessShouldNotCreateNewRemoteServerObject {
+      val server1 = new RemoteServer()
+      server1.start("localhost", 9990)
+
+      var found = RemoteServer.serverFor("localhost", 9990)
+      assert(found.isDefined, "sever not found")
+
+      val a = actor { case _ => }
+
+      found = RemoteServer.serverFor("localhost", 9990)
+      assert(found.isDefined, "sever not found after creating an actor")
+    }
+
+
+  @Test
+  def shouldNotRecreateRegisteredActor {
+    server.register(actorOf[RemoteActorSpecActorUnidirectional])
+    val actor = RemoteClient.actorFor("se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
+    val numberOfActorsInRegistry = ActorRegistry.actors.length
+    actor ! "OneWay"
+    assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
+    assert(numberOfActorsInRegistry === ActorRegistry.actors.length)
+    actor.stop
+  }
+
+  @Test
+  def shouldUseServiceNameAsIdForRemoteActorRef {
+    server.register(actorOf[RemoteActorSpecActorUnidirectional])
+    server.register("my-service", actorOf[RemoteActorSpecActorUnidirectional])
+    val actor1 = RemoteClient.actorFor("se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec$RemoteActorSpecActorUnidirectional", HOSTNAME, PORT)
+    val actor2 = RemoteClient.actorFor("my-service", HOSTNAME, PORT)
+    val actor3 = RemoteClient.actorFor("my-service", HOSTNAME, PORT)
+
+    actor1 ! "OneWay"
+    actor2 ! "OneWay"
+    actor3 ! "OneWay"
+
+    assert(actor1.uuid != actor2.uuid)
+    assert(actor1.uuid != actor3.uuid)
+    assert(actor1.id != actor2.id)
+    assert(actor2.id == actor3.id)
+  }
+
 }
 

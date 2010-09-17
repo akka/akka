@@ -2,17 +2,18 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-package se.scalablesolutions.akka.actor
+package se.scalablesolutions.akka.serialization
 
-import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
-import se.scalablesolutions.akka.config.ScalaConfig._
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, LocalActorRef, RemoteActorRef, IllegalActorStateException, ActorType}
 import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.{RemoteServer, MessageSerializer}
-import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType._
-import se.scalablesolutions.akka.serialization.Serializer
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
+import ActorTypeProtocol._
+import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
+import se.scalablesolutions.akka.config.ScalaConfig._
 
 import com.google.protobuf.ByteString
 import se.scalablesolutions.akka.util.UUID
@@ -68,7 +69,7 @@ trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
 }
 
 /**
- * Module for local actor serialization
+ * Module for local actor serialization.
  */
 object ActorSerialization {
 
@@ -250,6 +251,7 @@ object RemoteActorSerialization {
 
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
         .setUuid(uuid)
+        .setId(actorRef.id)
         .setTarget(actorClassName)
         .setTimeout(timeout)
 

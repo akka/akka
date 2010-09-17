@@ -36,7 +36,7 @@ object RedisStorage extends Storage {
  *
  * @author <a href="http://debasishg.blogspot.com">Debasish Ghosh</a>
  */
-class RedisPersistentMap(id: String) extends PersistentMap[Array[Byte], Array[Byte]] {
+class RedisPersistentMap(id: String) extends PersistentMapBinary {
   val uuid = id
   val storage = RedisStorageBackend
 }

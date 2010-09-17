@@ -7,6 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
+import se.scalablesolutions.akka.serialization._
 import se.scalablesolutions.akka.actor._
 import ActorSerialization._
 import Actor._
@@ -17,7 +18,6 @@ class SerializableTypeClassActorSpec extends
   ShouldMatchers with
   BeforeAndAfterAll {
 
-  import se.scalablesolutions.akka.serialization.Serializer
 
   object BinaryFormatMyActor {
     implicit object MyActorFormat extends Format[MyActor] {

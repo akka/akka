@@ -247,8 +247,8 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[CompletableFuture[T]]) = unsupported
   protected[akka] def mailbox: AnyRef = unsupported
   protected[akka] def mailbox_=(msg: AnyRef):AnyRef = unsupported
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
   protected[akka] def linkedActors: JavaMap[String, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
