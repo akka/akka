@@ -18,7 +18,7 @@ import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message
 import CamelMessageConversion.toExchangeAdapter
 import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 import se.scalablesolutions.akka.stm.TransactionConfig
-import se.scalablesolutions.akka.actor.{ScalaActorRef, ActorRegistry, Actor, ActorRef}
+import se.scalablesolutions.akka.actor.{ScalaActorRef, ActorRegistry, Actor, ActorRef, Uuid, uuidFrom}
 import se.scalablesolutions.akka.AkkaException
 
 import scala.reflect.BeanProperty
@@ -37,11 +37,11 @@ class ActorComponent extends DefaultComponent {
     new ActorEndpoint(uri, this, idAndUuid._1, idAndUuid._2)
   }
 
-  private def idAndUuidPair(remaining: String): Tuple2[Option[String], Option[String]] = {
+  private def idAndUuidPair(remaining: String): Tuple2[Option[String], Option[Uuid]] = {
     remaining split ":" toList match {
       case             id :: Nil => (Some(id), None)
       case   "id" ::   id :: Nil => (Some(id), None)
-      case "uuid" :: uuid :: Nil => (None, Some(uuid))
+      case "uuid" :: uuid :: Nil => (None, Some(uuidFrom(uuid)))
       case _ => throw new IllegalArgumentException(
         "invalid path format: %s - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
     }
@@ -64,7 +64,7 @@ class ActorComponent extends DefaultComponent {
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
                     val id: Option[String],
-                    val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
+                    val uuid: Option[Uuid]) extends DefaultEndpoint(uri, comp) {
 
   /**
    * Blocking of caller thread during two-way message exchanges with consumer actors. This is set
@@ -151,7 +151,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     case actors                       => Some(actors(0))
   }
 
-  private def targetByUuid(uuid: String) = ActorRegistry.actorFor(uuid)
+  private def targetByUuid(uuid: Uuid) = ActorRegistry.actorFor(uuid)
 }
 
 /**
@@ -250,7 +250,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  protected[akka] def linkedActors: JavaMap[String, ActorRef] = unsupported
+  protected[akka] def linkedActors: JavaMap[Uuid, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported

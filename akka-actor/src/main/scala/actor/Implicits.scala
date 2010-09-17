@@ -12,4 +12,9 @@ package object actor {
 
   implicit def scala2ActorRef(ref: ScalaActorRef): ActorRef =
     ref.asInstanceOf[ActorRef]
+
+  type Uuid = com.eaio.uuid.UUID
+  def newUuid(): Uuid = new Uuid()
+  def uuidFrom(time: Long, clockSeqAndNode: Long): Uuid = new Uuid(time,clockSeqAndNode)
+  def uuidFrom(uuid: String) = new Uuid(uuid)
 }

@@ -6,6 +6,7 @@ package se.scalablesolutions.akka.actor.ticket
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.actor.{Uuid,newUuid,uuidFrom}
 import se.scalablesolutions.akka.actor.remote.ServerInitiatedRemoteActorSpec.RemoteActorSpecActorUnidirectional
 import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
@@ -32,14 +33,15 @@ class Ticket434Spec extends Spec with ShouldMatchers {
 
   describe("The ActorInfoProtocol") {
     it("should be possible to set the acor id and uuuid") {
+      val uuid = newUuid
       val actorInfoBuilder = ActorInfoProtocol.newBuilder
-        .setUuid("unique-id")
+        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
         .setId("some-id")
         .setTarget("actorClassName")
         .setTimeout(5000L)
         .setActorType(ActorType.SCALA_ACTOR)
       val actorInfo = actorInfoBuilder.build
-      assert(actorInfo.getUuid === "unique-id")
+      assert(uuidFrom(actorInfo.getUuid.getHigh,actorInfo.getUuid.getLow) === uuid)
       assert(actorInfo.getId === "some-id")
     }
   }
