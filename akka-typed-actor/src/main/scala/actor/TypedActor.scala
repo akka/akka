@@ -622,7 +622,7 @@ private[akka] abstract class ActorAspect {
   protected var typedActor: TypedActor = _
   protected var actorRef: ActorRef = _
   protected var timeout: Long = _
-  protected var uuid: String = _
+  protected var uuid: Uuid = _
   protected var remoteAddress: Option[InetSocketAddress] = _
 
   protected def localDispatch(joinPoint: JoinPoint): AnyRef = {

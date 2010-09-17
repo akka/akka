@@ -244,12 +244,12 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteActorRefProtocol_fieldAccessorTable;
     }
     
-    // required string uuid = 1;
-    public static final int UUID_FIELD_NUMBER = 1;
-    private boolean hasUuid;
-    private java.lang.String uuid_ = "";
-    public boolean hasUuid() { return hasUuid; }
-    public java.lang.String getUuid() { return uuid_; }
+    // required string classOrServiceName = 1;
+    public static final int CLASSORSERVICENAME_FIELD_NUMBER = 1;
+    private boolean hasClassOrServiceName;
+    private java.lang.String classOrServiceName_ = "";
+    public boolean hasClassOrServiceName() { return hasClassOrServiceName; }
+    public java.lang.String getClassOrServiceName() { return classOrServiceName_; }
     
     // required string actorClassname = 2;
     public static final int ACTORCLASSNAME_FIELD_NUMBER = 2;
@@ -276,7 +276,7 @@ public final class RemoteProtocol {
       homeAddress_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
     }
     public final boolean isInitialized() {
-      if (!hasUuid) return false;
+      if (!hasClassOrServiceName) return false;
       if (!hasActorClassname) return false;
       if (!hasHomeAddress) return false;
       if (!getHomeAddress().isInitialized()) return false;
@@ -286,8 +286,8 @@ public final class RemoteProtocol {
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasUuid()) {
-        output.writeString(1, getUuid());
+      if (hasClassOrServiceName()) {
+        output.writeString(1, getClassOrServiceName());
       }
       if (hasActorClassname()) {
         output.writeString(2, getActorClassname());
@@ -307,9 +307,9 @@ public final class RemoteProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasUuid()) {
+      if (hasClassOrServiceName()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(1, getUuid());
+          .computeStringSize(1, getClassOrServiceName());
       }
       if (hasActorClassname()) {
         size += com.google.protobuf.CodedOutputStream
@@ -481,8 +481,8 @@ public final class RemoteProtocol {
       
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance()) return this;
-        if (other.hasUuid()) {
-          setUuid(other.getUuid());
+        if (other.hasClassOrServiceName()) {
+          setClassOrServiceName(other.getClassOrServiceName());
         }
         if (other.hasActorClassname()) {
           setActorClassname(other.getActorClassname());
@@ -519,7 +519,7 @@ public final class RemoteProtocol {
               break;
             }
             case 10: {
-              setUuid(input.readString());
+              setClassOrServiceName(input.readString());
               break;
             }
             case 18: {
@@ -544,24 +544,24 @@ public final class RemoteProtocol {
       }
       
       
-      // required string uuid = 1;
-      public boolean hasUuid() {
-        return result.hasUuid();
+      // required string classOrServiceName = 1;
+      public boolean hasClassOrServiceName() {
+        return result.hasClassOrServiceName();
       }
-      public java.lang.String getUuid() {
-        return result.getUuid();
+      public java.lang.String getClassOrServiceName() {
+        return result.getClassOrServiceName();
       }
-      public Builder setUuid(java.lang.String value) {
+      public Builder setClassOrServiceName(java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  result.hasUuid = true;
-        result.uuid_ = value;
+  result.hasClassOrServiceName = true;
+        result.classOrServiceName_ = value;
         return this;
       }
-      public Builder clearUuid() {
-        result.hasUuid = false;
-        result.uuid_ = getDefaultInstance().getUuid();
+      public Builder clearClassOrServiceName() {
+        result.hasClassOrServiceName = false;
+        result.classOrServiceName_ = getDefaultInstance().getClassOrServiceName();
         return this;
       }
       
@@ -680,12 +680,12 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_SerializedActorRefProtocol_fieldAccessorTable;
     }
     
-    // required string uuid = 1;
+    // required .UuidProtocol uuid = 1;
     public static final int UUID_FIELD_NUMBER = 1;
     private boolean hasUuid;
-    private java.lang.String uuid_ = "";
+    private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol uuid_;
     public boolean hasUuid() { return hasUuid; }
-    public java.lang.String getUuid() { return uuid_; }
+    public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() { return uuid_; }
     
     // required string id = 2;
     public static final int ID_FIELD_NUMBER = 2;
@@ -777,6 +777,7 @@ public final class RemoteProtocol {
     }
     
     private void initFields() {
+      uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
       originalAddress_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol.getDefaultInstance();
       lifeCycle_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.LifeCycleProtocol.getDefaultInstance();
       supervisor_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance();
@@ -786,6 +787,7 @@ public final class RemoteProtocol {
       if (!hasId) return false;
       if (!hasActorClassname) return false;
       if (!hasOriginalAddress) return false;
+      if (!getUuid().isInitialized()) return false;
       if (!getOriginalAddress().isInitialized()) return false;
       if (hasLifeCycle()) {
         if (!getLifeCycle().isInitialized()) return false;
@@ -803,7 +805,7 @@ public final class RemoteProtocol {
                         throws java.io.IOException {
       getSerializedSize();
       if (hasUuid()) {
-        output.writeString(1, getUuid());
+        output.writeMessage(1, getUuid());
       }
       if (hasId()) {
         output.writeString(2, getId());
@@ -852,7 +854,7 @@ public final class RemoteProtocol {
       size = 0;
       if (hasUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(1, getUuid());
+          .computeMessageSize(1, getUuid());
       }
       if (hasId()) {
         size += com.google.protobuf.CodedOutputStream
@@ -1065,7 +1067,7 @@ public final class RemoteProtocol {
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.SerializedActorRefProtocol.getDefaultInstance()) return this;
         if (other.hasUuid()) {
-          setUuid(other.getUuid());
+          mergeUuid(other.getUuid());
         }
         if (other.hasId()) {
           setId(other.getId());
@@ -1132,7 +1134,12 @@ public final class RemoteProtocol {
               break;
             }
             case 10: {
-              setUuid(input.readString());
+              se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder subBuilder = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder();
+              if (hasUuid()) {
+                subBuilder.mergeFrom(getUuid());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setUuid(subBuilder.buildPartial());
               break;
             }
             case 18: {
@@ -1205,24 +1212,40 @@ public final class RemoteProtocol {
       }
       
       
-      // required string uuid = 1;
+      // required .UuidProtocol uuid = 1;
       public boolean hasUuid() {
         return result.hasUuid();
       }
-      public java.lang.String getUuid() {
+      public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() {
         return result.getUuid();
       }
-      public Builder setUuid(java.lang.String value) {
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasUuid = true;
+          throw new NullPointerException();
+        }
+        result.hasUuid = true;
         result.uuid_ = value;
+        return this;
+      }
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder builderForValue) {
+        result.hasUuid = true;
+        result.uuid_ = builderForValue.build();
+        return this;
+      }
+      public Builder mergeUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (result.hasUuid() &&
+            result.uuid_ != se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance()) {
+          result.uuid_ =
+            se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder(result.uuid_).mergeFrom(value).buildPartial();
+        } else {
+          result.uuid_ = value;
+        }
+        result.hasUuid = true;
         return this;
       }
       public Builder clearUuid() {
         result.hasUuid = false;
-        result.uuid_ = getDefaultInstance().getUuid();
+        result.uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
         return this;
       }
       
@@ -1966,12 +1989,12 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_ActorInfoProtocol_fieldAccessorTable;
     }
     
-    // required string uuid = 1;
+    // required .UuidProtocol uuid = 1;
     public static final int UUID_FIELD_NUMBER = 1;
     private boolean hasUuid;
-    private java.lang.String uuid_ = "";
+    private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol uuid_;
     public boolean hasUuid() { return hasUuid; }
-    public java.lang.String getUuid() { return uuid_; }
+    public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() { return uuid_; }
     
     // required string target = 2;
     public static final int TARGET_FIELD_NUMBER = 2;
@@ -2009,6 +2032,7 @@ public final class RemoteProtocol {
     public java.lang.String getId() { return id_; }
     
     private void initFields() {
+      uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
       actorType_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType.SCALA_ACTOR;
       typedActorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDefaultInstance();
     }
@@ -2017,6 +2041,7 @@ public final class RemoteProtocol {
       if (!hasTarget) return false;
       if (!hasTimeout) return false;
       if (!hasActorType) return false;
+      if (!getUuid().isInitialized()) return false;
       if (hasTypedActorInfo()) {
         if (!getTypedActorInfo().isInitialized()) return false;
       }
@@ -2027,7 +2052,7 @@ public final class RemoteProtocol {
                         throws java.io.IOException {
       getSerializedSize();
       if (hasUuid()) {
-        output.writeString(1, getUuid());
+        output.writeMessage(1, getUuid());
       }
       if (hasTarget()) {
         output.writeString(2, getTarget());
@@ -2055,7 +2080,7 @@ public final class RemoteProtocol {
       size = 0;
       if (hasUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(1, getUuid());
+          .computeMessageSize(1, getUuid());
       }
       if (hasTarget()) {
         size += com.google.protobuf.CodedOutputStream
@@ -2236,7 +2261,7 @@ public final class RemoteProtocol {
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDefaultInstance()) return this;
         if (other.hasUuid()) {
-          setUuid(other.getUuid());
+          mergeUuid(other.getUuid());
         }
         if (other.hasTarget()) {
           setTarget(other.getTarget());
@@ -2279,7 +2304,12 @@ public final class RemoteProtocol {
               break;
             }
             case 10: {
-              setUuid(input.readString());
+              se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder subBuilder = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder();
+              if (hasUuid()) {
+                subBuilder.mergeFrom(getUuid());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setUuid(subBuilder.buildPartial());
               break;
             }
             case 18: {
@@ -2318,24 +2348,40 @@ public final class RemoteProtocol {
       }
       
       
-      // required string uuid = 1;
+      // required .UuidProtocol uuid = 1;
       public boolean hasUuid() {
         return result.hasUuid();
       }
-      public java.lang.String getUuid() {
+      public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() {
         return result.getUuid();
       }
-      public Builder setUuid(java.lang.String value) {
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasUuid = true;
+          throw new NullPointerException();
+        }
+        result.hasUuid = true;
         result.uuid_ = value;
+        return this;
+      }
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder builderForValue) {
+        result.hasUuid = true;
+        result.uuid_ = builderForValue.build();
+        return this;
+      }
+      public Builder mergeUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (result.hasUuid() &&
+            result.uuid_ != se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance()) {
+          result.uuid_ =
+            se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder(result.uuid_).mergeFrom(value).buildPartial();
+        } else {
+          result.uuid_ = value;
+        }
+        result.hasUuid = true;
         return this;
       }
       public Builder clearUuid() {
         result.hasUuid = false;
-        result.uuid_ = getDefaultInstance().getUuid();
+        result.uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
         return this;
       }
       
@@ -2827,12 +2873,12 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteRequestProtocol_fieldAccessorTable;
     }
     
-    // required uint64 id = 1;
-    public static final int ID_FIELD_NUMBER = 1;
-    private boolean hasId;
-    private long id_ = 0L;
-    public boolean hasId() { return hasId; }
-    public long getId() { return id_; }
+    // required .UuidProtocol uuid = 1;
+    public static final int UUID_FIELD_NUMBER = 1;
+    private boolean hasUuid;
+    private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol uuid_;
+    public boolean hasUuid() { return hasUuid; }
+    public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() { return uuid_; }
     
     // required .MessageProtocol message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
@@ -2855,12 +2901,12 @@ public final class RemoteProtocol {
     public boolean hasIsOneWay() { return hasIsOneWay; }
     public boolean getIsOneWay() { return isOneWay_; }
     
-    // optional string supervisorUuid = 5;
+    // optional .UuidProtocol supervisorUuid = 5;
     public static final int SUPERVISORUUID_FIELD_NUMBER = 5;
     private boolean hasSupervisorUuid;
-    private java.lang.String supervisorUuid_ = "";
+    private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol supervisorUuid_;
     public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
-    public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
+    public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getSupervisorUuid() { return supervisorUuid_; }
     
     // optional .RemoteActorRefProtocol sender = 6;
     public static final int SENDER_FIELD_NUMBER = 6;
@@ -2882,17 +2928,23 @@ public final class RemoteProtocol {
     }
     
     private void initFields() {
+      uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
       message_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance();
       actorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.getDefaultInstance();
+      supervisorUuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
       sender_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.getDefaultInstance();
     }
     public final boolean isInitialized() {
-      if (!hasId) return false;
+      if (!hasUuid) return false;
       if (!hasMessage) return false;
       if (!hasActorInfo) return false;
       if (!hasIsOneWay) return false;
+      if (!getUuid().isInitialized()) return false;
       if (!getMessage().isInitialized()) return false;
       if (!getActorInfo().isInitialized()) return false;
+      if (hasSupervisorUuid()) {
+        if (!getSupervisorUuid().isInitialized()) return false;
+      }
       if (hasSender()) {
         if (!getSender().isInitialized()) return false;
       }
@@ -2905,8 +2957,8 @@ public final class RemoteProtocol {
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasId()) {
-        output.writeUInt64(1, getId());
+      if (hasUuid()) {
+        output.writeMessage(1, getUuid());
       }
       if (hasMessage()) {
         output.writeMessage(2, getMessage());
@@ -2918,7 +2970,7 @@ public final class RemoteProtocol {
         output.writeBool(4, getIsOneWay());
       }
       if (hasSupervisorUuid()) {
-        output.writeString(5, getSupervisorUuid());
+        output.writeMessage(5, getSupervisorUuid());
       }
       if (hasSender()) {
         output.writeMessage(6, getSender());
@@ -2935,9 +2987,9 @@ public final class RemoteProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasId()) {
+      if (hasUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(1, getId());
+          .computeMessageSize(1, getUuid());
       }
       if (hasMessage()) {
         size += com.google.protobuf.CodedOutputStream
@@ -2953,7 +3005,7 @@ public final class RemoteProtocol {
       }
       if (hasSupervisorUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(5, getSupervisorUuid());
+          .computeMessageSize(5, getSupervisorUuid());
       }
       if (hasSender()) {
         size += com.google.protobuf.CodedOutputStream
@@ -3125,8 +3177,8 @@ public final class RemoteProtocol {
       
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol.getDefaultInstance()) return this;
-        if (other.hasId()) {
-          setId(other.getId());
+        if (other.hasUuid()) {
+          mergeUuid(other.getUuid());
         }
         if (other.hasMessage()) {
           mergeMessage(other.getMessage());
@@ -3138,7 +3190,7 @@ public final class RemoteProtocol {
           setIsOneWay(other.getIsOneWay());
         }
         if (other.hasSupervisorUuid()) {
-          setSupervisorUuid(other.getSupervisorUuid());
+          mergeSupervisorUuid(other.getSupervisorUuid());
         }
         if (other.hasSender()) {
           mergeSender(other.getSender());
@@ -3174,8 +3226,13 @@ public final class RemoteProtocol {
               }
               break;
             }
-            case 8: {
-              setId(input.readUInt64());
+            case 10: {
+              se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder subBuilder = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder();
+              if (hasUuid()) {
+                subBuilder.mergeFrom(getUuid());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setUuid(subBuilder.buildPartial());
               break;
             }
             case 18: {
@@ -3201,7 +3258,12 @@ public final class RemoteProtocol {
               break;
             }
             case 42: {
-              setSupervisorUuid(input.readString());
+              se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder subBuilder = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder();
+              if (hasSupervisorUuid()) {
+                subBuilder.mergeFrom(getSupervisorUuid());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setSupervisorUuid(subBuilder.buildPartial());
               break;
             }
             case 50: {
@@ -3224,21 +3286,40 @@ public final class RemoteProtocol {
       }
       
       
-      // required uint64 id = 1;
-      public boolean hasId() {
-        return result.hasId();
+      // required .UuidProtocol uuid = 1;
+      public boolean hasUuid() {
+        return result.hasUuid();
       }
-      public long getId() {
-        return result.getId();
+      public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() {
+        return result.getUuid();
       }
-      public Builder setId(long value) {
-        result.hasId = true;
-        result.id_ = value;
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        result.hasUuid = true;
+        result.uuid_ = value;
         return this;
       }
-      public Builder clearId() {
-        result.hasId = false;
-        result.id_ = 0L;
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder builderForValue) {
+        result.hasUuid = true;
+        result.uuid_ = builderForValue.build();
+        return this;
+      }
+      public Builder mergeUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (result.hasUuid() &&
+            result.uuid_ != se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance()) {
+          result.uuid_ =
+            se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder(result.uuid_).mergeFrom(value).buildPartial();
+        } else {
+          result.uuid_ = value;
+        }
+        result.hasUuid = true;
+        return this;
+      }
+      public Builder clearUuid() {
+        result.hasUuid = false;
+        result.uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
         return this;
       }
       
@@ -3334,24 +3415,40 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string supervisorUuid = 5;
+      // optional .UuidProtocol supervisorUuid = 5;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
       }
-      public java.lang.String getSupervisorUuid() {
+      public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getSupervisorUuid() {
         return result.getSupervisorUuid();
       }
-      public Builder setSupervisorUuid(java.lang.String value) {
+      public Builder setSupervisorUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasSupervisorUuid = true;
+          throw new NullPointerException();
+        }
+        result.hasSupervisorUuid = true;
         result.supervisorUuid_ = value;
+        return this;
+      }
+      public Builder setSupervisorUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder builderForValue) {
+        result.hasSupervisorUuid = true;
+        result.supervisorUuid_ = builderForValue.build();
+        return this;
+      }
+      public Builder mergeSupervisorUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (result.hasSupervisorUuid() &&
+            result.supervisorUuid_ != se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance()) {
+          result.supervisorUuid_ =
+            se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder(result.supervisorUuid_).mergeFrom(value).buildPartial();
+        } else {
+          result.supervisorUuid_ = value;
+        }
+        result.hasSupervisorUuid = true;
         return this;
       }
       public Builder clearSupervisorUuid() {
         result.hasSupervisorUuid = false;
-        result.supervisorUuid_ = getDefaultInstance().getSupervisorUuid();
+        result.supervisorUuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
         return this;
       }
       
@@ -3482,12 +3579,12 @@ public final class RemoteProtocol {
       return se.scalablesolutions.akka.remote.protocol.RemoteProtocol.internal_static_RemoteReplyProtocol_fieldAccessorTable;
     }
     
-    // required uint64 id = 1;
-    public static final int ID_FIELD_NUMBER = 1;
-    private boolean hasId;
-    private long id_ = 0L;
-    public boolean hasId() { return hasId; }
-    public long getId() { return id_; }
+    // required .UuidProtocol uuid = 1;
+    public static final int UUID_FIELD_NUMBER = 1;
+    private boolean hasUuid;
+    private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol uuid_;
+    public boolean hasUuid() { return hasUuid; }
+    public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() { return uuid_; }
     
     // optional .MessageProtocol message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
@@ -3503,12 +3600,12 @@ public final class RemoteProtocol {
     public boolean hasException() { return hasException; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol getException() { return exception_; }
     
-    // optional string supervisorUuid = 4;
+    // optional .UuidProtocol supervisorUuid = 4;
     public static final int SUPERVISORUUID_FIELD_NUMBER = 4;
     private boolean hasSupervisorUuid;
-    private java.lang.String supervisorUuid_ = "";
+    private se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol supervisorUuid_;
     public boolean hasSupervisorUuid() { return hasSupervisorUuid; }
-    public java.lang.String getSupervisorUuid() { return supervisorUuid_; }
+    public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getSupervisorUuid() { return supervisorUuid_; }
     
     // required bool isActor = 5;
     public static final int ISACTOR_FIELD_NUMBER = 5;
@@ -3537,18 +3634,24 @@ public final class RemoteProtocol {
     }
     
     private void initFields() {
+      uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
       message_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MessageProtocol.getDefaultInstance();
       exception_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ExceptionProtocol.getDefaultInstance();
+      supervisorUuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
     }
     public final boolean isInitialized() {
-      if (!hasId) return false;
+      if (!hasUuid) return false;
       if (!hasIsActor) return false;
       if (!hasIsSuccessful) return false;
+      if (!getUuid().isInitialized()) return false;
       if (hasMessage()) {
         if (!getMessage().isInitialized()) return false;
       }
       if (hasException()) {
         if (!getException().isInitialized()) return false;
+      }
+      if (hasSupervisorUuid()) {
+        if (!getSupervisorUuid().isInitialized()) return false;
       }
       for (se.scalablesolutions.akka.remote.protocol.RemoteProtocol.MetadataEntryProtocol element : getMetadataList()) {
         if (!element.isInitialized()) return false;
@@ -3559,8 +3662,8 @@ public final class RemoteProtocol {
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      if (hasId()) {
-        output.writeUInt64(1, getId());
+      if (hasUuid()) {
+        output.writeMessage(1, getUuid());
       }
       if (hasMessage()) {
         output.writeMessage(2, getMessage());
@@ -3569,7 +3672,7 @@ public final class RemoteProtocol {
         output.writeMessage(3, getException());
       }
       if (hasSupervisorUuid()) {
-        output.writeString(4, getSupervisorUuid());
+        output.writeMessage(4, getSupervisorUuid());
       }
       if (hasIsActor()) {
         output.writeBool(5, getIsActor());
@@ -3589,9 +3692,9 @@ public final class RemoteProtocol {
       if (size != -1) return size;
     
       size = 0;
-      if (hasId()) {
+      if (hasUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(1, getId());
+          .computeMessageSize(1, getUuid());
       }
       if (hasMessage()) {
         size += com.google.protobuf.CodedOutputStream
@@ -3603,7 +3706,7 @@ public final class RemoteProtocol {
       }
       if (hasSupervisorUuid()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeStringSize(4, getSupervisorUuid());
+          .computeMessageSize(4, getSupervisorUuid());
       }
       if (hasIsActor()) {
         size += com.google.protobuf.CodedOutputStream
@@ -3779,8 +3882,8 @@ public final class RemoteProtocol {
       
       public Builder mergeFrom(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol other) {
         if (other == se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol.getDefaultInstance()) return this;
-        if (other.hasId()) {
-          setId(other.getId());
+        if (other.hasUuid()) {
+          mergeUuid(other.getUuid());
         }
         if (other.hasMessage()) {
           mergeMessage(other.getMessage());
@@ -3789,7 +3892,7 @@ public final class RemoteProtocol {
           mergeException(other.getException());
         }
         if (other.hasSupervisorUuid()) {
-          setSupervisorUuid(other.getSupervisorUuid());
+          mergeSupervisorUuid(other.getSupervisorUuid());
         }
         if (other.hasIsActor()) {
           setIsActor(other.getIsActor());
@@ -3828,8 +3931,13 @@ public final class RemoteProtocol {
               }
               break;
             }
-            case 8: {
-              setId(input.readUInt64());
+            case 10: {
+              se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder subBuilder = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder();
+              if (hasUuid()) {
+                subBuilder.mergeFrom(getUuid());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setUuid(subBuilder.buildPartial());
               break;
             }
             case 18: {
@@ -3851,7 +3959,12 @@ public final class RemoteProtocol {
               break;
             }
             case 34: {
-              setSupervisorUuid(input.readString());
+              se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder subBuilder = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder();
+              if (hasSupervisorUuid()) {
+                subBuilder.mergeFrom(getSupervisorUuid());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setSupervisorUuid(subBuilder.buildPartial());
               break;
             }
             case 40: {
@@ -3873,21 +3986,40 @@ public final class RemoteProtocol {
       }
       
       
-      // required uint64 id = 1;
-      public boolean hasId() {
-        return result.hasId();
+      // required .UuidProtocol uuid = 1;
+      public boolean hasUuid() {
+        return result.hasUuid();
       }
-      public long getId() {
-        return result.getId();
+      public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getUuid() {
+        return result.getUuid();
       }
-      public Builder setId(long value) {
-        result.hasId = true;
-        result.id_ = value;
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        result.hasUuid = true;
+        result.uuid_ = value;
         return this;
       }
-      public Builder clearId() {
-        result.hasId = false;
-        result.id_ = 0L;
+      public Builder setUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder builderForValue) {
+        result.hasUuid = true;
+        result.uuid_ = builderForValue.build();
+        return this;
+      }
+      public Builder mergeUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (result.hasUuid() &&
+            result.uuid_ != se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance()) {
+          result.uuid_ =
+            se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder(result.uuid_).mergeFrom(value).buildPartial();
+        } else {
+          result.uuid_ = value;
+        }
+        result.hasUuid = true;
+        return this;
+      }
+      public Builder clearUuid() {
+        result.hasUuid = false;
+        result.uuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
         return this;
       }
       
@@ -3965,24 +4097,40 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional string supervisorUuid = 4;
+      // optional .UuidProtocol supervisorUuid = 4;
       public boolean hasSupervisorUuid() {
         return result.hasSupervisorUuid();
       }
-      public java.lang.String getSupervisorUuid() {
+      public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol getSupervisorUuid() {
         return result.getSupervisorUuid();
       }
-      public Builder setSupervisorUuid(java.lang.String value) {
+      public Builder setSupervisorUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  result.hasSupervisorUuid = true;
+          throw new NullPointerException();
+        }
+        result.hasSupervisorUuid = true;
         result.supervisorUuid_ = value;
+        return this;
+      }
+      public Builder setSupervisorUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.Builder builderForValue) {
+        result.hasSupervisorUuid = true;
+        result.supervisorUuid_ = builderForValue.build();
+        return this;
+      }
+      public Builder mergeSupervisorUuid(se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol value) {
+        if (result.hasSupervisorUuid() &&
+            result.supervisorUuid_ != se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance()) {
+          result.supervisorUuid_ =
+            se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.newBuilder(result.supervisorUuid_).mergeFrom(value).buildPartial();
+        } else {
+          result.supervisorUuid_ = value;
+        }
+        result.hasSupervisorUuid = true;
         return this;
       }
       public Builder clearSupervisorUuid() {
         result.hasSupervisorUuid = false;
-        result.supervisorUuid_ = getDefaultInstance().getSupervisorUuid();
+        result.supervisorUuid_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.UuidProtocol.getDefaultInstance();
         return this;
       }
       
@@ -5764,52 +5912,55 @@ public final class RemoteProtocol {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\024RemoteProtocol.proto\"v\n\026RemoteActorRef" +
-      "Protocol\022\014\n\004uuid\030\001 \002(\t\022\026\n\016actorClassname" +
-      "\030\002 \002(\t\022%\n\013homeAddress\030\003 \002(\0132\020.AddressPro" +
-      "tocol\022\017\n\007timeout\030\004 \001(\004\"\200\003\n\032SerializedAct" +
-      "orRefProtocol\022\014\n\004uuid\030\001 \002(\t\022\n\n\002id\030\002 \002(\t\022" +
-      "\026\n\016actorClassname\030\003 \002(\t\022)\n\017originalAddre" +
-      "ss\030\004 \002(\0132\020.AddressProtocol\022\025\n\ractorInsta" +
-      "nce\030\005 \001(\014\022\033\n\023serializerClassname\030\006 \001(\t\022\024" +
-      "\n\014isTransactor\030\007 \001(\010\022\017\n\007timeout\030\010 \001(\004\022\026\n" +
-      "\016receiveTimeout\030\t \001(\004\022%\n\tlifeCycle\030\n \001(\013",
-      "2\022.LifeCycleProtocol\022+\n\nsupervisor\030\013 \001(\013" +
-      "2\027.RemoteActorRefProtocol\022\024\n\014hotswapStac" +
-      "k\030\014 \001(\014\022(\n\010messages\030\r \003(\0132\026.RemoteReques" +
-      "tProtocol\"r\n\017MessageProtocol\0225\n\023serializ" +
-      "ationScheme\030\001 \002(\0162\030.SerializationSchemeT" +
-      "ype\022\017\n\007message\030\002 \002(\014\022\027\n\017messageManifest\030" +
-      "\003 \001(\014\"\236\001\n\021ActorInfoProtocol\022\014\n\004uuid\030\001 \002(" +
-      "\t\022\016\n\006target\030\002 \002(\t\022\017\n\007timeout\030\003 \002(\004\022\035\n\tac" +
-      "torType\030\004 \002(\0162\n.ActorType\022/\n\016typedActorI" +
-      "nfo\030\005 \001(\0132\027.TypedActorInfoProtocol\022\n\n\002id",
-      "\030\006 \001(\t\";\n\026TypedActorInfoProtocol\022\021\n\tinte" +
-      "rface\030\001 \002(\t\022\016\n\006method\030\002 \002(\t\"\352\001\n\025RemoteRe" +
-      "questProtocol\022\n\n\002id\030\001 \002(\004\022!\n\007message\030\002 \002" +
-      "(\0132\020.MessageProtocol\022%\n\tactorInfo\030\003 \002(\0132" +
-      "\022.ActorInfoProtocol\022\020\n\010isOneWay\030\004 \002(\010\022\026\n" +
-      "\016supervisorUuid\030\005 \001(\t\022\'\n\006sender\030\006 \001(\0132\027." +
-      "RemoteActorRefProtocol\022(\n\010metadata\030\007 \003(\013" +
-      "2\026.MetadataEntryProtocol\"\324\001\n\023RemoteReply" +
-      "Protocol\022\n\n\002id\030\001 \002(\004\022!\n\007message\030\002 \001(\0132\020." +
-      "MessageProtocol\022%\n\texception\030\003 \001(\0132\022.Exc",
-      "eptionProtocol\022\026\n\016supervisorUuid\030\004 \001(\t\022\017" +
-      "\n\007isActor\030\005 \002(\010\022\024\n\014isSuccessful\030\006 \002(\010\022(\n" +
-      "\010metadata\030\007 \003(\0132\026.MetadataEntryProtocol\"" +
-      ")\n\014UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002" +
-      "(\004\"3\n\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t" +
-      "\022\r\n\005value\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\t" +
-      "lifeCycle\030\001 \002(\0162\016.LifeCycleType\"1\n\017Addre" +
-      "ssProtocol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002" +
-      "(\r\"7\n\021ExceptionProtocol\022\021\n\tclassname\030\001 \002" +
-      "(\t\022\017\n\007message\030\002 \002(\t*=\n\tActorType\022\017\n\013SCAL",
-      "A_ACTOR\020\001\022\016\n\nJAVA_ACTOR\020\002\022\017\n\013TYPED_ACTOR" +
-      "\020\003*]\n\027SerializationSchemeType\022\010\n\004JAVA\020\001\022" +
-      "\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSO" +
-      "N\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\tPE" +
-      "RMANENT\020\001\022\r\n\tTEMPORARY\020\002B-\n)se.scalables" +
-      "olutions.akka.remote.protocolH\001"
+      "\n\024RemoteProtocol.proto\"\204\001\n\026RemoteActorRe" +
+      "fProtocol\022\032\n\022classOrServiceName\030\001 \002(\t\022\026\n" +
+      "\016actorClassname\030\002 \002(\t\022%\n\013homeAddress\030\003 \002" +
+      "(\0132\020.AddressProtocol\022\017\n\007timeout\030\004 \001(\004\"\217\003" +
+      "\n\032SerializedActorRefProtocol\022\033\n\004uuid\030\001 \002" +
+      "(\0132\r.UuidProtocol\022\n\n\002id\030\002 \002(\t\022\026\n\016actorCl" +
+      "assname\030\003 \002(\t\022)\n\017originalAddress\030\004 \002(\0132\020" +
+      ".AddressProtocol\022\025\n\ractorInstance\030\005 \001(\014\022" +
+      "\033\n\023serializerClassname\030\006 \001(\t\022\024\n\014isTransa" +
+      "ctor\030\007 \001(\010\022\017\n\007timeout\030\010 \001(\004\022\026\n\016receiveTi",
+      "meout\030\t \001(\004\022%\n\tlifeCycle\030\n \001(\0132\022.LifeCyc" +
+      "leProtocol\022+\n\nsupervisor\030\013 \001(\0132\027.RemoteA" +
+      "ctorRefProtocol\022\024\n\014hotswapStack\030\014 \001(\014\022(\n" +
+      "\010messages\030\r \003(\0132\026.RemoteRequestProtocol\"" +
+      "r\n\017MessageProtocol\0225\n\023serializationSchem" +
+      "e\030\001 \002(\0162\030.SerializationSchemeType\022\017\n\007mes" +
+      "sage\030\002 \002(\014\022\027\n\017messageManifest\030\003 \001(\014\"\255\001\n\021" +
+      "ActorInfoProtocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidPr" +
+      "otocol\022\016\n\006target\030\002 \002(\t\022\017\n\007timeout\030\003 \002(\004\022" +
+      "\035\n\tactorType\030\004 \002(\0162\n.ActorType\022/\n\016typedA",
+      "ctorInfo\030\005 \001(\0132\027.TypedActorInfoProtocol\022" +
+      "\n\n\002id\030\006 \001(\t\";\n\026TypedActorInfoProtocol\022\021\n" +
+      "\tinterface\030\001 \002(\t\022\016\n\006method\030\002 \002(\t\"\212\002\n\025Rem" +
+      "oteRequestProtocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidP" +
+      "rotocol\022!\n\007message\030\002 \002(\0132\020.MessageProtoc" +
+      "ol\022%\n\tactorInfo\030\003 \002(\0132\022.ActorInfoProtoco" +
+      "l\022\020\n\010isOneWay\030\004 \002(\010\022%\n\016supervisorUuid\030\005 " +
+      "\001(\0132\r.UuidProtocol\022\'\n\006sender\030\006 \001(\0132\027.Rem" +
+      "oteActorRefProtocol\022(\n\010metadata\030\007 \003(\0132\026." +
+      "MetadataEntryProtocol\"\364\001\n\023RemoteReplyPro",
+      "tocol\022\033\n\004uuid\030\001 \002(\0132\r.UuidProtocol\022!\n\007me" +
+      "ssage\030\002 \001(\0132\020.MessageProtocol\022%\n\texcepti" +
+      "on\030\003 \001(\0132\022.ExceptionProtocol\022%\n\016supervis" +
+      "orUuid\030\004 \001(\0132\r.UuidProtocol\022\017\n\007isActor\030\005" +
+      " \002(\010\022\024\n\014isSuccessful\030\006 \002(\010\022(\n\010metadata\030\007" +
+      " \003(\0132\026.MetadataEntryProtocol\")\n\014UuidProt" +
+      "ocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3\n\025Metad" +
+      "ataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002" +
+      " \002(\014\"6\n\021LifeCycleProtocol\022!\n\tlifeCycle\030\001" +
+      " \002(\0162\016.LifeCycleType\"1\n\017AddressProtocol\022",
+      "\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n\021Excep" +
+      "tionProtocol\022\021\n\tclassname\030\001 \002(\t\022\017\n\007messa" +
+      "ge\030\002 \002(\t*=\n\tActorType\022\017\n\013SCALA_ACTOR\020\001\022\016" +
+      "\n\nJAVA_ACTOR\020\002\022\017\n\013TYPED_ACTOR\020\003*]\n\027Seria" +
+      "lizationSchemeType\022\010\n\004JAVA\020\001\022\013\n\007SBINARY\020" +
+      "\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSON\020\004\022\014\n\010PROT" +
+      "OBUF\020\005*-\n\rLifeCycleType\022\r\n\tPERMANENT\020\001\022\r" +
+      "\n\tTEMPORARY\020\002B-\n)se.scalablesolutions.ak" +
+      "ka.remote.protocolH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5821,7 +5972,7 @@ public final class RemoteProtocol {
           internal_static_RemoteActorRefProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteActorRefProtocol_descriptor,
-              new java.lang.String[] { "Uuid", "ActorClassname", "HomeAddress", "Timeout", },
+              new java.lang.String[] { "ClassOrServiceName", "ActorClassname", "HomeAddress", "Timeout", },
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.class,
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteActorRefProtocol.Builder.class);
           internal_static_SerializedActorRefProtocol_descriptor =
@@ -5861,7 +6012,7 @@ public final class RemoteProtocol {
           internal_static_RemoteRequestProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteRequestProtocol_descriptor,
-              new java.lang.String[] { "Id", "Message", "ActorInfo", "IsOneWay", "SupervisorUuid", "Sender", "Metadata", },
+              new java.lang.String[] { "Uuid", "Message", "ActorInfo", "IsOneWay", "SupervisorUuid", "Sender", "Metadata", },
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol.class,
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteRequestProtocol.Builder.class);
           internal_static_RemoteReplyProtocol_descriptor =
@@ -5869,7 +6020,7 @@ public final class RemoteProtocol {
           internal_static_RemoteReplyProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteReplyProtocol_descriptor,
-              new java.lang.String[] { "Id", "Message", "Exception", "SupervisorUuid", "IsActor", "IsSuccessful", "Metadata", },
+              new java.lang.String[] { "Uuid", "Message", "Exception", "SupervisorUuid", "IsActor", "IsSuccessful", "Metadata", },
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol.class,
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.RemoteReplyProtocol.Builder.class);
           internal_static_UuidProtocol_descriptor =

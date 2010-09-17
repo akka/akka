@@ -35,7 +35,7 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ActorRegistry extends ListenerManagement {
-  private val actorsByUUID =          new ConcurrentHashMap[String, ActorRef]
+  private val actorsByUUID =          new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById =            new Index[String,ActorRef]
   
   /**
@@ -112,7 +112,7 @@ object ActorRegistry extends ListenerManagement {
    /**
    * Finds the actor that has a specific UUID.
    */
-  def actorFor(uuid: String): Option[ActorRef] = Option(actorsByUUID get uuid)
+  def actorFor(uuid: Uuid): Option[ActorRef] = Option(actorsByUUID get uuid)
 
   /**
    * Registers an actor in the ActorRegistry.

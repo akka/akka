@@ -4,7 +4,8 @@
 
 package se.scalablesolutions.akka
 
-import se.scalablesolutions.akka.util.{UUID, Logging}
+import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.actor.newUuid
 
 import java.io.{StringWriter, PrintWriter}
 import java.net.{InetAddress, UnknownHostException}
@@ -23,7 +24,7 @@ import java.net.{InetAddress, UnknownHostException}
   import AkkaException._
   val exceptionName = getClass.getName
 
-  val uuid = "%s_%s".format(hostname, UUID.newUuid.toString)
+  val uuid = "%s_%s".format(hostname, newUuid)
 
   override val toString = "%s\n\t[%s]\n\t%s\n\t%s".format(exceptionName, uuid, message, stackTrace)
 

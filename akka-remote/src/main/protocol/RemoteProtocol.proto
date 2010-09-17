@@ -16,7 +16,7 @@ option optimize_for = SPEED;
  * on the original node.
  */
 message RemoteActorRefProtocol {
-  required UuidProtocol uuid = 1;
+  required string classOrServiceName = 1;
   required string actorClassname = 2;
   required AddressProtocol homeAddress = 3;
   optional uint64 timeout = 4;
@@ -80,7 +80,7 @@ message RemoteRequestProtocol {
   required MessageProtocol message = 2;
   required ActorInfoProtocol actorInfo = 3;
   required bool isOneWay = 4;
-  optional string supervisorUuid = 5;
+  optional UuidProtocol supervisorUuid = 5;
   optional RemoteActorRefProtocol sender = 6;
   repeated MetadataEntryProtocol metadata = 7;
 }
@@ -92,7 +92,7 @@ message RemoteReplyProtocol {
   required UuidProtocol uuid = 1;
   optional MessageProtocol message = 2;
   optional ExceptionProtocol exception = 3;
-  optional string supervisorUuid = 4;
+  optional UuidProtocol supervisorUuid = 4;
   required bool isActor = 5;
   required bool isSuccessful = 6;
   repeated MetadataEntryProtocol metadata = 7;

@@ -4,18 +4,18 @@
 
 package se.scalablesolutions.akka.persistence.redis
 
-import se.scalablesolutions.akka.util.UUID
+import se.scalablesolutions.akka.actor.{newUuid}
 import se.scalablesolutions.akka.stm._
 import se.scalablesolutions.akka.persistence.common._
 
 object RedisStorage extends Storage {
   type ElementType = Array[Byte]
 
-  def newMap: PersistentMap[ElementType, ElementType] = newMap(UUID.newUuid.toString)
-  def newVector: PersistentVector[ElementType] = newVector(UUID.newUuid.toString)
-  def newRef: PersistentRef[ElementType] = newRef(UUID.newUuid.toString)
-  override def newQueue: PersistentQueue[ElementType] = newQueue(UUID.newUuid.toString)
-  override def newSortedSet: PersistentSortedSet[ElementType] = newSortedSet(UUID.newUuid.toString)
+  def newMap: PersistentMap[ElementType, ElementType] = newMap(newUuid.toString)
+  def newVector: PersistentVector[ElementType] = newVector(newUuid.toString)
+  def newRef: PersistentRef[ElementType] = newRef(newUuid.toString)
+  override def newQueue: PersistentQueue[ElementType] = newQueue(newUuid.toString)
+  override def newSortedSet: PersistentSortedSet[ElementType] = newSortedSet(newUuid.toString)
 
   def getMap(id: String): PersistentMap[ElementType, ElementType] = newMap(id)
   def getVector(id: String): PersistentVector[ElementType] = newVector(id)
