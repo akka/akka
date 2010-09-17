@@ -17,6 +17,7 @@ import org.apache.hadoop.hbase.client.HBaseAdmin
 import org.apache.hadoop.hbase.client.HTable
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.client.Get
+import org.apache.hadoop.hbase.client.Delete
 import org.apache.hadoop.hbase.util.Bytes
 
 /**
@@ -196,7 +197,15 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   }
 
   def getMapStorageFor(name: String): List[Tuple2[Array[Byte], Array[Byte]]] = {
-    Nil
+    val row = new Get(Bytes.toBytes(name))
+    val result = MAP_TABLE.get(row)
+    val raw = result.getFamilyMap(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME)).entrySet.toArray
+    val listBuffer = new ListBuffer[Tuple2[Array[Byte], Array[Byte]]]
+
+    for(i <- Range(raw.size-1, -1, -1)) {
+      listBuffer += Tuple2(raw.apply(i).asInstanceOf[java.util.Map.Entry[Array[Byte], Array[Byte]]].getKey, raw.apply(i).asInstanceOf[java.util.Map.Entry[Array[Byte],Array[Byte]]].getValue)
+    }
+    listBuffer.toList
   }
 
   def getMapStorageSizeFor(name: String): Int = {
@@ -209,9 +218,16 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     }
   }
 
-  def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
+  def removeMapStorageFor(name: String): Unit = {
+    val row = new Delete(Bytes.toBytes(name))
+    MAP_TABLE.delete(row)
+  }
 
-  def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {}
+  def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
+    val row = new Delete(Bytes.toBytes(name))
+    row.deleteColumns(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME), key)
+    MAP_TABLE.delete(row)
+  }
 
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[Tuple2[Array[Byte], Array[Byte]]] = {
     Nil

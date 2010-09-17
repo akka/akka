@@ -44,9 +44,9 @@ BeforeAndAfterEach {
       new String(getMapStorageEntryFor("t1", "stroustrup".getBytes).get) should equal("c++")
       getMapStorageEntryFor("t1", "torvalds".getBytes) should equal(None)
     }
-/*
+
     it("should insert with multiple keys and values") {
-      import MongoStorageBackend._
+      import HbaseStorageBackend._
 
       val l = List(("stroustrup", "c++"), ("odersky", "scala"), ("gosling", "java"))
       insertMapStorageEntriesFor("t1", l.map { case (k, v) => (k.getBytes, v.getBytes) })
@@ -66,7 +66,7 @@ BeforeAndAfterEach {
       removeMapStorageFor("t1")
       getMapStorageSizeFor("t1") should equal(0)
     }
-
+/*
     it("should do proper range queries") {
       import MongoStorageBackend._
       val l = List(
