@@ -4,22 +4,19 @@
 
 package se.scalablesolutions.akka.spring
 
-import java.beans.PropertyDescriptor
-import java.lang.reflect.Method
-import javax.annotation.PreDestroy
-import javax.annotation.PostConstruct
-
 import org.springframework.beans.{BeanUtils,BeansException,BeanWrapper,BeanWrapperImpl}
-import org.springframework.beans.factory.BeanFactory
+import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
+//import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import org.springframework.context.{ApplicationContext,ApplicationContextAware}
-import org.springframework.util.ReflectionUtils
+//import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
 import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor,Actor}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 import se.scalablesolutions.akka.util.{Logging, Duration}
 import scala.reflect.BeanProperty
+import java.net.InetSocketAddress
 
 /**
  * Exception to use when something goes wrong during bean creation.
@@ -49,13 +46,15 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   @BeanProperty var transactional: Boolean = false
   @BeanProperty var host: String = ""
   @BeanProperty var port: Int = _
+  @BeanProperty var serverManaged: Boolean = false
+  @BeanProperty var serviceName: String = ""
   @BeanProperty var lifecycle: String = ""
   @BeanProperty var dispatcher: DispatcherProperties = _
   @BeanProperty var scope: String = VAL_SCOPE_SINGLETON
   @BeanProperty var property: PropertyEntries = _
   @BeanProperty var applicationContext: ApplicationContext = _
 
-  // Holds info about if deps has been set or not. Depends on
+  // Holds info about if deps have been set or not. Depends on
   // if interface is specified or not. We must set deps on
   // target instance if interface is specified
   var hasSetDependecies = false
@@ -94,7 +93,16 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     if (implementation == null || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
 
-    TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig)
+    val typedActor: AnyRef = TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig) 
+    if (isRemote && serverManaged) {
+      val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port))
+      if (serviceName.isEmpty) {
+        server.registerTypedActor(interface, typedActor)
+      } else {
+        server.registerTypedActor(serviceName, typedActor)
+      }
+    }
+    typedActor
   }
 
   /**
@@ -111,7 +119,16 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
       actorRef.makeTransactionRequired
     }
     if (isRemote) {
-      actorRef.makeRemote(host, port)
+      if (serverManaged) {
+        val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port))
+        if (serviceName.isEmpty) {
+          server.register(actorRef)
+        } else {
+          server.register(serviceName, actorRef)
+        }
+      } else {
+        actorRef.makeRemote(host, port)
+      }
     }
     if (hasDispatcher) {
       if (dispatcher.dispatcherType != THREAD_BASED){
@@ -159,7 +176,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   private[akka] def createConfig: TypedActorConfiguration = {
     val config = new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
     if (transactional) config.makeTransactionRequired
-    if (isRemote) config.makeRemote(host, port)
+    if (isRemote && !serverManaged) config.makeRemote(host, port)
     if (hasDispatcher) {
       if (dispatcher.dispatcherType != THREAD_BASED) {
         config.dispatcher(dispatcherInstance())
@@ -191,3 +208,39 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     }
   }
 }
+
+/**
+ * Factory bean for remote client actor-for.
+ *
+ * @author michaelkober
+ */
+class ActorForFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with ApplicationContextAware {
+  import StringReflect._
+  import AkkaSpringConfigurationTags._
+
+  @BeanProperty var interface: String = ""
+  @BeanProperty var host: String = ""
+  @BeanProperty var port: Int = _
+  @BeanProperty var serviceName: String = ""
+  //@BeanProperty var scope: String = VAL_SCOPE_SINGLETON
+  @BeanProperty var applicationContext: ApplicationContext = _
+
+  override def isSingleton = false
+
+  /*
+   * @see org.springframework.beans.factory.FactoryBean#getObjectType()
+   */
+  def getObjectType: Class[AnyRef] = classOf[AnyRef]
+
+  /*
+   * @see org.springframework.beans.factory.config.AbstractFactoryBean#createInstance()
+   */
+  def createInstance: AnyRef = {
+    if (interface.isEmpty) {
+      RemoteClient.actorFor(serviceName, host, port)
+    } else {
+      RemoteClient.typedActorFor(interface.toClass, serviceName, host, port)
+    }
+  }
+}
+

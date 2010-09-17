@@ -4,14 +4,14 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import java.util.List
-
-import se.scalablesolutions.akka.util.{HashCode, Logging}
 import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
 import se.scalablesolutions.akka.AkkaException
-import java.util.concurrent.{ConcurrentSkipListSet}
+import java.util.{Queue, List}
+import java.util.concurrent._
+import concurrent.forkjoin.LinkedTransferQueue
+import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -29,8 +29,6 @@ final class MessageInvocation(val receiver: ActorRef,
     case e: NullPointerException => throw new ActorInitializationException(
       "Don't call 'self ! message' in the Actor's constructor (e.g. body of the class).")
   }
-
-  def send = receiver.dispatcher.dispatch(this)
 
   override def hashCode(): Int = synchronized {
     var result = HashCode.SEED
@@ -63,33 +61,94 @@ class MessageQueueAppendFailedException(message: String) extends AkkaException(m
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageQueue {
-  def append(handle: MessageInvocation)
+  val dispatcherLock = new SimpleLock
+  def enqueue(handle: MessageInvocation)
+  def dequeue(): MessageInvocation
+  def size: Int
+  def isEmpty: Boolean
+}
+
+/* Tells the dispatcher that it should create a bounded mailbox with the specified push timeout
+ * (If capacity > 0)
+ */
+case class MailboxConfig(capacity: Int, pushTimeOut: Option[Duration], blockingDequeue: Boolean) {
+
+  /**
+   * Creates a MessageQueue (Mailbox) with the specified properties
+   * bounds = whether the mailbox should be bounded (< 0 means unbounded)
+   * pushTime = only used if bounded, indicates if and how long an enqueue should block
+   * blockDequeue = whether dequeues should block or not
+   *
+   * The bounds + pushTime generates a MessageQueueAppendFailedException if enqueue times out
+   */
+  def newMailbox(bounds: Int = capacity,
+                 pushTime: Option[Duration] = pushTimeOut,
+                 blockDequeue: Boolean = blockingDequeue) : MessageQueue =
+    if (capacity > 0) new DefaultBoundedMessageQueue(bounds,pushTime,blockDequeue)
+    else new DefaultUnboundedMessageQueue(blockDequeue)
+}
+
+class DefaultUnboundedMessageQueue(blockDequeue: Boolean) extends LinkedBlockingQueue[MessageInvocation] with MessageQueue {
+  final def enqueue(handle: MessageInvocation) {
+    this add handle
+  }
+
+  final def dequeue(): MessageInvocation =
+    if (blockDequeue) this.take()
+    else this.poll()
+}
+
+class DefaultBoundedMessageQueue(capacity: Int, pushTimeOut: Option[Duration], blockDequeue: Boolean) extends LinkedBlockingQueue[MessageInvocation](capacity) with MessageQueue {
+  final def enqueue(handle: MessageInvocation) {
+    if (pushTimeOut.isDefined) {
+      if(!this.offer(handle,pushTimeOut.get.length,pushTimeOut.get.unit))
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
+    }
+    else {
+      this put handle
+    }
+  }
+
+  final def dequeue(): MessageInvocation =
+    if (blockDequeue) this.take()
+    else this.poll()
+
 }
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageDispatcher extends Logging {
   protected val uuids = new ConcurrentSkipListSet[String]
+
   def dispatch(invocation: MessageInvocation)
+
   def start
+
   def shutdown
-  def register(actorRef: ActorRef) = uuids add actorRef.uuid
+
+  def register(actorRef: ActorRef) {
+    if(actorRef.mailbox eq null)
+      actorRef.mailbox = createMailbox(actorRef)
+    uuids add actorRef.uuid
+  }
   def unregister(actorRef: ActorRef) = {
     uuids remove actorRef.uuid
+    actorRef.mailbox = null
     if (canBeShutDown) shutdown // shut down in the dispatcher's references is zero
   }
+  
   def canBeShutDown: Boolean = uuids.isEmpty
-  def isShutdown: Boolean
-  def mailboxSize(actorRef: ActorRef):Int = 0
-}
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-trait MessageDemultiplexer {
-  def select
-  def wakeUp
-  def acquireSelectedInvocations: List[MessageInvocation]
-  def releaseSelectedInvocations
+  def isShutdown: Boolean
+
+  /**
+   * Returns the size of the mailbox for the specified actor
+   */
+  def mailboxSize(actorRef: ActorRef):Int
+
+  /**
+   *  Creates and returns a mailbox for the given actor
+   */
+  protected def createMailbox(actorRef: ActorRef): AnyRef = null
 }

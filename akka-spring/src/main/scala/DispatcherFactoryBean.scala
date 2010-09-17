@@ -26,8 +26,6 @@ object DispatcherFactoryBean {
     var dispatcher = properties.dispatcherType match {
       case EXECUTOR_BASED_EVENT_DRIVEN => Dispatchers.newExecutorBasedEventDrivenDispatcher(properties.name)
       case EXECUTOR_BASED_EVENT_DRIVEN_WORK_STEALING => Dispatchers.newExecutorBasedEventDrivenWorkStealingDispatcher(properties.name)
-      case REACTOR_BASED_THREAD_POOL_EVENT_DRIVEN => Dispatchers.newReactorBasedThreadPoolEventDrivenDispatcher(properties.name)
-      case REACTOR_BASED_SINGLE_THREAD_EVENT_DRIVEN => Dispatchers.newReactorBasedSingleThreadEventDrivenDispatcher(properties.name)
       case THREAD_BASED => if (!actorRef.isDefined) {
         throw new IllegalArgumentException("Need an ActorRef to create a thread based dispatcher.")
       } else {
@@ -57,6 +55,9 @@ object DispatcherFactoryBean {
       }
       if (properties.threadPool.keepAlive > -1) {
         threadPoolBuilder.setKeepAliveTimeInMillis(properties.threadPool.keepAlive)
+      }
+      if (properties.threadPool.mailboxCapacity > -1) {
+        threadPoolBuilder.setMailboxCapacity(properties.threadPool.mailboxCapacity)
       }
       if ((properties.threadPool.rejectionPolicy != null) && (!properties.threadPool.rejectionPolicy.isEmpty)) {
         val policy: RejectedExecutionHandler = properties.threadPool.rejectionPolicy match {

@@ -99,17 +99,25 @@ class Logger(val logger: SLFLogger) {
     warning(t,message(fmt,arg,argN:_*))
   }
 
+  def warn(t: Throwable, fmt: => String, arg: Any, argN: Any*) = warning(t, fmt, arg, argN)
+
   def warning(t: Throwable, msg: => String) {
     if (warning_?) logger.warn(msg,t)
   }
+
+  def warn(t: Throwable, msg: => String) = warning(t, msg)
 
   def warning(fmt: => String, arg: Any, argN: Any*) {
      warning(message(fmt,arg,argN:_*))
   }
 
+  def warn(fmt: => String, arg: Any, argN: Any*) = warning(fmt, arg, argN)
+
   def warning(msg: => String) {
      if (warning_?) logger warn msg
   }
+
+  def warn(msg: => String) = warning(msg)
 
   //Error
   def error(t: Throwable, fmt: => String, arg: Any, argN: Any*) {

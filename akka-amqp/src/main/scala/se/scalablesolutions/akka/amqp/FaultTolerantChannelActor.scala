@@ -103,5 +103,5 @@ abstract private[amqp] class FaultTolerantChannelActor(
     closeChannel
   }
 
-  override def shutdown = closeChannel
+  override def postStop = closeChannel
 }

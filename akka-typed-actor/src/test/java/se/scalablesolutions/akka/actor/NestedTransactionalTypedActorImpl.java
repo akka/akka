@@ -10,7 +10,7 @@ public class NestedTransactionalTypedActorImpl extends TypedTransactor implement
   private boolean isInitialized = false;
 
   @Override
-  public void init() {
+  public void preStart() {
     if (!isInitialized) {
       mapState = new TransactionalMap();
       vectorState = new TransactionalVector();
