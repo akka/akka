@@ -70,5 +70,32 @@ class RestartStrategySpec extends JUnitSuite {
     }
     assert(exceptionLatch.tryAwait(1, TimeUnit.SECONDS))
   }
+
+  @Test
+  def slaveShouldBeImmortalWithoutMaxRestarts = {
+
+    val boss = actorOf(new Actor{
+      self.trapExit = List(classOf[Throwable])
+      self.faultHandler = Some(OneForOneStrategy(None, None))
+      protected def receive = { case _ => () }
+    }).start
+
+    val countDownLatch = new CountDownLatch(100)
+
+    val slave = actorOf(new Actor{
+
+      protected def receive = {
+        case Crash => throw new Exception("Crashing...")
+      }
+
+      override def postRestart(reason: Throwable) = {
+        countDownLatch.countDown
+      }
+    })
+
+    boss.startLink(slave)
+    (1 to 100) foreach { _ => slave ! Crash }
+    assert(countDownLatch.await(120, TimeUnit.SECONDS))
+  }
 }
 

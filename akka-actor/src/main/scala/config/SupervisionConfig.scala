@@ -8,8 +8,19 @@ import se.scalablesolutions.akka.actor.{ActorRef}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
 sealed abstract class FaultHandlingStrategy
-case class AllForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends FaultHandlingStrategy
-case class OneForOneStrategy(maxNrOfRetries: Int, withinTimeRange: Int) extends FaultHandlingStrategy
+object AllForOneStrategy {
+  def apply(maxNrOfRetries: Int, withinTimeRange: Int): AllForOneStrategy =
+    AllForOneStrategy(if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
+      if (withinTimeRange < 0) None else Some(withinTimeRange))
+}
+case class AllForOneStrategy(maxNrOfRetries: Option[Int] = None, withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy
+
+object OneForOneStrategy {
+  def apply(maxNrOfRetries: Int, withinTimeRange: Int): OneForOneStrategy =
+    this(if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
+      if (withinTimeRange < 0) None else Some(withinTimeRange))
+}
+case class OneForOneStrategy(maxNrOfRetries: Option[Int] = None, withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy
 
 /**
  * Configuration classes - not to be used as messages.

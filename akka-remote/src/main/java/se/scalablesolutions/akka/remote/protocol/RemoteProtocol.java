@@ -2001,6 +2001,13 @@ public final class RemoteProtocol {
     public boolean hasTypedActorInfo() { return hasTypedActorInfo; }
     public se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol getTypedActorInfo() { return typedActorInfo_; }
     
+    // optional string id = 6;
+    public static final int ID_FIELD_NUMBER = 6;
+    private boolean hasId;
+    private java.lang.String id_ = "";
+    public boolean hasId() { return hasId; }
+    public java.lang.String getId() { return id_; }
+    
     private void initFields() {
       actorType_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType.SCALA_ACTOR;
       typedActorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDefaultInstance();
@@ -2034,6 +2041,9 @@ public final class RemoteProtocol {
       if (hasTypedActorInfo()) {
         output.writeMessage(5, getTypedActorInfo());
       }
+      if (hasId()) {
+        output.writeString(6, getId());
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -2062,6 +2072,10 @@ public final class RemoteProtocol {
       if (hasTypedActorInfo()) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(5, getTypedActorInfo());
+      }
+      if (hasId()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeStringSize(6, getId());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2236,6 +2250,9 @@ public final class RemoteProtocol {
         if (other.hasTypedActorInfo()) {
           mergeTypedActorInfo(other.getTypedActorInfo());
         }
+        if (other.hasId()) {
+          setId(other.getId());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -2290,6 +2307,10 @@ public final class RemoteProtocol {
               }
               input.readMessage(subBuilder, extensionRegistry);
               setTypedActorInfo(subBuilder.buildPartial());
+              break;
+            }
+            case 50: {
+              setId(input.readString());
               break;
             }
           }
@@ -2412,6 +2433,27 @@ public final class RemoteProtocol {
       public Builder clearTypedActorInfo() {
         result.hasTypedActorInfo = false;
         result.typedActorInfo_ = se.scalablesolutions.akka.remote.protocol.RemoteProtocol.TypedActorInfoProtocol.getDefaultInstance();
+        return this;
+      }
+      
+      // optional string id = 6;
+      public boolean hasId() {
+        return result.hasId();
+      }
+      public java.lang.String getId() {
+        return result.getId();
+      }
+      public Builder setId(java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  result.hasId = true;
+        result.id_ = value;
+        return this;
+      }
+      public Builder clearId() {
+        result.hasId = false;
+        result.id_ = getDefaultInstance().getId();
         return this;
       }
       
@@ -5738,36 +5780,36 @@ public final class RemoteProtocol {
       "tProtocol\"r\n\017MessageProtocol\0225\n\023serializ" +
       "ationScheme\030\001 \002(\0162\030.SerializationSchemeT" +
       "ype\022\017\n\007message\030\002 \002(\014\022\027\n\017messageManifest\030" +
-      "\003 \001(\014\"\222\001\n\021ActorInfoProtocol\022\014\n\004uuid\030\001 \002(" +
+      "\003 \001(\014\"\236\001\n\021ActorInfoProtocol\022\014\n\004uuid\030\001 \002(" +
       "\t\022\016\n\006target\030\002 \002(\t\022\017\n\007timeout\030\003 \002(\004\022\035\n\tac" +
       "torType\030\004 \002(\0162\n.ActorType\022/\n\016typedActorI" +
-      "nfo\030\005 \001(\0132\027.TypedActorInfoProtocol\";\n\026Ty",
-      "pedActorInfoProtocol\022\021\n\tinterface\030\001 \002(\t\022" +
-      "\016\n\006method\030\002 \002(\t\"\352\001\n\025RemoteRequestProtoco" +
-      "l\022\n\n\002id\030\001 \002(\004\022!\n\007message\030\002 \002(\0132\020.Message" +
-      "Protocol\022%\n\tactorInfo\030\003 \002(\0132\022.ActorInfoP" +
-      "rotocol\022\020\n\010isOneWay\030\004 \002(\010\022\026\n\016supervisorU" +
-      "uid\030\005 \001(\t\022\'\n\006sender\030\006 \001(\0132\027.RemoteActorR" +
-      "efProtocol\022(\n\010metadata\030\007 \003(\0132\026.MetadataE" +
-      "ntryProtocol\"\324\001\n\023RemoteReplyProtocol\022\n\n\002" +
-      "id\030\001 \002(\004\022!\n\007message\030\002 \001(\0132\020.MessageProto" +
-      "col\022%\n\texception\030\003 \001(\0132\022.ExceptionProtoc",
-      "ol\022\026\n\016supervisorUuid\030\004 \001(\t\022\017\n\007isActor\030\005 " +
-      "\002(\010\022\024\n\014isSuccessful\030\006 \002(\010\022(\n\010metadata\030\007 " +
-      "\003(\0132\026.MetadataEntryProtocol\")\n\014UuidProto" +
-      "col\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002(\004\"3\n\025Metada" +
-      "taEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 " +
-      "\002(\014\"6\n\021LifeCycleProtocol\022!\n\tlifeCycle\030\001 " +
-      "\002(\0162\016.LifeCycleType\"1\n\017AddressProtocol\022\020" +
-      "\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n\021Except" +
-      "ionProtocol\022\021\n\tclassname\030\001 \002(\t\022\017\n\007messag" +
-      "e\030\002 \002(\t*=\n\tActorType\022\017\n\013SCALA_ACTOR\020\001\022\016\n",
-      "\nJAVA_ACTOR\020\002\022\017\n\013TYPED_ACTOR\020\003*]\n\027Serial" +
-      "izationSchemeType\022\010\n\004JAVA\020\001\022\013\n\007SBINARY\020\002" +
-      "\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSON\020\004\022\014\n\010PROTO" +
-      "BUF\020\005*-\n\rLifeCycleType\022\r\n\tPERMANENT\020\001\022\r\n" +
-      "\tTEMPORARY\020\002B-\n)se.scalablesolutions.akk" +
-      "a.remote.protocolH\001"
+      "nfo\030\005 \001(\0132\027.TypedActorInfoProtocol\022\n\n\002id",
+      "\030\006 \001(\t\";\n\026TypedActorInfoProtocol\022\021\n\tinte" +
+      "rface\030\001 \002(\t\022\016\n\006method\030\002 \002(\t\"\352\001\n\025RemoteRe" +
+      "questProtocol\022\n\n\002id\030\001 \002(\004\022!\n\007message\030\002 \002" +
+      "(\0132\020.MessageProtocol\022%\n\tactorInfo\030\003 \002(\0132" +
+      "\022.ActorInfoProtocol\022\020\n\010isOneWay\030\004 \002(\010\022\026\n" +
+      "\016supervisorUuid\030\005 \001(\t\022\'\n\006sender\030\006 \001(\0132\027." +
+      "RemoteActorRefProtocol\022(\n\010metadata\030\007 \003(\013" +
+      "2\026.MetadataEntryProtocol\"\324\001\n\023RemoteReply" +
+      "Protocol\022\n\n\002id\030\001 \002(\004\022!\n\007message\030\002 \001(\0132\020." +
+      "MessageProtocol\022%\n\texception\030\003 \001(\0132\022.Exc",
+      "eptionProtocol\022\026\n\016supervisorUuid\030\004 \001(\t\022\017" +
+      "\n\007isActor\030\005 \002(\010\022\024\n\014isSuccessful\030\006 \002(\010\022(\n" +
+      "\010metadata\030\007 \003(\0132\026.MetadataEntryProtocol\"" +
+      ")\n\014UuidProtocol\022\014\n\004high\030\001 \002(\004\022\013\n\003low\030\002 \002" +
+      "(\004\"3\n\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t" +
+      "\022\r\n\005value\030\002 \002(\014\"6\n\021LifeCycleProtocol\022!\n\t" +
+      "lifeCycle\030\001 \002(\0162\016.LifeCycleType\"1\n\017Addre" +
+      "ssProtocol\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002" +
+      "(\r\"7\n\021ExceptionProtocol\022\021\n\tclassname\030\001 \002" +
+      "(\t\022\017\n\007message\030\002 \002(\t*=\n\tActorType\022\017\n\013SCAL",
+      "A_ACTOR\020\001\022\016\n\nJAVA_ACTOR\020\002\022\017\n\013TYPED_ACTOR" +
+      "\020\003*]\n\027SerializationSchemeType\022\010\n\004JAVA\020\001\022" +
+      "\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSO" +
+      "N\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\tPE" +
+      "RMANENT\020\001\022\r\n\tTEMPORARY\020\002B-\n)se.scalables" +
+      "olutions.akka.remote.protocolH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5803,7 +5845,7 @@ public final class RemoteProtocol {
           internal_static_ActorInfoProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ActorInfoProtocol_descriptor,
-              new java.lang.String[] { "Uuid", "Target", "Timeout", "ActorType", "TypedActorInfo", },
+              new java.lang.String[] { "Uuid", "Target", "Timeout", "ActorType", "TypedActorInfo", "Id", },
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.class,
               se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorInfoProtocol.Builder.class);
           internal_static_TypedActorInfoProtocol_descriptor =
