@@ -31,11 +31,11 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   val REF_TABLE_NAME = "__REF_TABLE"
   val VECTOR_TABLE_NAME = "__VECTOR_TABLE"
   val VECTOR_ELEMENT_COLUMN_FAMILY_NAME = "__VECTOR_ELEMENT"
-  val MAP_KEY_COLUMN_FAMILY_NAME = "__MAP_KEY"
   val MAP_ELEMENT_COLUMN_FAMILY_NAME = "__MAP_ELEMENT"
   val MAP_TABLE_NAME = "__MAP_TABLE"
   var REF_TABLE: HTable = _
   var VECTOR_TABLE: HTable = _
+  var MAP_TABLE: HTable = _
 
   CONFIGURATION.set("hbase.zookeeper.quorum", HBASE_ZOOKEEPER_QUORUM)
 
@@ -57,6 +57,14 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
       ADMIN.enableTable(VECTOR_TABLE_NAME);
     }
     VECTOR_TABLE = new HTable(CONFIGURATION, VECTOR_TABLE_NAME) 
+
+    if (!ADMIN.tableExists(MAP_TABLE_NAME)) {
+      ADMIN.createTable(new HTableDescriptor(MAP_TABLE_NAME))
+      ADMIN.disableTable(MAP_TABLE_NAME)
+      ADMIN.addColumn(MAP_TABLE_NAME, new HColumnDescriptor(MAP_ELEMENT_COLUMN_FAMILY_NAME))
+      ADMIN.enableTable(MAP_TABLE_NAME);
+    }
+    MAP_TABLE = new HTable(CONFIGURATION, MAP_TABLE_NAME) 
   }
   
   def drop {
@@ -67,6 +75,10 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     if (ADMIN.tableExists(VECTOR_TABLE_NAME)) {
       ADMIN.disableTable(VECTOR_TABLE_NAME)
       ADMIN.deleteTable(VECTOR_TABLE_NAME)
+    }
+    if (ADMIN.tableExists(MAP_TABLE_NAME)) {
+      ADMIN.disableTable(MAP_TABLE_NAME)
+      ADMIN.deleteTable(MAP_TABLE_NAME)
     }    
     init
   }
@@ -100,7 +112,6 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     val row  = new Put(Bytes.toBytes(name))
     val size = getVectorStorageSizeFor(name)
     row.add(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME), Bytes.toBytes(size), element)
-    row.add(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME), Bytes.toBytes("size"), Bytes.toBytes(size+1))
     VECTOR_TABLE.put(row)
   }
 
@@ -115,7 +126,7 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = {
     val row = new Get(Bytes.toBytes(name))
     val result = VECTOR_TABLE.get(row)
-    val size   = getVectorStorageSizeFor(name)
+    val size   = result.size
     val colnum = size - index - 1
     return result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME),Bytes.toBytes(colnum))
   }
@@ -129,7 +140,7 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = {
     val row = new Get(Bytes.toBytes(name))
     val result = VECTOR_TABLE.get(row)
-    val size = Bytes.toInt(result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME), Bytes.toBytes("size")))
+    val size = result.size
     var listBuffer = new ListBuffer[Array[Byte]]
 
     if(start.isDefined && finish.isDefined) {
@@ -155,10 +166,10 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getVectorStorageSizeFor(name: String): Int = {
     val row = new Get(Bytes.toBytes(name))
     val result = VECTOR_TABLE.get(row)
-    if (result.isEmpty()) {
+    if (result.isEmpty) {
       0
     } else {
-      Bytes.toInt(result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME), Bytes.toBytes("size")))
+      result.size
     }
   }
 
@@ -166,12 +177,22 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   // For Map
   // ===============================================================
 
-  def insertMapStorageEntryFor(name: String, key: Array[Byte], element: Array[Byte]) = {}
+  def insertMapStorageEntryFor(name: String, key: Array[Byte], element: Array[Byte]) = {
+    val row = new Put(Bytes.toBytes(name))
+    row.add(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME), key, element)
+    MAP_TABLE.put(row)
+  }
 
-  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[Array[Byte], Array[Byte]]]) = {}
+  def insertMapStorageEntriesFor(name: String, entries: List[Tuple2[Array[Byte], Array[Byte]]]) = entries.foreach((x:Tuple2[Array[Byte], Array[Byte]]) => insertMapStorageEntryFor(name, x._1, x._2))
 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
-    None
+    val row = new Get(Bytes.toBytes(name))
+    val result = MAP_TABLE.get(row)
+    val value = result.getValue(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME), key)
+    if(value == null)
+      None
+    else
+      Some(value)
   }
 
   def getMapStorageFor(name: String): List[Tuple2[Array[Byte], Array[Byte]]] = {
@@ -179,7 +200,13 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   }
 
   def getMapStorageSizeFor(name: String): Int = {
-    0
+    val row = new Get(Bytes.toBytes(name))
+    val result = MAP_TABLE.get(row)
+    if (result.isEmpty) {
+      0
+    } else {
+      result.size
+    }
   }
 
   def removeMapStorageFor(name: String): Unit = removeMapStorageFor(name, null)
