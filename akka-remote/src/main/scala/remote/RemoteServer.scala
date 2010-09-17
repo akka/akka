@@ -30,6 +30,7 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -498,27 +499,36 @@ class RemoteServerHandler(
       case RemoteActorSystemMessage.Stop => actorRef.stop
       case _ =>     // then match on user defined messages
         if (request.getIsOneWay) actorRef.!(message)(sender)
-        else {
-          try {
-            val resultOrNone = (actorRef.!!(message)(sender)).as[AnyRef]
-            val result = if (resultOrNone.isDefined) resultOrNone.get else null
+        else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(message,request.getActorInfo.getTimeout,None,Some(
+          new DefaultCompletableFuture[AnyRef](request.getActorInfo.getTimeout){
+            override def onComplete(result: AnyRef) {
+              log.debug("Returning result from actor invocation [%s]", result)
+              val replyBuilder = RemoteReplyProtocol.newBuilder
+                  .setId(request.getId)
+                  .setMessage(MessageSerializer.serialize(result))
+                  .setIsSuccessful(true)
+                  .setIsActor(true)
 
-            log.debug("Returning result from actor invocation [%s]", result)
-            val replyBuilder = RemoteReplyProtocol.newBuilder
-                .setId(request.getId)
-                .setMessage(MessageSerializer.serialize(result))
-                .setIsSuccessful(true)
-                .setIsActor(true)
+              if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
-            if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
-            channel.write(replyBuilder.build)
+              try {
+                channel.write(replyBuilder.build)
+              } catch {
+                case e: Throwable =>
+                  server.notifyListeners(RemoteServerError(e, server))
+              }
+            }
 
-          } catch {
-            case e: Throwable =>
-              channel.write(createErrorReplyMessage(e, request, true))
-              server.notifyListeners(RemoteServerError(e, server))
-          }
+            override def onCompleteException(exception: Throwable) {
+              try {
+                channel.write(createErrorReplyMessage(exception, request, true))
+              } catch {
+                case e: Throwable =>
+                  server.notifyListeners(RemoteServerError(e, server))
+              }
+            }
         }
+     ))
     }
   }
 
@@ -589,9 +599,8 @@ class RemoteServerHandler(
    * Does not start the actor.
    */
   private def createActor(actorInfo: ActorInfoProtocol): ActorRef = {
-    val ids = actorInfo.getUuid.split(':')
-    val uuid = ids(0)
-    val id = ids(1)
+    val uuid = actorInfo.getUuid
+    val id = actorInfo.getId
 
     val name = actorInfo.getTarget
     val timeout = actorInfo.getTimeout
@@ -620,9 +629,8 @@ class RemoteServerHandler(
   }
 
   private def createTypedActor(actorInfo: ActorInfoProtocol): AnyRef = {
-    val ids = actorInfo.getUuid.split(':')
-    val uuid = ids(0)
-    val id = ids(1)
+    val uuid = actorInfo.getUuid
+    val id = actorInfo.getId
 
     val typedActorOrNull = findTypedActorByIdOrUUid(id, uuid)
 

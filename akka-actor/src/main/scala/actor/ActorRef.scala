@@ -601,9 +601,9 @@ trait ActorRef extends
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
   protected[akka] def registerSupervisorAsRemoteActor: Option[String]
 
@@ -864,11 +864,11 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def startLink(actorRef: ActorRef) = guard.withGuard {
+  def startLink(actorRef: ActorRef):Unit = guard.withGuard {
     try {
-      actorRef.start
-    } finally {
       link(actorRef)
+    } finally {
+      actorRef.start
     }
   }
 
@@ -877,13 +877,13 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int) = guard.withGuard {
+  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = guard.withGuard {
     ensureRemotingEnabled
     try {
       actorRef.makeRemote(hostname, port)
-      actorRef.start
-    } finally {
       link(actorRef)
+    } finally {
+      actorRef.start
     }
   }
 
@@ -893,9 +893,7 @@ class LocalActorRef private[akka](
    * To be invoked from within the actor itself.
    */
   def spawn(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actorRef = spawnButDoNotStart(clazz)
-    actorRef.start
-    actorRef
+    spawnButDoNotStart(clazz).start
   }
 
   /**
@@ -919,9 +917,9 @@ class LocalActorRef private[akka](
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
     val actor = spawnButDoNotStart(clazz)
     try {
-      actor.start
-    } finally {
       link(actor)
+    } finally {
+      actor.start
     }
     actor
   }
@@ -936,10 +934,11 @@ class LocalActorRef private[akka](
     val actor = spawnButDoNotStart(clazz)
     try {
       actor.makeRemote(hostname, port)
-      actor.start
-    } finally {
       link(actor)
+    } finally {
+      actor.start
     }
+    actor
   }
 
   /**
@@ -1038,12 +1037,18 @@ class LocalActorRef private[akka](
     }
   }
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = {
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
     if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis // first time around
-    maxNrOfRetriesCount += 1
+    
+    val tooManyRestarts = if (maxNrOfRetries.isDefined) {
+                            maxNrOfRetriesCount += 1
+                            maxNrOfRetriesCount > maxNrOfRetries.get
+                          } else false
 
-    val tooManyRestarts = maxNrOfRetriesCount > maxNrOfRetries
-    val restartingHasExpired = (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange
+    val restartingHasExpired = if (withinTimeRange.isDefined)
+                                 (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange.get
+                               else false
+
     if (tooManyRestarts || restartingHasExpired) {
       val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
       Actor.log.warning(
@@ -1081,7 +1086,7 @@ class LocalActorRef private[akka](
     }
   }
 
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int) = {
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) = {
     linkedActorsAsList.foreach { actorRef =>
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
@@ -1131,11 +1136,7 @@ class LocalActorRef private[akka](
     freshActor.postRestart(reason)
   }
 
-  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actorRef = Actor.actorOf(clazz.newInstance)
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actorRef.dispatcher = dispatcher
-    actorRef
-  }
+  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = Actor.actorOf(clazz.newInstance)
 
   private[this] def newActor: Actor = {
     Actor.actorRefInCreation.withValue(Some(this)){
@@ -1417,8 +1418,8 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def mailbox: AnyRef = unsupported
   protected[akka] def mailbox_=(value: AnyRef):AnyRef = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def linkedActors: JMap[String, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
