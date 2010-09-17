@@ -9,7 +9,6 @@ import se.scalablesolutions.akka.persistence.common._
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.config.Config.config
 
-import java.util.NoSuchElementException
 import com.novus.casbah.mongodb.Imports._
 
 /**
