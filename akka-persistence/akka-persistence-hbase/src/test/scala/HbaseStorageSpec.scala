@@ -66,9 +66,9 @@ BeforeAndAfterEach {
       removeMapStorageFor("t1")
       getMapStorageSizeFor("t1") should equal(0)
     }
-/*
+
     it("should do proper range queries") {
-      import MongoStorageBackend._
+      import HbaseStorageBackend._
       val l = List(
         ("bjarne stroustrup", "c++"), 
         ("martin odersky", "scala"), 
@@ -86,7 +86,7 @@ BeforeAndAfterEach {
       getMapStorageRangeFor("t1", None, None, 100).map { case (k, v) => (new String(k), new String(v)) } should equal(l.sortWith(_._1 < _._1))
       getMapStorageRangeFor("t1", None, None, 5).map { case (k, v) => (new String(k), new String(v)) }.size should equal(5)
     }
-    */
+
   }
 
   describe("persistent vectors") {
