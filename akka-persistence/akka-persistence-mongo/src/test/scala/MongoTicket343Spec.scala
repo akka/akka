@@ -238,7 +238,7 @@ class MongoTicket343Spec extends
       val add = List(("a", "1"), ("b", "2"), ("c", "3"))
       (proc !! CLEAR_AFTER_PUT(add)).getOrElse("CLEAR_AFTER_PUT failed") should equal(true)
 
-      (proc !! MAP_SIZE).getOrElse("Size failed") should equal(1)
+      (proc !! MAP_SIZE).getOrElse("Size failed") should equal(0)
       proc.stop
     }
   }
