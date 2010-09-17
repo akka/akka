@@ -31,10 +31,9 @@ BeforeAndAfterEach {
     HbaseStorageBackend.drop
   }
   
-/*
   describe("persistent maps") {
     it("should insert with single key and value") {
-      import MongoStorageBackend._
+      import HbaseStorageBackend._
 
       insertMapStorageEntryFor("t1", "odersky".getBytes, "scala".getBytes)
       insertMapStorageEntryFor("t1", "gosling".getBytes, "java".getBytes)
@@ -45,7 +44,7 @@ BeforeAndAfterEach {
       new String(getMapStorageEntryFor("t1", "stroustrup".getBytes).get) should equal("c++")
       getMapStorageEntryFor("t1", "torvalds".getBytes) should equal(None)
     }
-
+/*
     it("should insert with multiple keys and values") {
       import MongoStorageBackend._
 
@@ -87,8 +86,8 @@ BeforeAndAfterEach {
       getMapStorageRangeFor("t1", None, None, 100).map { case (k, v) => (new String(k), new String(v)) } should equal(l.sortWith(_._1 < _._1))
       getMapStorageRangeFor("t1", None, None, 5).map { case (k, v) => (new String(k), new String(v)) }.size should equal(5)
     }
+    */
   }
-*/
 
   describe("persistent vectors") {
     it("should insert a single value") {
@@ -121,9 +120,9 @@ BeforeAndAfterEach {
       getVectorStorageSizeFor("t1") should equal(2)
       insertVectorStorageEntriesFor("t1", List("ola bini".getBytes, "james strachan".getBytes, "dennis ritchie".getBytes))
       getVectorStorageRangeFor("t1", None, None, 100).map(new String(_)) should equal(List("ola bini", "james strachan", "dennis ritchie", "james gosling", "martin odersky"))
-      //getVectorStorageRangeFor("t1", Some(0), Some(5), 100).map(new String(_)) should equal(List("ola bini", "james strachan", "dennis ritchie", "james gosling", "martin odersky"))
-      //getVectorStorageRangeFor("t1", Some(2), Some(5), 100).map(new String(_)) should equal(List("dennis ritchie", "james gosling", "martin odersky"))
-      //getVectorStorageSizeFor("t1") should equal(5)
+      getVectorStorageRangeFor("t1", Some(0), Some(5), 100).map(new String(_)) should equal(List("ola bini", "james strachan", "dennis ritchie", "james gosling", "martin odersky"))
+      getVectorStorageRangeFor("t1", Some(2), Some(5), 100).map(new String(_)) should equal(List("dennis ritchie", "james gosling", "martin odersky"))
+      getVectorStorageSizeFor("t1") should equal(5)
     }
 
     it("should insert and query complex structures") {
