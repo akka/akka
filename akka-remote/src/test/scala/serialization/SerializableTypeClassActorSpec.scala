@@ -127,9 +127,16 @@ class SerializableTypeClassActorSpec extends
       (actor1 ! "hello")
       (actor1 ! "hello")
       (actor1 ! "hello")
+      actor1.mailboxSize should be > (0)
       val actor2 = fromBinary(toBinary(actor1))
       Thread.sleep(1000)
+      actor2.mailboxSize should be > (0)
       (actor2 !! "hello-reply").getOrElse("_") should equal("world")
+
+      val actor3 = fromBinary(toBinary(actor1, false))
+      Thread.sleep(1000)
+      actor3.mailboxSize should equal(0)
+      (actor3 !! "hello-reply").getOrElse("_") should equal("world")
     }
   }
 }

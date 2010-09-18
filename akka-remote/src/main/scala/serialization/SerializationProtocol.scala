@@ -8,6 +8,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, LocalActorRef, RemoteAc
 import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
+import se.scalablesolutions.akka.dispatch.MessageInvocation
 import se.scalablesolutions.akka.remote.{RemoteServer, RemoteRequestProtocolIdFactory, MessageSerializer}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import ActorTypeProtocol._
@@ -74,19 +75,19 @@ object ActorSerialization {
   def fromBinary[T <: Actor](bytes: Array[Byte])(implicit format: Format[T]): ActorRef =
     fromBinaryToLocalActorRef(bytes, format)
 
-  def toBinary[T <: Actor](a: ActorRef)(implicit format: Format[T]): Array[Byte] =
-    toSerializedActorRefProtocol(a, format).toByteArray
+  def toBinary[T <: Actor](a: ActorRef, serializeMailBox: Boolean = true)(implicit format: Format[T]): Array[Byte] =
+    toSerializedActorRefProtocol(a, format, serializeMailBox).toByteArray
 
   // wrapper for implicits to be used by Java
   def fromBinaryJ[T <: Actor](bytes: Array[Byte], format: Format[T]): ActorRef =
     fromBinary(bytes)(format)
 
   // wrapper for implicits to be used by Java
-  def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T]): Array[Byte] =
-    toBinary(a)(format)
+  def toBinaryJ[T <: Actor](a: ActorRef, format: Format[T], srlMailBox: Boolean = true): Array[Byte] =
+    toBinary(a, srlMailBox)(format)
 
   private def toSerializedActorRefProtocol[T <: Actor](
-    actorRef: ActorRef, format: Format[T]): SerializedActorRefProtocol = {
+    actorRef: ActorRef, format: Format[T], serializeMailBox: Boolean = true): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
       def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
         case Permanent => builder.setLifeCycle(LifeCycleType.PERMANENT)
@@ -113,6 +114,29 @@ object ActorSerialization {
       .setOriginalAddress(originalAddress)
       .setIsTransactor(actorRef.isTransactor)
       .setTimeout(actorRef.timeout)
+
+    if (serializeMailBox == true) {
+      val messages = 
+        actorRef.mailbox match {
+          case q: java.util.Queue[MessageInvocation] =>
+            val l = new scala.collection.mutable.ListBuffer[MessageInvocation]
+            val it = q.iterator
+            while (it.hasNext == true) l += it.next
+            l
+        }
+
+      val requestProtocols = 
+        messages.map(m =>
+          RemoteActorSerialization.createRemoteRequestProtocolBuilder(
+            actorRef,
+            m.message,
+            false,
+            actorRef.getSender,
+            None,
+            ActorType.ScalaActor).build)
+
+      requestProtocols.foreach(rp => builder.addMessages(rp))
+    }
 
     actorRef.receiveTimeout.foreach(builder.setReceiveTimeout(_))
     builder.setActorInstance(ByteString.copyFrom(format.toBinary(actorRef.actor.asInstanceOf[T])))
