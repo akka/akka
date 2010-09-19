@@ -123,8 +123,8 @@ object RemoteServer {
   }
 
   private class RemoteActorSet {
-    private[RemoteServer] val actors = new ConcurrentHashMap[Object, ActorRef]
-    private[RemoteServer] val typedActors = new ConcurrentHashMap[Object, AnyRef]
+    private[RemoteServer] val actors = new ConcurrentHashMap[String, ActorRef]
+    private[RemoteServer] val typedActors = new ConcurrentHashMap[String, AnyRef]
   }
 
   private val guard = new ReadWriteGuard
@@ -132,11 +132,11 @@ object RemoteServer {
   private val remoteServers =   Map[Address, RemoteServer]()
 
   private[akka] def registerActor(address: InetSocketAddress, uuid: Uuid, actor: ActorRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid, actor)
+    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actors.put(uuid.toString, actor)
   }
 
   private[akka] def registerTypedActor(address: InetSocketAddress, uuid: Uuid, typedActor: AnyRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(uuid, typedActor)
+    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(uuid.toString, typedActor)
   }
 
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
