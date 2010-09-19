@@ -231,7 +231,7 @@ object RemoteActorSerialization {
     }
 
     RemoteActorRefProtocol.newBuilder
-      .setClassOrServiceName(id)
+      .setClassOrServiceName(uuid.toString)
       .setActorClassname(actorClass.getName)
       .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
       .setTimeout(timeout)

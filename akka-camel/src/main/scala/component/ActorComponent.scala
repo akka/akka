@@ -33,18 +33,15 @@ import scala.reflect.BeanProperty
  */
 class ActorComponent extends DefaultComponent {
   def createEndpoint(uri: String, remaining: String, parameters: JavaMap[String, Object]): ActorEndpoint = {
-    val idAndUuid = idAndUuidPair(remaining)
-    new ActorEndpoint(uri, this, idAndUuid._1, idAndUuid._2)
+    val (id,uuid) = idAndUuidPair(remaining)
+    new ActorEndpoint(uri, this, id, uuid)
   }
 
-  private def idAndUuidPair(remaining: String): Tuple2[Option[String], Option[Uuid]] = {
-    remaining split ":" toList match {
-      case             id :: Nil => (Some(id), None)
-      case   "id" ::   id :: Nil => (Some(id), None)
-      case "uuid" :: uuid :: Nil => (None, Some(uuidFrom(uuid)))
-      case _ => throw new IllegalArgumentException(
-        "invalid path format: %s - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
-    }
+  private def idAndUuidPair(remaining: String): Tuple2[Option[String],Option[Uuid]] = remaining match {
+    case null | "" => throw new IllegalArgumentException("invalid path format: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
+    case   id if id startsWith "id:"     => (Some(id substring 3),None)
+    case uuid if uuid startsWith "uuid:" => (None,Some(uuidFrom(uuid substring 5)))
+    case   id => (Some(id),None)
   }
 }
 
