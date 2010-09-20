@@ -233,9 +233,15 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[Tuple2[Array[Byte], Array[Byte]]] = {
     val row = new Get(Bytes.toBytes(name))
     val result = MAP_TABLE.get(row)
-    val iterator = result.getFamilyMap(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME)).entrySet.iterator
+    val map = result.getFamilyMap(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME))
+
+    val startBytes = if (start.isDefined) start.get else map.firstEntry.getKey
+    val finishBytes = if (finish.isDefined) finish.get else map.lastEntry.getKey
+    val submap = map.subMap(startBytes, true, finishBytes, true)
+
+    val iterator = submap.entrySet.iterator
     val listBuffer = new ListBuffer[Tuple2[Array[Byte], Array[Byte]]]
-    val size = result.size
+    val size = submap.size
 
     val cnt = if(count > size) size else count
     var i: Int = 0
