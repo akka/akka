@@ -390,7 +390,18 @@ object TypedActor extends Logging {
     if (config._messageDispatcher.isDefined) actorRef.dispatcher = config._messageDispatcher.get
     if (config._threadBasedDispatcher.isDefined) actorRef.dispatcher = Dispatchers.newThreadBasedDispatcher(actorRef)
     if (config._host.isDefined) actorRef.makeRemote(config._host.get)
+    actorRef.timeout = config.timeout
     AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, config._host, config.timeout))
+    actorRef.start
+    proxy.asInstanceOf[T]
+  }
+
+  private[akka] def newInstance[T](intfClass: Class[T], actorRef: ActorRef): T = {
+    if (!actorRef.actorInstance.get.isInstanceOf[TypedActor]) throw new IllegalArgumentException("ActorRef is not a ref to a typed actor")
+    val typedActor = actorRef.actorInstance.get.asInstanceOf[TypedActor]
+    val proxy = Proxy.newInstance(Array(intfClass), Array(typedActor), true, false)
+    typedActor.initialize(proxy)
+    AspectInitRegistry.register(proxy, AspectInit(intfClass, typedActor, actorRef, actorRef.remoteAddress, actorRef.timeout))
     actorRef.start
     proxy.asInstanceOf[T]
   }
