@@ -229,7 +229,6 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     MAP_TABLE.delete(row)
   }
 
-  //TODO implement the start and the finish semantic
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[Tuple2[Array[Byte], Array[Byte]]] = {
     val row = new Get(Bytes.toBytes(name))
     val result = MAP_TABLE.get(row)
