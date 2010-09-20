@@ -249,7 +249,7 @@ object RemoteActorSerialization {
     if (!registeredInRemoteNodeDuringSerialization) {
       Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
       RemoteServer.getOrCreateServer(homeAddress)
-      RemoteServer.registerActor(homeAddress, uuid, ar)
+      RemoteServer.registerActorByUuid(homeAddress, uuid, ar)
       registeredInRemoteNodeDuringSerialization = true
     }
 
