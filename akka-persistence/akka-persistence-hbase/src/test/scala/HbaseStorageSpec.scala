@@ -81,9 +81,17 @@ BeforeAndAfterEach {
         ("larry wall", "perl"),
         ("guido van rossum", "python"),
         ("james strachan", "groovy"))
+      val rl = List(
+	("james gosling", "java"), 
+	("james strachan", "groovy"), 
+	("larry wall", "perl"), 
+	("martin odersky", "scala"), 
+	("ola bini", "ioke"), ("rich hickey", "clojure"), 
+	("slava pestov", "factor"))
       insertMapStorageEntriesFor("t1", l.map { case (k, v) => (k.getBytes, v.getBytes) })
       getMapStorageSizeFor("t1") should equal(l.size)
       getMapStorageRangeFor("t1", None, None, 100).map { case (k, v) => (new String(k), new String(v)) } should equal(l.sortWith(_._1 < _._1))
+      getMapStorageRangeFor("t1", Option("james gosling".getBytes), Option("slava pestov".getBytes), 100).map { case (k, v) => (new String(k), new String(v)) } should equal(rl.sortWith(_._1 < _._1))
       getMapStorageRangeFor("t1", None, None, 5).map { case (k, v) => (new String(k), new String(v)) }.size should equal(5)
     }
 
