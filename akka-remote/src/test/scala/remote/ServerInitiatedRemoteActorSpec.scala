@@ -79,7 +79,6 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     }
   }
 
-  
   @Test
   def shouldSendWithBang  {
     val actor = RemoteClient.actorFor(
@@ -176,6 +175,42 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
     assert(actor1.uuid != actor3.uuid)
     assert(actor1.id != actor2.id)
     assert(actor2.id == actor3.id)
+  }
+
+  @Test
+  def shouldFindActorByUuid {
+    val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
+    val actor2 = actorOf[RemoteActorSpecActorUnidirectional]
+    server.register("uuid:" + actor1.uuid, actor1)
+    server.register("my-service", actor2)
+
+    val ref1 = RemoteClient.actorFor("uuid:" + actor1.uuid, HOSTNAME, PORT)
+    val ref2 = RemoteClient.actorFor("my-service", HOSTNAME, PORT)
+
+    ref1 ! "OneWay"
+    assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
+    ref1.stop
+    ref2 ! "OneWay"
+    ref2.stop
+    
+  }
+
+  @Test
+  def shouldRegisterAndUnregister {
+    val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
+    server.register("my-service-1", actor1)
+    assert(server.actors().get("my-service-1") != null, "actor registered")
+    server.unregister("my-service-1")
+    assert(server.actors().get("my-service-1") == null, "actor unregistered")
+  }
+
+  @Test
+  def shouldRegisterAndUnregisterByUuid {
+    val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
+    server.register("uuid:" + actor1.uuid, actor1)
+    assert(server.actorsByUuid().get(actor1.uuid) != null, "actor registered")
+    server.unregister("uuid:" + actor1.uuid)
+    assert(server.actorsByUuid().get(actor1.uuid) == null, "actor unregistered")
   }
 
 }
