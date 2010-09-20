@@ -354,8 +354,8 @@ class RemoteServer extends Logging with ListenerManagement {
       if (id.startsWith(UUID_PREFIX)) {
         actorsByUuid().remove(id.substring(UUID_PREFIX.length)) 
       } else {
+        val actorRef = actors().get(id)
         if (actorRef.registeredInRemoteNodeDuringSerialization) {
-          val actorRef = actors().get(id)
           actorsByUuid() remove actorRef.uuid
         }
         actors() remove id
