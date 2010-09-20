@@ -189,13 +189,3 @@ class ExecutorBasedEventDrivenDispatcher(
     buildThreadPool
   }
 }
-
-/**
- * Usable to create a single-threaded dispatcher
- */
-object SingleThread extends Function1[ThreadPoolBuilder,Unit] {
-  def apply(b: ThreadPoolBuilder) {
-    b setCorePoolSize 1
-    b setMaxPoolSize  1
-  }
-}
