@@ -111,7 +111,7 @@ class Logger(val logger: SLFLogger) {
      warning(message(fmt,arg,argN:_*))
   }
 
-  def warn(fmt: => String, arg: Any, argN: Any*) = warning(fmt, arg, argN)
+  def warn(fmt: => String, arg: Any, argN: Any*) = warning(fmt, arg, argN:_*)
 
   def warning(msg: => String) {
      if (warning_?) logger warn msg
