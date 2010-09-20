@@ -78,24 +78,24 @@ class PersistentFailerActor extends Transactor {
 
 class HbasePersistentActorSpec extends JUnitSuite with BeforeAndAfterAll {
 
-  val testUtil = new HBaseTestingUtility
+  //val testUtil = new HBaseTestingUtility
 
   override def beforeAll {
-    testUtil.startMiniCluster
+    //testUtil.startMiniCluster
   }
   
   override def afterAll {
-    testUtil.shutdownMiniCluster
+    //testUtil.shutdownMiniCluster
   }
 
   @Before
   def beforeEach {
-    HbaseStorageBackend.drop
+    //HbaseStorageBackend.drop
   }
   
   @After
   def afterEach {
-    HbaseStorageBackend.drop
+    //HbaseStorageBackend.drop
   }
 
   @Test
