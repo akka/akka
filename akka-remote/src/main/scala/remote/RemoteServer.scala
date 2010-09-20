@@ -383,9 +383,9 @@ class RemoteServer extends Logging with ListenerManagement {
 
   protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
-  private[akka] def actors()      = RemoteServer.actorsFor(address).actors
+  private[akka] def actors()            = RemoteServer.actorsFor(address).actors
   private[akka] def actorsByUuid()      = RemoteServer.actorsFor(address).actorsByUuid
-  private[akka] def typedActors() = RemoteServer.actorsFor(address).typedActors
+  private[akka] def typedActors()       = RemoteServer.actorsFor(address).typedActors
   private[akka] def typedActorsByUuid() = RemoteServer.actorsFor(address).typedActorsByUuid
 }
 
@@ -508,11 +508,12 @@ class RemoteServerHandler(
 
   private def handleRemoteRequestProtocol(request: RemoteRequestProtocol, channel: Channel) = {
     log.debug("Received RemoteRequestProtocol[\n%s]", request.toString)
-    val actorType = request.getActorInfo.getActorType
-    if (actorType == SCALA_ACTOR) dispatchToActor(request, channel)
-    else if (actorType == JAVA_ACTOR)  throw new IllegalActorStateException("ActorType JAVA_ACTOR is currently not supported")
-    else if (actorType == TYPED_ACTOR) dispatchToTypedActor(request, channel)
-    else throw new IllegalActorStateException("Unknown ActorType [" + actorType + "]")
+    request.getActorInfo.getActorType match {
+      case SCALA_ACTOR => dispatchToActor(request, channel)
+      case TYPED_ACTOR => dispatchToTypedActor(request, channel)
+      case JAVA_ACTOR  => throw new IllegalActorStateException("ActorType JAVA_ACTOR is currently not supported")
+      case other       => throw new IllegalActorStateException("Unknown ActorType [" + other + "]")
+    }
   }
 
   private def dispatchToActor(request: RemoteRequestProtocol, channel: Channel) = {
