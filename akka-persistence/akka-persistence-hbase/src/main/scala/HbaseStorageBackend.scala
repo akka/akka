@@ -28,7 +28,6 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   val EMPTY_BYTE_ARRAY = new Array[Byte](0)
   val HBASE_ZOOKEEPER_QUORUM = config.getString("akka.storage.hbase.zookeeper.quorum", "localhost")
   val CONFIGURATION = new HBaseConfiguration
-  val ADMIN = new HBaseAdmin(CONFIGURATION)
   val REF_TABLE_NAME = "__REF_TABLE"
   val VECTOR_TABLE_NAME = "__VECTOR_TABLE"
   val VECTOR_ELEMENT_COLUMN_FAMILY_NAME = "__VECTOR_ELEMENT"
@@ -43,6 +42,8 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   init
   
   def init {
+    val ADMIN = new HBaseAdmin(CONFIGURATION)
+
     if (!ADMIN.tableExists(REF_TABLE_NAME)) {
       ADMIN.createTable(new HTableDescriptor(REF_TABLE_NAME))
       ADMIN.disableTable(REF_TABLE_NAME)
@@ -69,6 +70,8 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   }
   
   def drop {
+    val ADMIN = new HBaseAdmin(CONFIGURATION)
+
     if (ADMIN.tableExists(REF_TABLE_NAME)) {
       ADMIN.disableTable(REF_TABLE_NAME)
       ADMIN.deleteTable(REF_TABLE_NAME)
