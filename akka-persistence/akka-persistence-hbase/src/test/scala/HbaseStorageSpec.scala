@@ -30,7 +30,7 @@ BeforeAndAfterEach {
   override def afterEach {
     HbaseStorageBackend.drop
   }
-  
+ 
   describe("persistent maps") {
     it("should insert with single key and value") {
       import HbaseStorageBackend._
@@ -130,6 +130,10 @@ BeforeAndAfterEach {
       getVectorStorageRangeFor("t1", None, None, 100).map(new String(_)) should equal(List("ola bini", "james strachan", "dennis ritchie", "james gosling", "martin odersky"))
       getVectorStorageRangeFor("t1", Some(0), Some(5), 100).map(new String(_)) should equal(List("ola bini", "james strachan", "dennis ritchie", "james gosling", "martin odersky"))
       getVectorStorageRangeFor("t1", Some(2), Some(5), 100).map(new String(_)) should equal(List("dennis ritchie", "james gosling", "martin odersky"))
+      getVectorStorageRangeFor("t1", Some(-1), Some(5), 100).map(new String(_)) should equal(List("ola bini", "james strachan", "dennis ritchie", "james gosling", "martin odersky"))
+      getVectorStorageRangeFor("t1", Some(-1), None, 5).map(new String(_)) should equal(List("ola bini", "james strachan", "dennis ritchie", "james gosling", "martin odersky"))
+      getVectorStorageRangeFor("t1", Some(-1), Some(-1), 100).size should equal(0)
+      getVectorStorageRangeFor("t1", Some(0), Some(0), 100).size should equal(0)
       getVectorStorageSizeFor("t1") should equal(5)
     }
 
