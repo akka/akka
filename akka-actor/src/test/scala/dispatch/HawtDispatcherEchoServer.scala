@@ -146,7 +146,7 @@ object HawtDispatcherEchoServer {
       read_source.setEventHandler(^{ read })
       read_source.setCancelHandler(^{ close })
 
-      write_source = createSource(channel, SelectionKey.OP_READ, HawtDispatcher.queue(self));
+      write_source = createSource(channel, SelectionKey.OP_WRITE, HawtDispatcher.queue(self));
       write_source.setEventHandler(^{ write   })
       write_source.setCancelHandler(^{ close })
 

@@ -23,6 +23,15 @@ message RemoteActorRefProtocol {
 }
 
 /**
+ * Defines a remote ActorRef that "remembers" and uses its original typed Actor instance
+ * on the original node.
+ */
+message RemoteTypedActorRefProtocol {
+  required RemoteActorRefProtocol actorRef = 1;
+  required string interfaceName = 2;
+}
+
+/**
  * Defines a fully serialized remote ActorRef (with serialized Actor instance)
  * that is about to be instantiated on the remote node. It is fully disconnected 
  * from its original host.
@@ -41,6 +50,16 @@ message SerializedActorRefProtocol {
   optional RemoteActorRefProtocol supervisor = 11;
   optional bytes hotswapStack = 12;
   repeated RemoteRequestProtocol messages = 13;
+}
+
+/**
+ * Defines a fully serialized remote ActorRef (with serialized typed actor instance)
+ * that is about to be instantiated on the remote node. It is fully disconnected
+ * from its original host.
+ */
+message SerializedTypedActorRefProtocol {
+  required SerializedActorRefProtocol actorRef = 1;
+  required string interfaceName = 2;
 }
 
 /**
