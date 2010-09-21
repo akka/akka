@@ -26,9 +26,10 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
         VectorStorageBackend[Array[Byte]] with
         RefStorageBackend[Array[Byte]] with
         Logging {
+  val bootstrapUrlsProp = "bootstrap_urls"
   val clientConfig = config.getConfigMap("akka.storage.voldemort.client") match {
     case Some(configMap) => getClientConfig(configMap.asMap)
-    case None => getClientConfig(new HashMap[String, String] + ("boostrap_urls" -> "tcp://localhost:6666"))
+    case None => getClientConfig(new HashMap[String, String] + (bootstrapUrlsProp -> "tcp://localhost:6666"))
   }
   val refStore = config.getString("akka.storage.voldemort.store.ref", "Refs")
   val mapKeyStore = config.getString("akka.storage.voldemort.store.map-key", "MapKeys")
@@ -260,12 +261,12 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     }
 
     storeClientFactory = {
-      if (clientConfig.getProperty("bootstrap_urls", "none").startsWith("tcp")) {
+      if (clientConfig.getProperty(bootstrapUrlsProp, "none").startsWith("tcp")) {
         new SocketStoreClientFactory(new ClientConfig(clientConfig))
-      } else if (clientConfig.getProperty("bootstrap_urls", "none").startsWith("http")) {
+      } else if (clientConfig.getProperty(bootstrapUrlsProp, "none").startsWith("http")) {
         new HttpStoreClientFactory(new ClientConfig(clientConfig))
       } else {
-        throw new IllegalArgumentException("Unknown boostrapUrl syntax" + clientConfig.getProperty("boostrap_urls", "No Bootstrap URLs defined"))
+        throw new IllegalArgumentException("Unknown boostrapUrl syntax" + clientConfig.getProperty(bootstrapUrlsProp, "No Bootstrap URLs defined"))
       }
     }
     refClient = storeClientFactory.getStoreClient(refStore)
