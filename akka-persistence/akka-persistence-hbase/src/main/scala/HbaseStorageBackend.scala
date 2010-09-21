@@ -153,11 +153,11 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     var e = 0
 
     if(start.isDefined && finish.isDefined) {
-      b = max(0,start.get)
-      e = min(finish.get - 1, size -1)
+      b = start.get
+      e = finish.get - 1
     } else {
-      b = max(0,start.getOrElse(0))
-      e = finish.getOrElse(max(0,min(b + count - 1, size - 1)))
+      b = start.getOrElse(0)
+      e = finish.getOrElse(min(b + count - 1, size - 1)) 
     }
     for(i <- b to e) {
       val colnum = size - i - 1
