@@ -15,7 +15,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
   var server: VoldemortServer = null
 
   override protected def beforeAll(): Unit = {
-    
+
     try {
       val dir = "./akka-persistence/akka-persistence-voldemort/target/scala_2.8.0/test-resources"
       val home = new File(dir)
@@ -24,6 +24,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
       log.info("Starting Voldemort")
       server = new VoldemortServer(config)
       server.start
+      VoldemortStorageBackend.initStoreClients
       log.info("Started")
     } catch {
       case e => log.error(e, "Error Starting Voldemort")
