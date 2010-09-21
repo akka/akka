@@ -43,4 +43,45 @@ class VoldemortPersistentDatastructureSuite extends FunSuite with ShouldMatchers
   }
 
 
+  test("Persistent Vectors function as expected") {
+    val name = UUID.newUuid.toString
+    val one = "one".getBytes
+    val two = "two".getBytes
+    atomic {
+      val vec = VoldemortStorage.getVector(name)
+      vec.add(one)
+    }
+    atomic {
+      val vec = VoldemortStorage.getVector(name)
+      vec.size should be(1)
+      vec.add(two)
+    }
+    atomic {
+      val vec = VoldemortStorage.getVector(name)
+
+      vec.get(0) should be(one)
+      vec.get(1) should be(two)
+      vec.size should be(2)
+      vec.update(0, two)
+    }
+
+    atomic {
+      val vec = VoldemortStorage.getVector(name)
+      vec.get(0) should be(two)
+      vec.get(1) should be(two)
+      vec.size should be(2)
+      vec.update(0, Array.empty[Byte])
+      vec.update(1, Array.empty[Byte])
+    }
+
+    atomic {
+      val vec = VoldemortStorage.getVector(name)
+      vec.get(0) should be(Array.empty[Byte])
+      vec.get(1) should be(Array.empty[Byte])
+      vec.size should be(2)
+    }
+
+
+  }
+
 }
