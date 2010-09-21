@@ -15,7 +15,7 @@ object DispatchersSpec {
   import Dispatchers._
   //
   val tipe               = "type"
-  val keepalivems        = "keep-alive-ms"
+  val keepalivems        = "keep-alive-time"
   val corepoolsizefactor = "core-pool-size-factor"
   val maxpoolsizefactor  = "max-pool-size-factor"
   val executorbounds     = "executor-bounds"

@@ -31,13 +31,15 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateExcept
  */
 class ExecutorBasedEventDrivenWorkStealingDispatcher(
   _name: String,
-  capacity: Int = Dispatchers.MAILBOX_CAPACITY,
+  _mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
   config: (ThreadPoolBuilder) => Unit = _ => ()) extends MessageDispatcher with ThreadPoolBuilder {
 
-  def this(_name: String, capacity: Int) = this(_name,capacity, _ => ())
-  
-  mailboxCapacity = capacity
+  def this(_name: String, mailboxType: MailboxType) = this(_name, mailboxType, _ => ())
 
+  def this(_name: String) = this(_name, Dispatchers.MAILBOX_TYPE, _ => ())
+  
+  val mailboxType = Some(_mailboxType)
+  
   @volatile private var active: Boolean = false
 
   implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
@@ -182,35 +184,32 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     buildThreadPool
   }
 
-  protected override def createMailbox(actorRef: ActorRef): AnyRef = {
-    if (mailboxCapacity <= 0) {
+  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
+    case UnboundedMailbox(blocking) => // FIXME make use of 'blocking' in work stealer ConcurrentLinkedDeque
       new ConcurrentLinkedDeque[MessageInvocation] with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
+
         def dequeue: MessageInvocation = this.poll()
 
-        def run = {
-          if (!tryProcessMailbox(this)) {
-            // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
-            // to another actor and then process his mailbox in stead.
-            findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
-          }
+        def run = if (!tryProcessMailbox(this)) {
+          // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
+          // to another actor and then process his mailbox in stead.
+          findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
         }
       }
-    }
-    else {
-      new LinkedBlockingDeque[MessageInvocation](mailboxCapacity) with MessageQueue with Runnable {
+    case BoundedMailbox(blocking, capacity, pushTimeOut) => 
+      val cap = if (mailboxCapacity == -1) capacity else mailboxCapacity
+      new LinkedBlockingDeque[MessageInvocation](cap) with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
+
         def dequeue: MessageInvocation = this.poll()
 
-        def run = {
-          if (!tryProcessMailbox(this)) {
-            // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
-            // to another actor and then process his mailbox in stead.
-            findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
-          }
+        def run = if (!tryProcessMailbox(this)) {
+          // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
+          // to another actor and then process his mailbox in stead.
+          findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef, _) )
         }
       }
-    }
   }
 
   override def register(actorRef: ActorRef) = {

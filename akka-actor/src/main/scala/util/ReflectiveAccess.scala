@@ -5,29 +5,31 @@
 package se.scalablesolutions.akka.util
 
 import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException, ActorType}
-import se.scalablesolutions.akka.dispatch.{Future, CompletableFuture}
+import se.scalablesolutions.akka.dispatch.{Future, CompletableFuture, MessageInvocation}
 import se.scalablesolutions.akka.config.{Config, ModuleNotAvailableException}
-
-import java.net.InetSocketAddress
 import se.scalablesolutions.akka.stm.Transaction
 import se.scalablesolutions.akka.AkkaException
+
+import java.net.InetSocketAddress
 
 /**
  * Helper class for reflective access to different modules in order to allow optional loading of modules.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object ReflectiveAccess {
+object ReflectiveAccess extends Logging {
 
   val loader = getClass.getClassLoader
 
   lazy val isRemotingEnabled   = RemoteClientModule.isRemotingEnabled
   lazy val isTypedActorEnabled = TypedActorModule.isTypedActorEnabled
   lazy val isJtaEnabled        = JtaModule.isJtaEnabled
+  lazy val isEnterpriseEnabled = EnterpriseModule.isEnterpriseEnabled
 
   def ensureRemotingEnabled   = RemoteClientModule.ensureRemotingEnabled
   def ensureTypedActorEnabled = TypedActorModule.ensureTypedActorEnabled
   def ensureJtaEnabled        = JtaModule.ensureJtaEnabled
+  def ensureEnterpriseEnabled = EnterpriseModule.ensureEnterpriseEnabled
 
   /**
    * Reflective access to the RemoteClient module.
@@ -63,7 +65,7 @@ object ReflectiveAccess {
       "Can't load the remoting module, make sure that akka-remote.jar is on the classpath")
 
     val remoteClientObjectInstance: Option[RemoteClientObject] =
-      getObject("se.scalablesolutions.akka.remote.RemoteClient$")
+      getObjectFor("se.scalablesolutions.akka.remote.RemoteClient$")
 
     def register(address: InetSocketAddress, uuid: String) = {
       ensureRemotingEnabled
@@ -121,10 +123,10 @@ object ReflectiveAccess {
     }
 
     val remoteServerObjectInstance: Option[RemoteServerObject] =
-      getObject("se.scalablesolutions.akka.remote.RemoteServer$")
+      getObjectFor("se.scalablesolutions.akka.remote.RemoteServer$")
 
     val remoteNodeObjectInstance: Option[RemoteNodeObject] =
-      getObject("se.scalablesolutions.akka.remote.RemoteNode$")
+      getObjectFor("se.scalablesolutions.akka.remote.RemoteNode$")
 
     def registerActor(address: InetSocketAddress, uuid: String, actorRef: ActorRef) = {
       ensureRemotingEnabled
@@ -160,7 +162,7 @@ object ReflectiveAccess {
       "Can't load the typed actor module, make sure that akka-typed-actor.jar is on the classpath")
 
     val typedActorObjectInstance: Option[TypedActorObject] =
-      getObject("se.scalablesolutions.akka.actor.TypedActor$")
+      getObjectFor("se.scalablesolutions.akka.actor.TypedActor$")
 
     def resolveFutureIfMessageIsJoinPoint(message: Any, future: Future[_]): Boolean = {
       ensureTypedActorEnabled
@@ -189,11 +191,46 @@ object ReflectiveAccess {
       "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
 
     val transactionContainerObjectInstance: Option[TransactionContainerObject] =
-      getObject("se.scalablesolutions.akka.actor.TransactionContainer$")
+      getObjectFor("se.scalablesolutions.akka.actor.TransactionContainer$")
 
     def createTransactionContainer: TransactionContainer = {
       ensureJtaEnabled
       transactionContainerObjectInstance.get.apply.asInstanceOf[TransactionContainer]
+    }
+  }
+
+  object EnterpriseModule {
+
+    type FileBasedMailbox = {
+      def enqueue(message: MessageInvocation)
+      def dequeue: MessageInvocation
+    }
+    
+    type Serializer = {
+      def toBinary(obj: AnyRef): Array[Byte]
+      def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef      
+    }
+
+    lazy val isEnterpriseEnabled = clusterObjectInstance.isDefined
+
+    val clusterObjectInstance: Option[AnyRef] =
+      getObjectFor("se.scalablesolutions.akka.cluster.Cluster$")
+
+    val serializerClass: Option[Class[_]] = 
+      getClassFor("se.scalablesolutions.akka.serialization.Serializer")
+
+    def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(
+      "Feature is only available in Akka Enterprise")
+
+    def createFileBasedMailbox(name: String, serializer: Serializer): FileBasedMailbox = {
+      ensureEnterpriseEnabled
+      createInstance(
+        "se.scalablesolutions.akka.cluster.FileBasedMailbox",
+        Array(classOf[String], serializerClass.get),
+        Array(name, serializer).asInstanceOf[Array[AnyRef]],
+        loader)
+        .getOrElse(throw new IllegalActorStateException("Could not create file-based mailbox"))
+        .asInstanceOf[FileBasedMailbox]
     }
   }
 
@@ -203,30 +240,59 @@ object ReflectiveAccess {
   def createInstance[T](clazz: Class[_],
                         params: Array[Class[_]],
                         args: Array[AnyRef]): Option[T] = try {
+    assert(clazz ne null)
+    assert(params ne null)
+    assert(args ne null)
     val ctor = clazz.getDeclaredConstructor(params: _*)
     ctor.setAccessible(true)
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: Exception => None
+    case e: java.lang.reflect.InvocationTargetException =>
+      log.error(e.getCause, "Could not instantiate class [%s]", clazz.getName)
+      None
+    case e: Exception =>
+      log.error(e.getCause, "Could not instantiate class [%s]", clazz.getName)
+      None
   }
 
   def createInstance[T](fqn: String,
                         params: Array[Class[_]],
                         args: Array[AnyRef],
                         classloader: ClassLoader = loader): Option[T] = try {
+    assert(fqn ne null)
+    assert(params ne null)
+    assert(args ne null)
     val clazz = classloader.loadClass(fqn)
     val ctor = clazz.getDeclaredConstructor(params: _*)
     ctor.setAccessible(true)
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: Exception => None
+    case e: java.lang.reflect.InvocationTargetException =>
+      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
+      None
+    case e: Exception =>
+      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
+      None
   }
 
-  def getObject[T](fqn: String, classloader: ClassLoader = loader): Option[T] = try {//Obtains a reference to $MODULE$
+  def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Option[T] = try {//Obtains a reference to $MODULE$
+    assert(fqn ne null)
     val clazz = classloader.loadClass(fqn)
     val instance = clazz.getDeclaredField("MODULE$")
     instance.setAccessible(true)
     Option(instance.get(null).asInstanceOf[T])
+  } catch {
+    case e: java.lang.reflect.InvocationTargetException =>
+      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
+      None
+    case e: Exception =>
+      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
+      None
+  }
+
+  def getClassFor[T](fqn: String, classloader: ClassLoader = loader): Option[Class[T]] = try {
+    assert(fqn ne null)
+    Some(classloader.loadClass(fqn).asInstanceOf[Class[T]])
   } catch {
     case e: Exception => None
   }

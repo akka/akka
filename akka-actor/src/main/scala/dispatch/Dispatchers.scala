@@ -5,11 +5,13 @@
 package se.scalablesolutions.akka.dispatch
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
-import se.scalablesolutions.akka.config.Config.config
+import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
+
 import net.lag.configgy.ConfigMap
+
 import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
 import java.util.concurrent.TimeUnit
-import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
 
 /**
  * Scala API. Dispatcher factory.
@@ -44,14 +46,12 @@ import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Dispatchers extends Logging {
-  val THROUGHPUT             = config.getInt("akka.actor.throughput", 5)
-  val THROUGHPUT_DEADLINE_MS = config.getInt("akka.actor.throughput-deadline-ms",-1)
-  val MAILBOX_CAPACITY       = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
-  val MAILBOX_CONFIG         = MailboxConfig(
-    capacity = Dispatchers.MAILBOX_CAPACITY,
-    pushTimeOut = config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS)),
-    blockingDequeue = false
-  )
+  val THROUGHPUT                      = config.getInt("akka.actor.throughput", 5)
+  val MAILBOX_CAPACITY                = config.getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
+  val MAILBOX_PUSH_TIME_OUT           = Duration(config.getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), TIME_UNIT)
+  val THROUGHPUT_DEADLINE_TIME        = Duration(config.getInt("akka.actor.throughput-deadline-time",-1), TIME_UNIT)
+  val THROUGHPUT_DEADLINE_TIME_MILLIS = THROUGHPUT_DEADLINE_TIME.toMillis.toInt
+  val MAILBOX_TYPE                    = if (MAILBOX_CAPACITY < 0) UnboundedMailbox() else BoundedMailbox()
 
   lazy val defaultGlobalDispatcher = {
     config.getConfigMap("akka.actor.default-dispatcher").flatMap(from).getOrElse(globalExecutorBasedEventDrivenDispatcher)
@@ -59,7 +59,8 @@ object Dispatchers extends Logging {
 
   object globalHawtDispatcher extends HawtDispatcher
 
-  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher("global",THROUGHPUT,THROUGHPUT_DEADLINE_MS,MAILBOX_CONFIG) {
+  object globalExecutorBasedEventDrivenDispatcher extends ExecutorBasedEventDrivenDispatcher(
+    "global", THROUGHPUT, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE) {
     override def register(actor: ActorRef) = {
       if (isShutdown) init
       super.register(actor)
@@ -81,7 +82,7 @@ object Dispatchers extends Logging {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor)
+  def newThreadBasedDispatcher(actor: ActorRef) = new ThreadBasedDispatcher(actor, BoundedMailbox(true))
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -96,36 +97,32 @@ object Dispatchers extends Logging {
    * <p/>
    * E.g. each actor consumes its own thread.
    */
-  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) = new ThreadBasedDispatcher(actor, MailboxConfig(mailboxCapacity,Option(pushTimeOut),true))
+  def newThreadBasedDispatcher(actor: ActorRef, mailboxCapacity: Int, pushTimeOut: Duration) = 
+    new ThreadBasedDispatcher(actor, mailboxCapacity, pushTimeOut)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name, THROUGHPUT)
+  def newExecutorBasedEventDrivenDispatcher(name: String) = new ExecutorBasedEventDrivenDispatcher(name)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int) = new ExecutorBasedEventDrivenDispatcher(name, throughput)
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
+    new ExecutorBasedEventDrivenDispatcher(name, throughput, mailboxType)
+
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxCapacity: Int) = new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxCapacity)
-
-  /**
-   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
-   * <p/>
-   * Has a fluent builder interface for configuring its semantics.
-   */
-  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxCapacity: Int, pushTimeOut: Duration) = new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, MailboxConfig(mailboxCapacity,Some(pushTimeOut),false))
-
+  def newExecutorBasedEventDrivenDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) = 
+    new ExecutorBasedEventDrivenDispatcher(name, throughput, throughputDeadlineMs, mailboxType)
 
   /**
    * Creates a executor-based event-driven dispatcher with work stealing (TODO: better doc) serving multiple (millions) of actors through a thread pool.
@@ -139,7 +136,8 @@ object Dispatchers extends Logging {
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxCapacity: Int) = new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxCapacity)
+  def newExecutorBasedEventDrivenWorkStealingDispatcher(name: String, mailboxType: MailboxType) = 
+    new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType = mailboxType)
 
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
@@ -155,7 +153,7 @@ object Dispatchers extends Logging {
    *   type = "GlobalExecutorBasedEventDriven" # Must be one of the following, all "Global*" are non-configurable
    *                               # (ExecutorBasedEventDrivenWorkStealing), ExecutorBasedEventDriven,
    *                               # Hawt, GlobalExecutorBasedEventDriven, GlobalHawt
-   *   keep-alive-ms = 60000       # Keep alive time for threads
+   *   keep-alive-time = 60        # Keep alive time for threads
    *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
    *   executor-bounds = -1        # Makes the Executor bounded, -1 is unbounded
@@ -175,7 +173,7 @@ object Dispatchers extends Logging {
 
     def threadPoolConfig(b: ThreadPoolBuilder) {
       b.configureIfPossible( builder => {
-        cfg.getInt("keep-alive-ms").foreach(builder.setKeepAliveTimeInMillis(_))
+        cfg.getInt("keep-alive-time").foreach(time => builder.setKeepAliveTimeInMillis(Duration(time, TIME_UNIT).toMillis.toInt))
         cfg.getDouble("core-pool-size-factor").foreach(builder.setCorePoolSizeFromFactor(_))
         cfg.getDouble("max-pool-size-factor").foreach(builder.setMaxPoolSizeFromFactor(_))
         cfg.getInt("executor-bounds").foreach(builder.setExecutorBounds(_))
@@ -192,37 +190,27 @@ object Dispatchers extends Logging {
       })
     }
 
-    lazy val mailboxBounds: MailboxConfig = {
-      val capacity = cfg.getInt("mailbox-capacity",Dispatchers.MAILBOX_CAPACITY)
-      val timeout  = cfg.getInt("mailbox-push-timeout-ms").map(Duration(_,TimeUnit.MILLISECONDS))
-      MailboxConfig(capacity,timeout,false)
+    lazy val mailboxType: MailboxType = {
+      val capacity = cfg.getInt("mailbox-capacity", MAILBOX_CAPACITY)
+      // FIXME how do we read in isBlocking for mailbox? Now set to 'false'.
+      if (capacity < 0) UnboundedMailbox()
+      else BoundedMailbox(false, capacity, Duration(cfg.getInt("mailbox-push-timeout", MAILBOX_PUSH_TIME_OUT.toMillis.toInt), TIME_UNIT))
     }
 
-    val dispatcher: Option[MessageDispatcher] = cfg.getString("type") map {
-      case "ExecutorBasedEventDrivenWorkStealing" =>
-        new ExecutorBasedEventDrivenWorkStealingDispatcher(name,MAILBOX_CAPACITY,threadPoolConfig)
-      
+    cfg.getString("type") map {
       case "ExecutorBasedEventDriven" =>
         new ExecutorBasedEventDrivenDispatcher(
           name,
-          cfg.getInt("throughput",THROUGHPUT),
-          cfg.getInt("throughput-deadline-ms",THROUGHPUT_DEADLINE_MS),
-          mailboxBounds,
+          cfg.getInt("throughput", THROUGHPUT),
+          cfg.getInt("throughput-deadline", THROUGHPUT_DEADLINE_TIME_MILLIS),
+          mailboxType,
           threadPoolConfig)
 
-      case "Hawt" =>
-        new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
-
-      case "GlobalExecutorBasedEventDriven" =>
-        globalExecutorBasedEventDrivenDispatcher
-
-      case "GlobalHawt" =>
-        globalHawtDispatcher
-
-      case unknown =>
-        throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
+      case "ExecutorBasedEventDrivenWorkStealing" => new ExecutorBasedEventDrivenWorkStealingDispatcher(name, mailboxType, threadPoolConfig)
+      case "Hawt"                                 => new HawtDispatcher(cfg.getBool("aggregate").getOrElse(true))
+      case "GlobalExecutorBasedEventDriven"       => globalExecutorBasedEventDrivenDispatcher
+      case "GlobalHawt"                           => globalHawtDispatcher
+      case unknown                                => throw new IllegalArgumentException("Unknown dispatcher type [%s]" format unknown)
     }
-
-    dispatcher
   }
 }

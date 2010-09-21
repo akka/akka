@@ -1144,7 +1144,7 @@ class LocalActorRef private[akka](
     val actor = actorFactory match {
       case Left(Some(clazz)) =>
         import ReflectiveAccess.{createInstance,noParams,noArgs}
-        createInstance(clazz.asInstanceOf[Class[_]],noParams,noArgs).
+        createInstance(clazz.asInstanceOf[Class[_]], noParams, noArgs).
           getOrElse(throw new ActorInitializationException(
             "Could not instantiate Actor" +
             "\nMake sure Actor is NOT defined inside a class/trait," +
