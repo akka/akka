@@ -32,6 +32,10 @@ case class VUPD(i: Int, v: String)
 case class VUPD_AND_ABORT(i: Int, v: String)
 case class VGET(i: Int)
 case object VSIZE
+case object VLAST
+case object VFIRST
+case class VLAST_AFTER_ADD(vsToAdd: List[String])
+case class VFIRST_AFTER_ADD(vsToAdd: List[String])
 case class VGET_AFTER_VADD(vsToAdd: List[String], isToFetch: List[Int])
 case class VADD_WITH_SLICE(vsToAdd: List[String], start: Int, cnt: Int)
 
@@ -175,6 +179,30 @@ object Storage {
             fooVector.slice(Some(s), None, c)
           }
         self.reply(l.map(new String(_)))
+
+      case VLAST =>
+        val l = atomic { fooVector last }
+        self.reply(l)
+
+      case VFIRST =>
+        val l = atomic { fooVector first }
+        self.reply(l)
+
+      case VLAST_AFTER_ADD(vs) =>
+        val l =
+          atomic {
+            vs.foreach(fooVector + _.getBytes)
+            fooVector last
+          }
+        self.reply(l)
+
+      case VFIRST_AFTER_ADD(vs) =>
+        val l =
+          atomic {
+            vs.foreach(fooVector + _.getBytes)
+            fooVector first
+          }
+        self.reply(l)
     }
   }
 }
@@ -243,7 +271,7 @@ class RedisTicket343Spec extends
       val add = List(("a", "1"), ("b", "2"), ("c", "3"))
       (proc !! CLEAR_AFTER_PUT(add)).getOrElse("CLEAR_AFTER_PUT failed") should equal(true)
 
-      (proc !! MAP_SIZE).getOrElse("Size failed") should equal(1)
+      (proc !! MAP_SIZE).getOrElse("Size failed") should equal(0)
       proc.stop
     }
   }
@@ -344,7 +372,26 @@ class RedisTicket343Spec extends
       (proc !! VADD_WITH_SLICE(List(), 2, 2)).getOrElse("VADD_WITH_SLICE failed") should equal(Vector("maulindu", "debasish"))
 
       // slice with new elements added in current transaction
-      (proc !! VADD_WITH_SLICE(List("a", "b", "c", "d"), 2, 2)).getOrElse("VADD_WITH_SLICE failed") should equal(Vector("b", "a"))
+      (proc !! VADD_WITH_SLICE(List("a", "b", "c", "d"), 2, 4)).getOrElse("VADD_WITH_SLICE failed") should equal(Vector("b", "a", "nilanjan", "ramanendu"))
+      proc.stop
+    }
+  }
+
+  describe("Miscellaneous vector ops") {
+    it("vector slice() should not ignore elements added in current transaction") {
+      val proc = actorOf[RedisSampleVectorStorage]
+      proc.start
+
+      // add 4 elements in separate transactions
+      (proc !! VADD("debasish")).getOrElse("VADD failed") should equal(1)
+      (proc !! VADD("maulindu")).getOrElse("VADD failed") should equal(2)
+      (proc !! VADD("ramanendu")).getOrElse("VADD failed") should equal(3)
+      (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(4)
+
+      new String((proc !! VLAST).getOrElse("VLAST failed").asInstanceOf[Array[Byte]]) should equal("debasish")
+      new String((proc !! VFIRST).getOrElse("VFIRST failed").asInstanceOf[Array[Byte]]) should equal("nilanjan")
+      new String((proc !! VLAST_AFTER_ADD(List("kausik", "tarun"))).getOrElse("VLAST_AFTER_ADD failed").asInstanceOf[Array[Byte]]) should equal("debasish")
+      new String((proc !! VFIRST_AFTER_ADD(List("kausik", "tarun"))).getOrElse("VFIRST_AFTER_ADD failed").asInstanceOf[Array[Byte]]) should equal("tarun")
       proc.stop
     }
   }

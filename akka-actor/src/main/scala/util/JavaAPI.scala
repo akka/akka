@@ -14,3 +14,10 @@ trait Function[T,R] {
 trait Procedure[T] {
   def apply(param: T): Unit
 }
+
+/**
+ * An executable piece of code that takes no parameters and doesn't return any value
+ */
+trait SideEffect {
+  def apply: Unit
+}

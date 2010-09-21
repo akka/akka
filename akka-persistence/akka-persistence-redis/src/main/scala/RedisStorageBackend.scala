@@ -359,7 +359,6 @@ private [akka] object RedisStorageBackend extends
       case e: java.lang.NullPointerException =>
         throw new StorageException("Could not connect to Redis server")
       case e =>
-        e.printStackTrace
         throw new StorageException("Error in Redis: " + e.getMessage)
     }
   }
