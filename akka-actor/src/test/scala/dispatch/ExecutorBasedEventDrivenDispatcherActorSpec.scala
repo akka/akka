@@ -68,7 +68,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
   }
 
  @Test def shouldRespectThroughput {
-   val throughputDispatcher = new ExecutorBasedEventDrivenDispatcher("THROUGHPUT",101,0,Dispatchers.MAILBOX_CONFIG, (e) => {
+   val throughputDispatcher = new ExecutorBasedEventDrivenDispatcher("THROUGHPUT",101,0,Dispatchers.MAILBOX_TYPE, (e) => {
       e.setCorePoolSize(1)
    })
 
@@ -103,7 +103,7 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
 
  @Test def shouldRespectThroughputDeadline {
    val deadlineMs = 100
-   val throughputDispatcher = new ExecutorBasedEventDrivenDispatcher("THROUGHPUT",2,deadlineMs,Dispatchers.MAILBOX_CONFIG, (e) => {
+   val throughputDispatcher = new ExecutorBasedEventDrivenDispatcher("THROUGHPUT",2,deadlineMs,Dispatchers.MAILBOX_TYPE, (e) => {
       e.setCorePoolSize(1)
    })
 

@@ -4,11 +4,11 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import java.util.Queue
-
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.config.Config.config
-import concurrent.forkjoin.{TransferQueue, LinkedTransferQueue}
+import se.scalablesolutions.akka.util.Duration
+
+import java.util.Queue
 import java.util.concurrent.{ConcurrentLinkedQueue, BlockingQueue, TimeUnit, LinkedBlockingQueue}
 
 /**
@@ -16,23 +16,30 @@ import java.util.concurrent.{ConcurrentLinkedQueue, BlockingQueue, TimeUnit, Lin
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher(private val actor: ActorRef,
-                            val mailboxConfig: MailboxConfig
-                            ) extends MessageDispatcher {
-  def this(actor: ActorRef, capacity: Int) = this(actor,MailboxConfig(capacity,None,true))
-  def this(actor: ActorRef) = this(actor, Dispatchers.MAILBOX_CAPACITY)// For Java
+class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxType) extends MessageDispatcher {
+
+  def this(actor: ActorRef) = this(actor, BoundedMailbox(true)) // For Java API
+
+  def this(actor: ActorRef, capacity: Int) = this(actor, BoundedMailbox(true, capacity))
+
+  def this(actor: ActorRef, capacity: Int, pushTimeOut: Duration) = this(actor, BoundedMailbox(true, capacity, pushTimeOut))
+
+  val mailboxType = Some(_mailboxType)
 
   private val name = actor.getClass.getName + ":" + actor.uuid
   private val threadName = "akka:thread-based:dispatcher:" + name
   private var selectorThread: Thread = _
   @volatile private var active: Boolean = false
 
-  override def createMailbox(actorRef: ActorRef): AnyRef = mailboxConfig.newMailbox(blockDequeue = true)
+  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
+    case UnboundedMailbox(blocking) => 
+      new DefaultUnboundedMessageQueue(blocking)
+    case BoundedMailbox(blocking, capacity, pushTimeOut) => 
+      new DefaultBoundedMessageQueue(capacity, pushTimeOut, blocking)
+  }
   
   override def register(actorRef: ActorRef) = {
-    if(actorRef != actor)
-      throw new IllegalArgumentException("Cannot register to anyone but " + actor)
-
+    if (actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
     super.register(actorRef)
   }
 

@@ -58,7 +58,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(executor.getQueue().remainingCapacity() === Integer.MAX_VALUE)
       assert(dispatcher.name === EVENT_DRIVEN_PREFIX + "dispatcher-2")
     }
-
+/*
     scenario("get a executor-event-driven-dispatcher with bounded-blocking-queue and with bounded mailbox capacity") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val dispatcher = context.getBean("executor-event-driven-dispatcher-mc").asInstanceOf[ExecutorBasedEventDrivenDispatcher]
@@ -69,7 +69,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       assert(actorRef.mailbox.isInstanceOf[BlockingQueue[MessageInvocation]])
       assert((actorRef.mailbox.asInstanceOf[BlockingQueue[MessageInvocation]]).remainingCapacity === 1000)
     }
-
+*/
     scenario("get a executor-event-driven-dispatcher with unbounded-linked-blocking-queue with bounded capacity from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val dispatcher = context.getBean("executor-event-driven-dispatcher-4").asInstanceOf[ExecutorBasedEventDrivenDispatcher]
