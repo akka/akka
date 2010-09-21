@@ -100,12 +100,11 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getRefStorageFor(name: String): Option[Array[Byte]] = {
     val row = new Get(Bytes.toBytes(name))
     val result = REF_TABLE.get(row)
-    if (result.isEmpty()) {
-      return None;
-    } else {
-      val element = result.getValue(Bytes.toBytes("element"), Bytes.toBytes("element"))
-      return Some(element)
-    }
+
+    if (result.isEmpty())
+      None
+    else
+      Some(result.getValue(Bytes.toBytes("element"), Bytes.toBytes("element")))
   }
 
   // ===============================================================
@@ -132,7 +131,8 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     val result = VECTOR_TABLE.get(row)
     val size   = result.size
     val colnum = size - index - 1
-    return result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME),Bytes.toBytes(colnum))
+
+    result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME),Bytes.toBytes(colnum))
   }
 
   /**
@@ -142,39 +142,38 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
    * if <tt>start</tt> == 0 and <tt>finish</tt> == 0, return an empty collection
    */
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = {
+
+    import scala.math._
+    
     val row = new Get(Bytes.toBytes(name))
     val result = VECTOR_TABLE.get(row)
     val size = result.size
     var listBuffer = new ListBuffer[Array[Byte]]
+    var b = 0
+    var e = 0
 
     if(start.isDefined && finish.isDefined) {
-      for(i <- start.get to finish.get-1) {
-	val colnum = size - i - 1
-	listBuffer += result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME),Bytes.toBytes(colnum))
-      }
-      return listBuffer.toList
+      b = max(0,start.get)
+      e = min(finish.get - 1, size -1)
     } else {
-      val b = start.getOrElse(0)
-      val e = if(!finish.isDefined) {
-	val ee: Int = b + count -1
-	if(ee < size-1) ee else size-1
-      }
-      for(i <- b.asInstanceOf[Int] to e.asInstanceOf[Int]) {
-	val colnum = size - i - 1
-	listBuffer += result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME),Bytes.toBytes(colnum))
-      }
-      return listBuffer.toList
+      b = max(0,start.getOrElse(0))
+      e = finish.getOrElse(max(0,min(b + count - 1, size - 1)))
     }
+    for(i <- b to e) {
+      val colnum = size - i - 1
+      listBuffer += result.getValue(Bytes.toBytes(VECTOR_ELEMENT_COLUMN_FAMILY_NAME),Bytes.toBytes(colnum))
+    }
+    listBuffer.toList
   }
 
   def getVectorStorageSizeFor(name: String): Int = {
     val row = new Get(Bytes.toBytes(name))
     val result = VECTOR_TABLE.get(row)
-    if (result.isEmpty) {
+    
+    if (result.isEmpty)
       0
-    } else {
+    else
       result.size
-    }
   }
 
   // ===============================================================
@@ -192,11 +191,8 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
     val row = new Get(Bytes.toBytes(name))
     val result = MAP_TABLE.get(row)
-    val value = result.getValue(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME), key)
-    if(value == null)
-      None
-    else
-      Some(value)
+    
+    Option(result.getValue(Bytes.toBytes(MAP_ELEMENT_COLUMN_FAMILY_NAME), key))
   }
 
   def getMapStorageFor(name: String): List[Tuple2[Array[Byte], Array[Byte]]] = {
@@ -214,11 +210,11 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
   def getMapStorageSizeFor(name: String): Int = {
     val row = new Get(Bytes.toBytes(name))
     val result = MAP_TABLE.get(row)
-    if (result.isEmpty) {
+
+    if (result.isEmpty)
       0
-    } else {
+    else
       result.size
-    }
   }
 
   def removeMapStorageFor(name: String): Unit = {
@@ -248,8 +244,10 @@ private[akka] object HbaseStorageBackend extends MapStorageBackend[Array[Byte], 
     val cnt = if(count > size) size else count
     var i: Int = 0
     while(iterator.hasNext && i < cnt) {
-      val raw = iterator.next
-      listBuffer += Tuple2(raw.asInstanceOf[java.util.Map.Entry[Array[Byte], Array[Byte]]].getKey, raw.asInstanceOf[java.util.Map.Entry[Array[Byte],Array[Byte]]].getValue)
+      iterator.next match {
+        case entry: java.util.Map.Entry[Array[Byte], Array[Byte]] => listBuffer += ((entry.getKey,entry.getValue))
+        case _ =>
+      }
       i = i+1
     }
     listBuffer.toList
