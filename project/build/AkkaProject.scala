@@ -191,6 +191,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
     lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile"
+    lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test"
 
     lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile"
 
@@ -544,6 +545,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val velocity = Dependencies.velocity
     val bdb = Dependencies.bdb
     val dbcp = Dependencies.dbcp
+    val sjson = Dependencies.sjson_test
 
     override def testOptions = TestFilter((name: String) => name.endsWith("Suite")) :: Nil
   }
