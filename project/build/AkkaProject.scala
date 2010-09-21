@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------------\
+ /*---------------------------------------------------------------------------\
 | Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se> |
 \---------------------------------------------------------------------------*/
 
@@ -41,6 +41,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   object Repositories {
     lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+    lazy val CasbahRepo           = MavenRepository("Casbah Repo", "http://repo.bumnetworks.com/releases")
+    lazy val CasbahSnapshotRepo   = MavenRepository("Casbah Snapshots", "http://repo.bumnetworks.com/snapshots")
     lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
     lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
@@ -49,7 +51,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-    lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
     lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
     lazy val OracleRepo           = MavenRepository("Oracle Repo", "http://download.oracle.com/maven")
   }
@@ -78,7 +79,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
   lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
-  lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
+  lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
+  lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
   lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
   lazy val sleepycatModuleConfig   = ModuleConfiguration("com.sleepycat", OracleRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
@@ -174,8 +176,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val casbah = "com.novus" % "casbah_2.8.0" % "1.0.8.5" % "compile"
 
-    lazy val time = "org.scala-tools" % "time" % "2.8.0-SNAPSHOT-0.2-SNAPSHOT" % "compile"
-
     lazy val multiverse = "org.multiverse" % "multiverse-alpha" % MULTIVERSE_VERSION % "compile" intransitive
 
     lazy val netty = "org.jboss.netty" % "netty" % "3.2.2.Final" % "compile"
@@ -190,7 +190,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
-    lazy val sjson = "sjson.json" % "sjson" % "0.8-SNAPSHOT-2.8.0" % "compile"
+    lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile"
 
     lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile"
 

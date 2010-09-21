@@ -60,8 +60,8 @@ case object ReceiveTimeout extends LifeCycleMessage
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty val victim: ActorRef,
-  @BeanProperty val maxNrOfRetries: Int,
-  @BeanProperty val withinTimeRange: Int,
+  @BeanProperty val maxNrOfRetries: Option[Int],
+  @BeanProperty val withinTimeRange: Option[Int],
   @BeanProperty val lastExceptionCausingRestart: Throwable) extends LifeCycleMessage
 
 // Exceptions for Actors

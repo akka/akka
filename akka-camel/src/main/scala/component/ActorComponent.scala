@@ -18,10 +18,10 @@ import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message
 import CamelMessageConversion.toExchangeAdapter
 import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 import se.scalablesolutions.akka.stm.TransactionConfig
-import se.scalablesolutions.akka.actor.{ScalaActorRef, ActorRegistry, Actor, ActorRef}
 import se.scalablesolutions.akka.AkkaException
 
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.actor._
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -199,13 +199,12 @@ private[akka] object AsyncCallbackAdapter {
 private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCallback) extends ActorRef with ScalaActorRef {
 
   def start = {
-    _isRunning = true
+    _status = ActorRefStatus.RUNNING
     this
   }
 
   def stop() = {
-    _isRunning = false
-    _isShutDown = true
+    _status = ActorRefStatus.SHUTDOWN
   }
 
   /**
@@ -247,8 +246,8 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[ActorRef], senderFuture: Option[CompletableFuture[T]]) = unsupported
   protected[akka] def mailbox: AnyRef = unsupported
   protected[akka] def mailbox_=(msg: AnyRef):AnyRef = unsupported
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
   protected[akka] def linkedActors: JavaMap[String, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported

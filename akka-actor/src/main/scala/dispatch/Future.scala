@@ -160,6 +160,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     if (!_completed) {
       _completed = true
       _result = Some(result)
+      onComplete(result)
     }
   } finally {
     _signal.signalAll
@@ -171,6 +172,7 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
     if (!_completed) {
       _completed = true
       _exception = Some(exception)
+      onCompleteException(exception)
     }
   } finally {
     _signal.signalAll
@@ -178,4 +180,6 @@ class DefaultCompletableFuture[T](timeout: Long) extends CompletableFuture[T] {
   }
 
   private def currentTimeInNanos: Long = TIME_UNIT.toNanos(System.currentTimeMillis)
+  protected def onComplete(result: T) {}
+  protected def onCompleteException(exception: Throwable) {}
 }

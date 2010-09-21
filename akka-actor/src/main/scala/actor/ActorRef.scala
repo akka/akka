@@ -28,6 +28,17 @@ import java.lang.reflect.Field
 
 import scala.reflect.BeanProperty
 
+
+object ActorRefStatus {
+ /** LifeCycles for ActorRefs
+  */
+  private[akka] sealed trait StatusType
+  object UNSTARTED extends StatusType
+  object RUNNING extends StatusType
+  object BEING_RESTARTED extends StatusType
+  object SHUTDOWN extends StatusType
+}
+
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
  * <p/>
@@ -68,9 +79,7 @@ trait ActorRef extends
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
   @volatile protected[akka] var _uuid = UUID.newUuid.toString
-  @volatile protected[this] var _isRunning = false
-  @volatile protected[this] var _isShutDown = false
-  @volatile protected[akka] var _isBeingRestarted = false
+  @volatile protected[this] var _status: ActorRefStatus.StatusType = ActorRefStatus.UNSTARTED
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServerModule.HOSTNAME, RemoteServerModule.PORT)
   @volatile protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
   @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
@@ -229,17 +238,25 @@ trait ActorRef extends
   /**
    * Is the actor being restarted?
    */
-  def isBeingRestarted: Boolean = _isBeingRestarted
+  def isBeingRestarted: Boolean = _status == ActorRefStatus.BEING_RESTARTED
 
   /**
    * Is the actor running?
    */
-  def isRunning: Boolean = _isRunning
+  def isRunning: Boolean = _status match {
+    case ActorRefStatus.BEING_RESTARTED | ActorRefStatus.RUNNING => true
+    case _ => false
+  }
 
   /**
    * Is the actor shut down?
    */
-  def isShutdown: Boolean = _isShutDown
+  def isShutdown: Boolean = _status == ActorRefStatus.SHUTDOWN
+
+  /**
+   * Is the actor ever started?
+   */
+  def isUnstarted: Boolean = _status == ActorRefStatus.UNSTARTED
 
   /**
    * Is the actor able to handle the message passed in as arguments?
@@ -601,9 +618,9 @@ trait ActorRef extends
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
   protected[akka] def registerSupervisorAsRemoteActor: Option[String]
 
@@ -800,7 +817,7 @@ class LocalActorRef private[akka](
       if (isTransactor) {
         _transactionFactory = Some(TransactionFactory(_transactionConfig, id))
       }
-      _isRunning = true
+      _status = ActorRefStatus.RUNNING
       if (!isInInitialization) initializeActorInstance
       else runActorInitialization = true
     }
@@ -815,8 +832,7 @@ class LocalActorRef private[akka](
       cancelReceiveTimeout
       dispatcher.unregister(this)
       _transactionFactory = None
-      _isRunning = false
-      _isShutDown = true
+      _status = ActorRefStatus.SHUTDOWN
       actor.postStop
       ActorRegistry.unregister(this)
       if (isRemotingEnabled) {
@@ -864,11 +880,11 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def startLink(actorRef: ActorRef) = guard.withGuard {
+  def startLink(actorRef: ActorRef):Unit = guard.withGuard {
     try {
-      actorRef.start
-    } finally {
       link(actorRef)
+    } finally {
+      actorRef.start
     }
   }
 
@@ -877,13 +893,13 @@ class LocalActorRef private[akka](
    * <p/>
    * To be invoked from within the actor itself.
    */
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int) = guard.withGuard {
+  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = guard.withGuard {
     ensureRemotingEnabled
     try {
       actorRef.makeRemote(hostname, port)
-      actorRef.start
-    } finally {
       link(actorRef)
+    } finally {
+      actorRef.start
     }
   }
 
@@ -893,9 +909,7 @@ class LocalActorRef private[akka](
    * To be invoked from within the actor itself.
    */
   def spawn(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actorRef = spawnButDoNotStart(clazz)
-    actorRef.start
-    actorRef
+    spawnButDoNotStart(clazz).start
   }
 
   /**
@@ -919,9 +933,9 @@ class LocalActorRef private[akka](
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
     val actor = spawnButDoNotStart(clazz)
     try {
-      actor.start
-    } finally {
       link(actor)
+    } finally {
+      actor.start
     }
     actor
   }
@@ -936,10 +950,11 @@ class LocalActorRef private[akka](
     val actor = spawnButDoNotStart(clazz)
     try {
       actor.makeRemote(hostname, port)
-      actor.start
-    } finally {
       link(actor)
+    } finally {
+      actor.start
     }
+    actor
   }
 
   /**
@@ -1001,7 +1016,7 @@ class LocalActorRef private[akka](
   }
 
   /**
-   * Callback for the dispatcher. This is the ingle entry point to the user Actor implementation.
+   * Callback for the dispatcher. This is the single entry point to the user Actor implementation.
    */
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = guard.withGuard {
     if (isShutdown)
@@ -1038,12 +1053,18 @@ class LocalActorRef private[akka](
     }
   }
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = {
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
     if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis // first time around
-    maxNrOfRetriesCount += 1
+    
+    val tooManyRestarts = if (maxNrOfRetries.isDefined) {
+                            maxNrOfRetriesCount += 1
+                            maxNrOfRetriesCount > maxNrOfRetries.get
+                          } else false
 
-    val tooManyRestarts = maxNrOfRetriesCount > maxNrOfRetries
-    val restartingHasExpired = (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange
+    val restartingHasExpired = if (withinTimeRange.isDefined)
+                                 (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange.get
+                               else false
+
     if (tooManyRestarts || restartingHasExpired) {
       val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
       Actor.log.warning(
@@ -1062,7 +1083,7 @@ class LocalActorRef private[akka](
 
       stop
     } else {
-      _isBeingRestarted = true
+      _status = ActorRefStatus.BEING_RESTARTED
       val failedActor = actorInstance.get
       guard.withGuard {
         lifeCycle match {
@@ -1072,16 +1093,18 @@ class LocalActorRef private[akka](
             Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
             Actor.log.debug("Restarting linked actors for actor [%s].", id)
             restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
+
             Actor.log.debug("Invoking 'preRestart' for failed actor instance [%s].", id)
             if (isProxyableDispatcher(failedActor)) restartProxyableDispatcher(failedActor, reason)
-            else                                     restartActor(failedActor, reason)
-            _isBeingRestarted = false
+            else                                    restartActor(failedActor, reason)
+            
+            _status = ActorRefStatus.RUNNING
         }
       }
     }
   }
 
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int) = {
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) = {
     linkedActorsAsList.foreach { actorRef =>
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
@@ -1131,11 +1154,7 @@ class LocalActorRef private[akka](
     freshActor.postRestart(reason)
   }
 
-  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = guard.withGuard {
-    val actorRef = Actor.actorOf(clazz.newInstance)
-    if (!dispatcher.isInstanceOf[ThreadBasedDispatcher]) actorRef.dispatcher = dispatcher
-    actorRef
-  }
+  private def spawnButDoNotStart(clazz: Class[_ <: Actor]): ActorRef = Actor.actorOf(clazz.newInstance)
 
   private[this] def newActor: Actor = {
     Actor.actorRefInCreation.withValue(Some(this)){
@@ -1235,7 +1254,7 @@ class LocalActorRef private[akka](
   private def handleExceptionInDispatch(reason: Throwable, message: Any, topLevelTransaction: Boolean) = {
     Actor.log.error(reason, "Exception when invoking \n\tactor [%s] \n\twith message [%s]", this, message)
 
-    _isBeingRestarted = true
+    _status = ActorRefStatus.BEING_RESTARTED
     // abort transaction set
     if (isTransactionSetInScope) {
       val txSet = getTransactionSetInScope
@@ -1375,13 +1394,12 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   def start: ActorRef = {
-    _isRunning = true
+    _status = ActorRefStatus.RUNNING
     this
   }
 
   def stop: Unit = {
-    _isRunning = false
-    _isShutDown = true
+    _status = ActorRefStatus.SHUTDOWN
     postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
   }
 
@@ -1417,8 +1435,8 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def mailbox: AnyRef = unsupported
   protected[akka] def mailbox_=(value: AnyRef):AnyRef = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Int, withinTimeRange: Int): Unit = unsupported
+  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def linkedActors: JMap[String, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
