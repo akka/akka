@@ -24,8 +24,8 @@ object BankAccountActor {
 }
 
 class BankAccountActor extends Transactor {
-  private lazy val accountState = VoldemortStorage.newMap(state)
-  private lazy val txnLog = VoldemortStorage.newVector(tx)
+  private  val accountState = VoldemortStorage.newMap(state)
+  private  val txnLog = VoldemortStorage.newVector(tx)
 
   import sjson.json.DefaultProtocol._
   import sjson.json.JsonSerialization._
@@ -122,21 +122,25 @@ Spec with
 
   describe("successful debit") {
     it("should debit successfully") {
+      log.info("Succesful Debit starting")
       val bactor = actorOf[BankAccountActor]
       bactor.start
       val failer = actorOf[PersistentFailerActor]
       failer.start
       bactor !! Credit("a-123", 5000)
+      log.info("credited")
       bactor !! Debit("a-123", 3000, failer)
-
+      log.info("debited")
       (bactor !! Balance("a-123")).get.asInstanceOf[Int] should equal(2000)
-
+      log.info("balane matched")
       bactor !! Credit("a-123", 7000)
+      log.info("Credited")
       (bactor !! Balance("a-123")).get.asInstanceOf[Int] should equal(9000)
-
+      log.info("Balance matched")
       bactor !! Debit("a-123", 8000, failer)
+      log.info("Debited")
       (bactor !! Balance("a-123")).get.asInstanceOf[Int] should equal(1000)
-
+      log.info("Balance matched")
       (bactor !! LogSize).get.asInstanceOf[Int] should equal(7)
       (bactor !! Log(0, 7)).get.asInstanceOf[Iterable[String]].size should equal(7)
     }
