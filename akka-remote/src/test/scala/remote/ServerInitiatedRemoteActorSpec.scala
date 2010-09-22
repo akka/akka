@@ -208,7 +208,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldRegisterAndUnregisterByUuid {
     val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
     server.register("uuid:" + actor1.uuid, actor1)
-    assert(server.actorsByUuid().get(actor1.uuid) != null, "actor registered")
+    assert(server.actorsByUuid().get(actor1.uuid.toString) != null, "actor registered")
     server.unregister("uuid:" + actor1.uuid)
     assert(server.actorsByUuid().get(actor1.uuid) == null, "actor unregistered")
   }

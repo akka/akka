@@ -78,7 +78,7 @@ trait ActorRef extends
   java.lang.Comparable[ActorRef] { scalaRef: ScalaActorRef =>
 
   // Only mutable for RemoteServer in order to maintain identity across nodes
-  @volatile protected[akka] var _uuid = UUID.newUuid.toString
+  @volatile protected[akka] var _uuid = newUuid
   @volatile protected[this] var _status: ActorRefStatus.StatusType = ActorRefStatus.UNSTARTED
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServerModule.HOSTNAME, RemoteServerModule.PORT)
   @volatile protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
@@ -95,7 +95,7 @@ trait ActorRef extends
    * that you can use a custom name to be able to retrieve the "correct" persisted state
    * upon restart, remote restart etc.
    */
-  @BeanProperty @volatile var id: String = _uuid
+  @BeanProperty @volatile var id: String = _uuid.toString
 
   /**
    * User overridable callback/setting.
@@ -213,7 +213,7 @@ trait ActorRef extends
   /**
    * Comparison only takes uuid into account.
    */
-  def compareTo(other: ActorRef) = this.uuid.compareTo(other.uuid)
+  def compareTo(other: ActorRef) = this.uuid compareTo other.uuid
 
   /**
    * Returns the uuid for the actor.
@@ -266,7 +266,7 @@ trait ActorRef extends
   /**
    * Only for internal use. UUID is effectively final.
    */
-  protected[akka] def uuid_=(uid: String) = _uuid = uid
+  protected[akka] def uuid_=(uid: Uuid) = _uuid = uid
 
   /**
    * Akka Java API
@@ -622,9 +622,9 @@ trait ActorRef extends
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit
 
-  protected[akka] def registerSupervisorAsRemoteActor: Option[String]
+  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid]
 
-  protected[akka] def linkedActors: JMap[String, ActorRef]
+  protected[akka] def linkedActors: JMap[Uuid, ActorRef]
 
   protected[akka] def linkedActorsAsList: List[ActorRef]
 
@@ -665,7 +665,7 @@ class LocalActorRef private[akka](
   extends ActorRef with ScalaActorRef {
 
   @volatile private[akka] var _remoteAddress: Option[InetSocketAddress] = None // only mutable to maintain identity across nodes
-  @volatile private[akka] var _linkedActors: Option[ConcurrentHashMap[String, ActorRef]] = None
+  @volatile private[akka] var _linkedActors: Option[ConcurrentHashMap[Uuid, ActorRef]] = None
   @volatile private[akka] var _supervisor: Option[ActorRef] = None
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
@@ -687,7 +687,7 @@ class LocalActorRef private[akka](
   private[akka] def this(factory: () => Actor)     = this(Right(Some(factory)))
 
   // used only for deserialization
-  private[akka] def this(__uuid: String,
+  private[akka] def this(__uuid: Uuid,
                          __id: String,
                          __hostname: String,
                          __port: Int,
@@ -1114,7 +1114,7 @@ class LocalActorRef private[akka](
     }
   }
 
-  protected[akka] def registerSupervisorAsRemoteActor: Option[String] = guard.withGuard {
+  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = guard.withGuard {
     ensureRemotingEnabled
     if (_supervisor.isDefined) {
       remoteAddress.foreach(address => RemoteClientModule.registerSupervisorForActor(address, this))
@@ -1122,9 +1122,9 @@ class LocalActorRef private[akka](
     } else None
   }
 
-  protected[akka] def linkedActors: JMap[String, ActorRef] = guard.withGuard {
+  protected[akka] def linkedActors: JMap[Uuid, ActorRef] = guard.withGuard {
     if (_linkedActors.isEmpty) {
-      val actors = new ConcurrentHashMap[String, ActorRef]
+      val actors = new ConcurrentHashMap[Uuid, ActorRef]
       _linkedActors = Some(actors)
       actors
     } else _linkedActors.get
@@ -1408,7 +1408,7 @@ private[akka] case class RemoteActorRef private[akka] (
    */
   def actorClassName: String = className
 
-  protected[akka] def registerSupervisorAsRemoteActor: Option[String] = None
+  protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
 
   val remoteAddress: Option[InetSocketAddress] = Some(new InetSocketAddress(hostname, port))
 
@@ -1437,7 +1437,7 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
-  protected[akka] def linkedActors: JMap[String, ActorRef] = unsupported
+  protected[akka] def linkedActors: JMap[Uuid, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
@@ -1460,7 +1460,7 @@ trait ActorRefShared {
   /**
    * Returns the uuid for the actor.
    */
-  def uuid: String
+  def uuid: Uuid
 
   /**
    * Shuts down and removes all linked actors.
