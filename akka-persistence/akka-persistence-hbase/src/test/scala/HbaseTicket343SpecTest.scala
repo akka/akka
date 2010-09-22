@@ -171,7 +171,7 @@ object Storage {
 import Storage._
 
 @RunWith(classOf[JUnitRunner])
-class HbaseTicket343Spec extends Spec with ShouldMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class HbaseTicket343SpecTest extends Spec with ShouldMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   import org.apache.hadoop.hbase.HBaseTestingUtility
   

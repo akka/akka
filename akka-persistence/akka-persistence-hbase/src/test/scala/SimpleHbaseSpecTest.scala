@@ -10,7 +10,7 @@ import org.junit.Test
 import org.apache.hadoop.hbase.HBaseTestingUtility
 
 @RunWith(classOf[JUnitRunner])
-class PersistenceSpec extends Spec with BeforeAndAfterAll with ShouldMatchers {
+class PersistenceSpecTest extends Spec with BeforeAndAfterAll with ShouldMatchers {
 
   import org.apache.hadoop.hbase.HBaseTestingUtility
 
