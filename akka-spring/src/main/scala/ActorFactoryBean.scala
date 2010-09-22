@@ -6,10 +6,8 @@ package se.scalablesolutions.akka.spring
 
 import org.springframework.beans.{BeanUtils,BeansException,BeanWrapper,BeanWrapperImpl}
 import se.scalablesolutions.akka.remote.{RemoteClient, RemoteServer}
-//import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.config.AbstractFactoryBean
 import org.springframework.context.{ApplicationContext,ApplicationContextAware}
-//import org.springframework.util.ReflectionUtils
 import org.springframework.util.StringUtils
 
 import se.scalablesolutions.akka.actor.{ActorRef, AspectInitRegistry, TypedActorConfiguration, TypedActor,Actor}
@@ -42,10 +40,10 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   @BeanProperty var typed: String = ""
   @BeanProperty var interface: String = ""
   @BeanProperty var implementation: String = ""
-  @BeanProperty var timeout: Long = _
+  @BeanProperty var timeoutStr: String = ""
   @BeanProperty var transactional: Boolean = false
   @BeanProperty var host: String = ""
-  @BeanProperty var port: Int = _
+  @BeanProperty var port: String = ""
   @BeanProperty var serverManaged: Boolean = false
   @BeanProperty var serviceName: String = ""
   @BeanProperty var lifecycle: String = ""
@@ -53,6 +51,20 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   @BeanProperty var scope: String = VAL_SCOPE_SINGLETON
   @BeanProperty var property: PropertyEntries = _
   @BeanProperty var applicationContext: ApplicationContext = _
+
+  lazy val timeout = parseTimeout
+
+  private def parseTimeout() : Long = {
+    var result = -1L
+    try {
+      result = if (!timeoutStr.isEmpty) timeoutStr.toLong else -1L
+    } catch {
+      case nfe: NumberFormatException =>
+        log.error(nfe, "could not parse timeout %s", timeoutStr)
+        throw nfe
+    }
+    result
+  }
 
   // Holds info about if deps have been set or not. Depends on
   // if interface is specified or not. We must set deps on
@@ -95,7 +107,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
 
     val typedActor: AnyRef = TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig) 
     if (isRemote && serverManaged) {
-      val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port))
+      val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port.toInt))
       if (serviceName.isEmpty) {
         server.registerTypedActor(interface, typedActor)
       } else {
@@ -120,14 +132,14 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     }
     if (isRemote) {
       if (serverManaged) {
-        val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port))
+        val server = RemoteServer.getOrCreateServer(new InetSocketAddress(host, port.toInt))
         if (serviceName.isEmpty) {
           server.register(actorRef)
         } else {
           server.register(serviceName, actorRef)
         }
       } else {
-        actorRef.makeRemote(host, port)
+        actorRef.makeRemote(host, port.toInt)
       }
     }
     if (hasDispatcher) {
@@ -176,7 +188,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   private[akka] def createConfig: TypedActorConfiguration = {
     val config = new TypedActorConfiguration().timeout(Duration(timeout, "millis"))
     if (transactional) config.makeTransactionRequired
-    if (isRemote && !serverManaged) config.makeRemote(host, port)
+    if (isRemote && !serverManaged) config.makeRemote(host, port.toInt)
     if (hasDispatcher) {
       if (dispatcher.dispatcherType != THREAD_BASED) {
         config.dispatcher(dispatcherInstance())
@@ -220,9 +232,8 @@ class ActorForFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with 
 
   @BeanProperty var interface: String = ""
   @BeanProperty var host: String = ""
-  @BeanProperty var port: Int = _
+  @BeanProperty var port: String = ""
   @BeanProperty var serviceName: String = ""
-  //@BeanProperty var scope: String = VAL_SCOPE_SINGLETON
   @BeanProperty var applicationContext: ApplicationContext = _
 
   override def isSingleton = false
@@ -237,9 +248,9 @@ class ActorForFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with 
    */
   def createInstance: AnyRef = {
     if (interface.isEmpty) {
-      RemoteClient.actorFor(serviceName, host, port)
+      RemoteClient.actorFor(serviceName, host, port.toInt)
     } else {
-      RemoteClient.typedActorFor(interface.toClass, serviceName, host, port)
+      RemoteClient.typedActorFor(interface.toClass, serviceName, host, port.toInt)
     }
   }
 }
