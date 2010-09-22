@@ -314,7 +314,7 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  private def register(id: String, actorRef: ActorRef, registry: ConcurrentHashMap[String, ActorRef]) {
+  private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
     if (_isRunning) {
       if (!registry.contains(id)) {
         if (!actorRef.isRunning) actorRef.start
@@ -323,7 +323,7 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  private def registerTypedActor(id: String, typedActor: AnyRef, registry: ConcurrentHashMap[String, AnyRef]) {
+  private def registerTypedActor[Key](id: Key, typedActor: AnyRef, registry: ConcurrentHashMap[Key, AnyRef]) {
     if (_isRunning) {
       if (!registry.contains(id)) {
         registry.put(id, typedActor)
@@ -337,8 +337,7 @@ class RemoteServer extends Logging with ListenerManagement {
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
       log.debug("Unregistering server side remote actor [%s] with id [%s:%s]", actorRef.actorClass.getName, actorRef.id, actorRef.uuid)
-      val actorMap = actors()
-      actorMap remove actorRef.id
+      actors() remove actorRef.id
       if (actorRef.registeredInRemoteNodeDuringSerialization) actorsByUuid() remove actorRef.uuid
     }
   }
