@@ -60,7 +60,8 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
     val isRemote = (props.host != null) && (!props.host.isEmpty)
     val withInterface = (props.interface != null) && (!props.interface.isEmpty)
     if (isRemote) {
-      val remote = new RemoteAddress(props.host, props.port)
+      //val remote = new RemoteAddress(props.host, props.port)
+      val remote = new RemoteAddress(props.host, props.port.toInt)
       if (withInterface) {
         new Component(props.interface.toClass, props.target.toClass, lifeCycle, props.timeout, props.transactional, remote)
       } else {
@@ -91,7 +92,7 @@ class SupervisionFactoryBean extends AbstractFactoryBean[AnyRef] {
     }
 
     val supervise = if (isRemote) {
-      val remote = new SRemoteAddress(props.host, props.port)
+      val remote = new SRemoteAddress(props.host, props.port.toInt)
       Supervise(actorRef, lifeCycle.transform, remote)
     } else {
       Supervise(actorRef, lifeCycle.transform)

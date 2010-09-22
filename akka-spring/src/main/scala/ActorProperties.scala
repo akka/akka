@@ -15,11 +15,11 @@ import AkkaSpringConfigurationTags._
 class ActorProperties {
   var typed: String = ""
   var target: String = ""
-  var timeout: Long = _
+  var timeoutStr: String = ""
   var interface: String = ""
   var transactional: Boolean = false
   var host: String = ""
-  var port: Int = _
+  var port: String = ""
   var serverManaged: Boolean = false
   var serviceName: String = ""
   var lifecycle: String = ""
@@ -38,7 +38,7 @@ class ActorProperties {
     builder.addPropertyValue(PORT, port)
     builder.addPropertyValue("serverManaged", serverManaged)
     builder.addPropertyValue("serviceName", serviceName)
-    builder.addPropertyValue(TIMEOUT, timeout)
+    builder.addPropertyValue("timeoutStr", timeoutStr)
     builder.addPropertyValue(IMPLEMENTATION, target)
     builder.addPropertyValue(INTERFACE, interface)
     builder.addPropertyValue(TRANSACTIONAL, transactional)
@@ -46,7 +46,11 @@ class ActorProperties {
     builder.addPropertyValue(SCOPE, scope)
     builder.addPropertyValue(DISPATCHER_TAG, dispatcher)
     builder.addPropertyValue(PROPERTYENTRY_TAG,propertyEntries)
-}
+  }
+
+  def timeout() : Long = {
+    if (!timeoutStr.isEmpty) timeoutStr.toLong else -1L
+  }
 
 }
 
@@ -57,7 +61,7 @@ class ActorProperties {
 class ActorForProperties {
   var interface: String = ""
   var host: String = ""
-  var port: Int = _
+  var port: String = ""
   var serviceName: String = ""
 
   /**

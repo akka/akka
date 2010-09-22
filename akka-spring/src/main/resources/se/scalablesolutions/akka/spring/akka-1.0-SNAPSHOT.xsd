@@ -106,7 +106,7 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="port" type="xsd:integer" use="required">
+    <xsd:attribute name="port" type="xsd:string" use="required">
       <xsd:annotation>
         <xsd:documentation>
           Port of the remote host.
@@ -152,10 +152,10 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="timeout" type="xsd:long" use="required">
+    <xsd:attribute name="timeout" type="xsd:string" use="required">
       <xsd:annotation>
         <xsd:documentation>
-          The default timeout for '!!' invocations.
+          The default timeout for '!!' invocations in milliseconds.
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
@@ -198,10 +198,10 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="timeout" type="xsd:long">
+    <xsd:attribute name="timeout" type="xsd:string">
       <xsd:annotation>
         <xsd:documentation>
-          The default timeout for '!!' invocations.
+          The default timeout for '!!' invocations in milliseconds.
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
@@ -260,7 +260,7 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="port" type="xsd:integer" use="required">
+    <xsd:attribute name="port" type="xsd:string" use="required">
       <xsd:annotation>
         <xsd:documentation>
           Port of the remote host.
@@ -333,6 +333,14 @@
   <xsd:complexType name="camel-context-type">
     <xsd:attribute name="ref" type="xsd:string"/>
   </xsd:complexType>
+
+
+  <xsd:complexType name="config-type">
+    <xsd:attribute name="location" type="xsd:string"/>
+  </xsd:complexType>
+
+  <!-- akka conf -->
+  <xsd:element name="property-placeholder" type="config-type"/>
 
   <!-- TypedActor -->
   <xsd:element name="typed-actor" type="typed-actor-type"/>

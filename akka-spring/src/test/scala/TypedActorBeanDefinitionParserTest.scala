@@ -65,7 +65,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
       val props = parser.parseActor(dom(xml).getDocumentElement);
       assert(props != null)
       assert(props.host === "com.some.host")
-      assert(props.port === 9999)
+      assert(props.port === "9999")
       assert(!props.serverManaged)
     }
 
@@ -77,7 +77,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
       val props = parser.parseActor(dom(xml).getDocumentElement);
       assert(props != null)
       assert(props.host === "com.some.host")
-      assert(props.port === 9999)
+      assert(props.port === "9999")
       assert(props.serviceName === "my-service")
       assert(props.serverManaged)
     }
