@@ -16,12 +16,12 @@ private[akka] class Foo
 class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
 
   val restartStrategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Throwable]))
-  val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", 1000L))
+  val typedActors = List(createTypedActorProperties("se.scalablesolutions.akka.spring.Foo", "1000"))
 
-  def createTypedActorProperties(target: String, timeout: Long) : ActorProperties = {
+  private def createTypedActorProperties(target: String, timeout: String) : ActorProperties = {
     val properties = new ActorProperties()
     properties.target = target
-    properties.timeout = timeout
+    properties.timeoutStr = timeout
     properties
   }
 

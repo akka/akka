@@ -8,8 +8,6 @@ import org.w3c.dom.Element
 import scala.collection.JavaConversions._
 import se.scalablesolutions.akka.util.Logging
 
-import se.scalablesolutions.akka.actor.IllegalActorStateException
-
 /**
  * Parser trait for custom namespace configuration for typed-actor.
  * @author michaelkober
@@ -32,7 +30,7 @@ trait ActorParser extends BeanParser with DispatcherParser {
 
     if (remoteElement != null) {
       objectProperties.host = mandatory(remoteElement, HOST)
-      objectProperties.port = mandatory(remoteElement, PORT).toInt
+      objectProperties.port = mandatory(remoteElement, PORT)
       objectProperties.serverManaged = (remoteElement.getAttribute(MANAGED_BY) != null) && (remoteElement.getAttribute(MANAGED_BY).equals(SERVER_MANAGED))
       val serviceName = remoteElement.getAttribute(SERVICE_NAME)
       if ((serviceName != null) && (!serviceName.isEmpty)) {
@@ -54,15 +52,7 @@ trait ActorParser extends BeanParser with DispatcherParser {
       objectProperties.propertyEntries.add(entry)
     }
 
-    try {
-      val timeout = element.getAttribute(TIMEOUT)
-      objectProperties.timeout = if ((timeout != null) && (!timeout.isEmpty)) timeout.toLong else -1L
-    } catch {
-      case nfe: NumberFormatException =>
-        log.error(nfe, "could not parse timeout %s", element.getAttribute(TIMEOUT))
-        throw nfe
-    }
-
+    objectProperties.timeoutStr = element.getAttribute(TIMEOUT)
     objectProperties.target = mandatory(element, IMPLEMENTATION)
     objectProperties.transactional = if (element.getAttribute(TRANSACTIONAL).isEmpty) false else element.getAttribute(TRANSACTIONAL).toBoolean
 
@@ -97,7 +87,7 @@ trait ActorForParser extends BeanParser {
     val objectProperties = new ActorForProperties()
 
     objectProperties.host = mandatory(element, HOST)
-    objectProperties.port = mandatory(element, PORT).toInt
+    objectProperties.port = mandatory(element, PORT)
     objectProperties.serviceName = mandatory(element, SERVICE_NAME)
     if (element.hasAttribute(INTERFACE)) {
       objectProperties.interface = element.getAttribute(INTERFACE)
