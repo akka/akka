@@ -540,6 +540,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val hbase_test  = Dependencies.hbase_test
     val jetty       = Dependencies.jett_mortbay
     val log4j       = Dependencies.log4j
+
+    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
 
   // -------------------------------------------------------------------------------------------------------------------
