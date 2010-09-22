@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.util
 import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException, ActorType}
 import se.scalablesolutions.akka.dispatch.{Future, CompletableFuture}
 import se.scalablesolutions.akka.config.{Config, ModuleNotAvailableException}
-
+import se.scalablesolutions.akka.actor.Uuid
 import java.net.InetSocketAddress
 import se.scalablesolutions.akka.stm.Transaction
 import se.scalablesolutions.akka.AkkaException
@@ -51,8 +51,8 @@ object ReflectiveAccess {
     }
 
     type RemoteClientObject = {
-      def register(hostname: String, port: Int, uuid: String): Unit
-      def unregister(hostname: String, port: Int, uuid: String): Unit
+      def register(hostname: String, port: Int, uuid: Uuid): Unit
+      def unregister(hostname: String, port: Int, uuid: Uuid): Unit
       def clientFor(address: InetSocketAddress): RemoteClient
       def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient
     }
@@ -65,12 +65,12 @@ object ReflectiveAccess {
     val remoteClientObjectInstance: Option[RemoteClientObject] =
       getObject("se.scalablesolutions.akka.remote.RemoteClient$")
 
-    def register(address: InetSocketAddress, uuid: String) = {
+    def register(address: InetSocketAddress, uuid: Uuid) = {
       ensureRemotingEnabled
       remoteClientObjectInstance.get.register(address.getHostName, address.getPort, uuid)
     }
 
-    def unregister(address: InetSocketAddress, uuid: String) = {
+    def unregister(address: InetSocketAddress, uuid: Uuid) = {
       ensureRemotingEnabled
       remoteClientObjectInstance.get.unregister(address.getHostName, address.getPort, uuid)
     }
@@ -112,7 +112,7 @@ object ReflectiveAccess {
     val PORT     = Config.config.getInt("akka.remote.server.port", 9999)
 
     type RemoteServerObject = {
-      def registerActor(address: InetSocketAddress, uuid: String, actor: ActorRef): Unit
+      def registerActor(address: InetSocketAddress, uuid: Uuid, actor: ActorRef): Unit
       def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef): Unit
     }
 
@@ -126,7 +126,7 @@ object ReflectiveAccess {
     val remoteNodeObjectInstance: Option[RemoteNodeObject] =
       getObject("se.scalablesolutions.akka.remote.RemoteNode$")
 
-    def registerActor(address: InetSocketAddress, uuid: String, actorRef: ActorRef) = {
+    def registerActor(address: InetSocketAddress, uuid: Uuid, actorRef: ActorRef) = {
       ensureRemotingEnabled
       remoteServerObjectInstance.get.registerActor(address, uuid, actorRef)
     }

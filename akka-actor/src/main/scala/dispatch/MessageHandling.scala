@@ -10,7 +10,7 @@ import org.multiverse.commitbarriers.CountDownCommitBarrier
 import se.scalablesolutions.akka.AkkaException
 import java.util.{Queue, List}
 import java.util.concurrent._
-import concurrent.forkjoin.LinkedTransferQueue
+import se.scalablesolutions.akka.actor.Uuid
 import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
 
 /**
@@ -119,7 +119,7 @@ class DefaultBoundedMessageQueue(capacity: Int, pushTimeOut: Option[Duration], b
  *  @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait MessageDispatcher extends Logging {
-  protected val uuids = new ConcurrentSkipListSet[String]
+  protected val uuids = new ConcurrentSkipListSet[Uuid]
 
   def dispatch(invocation: MessageInvocation)
 

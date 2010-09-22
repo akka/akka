@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 object ExecutorBasedEventDrivenDispatcherActorSpec {
   class TestActor extends Actor {
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid)
+    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid.toString)
     def receive = {
       case "Hello" =>
         self.reply("World")
@@ -23,7 +23,7 @@ object ExecutorBasedEventDrivenDispatcherActorSpec {
     val oneWay = new CountDownLatch(1)
   }
   class OneWayTestActor extends Actor {
-    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid)
+    self.dispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(self.uuid.toString)
     def receive = {
       case "OneWay" => OneWayTestActor.oneWay.countDown
     }
