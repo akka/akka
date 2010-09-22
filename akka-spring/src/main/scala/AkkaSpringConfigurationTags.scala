@@ -13,6 +13,7 @@ object AkkaSpringConfigurationTags {
   // --- TAGS
   //
   // top level tags
+  val CONFIG_TAG = "property-placeholder"
   val TYPED_ACTOR_TAG = "typed-actor"
   val UNTYPED_ACTOR_TAG = "untyped-actor"
   val SUPERVISION_TAG = "supervision"
@@ -72,6 +73,9 @@ object AkkaSpringConfigurationTags {
   val BOUND ="bound"
   val REJECTION_POLICY ="rejection-policy"
   val MAILBOX_CAPACITY ="mailbox-capacity"
+
+  // config attribute
+  val LOCATION = "location"
 
   // --- VALUES
   //
