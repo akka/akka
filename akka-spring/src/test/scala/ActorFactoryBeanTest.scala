@@ -25,8 +25,8 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
     it("should have java getters and setters for all properties") {
       bean.setImplementation("java.lang.String")
       assert(bean.getImplementation == "java.lang.String")
-      bean.setTimeout(1000)
-      assert(bean.getTimeout == 1000)
+      bean.setTimeoutStr("1000")
+      assert(bean.getTimeoutStr === "1000")
     }
 
     it("should create a remote typed actor when a host is set") {
@@ -50,7 +50,7 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
       val bean = new ActorFactoryBean()
       bean.setInterface("se.scalablesolutions.akka.spring.PojoInf")
       bean.setImplementation("se.scalablesolutions.akka.spring.Pojo")
-      bean.timeout = 1000
+      bean.timeoutStr = "1000"
       bean.typed = AkkaSpringConfigurationTags.TYPED_ACTOR_TAG
       val entries = new PropertyEntries()
       val entry = new PropertyEntry()

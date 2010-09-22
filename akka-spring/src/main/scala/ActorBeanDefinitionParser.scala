@@ -70,3 +70,24 @@ class ActorForBeanDefinitionParser extends AbstractSingleBeanDefinitionParser wi
    */
   override def getBeanClass(element: Element): Class[_] = classOf[ActorForFactoryBean]
 }
+
+/**
+ * Parser for custom namespace configuration.
+ * @author michaelkober
+ */
+class ConfigBeanDefinitionParser extends AbstractSingleBeanDefinitionParser with ActorParser {
+  /*
+   * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#doParse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, org.springframework.beans.factory.support.BeanDefinitionBuilder)
+   */
+  override def doParse(element: Element, parserContext: ParserContext, builder: BeanDefinitionBuilder) {
+    val location  = element.getAttribute(LOCATION)
+    builder.addPropertyValue(LOCATION, location)
+  }
+
+  /*
+   * @see org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser#getBeanClass(org.w3c.dom.Element)
+   */
+  override def getBeanClass(element: Element): Class[_] = classOf[ConfiggyPropertyPlaceholderConfigurer]
+
+  override def shouldGenerateId() = true
+}
