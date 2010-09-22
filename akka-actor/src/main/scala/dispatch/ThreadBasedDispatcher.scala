@@ -16,7 +16,13 @@ import java.util.concurrent.{ConcurrentLinkedQueue, BlockingQueue, TimeUnit, Lin
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxType) extends MessageDispatcher {
+class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxType) 
+  extends ExecutorBasedEventDrivenDispatcher(
+    actor.getClass.getName + ":" + actor.uuid,
+    Dispatchers.THROUGHPUT,
+    -1,
+    _mailboxType,
+    ThreadBasedDispatcher.oneThread) {
 
   def this(actor: ActorRef) = this(actor, BoundedMailbox(true)) // For Java API
 
@@ -24,54 +30,19 @@ class ThreadBasedDispatcher(private val actor: ActorRef, _mailboxType: MailboxTy
 
   def this(actor: ActorRef, capacity: Int, pushTimeOut: Duration) = this(actor, BoundedMailbox(true, capacity, pushTimeOut))
 
-  val mailboxType = Some(_mailboxType)
-
-  private val name = actor.getClass.getName + ":" + actor.uuid
-  private val threadName = "akka:thread-based:dispatcher:" + name
-  private var selectorThread: Thread = _
-  @volatile private var active: Boolean = false
-
-  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
-    case UnboundedMailbox(blocking) => 
-      new DefaultUnboundedMessageQueue(blocking)
-    case BoundedMailbox(blocking, capacity, pushTimeOut) => 
-      new DefaultBoundedMessageQueue(capacity, pushTimeOut, blocking)
-  }
-  
   override def register(actorRef: ActorRef) = {
     if (actorRef != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
     super.register(actorRef)
   }
 
-  def mailbox = actor.mailbox.asInstanceOf[Queue[MessageInvocation] with MessageQueue]
-
-  def mailboxSize(a: ActorRef) = mailbox.size
-
-  def dispatch(invocation: MessageInvocation) = mailbox enqueue invocation
-
-  def start = if (!active) {
-    log.debug("Starting up %s", toString)
-    active = true
-    selectorThread = new Thread(threadName) {
-      override def run = {
-        while (active) {
-          try {
-            actor.invoke(mailbox.dequeue)
-          } catch { case e: InterruptedException => active = false }
-        }
-      }
-    }
-    selectorThread.start
-  }
-
-  def isShutdown = !active
-
-  def shutdown = if (active) {
-    log.debug("Shutting down %s", toString)
-    active = false
-    selectorThread.interrupt
-    uuids.clear
-  }
-
-  override def toString = "ThreadBasedDispatcher[" + threadName + "]"
+  override def toString = "ThreadBasedDispatcher[" + name + "]"
 }
+
+object ThreadBasedDispatcher {
+  def oneThread(b: ThreadPoolBuilder) {
+    b setCorePoolSize 1
+    b setMaxPoolSize 1
+    b setAllowCoreThreadTimeout true
+  }
+}
+
