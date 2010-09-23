@@ -516,7 +516,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_codec = Dependencies.commons_codec
     val redis         = Dependencies.redis
 
-    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -527,7 +527,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val mongo = Dependencies.mongo
     val casbah = Dependencies.casbah
 
-    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -543,7 +543,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val google_coll    = Dependencies.google_coll
     val high_scale     = Dependencies.high_scale
 
-    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -573,13 +573,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
     </dependencies>
 
-    val hbase_test = System.getenv("HBASE_TEST")
-    override def testOptions = { val o = TestFilter((name: String) => name.endsWith("Test")) :: Nil
-                                 if(hbase_test != "true")
-				   o
-				 else
-				   Nil
-			       }
+    override def testOptions = createTestFilter( _.endsWith("Test") )
   }
 
   // akka-persistence-voldemort subproject
@@ -599,7 +593,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val dbcp = Dependencies.dbcp
     val sjson = Dependencies.sjson_test
 
-    override def testOptions = TestFilter((name: String) => name.endsWith("Suite")) :: Nil
+    override def testOptions = createTestFilter( _.endsWith("Suite"))
   }
 
 
@@ -834,6 +828,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   def akkaArtifacts = descendents(info.projectPath / "dist", "*" + buildScalaVersion  + "-" + version + ".jar")
+  lazy val integrationTestsEnabled = systemOptional[Boolean]("integration.tests",false)
+  lazy val stressTestsEnabled = systemOptional[Boolean]("stress.tests",false)
 
   // ------------------------------------------------------------
   class AkkaDefaultProject(info: ProjectInfo, val deployPath: Path) extends DefaultProject(info) with DeployProject with OSGiProject {
@@ -844,6 +840,21 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def packageDocsJar = this.defaultJarPath("-docs.jar")
     override def packageSrcJar  = this.defaultJarPath("-sources.jar")
     override def packageToPublishActions = super.packageToPublishActions ++ Seq(this.packageDocs, this.packageSrc)
+
+    /**
+     * Used for testOptions, possibility to enable the running of integration and or stresstests
+     *
+     * To enable set true and disable set false
+     * set integration.tests true
+     * set stress.tests true
+     */
+    def createTestFilter(defaultTests: (String) => Boolean) = { TestFilter({
+        case s: String if defaultTests(s) => true
+        case s: String if integrationTestsEnabled.value => s.endsWith("TestIntegration")
+        case s: String if stressTestsEnabled.value      => s.endsWith("TestStress")
+        case _ => false
+      }) :: Nil
+    }
   }
 }
 
