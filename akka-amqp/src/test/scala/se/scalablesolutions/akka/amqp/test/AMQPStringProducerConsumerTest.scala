@@ -29,7 +29,7 @@ class AMQPStringProducerConsumerTest extends JUnitSuite with MustMatchers {
       assert(response == request.reverse)
       responseLatch.open
     }
-    AMQP.newStringConsumer(connection, "", responseHandler, Some("string.reply.key"))
+    AMQP.newStringConsumer(connection, responseHandler, None, Some("string.reply.key"))
 
     val producer = AMQP.newStringProducer(connection, "stringexchange")
     producer.send(request, Some("string.reply.key"))
