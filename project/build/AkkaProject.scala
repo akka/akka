@@ -230,8 +230,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test"
     lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test"
     lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test"
-    lazy val log4j          = "log4j"                  % "log4j"               % "1.2.15"          % "test"
-    lazy val jett_mortbay   = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test"
+    lazy val jett_mortbay   = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test" intransitive()
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -542,7 +541,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val hadoop_test = Dependencies.hadoop_test
     val hbase_test  = Dependencies.hbase_test
     val jetty       = Dependencies.jett_mortbay
-    val log4j       = Dependencies.log4j
 
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
