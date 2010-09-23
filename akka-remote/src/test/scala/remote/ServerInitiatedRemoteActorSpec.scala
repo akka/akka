@@ -72,7 +72,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def finished {
     try {
       server.shutdown
-      val s2 = RemoteServer.serverFor(HOSTNAME, PORT2)
+      val s2 = RemoteServer.serverFor(HOSTNAME, PORT + 1)
       if (s2.isDefined) s2.get.shutdown
       RemoteClient.shutdownAll
       Thread.sleep(1000)
