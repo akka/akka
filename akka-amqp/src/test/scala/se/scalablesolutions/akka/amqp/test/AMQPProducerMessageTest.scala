@@ -30,7 +30,7 @@ class AMQPProducerMessageTest extends JUnitSuite with MustMatchers {
         }
       }
       val producerParameters = ProducerParameters(
-        ExchangeParameters("text_exchange", ExchangeType.Direct), returnListener = Some(returnListener))
+        Some(ExchangeParameters("text_exchange")), returnListener = Some(returnListener))
 
       val producer = AMQP.newProducer(connection, producerParameters)
 

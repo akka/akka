@@ -39,7 +39,7 @@ class AMQPProducerConnectionRecoveryTest extends JUnitSuite with MustMatchers {
 
       val channelParameters = ChannelParameters(channelCallback = Some(producerCallback))
       val producerParameters = ProducerParameters(
-        ExchangeParameters("text_exchange", ExchangeType.Direct), channelParameters = Some(channelParameters))
+        Some(ExchangeParameters("text_exchange")), channelParameters = Some(channelParameters))
 
       val producer = AMQP.newProducer(connection, producerParameters)
       startedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)

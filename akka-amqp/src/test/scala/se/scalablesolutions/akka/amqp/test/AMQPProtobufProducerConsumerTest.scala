@@ -29,9 +29,9 @@ class AMQPProtobufProducerConsumerTest extends JUnitSuite with MustMatchers {
       assert(response.getHostname == request.getHostname.reverse)
       responseLatch.open
     }
-    AMQP.newProtobufConsumer(connection, "", responseHandler, Some("proto.reply.key"))
+    AMQP.newProtobufConsumer(connection, responseHandler, None, Some("proto.reply.key"))
 
-    val producer = AMQP.newProtobufProducer[AddressProtocol](connection, "protoexchange")
+    val producer = AMQP.newProtobufProducer[AddressProtocol](connection, Some("protoexchange"))
     producer.send(request, Some("proto.reply.key"))
 
     responseLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)

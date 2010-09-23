@@ -27,16 +27,16 @@ class AMQPConsumerMessageTest extends JUnitSuite with MustMatchers {
         case Stopped => ()
       }
 
-      val exchangeParameters = ExchangeParameters("text_exchange",ExchangeType.Direct)
+      val exchangeParameters = ExchangeParameters("text_exchange")
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
       val payloadLatch = new StandardLatch
-      val consumer = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "non.interesting.routing.key", actor {
+      val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actor {
         case Delivery(payload, _, _, _, _) => payloadLatch.open
-      }, channelParameters = Some(channelParameters)))
+      }, exchangeParameters = Some(exchangeParameters), channelParameters = Some(channelParameters)))
 
       val producer = AMQP.newProducer(connection,
-        ProducerParameters(exchangeParameters, channelParameters = Some(channelParameters)))
+        ProducerParameters(Some(exchangeParameters), channelParameters = Some(channelParameters)))
 
       countDown.await(2, TimeUnit.SECONDS) must be (true)
       producer ! Message("some_payload".getBytes, "non.interesting.routing.key")
