@@ -89,20 +89,20 @@ object AMQP {
   case class ExchangeParameters(
           exchangeName: String,
           exchangeType: ExchangeType = ExchangeType.Topic,
-          exchangeDeclaration: Declaration = new ActiveDeclaration(),
-          configurationArguments: Map[String, AnyRef] = Map.empty()) {
+          exchangeDeclaration: Declaration = ActiveDeclaration(),
+          configurationArguments: Map[String, AnyRef] = Map.empty) {
 
     // Needed for Java API usage
     def this(exchangeName: String) =
-      this (exchangeName, ExchangeType.Topic, new ActiveDeclaration(), Map.empty())
+      this (exchangeName, ExchangeType.Topic, ActiveDeclaration(), Map.empty)
 
     // Needed for Java API usage
     def this(exchangeName: String, exchangeType: ExchangeType) =
-      this (exchangeName, exchangeType, new ActiveDeclaration(), Map.empty())
+      this (exchangeName, exchangeType, ActiveDeclaration(), Map.empty)
 
     // Needed for Java API usage
     def this(exchangeName: String, exchangeType: ExchangeType, exchangeDeclaration: Declaration) =
-      this (exchangeName, exchangeType, exchangeDeclaration, Map.empty())
+      this (exchangeName, exchangeType, exchangeDeclaration, Map.empty)
   }
 
   /**
@@ -144,7 +144,7 @@ object AMQP {
           deliveryHandler: ActorRef,
           queueName: Option[String] = None,
           exchangeParameters: Option[ExchangeParameters],
-          queueDeclaration: Declaration = new ActiveDeclaration(),
+          queueDeclaration: Declaration = ActiveDeclaration(),
           selfAcknowledging: Boolean = true,
           channelParameters: Option[ChannelParameters] = None) {
     
@@ -154,29 +154,29 @@ object AMQP {
           throw new IllegalArgumentException("A queue name is required when requesting a durable queue.")
         case PassiveDeclaration =>
           throw new IllegalArgumentException("A queue name is required when requesting passive declaration.")
-        case NoActionDeclaration => () // ignore
+        case _ => () // ignore
       }
     }
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef) =
-      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), true, None)
+      this (routingKey, deliveryHandler, None, None, ActiveDeclaration(), true, None)
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, channelParameters: ChannelParameters) =
-      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), true, Some(channelParameters))
+      this (routingKey, deliveryHandler, None, None, ActiveDeclaration(), true, Some(channelParameters))
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, selfAcknowledging: Boolean) =
-      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), selfAcknowledging, None)
+      this (routingKey, deliveryHandler, None, None, ActiveDeclaration(), selfAcknowledging, None)
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
-      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), selfAcknowledging, Some(channelParameters))
+      this (routingKey, deliveryHandler, None, None, ActiveDeclaration(), selfAcknowledging, Some(channelParameters))
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, queueName: String) =
-      this (routingKey, deliveryHandler, Some(queueName), None, new ActiveDeclaration(), true, None)
+      this (routingKey, deliveryHandler, Some(queueName), None, ActiveDeclaration(), true, None)
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, queueDeclaration: Declaration, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
@@ -184,15 +184,15 @@ object AMQP {
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters) =
-      this (routingKey, deliveryHandler, None, Some(exchangeParameters), new ActiveDeclaration(), true, None)
+      this (routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), true, None)
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters, selfAcknowledging: Boolean) =
-      this (routingKey, deliveryHandler, None, Some(exchangeParameters), new ActiveDeclaration(), selfAcknowledging, None)
+      this (routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), selfAcknowledging, None)
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters) =
-      this (routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), new ActiveDeclaration(), true, None)
+      this (routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), ActiveDeclaration(), true, None)
 
     // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration) =

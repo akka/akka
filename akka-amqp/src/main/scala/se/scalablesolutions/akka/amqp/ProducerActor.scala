@@ -22,7 +22,7 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
 
     case message@Message(payload, routingKey, mandatory, immediate, properties) if channel.isDefined => {
       log.debug("Sending message [%s]", message)
-      channel.foreach(_.basicPublish(exchangeName.getOrElse(null), routingKey, mandatory, immediate, properties.getOrElse(null), payload))
+      channel.foreach(_.basicPublish(exchangeName.getOrElse(""), routingKey, mandatory, immediate, properties.getOrElse(null), payload))
     }
     case message@Message(payload, routingKey, mandatory, immediate, properties) => {
       log.warning("Unable to send message [%s]", message)

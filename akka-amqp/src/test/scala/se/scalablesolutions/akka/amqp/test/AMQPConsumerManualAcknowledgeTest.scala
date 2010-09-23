@@ -10,9 +10,9 @@ import se.scalablesolutions.akka.amqp._
 import org.junit.Test
 import se.scalablesolutions.akka.actor.ActorRef
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParameters, ChannelParameters, ProducerParameters}
 import org.multiverse.api.latches.StandardLatch
 import org.scalatest.junit.JUnitSuite
+import se.scalablesolutions.akka.amqp.AMQP._
 
 class AMQPConsumerManualAcknowledgeTest extends JUnitSuite with MustMatchers {
 
@@ -44,7 +44,8 @@ class AMQPConsumerManualAcknowledgeTest extends JUnitSuite with MustMatchers {
         }
         case Acknowledged(deliveryTag) => if (deliveryTagCheck == deliveryTag) acknowledgeLatch.open
       }, queueName = Some("self.ack.queue"), exchangeParameters = Some(exchangeParameters),
-        selfAcknowledging = false, channelParameters = Some(channelParameters)))
+        selfAcknowledging = false, channelParameters = Some(channelParameters),
+        queueDeclaration = ActiveDeclaration(autoDelete = false)))
 
       val producer = AMQP.newProducer(connection,
         ProducerParameters(Some(exchangeParameters), channelParameters = Some(channelParameters)))
