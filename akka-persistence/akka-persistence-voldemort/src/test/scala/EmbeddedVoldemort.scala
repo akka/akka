@@ -8,6 +8,8 @@ import org.scalatest.junit.JUnitRunner
 import voldemort.utils.Utils
 import java.io.File
 import se.scalablesolutions.akka.util.{Logging, UUID}
+import collection.JavaConversions
+import voldemort.store.memory.InMemoryStorageConfiguration
 
 @RunWith(classOf[JUnitRunner])
 trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
@@ -21,6 +23,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
       val home = new File(dir)
       log.info("Creating Voldemort Config")
       val config = VoldemortConfig.loadFromVoldemortHome(home.getCanonicalPath)
+      config.setStorageConfigurations(JavaConversions.asList(List(classOf[InMemoryStorageConfiguration].getName)))
       log.info("Starting Voldemort")
       server = new VoldemortServer(config)
       server.start

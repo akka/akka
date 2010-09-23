@@ -52,7 +52,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
     lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
-    lazy val OracleRepo           = MavenRepository("Oracle Repo", "http://download.oracle.com/maven")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -82,7 +81,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
   lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
   lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
-  lazy val sleepycatModuleConfig   = ModuleConfiguration("com.sleepycat", OracleRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -230,7 +228,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jdom = "org.jdom" % "jdom" % "1.1" % "test"
     lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
     lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
-    lazy val bdb = "com.sleepycat" % "je" % "4.0.103" % "test"
     lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
   }
 
@@ -543,7 +540,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jdom = Dependencies.jdom
     val jetty = Dependencies.vold_jetty
     val velocity = Dependencies.velocity
-    val bdb = Dependencies.bdb
     val dbcp = Dependencies.dbcp
     val sjson = Dependencies.sjson_test
 
