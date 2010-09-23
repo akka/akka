@@ -533,21 +533,21 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaHbaseProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     override def ivyXML =
     <dependencies>
-        <dependency org="org.apache.hadoop.zookeeper" name="zookeeper" rev="3.2.2">
+        <dependency org="org.apache.hadoop.zookeeper" name="zookeeper" rev="3.2.2" conf="compile,test">
         </dependency>
-        <dependency org="org.apache.hadoop" name="hadoop-core" rev="0.20.2">
+        <dependency org="org.apache.hadoop" name="hadoop-core" rev="0.20.2" conf="compile,test">
+        </dependency>
+        <dependency org="org.apache.hbase" name="hbase-core" rev="0.20.6" conf="compile,test">
+        </dependency>
+
+        <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2" conf="test">
 	  <exclude module="slf4j-api"/>
         </dependency>
-        <dependency org="org.apache.hbase" name="hbase-core" rev="0.20.6">
+        <dependency org="org.apache.hbase" name="hbase-test" rev="0.20.6" conf="test">
         </dependency>
-        <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2">
-	  <exclude module="slf4j-api"/>
+        <dependency org="log4j" name="log4j" rev="1.2.15" conf="test">
         </dependency>
-        <dependency org="org.apache.hbase" name="hbase-test" rev="0.20.6">
-        </dependency>
-        <dependency org="log4j" name="log4j" rev="1.2.15">
-        </dependency>
-        <dependency org="org.mortbay.jetty" name="jetty" rev="6.1.14">
+        <dependency org="org.mortbay.jetty" name="jetty" rev="6.1.14" conf="test">
         </dependency>
     </dependencies>
 
