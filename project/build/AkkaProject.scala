@@ -53,6 +53,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
     lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
     lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
+    lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
+    lazy val OracleRepo           = MavenRepository("Oracle Repo", "http://download.oracle.com/maven")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -83,6 +85,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val zookeeperRelease        = ModuleConfiguration("org.apache.hadoop.zookeeper",ZookeeperRepo)
   lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
   lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
+  lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
+  lazy val sleepycatModuleConfig   = ModuleConfiguration("com.sleepycat", OracleRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -193,6 +197,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
     lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile"
+    lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test"
 
     lazy val slf4j       = "org.slf4j" % "slf4j-api"     % SLF4J_VERSION % "compile"
 
@@ -205,6 +210,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val stax_api = "javax.xml.stream" % "stax-api" % "1.0-2" % "compile"
 
     lazy val thrift = "com.facebook" % "thrift" % "r917130" % "compile"
+
+    lazy val voldemort = "voldemort" % "voldemort" % "0.81" % "compile"
+    lazy val voldemort_contrib = "voldemort" % "voldemort-contrib" % "0.81" % "compile"
+    lazy val voldemort_needs_log4j = "org.slf4j" % "log4j-over-slf4j" % SLF4J_VERSION % "compile"
 
     lazy val werkz      = "org.codehaus.aspectwerkz" % "aspectwerkz-nodeps-jdk5" % ASPECTWERKZ_VERSION % "compile"
     lazy val werkz_core = "org.codehaus.aspectwerkz" % "aspectwerkz-jdk5"        % ASPECTWERKZ_VERSION % "compile"
@@ -228,10 +237,19 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val junit          = "junit"                  % "junit"               % "4.5"             % "test"
     lazy val mockito        = "org.mockito"            % "mockito-all"         % "1.8.1"           % "test"
     lazy val scalatest      = "org.scalatest"          % "scalatest"           % SCALATEST_VERSION % "test"
+
+    //HBase testing
     lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test"
     lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test"
     lazy val log4j          = "log4j"                  % "log4j"               % "1.2.15"          % "test"
     lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test"
+
+    //voldemort testing
+    lazy val jdom = "org.jdom" % "jdom" % "1.1" % "test"
+    lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
+    lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
+    lazy val bdb = "com.sleepycat" % "je" % "4.0.103" % "test"
+    lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -480,6 +498,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCassandraProject(_), akka_persistence_common)
     lazy val akka_persistence_hbase = project("akka-persistence-hbase", "akka-persistence-hbase",
       new AkkaHbaseProject(_), akka_persistence_common)
+    lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
+      new AkkaVoldemortProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -544,7 +564,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
 
         <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2" conf="test">
-	  <exclude module="slf4j-api"/>
+	        <exclude module="slf4j-api"/>
         </dependency>
         <dependency org="org.apache.hbase" name="hbase-test" rev="0.20.6" conf="test">
         </dependency>
@@ -556,6 +576,28 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
+
+  // akka-persistence-voldemort subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaVoldemortProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val voldemort = Dependencies.voldemort
+    val voldemort_contrib = Dependencies.voldemort_contrib
+    val voldemort_needs_log4j = Dependencies.voldemort_needs_log4j
+
+    //testing
+    val scalatest = Dependencies.scalatest
+    val google_coll = Dependencies.google_coll
+    val jdom = Dependencies.jdom
+    val jetty = Dependencies.vold_jetty
+    val velocity = Dependencies.velocity
+    val bdb = Dependencies.bdb
+    val dbcp = Dependencies.dbcp
+    val sjson = Dependencies.sjson_test
+
+    override def testOptions = TestFilter((name: String) => name.endsWith("Suite")) :: Nil
+  }
+
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-kernel subproject
@@ -600,7 +642,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_remote, akka_amqp, akka_http,
         akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
         akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
-        akka_persistence.akka_persistence_cassandra)
+        akka_persistence.akka_persistence_cassandra,akka_persistence.akka_persistence_voldemort)
   }
 
   class AkkaOSGiDependenciesBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
