@@ -54,7 +54,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
     lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
     lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
-    lazy val OracleRepo           = MavenRepository("Oracle Repo", "http://download.oracle.com/maven")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -86,7 +85,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
   lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
   lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
-  lazy val sleepycatModuleConfig   = ModuleConfiguration("com.sleepycat", OracleRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -248,7 +246,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val jdom = "org.jdom" % "jdom" % "1.1" % "test"
     lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
     lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
-    lazy val bdb = "com.sleepycat" % "je" % "4.0.103" % "test"
     lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
   }
 
@@ -498,8 +495,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCassandraProject(_), akka_persistence_common)
     lazy val akka_persistence_hbase = project("akka-persistence-hbase", "akka-persistence-hbase",
       new AkkaHbaseProject(_), akka_persistence_common)
-    lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
-      new AkkaVoldemortProject(_), akka_persistence_common)
+    //lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
+    //  new AkkaVoldemortProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -591,7 +588,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val jdom = Dependencies.jdom
     val jetty = Dependencies.vold_jetty
     val velocity = Dependencies.velocity
-    val bdb = Dependencies.bdb
     val dbcp = Dependencies.dbcp
     val sjson = Dependencies.sjson_test
 
@@ -642,7 +638,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_remote, akka_amqp, akka_http,
         akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
         akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
-        akka_persistence.akka_persistence_cassandra,akka_persistence.akka_persistence_voldemort)
+        akka_persistence.akka_persistence_cassandra,akka_persistence.akka_persistence_hbase/*akka_persistence.akka_persistence_voldemort*/)
   }
 
   class AkkaOSGiDependenciesBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
