@@ -495,8 +495,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaCassandraProject(_), akka_persistence_common)
     lazy val akka_persistence_hbase = project("akka-persistence-hbase", "akka-persistence-hbase",
       new AkkaHbaseProject(_), akka_persistence_common)
-    //lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
-    //  new AkkaVoldemortProject(_), akka_persistence_common)
+    lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
+      new AkkaVoldemortProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -638,7 +638,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaOSGiAssemblyProject(_), akka_osgi_dependencies_bundle, akka_remote, akka_amqp, akka_http,
         akka_camel, akka_spring, akka_jta, akka_persistence.akka_persistence_common,
         akka_persistence.akka_persistence_redis, akka_persistence.akka_persistence_mongo,
-        akka_persistence.akka_persistence_cassandra,akka_persistence.akka_persistence_hbase/*akka_persistence.akka_persistence_voldemort*/)
+        akka_persistence.akka_persistence_cassandra,akka_persistence.akka_persistence_hbase,
+      akka_persistence.akka_persistence_voldemort)
   }
 
   class AkkaOSGiDependenciesBundleProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) with BNDPlugin {
