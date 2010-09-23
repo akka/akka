@@ -249,12 +249,9 @@ object RemoteActorSerialization {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
-    if (!registeredInRemoteNodeDuringSerialization) {
-      Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
-      RemoteServer.getOrCreateServer(homeAddress)
-      RemoteServer.registerActorByUuid(homeAddress, uuid.toString, ar)
-      registeredInRemoteNodeDuringSerialization = true
-    }
+    Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
+    RemoteServer.getOrCreateServer(homeAddress)
+    RemoteServer.registerActorByUuid(homeAddress, uuid.toString, ar)
 
     RemoteActorRefProtocol.newBuilder
       .setClassOrServiceName(uuid.toString)
