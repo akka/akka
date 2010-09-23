@@ -28,17 +28,21 @@ object MessageSerializer extends Logging {
     messageProtocol.getSerializationScheme match {
       case SerializationSchemeType.JAVA =>
         unbox(SERIALIZER_JAVA.fromBinary(messageProtocol.getMessage.toByteArray, None))
+
       case SerializationSchemeType.PROTOBUF =>
         val clazz = loadManifest(SERIALIZER_PROTOBUF.classLoader, messageProtocol)
         SERIALIZER_PROTOBUF.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
+
       case SerializationSchemeType.SBINARY =>
         val clazz = loadManifest(SERIALIZER_SBINARY.classLoader, messageProtocol)
         val renderer = clazz.newInstance.asInstanceOf[Serializable.SBinary[_ <: AnyRef]]
         renderer.fromBytes(messageProtocol.getMessage.toByteArray)
+
       case SerializationSchemeType.SCALA_JSON =>
         val clazz = loadManifest(SERIALIZER_SCALA_JSON.classLoader, messageProtocol)
-        import scala.reflect._
-        SERIALIZER_SCALA_JSON.fromBinary(messageProtocol.getMessage.toByteArray)(Manifest.classType(clazz))
+        val renderer = clazz.newInstance.asInstanceOf[Serializable.ScalaJSON[_]]
+        renderer.fromBytes(messageProtocol.getMessage.toByteArray)
+
       case SerializationSchemeType.JAVA_JSON =>
         val clazz = loadManifest(SERIALIZER_JAVA_JSON.classLoader, messageProtocol)
         SERIALIZER_JAVA_JSON.fromBinary(messageProtocol.getMessage.toByteArray, Some(clazz))
@@ -52,9 +56,9 @@ object MessageSerializer extends Logging {
       builder.setSerializationScheme(SerializationSchemeType.PROTOBUF)
       builder.setMessage(ByteString.copyFrom(serializable.toByteArray))
       builder.setMessageManifest(ByteString.copyFromUtf8(serializable.getClass.getName))
-    } else if (message.isInstanceOf[Serializable.ScalaJSON]) {
+    } else if (message.isInstanceOf[Serializable.ScalaJSON[_]]) {
       builder.setSerializationScheme(SerializationSchemeType.SCALA_JSON)
-      setMessageAndManifest(builder, message.asInstanceOf[Serializable.ScalaJSON])
+      setMessageAndManifest(builder, message.asInstanceOf[Serializable.ScalaJSON[_ <: Any]])
     } else if (message.isInstanceOf[Serializable.SBinary[_]]) {
       builder.setSerializationScheme(SerializationSchemeType.SBINARY)
       setMessageAndManifest(builder, message.asInstanceOf[Serializable.SBinary[_ <: Any]])
