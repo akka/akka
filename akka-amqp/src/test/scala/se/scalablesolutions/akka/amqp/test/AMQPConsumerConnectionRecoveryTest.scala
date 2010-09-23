@@ -58,7 +58,7 @@ class AMQPConsumerConnectionRecoveryTest extends JUnitSuite with MustMatchers {
 
 
       val payloadLatch = new StandardLatch
-      val consumerExchangeParameters = ExchangeParameters("text_exchange", ExchangeType.Direct)
+      val consumerExchangeParameters = ExchangeParameters("text_exchange")
       val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
       val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actor {
         case Delivery(payload, _, _, _, _) => payloadLatch.open

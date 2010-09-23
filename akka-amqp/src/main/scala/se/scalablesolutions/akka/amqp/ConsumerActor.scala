@@ -41,9 +41,9 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
               log.debug("Actively declaring new queue [%s] for %s", name, toString)
               val configurationArguments = exchangeParameters match {
                 case Some(params) => params.configurationArguments
-                case _ => Map.empty()
+                case _ => Map.empty
               }
-              ch.queueDeclare(name, durable, exclusive, autoDelete, JavaConversions.asMap(configurationArguments))
+              ch.queueDeclare(name, durable, exclusive, autoDelete, JavaConversions.asMap(configurationArguments.toMap))
             case NoActionDeclaration => new com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk(name, 0, 0) // do nothing here
           }
         case None =>
@@ -52,11 +52,9 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
       }
     }
 
-    exchangeParameters.foreach {
-      params =>
-        log.debug("Binding new queue [%s] for %s", queueDeclare.getQueue, toString)
-        ch.queueBind(queueDeclare.getQueue, params.exchangeName, routingKey)
-    }
+    val exchangeName = exchangeParameters.flatMap(params => Some(params.exchangeName))
+    log.debug("Binding new queue [%s] for %s", queueDeclare.getQueue, toString)
+    ch.queueBind(queueDeclare.getQueue, exchangeName.getOrElse(""), routingKey)
 
     val tag = ch.basicConsume(queueDeclare.getQueue, false, new DefaultConsumer(ch) with Logging {
       override def handleDelivery(tag: String, envelope: Envelope, properties: BasicProperties, payload: Array[Byte]) {
