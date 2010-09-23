@@ -229,7 +229,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val hadoop_test    = "org.apache.hadoop"      % "hadoop-test"         % "0.20.2"          % "test"
     lazy val hbase_test     = "org.apache.hbase"       % "hbase-test"          % "0.20.6"          % "test"
     lazy val log4j          = "log4j"                  % "log4j"               % "1.2.15"          % "test"
-    lazy val jett_mortbay   = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test"
+    lazy val jetty_mortbay  = "org.mortbay.jetty"      % "jetty"               % "6.1.14"          % "test"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -531,15 +531,25 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaHbaseProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val zookeeper   = Dependencies.zookeeper
-    val hadoop_core = Dependencies.hadoop_core
-    val hbase_core  = Dependencies.hbase_core
- 
-    // testing
-    val hadoop_test = Dependencies.hadoop_test
-    val hbase_test  = Dependencies.hbase_test
-    val jetty       = Dependencies.jett_mortbay
-    val log4j       = Dependencies.log4j
+    override def ivyXML =
+    <dependencies>
+        <dependency org="org.apache.hadoop.zookeeper" name="zookeeper" rev="3.2.2">
+        </dependency>
+        <dependency org="org.apache.hadoop" name="hadoop-core" rev="0.20.2">
+	  <exclude module="slf4j-api"/>
+        </dependency>
+        <dependency org="org.apache.hbase" name="hbase-core" rev="0.20.6">
+        </dependency>
+        <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2">
+	  <exclude module="slf4j-api"/>
+        </dependency>
+        <dependency org="org.apache.hbase" name="hbase-test" rev="0.20.6">
+        </dependency>
+        <dependency org="log4j" name="log4j" rev="1.2.15">
+        </dependency>
+        <dependency org="org.mortbay.jetty" name="jetty" rev="6.1.14">
+        </dependency>
+    </dependencies>
 
     override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
   }
