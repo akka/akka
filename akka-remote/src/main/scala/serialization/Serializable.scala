@@ -91,10 +91,32 @@ object Serializable {
   }
 
   /**
+   * case class Address(street: String, city: String, zip: String)
+   *   extends ScalaJSON[Address] {
+   *
+   *   implicit val AddressFormat: Format[Address] = 
+   *     asProduct3("street", "city", "zip")(Address)(Address.unapply(_).get)
+   *
+   *   import dispatch.json._
+   *   import sjson.json._
+   *   import sjson.json.JsonSerialization._
+   *
+   *   def toJSON: String = JsValue.toJson(tojson(this))
+   *   def toBytes: Array[Byte] = tobinary(this)
+   *   def fromBytes(bytes: Array[Byte]): Address = frombinary[Address](bytes)
+   *   def fromJSON(js: String): Address = fromjson[Address](Js(js))
+   * }
+   *
+   * val a = Address(...)
+   * val js = tojson(a)
+   * val add = fromjson[Address](js)
+   *
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  trait ScalaJSON extends JSON {
+  trait ScalaJSON[T] extends JSON {
     def toJSON: String = new String(toBytes, "UTF-8")
-    def toBytes: Array[Byte] = SJSONSerializer.SJSON.out(this)
+    def fromJSON(js: String): T
+    def toBytes: Array[Byte] 
+    def fromBytes(bytes: Array[Byte]): T
   }
 }
