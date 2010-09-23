@@ -8,6 +8,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.config.OneForOneStrategy
 import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
+import ConnectionFactory._
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.{String, IllegalArgumentException}
 
@@ -19,54 +20,206 @@ import java.lang.{String, IllegalArgumentException}
  * @author Irmo Manie
  */
 object AMQP {
-  case class ConnectionParameters(
-          host: String = ConnectionFactory.DEFAULT_HOST,
-          port: Int = ConnectionFactory.DEFAULT_AMQP_PORT,
-          username: String = ConnectionFactory.DEFAULT_USER,
-          password: String = ConnectionFactory.DEFAULT_PASS,
-          virtualHost: String = ConnectionFactory.DEFAULT_VHOST,
-          initReconnectDelay: Long = 5000,
-          connectionCallback: Option[ActorRef] = None)
 
+  /**
+   * Parameters used to make the connection to the amqp broker. Uses the rabbitmq defaults.
+   */
+  case class ConnectionParameters(
+          host: String = DEFAULT_HOST,
+          port: Int = DEFAULT_AMQP_PORT,
+          username: String = DEFAULT_USER,
+          password: String = DEFAULT_PASS,
+          virtualHost: String = DEFAULT_VHOST,
+          initReconnectDelay: Long = 5000,
+          connectionCallback: Option[ActorRef] = None) {
+
+    // Needed for Java API usage
+    def this() = this (DEFAULT_HOST, DEFAULT_AMQP_PORT, DEFAULT_USER, DEFAULT_PASS, DEFAULT_VHOST, 5000, None)
+
+    // Needed for Java API usage
+    def this(host: String, port: Int, username: String, password: String, virtualHost: String) =
+      this (host, port, username, password, virtualHost, 5000, None)
+
+    // Needed for Java API usage
+    def this(host: String, port: Int, username: String, password: String, virtualHost: String, initReconnectDelay: Long, connectionCallback: ActorRef) =
+      this (host, port, username, password, virtualHost, initReconnectDelay, Some(connectionCallback))
+
+    // Needed for Java API usage
+    def this(connectionCallback: ActorRef) =
+      this (DEFAULT_HOST, DEFAULT_AMQP_PORT, DEFAULT_USER, DEFAULT_PASS, DEFAULT_VHOST, 5000, Some(connectionCallback))
+
+  }
+
+  /**
+   * Additional parameters for the channel
+   */
   case class ChannelParameters(
           shutdownListener: Option[ShutdownListener] = None,
-          channelCallback: Option[ActorRef] = None)
+          channelCallback: Option[ActorRef] = None) {
 
+    // Needed for Java API usage
+    def this() = this (None, None)
+
+    // Needed for Java API usage
+    def this(channelCallback: ActorRef) = this (None, Some(channelCallback))
+
+    // Needed for Java API usage
+    def this(shutdownListener: ShutdownListener, channelCallback: ActorRef) =
+      this (Some(shutdownListener), Some(channelCallback))
+  }
+
+  /**
+   * Declaration type used for either exchange or queue declaration
+   */
+  sealed trait Declaration
+  case object NoActionDeclaration extends Declaration
+  case object PassiveDeclaration extends Declaration
+  case class ActiveDeclaration(durable: Boolean = false, autoDelete: Boolean = true, exclusive: Boolean = false) extends Declaration {
+
+    // Needed for Java API usage
+    def this() = this (false, true, false)
+
+    // Needed for Java API usage
+    def this(durable: Boolean, autoDelete: Boolean) = this (durable, autoDelete, false)
+  }
+
+  /**
+   * Exchange specific parameters
+   */
   case class ExchangeParameters(
           exchangeName: String,
-          exchangeType: ExchangeType,
-          exchangeDurable: Boolean = false,
-          exchangeAutoDelete: Boolean = true,
-          exchangePassive: Boolean = false,
-          configurationArguments: Map[String, AnyRef] = Map())
+          exchangeType: ExchangeType = ExchangeType.Topic,
+          exchangeDeclaration: Declaration = new ActiveDeclaration(),
+          configurationArguments: Map[String, AnyRef] = Map.empty()) {
 
+    // Needed for Java API usage
+    def this(exchangeName: String) =
+      this (exchangeName, ExchangeType.Topic, new ActiveDeclaration(), Map.empty())
+
+    // Needed for Java API usage
+    def this(exchangeName: String, exchangeType: ExchangeType) =
+      this (exchangeName, exchangeType, new ActiveDeclaration(), Map.empty())
+
+    // Needed for Java API usage
+    def this(exchangeName: String, exchangeType: ExchangeType, exchangeDeclaration: Declaration) =
+      this (exchangeName, exchangeType, exchangeDeclaration, Map.empty())
+  }
+
+  /**
+   * Producer specific parameters
+   */
   case class ProducerParameters(
-          exchangeParameters: ExchangeParameters,
+          exchangeParameters: Option[ExchangeParameters] = None,
           producerId: Option[String] = None,
           returnListener: Option[ReturnListener] = None,
-          channelParameters: Option[ChannelParameters] = None)
+          channelParameters: Option[ChannelParameters] = None) {
 
+    def this() = this(None, None, None, None)
+
+    // Needed for Java API usage
+    def this(exchangeParameters: ExchangeParameters) = this (Some(exchangeParameters), None, None, None)
+
+    // Needed for Java API usage
+    def this(exchangeParameters: ExchangeParameters, producerId: String) =
+      this (Some(exchangeParameters), Some(producerId), None, None)
+
+    // Needed for Java API usage
+    def this(exchangeParameters: ExchangeParameters, returnListener: ReturnListener) =
+      this (Some(exchangeParameters), None, Some(returnListener), None)
+
+    // Needed for Java API usage
+    def this(exchangeParameters: ExchangeParameters, channelParameters: ChannelParameters) =
+      this (Some(exchangeParameters), None, None, Some(channelParameters))
+
+    // Needed for Java API usage
+    def this(exchangeParameters: ExchangeParameters, producerId: String, returnListener: ReturnListener, channelParameters: ChannelParameters) =
+      this (Some(exchangeParameters), Some(producerId), Some(returnListener), Some(channelParameters))
+  }
+
+  /**
+   * Consumer specific parameters
+   */
   case class ConsumerParameters(
-          exchangeParameters: ExchangeParameters,
           routingKey: String,
           deliveryHandler: ActorRef,
           queueName: Option[String] = None,
-          queueDurable: Boolean = false,
-          queueAutoDelete: Boolean = true,
-          queuePassive: Boolean = false,
-          queueExclusive: Boolean = false,
+          exchangeParameters: Option[ExchangeParameters],
+          queueDeclaration: Declaration = new ActiveDeclaration(),
           selfAcknowledging: Boolean = true,
           channelParameters: Option[ChannelParameters] = None) {
-    if (queueDurable && queueName.isEmpty) {
-      throw new IllegalArgumentException("A queue name is required when requesting a durable queue.")
+    
+    if (queueName.isEmpty) {
+      queueDeclaration match {
+        case ActiveDeclaration(true, _, _) =>
+          throw new IllegalArgumentException("A queue name is required when requesting a durable queue.")
+        case PassiveDeclaration =>
+          throw new IllegalArgumentException("A queue name is required when requesting passive declaration.")
+        case NoActionDeclaration => () // ignore
+      }
     }
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef) =
+      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), true, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, channelParameters: ChannelParameters) =
+      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), true, Some(channelParameters))
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, selfAcknowledging: Boolean) =
+      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), selfAcknowledging, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
+      this (routingKey, deliveryHandler, None, None, new ActiveDeclaration(), selfAcknowledging, Some(channelParameters))
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, queueName: String) =
+      this (routingKey, deliveryHandler, Some(queueName), None, new ActiveDeclaration(), true, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, queueDeclaration: Declaration, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
+      this (routingKey, deliveryHandler, Some(queueName), None, queueDeclaration, selfAcknowledging, Some(channelParameters))
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters) =
+      this (routingKey, deliveryHandler, None, Some(exchangeParameters), new ActiveDeclaration(), true, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters, selfAcknowledging: Boolean) =
+      this (routingKey, deliveryHandler, None, Some(exchangeParameters), new ActiveDeclaration(), selfAcknowledging, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters) =
+      this (routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), new ActiveDeclaration(), true, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration) =
+      this (routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), queueDeclaration, true, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration, selfAcknowledging: Boolean) =
+      this (routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), queueDeclaration, selfAcknowledging, None)
+
+    // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
+      this (routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), queueDeclaration, selfAcknowledging, Some(channelParameters))
+
+    // How about that for some overloading... huh? :P (yes, I know, there are still posibilities left...sue me!)
+    // Who said java is easy :(
   }
 
-  def newConnection(connectionParameters: ConnectionParameters = new ConnectionParameters): ActorRef = {
+  def newConnection(connectionParameters: ConnectionParameters = new ConnectionParameters()): ActorRef = {
     val connection = actorOf(new FaultTolerantConnectionActor(connectionParameters))
     supervisor.startLink(connection)
     connection ! Connect
     connection
+  }
+
+  // Needed for Java API usage
+  def newConnection(): ActorRef = {
+    newConnection(new ConnectionParameters())
   }
 
   def newProducer(connection: ActorRef, producerParameters: ProducerParameters): ActorRef = {
@@ -86,7 +239,7 @@ object AMQP {
   }
 
   /**
-   * Convenience
+   *  Convenience
    */
   class ProducerClient[O](client: ActorRef, routingKey: String, toBinary: ToBinary[O]) {
     def send(request: O, replyTo: Option[String] = None) = {
@@ -95,20 +248,19 @@ object AMQP {
       client ! Message(toBinary.toBinary(request), routingKey, false, false, Some(basicProperties))
     }
 
-    def stop = client.stop
+    def stop() = client.stop
   }
 
   def newStringProducer(connection: ActorRef,
-                          exchange: String,
-                          routingKey: Option[String] = None,
-                          producerId: Option[String] = None,
-                          durable: Boolean = false,
-                          autoDelete: Boolean = true,
-                          passive: Boolean = true): ProducerClient[String] = {
+                        exchangeName: Option[String],
+                        routingKey: Option[String] = None,
+                        producerId: Option[String] = None): ProducerClient[String] = {
 
-    val exchangeParameters = ExchangeParameters(exchange, ExchangeType.Topic,
-      exchangeDurable = durable, exchangeAutoDelete = autoDelete)
-    val rKey = routingKey.getOrElse("%s.request".format(exchange))
+    if (exchangeName.isEmpty && routingKey.isEmpty) {
+      throw new IllegalArgumentException("Either exchange name or routing key is mandatory")
+    }
+    val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
+    val rKey = routingKey.getOrElse("%s.request".format(exchangeName.get))
 
     val producerRef = newProducer(connection, ProducerParameters(exchangeParameters, producerId))
     val toBinary = new ToBinary[String] {
@@ -117,37 +269,57 @@ object AMQP {
     new ProducerClient(producerRef, rKey, toBinary)
   }
 
+  // Needed for Java API usage
+  def newStringProducer(connection: ActorRef): ProducerClient[String] = {
+    newStringProducer(connection, None, None, None)
+  }
+  // Needed for Java API usage
+  def newStringProducer(connection: ActorRef, exchangeName: String): ProducerClient[String] = {
+    newStringProducer(connection, Some(exchangeName), None, None)
+  }
+
+  // Needed for Java API usage
+  def newStringProducer(connection: ActorRef, exchangeName: String, routingKey: String): ProducerClient[String] = {
+    newStringProducer(connection, Some(exchangeName), Some(routingKey), None)
+  }
+
+  // Needed for Java API usage
+  def newStringProducer(connection: ActorRef, exchangeName: String, routingKey: String, producerId: String): ProducerClient[String] = {
+    newStringProducer(connection, Some(exchangeName), Some(routingKey), Some(producerId))
+  }
+
+
   def newStringConsumer(connection: ActorRef,
-                          exchange: String,
-                          handler: String => Unit,
-                          routingKey: Option[String] = None,
-                          queueName: Option[String] = None,
-                          durable: Boolean = false,
-                          autoDelete: Boolean = true): ActorRef = {
+                        handler: String => Unit,
+                        exchangeName: Option[String],
+                        routingKey: Option[String] = None,
+                        queueName: Option[String] = None): ActorRef = {
+
+    if (exchangeName.isEmpty && routingKey.isEmpty) {
+      throw new IllegalArgumentException("Either exchange name or routing key is mandatory")
+    }
 
     val deliveryHandler = actor {
       case Delivery(payload, _, _, _, _) => handler.apply(new String(payload))
     }
 
-    val exchangeParameters = ExchangeParameters(exchange, ExchangeType.Topic,
-      exchangeDurable = durable, exchangeAutoDelete = autoDelete)
-    val rKey = routingKey.getOrElse("%s.request".format(exchange))
+    val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
+    val rKey = routingKey.getOrElse("%s.request".format(exchangeName.get))
     val qName = queueName.getOrElse("%s.in".format(rKey))
 
-    newConsumer(connection, ConsumerParameters(exchangeParameters, rKey, deliveryHandler, Some(qName), durable, autoDelete))
+    newConsumer(connection, ConsumerParameters(rKey, deliveryHandler, Some(qName), exchangeParameters))
   }
 
   def newProtobufProducer[O <: com.google.protobuf.Message](connection: ActorRef,
-                                        exchange: String,
-                                        routingKey: Option[String] = None,
-                                        producerId: Option[String] = None,
-                                        durable: Boolean = false,
-                                        autoDelete: Boolean = true,
-                                        passive: Boolean = true): ProducerClient[O] = {
+                                                            exchangeName: Option[String],
+                                                            routingKey: Option[String] = None,
+                                                            producerId: Option[String] = None): ProducerClient[O] = {
 
-    val exchangeParameters = ExchangeParameters(exchange, ExchangeType.Topic,
-      exchangeDurable = durable, exchangeAutoDelete = autoDelete)
-    val rKey = routingKey.getOrElse("%s.request".format(exchange))
+    if (exchangeName.isEmpty && routingKey.isEmpty) {
+      throw new IllegalArgumentException("Either exchange name or routing key is mandatory")
+    }
+    val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
+    val rKey = routingKey.getOrElse("%s.request".format(exchangeName.get))
 
     val producerRef = newProducer(connection, ProducerParameters(exchangeParameters, producerId))
     new ProducerClient(producerRef, rKey, new ToBinary[O] {
@@ -156,12 +328,14 @@ object AMQP {
   }
 
   def newProtobufConsumer[I <: com.google.protobuf.Message](connection: ActorRef,
-                          exchange: String,
-                          handler: I => Unit,
-                          routingKey: Option[String] = None,
-                          queueName: Option[String] = None,
-                          durable: Boolean = false,
-                          autoDelete: Boolean = true)(implicit manifest: Manifest[I]): ActorRef = {
+                                                            handler: I => Unit,
+                                                            exchangeName: Option[String],
+                                                            routingKey: Option[String] = None,
+                                                            queueName: Option[String] = None)(implicit manifest: Manifest[I]): ActorRef = {
+
+    if (exchangeName.isEmpty && routingKey.isEmpty) {
+      throw new IllegalArgumentException("Either exchange name or routing key is mandatory")
+    }
 
     val deliveryHandler = actor {
       case Delivery(payload, _, _, _, _) => {
@@ -169,22 +343,20 @@ object AMQP {
       }
     }
 
-    val exchangeParameters = ExchangeParameters(exchange, ExchangeType.Topic,
-      exchangeDurable = durable, exchangeAutoDelete = autoDelete)
-    val rKey = routingKey.getOrElse("%s.request".format(exchange))
+    val exchangeParameters = exchangeName.flatMap(name => Some(ExchangeParameters(name)))
+    val rKey = routingKey.getOrElse("%s.request".format(exchangeName.get))
     val qName = queueName.getOrElse("%s.in".format(rKey))
 
-    newConsumer(connection, ConsumerParameters(exchangeParameters, rKey, deliveryHandler, Some(qName), durable, autoDelete))
+    newConsumer(connection, ConsumerParameters(rKey, deliveryHandler, Some(qName), exchangeParameters))
   }
 
   /**
    * Main supervisor
    */
-
   class AMQPSupervisorActor extends Actor {
     import self._
 
-    faultHandler = Some(OneForOneStrategy(5, 5000))
+    faultHandler = Some(OneForOneStrategy(None, None)) // never die
     trapExit = List(classOf[Throwable])
 
     def receive = {
@@ -194,7 +366,7 @@ object AMQP {
 
   private val supervisor = actorOf(new AMQPSupervisorActor).start
 
-  def shutdownAll = {
+  def shutdownAll() = {
     supervisor.shutdownLinkedActors
   }
 

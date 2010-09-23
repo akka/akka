@@ -6,20 +6,16 @@ package se.scalablesolutions.akka.amqp
 
 import collection.JavaConversions
 
-import se.scalablesolutions.akka.amqp.AMQP.ConsumerParameters
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.AkkaException
 
-import com.rabbitmq.client.AMQP.Queue.DeclareOk
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.{Channel, Envelope, DefaultConsumer}
+import se.scalablesolutions.akka.amqp.AMQP.{NoActionDeclaration, ActiveDeclaration, PassiveDeclaration, ConsumerParameters}
 
 private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
-    extends FaultTolerantChannelActor(
-        consumerParameters.exchangeParameters, consumerParameters.channelParameters) {
-
+        extends FaultTolerantChannelActor(
+          consumerParameters.exchangeParameters, consumerParameters.channelParameters) {
   import consumerParameters._
-  import exchangeParameters._
 
   var listenerTag: Option[String] = None
 
@@ -34,15 +30,21 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
 
   protected def setupChannel(ch: Channel) = {
 
-    val queueDeclare: DeclareOk = {
+    val queueDeclare: com.rabbitmq.client.AMQP.Queue.DeclareOk = {
       queueName match {
         case Some(name) =>
-          log.debug("Declaring new queue [%s] for %s", name, toString)
-          if (queuePassive) ch.queueDeclarePassive(name)
-          else {
-            ch.queueDeclare(
-              name, queueDurable, queueExclusive, queueAutoDelete,
-              JavaConversions.asMap(configurationArguments))
+          queueDeclaration match {
+            case PassiveDeclaration =>
+              log.debug("Passively declaring new queue [%s] for %s", name, toString)
+              ch.queueDeclarePassive(name)
+            case ActiveDeclaration(durable, autoDelete, exclusive) =>
+              log.debug("Actively declaring new queue [%s] for %s", name, toString)
+              val configurationArguments = exchangeParameters match {
+                case Some(params) => params.configurationArguments
+                case _ => Map.empty()
+              }
+              ch.queueDeclare(name, durable, exclusive, autoDelete, JavaConversions.asMap(configurationArguments))
+            case NoActionDeclaration => new com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk(name, 0, 0) // do nothing here
           }
         case None =>
           log.debug("Declaring new generated queue for %s", toString)
@@ -50,8 +52,11 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
       }
     }
 
-    log.debug("Binding new queue [%s] for %s", queueDeclare.getQueue, toString)
-    ch.queueBind(queueDeclare.getQueue, exchangeName, routingKey)
+    exchangeParameters.foreach {
+      params =>
+        log.debug("Binding new queue [%s] for %s", queueDeclare.getQueue, toString)
+        ch.queueBind(queueDeclare.getQueue, params.exchangeName, routingKey)
+    }
 
     val tag = ch.basicConsume(queueDeclare.getQueue, false, new DefaultConsumer(ch) with Logging {
       override def handleDelivery(tag: String, envelope: Envelope, properties: BasicProperties, payload: Array[Byte]) {
@@ -77,11 +82,12 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
 
   private def acknowledgeDeliveryTag(deliveryTag: Long, remoteAcknowledgement: Boolean) = {
     log.debug("Acking message with delivery tag [%s]", deliveryTag)
-    channel.foreach{ch =>
-      ch.basicAck(deliveryTag, false)
-      if (remoteAcknowledgement) {
-        deliveryHandler ! Acknowledged(deliveryTag)
-      }
+    channel.foreach {
+      ch =>
+        ch.basicAck(deliveryTag, false)
+        if (remoteAcknowledgement) {
+          deliveryHandler ! Acknowledged(deliveryTag)
+        }
     }
   }
 
@@ -90,10 +96,11 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     // FIXME: when rabbitmq 1.9 arrives, basicReject should be available on the API and implemented instead of this
     log.warning("Consumer is rejecting delivery with tag [%s] - " +
             "for now this means we have to self terminate and kill the channel - see you in a second.")
-    channel.foreach{ch =>
-      if (remoteAcknowledgement) {
-        deliveryHandler ! Rejected(deliveryTag)
-      }
+    channel.foreach {
+      ch =>
+        if (remoteAcknowledgement) {
+          deliveryHandler ! Rejected(deliveryTag)
+        }
     }
     throw new RejectionException(deliveryTag)
   }
@@ -115,10 +122,8 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
   }
 
   override def toString =
-    "AMQP.Consumer[id= "+ self.id +
-    ", exchange=" + exchangeName +
-    ", exchangeType=" + exchangeType +
-    ", durable=" + exchangeDurable +
-    ", autoDelete=" + exchangeAutoDelete + "]"
+    "AMQP.Consumer[id= " + self.id +
+            ", exchangeParameters=" + exchangeParameters +
+            ", queueDeclaration=" + queueDeclaration + "]"
 }
 

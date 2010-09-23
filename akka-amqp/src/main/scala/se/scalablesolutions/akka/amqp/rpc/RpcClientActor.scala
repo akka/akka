@@ -13,7 +13,7 @@ class RpcClientActor[I,O](
     routingKey: String,
     serializer: RpcClientSerializer[I,O],
     channelParameters: Option[ChannelParameters] = None)
-    extends FaultTolerantChannelActor(exchangeParameters, channelParameters) {
+    extends FaultTolerantChannelActor(Some(exchangeParameters), channelParameters) {
 
   import exchangeParameters._
 
