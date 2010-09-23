@@ -131,7 +131,6 @@ object Serializer {
   trait ScalaJSON {
     import dispatch.json._
     import sjson.json._
-    import sjson.json.JsonSerialization
 
     var classLoader: Option[ClassLoader] = None
 
