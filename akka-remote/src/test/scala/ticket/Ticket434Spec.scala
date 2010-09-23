@@ -14,12 +14,15 @@ import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 
 class Ticket434Spec extends Spec with ShouldMatchers {
 
+  val HOSTNAME = "localhost"
+  val PORT = 9991
+
   describe("A server managed remote actor") {
-    it("should possible be use a custom service name containing ':'") {
-      val server = new RemoteServer().start("localhost", 9999)
+    it("can use a custom service name containing ':'") {
+      val server = new RemoteServer().start(HOSTNAME, PORT)
       server.register("my:service", actorOf[RemoteActorSpecActorUnidirectional])
 
-      val actor = RemoteClient.actorFor("my:service", 5000L, "localhost", 9999)
+      val actor = RemoteClient.actorFor("my:service", 5000L, HOSTNAME, PORT)
       actor ! "OneWay"
 
       assert(RemoteActorSpecActorUnidirectional.latch.await(1, TimeUnit.SECONDS))
@@ -31,7 +34,7 @@ class Ticket434Spec extends Spec with ShouldMatchers {
   }
 
   describe("The ActorInfoProtocol") {
-    it("should be possible to set the acor id and uuuid") {
+    it("sets the acor id and uuuid") {
       val actorInfoBuilder = ActorInfoProtocol.newBuilder
         .setUuid("unique-id")
         .setId("some-id")
