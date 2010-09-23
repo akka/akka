@@ -7,7 +7,7 @@ package se.scalablesolutions.akka.amqp.test
 import se.scalablesolutions.akka.amqp.AMQP
 object AMQPTest {
 
-  def enabled = true
+  def enabled = false
 
   def withCleanEndState(action: => Unit) {
     try {
