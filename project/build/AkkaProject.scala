@@ -574,12 +574,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     </dependencies>
 
     val hbase_test = System.getenv("HBASE_TEST")
-    override def testOptions = { val o = TestFilter((name: String) => name.endsWith("Test")) :: Nil
-                                 if(hbase_test != "true")
-				   o
-				 else
-				   Nil
-			       }
+    override def testOptions = if(hbase_test == "true") TestFilter((name: String) => name.endsWith("Test")) :: Nil else  TestFilter((name: String) => name.endsWith("Tes")) :: Nil
   }
 
   // akka-persistence-voldemort subproject
