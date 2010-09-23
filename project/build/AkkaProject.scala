@@ -533,11 +533,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaHbaseProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     override def ivyXML =
     <dependencies>
-        <dependency org="org.apache.hadoop.zookeeper" name="zookeeper" rev="3.2.2" conf="compile,test">
+        <dependency org="org.apache.hadoop.zookeeper" name="zookeeper" rev="3.2.2" conf="compile">
         </dependency>
-        <dependency org="org.apache.hadoop" name="hadoop-core" rev="0.20.2" conf="compile,test">
+        <dependency org="org.apache.hadoop" name="hadoop-core" rev="0.20.2" conf="compile">
         </dependency>
-        <dependency org="org.apache.hbase" name="hbase-core" rev="0.20.6" conf="compile,test">
+        <dependency org="org.apache.hbase" name="hbase-core" rev="0.20.6" conf="compile">
         </dependency>
 
         <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2" conf="test">
