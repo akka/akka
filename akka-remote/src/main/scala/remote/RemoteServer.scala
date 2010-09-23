@@ -337,8 +337,8 @@ class RemoteServer extends Logging with ListenerManagement {
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
       log.debug("Unregistering server side remote actor [%s] with id [%s:%s]", actorRef.actorClass.getName, actorRef.id, actorRef.uuid)
-      actors() remove actorRef.id
-      if (actorRef.registeredInRemoteNodeDuringSerialization) actorsByUuid() remove actorRef.uuid
+      actors().remove(actorRef.id,actorRef)
+      actorsByUuid().remove(actorRef.uuid,actorRef)
     }
   }
 
@@ -353,11 +353,9 @@ class RemoteServer extends Logging with ListenerManagement {
       if (id.startsWith(UUID_PREFIX)) {
         actorsByUuid().remove(id.substring(UUID_PREFIX.length)) 
       } else {
-        val actorRef = actors().get(id)
-        if (actorRef.registeredInRemoteNodeDuringSerialization) {
-          actorsByUuid() remove actorRef.uuid
-        }
-        actors() remove id
+        val actorRef = actors() get id
+        actorsByUuid().remove(actorRef.uuid,actorRef)
+        actors().remove(id,actorRef)
       }
     }
   }

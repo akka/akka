@@ -82,7 +82,6 @@ trait ActorRef extends
   @volatile protected[this] var _status: ActorRefStatus.StatusType = ActorRefStatus.UNSTARTED
   @volatile protected[akka] var _homeAddress = new InetSocketAddress(RemoteServerModule.HOSTNAME, RemoteServerModule.PORT)
   @volatile protected[akka] var _futureTimeout: Option[ScheduledFuture[AnyRef]] = None
-  @volatile protected[akka] var registeredInRemoteNodeDuringSerialization = false
   protected[akka] val guard = new ReentrantGuard
 
   /**
