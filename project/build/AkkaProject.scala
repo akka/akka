@@ -563,6 +563,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         <dependency org="org.apache.hadoop" name="hadoop-test" rev="0.20.2" conf="test">
 	        <exclude module="slf4j-api"/>
         </dependency>
+        <dependency org="org.slf4j" name="slf4j-api" rev={SLF4J_VERSION} conf="test">
+        </dependency>
         <dependency org="org.apache.hbase" name="hbase-test" rev="0.20.6" conf="test">
         </dependency>
         <dependency org="log4j" name="log4j" rev="1.2.15" conf="test">
@@ -571,7 +573,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         </dependency>
     </dependencies>
 
-    override def testOptions = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+    val hbase_test = System.getenv("HBASE_TEST")
+    override def testOptions = { val o = TestFilter((name: String) => name.endsWith("Test")) :: Nil
+                                 if(hbase_test != "true")
+				   o
+				 else
+				   Nil
+			       }
   }
 
   // akka-persistence-voldemort subproject
