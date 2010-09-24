@@ -440,6 +440,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val junit      = Dependencies.junit
     val multiverse = Dependencies.multiverse
     val scalatest  = Dependencies.scalatest
+
+    override def testOptions = createTestFilter( _.endsWith("Test") )
   }
 
   // -------------------------------------------------------------------------------------------------------------------
