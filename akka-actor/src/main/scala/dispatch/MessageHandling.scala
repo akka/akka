@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
+import se.scalablesolutions.akka.actor.{Actor, ActorRef, Uuid, ActorInitializationException}
 import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
 import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
 import se.scalablesolutions.akka.AkkaException
@@ -13,7 +13,6 @@ import org.multiverse.commitbarriers.CountDownCommitBarrier
 
 import java.util.{Queue, List}
 import java.util.concurrent._
-import concurrent.forkjoin.LinkedTransferQueue
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -62,7 +61,7 @@ final class MessageInvocation(val receiver: ActorRef,
  */
 trait MessageDispatcher extends MailboxFactory with Logging {
   
-  protected val uuids = new ConcurrentSkipListSet[String]
+  protected val uuids = new ConcurrentSkipListSet[Uuid]
   
   def dispatch(invocation: MessageInvocation): Unit
 

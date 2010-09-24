@@ -8,12 +8,12 @@ import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
 import se.scalablesolutions.akka.stm.TransactionManagement
 import se.scalablesolutions.akka.dispatch.MessageInvocation
-import se.scalablesolutions.akka.remote.{RemoteServer, RemoteRequestProtocolIdFactory, MessageSerializer}
+import se.scalablesolutions.akka.remote.{RemoteServer, MessageSerializer}
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import ActorTypeProtocol._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
-
+import se.scalablesolutions.akka.actor.{uuidFrom,newUuid}
 import com.google.protobuf.ByteString
 import se.scalablesolutions.akka.actor._
 
@@ -110,12 +110,13 @@ object ActorSerialization {
         .build
 
     val builder = SerializedActorRefProtocol.newBuilder
-        .setUuid(actorRef.uuid)
-        .setId(actorRef.id)
-        .setActorClassname(actorRef.actorClass.getName)
-        .setOriginalAddress(originalAddress)
-        .setIsTransactor(actorRef.isTransactor)
-        .setTimeout(actorRef.timeout)
+      .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
+      .setId(actorRef.id)
+      .setActorClassname(actorRef.actorClass.getName)
+      .setOriginalAddress(originalAddress)
+      .setIsTransactor(actorRef.isTransactor)
+      .setTimeout(actorRef.timeout)
+
 
     if (serializeMailBox == true) {
       val messages = 
@@ -191,7 +192,7 @@ object ActorSerialization {
     }
 
     val ar = new LocalActorRef(
-      protocol.getUuid,
+      uuidFrom(protocol.getUuid.getHigh,protocol.getUuid.getLow),
       protocol.getId,
       protocol.getOriginalAddress.getHostname,
       protocol.getOriginalAddress.getPort,
@@ -232,7 +233,7 @@ object RemoteActorSerialization {
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
     Actor.log.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n" + protocol)
     RemoteActorRef(
-      protocol.getUuid,
+      protocol.getClassOrServiceName,
       protocol.getActorClassname,
       protocol.getHomeAddress.getHostname,
       protocol.getHomeAddress.getPort,
@@ -248,19 +249,16 @@ object RemoteActorSerialization {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
-    if (!registeredInRemoteNodeDuringSerialization) {
-      Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
-      RemoteServer.getOrCreateServer(homeAddress)
-      RemoteServer.registerActorByUuid(homeAddress, uuid, ar)
-      registeredInRemoteNodeDuringSerialization = true
-    }
+    Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
+    RemoteServer.getOrCreateServer(homeAddress)
+    RemoteServer.registerActorByUuid(homeAddress, uuid.toString, ar)
 
     RemoteActorRefProtocol.newBuilder
-        .setUuid(uuid)
-        .setActorClassname(actorClass.getName)
-        .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
-        .setTimeout(timeout)
-        .build
+      .setClassOrServiceName(uuid.toString)
+      .setActorClassname(actorClass.getName)
+      .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
+      .setTimeout(timeout)
+      .build
   }
 
   def createRemoteRequestProtocolBuilder(
@@ -274,7 +272,7 @@ object RemoteActorSerialization {
     import actorRef._
 
     val actorInfoBuilder = ActorInfoProtocol.newBuilder
-        .setUuid(uuid)
+        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
         .setId(actorRef.id)
         .setTarget(actorClassName)
         .setTimeout(timeout)
@@ -295,18 +293,18 @@ object RemoteActorSerialization {
     val actorInfo = actorInfoBuilder.build
 
     val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setId(RemoteRequestProtocolIdFactory.nextId)
+        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
 
     val id = registerSupervisorAsRemoteActor
-    if (id.isDefined) requestBuilder.setSupervisorUuid(id.get)
+    if (id.isDefined) requestBuilder.setSupervisorUuid(UuidProtocol.newBuilder.setHigh(id.get.getTime).setLow(id.get.getClockSeqAndNode).build)
 
-    senderOption.foreach {
-      sender =>
-        RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid, sender)
-        requestBuilder.setSender(toRemoteActorRefProtocol(sender))
+    senderOption.foreach { sender =>
+      RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid.toString, sender)
+      requestBuilder.setSender(toRemoteActorRefProtocol(sender))
+
     }
     requestBuilder
   }

@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.util
 
-import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException, ActorType}
+import se.scalablesolutions.akka.actor.{ActorRef, IllegalActorStateException, ActorType, Uuid}
 import se.scalablesolutions.akka.dispatch.{Future, CompletableFuture, MessageInvocation}
 import se.scalablesolutions.akka.config.{Config, ModuleNotAvailableException}
 import se.scalablesolutions.akka.stm.Transaction
@@ -53,8 +53,8 @@ object ReflectiveAccess extends Logging {
     }
 
     type RemoteClientObject = {
-      def register(hostname: String, port: Int, uuid: String): Unit
-      def unregister(hostname: String, port: Int, uuid: String): Unit
+      def register(hostname: String, port: Int, uuid: Uuid): Unit
+      def unregister(hostname: String, port: Int, uuid: Uuid): Unit
       def clientFor(address: InetSocketAddress): RemoteClient
       def clientFor(hostname: String, port: Int, loader: Option[ClassLoader]): RemoteClient
     }
@@ -67,12 +67,12 @@ object ReflectiveAccess extends Logging {
     val remoteClientObjectInstance: Option[RemoteClientObject] =
       getObjectFor("se.scalablesolutions.akka.remote.RemoteClient$")
 
-    def register(address: InetSocketAddress, uuid: String) = {
+    def register(address: InetSocketAddress, uuid: Uuid) = {
       ensureRemotingEnabled
       remoteClientObjectInstance.get.register(address.getHostName, address.getPort, uuid)
     }
 
-    def unregister(address: InetSocketAddress, uuid: String) = {
+    def unregister(address: InetSocketAddress, uuid: Uuid) = {
       ensureRemotingEnabled
       remoteClientObjectInstance.get.unregister(address.getHostName, address.getPort, uuid)
     }
@@ -114,7 +114,7 @@ object ReflectiveAccess extends Logging {
     val PORT     = Config.config.getInt("akka.remote.server.port", 9999)
 
     type RemoteServerObject = {
-      def registerActor(address: InetSocketAddress, uuid: String, actor: ActorRef): Unit
+      def registerActor(address: InetSocketAddress, uuid: Uuid, actor: ActorRef): Unit
       def registerTypedActor(address: InetSocketAddress, name: String, typedActor: AnyRef): Unit
     }
 
@@ -128,7 +128,7 @@ object ReflectiveAccess extends Logging {
     val remoteNodeObjectInstance: Option[RemoteNodeObject] =
       getObjectFor("se.scalablesolutions.akka.remote.RemoteNode$")
 
-    def registerActor(address: InetSocketAddress, uuid: String, actorRef: ActorRef) = {
+    def registerActor(address: InetSocketAddress, uuid: Uuid, actorRef: ActorRef) = {
       ensureRemotingEnabled
       remoteServerObjectInstance.get.registerActor(address, uuid, actorRef)
     }
@@ -223,12 +223,12 @@ object ReflectiveAccess extends Logging {
       "Feature is only available in Akka Enterprise")
 
     def createFileBasedMailbox(
-      name: String, actorType: ActorType, typedActorInfo: Option[Tuple2[String, String]]): FileBasedMailbox = {
+      uuid: Uuid, actorType: ActorType, typedActorInfo: Option[Tuple2[String, String]]): FileBasedMailbox = {
       ensureEnterpriseEnabled
       createInstance(
         "se.scalablesolutions.akka.cluster.FileBasedMailbox",
-        Array(classOf[String], classOf[ActorType], classOf[Option[Tuple2[String, String]]]),
-        Array(name, actorType, typedActorInfo).asInstanceOf[Array[AnyRef]],
+        Array(classOf[Uuid], classOf[ActorType], classOf[Option[Tuple2[String, String]]]),
+        Array(uuid, actorType, typedActorInfo).asInstanceOf[Array[AnyRef]],
         loader)
         .getOrElse(throw new IllegalActorStateException("Could not create file-based mailbox"))
         .asInstanceOf[FileBasedMailbox]
