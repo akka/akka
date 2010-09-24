@@ -9,16 +9,15 @@ import org.junit.runner.RunWith
 import se.scalablesolutions.akka.serialization.Serializable.ScalaJSON
 
 object Serializables {
-  import sjson.json.DefaultProtocol._
+  import DefaultProtocol._
+  import JsonSerialization._
+
   case class Shop(store: String, item: String, price: Int) extends
     ScalaJSON[Shop] {
     implicit val ShopFormat: sjson.json.Format[Shop] = 
       asProduct3("store", "item", "price")(Shop)(Shop.unapply(_).get)
 
-    import dispatch.json._
-    import sjson.json._
-    import sjson.json.JsonSerialization._
-
+    def toJSON: String = JsValue.toJson(tojson(this))
     def toBytes: Array[Byte] = tobinary(this)
     def fromBytes(bytes: Array[Byte]) = frombinary[Shop](bytes)
     def fromJSON(js: String) = fromjson[Shop](Js(js))
@@ -33,10 +32,7 @@ object Serializables {
     implicit val MyJsonObjectFormat: sjson.json.Format[MyJsonObject] =
       asProduct3("key", "map", "standAloneInt")(MyJsonObject)(MyJsonObject.unapply(_).get)
 
-    import dispatch.json._
-    import sjson.json._
-    import sjson.json.JsonSerialization._
-
+    def toJSON: String = JsValue.toJson(tojson(this))
     def toBytes: Array[Byte] = tobinary(this)
     def fromBytes(bytes: Array[Byte]) = frombinary[MyJsonObject](bytes)
     def fromJSON(js: String) = fromjson[MyJsonObject](Js(js))
