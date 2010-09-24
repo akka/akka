@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.dispatch
 
-import se.scalablesolutions.akka.actor.{Actor, ActorRef, ActorInitializationException}
+import se.scalablesolutions.akka.actor.{Actor, ActorType, ActorRef, ActorInitializationException}
 import se.scalablesolutions.akka.util.{SimpleLock, Duration, HashCode, Logging}
 import se.scalablesolutions.akka.util.ReflectiveAccess.EnterpriseModule
 import se.scalablesolutions.akka.AkkaException
@@ -104,7 +104,8 @@ trait MailboxFactory {
   *  Creates and returns a durable mailbox for the given actor.
    */
   protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
-    case FileBasedDurableMailbox(serializer)      => EnterpriseModule.createFileBasedMailbox(actorRef.uuid, serializer).asInstanceOf[MessageQueue]
+    // FIXME make generic (work for TypedActor as well)
+    case FileBasedDurableMailbox(serializer)      => EnterpriseModule.createFileBasedMailbox(actorRef.uuid, ActorType.ScalaActor, None).asInstanceOf[MessageQueue]
     case RedisBasedDurableMailbox(serializer)     => throw new UnsupportedOperationException("RedisBasedDurableMailbox is not yet supported")
     case BeanstalkBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("BeanstalkBasedDurableMailbox is not yet supported")
     case ZooKeeperBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("ZooKeeperBasedDurableMailbox is not yet supported")
