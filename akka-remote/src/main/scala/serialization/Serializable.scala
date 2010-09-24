@@ -114,7 +114,7 @@ object Serializable {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait ScalaJSON[T] extends JSON {
-    def toJSON: String = new String(toBytes, "UTF-8")
+    def toJSON: String 
     def fromJSON(js: String): T
     def toBytes: Array[Byte] 
     def fromBytes(bytes: Array[Byte]): T
