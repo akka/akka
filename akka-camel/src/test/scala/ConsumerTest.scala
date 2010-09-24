@@ -13,9 +13,9 @@ import se.scalablesolutions.akka.actor._
 /**
  * @author Martin Krasser
  */
-class ConsumerSpec extends WordSpec with BeforeAndAfterAll with MustMatchers {
+class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
   import CamelContextManager.template
-  import ConsumerSpec._
+  import ConsumerTest._
 
   var service: CamelService = _
 
@@ -174,7 +174,7 @@ class ConsumerSpec extends WordSpec with BeforeAndAfterAll with MustMatchers {
   }
 }
 
-object ConsumerSpec {
+object ConsumerTest {
   class TestConsumer(uri: String) extends Actor with Consumer {
     def endpointUri = uri
     protected def receive = {
