@@ -222,12 +222,13 @@ object ReflectiveAccess extends Logging {
     def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(
       "Feature is only available in Akka Enterprise")
 
-    def createFileBasedMailbox(name: String, serializer: Serializer): FileBasedMailbox = {
+    def createFileBasedMailbox(
+      name: String, actorType: ActorType, typedActorInfo: Option[Tuple2[String, String]]): FileBasedMailbox = {
       ensureEnterpriseEnabled
       createInstance(
         "se.scalablesolutions.akka.cluster.FileBasedMailbox",
-        Array(classOf[String], serializerClass.get),
-        Array(name, serializer).asInstanceOf[Array[AnyRef]],
+        Array(classOf[String], classOf[ActorType], classOf[Option[Tuple2[String, String]]]),
+        Array(name, actorType, typedActorInfo).asInstanceOf[Array[AnyRef]],
         loader)
         .getOrElse(throw new IllegalActorStateException("Could not create file-based mailbox"))
         .asInstanceOf[FileBasedMailbox]
