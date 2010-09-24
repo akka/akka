@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.camel.component.TypedActorComponent
 import se.scalablesolutions.akka.util.Logging
 
 /**
- * Defines the lifecycle of a CamelContext. Allowed state transitions are
+ * Manages the lifecycle of a CamelContext. Allowed transitions are
  * init -> start -> stop -> init -> ... etc.
  *
  * @author Martin Krasser
@@ -35,7 +35,7 @@ trait CamelContextLifecycle extends Logging {
 
   /**
    * Registry in which typed actors are TEMPORARILY registered during
-   * creation of Camel routes to typed actors.
+   * creation of Camel routes to these actors.
    */
   private[camel] var typedActorRegistry: Map[String, AnyRef] = _
 
@@ -63,7 +63,7 @@ trait CamelContextLifecycle extends Logging {
   def started = _started
 
   /**
-   * Starts the CamelContext and ProducerTemplate.
+   * Starts the CamelContext and an associated ProducerTemplate.
    */
   def start = {
     context.start
@@ -73,7 +73,7 @@ trait CamelContextLifecycle extends Logging {
   }
 
   /**
-   * Stops the CamelContext and ProducerTemplate.
+   * Stops the CamelContext and the associated ProducerTemplate.
    */
   def stop = {
     template.stop
@@ -90,11 +90,10 @@ trait CamelContextLifecycle extends Logging {
 
   /**
    * Initializes this lifecycle object with the given CamelContext. For the passed
-   * CamelContext stream-caching is enabled. If applications want to disable stream-
+   * CamelContext, stream-caching is enabled. If applications want to disable stream-
    * caching they can do so after this method returned and prior to calling start.
-   * This method also registers a new
-   * {@link se.scalablesolutions.akka.camel.component.TypedActorComponent} at
-   * <code>context</code> under a name defined by TypedActorComponent.InternalSchema.
+   * This method also registers a new TypedActorComponent at the passes CamelContext 
+   * under a name defined by TypedActorComponent.InternalSchema.
    */
   def init(context: CamelContext) {
     this.typedActorComponent = new TypedActorComponent
@@ -109,8 +108,7 @@ trait CamelContextLifecycle extends Logging {
 }
 
 /**
- * Makes a global CamelContext and ProducerTemplate accessible to applications. The lifecycle
- * of these objects is managed by se.scalablesolutions.akka.camel.CamelService.
+ * Manages a global CamelContext and an associated ProducerTemplate.
  */
 object CamelContextManager extends CamelContextLifecycle {
   override def context: CamelContext = super.context

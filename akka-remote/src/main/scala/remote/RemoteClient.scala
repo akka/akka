@@ -7,12 +7,12 @@ package se.scalablesolutions.akka.remote
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, ActorType, RemoteActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
-import se.scalablesolutions.akka.util.{ListenerManagement, UUID, Logging, Duration}
+import se.scalablesolutions.akka.util.{ListenerManagement, Logging, Duration}
+import se.scalablesolutions.akka.actor.{Uuid,newUuid,uuidFrom}
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
 import se.scalablesolutions.akka.AkkaException
 import Actor._
-
 import org.jboss.netty.channel._
 import group.DefaultChannelGroup
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
@@ -31,18 +31,6 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable.{HashSet, HashMap}
 import scala.reflect.BeanProperty
 import se.scalablesolutions.akka.actor._
-
-/**
- * Atomic remote request/reply message id generator.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object RemoteRequestProtocolIdFactory {
-  private val nodeId = UUID.newUuid
-  private val id = new AtomicLong
-
-  def nextId: Long = id.getAndIncrement + nodeId
-}
 
 /**
  * Life-cycle events for RemoteClient.
@@ -75,7 +63,7 @@ object RemoteClient extends Logging {
   val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
 
   private val remoteClients = new HashMap[String, RemoteClient]
-  private val remoteActors =  new HashMap[RemoteServer.Address, HashSet[String]]
+  private val remoteActors =  new HashMap[RemoteServer.Address, HashSet[Uuid]]
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
@@ -174,21 +162,21 @@ object RemoteClient extends Logging {
     remoteClients.clear
   }
 
-  def register(hostname: String, port: Int, uuid: String) = synchronized {
+  def register(hostname: String, port: Int, uuid: Uuid) = synchronized {
     actorsFor(RemoteServer.Address(hostname, port)) += uuid
   }
 
-  private[akka] def unregister(hostname: String, port: Int, uuid: String) = synchronized {
+  private[akka] def unregister(hostname: String, port: Int, uuid: Uuid) = synchronized {
     val set = actorsFor(RemoteServer.Address(hostname, port))
     set -= uuid
     if (set.isEmpty) shutdownClientFor(new InetSocketAddress(hostname, port))
   }
 
-  private[akka] def actorsFor(remoteServerAddress: RemoteServer.Address): HashSet[String] = {
+  private[akka] def actorsFor(remoteServerAddress: RemoteServer.Address): HashSet[Uuid] = {
     val set = remoteActors.get(remoteServerAddress)
     if (set.isDefined && (set.get ne null)) set.get
     else {
-      val remoteActorSet = new HashSet[String]
+      val remoteActorSet = new HashSet[Uuid]
       remoteActors.put(remoteServerAddress, remoteActorSet)
       remoteActorSet
     }
@@ -206,8 +194,8 @@ class RemoteClient private[akka] (
   val name = "RemoteClient@" + hostname + "::" + port
 
   //FIXME Should these be clear:ed on postStop?
-  private val futures = new ConcurrentHashMap[Long, CompletableFuture[_]]
-  private val supervisors = new ConcurrentHashMap[String, ActorRef]
+  private val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
+  private val supervisors = new ConcurrentHashMap[Uuid, ActorRef]
 
   private val remoteAddress = new InetSocketAddress(hostname, port)
 
@@ -299,7 +287,7 @@ class RemoteClient private[akka] (
       futures.synchronized {
         val futureResult = if (senderFuture.isDefined) senderFuture.get
         else new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
-        futures.put(request.getId, futureResult)
+        futures.put(uuidFrom(request.getUuid.getHigh,request.getUuid.getLow), futureResult)
         connection.getChannel.write(request)
         Some(futureResult)
       }
@@ -342,8 +330,8 @@ class RemoteClient private[akka] (
  */
 class RemoteClientPipelineFactory(
     name: String,
-    futures: ConcurrentMap[Long, CompletableFuture[_]],
-    supervisors: ConcurrentMap[String, ActorRef],
+    futures: ConcurrentMap[Uuid, CompletableFuture[_]],
+    supervisors: ConcurrentMap[Uuid, ActorRef],
     bootstrap: ClientBootstrap,
     remoteAddress: SocketAddress,
     timer: HashedWheelTimer,
@@ -382,8 +370,8 @@ class RemoteClientPipelineFactory(
 @ChannelHandler.Sharable
 class RemoteClientHandler(
     val name: String,
-    val futures: ConcurrentMap[Long, CompletableFuture[_]],
-    val supervisors: ConcurrentMap[String, ActorRef],
+    val futures: ConcurrentMap[Uuid, CompletableFuture[_]],
+    val supervisors: ConcurrentMap[Uuid, ActorRef],
     val bootstrap: ClientBootstrap,
     val remoteAddress: SocketAddress,
     val timer: HashedWheelTimer,
@@ -403,14 +391,15 @@ class RemoteClientHandler(
       val result = event.getMessage
       if (result.isInstanceOf[RemoteReplyProtocol]) {
         val reply = result.asInstanceOf[RemoteReplyProtocol]
+        val replyUuid = uuidFrom(reply.getUuid.getHigh,reply.getUuid.getLow)
         log.debug("Remote client received RemoteReplyProtocol[\n%s]", reply.toString)
-        val future = futures.get(reply.getId).asInstanceOf[CompletableFuture[Any]]
+        val future = futures.get(replyUuid).asInstanceOf[CompletableFuture[Any]]
         if (reply.getIsSuccessful) {
           val message = MessageSerializer.deserialize(reply.getMessage)
           future.completeWithResult(message)
         } else {
           if (reply.hasSupervisorUuid()) {
-            val supervisorUuid = reply.getSupervisorUuid
+            val supervisorUuid = uuidFrom(reply.getSupervisorUuid.getHigh,reply.getSupervisorUuid.getLow)
             if (!supervisors.containsKey(supervisorUuid)) throw new IllegalActorStateException(
               "Expected a registered supervisor for UUID [" + supervisorUuid + "] but none was found")
             val supervisedActor = supervisors.get(supervisorUuid)
@@ -420,7 +409,7 @@ class RemoteClientHandler(
           }
           future.completeWithException(parseException(reply, client.loader))
         }
-        futures.remove(reply.getId)
+        futures remove replyUuid
       } else {
         val exception = new RemoteClientException("Unknown message received in remote client handler: " + result, client)
         client.notifyListeners(RemoteClientError(exception, client))

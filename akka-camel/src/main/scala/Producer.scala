@@ -24,7 +24,7 @@ trait ProducerSupport { this: Actor =>
   private val headersToCopyDefault = Set(Message.MessageExchangeId)
 
   /**
-   * <code>Endpoint</code> object resolved from current CamelContext with
+   * <code>Endpoint</code> object resolved from the current CamelContext with
    * <code>endpointUri</code>.
    */
   private lazy val endpoint = CamelContextManager.context.getEndpoint(endpointUri)
@@ -36,8 +36,8 @@ trait ProducerSupport { this: Actor =>
 
   /**
    * If set to false (default), this producer expects a response message from the Camel endpoint.
-   * If set to true, this producer communicates with the Camel endpoint with an in-only message
-   * exchange pattern (fire and forget).
+   * If set to true, this producer initiates an in-only message exchange with the Camel endpoint
+   * (fire and forget).
    */
   def oneway: Boolean = false
 
@@ -62,13 +62,17 @@ trait ProducerSupport { this: Actor =>
   }
 
   /**
-   * Produces <code>msg</code> as exchange of given <code>pattern</code> to the endpoint specified by
-   * <code>endpointUri</code>. After producing to the endpoint the processing result is passed as argument
-   * to <code>receiveAfterProduce</code>. If the result was returned synchronously by the endpoint then
-   * <code>receiveAfterProduce</code> is called synchronously as well. If the result was returned asynchronously,
-   * the <code>receiveAfterProduce</code> is called asynchronously as well. This is done by wrapping the result,
-   * adding it to this producers mailbox, unwrapping it once it is received and calling
-   * <code>receiveAfterProduce</code>. The original sender and senderFuture are thereby preserved.
+   * Initiates a message exchange of given <code>pattern</code> with the endpoint specified by
+   * <code>endpointUri</code>. The in-message of the initiated exchange is the canonical form
+   * of <code>msg</code>. After sending the in-message, the processing result (response) is passed
+   * as argument to <code>receiveAfterProduce</code>. If the response is received synchronously from
+   * the endpoint then <code>receiveAfterProduce</code> is called synchronously as well. If the
+   * response is received asynchronously, the <code>receiveAfterProduce</code> is called
+   * asynchronously. This is done by wrapping the response, adding it to this producers
+   * mailbox, unwrapping it and calling <code>receiveAfterProduce</code>. The original
+   * sender and senderFuture are thereby preserved.
+   *
+   * @see Message#canonicalize(Any)
    *
    * @param msg message to produce
    * @param pattern exchange pattern
@@ -106,8 +110,8 @@ trait ProducerSupport { this: Actor =>
 
   /**
    * Produces <code>msg</code> to the endpoint specified by <code>endpointUri</code>. Before the message is
-   * actually produced it is pre-processed by calling <code>receiveBeforeProduce</code>. If <code>oneway</code>
-   * is true an in-only message exchange is initiated, otherwise an in-out message exchange.
+   * actually sent it is pre-processed by calling <code>receiveBeforeProduce</code>. If <code>oneway</code>
+   * is <code>true</code>, an in-only message exchange is initiated, otherwise an in-out message exchange.
    *
    * @see Producer#produce(Any, ExchangePattern)
    */
@@ -132,17 +136,18 @@ trait ProducerSupport { this: Actor =>
   }
 
   /**
-   * Called after the a result was received from the endpoint specified by <code>endpointUri</code>. The
-   * result is passed as argument. By default, this method replies the result back to the original sender
-   * if <code>oneway</code> is false. If <code>oneway</code> is true then nothing is done. This method may
-   * be overridden by subtraits or subclasses.
+   * Called after a response was received from the endpoint specified by <code>endpointUri</code>. The
+   * response is passed as argument. By default, this method sends the response back to the original sender
+   * if <code>oneway</code> is <code>false</code>. If <code>oneway</code> is <code>true</code>, nothing is
+   * done. This method may be overridden by subtraits or subclasses (e.g. to forward responses to another
+   * actor).
    */
   protected def receiveAfterProduce: Receive = {
     case msg => if (!oneway) self.reply(msg)
   }
 
   /**
-   * Creates a new Exchange with given <code>pattern</code> from the endpoint specified by
+   * Creates a new Exchange of given <code>pattern</code> from the endpoint specified by
    * <code>endpointUri</code>.
    */
   private def createExchange(pattern: ExchangePattern): Exchange = endpoint.createExchange(pattern)
@@ -158,25 +163,26 @@ trait ProducerSupport { this: Actor =>
 }
 
 /**
- * Mixed in by Actor implementations that produce messages to Camel endpoints.
+ * Mixed in by Actor implementations to produce messages to Camel endpoints.
  */
 trait Producer extends ProducerSupport { this: Actor =>
 
   /**
-   * Default implementation of Actor.receive
+   * Default implementation of Actor.receive. Any messages received by this actors
+   * will be produced to the endpoint specified by <code>endpointUri</code>.
    */
   protected def receive = produce
 }
 
 /**
- * Java-friendly {@link ProducerSupport} inherited by {@link UntypedProducerActor} implementations.
+ * Java-friendly ProducerSupport.
+ *
+ * @see UntypedProducerActor
  *
  * @author Martin Krasser
  */
 trait UntypedProducer extends ProducerSupport { this: UntypedActor =>
-
   final override def endpointUri = getEndpointUri
-
   final override def oneway = isOneway
 
   final override def receiveBeforeProduce = {
@@ -213,10 +219,10 @@ trait UntypedProducer extends ProducerSupport { this: UntypedActor =>
   def onReceiveBeforeProduce(message: Any): Any = super.receiveBeforeProduce(message)
 
   /**
-   * Called after the a result was received from the endpoint specified by <code>getEndpointUri</code>. The
-   * result is passed as argument. By default, this method replies the result back to the original sender
-   * if <code>isOneway</code> returns false. If <code>isOneway</code> returns true then nothing is done. This
-   * method may be overridden by subclasses.
+   * Called after a response was received from the endpoint specified by <code>endpointUri</code>. The
+   * response is passed as argument. By default, this method sends the response back to the original sender
+   * if <code>oneway</code> is <code>false</code>. If <code>oneway</code> is <code>true</code>, nothing is
+   * done. This method may be overridden by subclasses (e.g. to forward responses to another actor).
    */
   @throws(classOf[Exception])
   def onReceiveAfterProduce(message: Any): Unit = super.receiveAfterProduce(message)

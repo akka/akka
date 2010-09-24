@@ -128,11 +128,23 @@ object Serializer {
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
-  object ScalaJSON extends ScalaJSON
-  trait ScalaJSON extends Serializer {
+  trait ScalaJSON {
+    import sjson.json._
+
+    var classLoader: Option[ClassLoader] = None
+
+    def tojson[T](o: T)(implicit tjs: Writes[T]): JsValue = JsonSerialization.tojson(o)(tjs)
+
+    def fromjson[T](json: JsValue)(implicit fjs: Reads[T]): T = JsonSerialization.fromjson(json)(fjs)
+
+    def tobinary[T](o: T)(implicit tjs: Writes[T]): Array[Byte] = JsonSerialization.tobinary(o)(tjs)
+
+    def frombinary[T](bytes: Array[Byte])(implicit fjs: Reads[T]): T = JsonSerialization.frombinary(bytes)(fjs)
+
+    // backward compatibility
+    // implemented using refelction based json serialization
     def toBinary(obj: AnyRef): Array[Byte] = SJSONSerializer.SJSON.out(obj)
 
-    // FIXME set ClassLoader on SJSONSerializer.SJSON
     def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = SJSONSerializer.SJSON.in(bytes)
 
     import scala.reflect.Manifest
@@ -144,6 +156,7 @@ object Serializer {
       SJSONSerializer.SJSON.in(bytes)(m)
     }
   }
+  object ScalaJSON extends ScalaJSON
 
   /**
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

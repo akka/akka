@@ -4,7 +4,7 @@
 
 package se.scalablesolutions.akka.stm
 
-import se.scalablesolutions.akka.util.UUID
+import se.scalablesolutions.akka.actor.{newUuid, Uuid}
 
 import org.multiverse.transactional.refs.BasicRef
 
@@ -34,7 +34,7 @@ class Ref[T](initialValue: T) extends BasicRef[T](initialValue) with Transaction
 
   def this() = this(null.asInstanceOf[T])
 
-  val uuid = UUID.newUuid.toString
+  val uuid = newUuid.toString
 
   def swap(elem: T) = set(elem)
 
