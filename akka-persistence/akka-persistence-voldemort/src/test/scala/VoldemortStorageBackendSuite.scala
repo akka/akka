@@ -82,34 +82,26 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
 
   }
 
-  test("that vector size storage and retrieval works") {
-    val key = "vectorKey"
-    val size = IntSerializer.toBytes(17)
-    vectorSizeClient.delete(key)
-    vectorSizeClient.getValue(key, empty) should equal(empty)
-    vectorSizeClient.put(key, size)
-    vectorSizeClient.getValue(key) should equal(size)
-  }
 
   test("that vector value storage and retrieval works") {
     val key = "vectorValueKey"
     val index = 3
     val value = bytes("some bytes")
-    val vecKey = getVectorValueKey(key, index)
+    val vecKey = getIndexedKey(key, index)
     getIndexFromVectorValueKey(key, vecKey) should be(index)
-    vectorValueClient.delete(vecKey)
-    vectorValueClient.getValue(vecKey, empty) should equal(empty)
-    vectorValueClient.put(vecKey, value)
-    vectorValueClient.getValue(vecKey) should equal(value)
+    vectorClient.delete(vecKey)
+    vectorClient.getValue(vecKey, empty) should equal(empty)
+    vectorClient.put(vecKey, value)
+    vectorClient.getValue(vecKey) should equal(value)
   }
 
   test("PersistentVector apis function as expected") {
     val key = "vectorApiKey"
     val value = bytes("Some bytes we want to store in a vector")
     val updatedValue = bytes("Some updated bytes we want to store in a vector")
-    vectorSizeClient.delete(key)
-    vectorValueClient.delete(getVectorValueKey(key, 0))
-    vectorValueClient.delete(getVectorValueKey(key, 1))
+    vectorClient.delete(getIndexedKey(key, vectorSizeIndex))
+    vectorClient.delete(getIndexedKey(key, 0))
+    vectorClient.delete(getIndexedKey(key, 1))
     getVectorStorageEntryFor(key, 0) should be(empty)
     getVectorStorageEntryFor(key, 1) should be(empty)
     getVectorStorageRangeFor(key, None, None, 1).head should be(empty)
