@@ -11,10 +11,10 @@ import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.amqp.rpc.RPC
 
-class AMQPStringProducerConsumerTest extends JUnitSuite with MustMatchers {
+class AMQPStringProducerConsumerTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerMessage = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection()
 

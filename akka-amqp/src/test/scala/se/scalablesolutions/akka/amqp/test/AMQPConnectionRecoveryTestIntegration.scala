@@ -14,10 +14,10 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-class AMQPConnectionRecoveryTest extends JUnitSuite with MustMatchers {
+class AMQPConnectionRecoveryTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def connectionAndRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def connectionAndRecovery = AMQPTest.withCleanEndState {
 
     val connectedLatch = new StandardLatch
     val reconnectingLatch = new StandardLatch
