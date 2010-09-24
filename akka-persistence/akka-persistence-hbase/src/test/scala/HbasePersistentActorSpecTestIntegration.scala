@@ -76,7 +76,7 @@ class PersistentFailerActor extends Transactor {
   }
 }
 
-class HbasePersistentActorSpec extends JUnitSuite with BeforeAndAfterAll {
+class HbasePersistentActorSpecTestIntegration extends JUnitSuite with BeforeAndAfterAll {
 
   val testUtil = new HBaseTestingUtility
 
