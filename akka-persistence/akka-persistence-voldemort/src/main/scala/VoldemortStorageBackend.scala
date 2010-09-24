@@ -33,23 +33,22 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     case None => getClientConfig(new HashMap[String, String] + (bootstrapUrlsProp -> "tcp://localhost:6666"))
   }
   val refStore = config.getString("akka.storage.voldemort.store.ref", "Refs")
-  val mapKeyStore = config.getString("akka.storage.voldemort.store.map-key", "MapKeys")
-  val mapValueStore = config.getString("akka.storage.voldemort.store.map-value", "MapValues")
+  val mapStore = config.getString("akka.storage.voldemort.store.map", "Maps")
   val vectorStore = config.getString("akka.storage.voldemort.store.vector", "Vectors")
   val queueStore = config.getString("akka.storage.voldemort.store.queue", "Queues")
 
   var storeClientFactory: StoreClientFactory = null
   var refClient: StoreClient[String, Array[Byte]] = null
-  var mapKeyClient: StoreClient[String, Array[Byte]] = null
-  var mapValueClient: StoreClient[Array[Byte], Array[Byte]] = null
+  var mapClient: StoreClient[Array[Byte], Array[Byte]] = null
   var vectorClient: StoreClient[Array[Byte], Array[Byte]] = null
   var queueClient: StoreClient[Array[Byte], Array[Byte]] = null
   initStoreClients
 
   val underscoreBytesUTF8 = "_".getBytes("UTF-8")
-  val vectorSizeIndex = -1
-  val queueHeadIndex = -1
-  val queueTailIndex = -2
+  val mapKeysIndex = getIndexedBytes(-1)
+  val vectorSizeIndex = getIndexedBytes(-1)
+  val queueHeadIndex = getIndexedBytes(-1)
+  val queueTailIndex = getIndexedBytes(-2)
   case class QueueMetadata(head: Int, tail: Int) {
     def size = tail - head
     //worry about wrapping etc
@@ -85,7 +84,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
   private def getKeyValues(name: String, keys: SortedSet[Array[Byte]]): List[(Array[Byte], Array[Byte])] = {
     val all: JMap[Array[Byte], Versioned[Array[Byte]]] =
-    mapValueClient.getAll(JavaConversions.asIterable(keys.map {
+    mapClient.getAll(JavaConversions.asIterable(keys.map {
       mapKey => getKey(name, mapKey)
     }))
 
@@ -108,7 +107,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
-    val result: Array[Byte] = mapValueClient.getValue(getKey(name, key))
+    val result: Array[Byte] = mapClient.getValue(getKey(name, key))
     result match {
       case null => None
       case _ => Some(result)
@@ -119,7 +118,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     var keys = getMapKeys(name)
     keys -= key
     putMapKeys(name, keys)
-    mapValueClient.delete(getKey(name, key))
+    mapClient.delete(getKey(name, key))
   }
 
 
@@ -127,13 +126,13 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val keys = getMapKeys(name)
     keys.foreach {
       key =>
-        mapValueClient.delete(getKey(name, key))
+        mapClient.delete(getKey(name, key))
     }
-    mapKeyClient.delete(name)
+    mapClient.delete(getKey(name, mapKeysIndex))
   }
 
   def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte]) = {
-    mapValueClient.put(getKey(name, key), value)
+    mapClient.put(getKey(name, key), value)
     var keys = getMapKeys(name)
     keys += key
     putMapKeys(name, keys)
@@ -142,7 +141,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) = {
     val newKeys = entries.map {
       case (key, value) => {
-        mapValueClient.put(getKey(name, key), value)
+        mapClient.put(getKey(name, key), value)
         key
       }
     }
@@ -152,16 +151,16 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def putMapKeys(name: String, keys: SortedSet[Array[Byte]]) = {
-    mapKeyClient.put(name, SortedSetSerializer.toBytes(keys))
+    mapClient.put(getKey(name, mapKeysIndex), SortedSetSerializer.toBytes(keys))
   }
 
   def getMapKeys(name: String): SortedSet[Array[Byte]] = {
-    SortedSetSerializer.fromBytes(mapKeyClient.getValue(name, Array.empty[Byte]))
+    SortedSetSerializer.fromBytes(mapClient.getValue(getKey(name, mapKeysIndex), Array.empty[Byte]))
   }
 
 
   def getVectorStorageSizeFor(name: String): Int = {
-    IntSerializer.fromBytes(vectorClient.getValue(getIndexedKey(name, vectorSizeIndex), IntSerializer.toBytes(0)))
+    IntSerializer.fromBytes(vectorClient.getValue(getKey(name, vectorSizeIndex), IntSerializer.toBytes(0)))
   }
 
 
@@ -205,7 +204,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val size = getVectorStorageSizeFor(name)
     vectorClient.put(getIndexedKey(name, index), elem)
     if (size < index + 1) {
-      vectorClient.put(getIndexedKey(name, vectorSizeIndex), IntSerializer.toBytes(index + 1))
+      vectorClient.put(getKey(name, vectorSizeIndex), IntSerializer.toBytes(index + 1))
     }
   }
 
@@ -216,7 +215,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
         vectorClient.put(getIndexedKey(name, size), element)
         size += 1
     }
-    vectorClient.put(getIndexedKey(name, vectorSizeIndex), IntSerializer.toBytes(size))
+    vectorClient.put(getKey(name, vectorSizeIndex), IntSerializer.toBytes(size))
   }
 
   def insertVectorStorageEntryFor(name: String, element: Array[Byte]) = {
@@ -244,13 +243,13 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val mdata = getQueueMetadata(name)
     val key = getIndexedKey(name, mdata.tail)
     queueClient.put(key, item)
-    queueClient.put(getIndexedKey(name, queueTailIndex), IntSerializer.toBytes(mdata.tail + 1))
-    Some (mdata.size + 1)
+    queueClient.put(getKey(name, queueTailIndex), IntSerializer.toBytes(mdata.tail + 1))
+    Some(mdata.size + 1)
   }
 
 
   def getQueueMetadata(name: String): QueueMetadata = {
-    val keys = List(getIndexedKey(name, queueHeadIndex), getIndexedKey(name, queueTailIndex))
+    val keys = List(getKey(name, queueHeadIndex), getKey(name, queueTailIndex))
     val qdata = JavaConversions.asMap(queueClient.getAll(JavaConversions.asIterable(keys)))
     val values = keys.map {
       qdata.get(_) match {
@@ -278,12 +277,16 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     theKey
   }
 
-  def getIndexedKey(owner: String, index: Int): Array[Byte] = {
+  def getIndexedBytes(index: Int): Array[Byte] = {
     val indexbytes = IntSerializer.toBytes(index)
     val theIndexKey = new Array[Byte](underscoreBytesUTF8.length + indexbytes.length)
     System.arraycopy(underscoreBytesUTF8, 0, theIndexKey, 0, underscoreBytesUTF8.length)
     System.arraycopy(indexbytes, 0, theIndexKey, underscoreBytesUTF8.length, indexbytes.length)
-    getKey(owner, theIndexKey)
+    theIndexKey
+  }
+
+  def getIndexedKey(owner: String, index: Int): Array[Byte] = {
+    getKey(owner, getIndexedBytes(index))
   }
 
   def getIndexFromVectorValueKey(owner: String, key: Array[Byte]): Int = {
@@ -318,8 +321,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
       }
     }
     refClient = storeClientFactory.getStoreClient(refStore)
-    mapKeyClient = storeClientFactory.getStoreClient(mapKeyStore)
-    mapValueClient = storeClientFactory.getStoreClient(mapValueStore)
+    mapClient = storeClientFactory.getStoreClient(mapStore)
     vectorClient = storeClientFactory.getStoreClient(vectorStore)
     queueClient = storeClientFactory.getStoreClient(queueStore)
   }
