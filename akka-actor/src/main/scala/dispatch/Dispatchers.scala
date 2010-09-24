@@ -9,7 +9,8 @@ import se.scalablesolutions.akka.config.Config.config
 import net.lag.configgy.ConfigMap
 import java.util.concurrent.ThreadPoolExecutor.{AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy}
 import java.util.concurrent.TimeUnit
-import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
+import se.scalablesolutions.akka.util.{Duration, Logging}
+import se.scalablesolutions.akka.actor.newUuid
 
 /**
  * Scala API. Dispatcher factory.
@@ -171,7 +172,7 @@ object Dispatchers extends Logging {
    * Throws: IllegalArgumentException if the value of "type" is not valid
    */
   def from(cfg: ConfigMap): Option[MessageDispatcher] = {
-    lazy val name = cfg.getString("name", UUID.newUuid.toString)
+    lazy val name = cfg.getString("name", newUuid.toString)
 
     def threadPoolConfig(b: ThreadPoolBuilder) {
       b.configureIfPossible( builder => {

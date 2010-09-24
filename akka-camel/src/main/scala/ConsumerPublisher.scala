@@ -31,7 +31,7 @@ private[camel] object ConsumerPublisher extends Logging {
    * Stops route to the already un-registered consumer actor.
    */
   def handleConsumerUnregistered(event: ConsumerUnregistered) {
-    CamelContextManager.context.stopRoute(event.uuid)
+    CamelContextManager.context.stopRoute(event.uuid.toString)
     log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
   }
 
@@ -143,7 +143,7 @@ private[camel] abstract class ConsumerRoute(endpointUri: String, id: String) ext
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerActorRoute(endpointUri: String, uuid: String, blocking: Boolean) extends ConsumerRoute(endpointUri, uuid) {
+private[camel] class ConsumerActorRoute(endpointUri: String, uuid: Uuid, blocking: Boolean) extends ConsumerRoute(endpointUri, uuid.toString) {
   protected override def targetUri = "actor:uuid:%s?blocking=%s" format (uuid, blocking)
 }
 
@@ -229,7 +229,7 @@ private[camel] sealed trait ConsumerEvent
  *
  * @author Martin Krasser
  */
-private[camel] case class ConsumerRegistered(actorRef: ActorRef, uri: String, uuid: String, blocking: Boolean) extends ConsumerEvent
+private[camel] case class ConsumerRegistered(actorRef: ActorRef, uri: String, uuid: Uuid, blocking: Boolean) extends ConsumerEvent
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
@@ -240,7 +240,7 @@ private[camel] case class ConsumerRegistered(actorRef: ActorRef, uri: String, uu
  *
  * @author Martin Krasser
  */
-private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, uuid: String) extends ConsumerEvent
+private[camel] case class ConsumerUnregistered(actorRef: ActorRef, uri: String, uuid: Uuid) extends ConsumerEvent
 
 /**
  * Event indicating that an typed actor proxy has been created for a typed actor. For each <code>@consume</code>
