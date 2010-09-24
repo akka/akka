@@ -88,13 +88,13 @@ object AMQP {
    */
   case class ExchangeParameters(
           exchangeName: String,
-          exchangeType: ExchangeType = ExchangeType.Topic,
+          exchangeType: ExchangeType = Topic,
           exchangeDeclaration: Declaration = ActiveDeclaration(),
           configurationArguments: Map[String, AnyRef] = Map.empty) {
 
     // Needed for Java API usage
     def this(exchangeName: String) =
-      this (exchangeName, ExchangeType.Topic, ActiveDeclaration(), Map.empty)
+      this (exchangeName, Topic, ActiveDeclaration(), Map.empty)
 
     // Needed for Java API usage
     def this(exchangeName: String, exchangeType: ExchangeType) =
@@ -187,6 +187,10 @@ object AMQP {
       this (routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), true, None)
 
     // Needed for Java API usage
+    def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters, channelParameters: ChannelParameters) =
+      this (routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), true, Some(channelParameters))
+
+    // Needed for Java API usage
     def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters, selfAcknowledging: Boolean) =
       this (routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), selfAcknowledging, None)
 
@@ -269,26 +273,6 @@ object AMQP {
     new ProducerClient(producerRef, rKey, toBinary)
   }
 
-  // Needed for Java API usage
-  def newStringProducer(connection: ActorRef): ProducerClient[String] = {
-    newStringProducer(connection, None, None, None)
-  }
-  // Needed for Java API usage
-  def newStringProducer(connection: ActorRef, exchangeName: String): ProducerClient[String] = {
-    newStringProducer(connection, Some(exchangeName), None, None)
-  }
-
-  // Needed for Java API usage
-  def newStringProducer(connection: ActorRef, exchangeName: String, routingKey: String): ProducerClient[String] = {
-    newStringProducer(connection, Some(exchangeName), Some(routingKey), None)
-  }
-
-  // Needed for Java API usage
-  def newStringProducer(connection: ActorRef, exchangeName: String, routingKey: String, producerId: String): ProducerClient[String] = {
-    newStringProducer(connection, Some(exchangeName), Some(routingKey), Some(producerId))
-  }
-
-
   def newStringConsumer(connection: ActorRef,
                         handler: String => Unit,
                         exchangeName: Option[String],
@@ -309,6 +293,7 @@ object AMQP {
 
     newConsumer(connection, ConsumerParameters(rKey, deliveryHandler, Some(qName), exchangeParameters))
   }
+
 
   def newProtobufProducer[O <: com.google.protobuf.Message](connection: ActorRef,
                                                             exchangeName: Option[String],
@@ -350,6 +335,7 @@ object AMQP {
     newConsumer(connection, ConsumerParameters(rKey, deliveryHandler, Some(qName), exchangeParameters))
   }
 
+  
   /**
    * Main supervisor
    */
