@@ -10,7 +10,7 @@ import org.apache.camel.util.ExchangeHelper
 /**
  * An immutable representation of a Camel message. Actor classes that mix in
  * se.scalablesolutions.akka.camel.Producer or
- * se.scalablesolutions.akka.camel.Consumer use this message type for communication.
+ * se.scalablesolutions.akka.camel.Consumer usually use this message type for communication.
  *
  * @author Martin Krasser
  */
@@ -264,8 +264,8 @@ class CamelMessageAdapter(val cm: CamelMessage) {
 
 /**
  * Defines conversion methods to CamelExchangeAdapter and CamelMessageAdapter.
- * Imported by applications
- * that implicitly want to use conversion methods of CamelExchangeAdapter and CamelMessageAdapter.
+ * Imported by applications that implicitly want to use conversion methods of
+ * CamelExchangeAdapter and CamelMessageAdapter.
  */
 object CamelMessageConversion {
 

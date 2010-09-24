@@ -12,9 +12,10 @@ import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 
 /**
- * Used by applications (and the Kernel) to publish consumer actors and typed actors via
- * Camel endpoints and to manage the life cycle of a a global CamelContext which can be
- * accessed via <code>se.scalablesolutions.akka.camel.CamelContextManager.context</code>.
+ * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors
+ * are published (asynchronously) when they are started and unpublished (asynchronously) when
+ * they are stopped. The CamelService is notified about actor start- and stop-events by
+ * registering listeners at ActorRegistry and AspectInitRegistry.
  *
  * @author Martin Krasser
  */
@@ -29,11 +30,11 @@ trait CamelService extends Bootable with Logging {
   AspectInitRegistry.addListener(publishRequestor)
 
   /**
-   * Starts the CamelService. Any started actor that is a consumer actor will be (asynchronously)
+   * Starts this CamelService. Any started actor that is a consumer actor will be (asynchronously)
    * published as Camel endpoint. Consumer actors that are started after this method returned will
    * be published as well. Actor publishing is done asynchronously. A started (loaded) CamelService
    * also publishes <code>@consume</code> annotated methods of typed actors that have been created
-   * with <code>TypedActor.newInstance(..)</code> (and <code>TypedActor.newInstance(..)</code>
+   * with <code>TypedActor.newInstance(..)</code> (and <code>TypedActor.newRemoteInstance(..)</code>
    * on a remote node).
    */
   abstract override def onLoad = {
@@ -54,7 +55,8 @@ trait CamelService extends Bootable with Logging {
   }
 
   /**
-   * Stops the CamelService.
+   * Stops this CamelService. All published consumer actors and typed consumer actor methods will be
+   * unpublished asynchronously.
    */
   abstract override def onUnload = {
     // Unregister this instance as current CamelService
@@ -98,24 +100,24 @@ trait CamelService extends Bootable with Logging {
   def stop = onUnload
 
   /**
-   * Sets an expectation of the number of upcoming endpoint activations and returns
-   * a {@link CountDownLatch} that can be used to wait for the activations to occur.
-   * Endpoint activations that occurred in the past are not considered.
+   * Sets an expectation on the number of upcoming endpoint activations and returns
+   * a CountDownLatch that can be used to wait for the activations to occur. Endpoint 
+   * activations that occurred in the past are not considered.
    */
   def expectEndpointActivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedRegistrationCount(count)).as[CountDownLatch].get
 
   /**
-   * Sets an expectation of the number of upcoming endpoint de-activations and returns
-   * a {@link CountDownLatch} that can be used to wait for the de-activations to occur.
-   * Endpoint de-activations that occurred in the past are not considered.
+   * Sets an expectation on the number of upcoming endpoint de-activations and returns
+   * a CountDownLatch that can be used to wait for the de-activations to occur. Endpoint
+   * de-activations that occurred in the past are not considered.
    */
   def expectEndpointDeactivationCount(count: Int): CountDownLatch =
     (consumerPublisher !! SetExpectedUnregistrationCount(count)).as[CountDownLatch].get
 }
 
 /**
- * ...
+ * Manages a global CamelService (the 'current' CamelService).
  *
  * @author Martin Krasser
  */
@@ -128,11 +130,17 @@ object CamelServiceManager {
 
   /**
    * Starts a new CamelService and makes it the current CamelService.
+   *
+   * @see CamelService#start
+   * @see CamelService#onLoad
    */
   def startCamelService = CamelServiceFactory.createCamelService.start
 
   /**
    * Stops the current CamelService.
+   *
+   * @see CamelService#stop
+   * @see CamelService#onUnload
    */
   def stopCamelService = service.stop
 
@@ -159,12 +167,12 @@ object CamelServiceManager {
  */
 object CamelServiceFactory {
   /**
-   * Creates a new CamelService instance
+   * Creates a new CamelService instance.
    */
   def createCamelService: CamelService = new CamelService { }
 
   /**
-   * Creates a new CamelService instance
+   * Creates a new CamelService instance and initializes it with the given CamelContext.
    */
   def createCamelService(camelContext: CamelContext): CamelService = {
     CamelContextManager.init(camelContext)

@@ -5,8 +5,12 @@ import org.apache.camel.impl.DefaultCamelContext
 import org.junit._
 import org.scalatest.junit.JUnitSuite
 
+import se.scalablesolutions.akka.actor.uuidFrom
+
 class ActorComponentTest extends JUnitSuite {
   val component: ActorComponent = ActorComponentTest.actorComponent
+
+  def testUUID = uuidFrom("93da8c80-c3fd-11df-abed-60334b120057")
 
   @Test def shouldCreateEndpointWithIdDefined = {
     val ep1: ActorEndpoint = component.createEndpoint("actor:abc").asInstanceOf[ActorEndpoint]
@@ -20,15 +24,15 @@ class ActorComponentTest extends JUnitSuite {
   }
 
   @Test def shouldCreateEndpointWithUuidDefined = {
-    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:abc").asInstanceOf[ActorEndpoint]
-    assert(ep.uuid === Some("abc"))
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:" + testUUID).asInstanceOf[ActorEndpoint]
+    assert(ep.uuid === Some(testUUID))
     assert(ep.id === None)
     assert(!ep.blocking)
   }
 
   @Test def shouldCreateEndpointWithBlockingSet = {
-    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:abc?blocking=true").asInstanceOf[ActorEndpoint]
-    assert(ep.uuid === Some("abc"))
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:"+testUUID+"?blocking=true").asInstanceOf[ActorEndpoint]
+    assert(ep.uuid === Some(testUUID))
     assert(ep.id === None)
     assert(ep.blocking)
   }

@@ -6,7 +6,8 @@ package se.scalablesolutions.akka.dispatch
 
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.{Duration, Logging, UUID}
+import se.scalablesolutions.akka.util.{Duration, Logging}
+import se.scalablesolutions.akka.actor.newUuid
 
 import net.lag.configgy.ConfigMap
 
@@ -169,7 +170,7 @@ object Dispatchers extends Logging {
    * Throws: IllegalArgumentException if the value of "type" is not valid
    */
   def from(cfg: ConfigMap): Option[MessageDispatcher] = {
-    lazy val name = cfg.getString("name", UUID.newUuid.toString)
+    lazy val name = cfg.getString("name", newUuid.toString)
 
     def threadPoolConfig(b: ThreadPoolBuilder) {
       b.configureIfPossible( builder => {

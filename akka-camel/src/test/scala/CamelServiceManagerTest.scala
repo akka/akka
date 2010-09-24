@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.actor.ActorRegistry
 /**
  * @author Martin Krasser
  */
-class CamelServiceManagerSpec extends WordSpec with BeforeAndAfterAll with MustMatchers {
+class CamelServiceManagerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
 
   override def afterAll = ActorRegistry.shutdownAll
 
