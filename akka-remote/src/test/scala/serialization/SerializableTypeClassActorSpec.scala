@@ -8,7 +8,7 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import se.scalablesolutions.akka.serialization._
-import dispatch.json._
+// import dispatch.json._
 import se.scalablesolutions.akka.actor._
 import ActorSerialization._
 import Actor._
@@ -230,12 +230,14 @@ case class MyMessage(val id: String, val value: Tuple2[String, Int])
   extends Serializable.ScalaJSON[MyMessage] {
 
   def this() = this(null, null)
-  import sjson.json.DefaultProtocol._
-  import sjson.json._
-  import sjson.json.JsonSerialization._
+
+  import DefaultProtocol._
+  import JsonSerialization._
+
   implicit val MyMessageFormat: sjson.json.Format[MyMessage] =
     asProduct2("id", "value")(MyMessage)(MyMessage.unapply(_).get)
 
+  def toJSON: String = JsValue.toJson(tojson(this))
   def toBytes: Array[Byte] = tobinary(this)
   def fromBytes(bytes: Array[Byte]) = frombinary[MyMessage](bytes)
   def fromJSON(js: String) = fromjson[MyMessage](Js(js))
