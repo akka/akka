@@ -1,13 +1,12 @@
 package se.scalablesolutions.akka.camel.component
 
+import org.apache.camel._
+import org.apache.camel.builder.RouteBuilder
+import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
 import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
 
-import org.apache.camel.builder.RouteBuilder
-import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{ActorRegistry, TypedActor}
 import se.scalablesolutions.akka.camel._
-import org.apache.camel.impl.{DefaultCamelContext, SimpleRegistry}
-import org.apache.camel.{ResolveEndpointFailedException, ExchangePattern, Exchange, Processor}
 
 /**
  * @author Martin Krasser
