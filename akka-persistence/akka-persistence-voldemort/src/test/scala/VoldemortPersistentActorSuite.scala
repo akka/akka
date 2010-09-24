@@ -108,12 +108,11 @@ Spec with
   override def beforeEach {
     removeMapStorageFor(state)
     var size = getVectorStorageSizeFor(tx)
-    (0 to size).foreach {
+    (-1 to size).foreach {
       index => {
-        vectorValueClient.delete(getVectorValueKey(tx, index))
+        vectorClient.delete(getIndexedKey(tx, index))
       }
     }
-    vectorSizeClient.delete(tx)
   }
 
   override def afterEach {

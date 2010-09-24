@@ -34,18 +34,23 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   val refStore = config.getString("akka.storage.voldemort.store.ref", "Refs")
   val mapKeyStore = config.getString("akka.storage.voldemort.store.map-key", "MapKeys")
   val mapValueStore = config.getString("akka.storage.voldemort.store.map-value", "MapValues")
-  val vectorSizeStore = config.getString("akka.storage.voldemort.store.vector-size", "VectorSizes")
-  val vectorValueStore = config.getString("akka.storage.voldemort.store.vector-value", "VectorValues")
+  val vectorStore = config.getString("akka.storage.voldemort.store.vector", "Vectors")
+  val queueStore = config.getString("akka.storage.voldemort.store.queue", "Queues")
 
   var storeClientFactory: StoreClientFactory = null
   var refClient: StoreClient[String, Array[Byte]] = null
   var mapKeyClient: StoreClient[String, Array[Byte]] = null
   var mapValueClient: StoreClient[Array[Byte], Array[Byte]] = null
-  var vectorSizeClient: StoreClient[String, Array[Byte]] = null
-  var vectorValueClient: StoreClient[Array[Byte], Array[Byte]] = null
+  var vectorClient: StoreClient[Array[Byte], Array[Byte]] = null
+  var queueClient: StoreClient[Array[Byte], Array[Byte]] = null
   initStoreClients
 
   val underscoreBytesUTF8 = "_".getBytes("UTF-8")
+  val vectorSizeIndex = -1
+  val queueSizeKeyBytes = IntSerializer.toBytes(-1)
+  val queueHeadKeyBytes = IntSerializer.toBytes(-2)
+  val queueTailKeyBytes = IntSerializer.toBytes(-3)
+
   implicit val byteOrder = new Ordering[Array[Byte]] {
     override def compare(x: Array[Byte], y: Array[Byte]) = ByteUtils.compare(x, y)
   }
@@ -152,7 +157,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
 
   def getVectorStorageSizeFor(name: String): Int = {
-    IntSerializer.fromBytes(vectorSizeClient.getValue(name, IntSerializer.toBytes(0)))
+    IntSerializer.fromBytes(vectorClient.getValue(getIndexedKey(name, vectorSizeIndex), IntSerializer.toBytes(0)))
   }
 
 
@@ -167,10 +172,10 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
       count
     }
     val seq: IndexedSeq[Array[Byte]] = (st until st + cnt).map {
-      index => getVectorValueKey(name, index)
+      index => getIndexedKey(name, index)
     }
 
-    val all: JMap[Array[Byte], Versioned[Array[Byte]]] = vectorValueClient.getAll(JavaConversions.asIterable(seq))
+    val all: JMap[Array[Byte], Versioned[Array[Byte]]] = vectorClient.getAll(JavaConversions.asIterable(seq))
 
     var storage = new ArrayBuffer[Array[Byte]](seq.size)
     storage = storage.padTo(seq.size, Array.empty[Byte])
@@ -189,14 +194,14 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = {
-    vectorValueClient.getValue(getVectorValueKey(name, index), Array.empty[Byte])
+    vectorClient.getValue(getIndexedKey(name, index), Array.empty[Byte])
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
     val size = getVectorStorageSizeFor(name)
-    vectorValueClient.put(getVectorValueKey(name, index), elem)
+    vectorClient.put(getIndexedKey(name, index), elem)
     if (size < index + 1) {
-      vectorSizeClient.put(name, IntSerializer.toBytes(index + 1))
+      vectorClient.put(getIndexedKey(name, vectorSizeIndex), IntSerializer.toBytes(index + 1))
     }
   }
 
@@ -204,10 +209,10 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     var size = getVectorStorageSizeFor(name)
     elements.foreach {
       element =>
-        vectorValueClient.put(getVectorValueKey(name, size), element)
+        vectorClient.put(getIndexedKey(name, size), element)
         size += 1
     }
-    vectorSizeClient.put(name, IntSerializer.toBytes(size))
+    vectorClient.put(getIndexedKey(name, vectorSizeIndex), IntSerializer.toBytes(size))
   }
 
   def insertVectorStorageEntryFor(name: String, element: Array[Byte]) = {
@@ -220,6 +225,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
    * Store the length of owner as first byte to work around the rare case
    * where ownerbytes1 + keybytes1 == ownerbytes2 + keybytes2 but ownerbytes1 != ownerbytes2
    */
+
   def getKey(owner: String, key: Array[Byte]): Array[Byte] = {
     val ownerBytes: Array[Byte] = owner.getBytes("UTF-8")
     val ownerLenghtBytes: Array[Byte] = IntSerializer.toBytes(owner.length)
@@ -230,7 +236,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     theKey
   }
 
-  def getVectorValueKey(owner: String, index: Int): Array[Byte] = {
+  def getIndexedKey(owner: String, index: Int): Array[Byte] = {
     val indexbytes = IntSerializer.toBytes(index)
     val theIndexKey = new Array[Byte](underscoreBytesUTF8.length + indexbytes.length)
     System.arraycopy(underscoreBytesUTF8, 0, theIndexKey, 0, underscoreBytesUTF8.length)
@@ -243,6 +249,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     System.arraycopy(key, key.length - IntSerializer.bytesPerInt, indexBytes, 0, IntSerializer.bytesPerInt)
     IntSerializer.fromBytes(indexBytes)
   }
+
 
 
   def getClientConfig(configMap: Map[String, String]): Properties = {
@@ -272,8 +279,8 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     refClient = storeClientFactory.getStoreClient(refStore)
     mapKeyClient = storeClientFactory.getStoreClient(mapKeyStore)
     mapValueClient = storeClientFactory.getStoreClient(mapValueStore)
-    vectorSizeClient = storeClientFactory.getStoreClient(vectorSizeStore)
-    vectorValueClient = storeClientFactory.getStoreClient(vectorValueStore)
+    vectorClient = storeClientFactory.getStoreClient(vectorStore)
+    queueClient = storeClientFactory.getStoreClient(queueStore)
   }
 
   object IntSerializer {
