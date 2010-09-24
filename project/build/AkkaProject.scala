@@ -40,19 +40,19 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   object Repositories {
-//    lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
-//    lazy val CasbahRepo           = MavenRepository("Casbah Repo", "http://repo.bumnetworks.com/releases")
-//    lazy val CasbahSnapshotRepo   = MavenRepository("Casbah Snapshots", "http://repo.bumnetworks.com/snapshots")
-//    lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
+    lazy val AkkaRepo             = MavenRepository("Akka Repository", "http://scalablesolutions.se/akka/repository")
+    lazy val CasbahRepo           = MavenRepository("Casbah Repo", "http://repo.bumnetworks.com/releases")
+    lazy val CasbahSnapshotRepo   = MavenRepository("Casbah Snapshots", "http://repo.bumnetworks.com/snapshots")
+    lazy val CodehausRepo         = MavenRepository("Codehaus Repo", "http://repository.codehaus.org")
     lazy val EmbeddedRepo         = MavenRepository("Embedded Repo", (info.projectPath / "embedded-repo").asURL.toString)
-//    lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
-//    lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
-//    lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
-//    lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
-//    lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
-//    lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
-//    lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
-//    lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
+    lazy val FusesourceSnapshotRepo = MavenRepository("Fusesource Snapshots", "http://repo.fusesource.com/nexus/content/repositories/snapshots")
+    lazy val GuiceyFruitRepo      = MavenRepository("GuiceyFruit Repo", "http://guiceyfruit.googlecode.com/svn/repo/releases/")
+    lazy val JBossRepo            = MavenRepository("JBoss Repo", "https://repository.jboss.org/nexus/content/groups/public/")
+    lazy val JavaNetRepo          = MavenRepository("java.net Repo", "http://download.java.net/maven/2")
+    lazy val SonatypeSnapshotRepo = MavenRepository("Sonatype OSS Repo", "http://oss.sonatype.org/content/repositories/releases")
+    lazy val SunJDMKRepo          = MavenRepository("Sun JDMK Repo", "http://wp5.e-taxonomy.eu/cdmlib/mavenrepo")
+    lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
+    lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -63,31 +63,27 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   import Repositories._
-//  lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
-//  lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
-//  lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
-//  // lazy val hawtdispatchModuleConfig  = ModuleConfiguration("org.fusesource.hawtdispatch", FusesourceSnapshotRepo)
-//  lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
-//  lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
-//  lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
-//  lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
-//  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
-//  lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
-//  lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
-//  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
-//  lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-//  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
-//  lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
-//  lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
-//  lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
-//  lazy val zookeeperRelease        = ModuleConfiguration("org.apache.hadoop.zookeeper",ZookeeperRepo)
-//  lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
-//  lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
+  lazy val atmosphereModuleConfig  = ModuleConfiguration("org.atmosphere", SonatypeSnapshotRepo)
+  lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
+  lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
+  // lazy val hawtdispatchModuleConfig  = ModuleConfiguration("org.fusesource.hawtdispatch", FusesourceSnapshotRepo)
+  lazy val jbossModuleConfig       = ModuleConfiguration("org.jboss", JBossRepo)
+  lazy val jdmkModuleConfig        = ModuleConfiguration("com.sun.jdmk", SunJDMKRepo)
+  lazy val jmsModuleConfig         = ModuleConfiguration("javax.jms", SunJDMKRepo)
+  lazy val jmxModuleConfig         = ModuleConfiguration("com.sun.jmx", SunJDMKRepo)
+  lazy val jerseyContrModuleConfig = ModuleConfiguration("com.sun.jersey.contribs", JavaNetRepo)
+  lazy val jerseyModuleConfig      = ModuleConfiguration("com.sun.jersey", JavaNetRepo)
+  lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
+  lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
+  lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
+  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
+  lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
+  lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
+  lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
+  lazy val zookeeperRelease        = ModuleConfiguration("org.apache.hadoop.zookeeper",ZookeeperRepo)
+  lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
+  lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
-  val mavenLocal = "Local Maven Repository" at "file:/e:/maven-repository"
-
-    val efgfpNexusReleasesRepository = "Nexus Releases" at "http://nexus/nexus/content/groups/public"
-    val efgfpNexusSnaphotsRepository = "Nexus Snapshots" at "http://nexus/nexus/content/groups/public-snapshots"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Versions
