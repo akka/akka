@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.stm
 
 import scala.collection.immutable.Vector
 
-import se.scalablesolutions.akka.util.UUID
+import se.scalablesolutions.akka.actor.newUuid
 
 import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 
@@ -24,7 +24,7 @@ object TransactionalVector {
 class TransactionalVector[T](initialValue: Vector[T]) extends Transactional with IndexedSeq[T] {
   def this() = this(Vector[T]())
 
-  val uuid = UUID.newUuid.toString
+  val uuid = newUuid.toString
 
   private[this] val ref = Ref(initialValue)
 

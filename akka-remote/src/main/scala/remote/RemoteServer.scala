@@ -10,7 +10,7 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor.{
-  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage}
+  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage,uuidFrom,Uuid}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
@@ -314,7 +314,7 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  private def register(id: String, actorRef: ActorRef, registry: ConcurrentHashMap[String, ActorRef]) {
+  private def register[Key](id: Key, actorRef: ActorRef, registry: ConcurrentHashMap[Key, ActorRef]) {
     if (_isRunning) {
       if (!registry.contains(id)) {
         if (!actorRef.isRunning) actorRef.start
@@ -323,7 +323,7 @@ class RemoteServer extends Logging with ListenerManagement {
     }
   }
 
-  private def registerTypedActor(id: String, typedActor: AnyRef, registry: ConcurrentHashMap[String, AnyRef]) {
+  private def registerTypedActor[Key](id: Key, typedActor: AnyRef, registry: ConcurrentHashMap[Key, AnyRef]) {
     if (_isRunning) {
       if (!registry.contains(id)) {
         registry.put(id, typedActor)
@@ -337,9 +337,8 @@ class RemoteServer extends Logging with ListenerManagement {
   def unregister(actorRef: ActorRef):Unit = synchronized {
     if (_isRunning) {
       log.debug("Unregistering server side remote actor [%s] with id [%s:%s]", actorRef.actorClass.getName, actorRef.id, actorRef.uuid)
-      val actorMap = actors()
-      actorMap remove actorRef.id
-      if (actorRef.registeredInRemoteNodeDuringSerialization) actorsByUuid() remove actorRef.uuid
+      actors().remove(actorRef.id,actorRef)
+      actorsByUuid().remove(actorRef.uuid,actorRef)
     }
   }
 
@@ -354,11 +353,9 @@ class RemoteServer extends Logging with ListenerManagement {
       if (id.startsWith(UUID_PREFIX)) {
         actorsByUuid().remove(id.substring(UUID_PREFIX.length)) 
       } else {
-        val actorRef = actors().get(id)
-        if (actorRef.registeredInRemoteNodeDuringSerialization) {
-          actorsByUuid() remove actorRef.uuid
-        }
-        actors() remove id
+        val actorRef = actors() get id
+        actorsByUuid().remove(actorRef.uuid,actorRef)
+        actors().remove(id,actorRef)
       }
     }
   }
@@ -536,10 +533,10 @@ class RemoteServerHandler(
             override def onComplete(result: AnyRef) {
               log.debug("Returning result from actor invocation [%s]", result)
               val replyBuilder = RemoteReplyProtocol.newBuilder
-                  .setId(request.getId)
-                  .setMessage(MessageSerializer.serialize(result))
-                  .setIsSuccessful(true)
-                  .setIsActor(true)
+                .setUuid(request.getUuid)
+                .setMessage(MessageSerializer.serialize(result))
+                .setIsSuccessful(true)
+                .setIsActor(true)
 
               if (request.hasSupervisorUuid) replyBuilder.setSupervisorUuid(request.getSupervisorUuid)
 
@@ -580,7 +577,7 @@ class RemoteServerHandler(
         val result = messageReceiver.invoke(typedActor, args: _*)
         log.debug("Returning result from remote typed actor invocation [%s]", result)
         val replyBuilder = RemoteReplyProtocol.newBuilder
-            .setId(request.getId)
+            .setUuid(request.getUuid)
             .setMessage(MessageSerializer.serialize(result))
             .setIsSuccessful(true)
             .setIsActor(false)
@@ -640,7 +637,7 @@ class RemoteServerHandler(
         val clazz = if (applicationLoader.isDefined) applicationLoader.get.loadClass(name)
                     else Class.forName(name)
         val actorRef = Actor.actorOf(clazz.newInstance.asInstanceOf[Actor])
-        actorRef.uuid = uuid
+        actorRef.uuid = uuidFrom(uuid.getHigh,uuid.getLow)
         actorRef.id = id
         actorRef.timeout = timeout
         actorRef.remoteAddress = None
@@ -695,7 +692,7 @@ class RemoteServerHandler(
     val actorInfo = request.getActorInfo
     log.error(e, "Could not invoke remote typed actor [%s :: %s]", actorInfo.getTypedActorInfo.getMethod, actorInfo.getTarget)
     val replyBuilder = RemoteReplyProtocol.newBuilder
-        .setId(request.getId)
+        .setUuid(request.getUuid)
         .setException(ExceptionProtocol.newBuilder.setClassname(e.getClass.getName).setMessage(e.getMessage).build)
         .setIsSuccessful(false)
         .setIsActor(isActor)
