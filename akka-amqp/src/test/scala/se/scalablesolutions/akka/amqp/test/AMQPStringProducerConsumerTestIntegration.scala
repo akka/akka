@@ -31,7 +31,7 @@ class AMQPStringProducerConsumerTestIntegration extends JUnitSuite with MustMatc
     }
     AMQP.newStringConsumer(connection, responseHandler, None, Some("string.reply.key"))
 
-    val producer = AMQP.newStringProducer(connection, "stringexchange")
+    val producer = AMQP.newStringProducer(connection, Some("stringexchange"))
     producer.send(request, Some("string.reply.key"))
 
     responseLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)

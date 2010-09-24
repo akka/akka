@@ -18,7 +18,23 @@ case class Message(
     routingKey: String,
     mandatory: Boolean = false,
     immediate: Boolean = false,
-    properties: Option[BasicProperties] = None) extends AMQPMessage
+    properties: Option[BasicProperties] = None) extends AMQPMessage {
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String) = this(payload, routingKey, false, false, None)
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String, mandatory: Boolean, immediate: Boolean) =
+    this(payload, routingKey, mandatory, immediate, None)
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String, properties: BasicProperties) =
+    this(payload, routingKey, false, false, Some(properties))
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String, mandatory: Boolean, immediate: Boolean, properties: BasicProperties) =
+    this(payload, routingKey, mandatory, immediate, Some(properties))
+}
 
 case class Delivery(
     payload: Array[Byte],
@@ -52,8 +68,8 @@ class RejectionException(deliveryTag: Long) extends RuntimeException
 
 // internal messages
 private[akka] case class Failure(cause: Throwable) extends InternalAMQPMessage
-private[akka] case class ConnectionShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
-private[akka] case class ChannelShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
+case class ConnectionShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
+case class ChannelShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
 
 private[akka] class MessageNotDeliveredException(
     val message: String,

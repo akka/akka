@@ -434,12 +434,12 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   class AkkaAMQPProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val commons_io = Dependencies.commons_io
     val rabbit     = Dependencies.rabbit
-    val protobuf      = Dependencies.protobuf
+    val protobuf   = Dependencies.protobuf
 
     // testing
-    val junit      = Dependencies.junit
-    val multiverse = Dependencies.multiverse
-    val scalatest  = Dependencies.scalatest
+    val junit           = Dependencies.junit
+    val multiverse      = Dependencies.multiverse
+    val scalatest       = Dependencies.scalatest
 
     override def testOptions = createTestFilter( _.endsWith("Test") )
   }
