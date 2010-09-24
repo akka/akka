@@ -72,6 +72,8 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def finished {
     try {
       server.shutdown
+      val s2 = RemoteServer.serverFor(HOSTNAME, PORT + 1)
+      if (s2.isDefined) s2.get.shutdown
       RemoteClient.shutdownAll
       Thread.sleep(1000)
     } catch {
@@ -208,7 +210,7 @@ class ServerInitiatedRemoteActorSpec extends JUnitSuite {
   def shouldRegisterAndUnregisterByUuid {
     val actor1 = actorOf[RemoteActorSpecActorUnidirectional]
     server.register("uuid:" + actor1.uuid, actor1)
-    assert(server.actorsByUuid().get(actor1.uuid) != null, "actor registered")
+    assert(server.actorsByUuid().get(actor1.uuid.toString) != null, "actor registered")
     server.unregister("uuid:" + actor1.uuid)
     assert(server.actorsByUuid().get(actor1.uuid) == null, "actor unregistered")
   }

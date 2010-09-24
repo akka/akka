@@ -5,7 +5,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 
-class HbaseStorageSpec extends
+class HbaseStorageSpecTestIntegration extends
 Spec with
 ShouldMatchers with
 BeforeAndAfterAll with 

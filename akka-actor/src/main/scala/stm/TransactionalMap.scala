@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.stm
 
 import scala.collection.immutable.HashMap
 
-import se.scalablesolutions.akka.util.UUID
+import se.scalablesolutions.akka.actor.{newUuid}
 
 import org.multiverse.api.ThreadLocalTransaction.getThreadLocalTransaction
 
@@ -24,7 +24,7 @@ object TransactionalMap {
 class TransactionalMap[K, V](initialValue: HashMap[K, V]) extends Transactional with scala.collection.mutable.Map[K, V] {
   def this() = this(HashMap[K, V]())
 
-  val uuid = UUID.newUuid.toString
+  val uuid = newUuid.toString
 
   private[this] val ref = Ref(initialValue)
 

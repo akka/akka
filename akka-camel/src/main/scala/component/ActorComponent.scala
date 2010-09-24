@@ -14,14 +14,13 @@ import jsr166x.Deque
 import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
-import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message}
-import CamelMessageConversion.toExchangeAdapter
+import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.camel.{Failure, Message}
+import se.scalablesolutions.akka.camel.CamelMessageConversion.toExchangeAdapter
 import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 import se.scalablesolutions.akka.stm.TransactionConfig
-import se.scalablesolutions.akka.AkkaException
 
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.actor._
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -33,28 +32,26 @@ import se.scalablesolutions.akka.actor._
  */
 class ActorComponent extends DefaultComponent {
   def createEndpoint(uri: String, remaining: String, parameters: JavaMap[String, Object]): ActorEndpoint = {
-    val idAndUuid = idAndUuidPair(remaining)
-    new ActorEndpoint(uri, this, idAndUuid._1, idAndUuid._2)
+    val (id,uuid) = idAndUuidPair(remaining)
+    new ActorEndpoint(uri, this, id, uuid)
   }
 
-  private def idAndUuidPair(remaining: String): Tuple2[Option[String], Option[String]] = {
-    remaining split ":" toList match {
-      case             id :: Nil => (Some(id), None)
-      case   "id" ::   id :: Nil => (Some(id), None)
-      case "uuid" :: uuid :: Nil => (None, Some(uuid))
-      case _ => throw new IllegalArgumentException(
-        "invalid path format: %s - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
-    }
+  private def idAndUuidPair(remaining: String): Tuple2[Option[String],Option[Uuid]] = remaining match {
+    case null | "" => throw new IllegalArgumentException("invalid path format: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
+    case   id if id startsWith "id:"     => (Some(id substring 3),None)
+    case uuid if uuid startsWith "uuid:" => (None,Some(uuidFrom(uuid substring 5)))
+    case   id => (Some(id),None)
   }
 }
 
 /**
- * Camel endpoint for referencing an (untyped) actor. The actor reference is given by the endpoint URI.
- * An actor can be referenced by its <code>ActorRef.id</code> or its <code>ActorRef.uuid</code>.
- * Supported endpoint URI formats are
- * <code>actor:&lt;actorid&gt;</code>,
- * <code>actor:id:&lt;actorid&gt;</code> and
- * <code>actor:uuid:&lt;actoruuid&gt;</code>.
+ * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
+ * are referenced using <code>actor</code> endpoint URIs of the following format:
+ * <code>actor:<actor-id></code>,
+ * <code>actor:id:<actor-id></code> and
+ * <code>actor:uuid:<actor-uuid></code>,
+ * where <code>actor-id</code> refers to <code>ActorRef.id</code> and  <code>actor-uuid</code>
+ * refers to the String-representation od <code>ActorRef.uuid</code>. 
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorProducer
@@ -64,11 +61,12 @@ class ActorComponent extends DefaultComponent {
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
                     val id: Option[String],
-                    val uuid: Option[String]) extends DefaultEndpoint(uri, comp) {
+                    val uuid: Option[Uuid]) extends DefaultEndpoint(uri, comp) {
 
   /**
-   * Blocking of caller thread during two-way message exchanges with consumer actors. This is set
-   * via the <code>blocking=true|false</code> endpoint URI parameter. If omitted blocking is false.
+   * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
+   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
+   * <code>false</code>.
    */
   @BeanProperty var blocking: Boolean = false
 
@@ -90,9 +88,18 @@ class ActorEndpoint(uri: String,
 }
 
 /**
- * Sends the in-message of an exchange to an (untyped) actor. If the exchange pattern is out-capable and
- * <code>blocking</code> is enabled then the producer waits for a reply (using the !! operator),
- * otherwise the ! operator is used for sending the message.
+ * Sends the in-message of an exchange to an (untyped) actor.
+ * <ul>
+ * <li>If the exchange pattern is out-capable and <code>blocking</code> is set to
+ * <code>true</code> then the producer waits for a reply, using the !! operator.</li>
+ * <li>If the exchange pattern is out-capable and <code>blocking</code> is set to
+ * <code>false</code> then the producer sends the message using the ! operator, together
+ * with a callback handler. The callback handler is an <code>ActorRef</code> that can be
+ * used by the receiving actor to asynchronously reply to the route that is sending the 
+ * message.</li>
+ * <li>If the exchange pattern is in-only then the producer sends the message using the
+ * ! operator.</li>
+ * </ul>
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
@@ -151,7 +158,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     case actors                       => Some(actors(0))
   }
 
-  private def targetByUuid(uuid: String) = ActorRegistry.actorFor(uuid)
+  private def targetByUuid(uuid: Uuid) = ActorRegistry.actorFor(uuid)
 }
 
 /**
@@ -187,11 +194,11 @@ private[akka] object AsyncCallbackAdapter {
 }
 
 /**
- * Adapts an <code>AsyncCallback</code> to <code>ActorRef.!</code>. Used by other actors to reply
- * asynchronously to Camel with <code>ActorRef.reply</code>.
+ * Adapts an <code>ActorRef</code> to a Camel <code>AsyncCallback</code>. Used by receiving actors to reply
+ * asynchronously to Camel routes with <code>ActorRef.reply</code>.
  * <p>
  * <em>Please note</em> that this adapter can only be used locally at the moment which should not
- * be a problem is most situations as Camel endpoints are only activated for local actor references,
+ * be a problem is most situations since Camel endpoints are only activated for local actor references,
  * never for remote references.
  *
  * @author Martin Krasser
@@ -208,8 +215,9 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   }
 
   /**
-   * Writes the reply <code>message</code> to <code>exchange</code> and uses <code>callback</code> to
-   * generate completion notifications.
+   * Populates the initial <code>exchange</code> with the reply <code>message</code> and uses the
+   * <code>callback</code> handler to notify Camel about the asynchronous completion of the message
+   * exchange.
    *
    * @param message reply message
    * @param sender ignored
@@ -249,7 +257,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  protected[akka] def linkedActors: JavaMap[String, ActorRef] = unsupported
+  protected[akka] def linkedActors: JavaMap[Uuid, ActorRef] = unsupported
   protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported

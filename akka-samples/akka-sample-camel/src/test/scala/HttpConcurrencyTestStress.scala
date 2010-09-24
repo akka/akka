@@ -17,9 +17,8 @@ import se.scalablesolutions.akka.routing.Routing._
 /**
  * @author Martin Krasser
  */
-@Ignore // do not run concurrency test by default
-class HttpConcurrencyTest extends JUnitSuite {
-  import HttpConcurrencyTest._
+class HttpConcurrencyTestStress extends JUnitSuite {
+  import HttpConcurrencyTestStress._
 
   @Test def shouldProcessMessagesConcurrently = {
     val num = 50
@@ -43,7 +42,7 @@ class HttpConcurrencyTest extends JUnitSuite {
   }
 }
 
-object HttpConcurrencyTest {
+object HttpConcurrencyTestStress {
   @BeforeClass
   def beforeClass = {
     startCamelService
