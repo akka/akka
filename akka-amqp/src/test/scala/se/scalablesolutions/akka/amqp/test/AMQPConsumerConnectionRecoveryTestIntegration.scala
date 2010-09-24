@@ -9,21 +9,38 @@ import com.rabbitmq.client.ShutdownSignalException
 import se.scalablesolutions.akka.amqp._
 import org.scalatest.matchers.MustMatchers
 import java.util.concurrent.TimeUnit
-import se.scalablesolutions.akka.actor.ActorRef
 import org.junit.Test
 import se.scalablesolutions.akka.amqp.AMQP._
 import org.scalatest.junit.JUnitSuite
-import se.scalablesolutions.akka.actor.Actor._
+import se.scalablesolutions.akka.actor.{Actor, ActorRef}
+import Actor._
 
-class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers {
+class AMQPConsumerConnectionRecoveryTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerChannelRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerConnectionRecovery = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
     try {
+      val producerStartedLatch = new StandardLatch
+      val producerRestartedLatch = new StandardLatch
+      val producerChannelCallback: ActorRef = actor {
+        case Started => {
+          if (!producerStartedLatch.isOpen) {
+            producerStartedLatch.open
+          } else {
+            producerRestartedLatch.open
+          }
+        }
+        case Restarting => ()
+        case Stopped => ()
+      }
+
+      val channelParameters = ChannelParameters(channelCallback = Some(producerChannelCallback))
       val producer = AMQP.newProducer(connection, ProducerParameters(
-        Some(ExchangeParameters("text_exchange"))))
+        Some(ExchangeParameters("text_exchange")), channelParameters = Some(channelParameters)))
+      producerStartedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
+
 
       val consumerStartedLatch = new StandardLatch
       val consumerRestartedLatch = new StandardLatch
@@ -39,6 +56,7 @@ class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers {
         case Stopped => ()
       }
 
+
       val payloadLatch = new StandardLatch
       val consumerExchangeParameters = ExchangeParameters("text_exchange")
       val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
@@ -49,8 +67,9 @@ class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers {
 
       val listenerLatch = new StandardLatch
 
-      consumer ! new ChannelShutdown(new ShutdownSignalException(false, false, "TestException", "TestRef"))
+      connection ! new ConnectionShutdown(new ShutdownSignalException(true, false, "TestException", "TestRef"))
 
+      producerRestartedLatch.tryAwait(4, TimeUnit.SECONDS) must be (true)
       consumerRestartedLatch.tryAwait(4, TimeUnit.SECONDS) must be (true)
 
       producer ! Message("some_payload".getBytes, "non.interesting.routing.key")

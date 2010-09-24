@@ -13,10 +13,10 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParamete
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-class AMQPConsumerMessageTest extends JUnitSuite with MustMatchers {
+class AMQPConsumerMessageTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerMessage = AMQPTest.withCleanEndState {
     val connection = AMQP.newConnection()
     try {
 

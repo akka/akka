@@ -12,10 +12,10 @@ import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.amqp.rpc.RPC
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol
 
-class AMQPProtobufProducerConsumerTest extends JUnitSuite with MustMatchers {
+class AMQPProtobufProducerConsumerTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerMessage = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection()
 
