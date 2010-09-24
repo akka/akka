@@ -478,6 +478,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val camel_core = Dependencies.camel_core
+    
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -762,6 +764,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         <dependency org="org.apache.activemq" name="activemq-core" rev="5.3.2">
         </dependency>
       </dependencies>
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {
