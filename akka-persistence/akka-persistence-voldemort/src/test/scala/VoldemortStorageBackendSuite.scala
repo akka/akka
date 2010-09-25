@@ -34,8 +34,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
   test("that map key storage and retrieval works") {
     val key = "testmapKey"
     val mapKeys = new TreeSet[Array[Byte]] + bytes("key1")
-    mapKeyClient.delete(key)
-    mapKeyClient.getValue(key, SortedSetSerializer.toBytes(emptySet)) should equal(SortedSetSerializer.toBytes(emptySet))
+    mapClient.delete(getKey(key, mapKeysIndex))
+    mapClient.getValue(getKey(key, mapKeysIndex), SortedSetSerializer.toBytes(emptySet)) should equal(SortedSetSerializer.toBytes(emptySet))
     putMapKeys(key, mapKeys)
     getMapKeys(key) should equal(mapKeys)
   }
@@ -43,8 +43,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
   test("that map value storage and retrieval works") {
     val key = bytes("keyForTestingMapValueClient")
     val value = bytes("value for testing map value client")
-    mapValueClient.put(key, value)
-    mapValueClient.getValue(key, empty) should equal(value)
+    mapClient.put(key, value)
+    mapClient.getValue(key, empty) should equal(value)
   }
 
 
@@ -99,7 +99,7 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = "vectorApiKey"
     val value = bytes("Some bytes we want to store in a vector")
     val updatedValue = bytes("Some updated bytes we want to store in a vector")
-    vectorClient.delete(getIndexedKey(key, vectorSizeIndex))
+    vectorClient.delete(getKey(key, vectorSizeIndex))
     vectorClient.delete(getIndexedKey(key, 0))
     vectorClient.delete(getIndexedKey(key, 1))
     getVectorStorageEntryFor(key, 0) should be(empty)
