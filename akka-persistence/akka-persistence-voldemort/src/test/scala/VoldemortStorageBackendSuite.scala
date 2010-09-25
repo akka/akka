@@ -8,6 +8,7 @@ import se.scalablesolutions.akka.persistence.voldemort.VoldemortStorageBackend._
 import se.scalablesolutions.akka.util.{Logging}
 import collection.immutable.TreeSet
 import VoldemortStorageBackendSuite._
+import scala.None
 
 @RunWith(classOf[JUnitRunner])
 class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with EmbeddedVoldemort with Logging {
@@ -123,6 +124,37 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     getVectorStorageRangeFor(key, None, None, 1).head should be(value)
     getVectorStorageRangeFor(key, Some(1), None, 1).head should be(updatedValue)
     getVectorStorageSizeFor(key) should be(2)
+
+  }
+
+  test("Persistent Queue apis function as expected") {
+    val key = "queueApiKey"
+    val value = bytes("some bytes even")
+    val valueOdd = bytes("some bytes odd")
+    remove(key)
+    VoldemortStorageBackend.size(key) should be(0)
+    enqueue(key, value) should be(Some(1))
+    VoldemortStorageBackend.size(key) should be(1)
+    enqueue(key, valueOdd) should be(Some(2))
+    VoldemortStorageBackend.size(key) should be(2)
+    dequeue(key).get should be(value)
+    VoldemortStorageBackend.size(key) should be(1)
+    dequeue(key).get should be(valueOdd)
+    VoldemortStorageBackend.size(key) should be(0)
+    dequeue(key) should be(None)
+    queueClient.put(getKey(key, queueHeadIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
+    queueClient.put(getKey(key, queueTailIndex), IntSerializer.toBytes(Integer.MAX_VALUE))
+    VoldemortStorageBackend.size(key) should be(0)
+    enqueue(key, value) should be(Some(1))
+    VoldemortStorageBackend.size(key) should be(1)
+    enqueue(key, valueOdd) should be(Some(2))
+    VoldemortStorageBackend.size(key) should be(2)
+    dequeue(key).get should be(value)
+    VoldemortStorageBackend.size(key) should be(1)
+    dequeue(key).get should be(valueOdd)
+    VoldemortStorageBackend.size(key) should be(0)
+    dequeue(key) should be(None)
+
 
   }
 
