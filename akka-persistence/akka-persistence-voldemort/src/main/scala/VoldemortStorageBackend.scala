@@ -49,10 +49,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   val vectorSizeIndex = getIndexedBytes(-1)
   val queueHeadIndex = getIndexedBytes(-1)
   val queueTailIndex = getIndexedBytes(-2)
-  case class QueueMetadata(head: Int, tail: Int) {
-    def size = tail - head
-    //worry about wrapping etc
-  }
+
 
   implicit val byteOrder = new Ordering[Array[Byte]] {
     override def compare(x: Array[Byte], y: Array[Byte]) = ByteUtils.compare(x, y)
@@ -224,7 +221,13 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
 
   def remove(name: String): Boolean = {
-    false
+    val mdata = getQueueMetadata(name)
+    mdata.getActiveIndexes foreach {
+      index =>
+        queueClient.delete(getIndexedKey(name, index))
+    }
+    queueClient.delete(getKey(name, queueHeadIndex))
+    queueClient.delete(getKey(name, queueTailIndex))
   }
 
   def peek(name: String, start: Int, count: Int): List[Array[Byte]] = {
@@ -236,15 +239,28 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def dequeue(name: String): Option[Array[Byte]] = {
-    None
+    val mdata = getQueueMetadata(name)
+    if (mdata.canDequeue) {
+      val key = getIndexedKey(name, mdata.head)
+      val dequeued = queueClient.getValue(key)
+      queueClient.delete(key)
+      queueClient.put(getKey(name, queueHeadIndex), IntSerializer.toBytes(mdata.nextDequeue))
+      Some(dequeued)
+    } else {
+      None
+    }
   }
 
   def enqueue(name: String, item: Array[Byte]): Option[Int] = {
     val mdata = getQueueMetadata(name)
-    val key = getIndexedKey(name, mdata.tail)
-    queueClient.put(key, item)
-    queueClient.put(getKey(name, queueTailIndex), IntSerializer.toBytes(mdata.tail + 1))
-    Some(mdata.size + 1)
+    if (mdata.canEnqueue) {
+      val key = getIndexedKey(name, mdata.tail)
+      queueClient.put(key, item)
+      queueClient.put(getKey(name, queueTailIndex), IntSerializer.toBytes(mdata.nextEnqueue))
+      Some(mdata.size + 1)
+    } else {
+      None
+    }
   }
 
 
@@ -324,6 +340,50 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     mapClient = storeClientFactory.getStoreClient(mapStore)
     vectorClient = storeClientFactory.getStoreClient(vectorStore)
     queueClient = storeClientFactory.getStoreClient(queueStore)
+  }
+
+
+  case class QueueMetadata(head: Int, tail: Int) {
+    //queue is an sequence with indexes from 0 to Int.MAX_VALUE
+    //wraps around when one pointer gets to max value
+    def size = {
+      if (tail >= head) {
+        tail - head
+      } else {
+        //queue has wrapped
+        Integer.MAX_VALUE - head + tail + 1
+      }
+    }
+
+    def canEnqueue = {
+      //the -1 stops the tail from catching the head on a wrap around
+      size < Integer.MAX_VALUE - 1
+    }
+
+    def canDequeue = {size > 0}
+
+    def getActiveIndexes(): Seq[Int] = {
+      if (tail >= head) {
+        head to tail
+      } else {
+        //queue has wrapped
+        (0 to tail) ++ (head to Integer.MAX_VALUE)
+      }
+    }
+
+    def nextEnqueue = {
+      tail match {
+        case Integer.MAX_VALUE => 0
+        case _ => tail + 1
+      }
+    }
+
+    def nextDequeue = {
+      head match {
+        case Integer.MAX_VALUE => 0
+        case _ => head + 1
+      }
+    }
   }
 
   object IntSerializer {
