@@ -21,6 +21,11 @@ import collection.immutable.{IndexedSeq, SortedSet, TreeSet, HashMap}
 import collection.mutable.{Set, HashSet, ArrayBuffer}
 import java.util.{Properties, Map => JMap}
 
+/*
+  RequiredReads + RequiredWrites should be > ReplicationFactor for all Voldemort Stores
+  In this case all VoldemortBackend operations can be retried until successful, and data should remain consistent
+ */
+
 private[akka] object VoldemortStorageBackend extends
 MapStorageBackend[Array[Byte], Array[Byte]] with
         VectorStorageBackend[Array[Byte]] with
@@ -242,10 +247,19 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val mdata = getQueueMetadata(name)
     if (mdata.canDequeue) {
       val key = getIndexedKey(name, mdata.head)
-      val dequeued = queueClient.getValue(key)
-      queueClient.delete(key)
-      queueClient.put(getKey(name, queueHeadIndex), IntSerializer.toBytes(mdata.nextDequeue))
-      Some(dequeued)
+      try {
+        val dequeued = queueClient.getValue(key)
+        queueClient.put(getKey(name, queueHeadIndex), IntSerializer.toBytes(mdata.nextDequeue))
+        Some(dequeued)
+      }
+      finally {
+        try {
+          queueClient.delete(key)
+        } catch {
+          //a failure to delete is ok, just leaves a K-V in Voldemort that will be overwritten if the queue ever wraps around 
+          case e: Exception => log.warn(e, "caught an exception while deleting a dequeued element, however this will not cause any inconsistency in the queue")
+        }
+      }
     } else {
       None
     }
@@ -362,12 +376,12 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
     def canDequeue = {size > 0}
 
-    def getActiveIndexes(): Seq[Int] = {
+    def getActiveIndexes(): Stream[Int] = {
       if (tail >= head) {
-        head to tail
+        Stream.range(head, tail)
       } else {
         //queue has wrapped
-        (0 to tail) ++ (head to Integer.MAX_VALUE)
+        Stream.range(0, tail) ++ Stream.range(head, Integer.MAX_VALUE)
       }
     }
 
