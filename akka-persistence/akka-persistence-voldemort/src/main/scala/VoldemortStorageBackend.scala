@@ -390,8 +390,8 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
         Range(head, tail)
       } else {
         //queue has wrapped
-        val headRange = Range(head, Integer.MAX_VALUE)
-        (if (tail > 0) {headRange ++ Range(0, tail - 1)} else {headRange})
+        val headRange = Range.inclusive(head, Integer.MAX_VALUE)
+        (if (tail > 0) {headRange ++ Range(0, tail)} else {headRange})
       }
     }
 
