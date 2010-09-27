@@ -116,6 +116,10 @@ class ExecutorBasedEventDrivenDispatcher(
         val started = if (isDeadlineEnabled) System.currentTimeMillis else 0
         do {
           nextMessage.invoke
+
+          if (nextMessage.receiver.isBeingRestarted)
+            return !self.isEmpty
+
           if (throttle) { // Will be elided when false
             processedMessages += 1
             if ((processedMessages >= throughput) || 
