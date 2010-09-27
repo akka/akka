@@ -1667,6 +1667,22 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
     } else false
   }
 
+  /**
+   * Abstraction for unification of sender and senderFuture for later reply
+   */
+  def channel: Channel[Any] = {
+    if (senderFuture.isDefined) {
+      new Channel[Any] {
+        val future = senderFuture.get
+        def !(msg: Any) = future completeWithResult msg
+      }
+    } else if (sender.isDefined) {
+      new Channel[Any] {
+        val client = sender.get
+        def !(msg: Any) = client ! msg
+      }
+    } else throw new IllegalActorStateException("No channel available")
+  }
 
 
   /**
@@ -1697,4 +1713,12 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
     ensureRemotingEnabled
     spawnLinkRemote(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]],hostname,port)
   }
+}
+
+
+/**
+ * Abstraction for unification of sender and senderFuture for later reply
+ */
+abstract class Channel[T] {
+  def !(msg: T): Unit
 }
