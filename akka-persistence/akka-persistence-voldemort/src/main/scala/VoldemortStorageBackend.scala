@@ -236,7 +236,14 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def peek(name: String, start: Int, count: Int): List[Array[Byte]] = {
-    List(Array.empty[Byte])
+    val mdata = getQueueMetadata(name)
+    val ret = mdata.getPeekIndexes(start, count).toList map {
+      index: Int => {
+        log.debug("peeking:" + index)
+        queueClient.getValue(getIndexedKey(name, index))
+      }
+    }
+    ret
   }
 
   def size(name: String): Int = {
@@ -360,12 +367,14 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   case class QueueMetadata(head: Int, tail: Int) {
     //queue is an sequence with indexes from 0 to Int.MAX_VALUE
     //wraps around when one pointer gets to max value
+    //head has an element in it.
+    //tail is the next slot to write to.
     def size = {
       if (tail >= head) {
         tail - head
       } else {
         //queue has wrapped
-        Integer.MAX_VALUE - head + tail + 1
+        (Integer.MAX_VALUE - head) + (tail + 1)
       }
     }
 
@@ -376,13 +385,21 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
     def canDequeue = {size > 0}
 
-    def getActiveIndexes(): Stream[Int] = {
+    def getActiveIndexes(): IndexedSeq[Int] = {
       if (tail >= head) {
-        Stream.range(head, tail)
+        Range(head, tail)
       } else {
         //queue has wrapped
-        Stream.range(0, tail) ++ Stream.range(head, Integer.MAX_VALUE)
+        val headRange = Range(head, Integer.MAX_VALUE)
+        (if (tail > 0) {headRange ++ Range(0, tail - 1)} else {headRange})
       }
+    }
+
+    def getPeekIndexes(start: Int, count: Int): IndexedSeq[Int] = {
+      val indexes = getActiveIndexes
+      if (indexes.size < start)
+        {IndexedSeq.empty[Int]} else
+        {indexes.drop(start).take(count)}
     }
 
     def nextEnqueue = {

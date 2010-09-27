@@ -131,12 +131,15 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     val key = "queueApiKey"
     val value = bytes("some bytes even")
     val valueOdd = bytes("some bytes odd")
+    
     remove(key)
     VoldemortStorageBackend.size(key) should be(0)
     enqueue(key, value) should be(Some(1))
     VoldemortStorageBackend.size(key) should be(1)
     enqueue(key, valueOdd) should be(Some(2))
     VoldemortStorageBackend.size(key) should be(2)
+    peek(key, 0, 1)(0) should be(value)
+    peek(key, 1, 1)(0) should be(valueOdd)
     dequeue(key).get should be(value)
     VoldemortStorageBackend.size(key) should be(1)
     dequeue(key).get should be(valueOdd)
@@ -149,6 +152,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     VoldemortStorageBackend.size(key) should be(1)
     enqueue(key, valueOdd) should be(Some(2))
     VoldemortStorageBackend.size(key) should be(2)
+    peek(key, 0, 1)(0) should be(value)
+    peek(key, 1, 1)(0) should be(valueOdd)
     dequeue(key).get should be(value)
     VoldemortStorageBackend.size(key) should be(1)
     dequeue(key).get should be(valueOdd)
@@ -157,6 +162,8 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
 
 
   }
+
+
 
 }
 
