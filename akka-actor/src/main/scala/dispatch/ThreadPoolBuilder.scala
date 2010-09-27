@@ -30,6 +30,8 @@ trait ThreadPoolBuilder extends Logging {
 
   protected var executor: ExecutorService = _
 
+  def execute(task: Runnable) = executor execute task
+  
   def isShutdown = executor.isShutdown
 
   def buildThreadPool(): Unit = synchronized {

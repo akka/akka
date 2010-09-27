@@ -135,7 +135,7 @@ class ExecutorBasedEventDrivenDispatcher(
     registerForExecution(mbox)
   }
 
-  protected def registerForExecution(mailbox: MessageQueue with ExecutableMailbox): Unit = if (active) {
+  def registerForExecution(mailbox: MessageQueue with ExecutableMailbox): Unit = if (active) {
     if (mailbox.dispatcherLock.tryLock()) {
       try {
         executor execute mailbox

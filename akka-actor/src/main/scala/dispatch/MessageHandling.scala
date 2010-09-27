@@ -65,6 +65,8 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   
   def dispatch(invocation: MessageInvocation): Unit
 
+  def execute(task: Runnable): Unit
+
   def start: Unit
 
   def shutdown: Unit
