@@ -147,6 +147,8 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
  
   def start = if (active.compareAndSet(false, true)) retainNonDaemon
 
+  def execute(task: Runnable) {}
+
   def shutdown = if (active.compareAndSet(true, false)) releaseNonDaemon
 
   def isShutdown = !active.get

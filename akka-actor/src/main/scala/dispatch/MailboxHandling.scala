@@ -105,10 +105,10 @@ trait MailboxFactory {
    */
   protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
     // FIXME make generic (work for TypedActor as well)
-    case FileBasedDurableMailbox(serializer)      => EnterpriseModule.createFileBasedMailbox(actorRef.uuid, ActorType.ScalaActor, None).asInstanceOf[MessageQueue]
-    case RedisBasedDurableMailbox(serializer)     => throw new UnsupportedOperationException("RedisBasedDurableMailbox is not yet supported")
-    case BeanstalkBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("BeanstalkBasedDurableMailbox is not yet supported")
-    case ZooKeeperBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("ZooKeeperBasedDurableMailbox is not yet supported")
+    case FileBasedDurableMailbox(serializer)      => EnterpriseModule.createFileBasedMailbox(actorRef).asInstanceOf[MessageQueue]
+    case ZooKeeperBasedDurableMailbox(serializer) => EnterpriseModule.createZooKeeperBasedMailbox(actorRef).asInstanceOf[MessageQueue]
+    case BeanstalkBasedDurableMailbox(serializer) => EnterpriseModule.createBeanstalkBasedMailbox(actorRef).asInstanceOf[MessageQueue]
+    case RedisBasedDurableMailbox(serializer)     => EnterpriseModule.createRedisBasedMailbox(actorRef).asInstanceOf[MessageQueue]
     case AMQPBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("AMQPBasedDurableMailbox is not yet supported")
     case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported")
   }
