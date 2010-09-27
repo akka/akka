@@ -269,10 +269,10 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e: java.lang.reflect.InvocationTargetException =>
-      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
+      log.error(e.getCause, "Could not instantiate class [%s] due to [%s]", fqn, e.toString)
       None
     case e: Exception =>
-      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
+      log.error(e.getCause, "Could not instantiate class [%s] due to [%s]", fqn, e.toString)
       None
   }
 
