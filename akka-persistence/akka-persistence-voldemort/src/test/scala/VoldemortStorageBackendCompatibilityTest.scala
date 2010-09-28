@@ -9,7 +9,9 @@ import org.scalatest.Spec
 
 @RunWith(classOf[JUnitRunner])
 class VoldemortStorageBackendCompatibilityTest extends RefStorageBackendTest with EmbeddedVoldemort {
-  def dropRefs: Unit = {}
+  def dropRefs: Unit = {
+    //drop Refs Impl
+  }
 
 
   def storage: RefStorageBackend[Array[Byte]] = {VoldemortStorageBackend}
