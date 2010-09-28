@@ -4,14 +4,15 @@
 
 package se.scalablesolutions.akka.actor
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 import scala.reflect.Manifest
 
 import java.util.concurrent.{ConcurrentSkipListSet, ConcurrentHashMap}
 import java.util.{Set => JSet}
 
-import se.scalablesolutions.akka.util.ListenerManagement
 import annotation.tailrec
+import se.scalablesolutions.akka.util.{ReadWriteGuard, Address, ListenerManagement}
+import java.net.InetSocketAddress
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -37,6 +38,8 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
 object ActorRegistry extends ListenerManagement {
   private val actorsByUUID =          new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById =            new Index[String,ActorRef]
+  private val remoteActorSets =       Map[Address, RemoteActorSet]()
+  private val guard = new ReadWriteGuard
   
   /**
    * Returns all actors in the system.
@@ -149,6 +152,35 @@ object ActorRegistry extends ListenerManagement {
     actorsByUUID.clear
     actorsById.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
+  }
+
+  /**
+   * Get the remote actors for the given server address. For internal use only.
+   */
+  private[akka] def actorsFor(remoteServerAddress: Address): RemoteActorSet = guard.withWriteGuard {
+    remoteActorSets.getOrElseUpdate(remoteServerAddress, new RemoteActorSet)
+  }
+
+  private[akka] def registerActorByUuid(address: InetSocketAddress, uuid: String, actor: ActorRef) {
+    actorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, actor)
+  }
+
+  private[akka] def registerTypedActorByUuid(address: InetSocketAddress, uuid: String, typedActor: AnyRef) {
+    typedActorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, typedActor)
+  }
+
+
+
+  private[akka] def actors(address: Address) = actorsFor(address).actors
+  private[akka] def actorsByUuid(address: Address) = actorsFor(address).actorsByUuid
+  private[akka] def typedActors(address: Address) = actorsFor(address).typedActors
+  private[akka] def typedActorsByUuid(address: Address) = actorsFor(address).typedActorsByUuid
+
+  private[akka] class RemoteActorSet {
+    private[ActorRegistry] val actors = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistry] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistry] val typedActors = new ConcurrentHashMap[String, AnyRef]
+    private[ActorRegistry] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
   }
 }
 
