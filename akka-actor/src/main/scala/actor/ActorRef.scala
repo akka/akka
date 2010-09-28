@@ -667,7 +667,6 @@ class LocalActorRef private[akka](
   @volatile private[akka] var _supervisor: Option[ActorRef] = None
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
-  @volatile private var isDeserialized = false
   @volatile private var maxNrOfRetriesCount: Int = 0
   @volatile private var restartsWithinTimeRangeTimestamp: Long = 0L
   @volatile private var _mailbox: AnyRef = _
@@ -678,7 +677,7 @@ class LocalActorRef private[akka](
   // instance elegible for garbage collection
   private val actorSelfFields = findActorSelfField(actor.getClass)
 
-  if (runActorInitialization && !isDeserialized) initializeActorInstance
+  if (runActorInitialization) initializeActorInstance
 
   private[akka] def this(clazz: Class[_ <: Actor]) = this(Left(Some(clazz)))
   private[akka] def this(factory: () => Actor)     = this(Right(Some(factory)))
@@ -696,7 +695,6 @@ class LocalActorRef private[akka](
                          __hotswap: Option[PartialFunction[Any, Unit]],
                          __factory: () => Actor) = {
       this(__factory)
-      isDeserialized = true
       _uuid = __uuid
       id = __id
       homeAddress = (__hostname, __port)
