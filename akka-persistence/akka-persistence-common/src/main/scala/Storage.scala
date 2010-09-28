@@ -71,6 +71,16 @@ trait Storage {
     throw new UnsupportedOperationException
 }
 
+private[akka] object PersistentMap {
+  // operations on the Map
+  sealed trait Op
+  case object GET extends Op
+  case object PUT extends Op
+  case object REM extends Op
+  case object UPD extends Op
+  case object CLR extends Op
+}
+
 /**
  * Implementation of <tt>PersistentMap</tt> for every concrete
  * storage will have the same workflow. This abstracts the workflow.
@@ -83,13 +93,8 @@ trait Storage {
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
   with Transactional with Committable with Abortable with Logging {
 
-  // operations on the Map
-  trait Op
-  case object GET extends Op
-  case object PUT extends Op
-  case object REM extends Op
-  case object UPD extends Op
-  case object CLR extends Op
+  //Import Ops
+  import PersistentMap._
 
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
@@ -362,17 +367,22 @@ trait PersistentMapBinary extends PersistentMap[Array[Byte], Array[Byte]] {
   }
 }
 
+private[akka] object PersistentVector {
+  // operations on the Vector
+  sealed trait Op
+  case object ADD extends Op
+  case object UPD extends Op
+  case object POP extends Op
+}
+
 /**
  * Implements a template for a concrete persistent transactional vector based storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable {
-  // operations on the Vector
-  trait Op
-  case object ADD extends Op
-  case object UPD extends Op
-  case object POP extends Op
+  //Import Ops
+  import PersistentVector._
 
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
@@ -510,6 +520,13 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
   }
 }
 
+  private[akka] object PersistentQueue {
+    //Operations for PersistentQueue
+    sealed trait QueueOp
+    case object ENQ extends QueueOp
+    case object DEQ extends QueueOp
+  }
+
 /**
  * Implementation of <tt>PersistentQueue</tt> for every concrete
  * storage will have the same workflow. This abstracts the workflow.
@@ -538,10 +555,8 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
 trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   with Transactional with Committable with Abortable with Logging {
 
-  sealed trait QueueOp
-  case object ENQ extends QueueOp
-  case object DEQ extends QueueOp
-
+  //Import Ops
+  import PersistentQueue._
   import scala.collection.immutable.Queue
 
   // current trail that will be played on commit to the underlying store
