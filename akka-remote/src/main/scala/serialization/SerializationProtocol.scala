@@ -337,7 +337,7 @@ object TypedActorSerialization {
       proxy: AnyRef, format: Format[T]): SerializedTypedActorRefProtocol = {
 
     val init = AspectInitRegistry.initFor(proxy)
-    if (init == null) throw new IllegalArgumentException("Proxy for typed actor could not be found in AspectInitRegistry.")
+    if (init eq null) throw new IllegalArgumentException("Proxy for typed actor could not be found in AspectInitRegistry.")
 
     SerializedTypedActorRefProtocol.newBuilder
         .setActorRef(ActorSerialization.toSerializedActorRefProtocol(init.actorRef, format))

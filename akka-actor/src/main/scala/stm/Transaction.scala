@@ -165,7 +165,6 @@ object Transaction {
   }
 */
   override def equals(that: Any): Boolean = synchronized {
-    that != null &&
     that.isInstanceOf[Transaction] &&
     that.asInstanceOf[Transaction].id == this.id
   }

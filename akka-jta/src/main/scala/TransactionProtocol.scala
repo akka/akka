@@ -221,7 +221,7 @@ trait TransactionProtocol extends Logging {
   private def storeInThreadLocal(tx: Transaction) = suspendedTx.set(tx)
 
   private def fetchFromThreadLocal: Option[Transaction] = {
-    if (suspendedTx != null && suspendedTx.get() != null) Some(suspendedTx.get.asInstanceOf[Transaction])
+    if ((suspendedTx ne null) && (suspendedTx.get() ne null)) Some(suspendedTx.get.asInstanceOf[Transaction])
     else None
   }
 }

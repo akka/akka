@@ -115,7 +115,6 @@ object RemoteServer {
       result
     }
     override def equals(that: Any): Boolean = {
-      that != null &&
       that.isInstanceOf[Address] &&
       that.asInstanceOf[Address].hostname == hostname &&
       that.asInstanceOf[Address].port == port
