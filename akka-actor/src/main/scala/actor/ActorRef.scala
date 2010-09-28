@@ -668,7 +668,6 @@ class LocalActorRef private[akka](
   @volatile private var isInInitialization = false
   @volatile private var runActorInitialization = false
   @volatile private var isDeserialized = false
-  @volatile private var loader: Option[ClassLoader] = None
   @volatile private var maxNrOfRetriesCount: Int = 0
   @volatile private var restartsWithinTimeRangeTimestamp: Long = 0L
   @volatile private var _mailbox: AnyRef = _
@@ -695,10 +694,8 @@ class LocalActorRef private[akka](
                          __lifeCycle: Option[LifeCycle],
                          __supervisor: Option[ActorRef],
                          __hotswap: Option[PartialFunction[Any, Unit]],
-                         __loader: ClassLoader,
                          __factory: () => Actor) = {
       this(__factory)
-      loader = Some(__loader)
       isDeserialized = true
       _uuid = __uuid
       id = __id
