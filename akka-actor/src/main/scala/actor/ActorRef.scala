@@ -630,7 +630,6 @@ trait ActorRef extends
   override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
 
   override def equals(that: Any): Boolean = {
-    that != null &&
     that.isInstanceOf[ActorRef] &&
     that.asInstanceOf[ActorRef].uuid == uuid
   }
@@ -1302,7 +1301,7 @@ class LocalActorRef private[akka](
     } catch {
       case e: NoSuchFieldException =>
         val parent = clazz.getSuperclass
-        if (parent != null) findActorSelfField(parent)
+        if (parent ne null) findActorSelfField(parent)
         else throw new IllegalActorStateException(
           toString + " is not an Actor since it have not mixed in the 'Actor' trait")
     }

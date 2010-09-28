@@ -28,18 +28,18 @@ trait ActorParser extends BeanParser with DispatcherParser {
     val dispatcherElement = DomUtils.getChildElementByTagName(element, DISPATCHER_TAG)
     val propertyEntries = DomUtils.getChildElementsByTagName(element, PROPERTYENTRY_TAG)
 
-    if (remoteElement != null) {
+    if (remoteElement ne null) {
       objectProperties.host = mandatory(remoteElement, HOST)
       objectProperties.port = mandatory(remoteElement, PORT)
-      objectProperties.serverManaged = (remoteElement.getAttribute(MANAGED_BY) != null) && (remoteElement.getAttribute(MANAGED_BY).equals(SERVER_MANAGED))
+      objectProperties.serverManaged = (remoteElement.getAttribute(MANAGED_BY) ne null) && (remoteElement.getAttribute(MANAGED_BY).equals(SERVER_MANAGED))
       val serviceName = remoteElement.getAttribute(SERVICE_NAME)
-      if ((serviceName != null) && (!serviceName.isEmpty)) {
+      if ((serviceName ne null) && (!serviceName.isEmpty)) {
         objectProperties.serviceName = serviceName
         objectProperties.serverManaged = true
       }
     }
 
-    if (dispatcherElement != null) {
+    if (dispatcherElement ne null) {
       val dispatcherProperties = parseDispatcher(dispatcherElement)
       objectProperties.dispatcher = dispatcherProperties
     }
@@ -108,7 +108,7 @@ trait BeanParser extends Logging {
    * @param attribute name of the mandatory attribute
    */
   def mandatory(element: Element, attribute: String): String = {
-    if ((element.getAttribute(attribute) == null) || (element.getAttribute(attribute).isEmpty)) {
+    if ((element.getAttribute(attribute) eq null) || (element.getAttribute(attribute).isEmpty)) {
       throw new IllegalArgumentException("Mandatory attribute missing: " + attribute)
     } else {
       element.getAttribute(attribute)
@@ -122,7 +122,7 @@ trait BeanParser extends Logging {
    */
   def mandatoryElement(element: Element, childName: String): Element = {
     val childElement = DomUtils.getChildElementByTagName(element, childName);
-    if (childElement == null) {
+    if (childElement eq null) {
       throw new IllegalArgumentException("Mandatory element missing: '<akka:" + childName + ">'")
     } else {
       childElement
@@ -150,7 +150,7 @@ trait DispatcherParser extends BeanParser {
     if (hasRef(element)) {
       val ref = element.getAttribute(REF)
       dispatcherElement = element.getOwnerDocument.getElementById(ref)
-      if (dispatcherElement == null) {
+      if (dispatcherElement eq null) {
         throw new IllegalArgumentException("Referenced dispatcher not found: '" + ref + "'")
       }
     }
@@ -173,7 +173,7 @@ trait DispatcherParser extends BeanParser {
     }
 
     val threadPoolElement = DomUtils.getChildElementByTagName(dispatcherElement, THREAD_POOL_TAG);
-    if (threadPoolElement != null) {
+    if (threadPoolElement ne null) {
       if (properties.dispatcherType == THREAD_BASED) {
         throw new IllegalArgumentException("Element 'thread-pool' not allowed for this dispatcher type.")
       }
@@ -220,7 +220,7 @@ trait DispatcherParser extends BeanParser {
 
   def hasRef(element: Element): Boolean = {
     val ref = element.getAttribute(REF)
-    (ref != null) && !ref.isEmpty
+    (ref ne null) && !ref.isEmpty
   }
 
 }

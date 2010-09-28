@@ -39,7 +39,6 @@ final class MessageInvocation(val receiver: ActorRef,
   }
 
   override def equals(that: Any): Boolean = {
-    that != null &&
     that.isInstanceOf[MessageInvocation] &&
     that.asInstanceOf[MessageInvocation].receiver.actor == receiver.actor &&
     that.asInstanceOf[MessageInvocation].message == message

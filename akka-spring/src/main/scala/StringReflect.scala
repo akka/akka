@@ -17,7 +17,7 @@ object StringReflect {
  * @author michaelkober
  */
 class StringReflect(val self: String) {
-  if (self == null || self == "") throw new IllegalArgumentException("Class name can't be null or empty string [" + self + "]")
+  if ((self eq null) || self == "") throw new IllegalArgumentException("Class name can't be null or empty string [" + self + "]")
   def toClass[T <: AnyRef]: Class[T] = {
     val clazz = Class.forName(self)
     clazz.asInstanceOf[Class[T]]
