@@ -251,7 +251,7 @@ object RemoteActorSerialization {
 
     Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
     RemoteServer.getOrCreateServer(homeAddress)
-    RemoteServer.registerActorByUuid(homeAddress, uuid.toString, ar)
+    ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
 
     RemoteActorRefProtocol.newBuilder
       .setClassOrServiceName(uuid.toString)
