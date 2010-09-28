@@ -202,7 +202,6 @@ object ActorSerialization {
       lifeCycle,
       supervisor,
       hotswap,
-      classLoader, // TODO: should we fall back to getClass.getClassLoader?
       factory)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteRequestProtocol]]
