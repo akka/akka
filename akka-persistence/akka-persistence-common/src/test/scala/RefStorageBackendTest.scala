@@ -13,9 +13,8 @@ import org.scalatest.{Suite, BeforeAndAfterEach, Spec}
 /**
  * Implementation Compatibility test for PersistentRef backend implementations.
  */
-@RunWith(classOf[JUnitRunner])
+
 trait RefStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfterEach with Logging {
-  this: Spec =>
   def storage: RefStorageBackend[Array[Byte]]
 
   def dropRefs: Unit
