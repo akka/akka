@@ -4,11 +4,9 @@
 
 package se.scalablesolutions.akka.persistence.common
 
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
 import org.scalatest.matchers.ShouldMatchers
 import se.scalablesolutions.akka.util.Logging
-import org.scalatest.{Suite, BeforeAndAfterEach, Spec}
+import org.scalatest.{BeforeAndAfterEach, Spec}
 
 /**
  * Implementation Compatibility test for PersistentRef backend implementations.
@@ -30,7 +28,7 @@ trait RefStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
   }
 
 
-  describe("A Properly functioning RefStorage Backend") {
+  describe("A Properly functioning RefStorageBackend") {
     it("should successfully insert ref storage") {
       val name = "RefStorageTest #1"
       val value = name.getBytes
