@@ -543,7 +543,7 @@ object TypedActor extends Logging {
   }
 
   def isTransactional(clazz: Class[_]): Boolean = {
-    if (clazz == null) false
+    if (clazz eq null) false
     else if (clazz.isAssignableFrom(classOf[TypedTransactor])) true
     else isTransactional(clazz.getSuperclass)
   }

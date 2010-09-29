@@ -21,6 +21,11 @@ import collection.immutable.{IndexedSeq, SortedSet, TreeSet, HashMap}
 import collection.mutable.{Set, HashSet, ArrayBuffer}
 import java.util.{Properties, Map => JMap}
 
+/*
+  RequiredReads + RequiredWrites should be > ReplicationFactor for all Voldemort Stores
+  In this case all VoldemortBackend operations can be retried until successful, and data should remain consistent
+ */
+
 private[akka] object VoldemortStorageBackend extends
 MapStorageBackend[Array[Byte], Array[Byte]] with
         VectorStorageBackend[Array[Byte]] with
@@ -49,10 +54,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   val vectorSizeIndex = getIndexedBytes(-1)
   val queueHeadIndex = getIndexedBytes(-1)
   val queueTailIndex = getIndexedBytes(-2)
-  case class QueueMetadata(head: Int, tail: Int) {
-    def size = tail - head
-    //worry about wrapping etc
-  }
+
 
   implicit val byteOrder = new Ordering[Array[Byte]] {
     override def compare(x: Array[Byte], y: Array[Byte]) = ByteUtils.compare(x, y)
@@ -224,11 +226,24 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
 
   def remove(name: String): Boolean = {
-    false
+    val mdata = getQueueMetadata(name)
+    mdata.getActiveIndexes foreach {
+      index =>
+        queueClient.delete(getIndexedKey(name, index))
+    }
+    queueClient.delete(getKey(name, queueHeadIndex))
+    queueClient.delete(getKey(name, queueTailIndex))
   }
 
   def peek(name: String, start: Int, count: Int): List[Array[Byte]] = {
-    List(Array.empty[Byte])
+    val mdata = getQueueMetadata(name)
+    val ret = mdata.getPeekIndexes(start, count).toList map {
+      index: Int => {
+        log.debug("peeking:" + index)
+        queueClient.getValue(getIndexedKey(name, index))
+      }
+    }
+    ret
   }
 
   def size(name: String): Int = {
@@ -236,15 +251,37 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def dequeue(name: String): Option[Array[Byte]] = {
-    None
+    val mdata = getQueueMetadata(name)
+    if (mdata.canDequeue) {
+      val key = getIndexedKey(name, mdata.head)
+      try {
+        val dequeued = queueClient.getValue(key)
+        queueClient.put(getKey(name, queueHeadIndex), IntSerializer.toBytes(mdata.nextDequeue))
+        Some(dequeued)
+      }
+      finally {
+        try {
+          queueClient.delete(key)
+        } catch {
+          //a failure to delete is ok, just leaves a K-V in Voldemort that will be overwritten if the queue ever wraps around 
+          case e: Exception => log.warn(e, "caught an exception while deleting a dequeued element, however this will not cause any inconsistency in the queue")
+        }
+      }
+    } else {
+      None
+    }
   }
 
   def enqueue(name: String, item: Array[Byte]): Option[Int] = {
     val mdata = getQueueMetadata(name)
-    val key = getIndexedKey(name, mdata.tail)
-    queueClient.put(key, item)
-    queueClient.put(getKey(name, queueTailIndex), IntSerializer.toBytes(mdata.tail + 1))
-    Some(mdata.size + 1)
+    if (mdata.canEnqueue) {
+      val key = getIndexedKey(name, mdata.tail)
+      queueClient.put(key, item)
+      queueClient.put(getKey(name, queueTailIndex), IntSerializer.toBytes(mdata.nextEnqueue))
+      Some(mdata.size + 1)
+    } else {
+      None
+    }
   }
 
 
@@ -307,7 +344,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def initStoreClients() = {
-    if (storeClientFactory != null) {
+    if (storeClientFactory ne null) {
       storeClientFactory.close
     }
 
@@ -324,6 +361,60 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     mapClient = storeClientFactory.getStoreClient(mapStore)
     vectorClient = storeClientFactory.getStoreClient(vectorStore)
     queueClient = storeClientFactory.getStoreClient(queueStore)
+  }
+
+
+  case class QueueMetadata(head: Int, tail: Int) {
+    //queue is an sequence with indexes from 0 to Int.MAX_VALUE
+    //wraps around when one pointer gets to max value
+    //head has an element in it.
+    //tail is the next slot to write to.
+    def size = {
+      if (tail >= head) {
+        tail - head
+      } else {
+        //queue has wrapped
+        (Integer.MAX_VALUE - head) + (tail + 1)
+      }
+    }
+
+    def canEnqueue = {
+      //the -1 stops the tail from catching the head on a wrap around
+      size < Integer.MAX_VALUE - 1
+    }
+
+    def canDequeue = {size > 0}
+
+    def getActiveIndexes(): IndexedSeq[Int] = {
+      if (tail >= head) {
+        Range(head, tail)
+      } else {
+        //queue has wrapped
+        val headRange = Range.inclusive(head, Integer.MAX_VALUE)
+        (if (tail > 0) {headRange ++ Range(0, tail)} else {headRange})
+      }
+    }
+
+    def getPeekIndexes(start: Int, count: Int): IndexedSeq[Int] = {
+      val indexes = getActiveIndexes
+      if (indexes.size < start)
+        {IndexedSeq.empty[Int]} else
+        {indexes.drop(start).take(count)}
+    }
+
+    def nextEnqueue = {
+      tail match {
+        case Integer.MAX_VALUE => 0
+        case _ => tail + 1
+      }
+    }
+
+    def nextDequeue = {
+      head match {
+        case Integer.MAX_VALUE => 0
+        case _ => head + 1
+      }
+    }
   }
 
   object IntSerializer {

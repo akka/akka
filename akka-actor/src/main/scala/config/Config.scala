@@ -33,7 +33,7 @@ object Config {
 
   val HOME = {
     val systemHome = System.getenv("AKKA_HOME")
-    if (systemHome == null || systemHome.length == 0 || systemHome == ".") {
+    if ((systemHome eq null) || systemHome.length == 0 || systemHome == ".") {
       val optionHome = System.getProperty("akka.home", "")
       if (optionHome.length != 0) Some(optionHome)
       else None
@@ -52,7 +52,7 @@ object Config {
           "\n\tdue to: " + e.toString)
       }
       Configgy.config
-    } else if (getClass.getClassLoader.getResource("akka.conf") != null) {
+    } else if (getClass.getClassLoader.getResource("akka.conf") ne null) {
       try {
         Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
         ConfigLogger.log.info("Config loaded from the application classpath.")
