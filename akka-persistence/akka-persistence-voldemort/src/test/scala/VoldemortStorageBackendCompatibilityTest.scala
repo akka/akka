@@ -8,7 +8,7 @@ import se.scalablesolutions.akka.persistence.common.{QueueStorageBackendTest, Ve
 @RunWith(classOf[JUnitRunner])
 class VoldemortRefStorageBackendTest extends RefStorageBackendTest with EmbeddedVoldemort {
   def dropRefs = {
-    //drop Refs Impl
+    admin.truncate(0, VoldemortStorageBackend.refStore)
   }
 
 
@@ -18,7 +18,7 @@ class VoldemortRefStorageBackendTest extends RefStorageBackendTest with Embedded
 @RunWith(classOf[JUnitRunner])
 class VoldemortMapStorageBackendTest extends MapStorageBackendTest with EmbeddedVoldemort {
   def dropMaps = {
-    //drop Maps Impl
+    admin.truncate(0, VoldemortStorageBackend.mapStore)
   }
 
 
@@ -28,7 +28,7 @@ class VoldemortMapStorageBackendTest extends MapStorageBackendTest with Embedded
 @RunWith(classOf[JUnitRunner])
 class VoldemortVectorStorageBackendTest extends VectorStorageBackendTest with EmbeddedVoldemort {
   def dropVectors = {
-    //drop Maps Impl
+    admin.truncate(0, VoldemortStorageBackend.vectorStore)
   }
 
 
@@ -39,7 +39,7 @@ class VoldemortVectorStorageBackendTest extends VectorStorageBackendTest with Em
 @RunWith(classOf[JUnitRunner])
 class VoldemortQueueStorageBackendTest extends QueueStorageBackendTest with EmbeddedVoldemort {
   def dropQueues = {
-    //drop Maps Impl
+    admin.truncate(0, VoldemortStorageBackend.queueStore)
   }
 
 
