@@ -172,7 +172,12 @@ class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = 
 
   def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = null.asInstanceOf[AnyRef]
 
-  override def toString = "HawtDispatchEventDrivenDispatcher"
+  /**
+   * Creates and returns a durable mailbox for the given actor.
+   */
+  protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = null.asInstanceOf[AnyRef]
+
+  override def toString = "HawtDispatcher"
 }
 
 class HawtDispatcherMailbox(val queue: DispatchQueue) {
