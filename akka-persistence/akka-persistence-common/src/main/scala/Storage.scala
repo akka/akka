@@ -74,7 +74,6 @@ trait Storage {
 private[akka] object PersistentMap {
   // operations on the Map
   sealed trait Op
-  case object GET extends Op
   case object PUT extends Op
   case object REM extends Op
   case object UPD extends Op
@@ -309,7 +308,7 @@ trait PersistentMapBinary extends PersistentMap[Array[Byte], Array[Byte]] {
                  .filter(k => existsInStorage(k).isDefined)
                  .map(k => ArraySeq(k: _*))
 
-    (fromStorage -- inStorageRemovedInTx) ++ keysAdded.map { case (k, Some(v)) => (ArraySeq(k: _*), v) }
+    (fromStorage -- inStorageRemovedInTx) ++ keysAdded.map { case (k, v) => (ArraySeq(k: _*), v.get) }
   }
 
   override def slice(start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = try {
@@ -396,7 +395,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
 
   def commit = {
     for(entry <- appendOnlyTxLog) {
-      entry match {
+      (entry: @unchecked) match {
         case LogEntry(_, Some(v), ADD) => storage.insertVectorStorageEntryFor(uuid, v)
         case LogEntry(Some(i), Some(v), UPD) => storage.updateVectorStorageEntryFor(uuid, i, v)
         case LogEntry(_, _, POP) => //..
@@ -414,7 +413,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
     var elemsStorage = ArrayBuffer(storage.getVectorStorageRangeFor(uuid, None, None, storage.getVectorStorageSizeFor(uuid)).reverse: _*)
 
     for(entry <- appendOnlyTxLog) {
-      entry match {
+      (entry: @unchecked) match {
         case LogEntry(_, Some(v), ADD) => elemsStorage += v
         case LogEntry(Some(i), Some(v), UPD) => elemsStorage.update(i, v)
         case LogEntry(_, _, POP) => elemsStorage = elemsStorage.drop(1)
