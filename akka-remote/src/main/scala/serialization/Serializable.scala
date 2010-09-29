@@ -9,7 +9,6 @@ import org.codehaus.jackson.map.ObjectMapper
 import com.google.protobuf.Message
 
 import reflect.Manifest
-import sbinary.DefaultProtocol
 
 import java.io.{StringWriter, ByteArrayOutputStream, ObjectOutputStream}
 
