@@ -75,33 +75,36 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * @return true if the mailbox was processed, false otherwise
    */
   private def tryProcessMailbox(mailbox: MessageQueue): Boolean = {
-    var lockAcquiredOnce = false
+    var mailboxWasProcessed = false
 
     // this do-wile loop is required to prevent missing new messages between the end of processing
     // the mailbox and releasing the lock
     do {
       if (mailbox.dispatcherLock.tryLock) {
-        lockAcquiredOnce = true
         try {
-          processMailbox(mailbox)
+          mailboxWasProcessed = processMailbox(mailbox)
         } finally {
           mailbox.dispatcherLock.unlock
         }
       }
-    } while ((lockAcquiredOnce && !mailbox.isEmpty))
+    } while ((mailboxWasProcessed && !mailbox.isEmpty))
 
-    lockAcquiredOnce
+    mailboxWasProcessed
   }
 
   /**
    * Process the messages in the mailbox of the given actor.
+   * @return
    */
-  private def processMailbox(mailbox: MessageQueue) = {
+  private def processMailbox(mailbox: MessageQueue): Boolean = {
     var messageInvocation = mailbox.dequeue
     while (messageInvocation ne null) {
       messageInvocation.invoke
+      if (messageInvocation.receiver.isBeingRestarted)
+        return false
       messageInvocation = mailbox.dequeue
     }
+    true
   }
 
   private def findThief(receiver: ActorRef): Option[ActorRef] = {
