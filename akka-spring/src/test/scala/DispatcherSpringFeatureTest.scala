@@ -18,9 +18,6 @@ import org.springframework.core.io.{ClassPathResource, Resource}
 import java.util.concurrent._
 import se.scalablesolutions.akka.actor.{UntypedActor, Actor, ActorRef}
 
-
-
-
 /**
  * Tests for spring configuration of typed actors.
  * @author michaelkober
@@ -109,7 +106,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val dispatcher = context.getBean("hawt-dispatcher").asInstanceOf[HawtDispatcher]
       assert(dispatcher ne null)
-      assert(dispatcher.toString === "HawtDispatchEventDrivenDispatcher")
+      assert(dispatcher.toString === "HawtDispatcher")
       assert(dispatcher.aggregate === false)
     }
 
