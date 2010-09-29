@@ -380,6 +380,15 @@ final class TypedActorConfiguration {
 }
 
 /**
+ * Factory closure for an TypedActor, to be used with 'TypedActor.newInstance(interface, factory)'.
+ *
+ * @author michaelkober
+ */
+trait TypedActorFactory {
+ def create: TypedActor
+}
+
+/**
  * Factory class for creating TypedActors out of plain POJOs and/or POJOs with interfaces.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -524,7 +533,50 @@ object TypedActor extends Logging {
     proxy.asInstanceOf[T]
   }
 
+  /**
+   * Java API.
+   * NOTE: Use this convenience method with care, do NOT make it possible to get a reference to the
+   * TypedActor instance directly, but only through its 'ActorRef' wrapper reference.
+   * <p/>
+   * Creates an ActorRef out of the Actor. Allows you to pass in the instance for the TypedActor.
+   * Only use this method when you need to pass in constructor arguments into the 'TypedActor'.
+   * <p/>
+   * You use it by implementing the TypedActorFactory interface.
+   * Example in Java:
+   * <pre>
+   *   MyPojo pojo = TypedActor.newInstance(MyPojo.class, new TypedActorFactory() {
+   *     public TypedActor create() {
+   *       return new MyTypedActor("service:name", 5);
+   *     }
+   *   });
+   * </pre>
+   */
+  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory) : T =
+    newInstance(intfClass, factory.create)
 
+  /**
+   * Java API.
+   */ 
+  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, hostname: String, port: Int) : T =
+    newRemoteInstance(intfClass, factory.create, hostname, port)
+
+  /**
+   * Java API.
+   */
+  def newRemoteInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long, hostname: String, port: Int) : T =
+    newRemoteInstance(intfClass, factory.create, timeout, hostname, port)
+
+  /**
+   * Java API.
+   */
+  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory, timeout: Long) : T =
+    newInstance(intfClass, factory.create, timeout)
+
+  /**
+   * Java API.
+   */
+  def newInstance[T](intfClass: Class[T], factory: TypedActorFactory, config: TypedActorConfiguration): T =
+    newInstance(intfClass, factory.create, config)
 
   /**
    * Create a proxy for a RemoteActorRef representing a server managed remote typed actor.
