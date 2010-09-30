@@ -141,11 +141,16 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
       //implement if this method will be used
     }
 
+
+    it("should return Some(null), not None, for a key that has had the value null set?") {
+
+    }
+
     it("should not throw an exception when size is called on a non existent map?") {
       storage.getMapStorageSizeFor("nonExistent") should be(0)
     }
 
-   
+
   }
 
 }
