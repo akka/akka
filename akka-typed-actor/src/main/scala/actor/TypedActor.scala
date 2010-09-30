@@ -626,12 +626,23 @@ object TypedActor extends Logging {
   def stop(proxy: AnyRef): Unit = AspectInitRegistry.unregister(proxy)
 
   /**
-   * Get the underlying dispatcher actor for the given Typed Actor.
+   * Get the underlying typed actor for the given Typed Actor.
    */
   def actorFor(proxy: AnyRef): Option[ActorRef] =
     ActorRegistry
       .actorsFor(classOf[TypedActor])
       .find(a => a.actor.asInstanceOf[TypedActor].proxy == proxy)
+
+  /**
+   * Get the typed actor proxy for the given Typed Actor.
+   */
+  def proxyFor(actorRef: ActorRef): Option[AnyRef] = {
+    if (actorRef.actor.isInstanceOf[TypedActor]) {
+      Some(actorRef.actor.asInstanceOf[TypedActor].proxy)
+    } else {
+      None
+    }
+  }
 
   /**
    * Links an other Typed Actor to this Typed Actor.
