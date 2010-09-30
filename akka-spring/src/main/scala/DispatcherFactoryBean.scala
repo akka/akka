@@ -35,7 +35,7 @@ object DispatcherFactoryBean {
       case _ => throw new IllegalArgumentException("unknown dispatcher type")
     }
     // build threadpool
-    if ((properties.threadPool != null) && (properties.threadPool.queue != null)) {
+    if ((properties.threadPool ne null) && (properties.threadPool.queue ne null)) {
       var threadPoolBuilder = dispatcher.asInstanceOf[ThreadPoolBuilder]
       threadPoolBuilder = properties.threadPool.queue match {
         case VAL_BOUNDED_ARRAY_BLOCKING_QUEUE => threadPoolBuilder.withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(properties.threadPool.capacity, properties.threadPool.fairness)
@@ -59,7 +59,7 @@ object DispatcherFactoryBean {
       if (properties.threadPool.mailboxCapacity > -1) {
         threadPoolBuilder.setMailboxCapacity(properties.threadPool.mailboxCapacity)
       }
-      if ((properties.threadPool.rejectionPolicy != null) && (!properties.threadPool.rejectionPolicy.isEmpty)) {
+      if ((properties.threadPool.rejectionPolicy ne null) && (!properties.threadPool.rejectionPolicy.isEmpty)) {
         val policy: RejectedExecutionHandler = properties.threadPool.rejectionPolicy match {
           case "abort-policy" => new AbortPolicy()
           case "caller-runs-policy" => new CallerRunsPolicy()

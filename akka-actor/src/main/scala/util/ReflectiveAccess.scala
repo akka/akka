@@ -204,7 +204,7 @@ object ReflectiveAccess extends Logging {
 
   object EnterpriseModule {
 
-    type FileBasedMailbox = {
+    type Mailbox = {
       def enqueue(message: MessageInvocation)
       def dequeue: MessageInvocation
     }
@@ -225,16 +225,23 @@ object ReflectiveAccess extends Logging {
     def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(
       "Feature is only available in Akka Enterprise")
 
-    def createFileBasedMailbox(
-      uuid: Uuid, actorType: ActorType, typedActorInfo: Option[Tuple2[String, String]]): FileBasedMailbox = {
+    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.FileBasedMailbox", actorRef)
+
+    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.ZooKeeperBasedMailbox", actorRef)
+
+    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.BeanstalkBasedMailbox", actorRef)
+
+    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.RedisBasedMailbox", actorRef)
+
+    private def createMailbox(mailboxClassname: String, actorRef: ActorRef): Mailbox = {
       ensureEnterpriseEnabled
       createInstance(
-        "se.scalablesolutions.akka.cluster.FileBasedMailbox",
-        Array(classOf[Uuid], classOf[ActorType], classOf[Option[Tuple2[String, String]]]),
-        Array(uuid, actorType, typedActorInfo).asInstanceOf[Array[AnyRef]],
+        mailboxClassname,
+        Array(classOf[ActorRef]),
+        Array(actorRef).asInstanceOf[Array[AnyRef]],
         loader)
-        .getOrElse(throw new IllegalActorStateException("Could not create file-based mailbox"))
-        .asInstanceOf[FileBasedMailbox]
+        .getOrElse(throw new IllegalActorStateException("Could not create durable mailbox [" + mailboxClassname + "] for actor [" + actorRef + "]"))
+        .asInstanceOf[Mailbox]
     }
   }
 
@@ -252,9 +259,11 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e: java.lang.reflect.InvocationTargetException =>
+      e.printStackTrace
       log.error(e.getCause, "Could not instantiate class [%s]", clazz.getName)
       None
     case e: Exception =>
+      e.printStackTrace
       log.error(e.getCause, "Could not instantiate class [%s]", clazz.getName)
       None
   }
@@ -272,9 +281,11 @@ object ReflectiveAccess extends Logging {
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
     case e: java.lang.reflect.InvocationTargetException =>
+      e.printStackTrace
       log.error(e.getCause, "Could not instantiate class [%s] due to [%s]", fqn, e.toString)
       None
     case e: Exception =>
+      e.printStackTrace
       log.error(e.getCause, "Could not instantiate class [%s] due to [%s]", fqn, e.toString)
       None
   }
@@ -287,9 +298,11 @@ object ReflectiveAccess extends Logging {
     Option(instance.get(null).asInstanceOf[T])
   } catch {
     case e: java.lang.reflect.InvocationTargetException =>
+      e.printStackTrace
       log.error(e.getCause, "Could not instantiate class [%s]", fqn)
       None
     case e: Exception =>
+      e.printStackTrace
       log.error(e.getCause, "Could not instantiate class [%s]", fqn)
       None
   }

@@ -34,11 +34,11 @@ class SupervisorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       val myConfigurator = context.getBean("supervision1").asInstanceOf[TypedActorConfigurator]
       // get TypedActors
       val foo = myConfigurator.getInstance(classOf[IFoo])
-      assert(foo != null)
+      assert(foo ne null)
       val bar = myConfigurator.getInstance(classOf[IBar])
-      assert(bar != null)
+      assert(bar ne null)
       val pojo = myConfigurator.getInstance(classOf[IMyPojo])
-      assert(pojo != null)
+      assert(pojo ne null)
     }
 
     scenario("get a supervisor for untyped actors from context") {
@@ -51,7 +51,7 @@ class SupervisorSpringFeatureTest extends FeatureSpec with ShouldMatchers {
       val context = new ClassPathXmlApplicationContext("/supervisor-config.xml")
       val myConfigurator = context.getBean("supervision-with-dispatcher").asInstanceOf[TypedActorConfigurator]
       val foo = myConfigurator.getInstance(classOf[IFoo])
-      assert(foo != null)
+      assert(foo ne null)
     }
   }
 }
