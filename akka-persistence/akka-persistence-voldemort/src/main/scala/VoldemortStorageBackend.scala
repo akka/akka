@@ -17,9 +17,10 @@ import voldemort.versioning.Versioned
 import collection.JavaConversions
 import java.nio.ByteBuffer
 import collection.Map
-import collection.immutable.{IndexedSeq, SortedSet, TreeSet, HashMap}
 import collection.mutable.{Set, HashSet, ArrayBuffer}
 import java.util.{Properties, Map => JMap}
+import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
+import collection.immutable._
 
 /*
   RequiredReads + RequiredWrites should be > ReplicationFactor for all Voldemort Stores
@@ -54,11 +55,8 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   val vectorSizeIndex = getIndexedBytes(-1)
   val queueHeadIndex = getIndexedBytes(-1)
   val queueTailIndex = getIndexedBytes(-2)
-
-
-  implicit val byteOrder = new Ordering[Array[Byte]] {
-    override def compare(x: Array[Byte], y: Array[Byte]) = ByteUtils.compare(x, y)
-  }
+  //explicit implicit :)
+  implicit val ordering = ArrayOrdering
 
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = {
@@ -90,17 +88,17 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
       mapKey => getKey(name, mapKey)
     }))
 
-    val buf = new ArrayBuffer[(Array[Byte], Array[Byte])](all.size)
+    var returned = new TreeMap[Array[Byte], Array[Byte]]()(ordering)
     JavaConversions.asMap(all).foreach {
       (entry) => {
         entry match {
-          case (key: Array[Byte], versioned: Versioned[Array[Byte]]) => {
-            buf += key -> versioned.getValue
+          case (namePlusKey: Array[Byte], versioned: Versioned[Array[Byte]]) => {
+            returned += getMapKeyFromKey(name, namePlusKey) -> versioned.getValue
           }
         }
       }
     }
-    buf.toList
+    returned.toList
   }
 
   def getMapStorageSizeFor(name: String): Int = {
@@ -263,7 +261,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
         try {
           queueClient.delete(key)
         } catch {
-          //a failure to delete is ok, just leaves a K-V in Voldemort that will be overwritten if the queue ever wraps around 
+          //a failure to delete is ok, just leaves a K-V in Voldemort that will be overwritten if the queue ever wraps around
           case e: Exception => log.warn(e, "caught an exception while deleting a dequeued element, however this will not cause any inconsistency in the queue")
         }
       }
@@ -330,6 +328,13 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val indexBytes = new Array[Byte](IntSerializer.bytesPerInt)
     System.arraycopy(key, key.length - IntSerializer.bytesPerInt, indexBytes, 0, IntSerializer.bytesPerInt)
     IntSerializer.fromBytes(indexBytes)
+  }
+
+  def getMapKeyFromKey(owner: String, key: Array[Byte]): Array[Byte] = {
+    val mapKeyLength = key.length - IntSerializer.bytesPerInt - owner.getBytes("UTF-8").length
+    val mapkey = new Array[Byte](mapKeyLength)
+    System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
+    mapkey
   }
 
 
@@ -450,6 +455,8 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     }
 
     def fromBytes(bytes: Array[Byte]): SortedSet[Array[Byte]] = {
+      import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
+
       var set = new TreeSet[Array[Byte]]
       if (bytes.length > IntSerializer.bytesPerInt) {
         var pos = 0

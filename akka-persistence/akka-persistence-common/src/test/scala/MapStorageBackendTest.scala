@@ -8,7 +8,9 @@ import org.scalatest.matchers.ShouldMatchers
 import se.scalablesolutions.akka.util.Logging
 import org.scalatest.{BeforeAndAfterEach, Spec}
 import scala.util.Random
-import collection.immutable.{HashMap, HashSet}
+import collection.immutable.{TreeMap, HashMap, HashSet}
+import se.scalablesolutions.akka.persistence.common.PersistentMapBinary.COrdering._
+
 
 /**
  * Implementation Compatibility test for PersistentMap backend implementations.
@@ -106,38 +108,44 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
 
 
 
-    it("should return all the key value pairs in the map (in the correct order?) when getMapStorageFor(name) is called") {
+    it("should return all the key value pairs in the map in the correct order when getMapStorageFor(name) is called") {
       val mapName = "allTest"
       val rand = new Random(3).nextInt(100)
-      val entries = (1 to rand).toList.map {
+      var entries = new TreeMap[Array[Byte], Array[Byte]]()(ArrayOrdering)
+      (1 to rand).foreach {
         index =>
-          (("allTestKey" + index).getBytes -> ("allTestValue" + index).getBytes)
+          entries += (("allTestKey" + index).getBytes -> ("allTestValue" + index).getBytes)
       }
 
-      storage.insertMapStorageEntriesFor(mapName, entries)
+      storage.insertMapStorageEntriesFor(mapName, entries.toList)
       val retrieved = storage.getMapStorageFor(mapName)
       retrieved.size should be(rand)
       entries.size should be(rand)
+
 
 
       val entryMap = new HashMap[String, String] ++ entries.map {_ match {case (k, v) => (new String(k), new String(v))}}
       val retrievedMap = new HashMap[String, String] ++ entries.map {_ match {case (k, v) => (new String(k), new String(v))}}
 
       entryMap should equal(retrievedMap)
-      //Should the ordering of key-vals returned be enforced?
-      //ordered by key?
-      //using what comaparison?
 
+      (0 until rand).foreach {
+        i: Int => {
+          new String(entries.toList(i)._1) should be(new String(retrieved(i)._1))
+        }
+      }
+
+    }
+
+    it("should return all the key->value pairs that exist in the map that are between start and end, up to count pairs when getMapStorageRangeFor is called") {
+      //implement if this method will be used
     }
 
     it("should not throw an exception when size is called on a non existent map?") {
       storage.getMapStorageSizeFor("nonExistent") should be(0)
     }
 
-    it("should behave properly when getMapStorageRange is called?") {
-      //No current code calls   getMapStorageRangeFor
-    }
-
+   
   }
 
 }
