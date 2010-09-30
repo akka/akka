@@ -43,7 +43,7 @@ trait QueueStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAft
 
     }
 
-    it("should dequeue properly when the queue is empty") {
+    it("should dequeue properly when the queue is not empty") {
       val queue = "dequeueTest"
       val value = "dequeueTestValue".getBytes
       storage.size(queue) should be(0)
