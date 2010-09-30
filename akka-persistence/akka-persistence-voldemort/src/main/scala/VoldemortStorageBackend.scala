@@ -344,7 +344,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def initStoreClients() = {
-    if (storeClientFactory != null) {
+    if (storeClientFactory ne null) {
       storeClientFactory.close
     }
 

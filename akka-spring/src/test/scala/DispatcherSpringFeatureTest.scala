@@ -18,9 +18,6 @@ import org.springframework.core.io.{ClassPathResource, Resource}
 import java.util.concurrent._
 import se.scalablesolutions.akka.actor.{UntypedActor, Actor, ActorRef}
 
-
-
-
 /**
  * Tests for spring configuration of typed actors.
  * @author michaelkober
@@ -47,7 +44,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
     scenario("get a dispatcher via ref from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val pojo = context.getBean("typed-actor-with-dispatcher-ref").asInstanceOf[IMyPojo]
-      assert(pojo != null)
+      assert(pojo ne null)
     }
 
     scenario("get a executor-event-driven-dispatcher with blocking-queue with unbounded capacity from context") {
@@ -99,7 +96,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
     scenario("get a executor-based-event-driven-work-stealing-dispatcher from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val dispatcher = context.getBean("executor-based-event-driven-work-stealing-dispatcher").asInstanceOf[ExecutorBasedEventDrivenWorkStealingDispatcher]
-      assert(dispatcher != null)
+      assert(dispatcher ne null)
       assert(dispatcher.name === "akka:event-driven-work-stealing:dispatcher:workStealingDispatcher")
       val executor = getThreadPoolExecutorAndAssert(dispatcher)
       assert(executor.getQueue().isInstanceOf[BlockingQueue[Runnable]])
@@ -108,15 +105,15 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
     scenario("get a hawt-dispatcher from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val dispatcher = context.getBean("hawt-dispatcher").asInstanceOf[HawtDispatcher]
-      assert(dispatcher != null)
-      assert(dispatcher.toString === "HawtDispatchEventDrivenDispatcher")
+      assert(dispatcher ne null)
+      assert(dispatcher.toString === "HawtDispatcher")
       assert(dispatcher.aggregate === false)
     }
 
     scenario("get a thread-based-dispatcher for typed actor from context") {
       val context = new ClassPathXmlApplicationContext("/dispatcher-config.xml")
       val pojo = context.getBean("typed-actor-with-thread-based-dispatcher").asInstanceOf[IMyPojo]
-      assert(pojo != null)
+      assert(pojo ne null)
     }
 
     scenario("get a thread-based-dispatcher for untyped from context") {
@@ -138,7 +135,7 @@ class DispatcherSpringFeatureTest extends FeatureSpec with ShouldMatchers {
     val field = pool.getClass.getDeclaredField("se$scalablesolutions$akka$dispatch$ThreadPoolBuilder$$threadPoolBuilder")
     field.setAccessible(true)
     val executor = field.get(pool).asInstanceOf[ThreadPoolExecutor]
-    assert(executor != null)
+    assert(executor ne null)
     executor;
   }
 

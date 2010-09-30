@@ -190,7 +190,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile"
 
-    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0" % "compile"
+    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.1" % "compile"
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
