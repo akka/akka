@@ -66,7 +66,7 @@ trait MapStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
 
     it("should insert multiple map storage elements properly") {
       val mapName = "insertMultipleTest"
-      val rand = new Random(2).nextInt(100)
+      val rand = new Random(3).nextInt(100)
       val entries = (1 to rand).toList.map {
         index =>
           (("insertMultipleTestKey" + index).getBytes -> ("insertMutlipleTestValue" + index).getBytes)
