@@ -70,9 +70,32 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
       toUpdate should be(new String(storage.getVectorStorageEntryFor(vector, urand)))
     }
 
-    
+    it("should return the correct value from getVectorStorageFor") {
+      val vector = "getTest"
+      val rand = new Random(3).nextInt(100)
+      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
+      val urand = new Random(3).nextInt(rand)
+      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
+      values.reverse(urand) should be(new String(storage.getVectorStorageEntryFor(vector, urand)))
+    }
 
-    //getStorageEntry for a non existent entry?
+    it("should return the correct values from getVectorStorageRangeFor") {
+      val vector = "getTest"
+      val rand = new Random(3).nextInt(100)
+      val drand = new Random(3).nextInt(rand)
+      val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
+      storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
+      values.reverse should be(storage.getVectorStorageRangeFor(vector, None, None, rand + 1).map {b: Array[Byte] => new String(b)})
+    }
+
+    it("should behave properly when the range used in getVectorStorageRangeFor has indexes outside the current size of the vector") {
+      //what is proper?
+    }
+
+    it("shoud behave properly when getStorageEntry for a non existent entry?") {
+      //What is proper?
+    }
+
   }
 
 }
