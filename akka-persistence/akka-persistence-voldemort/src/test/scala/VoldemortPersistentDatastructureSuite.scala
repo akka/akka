@@ -5,7 +5,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import se.scalablesolutions.akka.persistence.voldemort.VoldemortStorageBackend._
-import se.scalablesolutions.akka.actor.{newUuid,Uuid}
+import se.scalablesolutions.akka.actor.{newUuid, Uuid}
 import collection.immutable.TreeSet
 import VoldemortStorageBackendSuite._
 
@@ -79,6 +79,20 @@ class VoldemortPersistentDatastructureSuite extends FunSuite with ShouldMatchers
       vec.get(0) should be(Array.empty[Byte])
       vec.get(1) should be(Array.empty[Byte])
       vec.size should be(2)
+    }
+
+
+  }
+
+  test("Persistent Maps work as expected") {
+    atomic {
+      val map = VoldemortStorage.getMap("map")
+      map.put("mapTest".getBytes, null)
+    }
+
+    atomic {
+      val map = VoldemortStorage.getMap("map")
+      map.get("mapTest".getBytes).get should be(null)
     }
 
 
