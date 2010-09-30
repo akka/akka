@@ -154,6 +154,9 @@ object ReflectiveAccess extends Logging {
     type TypedActorObject = {
       def isJoinPoint(message: Any): Boolean
       def isJoinPointAndOneWay(message: Any): Boolean
+      def actorFor(proxy: AnyRef): Option[ActorRef]
+      def proxyFor(actorRef: ActorRef): Option[AnyRef]
+      def stop(anyRef: AnyRef) : Unit
     }
 
     lazy val isTypedActorEnabled = typedActorObjectInstance.isDefined

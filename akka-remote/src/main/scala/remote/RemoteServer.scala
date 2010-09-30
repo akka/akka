@@ -10,12 +10,13 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor.{
-  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage,uuidFrom,Uuid}
+  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid, ActorRegistry}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType._
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.serialization.RemoteActorSerialization
 import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
 
@@ -30,7 +31,6 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 
 /**
  * Use this object if you need a single remote server on a specific node.
@@ -103,42 +103,8 @@ object RemoteServer {
     } else */false
   }
 
-  object Address {
-    def apply(hostname: String, port: Int) = new Address(hostname, port)
-  }
-
-  class Address(val hostname: String, val port: Int) {
-    override def hashCode: Int = {
-      var result = HashCode.SEED
-      result = HashCode.hash(result, hostname)
-      result = HashCode.hash(result, port)
-      result
-    }
-    override def equals(that: Any): Boolean = {
-      that.isInstanceOf[Address] &&
-      that.asInstanceOf[Address].hostname == hostname &&
-      that.asInstanceOf[Address].port == port
-    }
-  }
-
-  private class RemoteActorSet {
-    private[RemoteServer] val actors = new ConcurrentHashMap[String, ActorRef]
-    private[RemoteServer] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
-    private[RemoteServer] val typedActors = new ConcurrentHashMap[String, AnyRef]
-    private[RemoteServer] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
-  }
-
   private val guard = new ReadWriteGuard
-  private val remoteActorSets = Map[Address, RemoteActorSet]()
   private val remoteServers =   Map[Address, RemoteServer]()
-
-  private[akka] def registerActorByUuid(address: InetSocketAddress, uuid: String, actor: ActorRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).actorsByUuid.put(uuid, actor)
-  }
-
-  private[akka] def registerTypedActorByUuid(address: InetSocketAddress, uuid: String, typedActor: AnyRef) = guard.withWriteGuard {
-    actorsFor(RemoteServer.Address(address.getHostName, address.getPort)).typedActors.put(uuid, typedActor)
-  }
 
   private[akka] def getOrCreateServer(address: InetSocketAddress): RemoteServer = guard.withWriteGuard {
     serverFor(address) match {
@@ -161,10 +127,7 @@ object RemoteServer {
   private[akka] def unregister(hostname: String, port: Int) = guard.withWriteGuard {
     remoteServers.remove(Address(hostname, port))
   }
-
-  private def actorsFor(remoteServerAddress: RemoteServer.Address): RemoteActorSet = {
-    remoteActorSets.getOrElseUpdate(remoteServerAddress,new RemoteActorSet)
-  }
+  
 }
 
 /**
@@ -197,7 +160,7 @@ class RemoteServer extends Logging with ListenerManagement {
   import RemoteServer._
   def name = "RemoteServer@" + hostname + ":" + port
 
-  private[akka] var address  = RemoteServer.Address(RemoteServer.HOSTNAME,RemoteServer.PORT)
+  private[akka] var address  = Address(RemoteServer.HOSTNAME,RemoteServer.PORT)
 
   def hostname = address.hostname
   def port     = address.port
@@ -236,7 +199,7 @@ class RemoteServer extends Logging with ListenerManagement {
   private def start(_hostname: String, _port: Int, loader: Option[ClassLoader]): RemoteServer = synchronized {
     try {
       if (!_isRunning) {
-        address = RemoteServer.Address(_hostname,_port)
+        address = Address(_hostname,_port)
         log.info("Starting remote server at [%s:%s]", hostname, port)
         RemoteServer.register(hostname, port, this)
         val pipelineFactory = new RemoteServerPipelineFactory(
@@ -379,10 +342,10 @@ class RemoteServer extends Logging with ListenerManagement {
 
   protected[akka] override def notifyListeners(message: => Any): Unit = super.notifyListeners(message)
 
-  private[akka] def actors()            = RemoteServer.actorsFor(address).actors
-  private[akka] def actorsByUuid()      = RemoteServer.actorsFor(address).actorsByUuid
-  private[akka] def typedActors()       = RemoteServer.actorsFor(address).typedActors
-  private[akka] def typedActorsByUuid() = RemoteServer.actorsFor(address).typedActorsByUuid
+  private[akka] def actors()            = ActorRegistry.actors(address)
+  private[akka] def actorsByUuid()      = ActorRegistry.actorsByUuid(address)
+  private[akka] def typedActors()       = ActorRegistry.typedActors(address)
+  private[akka] def typedActorsByUuid() = ActorRegistry.typedActorsByUuid(address)
 }
 
 object RemoteServerSslContext {

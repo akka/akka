@@ -4,14 +4,16 @@
 
 package se.scalablesolutions.akka.actor
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 import scala.reflect.Manifest
 
 import java.util.concurrent.{ConcurrentSkipListSet, ConcurrentHashMap}
 import java.util.{Set => JSet}
 
-import se.scalablesolutions.akka.util.ListenerManagement
 import annotation.tailrec
+import se.scalablesolutions.akka.util.ReflectiveAccess._
+import se.scalablesolutions.akka.util.{ReadWriteGuard, Address, ListenerManagement}
+import java.net.InetSocketAddress
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -37,6 +39,8 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
 object ActorRegistry extends ListenerManagement {
   private val actorsByUUID =          new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById =            new Index[String,ActorRef]
+  private val remoteActorSets =       Map[Address, RemoteActorSet]()
+  private val guard = new ReadWriteGuard
   
   /**
    * Returns all actors in the system.
@@ -109,10 +113,125 @@ object ActorRegistry extends ListenerManagement {
    */
   def actorsFor(id: String): Array[ActorRef] = actorsById values id
 
-   /**
+  /**
    * Finds the actor that has a specific UUID.
    */
   def actorFor(uuid: Uuid): Option[ActorRef] = Option(actorsByUUID get uuid)
+
+  /**
+   * Returns all typed actors in the system.
+   */
+  def typedActors: Array[AnyRef] = filterTypedActors(_ => true)
+
+  /**
+   * Invokes a function for all typed actors.
+   */
+  def foreachTypedActor(f: (AnyRef) => Unit) = {
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val proxy = typedActorFor(elements.nextElement)
+      if (proxy.isDefined) {
+        f(proxy.get)
+      }
+    }
+  }
+
+  /**
+   * Invokes the function on all known typed actors until it returns Some
+   * Returns None if the function never returns Some
+   */
+  def findTypedActor[T](f: PartialFunction[AnyRef,T]) : Option[T] = {
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val proxy = typedActorFor(elements.nextElement)
+      if(proxy.isDefined && (f isDefinedAt proxy))
+        return Some(f(proxy))
+    }
+    None
+  }
+
+  /**
+   * Finds all typed actors that satisfy a predicate.
+   */
+  def filterTypedActors(p: AnyRef => Boolean): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    val all = new ListBuffer[AnyRef]
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val proxy = typedActorFor(elements.nextElement)
+      if (proxy.isDefined && p(proxy.get))  {
+        all += proxy.get
+      }
+    }
+    all.toArray
+  }
+
+  /**
+   * Finds all typed actors that are subtypes of the class passed in as the Manifest argument.
+   */
+  def typedActorsFor[T <: AnyRef](implicit manifest: Manifest[T]): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    typedActorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
+  }
+
+  /**
+   * Finds any typed actor that matches T.
+   */
+  def typedActorFor[T <: AnyRef](implicit manifest: Manifest[T]): Option[AnyRef] = {
+    def predicate(proxy: AnyRef) : Boolean = {
+      val actorRef = actorFor(proxy)
+      actorRef.isDefined && manifest.erasure.isAssignableFrom(actorRef.get.actor.getClass)
+    }
+    findTypedActor({ case a:AnyRef if predicate(a) => a })
+  }
+
+  /**
+   * Finds all typed actors of type or sub-type specified by the class passed in as the Class argument.
+   */
+  def typedActorsFor[T <: AnyRef](clazz: Class[T]): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    def predicate(proxy: AnyRef) : Boolean = {
+      val actorRef = actorFor(proxy)
+      actorRef.isDefined && clazz.isAssignableFrom(actorRef.get.actor.getClass)
+    }
+    filterTypedActors(predicate)
+  }
+
+  /**
+   * Finds all typed actors that have a specific id.
+   */
+  def typedActorsFor(id: String): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    val actorRefs = actorsById values id
+    actorRefs.flatMap(typedActorFor(_))
+  }
+
+  /**
+   * Finds the typed actor that has a specific UUID.
+   */
+  def typedActorFor(uuid: Uuid): Option[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    val actorRef = actorsByUUID get uuid
+    if (actorRef eq null)
+      None
+    else
+      typedActorFor(actorRef)
+  }
+
+  /**
+   * Get the typed actor proxy for a given typed actor ref.
+   */
+  private def typedActorFor(actorRef: ActorRef): Option[AnyRef] = {
+    TypedActorModule.typedActorObjectInstance.get.proxyFor(actorRef)
+  }
+
+  /**
+   * Get the underlying typed actor for a given proxy.
+   */
+  private def actorFor(proxy: AnyRef): Option[ActorRef] = {
+    TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
+  }
+
 
   /**
    * Registers an actor in the ActorRegistry.
@@ -145,10 +264,50 @@ object ActorRegistry extends ListenerManagement {
    */
   def shutdownAll() {
     log.info("Shutting down all actors in the system...")
-    foreach(_.stop)
+    if (TypedActorModule.isTypedActorEnabled) {
+      val elements = actorsByUUID.elements
+      while (elements.hasMoreElements) {
+        val actorRef = elements.nextElement
+        val proxy = typedActorFor(actorRef)
+        if (proxy.isDefined) {
+          TypedActorModule.typedActorObjectInstance.get.stop(proxy.get)
+        } else {
+          actorRef.stop
+        }
+      }
+    } else {
+      foreach(_.stop)
+    }
     actorsByUUID.clear
     actorsById.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
+  }
+
+  /**
+   * Get the remote actors for the given server address. For internal use only.
+   */
+  private[akka] def actorsFor(remoteServerAddress: Address): RemoteActorSet = guard.withWriteGuard {
+    remoteActorSets.getOrElseUpdate(remoteServerAddress, new RemoteActorSet)
+  }
+
+  private[akka] def registerActorByUuid(address: InetSocketAddress, uuid: String, actor: ActorRef) {
+    actorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, actor)
+  }
+
+  private[akka] def registerTypedActorByUuid(address: InetSocketAddress, uuid: String, typedActor: AnyRef) {
+    typedActorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, typedActor)
+  }
+
+  private[akka] def actors(address: Address) = actorsFor(address).actors
+  private[akka] def actorsByUuid(address: Address) = actorsFor(address).actorsByUuid
+  private[akka] def typedActors(address: Address) = actorsFor(address).typedActors
+  private[akka] def typedActorsByUuid(address: Address) = actorsFor(address).typedActorsByUuid
+
+  private[akka] class RemoteActorSet {
+    private[ActorRegistry] val actors = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistry] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistry] val typedActors = new ConcurrentHashMap[String, AnyRef]
+    private[ActorRegistry] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
   }
 }
 
