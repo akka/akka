@@ -11,7 +11,7 @@ import java.security.MessageDigest
  */
 object Helpers extends Logging {
 
-  implicit def null2Option[T](t: T): Option[T] = if (t != null) Some(t) else None
+  implicit def null2Option[T](t: T): Option[T] = Option(t)
 
   def intToBytes(value: Int): Array[Byte] = {
     val bytes = new Array[Byte](4)
@@ -41,7 +41,7 @@ object Helpers extends Logging {
    * if the actual type is not assignable from the given one.
    */
   def narrow[T](o: Option[Any]): Option[T] = {
-    require(o != null, "Option to be narrowed must not be null!")
+    require((o ne null), "Option to be narrowed must not be null!")
     o.asInstanceOf[Option[T]]
   }
 

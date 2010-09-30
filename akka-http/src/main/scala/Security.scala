@@ -207,7 +207,7 @@ trait AuthenticationActor[C <: Credentials] extends Actor {
   //Turns the aforementioned header value into an option
   def authOption(r: Req): Option[String] = {
     val a = auth(r)
-    if (a != null && a.length > 0) Some(a) else None
+    if ((a ne null) && a.length > 0) Some(a) else None
   }
 }
 

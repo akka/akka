@@ -104,7 +104,7 @@ class TypedActorInfo(context: CamelContext, clazz: Class[_], strategy: Parameter
       }
     }
     val superclass = clazz.getSuperclass
-    if (superclass != null && !superclass.equals(classOf[AnyRef])) {
+    if ((superclass ne null) && !superclass.equals(classOf[AnyRef])) {
       introspect(superclass)
     }
   }

@@ -100,9 +100,9 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
   }
 
   private[akka] def createTypedInstance() : AnyRef = {
-    if (interface == null || interface == "") throw new AkkaBeansException(
+    if ((interface eq null) || interface == "") throw new AkkaBeansException(
         "The 'interface' part of the 'akka:actor' element in the Spring config file can't be null or empty string")
-    if (implementation == null || implementation == "") throw new AkkaBeansException(
+    if ((implementation eq null) || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:typed-actor' element in the Spring config file can't be null or empty string")
 
     val typedActor: AnyRef = TypedActor.newInstance(interface.toClass, implementation.toClass, createConfig) 
@@ -121,7 +121,7 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
    * Create an UntypedActor.
    */
   private[akka] def createUntypedInstance() : ActorRef = {
-    if (implementation == null || implementation == "") throw new AkkaBeansException(
+    if ((implementation eq null) || implementation == "") throw new AkkaBeansException(
         "The 'implementation' part of the 'akka:untyped-actor' element in the Spring config file can't be null or empty string")
     val actorRef = Actor.actorOf(implementation.toClass)
     if (timeout > 0) {
@@ -199,11 +199,11 @@ class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with Logging with App
     config
   }
 
-  private[akka] def isRemote = (host != null) && (!host.isEmpty)
+  private[akka] def isRemote = (host ne null) && (!host.isEmpty)
 
   private[akka] def hasDispatcher =
-    (dispatcher != null) &&
-    (dispatcher.dispatcherType != null) &&
+    (dispatcher ne null) &&
+    (dispatcher.dispatcherType ne null) &&
     (!dispatcher.dispatcherType.isEmpty)
 
   /**

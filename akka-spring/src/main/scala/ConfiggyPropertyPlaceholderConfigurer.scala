@@ -18,7 +18,7 @@ class ConfiggyPropertyPlaceholderConfigurer extends PropertyPlaceholderConfigure
    * @param configgyResource akka.conf  
    */
   override def setLocation(configgyResource: Resource) {
-    if (configgyResource == null) throw new IllegalArgumentException("Property 'config' must be set")
+    if (configgyResource eq null) throw new IllegalArgumentException("Property 'config' must be set")
     val properties = loadAkkaConfig(configgyResource)
     setProperties(properties)
   }

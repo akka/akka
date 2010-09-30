@@ -24,7 +24,7 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                  type="executor-based-event-driven"
                                  name="myDispatcher"/>
       var props = parser.parseDispatcher(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.dispatcherType === "executor-based-event-driven")
       assert(props.name === "myDispatcher")
 
@@ -45,7 +45,7 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                   keep-alive="2000"
                                   rejection-policy="caller-runs-policy"/>
       val props = parser.parseThreadPool(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.queue == "bounded-array-blocking-queue")
       assert(props.capacity == 100)
       assert(props.fairness)
@@ -66,7 +66,7 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
                             keep-alive="1000"/>
       </akka:dispatcher>
       val props = parser.parseDispatcher(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.dispatcherType == "executor-based-event-driven")
       assert(props.name == "myDispatcher")
       assert(props.threadPool.corePoolSize == 2)
@@ -97,7 +97,7 @@ class DispatcherBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                  type="hawt"
                                  aggregate="false"/>
       var props = parser.parseDispatcher(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.dispatcherType === "hawt")
       assert(props.aggregate === false)
     }
