@@ -704,22 +704,22 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
  * <p/>
  * zscore can be implemented in a variety of ways by the calling class:
  * <pre>
- * trait ZScorable       {
+ * trait ZScorable        {
  *   def toZScore: Float
  * }
  *
- * class Foo extends ZScorable       {
+ * class Foo extends ZScorable        {
  *   //.. implemnetation
  * }
  * </pre>
  * Or we can also use views:
  * <pre>
- * class Foo       {
+ * class Foo        {
  *   //..
  * }
  *
- * implicit def Foo2Scorable(foo: Foo): ZScorable = new ZScorable       {
- *   def toZScore =       {
+ * implicit def Foo2Scorable(foo: Foo): ZScorable = new ZScorable        {
+ *   def toZScore =        {
  *     //..
  * }
  * }

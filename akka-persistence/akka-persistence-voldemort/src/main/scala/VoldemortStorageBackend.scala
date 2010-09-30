@@ -174,9 +174,11 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     } else {
       count
     }
+
+
     val seq: IndexedSeq[Array[Byte]] = (st until st + cnt).map {
       index => getIndexedKey(name, index)
-    }
+    }.reverse //read backwards
 
     val all: JMap[Array[Byte], Versioned[Array[Byte]]] = vectorClient.getAll(JavaConversions.asIterable(seq))
 
@@ -197,12 +199,17 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = {
-    vectorClient.getValue(getIndexedKey(name, index), Array.empty[Byte])
+    val size = getVectorStorageSizeFor(name)
+    if (size > 0) {
+      vectorClient.getValue(getIndexedKey(name, /*read backwards*/ (size - 1) - index))
+    } else {
+      Array.empty[Byte] //is this what to return?
+    }
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
     val size = getVectorStorageSizeFor(name)
-    vectorClient.put(getIndexedKey(name, index), elem)
+    vectorClient.put(getIndexedKey(name, /*read backwards*/ (size - 1) - index), elem)
     if (size < index + 1) {
       vectorClient.put(getKey(name, vectorSizeIndex), IntSerializer.toBytes(index + 1))
     }
