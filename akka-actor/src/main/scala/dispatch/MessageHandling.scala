@@ -39,7 +39,6 @@ final class MessageInvocation(val receiver: ActorRef,
   }
 
   override def equals(that: Any): Boolean = {
-    that != null &&
     that.isInstanceOf[MessageInvocation] &&
     that.asInstanceOf[MessageInvocation].receiver.actor == receiver.actor &&
     that.asInstanceOf[MessageInvocation].message == message
@@ -64,6 +63,8 @@ trait MessageDispatcher extends MailboxFactory with Logging {
   protected val uuids = new ConcurrentSkipListSet[Uuid]
   
   def dispatch(invocation: MessageInvocation): Unit
+
+  def execute(task: Runnable): Unit
 
   def start: Unit
 

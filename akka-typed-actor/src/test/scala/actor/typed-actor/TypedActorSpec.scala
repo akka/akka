@@ -18,12 +18,27 @@ import TypedActorSpec._
 object TypedActorSpec {
   trait MyTypedActor {
     def sendOneWay(msg: String) : Unit
+    def sendRequestReply(msg: String) : String
   }
 
   class MyTypedActorImpl extends TypedActor with MyTypedActor {
     self.id = "my-custom-id"
     def sendOneWay(msg: String) {
-      println("got " + msg)
+      println("got " + msg )
+    }
+    def sendRequestReply(msg: String) : String = {
+      "got " + msg
+    }
+  }
+
+  class MyTypedActorWithConstructorArgsImpl(aString: String, aLong: Long) extends TypedActor with MyTypedActor {
+    self.id = "my-custom-id"
+    def sendOneWay(msg: String) {
+      println("got " + msg + " " + aString + " " + aLong)
+    }
+
+    def sendRequestReply(msg: String) : String = {
+      msg + " " + aString + " " + aLong
     }
   }
 
@@ -35,6 +50,7 @@ object TypedActorSpec {
   }
   
 }
+
 
 @RunWith(classOf[JUnitRunner])
 class TypedActorSpec extends
@@ -54,12 +70,28 @@ class TypedActorSpec extends
     ActorRegistry.shutdownAll
   }
 
+  override def afterAll() {
+    ActorRegistry.shutdownAll
+  }
+
   describe("TypedActor") {
+
     it("should resolve Future return from method defined to return a Future") {
       val future = simplePojo.square(10)
       future.await
       future.result.isDefined should equal (true)
       future.result.get should equal (100)
+    }
+
+    it("should accept constructor arguments") {
+      val pojo1 = TypedActor.newInstance(classOf[MyTypedActor], new MyTypedActorWithConstructorArgsImpl("test", 1L))
+      assert(pojo1.sendRequestReply("hello") === "hello test 1")
+
+      val pojo2 = TypedActor.newInstance(classOf[MyTypedActor], new MyTypedActorWithConstructorArgsImpl("test2", 2L), new TypedActorConfiguration())
+      assert(pojo2.sendRequestReply("hello") === "hello test2 2")
+
+      val pojo3 = TypedActor.newInstance(classOf[MyTypedActor], new MyTypedActorWithConstructorArgsImpl("test3", 3L), 5000L)
+      assert(pojo3.sendRequestReply("hello") === "hello test3 3")
     }
   }
 
@@ -76,11 +108,8 @@ class TypedActorSpec extends
     it("should support finding a typed actor by uuid ") {
       val typedActorRef = TypedActor.actorFor(simplePojo).get
       val uuid = typedActorRef.uuid
-      println("### 1")
       assert(ActorRegistry.typedActorFor(newUuid()) === None)
-      println("### 2")
       assert(ActorRegistry.typedActorFor(uuid).isDefined)
-      println("### 3")
       assert(ActorRegistry.typedActorFor(uuid).get === simplePojo)
     }
 

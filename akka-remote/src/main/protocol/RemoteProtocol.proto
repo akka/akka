@@ -23,7 +23,7 @@ message RemoteActorRefProtocol {
 }
 
 /**
- * Defines a remote ActorRef that "remembers" and uses its original typed Actor instance
+ * Defines a remote Typed ActorRef that "remembers" and uses its original typed Actor instance
  * on the original node.
  */
 message RemoteTypedActorRefProtocol {

@@ -75,33 +75,36 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * @return true if the mailbox was processed, false otherwise
    */
   private def tryProcessMailbox(mailbox: MessageQueue): Boolean = {
-    var lockAcquiredOnce = false
+    var mailboxWasProcessed = false
 
     // this do-wile loop is required to prevent missing new messages between the end of processing
     // the mailbox and releasing the lock
     do {
       if (mailbox.dispatcherLock.tryLock) {
-        lockAcquiredOnce = true
         try {
-          processMailbox(mailbox)
+          mailboxWasProcessed = processMailbox(mailbox)
         } finally {
           mailbox.dispatcherLock.unlock
         }
       }
-    } while ((lockAcquiredOnce && !mailbox.isEmpty))
+    } while ((mailboxWasProcessed && !mailbox.isEmpty))
 
-    lockAcquiredOnce
+    mailboxWasProcessed
   }
 
   /**
    * Process the messages in the mailbox of the given actor.
+   * @return
    */
-  private def processMailbox(mailbox: MessageQueue) = {
+  private def processMailbox(mailbox: MessageQueue): Boolean = {
     var messageInvocation = mailbox.dequeue
     while (messageInvocation ne null) {
       messageInvocation.invoke
+      if (messageInvocation.receiver.isBeingRestarted)
+        return false
       messageInvocation = mailbox.dequeue
     }
+    true
   }
 
   private def findThief(receiver: ActorRef): Option[ActorRef] = {
@@ -210,6 +213,19 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
           findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef, _) )
         }
       }
+  }
+
+  /**
+   * Creates and returns a durable mailbox for the given actor.
+   */
+  protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
+    // FIXME make generic (work for TypedActor as well)
+    case FileBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("FileBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case ZooKeeperBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("ZooKeeperBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case BeanstalkBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("BeanstalkBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case RedisBasedDurableMailbox(serializer)     => throw new UnsupportedOperationException("RedisBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case AMQPBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("AMQPBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
   }
 
   override def register(actorRef: ActorRef) = {
