@@ -10,12 +10,13 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.{Map => JMap}
 
 import se.scalablesolutions.akka.actor.{
-  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage,uuidFrom,Uuid}
+  Actor, TypedActor, ActorRef, IllegalActorStateException, RemoteActorSystemMessage, uuidFrom, Uuid}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.util._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.ActorType._
 import se.scalablesolutions.akka.config.Config._
+import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 import se.scalablesolutions.akka.serialization.RemoteActorSerialization
 import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
 
@@ -30,7 +31,6 @@ import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.collection.mutable.Map
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
 
 /**
  * Use this object if you need a single remote server on a specific node.
