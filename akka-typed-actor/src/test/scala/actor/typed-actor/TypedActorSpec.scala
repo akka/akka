@@ -70,10 +70,6 @@ class TypedActorSpec extends
     ActorRegistry.shutdownAll
   }
 
-  override def afterAll() {
-    ActorRegistry.shutdownAll
-  }
-
   describe("TypedActor") {
 
     it("should resolve Future return from method defined to return a Future") {
