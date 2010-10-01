@@ -41,6 +41,12 @@ trait RefStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAfter
       val value = name.getBytes
       storage.getRefStorageFor(name) should be(None)
     }
+
+    it("Should return None, not Some(null) when getRefStorageFor is called when null has been set") {
+      val name = "RefStorageTest #3"
+      storage.insertRefStorageFor(name, null)
+      storage.getRefStorageFor(name) should be(None)
+    }
   }
 
 }

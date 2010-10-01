@@ -50,6 +50,9 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   var queueClient: StoreClient[Array[Byte], Array[Byte]] = null
   initStoreClients
 
+  val nullMapValueHeader = 0x00.byteValue
+  val nullMapValue: Array[Byte] = Array(nullMapValueHeader)
+  val notNullMapValueHeader: Byte = 0xff.byteValue
   val underscoreBytesUTF8 = "_".getBytes("UTF-8")
   val mapKeysIndex = getIndexedBytes(-1)
   val vectorSizeIndex = getIndexedBytes(-1)
@@ -61,14 +64,14 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
   def getRefStorageFor(name: String): Option[Array[Byte]] = {
     val result: Array[Byte] = refClient.getValue(name)
-    result match {
-      case null => None
-      case _ => Some(result)
-    }
+    Option(result)
   }
 
   def insertRefStorageFor(name: String, element: Array[Byte]) = {
-    refClient.put(name, element)
+    element match {
+      case null => refClient.delete(name)
+      case _ => refClient.put(name, element)
+    }
   }
 
   def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = {
@@ -93,7 +96,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
       (entry) => {
         entry match {
           case (namePlusKey: Array[Byte], versioned: Versioned[Array[Byte]]) => {
-            returned += getMapKeyFromKey(name, namePlusKey) -> versioned.getValue
+            returned += getMapKeyFromKey(name, namePlusKey) -> getMapValueFromStored(versioned.getValue)
           }
         }
       }
@@ -110,7 +113,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val result: Array[Byte] = mapClient.getValue(getKey(name, key))
     result match {
       case null => None
-      case _ => Some(result)
+      case _ => Some(getMapValueFromStored(result))
     }
   }
 
@@ -132,7 +135,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   }
 
   def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte]) = {
-    mapClient.put(getKey(name, key), value)
+    mapClient.put(getKey(name, key), getStoredMapValue(value))
     var keys = getMapKeys(name)
     keys += key
     putMapKeys(name, keys)
@@ -141,7 +144,7 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) = {
     val newKeys = entries.map {
       case (key, value) => {
-        mapClient.put(getKey(name, key), value)
+        mapClient.put(getKey(name, key), getStoredMapValue(value))
         key
       }
     }
@@ -167,18 +170,21 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = {
     val size = getVectorStorageSizeFor(name)
     val st = start.getOrElse(0)
-    val cnt =
+    var cnt =
     if (finish.isDefined) {
       val f = finish.get
       if (f >= st) (f - st) else count
     } else {
       count
     }
+    if (cnt > (size - st)) {
+      cnt = size - st
+    }
 
 
     val seq: IndexedSeq[Array[Byte]] = (st until st + cnt).map {
-      index => getIndexedKey(name, index)
-    }.reverse //read backwards
+      index => getIndexedKey(name, (size - 1) - index)
+    } //read backwards
 
     val all: JMap[Array[Byte], Versioned[Array[Byte]]] = vectorClient.getAll(JavaConversions.asIterable(seq))
 
@@ -200,18 +206,22 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
 
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] = {
     val size = getVectorStorageSizeFor(name)
-    if (size > 0) {
+    if (size > 0 && index < size) {
       vectorClient.getValue(getIndexedKey(name, /*read backwards*/ (size - 1) - index))
     } else {
-      Array.empty[Byte] //is this what to return?
+      throw new StorageException("In Vector:" + name + " No such Index:" + index)
     }
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
     val size = getVectorStorageSizeFor(name)
-    vectorClient.put(getIndexedKey(name, /*read backwards*/ (size - 1) - index), elem)
-    if (size < index + 1) {
-      vectorClient.put(getKey(name, vectorSizeIndex), IntSerializer.toBytes(index + 1))
+    if (size > 0 && index < size) {
+      elem match {
+        case null => vectorClient.delete(getIndexedKey(name, /*read backwards*/ (size - 1) - index))
+        case _ => vectorClient.put(getIndexedKey(name, /*read backwards*/ (size - 1) - index), elem)
+      }
+    } else {
+      throw new StorageException("In Vector:" + name + " No such Index:" + index)
     }
   }
 
@@ -219,7 +229,9 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     var size = getVectorStorageSizeFor(name)
     elements.foreach {
       element =>
-        vectorClient.put(getIndexedKey(name, size), element)
+        if (element != null) {
+          vectorClient.put(getIndexedKey(name, size), element)
+        }
         size += 1
     }
     vectorClient.put(getKey(name, vectorSizeIndex), IntSerializer.toBytes(size))
@@ -281,7 +293,10 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val mdata = getQueueMetadata(name)
     if (mdata.canEnqueue) {
       val key = getIndexedKey(name, mdata.tail)
-      queueClient.put(key, item)
+      item match {
+        case null => queueClient.delete(key)
+        case _ => queueClient.put(key, item)
+      }
       queueClient.put(getKey(name, queueTailIndex), IntSerializer.toBytes(mdata.nextEnqueue))
       Some(mdata.size + 1)
     } else {
@@ -342,6 +357,32 @@ MapStorageBackend[Array[Byte], Array[Byte]] with
     val mapkey = new Array[Byte](mapKeyLength)
     System.arraycopy(key, key.length - mapKeyLength, mapkey, 0, mapKeyLength)
     mapkey
+  }
+
+  //wrapper for null
+  def getStoredMapValue(value: Array[Byte]): Array[Byte] = {
+    value match {
+      case null => nullMapValue
+      case value => {
+        val stored = new Array[Byte](value.length + 1)
+        stored(0) = notNullMapValueHeader
+        System.arraycopy(value, 0, stored, 1, value.length)
+        stored
+      }
+    }
+  }
+
+  def getMapValueFromStored(value: Array[Byte]): Array[Byte] = {
+
+    if (value(0) == nullMapValueHeader) {
+      null
+    } else if (value(0) == notNullMapValueHeader) {
+      val returned = new Array[Byte](value.length - 1)
+      System.arraycopy(value, 1, returned, 0, value.length - 1)
+      returned
+    } else {
+      throw new StorageException("unknown header byte on map value:" + value(0))
+    }
   }
 
 
