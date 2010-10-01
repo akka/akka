@@ -111,6 +111,13 @@ trait QueueStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAft
       storage.remove(queue)
       storage.size(queue) should be(0)
     }
+
+    it("should accept null as a value to enqueue and return Some(null) when that value is dequeued") {
+      val queue = "nullTest"
+      storage.enqueue(queue, null).get should be(1)
+      storage.dequeue(queue).get should be(null)
+      storage.dequeue(queue) should be(None)
+    }
   }
 
 }

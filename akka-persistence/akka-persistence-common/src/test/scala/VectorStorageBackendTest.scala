@@ -86,14 +86,36 @@ trait VectorStorageBackendTest extends Spec with ShouldMatchers with BeforeAndAf
       val values = (0 to rand).toList.map {i: Int => vector + "value" + i}
       storage.insertVectorStorageEntriesFor(vector, values.map {s: String => s.getBytes})
       values.reverse should be(storage.getVectorStorageRangeFor(vector, None, None, rand + 1).map {b: Array[Byte] => new String(b)})
+      (0 to drand).foreach {
+        i: Int => {
+          val value: String = vector + "value" + (rand - i)
+          log.debug(value)
+          List(value) should be(storage.getVectorStorageRangeFor(vector, Some(i), None, 1).map {b: Array[Byte] => new String(b)})
+        }
+      }
     }
 
     it("should behave properly when the range used in getVectorStorageRangeFor has indexes outside the current size of the vector") {
       //what is proper?
     }
 
-    it("shoud behave properly when getStorageEntry for a non existent entry?") {
+    it("shoud return null when getStorageEntry is called on a null entry") {
       //What is proper?
+      val vector = "nullTest"
+      storage.insertVectorStorageEntryFor(vector, null)
+      storage.getVectorStorageEntryFor(vector, 0) should be(null)
+    }
+
+    it("shoud throw a Storage exception when there is an attempt to retrieve an index larger than the Vector") {
+      val vector = "tooLargeRetrieve"
+      storage.insertVectorStorageEntryFor(vector, null)
+      evaluating {storage.getVectorStorageEntryFor(vector, 9)} should produce[StorageException]
+    }
+
+    it("shoud throw a Storage exception when there is an attempt to update an index larger than the Vector") {
+      val vector = "tooLargeUpdate"
+      storage.insertVectorStorageEntryFor(vector, null)
+      evaluating {storage.updateVectorStorageEntryFor(vector, 9, null)} should produce[StorageException]
     }
 
   }
