@@ -9,6 +9,7 @@ import org.apache.camel.CamelContext
 
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
+import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.util.{Bootable, Logging}
 
 /**
@@ -30,6 +31,28 @@ trait CamelService extends Bootable with Logging {
   AspectInitRegistry.addListener(publishRequestor)
 
   /**
+   * Starts this CamelService unless <code>akka.camel.service</code> is set to <code>false</code>.
+   */
+  abstract override def onLoad = {
+    super.onLoad
+    if (config.getBool("akka.camel.service", true)) start
+  }
+
+  /**
+   * Stops this CamelService unless <code>akka.camel.service</code> is set to <code>false</code>.
+   */
+  abstract override def onUnload = {
+    if (config.getBool("akka.camel.service", true)) stop
+    super.onUnload
+  }
+
+  @deprecated("use start() instead")
+  def load = start
+
+  @deprecated("use stop() instead")
+  def unload = stop
+
+  /**
    * Starts this CamelService. Any started actor that is a consumer actor will be (asynchronously)
    * published as Camel endpoint. Consumer actors that are started after this method returned will
    * be published as well. Actor publishing is done asynchronously. A started (loaded) CamelService
@@ -37,9 +60,7 @@ trait CamelService extends Bootable with Logging {
    * with <code>TypedActor.newInstance(..)</code> (and <code>TypedActor.newRemoteInstance(..)</code>
    * on a remote node).
    */
-  abstract override def onLoad = {
-    super.onLoad
-
+  def start: CamelService = {
     // Only init and start if not already done by application
     if (!CamelContextManager.initialized) CamelContextManager.init
     if (!CamelContextManager.started) CamelContextManager.start
@@ -50,15 +71,16 @@ trait CamelService extends Bootable with Logging {
     // init publishRequestor so that buffered and future events are delivered to consumerPublisher
     publishRequestor ! PublishRequestorInit(consumerPublisher)
 
-    // Register this instance as current CamelService
+    // Register this instance as current CamelService and return it
     CamelServiceManager.register(this)
+    CamelServiceManager.service
   }
 
   /**
    * Stops this CamelService. All published consumer actors and typed consumer actor methods will be
    * unpublished asynchronously.
    */
-  abstract override def onUnload = {
+  def stop = {
     // Unregister this instance as current CamelService
     CamelServiceManager.unregister(this)
 
@@ -69,35 +91,7 @@ trait CamelService extends Bootable with Logging {
     // Stop related services
     consumerPublisher.stop
     CamelContextManager.stop
-
-    super.onUnload
   }
-
-  @deprecated("use start() instead")
-  def load: CamelService = {
-    onLoad
-    this
-  }
-
-  @deprecated("use stop() instead")
-  def unload = onUnload
-
-  /**
-   * Starts the CamelService.
-   *
-   * @see onLoad
-   */
-  def start: CamelService = {
-    onLoad
-    this
-  }
-
-  /**
-   * Stops the CamelService.
-   *
-   * @see onUnload
-   */
-  def stop = onUnload
 
   /**
    * Sets an expectation on the number of upcoming endpoint activations and returns
