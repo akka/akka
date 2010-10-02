@@ -32,19 +32,34 @@ object Config {
   System.setProperty("org.multiverse.api.GlobalStmInstance.factorymethod", "org.multiverse.stms.alpha.AlphaStm.createFast")
 
   val HOME = {
-    val systemHome = System.getenv("AKKA_HOME")
-    if ((systemHome eq null) || systemHome.length == 0 || systemHome == ".") {
-      val optionHome = System.getProperty("akka.home", "")
-      if (optionHome.length != 0) Some(optionHome)
-      else None
-    } else Some(systemHome)
+    val envHome = System.getenv("AKKA_HOME") match {
+      case null | "" | "." => None
+      case value           => Some(value)
+    }
+
+    val systemHome = System.getProperty("akka.home") match {
+      case null | "" => None
+      case value     => Some(value)
+    }
+
+    envHome orElse systemHome
   }
 
   val config = {
 
-    val confName = System.getenv("AKKA_MODE") match {
-      case null | "" => Option(System.getProperty("akka.mode")).map("akka." + _ + ".conf").getOrElse("akka.conf")
-      case s:String  => "akka." + s + ".conf"
+    val confName = {
+
+      val envConf = System.getenv("AKKA_MODE") match {
+        case null | "" => None
+        case value     => Some(value)
+      }
+
+      val systemConf = System.getProperty("akka.mode") match {
+        case null | "" => None
+        case value     => Some(value)
+      }
+
+      (envConf orElse systemConf).map("akka." + _ + ".conf").getOrElse("akka.conf") 
     }
 
     if (System.getProperty("akka.config", "") != "") {
