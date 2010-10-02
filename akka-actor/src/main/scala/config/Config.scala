@@ -41,6 +41,12 @@ object Config {
   }
 
   val config = {
+
+    val confName = System.getenv("AKKA_MODE") match {
+      case null | "" => Option(System.getProperty("akka.mode")).map("akka." + _ + ".conf").getOrElse("akka.conf")
+      case s:String  => "akka." + s + ".conf"
+    }
+
     if (System.getProperty("akka.config", "") != "") {
       val configFile = System.getProperty("akka.config", "")
       try {
@@ -52,19 +58,9 @@ object Config {
           "\n\tdue to: " + e.toString)
       }
       Configgy.config
-    } else if (getClass.getClassLoader.getResource("akka.conf") ne null) {
+    }  else if (HOME.isDefined) {
       try {
-        Configgy.configureFromResource("akka.conf", getClass.getClassLoader)
-        ConfigLogger.log.info("Config loaded from the application classpath.")
-      } catch {
-        case e: ParseException => throw new ConfigurationException(
-          "Can't load 'akka.conf' config file from application classpath," +
-          "\n\tdue to: " + e.toString)
-      }
-      Configgy.config
-    } else if (HOME.isDefined) {
-      try {
-        val configFile = HOME.getOrElse(throwNoAkkaHomeException) + "/config/akka.conf"
+        val configFile = HOME.getOrElse(throwNoAkkaHomeException) + "/config/" + confName
         Configgy.configure(configFile)
         ConfigLogger.log.info(
           "AKKA_HOME is defined as [%s], config loaded from [%s].", 
@@ -73,18 +69,28 @@ object Config {
       } catch {
         case e: ParseException => throw new ConfigurationException(
           "AKKA_HOME is defined as [" + HOME.get + "] " +
-          "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/akka.conf]," +
+          "\n\tbut the 'akka.conf' config file can not be found at [" + HOME.get + "/config/"+ confName + "]," +
+          "\n\tdue to: " + e.toString)
+      }
+      Configgy.config
+    } else if (getClass.getClassLoader.getResource(confName) ne null) {
+      try {
+        Configgy.configureFromResource(confName, getClass.getClassLoader)
+        ConfigLogger.log.info("Config [%s] loaded from the application classpath.",confName)
+      } catch {
+        case e: ParseException => throw new ConfigurationException(
+          "Can't load '" + confName + "' config file from application classpath," +
           "\n\tdue to: " + e.toString)
       }
       Configgy.config
     } else {
       ConfigLogger.log.warning(
-        "\nCan't load 'akka.conf'." +
-        "\nOne of the three ways of locating the 'akka.conf' file needs to be defined:" +
+        "\nCan't load '" + confName + "'." +
+        "\nOne of the three ways of locating the '" + confName + "' file needs to be defined:" +
         "\n\t1. Define the '-Dakka.config=...' system property option." +
-        "\n\t2. Put the 'akka.conf' file on the classpath." +
+        "\n\t2. Put the '" + confName + "' file on the classpath." +
         "\n\t3. Define 'AKKA_HOME' environment variable pointing to the root of the Akka distribution." +
-        "\nI have no way of finding the 'akka.conf' configuration file." +
+        "\nI have no way of finding the '" + confName + "' configuration file." +
         "\nUsing default values everywhere.")
       CConfig.fromString("<akka></akka>") // default empty config
     }
@@ -92,7 +98,7 @@ object Config {
   
   val CONFIG_VERSION = config.getString("akka.version", VERSION)
   if (VERSION != CONFIG_VERSION) throw new ConfigurationException(
-    "Akka JAR version [" + VERSION + "] is different than the provided config ('akka.conf') version [" + CONFIG_VERSION + "]")
+    "Akka JAR version [" + VERSION + "] is different than the provided config version [" + CONFIG_VERSION + "]")
 
   val TIME_UNIT = config.getString("akka.time-unit", "seconds")
 
