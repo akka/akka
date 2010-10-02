@@ -7,7 +7,6 @@ package se.scalablesolutions.akka.remote
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.{ActorType => ActorTypeProtocol, _}
 import se.scalablesolutions.akka.actor.{Exit, Actor, ActorRef, ActorType, RemoteActorRef, IllegalActorStateException}
 import se.scalablesolutions.akka.dispatch.{DefaultCompletableFuture, CompletableFuture}
-import se.scalablesolutions.akka.util.{ListenerManagement, Logging, Duration}
 import se.scalablesolutions.akka.actor.{Uuid,newUuid,uuidFrom}
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.serialization.RemoteActorSerialization._
@@ -31,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable.{HashSet, HashMap}
 import scala.reflect.BeanProperty
 import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.util.{Address, ListenerManagement, Logging, Duration}
 
 /**
  * Life-cycle events for RemoteClient.
@@ -63,7 +63,7 @@ object RemoteClient extends Logging {
   val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
 
   private val remoteClients = new HashMap[String, RemoteClient]
-  private val remoteActors =  new HashMap[RemoteServer.Address, HashSet[Uuid]]
+  private val remoteActors =  new HashMap[Address, HashSet[Uuid]]
 
   def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
     actorFor(classNameOrServiceId, classNameOrServiceId, 5000L, hostname, port, None)
@@ -163,16 +163,16 @@ object RemoteClient extends Logging {
   }
 
   def register(hostname: String, port: Int, uuid: Uuid) = synchronized {
-    actorsFor(RemoteServer.Address(hostname, port)) += uuid
+    actorsFor(Address(hostname, port)) += uuid
   }
 
   private[akka] def unregister(hostname: String, port: Int, uuid: Uuid) = synchronized {
-    val set = actorsFor(RemoteServer.Address(hostname, port))
+    val set = actorsFor(Address(hostname, port))
     set -= uuid
     if (set.isEmpty) shutdownClientFor(new InetSocketAddress(hostname, port))
   }
 
-  private[akka] def actorsFor(remoteServerAddress: RemoteServer.Address): HashSet[Uuid] = {
+  private[akka] def actorsFor(remoteServerAddress: Address): HashSet[Uuid] = {
     val set = remoteActors.get(remoteServerAddress)
     if (set.isDefined && (set.get ne null)) set.get
     else {
