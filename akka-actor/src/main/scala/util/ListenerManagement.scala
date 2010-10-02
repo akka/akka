@@ -45,6 +45,11 @@ trait ListenerManagement extends Logging {
    */
   def hasListeners: Boolean = !listeners.isEmpty
 
+  /**
+   * Checks if a specfic listener is registered.
+   */
+  def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)
+
   protected def notifyListeners(message: => Any) {
     if (hasListeners) {
       val msg = message
