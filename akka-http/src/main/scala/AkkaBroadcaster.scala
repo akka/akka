@@ -5,23 +5,27 @@
 package se.scalablesolutions.akka.comet
 
 import org.atmosphere.cpr.{AtmosphereResourceEvent, AtmosphereResource}
+
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.dispatch.Dispatchers
+import org.atmosphere.jersey.util.JerseyBroadcasterUtil
 
 object AkkaBroadcaster {
   val broadcasterDispatcher = Dispatchers.fromConfig("akka.rest.comet-dispatcher")
+
+  type Event    = AtmosphereResourceEvent[_,_]
+  type Resource = AtmosphereResource[_,_]
 }
 
-class AkkaBroadcaster extends org.atmosphere.jersey.JerseyBroadcaster {
+class AkkaBroadcaster extends org.atmosphere.jersey.util.JerseySimpleBroadcaster {
   import AkkaBroadcaster._
-  name = classOf[AkkaBroadcaster].getName
 
   //FIXME should be supervised
-  val caster = actorOf(new Actor {
+  lazy val caster = actorOf(new Actor {
     self.dispatcher = broadcasterDispatcher
     def receive = {
-      case f : Function0[_] => f()
+      case (r: Resource,e: Event) => JerseyBroadcasterUtil.broadcast(r,e)
     }
   }).start
 
@@ -30,7 +34,7 @@ class AkkaBroadcaster extends org.atmosphere.jersey.JerseyBroadcaster {
     caster.stop
   }
 
-  protected override def broadcast(r :  AtmosphereResource[_,_], e : AtmosphereResourceEvent[_,_]) = {
-    caster ! (() => super.broadcast(r,e))
+  protected override def broadcast(r: Resource, e : Event) {
+    caster ! ((r,e))
   }
 }
