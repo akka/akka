@@ -258,13 +258,8 @@ object ReflectiveAccess extends Logging {
     ctor.setAccessible(true)
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: java.lang.reflect.InvocationTargetException =>
-      e.printStackTrace
-      log.error(e.getCause, "Could not instantiate class [%s]", clazz.getName)
-      None
     case e: Exception =>
-      e.printStackTrace
-      log.error(e.getCause, "Could not instantiate class [%s]", clazz.getName)
+      log.debug(e, "Could not instantiate class [%s] due to [%s]", clazz.getName, e.getMessage)
       None
   }
 
@@ -280,13 +275,8 @@ object ReflectiveAccess extends Logging {
     ctor.setAccessible(true)
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: java.lang.reflect.InvocationTargetException =>
-      e.printStackTrace
-      log.error(e.getCause, "Could not instantiate class [%s] due to [%s]", fqn, e.toString)
-      None
     case e: Exception =>
-      e.printStackTrace
-      log.error(e.getCause, "Could not instantiate class [%s] due to [%s]", fqn, e.toString)
+      log.debug(e, "Could not instantiate class [%s] due to [%s]", fqn, e.getMessage)
       None
   }
 
@@ -297,13 +287,8 @@ object ReflectiveAccess extends Logging {
     instance.setAccessible(true)
     Option(instance.get(null).asInstanceOf[T])
   } catch {
-    case e: java.lang.reflect.InvocationTargetException =>
-      e.printStackTrace
-      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
-      None
     case e: Exception =>
-      e.printStackTrace
-      log.error(e.getCause, "Could not instantiate class [%s]", fqn)
+      log.debug(e, "Could not get object [%s] due to [%s]", fqn, e.getMessage)
       None
   }
 

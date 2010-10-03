@@ -91,7 +91,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val ATMO_VERSION          = "0.6.1"
+  lazy val ATMO_VERSION          = "0.6.2"
   lazy val CAMEL_VERSION         = "2.4.0"
   lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
