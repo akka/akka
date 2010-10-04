@@ -499,6 +499,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaHbaseProject(_), akka_persistence_common)
     lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
       new AkkaVoldemortProject(_), akka_persistence_common)
+    lazy val akka_persistence_couchdb = project("akka_persistence_couchdb", "akka_persistence_couchdb",
+      new AkkaCouchDBProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -598,6 +600,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = createTestFilter( _.endsWith("Suite"))
   }
 
+  class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // akka-kernel subproject
