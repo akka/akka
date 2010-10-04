@@ -29,10 +29,10 @@ class SupervisorException private[akka](message: String) extends AkkaException(m
  *      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception]),
  *      Supervise(
  *        myFirstActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Supervise(
  *        mySecondActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Nil))
  * </pre>
  *
@@ -60,10 +60,10 @@ object Supervisor {
  *      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception]),
  *      Supervise(
  *        myFirstActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Supervise(
  *        mySecondActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Nil))
  * </pre>
  *
@@ -160,7 +160,7 @@ sealed class Supervisor private[akka] (
               else list
             }
             _childActors.put(className, actorRef :: currentActors)
-            actorRef.lifeCycle = Some(lifeCycle)
+            actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
             remoteAddress.foreach { address =>
               RemoteServerModule.registerActor(

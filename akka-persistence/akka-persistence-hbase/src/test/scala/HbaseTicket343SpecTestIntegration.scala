@@ -36,7 +36,7 @@ case class VADD_WITH_SLICE(vsToAdd: List[String], start: Int, cnt: Int)
 
 object Storage {
   class HbaseSampleMapStorage extends Actor {
-    self.lifeCycle = Some(LifeCycle(Permanent))
+    self.lifeCycle = Permanent
     val FOO_MAP = "akka.sample.map"
 
     private var fooMap = atomic { HbaseStorage.getMap(FOO_MAP) }
@@ -119,7 +119,7 @@ object Storage {
   }
 
   class HbaseSampleVectorStorage extends Actor {
-    self.lifeCycle = Some(LifeCycle(Permanent))
+    self.lifeCycle = Permanent
     val FOO_VECTOR = "akka.sample.vector"
 
     private var fooVector = atomic { HbaseStorage.getVector(FOO_VECTOR) }
