@@ -98,7 +98,7 @@ class SchedulerSpec extends JUnitSuite {
     val pingLatch = new CountDownLatch(6)
 
     val actor = actorOf(new Actor {
-      self.lifeCycle = Some(LifeCycle(Permanent))
+      self.lifeCycle = Permanent
 
       def receive = {
         case Ping => pingLatch.countDown
@@ -113,7 +113,7 @@ class SchedulerSpec extends JUnitSuite {
           List(classOf[Exception])),
         Supervise(
           actor,
-          LifeCycle(Permanent))
+          Permanent)
                 :: Nil)).start
 
     Scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS)

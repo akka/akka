@@ -28,13 +28,13 @@ class Boot {
       RestartStrategy(OneForOne, 3, 100,List(classOf[Exception])),
       Supervise(
         actorOf[SimpleServiceActor],
-        LifeCycle(Permanent)) ::
+        Permanent) ::
       Supervise(
         actorOf[ChatActor],
-        LifeCycle(Permanent)) ::
+        Permanent) ::
       Supervise(
          actorOf[PersistentSimpleServiceActor],
-         LifeCycle(Permanent))
+         Permanent)
       :: Nil))
   factory.newInstance.start
 }

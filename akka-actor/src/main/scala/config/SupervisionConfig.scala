@@ -32,12 +32,13 @@ object ScalaConfig {
 
   abstract class Server extends ConfigElement
   abstract class FailOverScheme extends ConfigElement
-  abstract class Scope extends ConfigElement
+  abstract class LifeCycle extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
+  
   object Supervise {
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorRef, lifeCycle, remoteAddress)
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, null)
@@ -53,9 +54,9 @@ object ScalaConfig {
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
 
-  case class LifeCycle(scope: Scope) extends ConfigElement
-  case object Permanent extends Scope
-  case object Temporary extends Scope
+  case object Permanent extends LifeCycle
+  case object Temporary extends LifeCycle
+  case object UndefinedLifeCycle extends LifeCycle
 
   case class RemoteAddress(val hostname: String, val port: Int) extends ConfigElement
 
@@ -139,20 +140,20 @@ object JavaConfig {
       scheme.transform, maxNrOfRetries, withinTimeRange, trapExceptions.toList)
   }
 
-  class LifeCycle(@BeanProperty val scope: Scope) extends ConfigElement {
-    def transform = {
-      se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform)
-    }
+  abstract class LifeCycle extends ConfigElement {
+    def transform: se.scalablesolutions.akka.config.ScalaConfig.LifeCycle
   }
 
-  abstract class Scope extends ConfigElement {
-    def transform: se.scalablesolutions.akka.config.ScalaConfig.Scope
-  }
-  class Permanent extends Scope {
+  class Permanent extends LifeCycle {
     override def transform = se.scalablesolutions.akka.config.ScalaConfig.Permanent
   }
-  class Temporary extends Scope {
+  
+  class Temporary extends LifeCycle {
     override def transform = se.scalablesolutions.akka.config.ScalaConfig.Temporary
+  }
+
+  class UndefinedLifeCycle extends LifeCycle {
+    override def transform = se.scalablesolutions.akka.config.ScalaConfig.UndefinedLifeCycle
   }
 
   abstract class FailOverScheme extends ConfigElement {

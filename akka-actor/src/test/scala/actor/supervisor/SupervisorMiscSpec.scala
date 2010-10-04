@@ -58,10 +58,10 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
       val sup = Supervisor(
         SupervisorConfig(
           RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
-          Supervise(actor1, LifeCycle(Permanent)) ::
-              Supervise(actor2, LifeCycle(Permanent)) ::
-              Supervise(actor3, LifeCycle(Permanent)) ::
-              Supervise(actor4, LifeCycle(Permanent)) ::
+          Supervise(actor1, Permanent) ::
+              Supervise(actor2, Permanent) ::
+              Supervise(actor3, Permanent) ::
+              Supervise(actor4, Permanent) ::
               Nil))
 
       actor1 ! "kill"

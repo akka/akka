@@ -33,13 +33,13 @@ class RestartNestedTransactionalTypedActorSpec extends
       new RestartStrategy(new AllForOne, 3, 5000, List(classOf[Exception]).toArray),
         List(
           new Component(classOf[TransactionalTypedActor],
-            new LifeCycle(new Permanent),
+            new Permanent,
             10000),
           new Component(classOf[NestedTransactionalTypedActor],
-            new LifeCycle(new Permanent),
+            new Permanent,
             10000),
           new Component(classOf[TypedActorFailer],
-            new LifeCycle(new Permanent),
+            new Permanent,
             10000)
         ).toArray).supervise
         */

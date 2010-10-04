@@ -16,7 +16,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
   import connectionParameters._
 
   self.id = "amqp-connection-%s".format(host)
-  self.lifeCycle = Some(LifeCycle(Permanent))
+  self.lifeCycle = Permanent
 
   self.trapExit = List(classOf[Throwable])
   self.faultHandler = Some(OneForOneStrategy(5, 5000))

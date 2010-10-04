@@ -41,7 +41,7 @@ case class VADD_WITH_SLICE(vsToAdd: List[String], start: Int, cnt: Int)
 
 object Storage {
   class RedisSampleMapStorage extends Actor {
-    self.lifeCycle = Some(LifeCycle(Permanent))
+    self.lifeCycle = Permanent
     val FOO_MAP = "akka.sample.map"
 
     private var fooMap = atomic { RedisStorage.getMap(FOO_MAP) }
@@ -134,7 +134,7 @@ object Storage {
   }
 
   class RedisSampleVectorStorage extends Actor {
-    self.lifeCycle = Some(LifeCycle(Permanent))
+    self.lifeCycle = Permanent
     val FOO_VECTOR = "akka.sample.vector"
 
     private var fooVector = atomic { RedisStorage.getVector(FOO_VECTOR) }

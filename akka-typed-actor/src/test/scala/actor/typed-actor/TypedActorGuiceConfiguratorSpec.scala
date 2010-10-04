@@ -41,13 +41,13 @@ class TypedActorGuiceConfiguratorSpec extends
              new Component(
                 classOf[Foo],
                 classOf[FooImpl],
-                new LifeCycle(new Permanent),
+                new Permanent,
                 1000,
                 dispatcher),
             new Component(
                 classOf[Bar],
                 classOf[BarImpl],
-                new LifeCycle(new Permanent),
+                new Permanent,
                 1000,
                 dispatcher)
         ).toArray).inject.supervise

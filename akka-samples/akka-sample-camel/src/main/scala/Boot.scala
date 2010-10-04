@@ -27,8 +27,8 @@ class Boot {
   //val supervisor = Supervisor(
   //  SupervisorConfig(
   //    RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-  //    Supervise(actorOf[Consumer1], LifeCycle(Permanent)) ::
-  //    Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
+  //    Supervise(actorOf[Consumer1], Permanent) ::
+  //    Supervise(actorOf[Consumer2], Permanent) :: Nil))
 
   // -----------------------------------------------------------------------
   // Custom Camel route example
