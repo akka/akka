@@ -9,6 +9,7 @@ import se.scalablesolutions.akka.remote.BootableRemoteActorService
 import se.scalablesolutions.akka.actor.BootableActorLoaderService
 import se.scalablesolutions.akka.camel.CamelService
 import se.scalablesolutions.akka.config.Config
+import se.scalablesolutions.akka.http.EmbeddedAppServer
 
 object Main {
   def main(args: Array[String]) = Kernel.boot
