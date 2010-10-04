@@ -483,7 +483,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
         RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
             :: Nil))
 
     factory.newInstance
@@ -499,7 +499,7 @@ class RemoteSupervisorSpec extends JUnitSuite {
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
             :: Nil))
     factory.newInstance
   }
@@ -520,15 +520,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
         RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
             ::
             Supervise(
               pingpong2,
-              LifeCycle(Permanent))
+              Permanent)
             ::
             Supervise(
               pingpong3,
-              LifeCycle(Permanent))
+              Permanent)
             :: Nil))
     factory.newInstance
   }
@@ -551,15 +551,15 @@ class RemoteSupervisorSpec extends JUnitSuite {
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
           ::
         Supervise(
           pingpong2,
-          LifeCycle(Permanent))
+          Permanent)
           ::
         Supervise(
           pingpong3,
-          LifeCycle(Permanent))
+          Permanent)
           :: Nil))
     factory.newInstance
   }
@@ -580,17 +580,17 @@ class RemoteSupervisorSpec extends JUnitSuite {
         RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
             ::
             SupervisorConfig(
               RestartStrategy(AllForOne, 3, 100, List(classOf[Exception])),
               Supervise(
                 pingpong2,
-                LifeCycle(Permanent))
+               Permanent)
               ::
               Supervise(
                 pingpong3,
-                LifeCycle(Permanent))
+                Permanent)
               :: Nil)
             :: Nil))
     factory.newInstance

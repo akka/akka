@@ -97,7 +97,7 @@ trait ChatStorage extends Actor
  * Redis-backed chat storage implementation.
  */
 class RedisChatStorage extends ChatStorage {
-  self.lifeCycle = Some(LifeCycle(Permanent))
+  self.lifeCycle = Permanent
   val CHAT_LOG = "akka.chat.log"
 
   private var chatLog = atomic { RedisStorage.getVector(CHAT_LOG) }

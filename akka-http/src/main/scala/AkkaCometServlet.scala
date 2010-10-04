@@ -83,21 +83,21 @@ class AkkaServlet extends AtmosphereServlet with Logging {
     addAtmosphereHandler("/*", servlet, new AkkaBroadcaster)
   }
 
-   /**
+  /**
     * This method is overridden because Akka Kernel is bundles with Grizzly, so if we deploy the Kernel in another container,
     * we need to handle that.
     */
-   override def createCometSupportResolver() : CometSupportResolver = {
-      import scala.collection.JavaConversions._
+  lazy val akkaCometResolver: CometSupportResolver = {
+    import scala.collection.JavaConversions._
 
-      new DefaultCometSupportResolver(config) {
-        type CS = CometSupport[_ <: AtmosphereResource[_,_]]
+    new DefaultCometSupportResolver(config) {
+      lazy val desiredCometSupport =
+        Option(config.getInitParameter("cometSupport")) filter testClassExists map newCometSupport
 
-        override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CS = {
-           val predef = config.getInitParameter("cometSupport")
-           if (testClassExists(predef)) newCometSupport(predef)
-           else super.resolve(useNativeIfPossible, useBlockingAsDefault)
-        }
-      }
+      override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CometSupport[_ <: AtmosphereResource[_,_]] =
+         desiredCometSupport.getOrElse(super.resolve(useNativeIfPossible, useBlockingAsDefault))
+    }
   }
+
+  override def createCometSupportResolver() = akkaCometResolver
 }
