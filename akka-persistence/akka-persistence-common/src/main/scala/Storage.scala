@@ -271,7 +271,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
 
   def iterator: Iterator[Tuple2[K, V]] 
 
-  private def register = {
+  protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register(uuid, this)
   }
@@ -475,7 +475,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
 
   def length: Int = replay.length
 
-  private def register = {
+  protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register(uuid, this)
   }
@@ -513,18 +513,18 @@ trait PersistentRef[T] extends Transactional with Committable with Abortable {
     else default
   }
 
-  private def register = {
+  protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register(uuid, this)
   }
 }
 
-  private[akka] object PersistentQueue {
-    //Operations for PersistentQueue
-    sealed trait QueueOp
-    case object ENQ extends QueueOp
-    case object DEQ extends QueueOp
-  }
+private[akka] object PersistentQueue {
+  //Operations for PersistentQu eue
+  sealed trait QueueOp
+  case object ENQ extends QueueOp
+  case object DEQ extends QueueOp
+}
 
 /**
  * Implementation of <tt>PersistentQueue</tt> for every concrete
@@ -618,7 +618,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
       storage.peek(uuid, i, 1)(0)
     } else {
       // check we have transient candidates in localQ for DQ
-      if (localQ.get.isEmpty == false) {
+      if (!localQ.get.isEmpty) {
         val (a, q) = localQ.get.dequeue
         localQ.swap(q)
         a
@@ -656,7 +656,7 @@ trait PersistentQueue[A] extends scala.collection.mutable.Queue[A]
   override def dequeueAll(p: A => Boolean): scala.collection.mutable.Seq[A] =
     throw new UnsupportedOperationException("dequeueAll not supported")
 
-  private def register = {
+  protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register(uuid, this)
   }
@@ -762,7 +762,6 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
     def compare(x: (A, Float),y : (A,Float)) = x._2 compare y._2
   }
 
-
   def zrange(start: Int, end: Int): List[(A, Float)] = {
     // need to operate on the whole range
     // get all from the underlying storage
@@ -780,7 +779,7 @@ trait PersistentSortedSet[A] extends Transactional with Committable with Abortab
     ts.iterator.slice(s, e + 1).toList
   }
 
-  private def register = {
+  protected def register = {
     if (transaction.get.isEmpty) throw new NoTransactionInScopeException
     transaction.get.get.register(uuid, this)
   }
