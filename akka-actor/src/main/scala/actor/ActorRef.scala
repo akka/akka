@@ -160,12 +160,6 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
   def setFaultHandler(handler: FaultHandlingStrategy) = this.faultHandler = Some(handler)
   def getFaultHandler(): Option[FaultHandlingStrategy] = faultHandler
 
-  /**
-   * Defines the life-cycle for a supervised actor.
-   */
-  def setLifeCycle(lifeCycle: LifeCycle) = this.lifeCycle = Some(lifeCycle)
-  def getLifeCycle(): Option[LifeCycle] = lifeCycle
-
   @volatile
   private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
 
@@ -698,7 +692,7 @@ class LocalActorRef private[akka] (
     __isTransactor: Boolean,
     __timeout: Long,
     __receiveTimeout: Option[Long],
-    __lifeCycle: Option[LifeCycle],
+    __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
     __hotswap: Option[PartialFunction[Any, Unit]],
     __factory: () => Actor) = {
@@ -1088,7 +1082,7 @@ class LocalActorRef private[akka] (
       val failedActor = actorInstance.get
       guard.withGuard {
         lifeCycle match {
-          case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this)
+          case Temporary => shutDownTemporaryActor(this)
           case _ =>
             // either permanent or none where default is permanent
             Actor.log.info("Restarting actor [%s] configured as PERMANENT.", id)
@@ -1109,7 +1103,7 @@ class LocalActorRef private[akka] (
     linkedActorsAsList.foreach { actorRef =>
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
-        case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(actorRef)
+        case Temporary => shutDownTemporaryActor(actorRef)
         case _ => actorRef.restart(reason, maxNrOfRetries, withinTimeRange)
       }
     }
@@ -1274,7 +1268,7 @@ class LocalActorRef private[akka] (
     if (supervisor.isDefined) notifySupervisorWithMessage(Exit(this, reason))
     else {
       lifeCycle match {
-        case Some(LifeCycle(Temporary)) => shutDownTemporaryActor(this)
+        case Temporary => shutDownTemporaryActor(this)
         case _ =>
       }
     }
@@ -1495,7 +1489,8 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
    * Defines the life-cycle for a supervised actor.
    */
   @volatile
-  var lifeCycle: Option[LifeCycle] = None
+  @BeanProperty
+  var lifeCycle: LifeCycle = UndefinedLifeCycle
 
   /**
    * User overridable callback/setting.

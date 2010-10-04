@@ -33,11 +33,11 @@ class RestartTransactionalTypedActorSpec extends
       List(
         new Component(
           classOf[TransactionalTypedActor],
-          new LifeCycle(new Temporary),
+          new Temporary,
           10000),
         new Component(
           classOf[TypedActorFailer],
-          new LifeCycle(new Temporary),
+          new Temporary,
           10000)
       ).toArray).supervise
   }

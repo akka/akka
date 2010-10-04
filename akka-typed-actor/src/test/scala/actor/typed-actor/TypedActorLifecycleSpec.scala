@@ -22,8 +22,8 @@ class TypedActorLifecycleSpec extends Spec with ShouldMatchers with BeforeAndAft
 
   override protected def beforeAll() = {
     val strategy = new RestartStrategy(new AllForOne(), 3, 1000, Array(classOf[Exception]))
-    val comp3 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new LifeCycle(new Permanent()), 1000)
-    val comp4 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new LifeCycle(new Temporary()), 1000)
+    val comp3 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new Permanent(), 1000)
+    val comp4 = new Component(classOf[SamplePojo], classOf[SamplePojoImpl], new Temporary(), 1000)
     conf1 = new TypedActorConfigurator().configure(strategy, Array(comp3)).supervise
     conf2 = new TypedActorConfigurator().configure(strategy, Array(comp4)).supervise
   }
