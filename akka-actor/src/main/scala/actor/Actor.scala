@@ -444,7 +444,6 @@ trait Actor extends Logging {
    */
   def become(behavior: Option[Receive]) {
     self.hotswap = behavior
-    self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
   }
 
   /** Akka Java API
