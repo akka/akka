@@ -44,7 +44,7 @@ object StorageObj {
   var getVector: String => PersistentVector[Array[Byte]] = _
 
   class SampleMapStorage extends Actor {
-    self.lifeCycle = Some(LifeCycle(Permanent))
+    self.lifeCycle = Permanent
     val FOO_MAP = "akka.sample.map"
 
     private var fooMap = atomic {StorageObj.getMap(FOO_MAP)}
@@ -134,7 +134,7 @@ object StorageObj {
   }
 
   class SampleVectorStorage extends Actor {
-    self.lifeCycle = Some(LifeCycle(Permanent))
+    self.lifeCycle = Permanent
     val FOO_VECTOR = "akka.sample.vector"
 
     private var fooVector = atomic {StorageObj.getVector(FOO_VECTOR)}
