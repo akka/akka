@@ -193,6 +193,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.1" % "compile"
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
+    lazy val specs = "org.scala-tools.testing" % "specs_2.8.0" % "1.6.5" % "test"
 
     lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile"
     lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test"
@@ -499,7 +500,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaHbaseProject(_), akka_persistence_common)
     lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
       new AkkaVoldemortProject(_), akka_persistence_common)
-    lazy val akka_persistence_couchdb = project("akka_persistence_couchdb", "akka_persistence_couchdb",
+    lazy val akka_persistence_couchdb = project("akka-persistence-couchdb", "akka-persistence-couchdb",
       new AkkaCouchDBProject(_), akka_persistence_common)
   }
 
@@ -520,7 +521,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_codec = Dependencies.commons_codec
     val redis         = Dependencies.redis
 
-    override def testOptions = createTestFilter( _.endsWith("Test"))
+    // override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -601,7 +602,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val specs = Dependencies.specs
+    val httpclient = "maven2" at "http://repo1.maven.org/maven2/"
+    val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
     
+    // override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -707,7 +712,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val commons_fileupload = "commons-fileupload"        % "commons-fileupload" % "1.2.1" % "compile" intransitive
     val jms_1_1            = "org.apache.geronimo.specs" % "geronimo-jms_1.1_spec" % "1.1.1" % "compile" intransitive
     val joda               = "joda-time"                 % "joda-time" % "1.6" intransitive
-
+    
     override def packageAction =
       task {
         val libs: Seq[Path] = managedClasspath(config("compile")).get.toSeq
