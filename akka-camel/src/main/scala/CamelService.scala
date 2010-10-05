@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
 import se.scalablesolutions.akka.config.Config._
 import se.scalablesolutions.akka.util.{Logging, Bootable}
-import se.scalablesolutions.akka.util.JavaAPI.{Option => JOption, Some => JSome, None => JNone}
+import se.scalablesolutions.akka.util.JavaAPI.{Option => JOption}
 
 /**
  * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors
@@ -116,7 +116,7 @@ trait CamelService extends Bootable with Logging {
  *
  * @author Martin Krasser
  */
-object CamelServiceManager {
+object CamelServiceManager extends CamelServiceManagerJavaAPI {
 
   /**
    * The current (optional) CamelService. Is defined when a CamelService has been started.
@@ -145,14 +145,7 @@ object CamelServiceManager {
    */
   def service = _current
 
-  /**
-   * Returns the current CamelService.
-   *
-   * @throws IllegalStateException if there's no current CamelService.
-   */
-  def getService: JOption[CamelService] = {
-    if (_current.isDefined) JSome(_current.get) else JNone[CamelService]
-  }
+  // TODO: add mandatoryService (throwing exception if service is not defined)
 
   private[camel] def register(service: CamelService) =
     if (_current.isDefined) throw new IllegalStateException("current CamelService already registered")
@@ -161,6 +154,21 @@ object CamelServiceManager {
   private[camel] def unregister(service: CamelService) =
     if (_current == Some(service)) _current = None
     else throw new IllegalStateException("only current CamelService can be unregistered")
+}
+
+/**
+ * Java API for CamelServiceManager.
+ *
+ * @author Martin Krasser
+ */
+trait CamelServiceManagerJavaAPI {
+  /**
+   * Returns <code>Some(CamelService)</code> if <code>CamelService</code>
+   * has been started, <code>None</code> otherwise.
+   * <p>
+   * Java API
+   */
+  def getService: JOption[CamelService] = CamelServiceManager.service
 }
 
 /**
