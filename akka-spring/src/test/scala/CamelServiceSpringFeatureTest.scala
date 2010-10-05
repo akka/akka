@@ -22,7 +22,7 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
     scenario("with a custom CamelContext and access a registered typed actor") {
       val appctx = new ClassPathXmlApplicationContext("/appContextCamelServiceCustom.xml")
       assert(context.isInstanceOf[SpringCamelContext])
-      assert("hello sample" === template.requestBody("direct:test", "sample"))
+      assert("hello sample" === mandatoryTemplate.requestBody("direct:test", "sample"))
       appctx.close
     }
 
@@ -35,7 +35,7 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
       assert(context.isInstanceOf[DefaultCamelContext])
       context.asInstanceOf[DefaultCamelContext].setRegistry(registry)
       // access registered typed actor
-      assert("hello sample" === template.requestBody("typed-actor:custom?method=foo", "sample"))
+      assert("hello sample" === mandatoryTemplate.requestBody("typed-actor:custom?method=foo", "sample"))
       appctx.close
     }
   }

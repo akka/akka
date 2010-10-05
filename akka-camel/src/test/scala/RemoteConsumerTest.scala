@@ -50,7 +50,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       then("the published consumer is accessible via its endpoint URI")
-      val response = CamelContextManager.template.requestBody("direct:remote-consumer", "test")
+      val response = CamelContextManager.mandatoryTemplate.requestBody("direct:remote-consumer", "test")
       assert(response === "remote actor: test")
     }
   }
@@ -66,7 +66,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       then("the published method is accessible via its endpoint URI")
-      val response = CamelContextManager.template.requestBody("direct:remote-typed-consumer", "test")
+      val response = CamelContextManager.mandatoryTemplate.requestBody("direct:remote-typed-consumer", "test")
       assert(response === "remote typed actor: test")
     }
   }
@@ -82,7 +82,7 @@ class RemoteConsumerTest extends FeatureSpec with BeforeAndAfterAll with GivenWh
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
       then("the published untyped consumer is accessible via its endpoint URI")
-      val response = CamelContextManager.template.requestBodyAndHeader("direct:remote-untyped-consumer", "a", "test", "b")
+      val response = CamelContextManager.mandatoryTemplate.requestBodyAndHeader("direct:remote-untyped-consumer", "a", "test", "b")
       assert(response === "a b")
     }
   }

@@ -14,7 +14,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     CamelContextManager.init
-    CamelContextManager.context.addRoutes(new TestRoute)
+    CamelContextManager.mandatoryContext.addRoutes(new TestRoute)
     CamelContextManager.start
   }
 
@@ -239,7 +239,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     }
   }
 
-  private def mockEndpoint = CamelContextManager.context.getEndpoint("mock:mock", classOf[MockEndpoint])
+  private def mockEndpoint = CamelContextManager.mandatoryContext.getEndpoint("mock:mock", classOf[MockEndpoint])
 }
 
 object ProducerFeatureTest {
