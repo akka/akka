@@ -155,8 +155,7 @@ private [akka] object CouchDBStorageBackend extends
 	def getRefStorageFor(name: String): Option[Array[Byte]] ={
 		getResponseForNameAsMap(name).flatMap(_.get("ref")).map(_.asInstanceOf[String].getBytes)
 	}
-	
-	
+
 	private def findDocRev(name: String) = {
 		getResponse(URL + name).flatMap(JSON.parseFull(_)).asInstanceOf[Option[Map[String, Any]]]
 		.flatMap(_.get("_rev")).asInstanceOf[Option[String]]

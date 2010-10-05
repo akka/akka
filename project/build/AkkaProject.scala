@@ -114,6 +114,13 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     // Compile
 
+		val httpclient = "maven2" at "http://repo1.maven.org/maven2/"
+		val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
+		
+		val scalatoolsSnapshot = "Scala Tools Snapshot" at "http://scala-tools.org/repo-snapshots/"
+		val specs = "org.scala-tools.testing" %% "specs" % "1.6.5" % "test"
+
+
     lazy val annotation = "javax.annotation" % "jsr250-api" % "1.0" % "compile"
 
     lazy val aopalliance = "aopalliance" % "aopalliance" % "1.0" % "compile"
@@ -193,7 +200,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.1" % "compile"
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
-    lazy val specs = "org.scala-tools.testing" % "specs_2.8.0" % "1.6.5" % "test"
 
     lazy val sjson = "sjson.json" % "sjson" % "0.8-2.8.0" % "compile"
     lazy val sjson_test = "sjson.json" % "sjson" % "0.8-2.8.0" % "test"
@@ -535,6 +541,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
+
   // -------------------------------------------------------------------------------------------------------------------
   // akka-persistence-cassandra subproject
   // -------------------------------------------------------------------------------------------------------------------
@@ -602,11 +609,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   }
 
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
-    val specs = Dependencies.specs
-    val httpclient = "maven2" at "http://repo1.maven.org/maven2/"
-    val commonsHttpClient = "commons-httpclient" % "commons-httpclient" % "3.1" % "compile"
-    
-    // override def testOptions = createTestFilter( _.endsWith("Test"))
+  	val couch = Dependencies.commonsHttpClient
+		val spec = Dependencies.specs
   }
 
   // -------------------------------------------------------------------------------------------------------------------
