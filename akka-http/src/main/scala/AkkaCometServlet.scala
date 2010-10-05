@@ -89,16 +89,14 @@ class AkkaServlet extends AtmosphereServlet {
     addAtmosphereHandler("/*", servlet, new AkkaBroadcaster)
   }
 
-  lazy val akkaCometResolver: CometSupportResolver = {
+  lazy val akkaCometResolver: CometSupportResolver = new DefaultCometSupportResolver(config) {
     import scala.collection.JavaConversions._
 
-    new DefaultCometSupportResolver(config) {
-      lazy val desiredCometSupport =
-        Option(getInitParameter("cometSupport")) filter testClassExists map newCometSupport
+    lazy val desiredCometSupport =
+      Option(getInitParameter("cometSupport")) filter testClassExists map newCometSupport
 
-      override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CometSupport[_ <: AtmosphereResource[_,_]] =
-         desiredCometSupport.getOrElse(super.resolve(useNativeIfPossible, useBlockingAsDefault))
-    }
+    override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CometSupport[_ <: AtmosphereResource[_,_]] =
+      desiredCometSupport.getOrElse(super.resolve(useNativeIfPossible, useBlockingAsDefault))
   }
 
   override def createCometSupportResolver() = akkaCometResolver
