@@ -61,7 +61,7 @@ class AkkaServlet extends AtmosphereServlet {
    * Provide a fallback for default values
    */
   override def getInitParameter(key : String) =
-    Option(super.getInitParameter(key)).getOrElse(initParams.get(key))
+    Option(super.getInitParameter(key)).getOrElse(initParams get key)
 
   /*
    * Provide a fallback for default values
@@ -89,15 +89,13 @@ class AkkaServlet extends AtmosphereServlet {
     addAtmosphereHandler("/*", servlet, new AkkaBroadcaster)
   }
 
-  lazy val akkaCometResolver: CometSupportResolver = new DefaultCometSupportResolver(config) {
+  override lazy val createCometSupportResolver: CometSupportResolver = new DefaultCometSupportResolver(config) {
     import scala.collection.JavaConversions._
 
     lazy val desiredCometSupport =
-      Option(getInitParameter("cometSupport")) filter testClassExists map newCometSupport
+      Option(AkkaServlet.this.getInitParameter("cometSupport")) filter testClassExists map newCometSupport
 
     override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CometSupport[_ <: AtmosphereResource[_,_]] =
       desiredCometSupport.getOrElse(super.resolve(useNativeIfPossible, useBlockingAsDefault))
   }
-
-  override def createCometSupportResolver() = akkaCometResolver
 }
