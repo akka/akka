@@ -50,7 +50,7 @@ object HttpConcurrencyTestStress {
     val workers = for (i <- 1 to 8) yield actorOf[HttpServerWorker].start
     val balancer = loadBalancerActor(new CyclicIterator(workers.toList))
 
-    val completion = service.expectEndpointActivationCount(1)
+    val completion = service.get.expectEndpointActivationCount(1)
     val server = actorOf(new HttpServerActor(balancer)).start
     completion.await
   }
