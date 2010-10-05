@@ -1312,7 +1312,6 @@ class LocalActorRef private[akka] (
     actor.preStart // run actor preStart
     Actor.log.trace("[%s] has started", toString)
     ActorRegistry.register(this)
-    if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
     clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
   }
 
