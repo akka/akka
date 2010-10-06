@@ -21,7 +21,8 @@ class CouchDBStorageBackendSpec extends Specification {
   
   doAfterSpec {
     CouchDBStorageBackend.drop()
-  } 
+  }
+  
   "CouchDBStorageBackend store and query in map" should {
     "enter 4 entries for transaction T-1" in {
       insertMapStorageEntryFor("T-1", "debasish.company".getBytes, "anshinsoft".getBytes)
@@ -30,41 +31,49 @@ class CouchDBStorageBackendSpec extends Specification {
       insertMapStorageEntryFor("T-1", "debasish.spouse".getBytes, "paramita".getBytes)
 
       getMapStorageSizeFor("T-1") mustEqual(4)
-      new String(getMapStorageEntryFor(
-        "T-1", "debasish.language".getBytes).get) mustEqual("java")
-      
+      new String(getMapStorageEntryFor("T-1", "debasish.language".getBytes).get) mustEqual("java")
+      getMapStorageSizeFor("T-1") mustEqual(4)
     }
     
     "enter key/values for another transaction T-2" in {
       insertMapStorageEntryFor("T-2", "debasish.age".getBytes, "49".getBytes)
       insertMapStorageEntryFor("T-2", "debasish.spouse".getBytes, "paramita".getBytes)
-      getMapStorageSizeFor("T-1") mustEqual(4)
       getMapStorageSizeFor("T-2") mustEqual(2)
     }
+    
+    "remove map storage for T-99" in {
+      insertMapStorageEntryFor("T-99", "provider".getBytes, "googleapp".getBytes)
+      insertMapStorageEntryFor("T-99", "quota".getBytes, "100mb".getBytes)
+      getMapStorageSizeFor("T-99") mustEqual(2)
+      removeMapStorageFor("T-99", "quota".getBytes)
+      getMapStorageSizeFor("T-99") mustEqual(1)
+      getMapStorageEntryFor("T-99", "quota".getBytes) mustEqual(None)
+    }
 
-    // "remove map storage for T-1 and T2" in {
-    //   removeMapStorageFor("T-1")
-    //   removeMapStorageFor("T-2")      
-    // }
+    "remove map storage for T-1 and T2" in {
+      removeMapStorageFor("T-1")
+      removeMapStorageFor("T-2")
+      getMapStorageSizeFor("T-1") mustEqual(0)
+      getMapStorageSizeFor("T-2") mustEqual(0)
+    }
   }
 
   "CouchDBStorageBackend store and query long value in map" should {
     "enter 4 entries for transaction T-11" in {
       val d = Calendar.getInstance.getTime.getTime
-        insertMapStorageEntryFor("T-11", "debasish".getBytes, toByteArray[Long](d))
+        insertMapStorageEntryFor("T-11", "steve".getBytes, toByteArray[Long](d))
+        insertMapStorageEntryFor("T-11", "john".getBytes, toByteArray[Long](d + 1))
+        insertMapStorageEntryFor("T-11", "bill".getBytes, toByteArray[Long](d * 999))
+        insertMapStorageEntryFor("T-11", "david".getBytes, toByteArray[Long](d / 2))
 
-        getMapStorageSizeFor("T-11") mustEqual(1)
-        fromByteArray[Long](getMapStorageEntryFor("T-11", "debasish".getBytes).get) mustEqual(d)      
+        getMapStorageSizeFor("T-11") mustEqual(4)
+        fromByteArray[Long](getMapStorageEntryFor("T-11", "steve".getBytes).get) mustEqual(d)      
     }
-    
-    // "should remove map storage for T-11" in {
-    //   removeMapStorageFor("T-11")
-    // }
   }
 
 
   "Range query in maps" should {
-    "enter 7 entries in redis for transaction T-5" in {
+    "enter 7 entries in couchdb for transaction T-5" in {
       insertMapStorageEntryFor("T-5", "trade.refno".getBytes, "R-123".getBytes)
       insertMapStorageEntryFor("T-5", "trade.instrument".getBytes, "IBM".getBytes)
       insertMapStorageEntryFor("T-5", "trade.type".getBytes, "BUY".getBytes)
@@ -89,9 +98,7 @@ class CouchDBStorageBackendSpec extends Specification {
       getMapStorageRangeFor("T-5",
         Some("trade.account".getBytes),
         None, 0).map(e => (new String(e._1), new String(e._2))).size mustEqual(7)
-    }
-    
-    "remove map storage for T5" in {
+        
       removeMapStorageFor("T-5")
     }
   }
@@ -105,11 +112,8 @@ class CouchDBStorageBackendSpec extends Specification {
       insertMapStorageEntryFor("T-31", "debasish".getBytes, toByteArray[Name](n))
       getMapStorageSizeFor("T-31") mustEqual(1)
       fromByteArray[Name](getMapStorageEntryFor("T-31", "debasish".getBytes).getOrElse(Array[Byte]())) mustEqual(n)
-    }
-    
-    "should remove map storage for T31" in {
       removeMapStorageFor("T-31")
-    }
+    }    
   }
 
   "Store and query in vectors" should {
@@ -123,8 +127,6 @@ class CouchDBStorageBackendSpec extends Specification {
       getVectorStorageSizeFor("T-3") mustEqual(4)
       fromByteArray[Long](getVectorStorageEntryFor("T-3", 0)) mustEqual(dt)
       getVectorStorageSizeFor("T-3") mustEqual(4)
-      // removeVectorStorageFor("T-3")
-      // getVectorStorageSizeFor("T-3") mustEqual(0)
     }
   }
 
@@ -141,21 +143,39 @@ class CouchDBStorageBackendSpec extends Specification {
   }
 
   "Store and query in ref" should {
-      import NameSerialization._
-      "write 4 entries in 4 refs for transaction T-4" in {
-        insertRefStorageFor("T-4", "debasish".getBytes)
-        insertRefStorageFor("T-4", "maulindu".getBytes)
-      
-        insertRefStorageFor("T-4", "1200".getBytes)
-        new String(getRefStorageFor("T-4").get) mustEqual("1200")
-      }
-      "should write a Name object and fetch it properly" in {
-        val dtb = Calendar.getInstance.getTime
-        val n = Name(100, "debasish ghosh", "kolkata", dtb, Some(dtb))
-        insertRefStorageFor("T-4", toByteArray[Name](n))
-        fromByteArray[Name](getRefStorageFor("T-4").get) mustEqual(n)
-      }
+    import NameSerialization._
+    "write 4 entries in 4 refs for transaction T-4" in {
+      insertRefStorageFor("T-4", "debasish".getBytes)
+      insertRefStorageFor("T-4", "maulindu".getBytes)
+
+      insertRefStorageFor("T-4", "1200".getBytes)
+      new String(getRefStorageFor("T-4").get) mustEqual("1200")
     }
+
+    "write a Name object and fetch it properly" in {
+      val dtb = Calendar.getInstance.getTime
+      val n = Name(100, "debasish ghosh", "kolkata", dtb, Some(dtb))
+      insertRefStorageFor("T-4", toByteArray[Name](n))
+      fromByteArray[Name](getRefStorageFor("T-4").get) mustEqual(n)
+    }
+  }
+  
+  "Mix the 3 different types storage with the same name" should {
+    "work independently without inference each other" in {
+      insertVectorStorageEntryFor("SameName", "v1".getBytes)
+      insertMapStorageEntryFor("SameName", "vector".getBytes, "map_value_v".getBytes)
+      insertVectorStorageEntryFor("SameName", "v2".getBytes)
+      insertMapStorageEntryFor("SameName", "ref".getBytes, "map_value_r".getBytes)      
+      insertVectorStorageEntryFor("SameName", "v3".getBytes)
+      insertRefStorageFor("SameName", "I am a ref!".getBytes)
+      
+      getMapStorageSizeFor("SameName") mustEqual(2)
+      new String(getMapStorageEntryFor("SameName", "vector".getBytes).get) mustEqual("map_value_v")
+      new String(getMapStorageEntryFor("SameName", "ref".getBytes).get) mustEqual("map_value_r")
+      getVectorStorageSizeFor("SameName") mustEqual(3)
+      new String(getRefStorageFor("SameName").get) mustEqual("I am a ref!")      
+    }
+  }
 }
 
 object NameSerialization {

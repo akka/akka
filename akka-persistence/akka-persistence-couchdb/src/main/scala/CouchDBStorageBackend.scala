@@ -47,20 +47,25 @@ private [akka] object CouchDBStorageBackend extends
     put.getResponseBodyAsString
   }
   
-	private def storeMap(name: String, entries: List[(Array[Byte], Array[Byte])]) ={
-		var m = entries.map(e=>(new String(e._1) -> new String(e._2))).toMap + ("_id" -> name)
+	private def storeMap(name: String, postfix: String, entries: List[(Array[Byte], Array[Byte])]) ={
+		var m = entries.map(e=>(new String(e._1) -> new String(e._2))).toMap + ("_id" -> (name + postfix))
 		val dataJson = JsonSerialization.tojson(m)
 		postData(URL, dataJson.toString)
 	}
 	
-	private def storeMap(name: String, entries: Map[String, Any]) ={
-    postData(URL, JsonSerialization.tojson(entries + ("_id" -> name)).toString)
+	private def storeMap(name: String, postfix: String, entries: Map[String, Any]) ={
+    postData(URL, JsonSerialization.tojson(entries + ("_id" -> (name + postfix))).toString)
   }	
 
+  private def getResponseForNameAsMap(name: String, postfix: String): Option[Map[String, Any]] = {
+    getResponse(URL + name + postfix).flatMap(JSON.parseFull(_)).asInstanceOf[Option[Map[String, Any]]]
+  }
+
+
 	def insertMapStorageEntriesFor(name: String, entries: List[(Array[Byte], Array[Byte])]) ={
-		val newDoc = getResponseForNameAsMap(name).getOrElse(Map[String, Any]()) ++ 
+		val newDoc = getResponseForNameAsMap(name, "_map").getOrElse(Map[String, Any]()) ++ 
 		  entries.map(e=>(new String(e._1) -> new String(e._2))).toMap
-    storeMap(name, newDoc)
+    storeMap(name, "_map", newDoc)
 	}
 	
   def insertMapStorageEntryFor(name: String, key: Array[Byte], value: Array[Byte])={
@@ -69,9 +74,10 @@ private [akka] object CouchDBStorageBackend extends
 	
 	
   def removeMapStorageFor(name: String): Unit = {
-		findDocRev(name).flatMap(deleteData(URL + name, _))
+		findDocRev(name + "_map").flatMap(deleteData(URL + name + "_map", _))
 	}
 	
+<<<<<<< HEAD
   def removeMapStorageFor(name: String, key: Array[Byte])/*: Unit*/ = {
 		// val oldDoc = getResponseForNameAsMap(name).getOrElse(Map[String, Any]())
 		// removeMapStorageFor(name)
@@ -80,10 +86,16 @@ private [akka] object CouchDBStorageBackend extends
 		  		removeMapStorageFor(name)
 		    	storeMap(name, doc - new String(key))
 		    })
+=======
+  def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
+		getResponseForNameAsMap(name, "_map").flatMap(doc=>{ // if we can't find the map for name, then we don't need to delete it.
+    	storeMap(name, "_map", doc - new String(key))
+    })
+>>>>>>> abb7edf5aa35e155dbc2713b736ad3d3d0abebbf
 	}
 	
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
-    getResponseForNameAsMap(name).flatMap(_.get(new String(key))).asInstanceOf[Option[String]]
+    getResponseForNameAsMap(name, "_map").flatMap(_.get(new String(key))).asInstanceOf[Option[String]]
       .map(_.getBytes)
 	}
   
@@ -92,12 +104,12 @@ private [akka] object CouchDBStorageBackend extends
 	}
 	
   def getMapStorageFor(name: String): List[(Array[Byte], Array[Byte])] = {
-		val m = getResponseForNameAsMap(name).map(_ - ("_id", "_rev")).getOrElse(Map[String, Any]())
+		val m = getResponseForNameAsMap(name, "_map").map(_ - ("_id", "_rev")).getOrElse(Map[String, Any]())
 		m.toList.map(e => (e._1.getBytes, e._2.asInstanceOf[String].getBytes))
 	}
   
 	def getMapStorageRangeFor(name: String, start: Option[Array[Byte]], finish: Option[Array[Byte]], count: Int): List[(Array[Byte], Array[Byte])] = {
-    val m = getResponseForNameAsMap(name).map(_ - ("_id", "_rev")).getOrElse(Map[String, Any]())
+    val m = getResponseForNameAsMap(name, "_map").map(_ - ("_id", "_rev")).getOrElse(Map[String, Any]())
     val keys = m.keys.toList.sortWith(_ < _)
     
     // if the supplied start is not defined, get the head of keys
@@ -117,21 +129,21 @@ private [akka] object CouchDBStorageBackend extends
   }
 
   def insertVectorStorageEntriesFor(name: String, elements: List[Array[Byte]]) = {
-    val m = getResponseForNameAsMap(name).getOrElse(Map[String, Any]())
+    val m = getResponseForNameAsMap(name, "_vector").getOrElse(Map[String, Any]())
     val v = elements.map(x=>new String(x)) ::: m.getOrElse("vector", List[String]()).asInstanceOf[List[String]]
-    storeMap(name, m + ("vector" -> v))
+    storeMap(name, "_vector", m + ("vector" -> v))
   }
 
   def updateVectorStorageEntryFor(name: String, index: Int, elem: Array[Byte]) = {
-    val m = getResponseForNameAsMap(name).getOrElse(Map[String, Any]())
+    val m = getResponseForNameAsMap(name, "_vector").getOrElse(Map[String, Any]())
     val v: List[String] = m.getOrElse("vector", List[String]()).asInstanceOf[List[String]]
     if (v.indices.contains(index)) {
-      storeMap(name, m + ("vector" -> v.updated(index, new String(elem))))
+      storeMap(name, "_vector", m + ("vector" -> v.updated(index, new String(elem))))
     }
   }
   
   def getVectorStorageEntryFor(name: String, index: Int): Array[Byte] ={
-		val v = getResponseForNameAsMap(name).flatMap(_.get("vector")).getOrElse(List[String]()).asInstanceOf[List[String]]
+		val v = getResponseForNameAsMap(name, "_vector").flatMap(_.get("vector")).getOrElse(List[String]()).asInstanceOf[List[String]]
 		if (v.indices.contains(index))
 		  v(index).getBytes
 		else
@@ -139,11 +151,11 @@ private [akka] object CouchDBStorageBackend extends
 	}
 	
   def getVectorStorageSizeFor(name: String): Int ={
-		getResponseForNameAsMap(name).flatMap(_.get("vector")).map(_.asInstanceOf[List[String]].size).getOrElse(0)
+		getResponseForNameAsMap(name, "_vector").flatMap(_.get("vector")).map(_.asInstanceOf[List[String]].size).getOrElse(0)
 	}
 
   def getVectorStorageRangeFor(name: String, start: Option[Int], finish: Option[Int], count: Int): List[Array[Byte]] = {
-    val v = getResponseForNameAsMap(name).flatMap(_.get("vector")).asInstanceOf[Option[List[String]]].getOrElse(List[String]())
+    val v = getResponseForNameAsMap(name, "_vector").flatMap(_.get("vector")).asInstanceOf[Option[List[String]]].getOrElse(List[String]())
     val s = start.getOrElse(0)
     val f = finish.getOrElse(v.length)
     val c = if (count == 0) v.length else count
@@ -151,12 +163,12 @@ private [akka] object CouchDBStorageBackend extends
   }
 	
   def insertRefStorageFor(name: String, element: Array[Byte]) ={
-		val newDoc = getResponseForNameAsMap(name).getOrElse(Map[String, Any]()) ++ Map("ref" -> new String(element))
-		storeMap(name, newDoc)
+		val newDoc = getResponseForNameAsMap(name, "_ref").getOrElse(Map[String, Any]()) ++ Map("ref" -> new String(element))
+		storeMap(name, "_ref", newDoc)
 	}
 	
 	def getRefStorageFor(name: String): Option[Array[Byte]] ={
-		getResponseForNameAsMap(name).flatMap(_.get("ref")).map(_.asInstanceOf[String].getBytes)
+		getResponseForNameAsMap(name, "_ref").flatMap(_.get("ref")).map(_.asInstanceOf[String].getBytes)
 	}
 <<<<<<< Updated upstream
 
@@ -169,52 +181,45 @@ private [akka] object CouchDBStorageBackend extends
 		.flatMap(_.get("_rev")).asInstanceOf[Option[String]]
 	}
 
-		private def deleteData(url:String, rev:String): Option[String] = {
-			val client: HttpClient = new HttpClient()
-			val delete: DeleteMethod = new DeleteMethod(url)
-			delete.setRequestHeader("If-Match", rev)
-			client.executeMethod(delete)
-			
-			val response = delete.getResponseBodyAsString()
-			if (response != null)
-			  Some(response)
-			else
-			  None
-		}
-	
-		private def postData(url: String, data: String): Option[String] = {
-	  	val client: HttpClient = new HttpClient()
-	  	val post: PostMethod = new PostMethod(url)
-	  	post.setRequestEntity(new StringRequestEntity(data, null, "utf-8"))
-	  	post.setRequestHeader("Content-Type", "application/json")
-	  	client.executeMethod(post)
-	    val response = post.getResponseBodyAsString
-	    if (response != null)
-	  	  Some(response)
-	  	else
-	  	  None
-		}
-
-  private def getResponseForNameAsMap(name: String): Option[Map[String, Any]] = {
-    getResponse(URL + name).flatMap(JSON.parseFull(_)).asInstanceOf[Option[Map[String, Any]]]
-  }
-
-	
-		private def getResponse(url: String): Option[String] = {
-	  	val client = new HttpClient()
-	  	val method = new GetMethod(url)
-	
-	  	method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
-	    new DefaultHttpMethodRetryHandler(3, false))
-	
-	  	client.executeMethod(method)
-	    val response = method.getResponseBodyAsString
-	  	if (method.getStatusCode == 200 && response != null)
-	    	Some(response)
-	  	else
-	    	None
+	private def deleteData(url:String, rev:String): Option[String] = {
+		val client: HttpClient = new HttpClient()
+		val delete: DeleteMethod = new DeleteMethod(url)
+		delete.setRequestHeader("If-Match", rev)
+		client.executeMethod(delete)
+		
+		val response = delete.getResponseBodyAsString()
+		if (response != null)
+		  Some(response)
+		else
+		  None
 	}
 
+	private def postData(url: String, data: String): Option[String] = {
+  	val client: HttpClient = new HttpClient()
+  	val post: PostMethod = new PostMethod(url)
+  	post.setRequestEntity(new StringRequestEntity(data, null, "utf-8"))
+  	post.setRequestHeader("Content-Type", "application/json")
+  	client.executeMethod(post)
+    val response = post.getResponseBodyAsString
+    if (response != null)
+  	  Some(response)
+  	else
+  	  None
+	}
+	
+	private def getResponse(url: String): Option[String] = {
+  	val client = new HttpClient()
+  	val method = new GetMethod(url)
 
+  	method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
+    new DefaultHttpMethodRetryHandler(3, false))
+
+  	client.executeMethod(method)
+    val response = method.getResponseBodyAsString
+  	if (method.getStatusCode == 200 && response != null)
+    	Some(response)
+  	else
+    	None
+	}
 }
 
