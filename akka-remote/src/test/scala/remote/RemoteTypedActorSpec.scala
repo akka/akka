@@ -55,13 +55,13 @@ class RemoteTypedActorSpec extends
         new Component(
           classOf[RemoteTypedActorOne],
           classOf[RemoteTypedActorOneImpl],
-          new LifeCycle(new Permanent),
+          new Permanent,
           10000,
           new RemoteAddress("localhost", 9995)),
         new Component(
           classOf[RemoteTypedActorTwo],
           classOf[RemoteTypedActorTwoImpl],
-          new LifeCycle(new Permanent),
+          new Permanent,
           10000,
           new RemoteAddress("localhost", 9995))
       ).toArray).supervise
