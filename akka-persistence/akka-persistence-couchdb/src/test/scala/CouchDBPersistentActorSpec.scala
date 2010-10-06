@@ -19,8 +19,8 @@ case object LogSize
 
 class BankAccountActor extends Transactor {
 
-  private lazy val accountState = CouchDBStorage.newMap
-  private lazy val txnLog = CouchDBStorage.newVector
+  private  val accountState = CouchDBStorage.newMap
+  private  val txnLog = CouchDBStorage.newVector
 
   import sjson.json.DefaultProtocol._
   import sjson.json.JsonSerialization._
@@ -42,7 +42,6 @@ class BankAccountActor extends Transactor {
                           .getOrElse(0)
 
       accountState.put(accountNo.getBytes, tobinary(m - amount))
-      
       if (amount > m) failer !! "Failure"
 
       self.reply(m - amount)
@@ -58,10 +57,11 @@ class BankAccountActor extends Transactor {
                           .getOrElse(0)
 
       var cbal = m
-      amounts.foreach { amount =>
-        accountState.put(accountNo.getBytes, tobinary(m - amount))
-        cbal = cbal - amount
-        if (cbal < 0) failer !! "Failure"
+      amounts.foreach {
+        amount =>
+          accountState.put(accountNo.getBytes, tobinary(m - amount))
+          cbal = cbal - amount
+          if (cbal < 0) failer !! "Failure"
       }
 
       self.reply(m - sum)
@@ -74,7 +74,9 @@ class BankAccountActor extends Transactor {
                           .getOrElse(0)
 
       accountState.put(accountNo.getBytes, tobinary(m + amount))
+
       self.reply(m + amount)
+
     case LogSize =>
       self.reply(txnLog.length)
 
@@ -91,7 +93,7 @@ class BankAccountActor extends Transactor {
 }
 
 @RunWith(classOf[JUnitRunner])
-class CouchDBPersistentActorSpec extends
+class CouchDBPersistentActorSuite extends
   Spec with
   ShouldMatchers with
   BeforeAndAfterEach {
@@ -106,21 +108,25 @@ class CouchDBPersistentActorSpec extends
 
   describe("successful debit") {
     it("should debit successfully") {
+      log.info("Succesful Debit starting")
       val bactor = actorOf[BankAccountActor]
       bactor.start
       val failer = actorOf[PersistentFailerActor]
       failer.start
       bactor !! Credit("a-123", 5000)
+      log.info("credited")
       bactor !! Debit("a-123", 3000, failer)
-
+      log.info("debited")
       (bactor !! Balance("a-123")).get.asInstanceOf[Int] should equal(2000)
-
+      log.info("balane matched")
       bactor !! Credit("a-123", 7000)
+      log.info("Credited")
       (bactor !! Balance("a-123")).get.asInstanceOf[Int] should equal(9000)
-
+      log.info("Balance matched")
       bactor !! Debit("a-123", 8000, failer)
+      log.info("Debited")
       (bactor !! Balance("a-123")).get.asInstanceOf[Int] should equal(1000)
-
+      log.info("Balance matched")
       (bactor !! LogSize).get.asInstanceOf[Int] should equal(7)
       (bactor !! Log(0, 7)).get.asInstanceOf[Iterable[String]].size should equal(7)
     }
