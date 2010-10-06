@@ -9,5 +9,5 @@ object CouchDBStorageSpec extends Specification {
 	CouchDBStorageBackend.insertMapStorageEntryFor("weather", "abc".getBytes , "henbf".getBytes)
 	//CouchDBStorageBackend.removeMapStorageFor("weather")
 	CouchDBStorageBackend.insertMapStorageEntryFor("weather", "def".getBytes , "werg".getBytes)
-	//CouchDBStorageBackend.removeMapStorageFor("weather" , "def".getBytes)
+	CouchDBStorageBackend.removeMapStorageFor("weather" , "def".getBytes)
 }
