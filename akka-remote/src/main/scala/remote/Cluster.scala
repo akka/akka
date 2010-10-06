@@ -241,7 +241,7 @@ object Cluster extends Cluster with Logging {
     Some(Supervisor(
       SupervisorConfig(
         RestartStrategy(OneForOne, 5, 1000, List(classOf[Exception])),
-        Supervise(actor, LifeCycle(Permanent)) :: Nil)))
+        Supervise(actor, Permanent) :: Nil)))
 
   private[this] def clusterActor = if (clusterActorRef.isEmpty) None else Some(clusterActorRef.get.actor.asInstanceOf[ClusterActor])
 

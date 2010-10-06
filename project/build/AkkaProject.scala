@@ -605,7 +605,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val dbcp = Dependencies.dbcp
     val sjson = Dependencies.sjson_test
 
-    override def testOptions = createTestFilter( _.endsWith("Suite"))
+    override def testOptions = createTestFilter({ s:String=> s.endsWith("Suite") || s.endsWith("Test")})
   }
 
   class AkkaCouchDBProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {

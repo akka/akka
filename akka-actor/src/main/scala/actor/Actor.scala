@@ -159,7 +159,7 @@ object Actor extends Logging {
    */
   def actor(body: Receive): ActorRef =
     actorOf(new Actor() {
-      self.lifeCycle = Some(LifeCycle(Permanent))
+        self.lifeCycle = Permanent
       def receive: Receive = body
     }).start
 
@@ -181,7 +181,7 @@ object Actor extends Logging {
    */
   def transactor(body: Receive): ActorRef =
     actorOf(new Transactor() {
-      self.lifeCycle = Some(LifeCycle(Permanent))
+      self.lifeCycle = Permanent
       def receive: Receive = body
     }).start
 
@@ -201,7 +201,7 @@ object Actor extends Logging {
    */
   def temporaryActor(body: Receive): ActorRef =
     actorOf(new Actor() {
-      self.lifeCycle = Some(LifeCycle(Temporary))
+      self.lifeCycle = Temporary
       def receive = body
     }).start
 
@@ -226,7 +226,7 @@ object Actor extends Logging {
     def handler[A](body: => Unit) = new {
       def receive(handler: Receive) =
         actorOf(new Actor() {
-          self.lifeCycle = Some(LifeCycle(Permanent))
+          self.lifeCycle = Permanent
           body
           def receive = handler
         }).start
@@ -444,7 +444,6 @@ trait Actor extends Logging {
    */
   def become(behavior: Option[Receive]) {
     self.hotswap = behavior
-    self.checkReceiveTimeout // FIXME : how to reschedule receivetimeout on hotswap?
   }
 
   /** Akka Java API

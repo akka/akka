@@ -1,20 +1,20 @@
 package se.scalablesolutions.akka.persistence.voldemort
 
-import org.scalatest.matchers.ShouldMatchers
 import voldemort.server.{VoldemortServer, VoldemortConfig}
-import org.scalatest.{Suite, BeforeAndAfterAll, FunSuite}
+import org.scalatest.{Suite, BeforeAndAfterAll}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import voldemort.utils.Utils
 import java.io.File
 import se.scalablesolutions.akka.util.{Logging}
 import collection.JavaConversions
 import voldemort.store.memory.InMemoryStorageConfiguration
+import voldemort.client.protocol.admin.{AdminClientConfig, AdminClient}
 
-@RunWith(classOf[JUnitRunner])
+
 trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
   this: Suite =>
   var server: VoldemortServer = null
+  var admin: AdminClient = null
 
   override protected def beforeAll(): Unit = {
 
@@ -28,6 +28,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
       server = new VoldemortServer(config)
       server.start
       VoldemortStorageBackend.initStoreClients
+      admin = new AdminClient(VoldemortStorageBackend.clientConfig.getProperty(VoldemortStorageBackend.bootstrapUrlsProp), new AdminClientConfig)
       log.info("Started")
     } catch {
       case e => log.error(e, "Error Starting Voldemort")
@@ -36,6 +37,7 @@ trait EmbeddedVoldemort extends BeforeAndAfterAll with Logging {
   }
 
   override protected def afterAll(): Unit = {
+    admin.stop
     server.stop
   }
 }

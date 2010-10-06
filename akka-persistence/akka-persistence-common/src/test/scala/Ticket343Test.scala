@@ -1,4 +1,8 @@
-package se.scalablesolutions.akka.persistence.hbase
+/**
+ * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ */
+
+package se.scalablesolutions.akka.persistence.common
 
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
@@ -12,8 +16,8 @@ import Actor._
 import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.util.Logging
+import StorageObj._
 
-import HbaseStorageBackend._
 
 case class GET(k: String)
 case class SET(k: String, v: String)
@@ -34,12 +38,16 @@ case object VSIZE
 case class VGET_AFTER_VADD(vsToAdd: List[String], isToFetch: List[Int])
 case class VADD_WITH_SLICE(vsToAdd: List[String], start: Int, cnt: Int)
 
-object Storage {
-  class HbaseSampleMapStorage extends Actor {
+
+object StorageObj {
+  var getMap: String => PersistentMap[Array[Byte], Array[Byte]] = _
+  var getVector: String => PersistentVector[Array[Byte]] = _
+
+  class SampleMapStorage extends Actor {
     self.lifeCycle = Permanent
     val FOO_MAP = "akka.sample.map"
 
-    private var fooMap = atomic { HbaseStorage.getMap(FOO_MAP) }
+    private var fooMap = atomic {StorageObj.getMap(FOO_MAP)}
 
     def receive = {
       case SET(k, v) =>
@@ -73,44 +81,51 @@ object Storage {
         self.reply(v)
 
       case MSET(kvs) => atomic {
-          kvs.foreach {kv => fooMap += (kv._1.getBytes, kv._2.getBytes) }
-        }
-        self.reply(kvs.size)
+        kvs.foreach {kv => fooMap += (kv._1.getBytes, kv._2.getBytes)}
+      }
+      self.reply(kvs.size)
 
       case REMOVE_AFTER_PUT(kvs2add, ks2rem) => atomic {
-        kvs2add.foreach {kv =>
-          fooMap += (kv._1.getBytes, kv._2.getBytes)
+        kvs2add.foreach {
+          kv =>
+            fooMap += (kv._1.getBytes, kv._2.getBytes)
         }
- 
-        ks2rem.foreach {k =>
-          fooMap -= k.getBytes
-        }}
-        self.reply(fooMap.size)
+
+        ks2rem.foreach {
+          k =>
+            fooMap -= k.getBytes
+        }
+      }
+      self.reply(fooMap.size)
 
       case CLEAR_AFTER_PUT(kvs2add) => atomic {
-        kvs2add.foreach {kv =>
-          fooMap += (kv._1.getBytes, kv._2.getBytes)
+        kvs2add.foreach {
+          kv =>
+            fooMap += (kv._1.getBytes, kv._2.getBytes)
         }
         fooMap.clear
-        }
-        self.reply(true)
+      }
+      self.reply(true)
 
-      case PUT_WITH_SLICE(kvs2add, from, cnt) => 
+      case PUT_WITH_SLICE(kvs2add, from, cnt) =>
         val v = atomic {
-          kvs2add.foreach {kv =>
-            fooMap += (kv._1.getBytes, kv._2.getBytes)
+          kvs2add.foreach {
+            kv =>
+              fooMap += (kv._1.getBytes, kv._2.getBytes)
           }
           fooMap.slice(Some(from.getBytes), cnt)
         }
         self.reply(v: List[(Array[Byte], Array[Byte])])
 
-      case PUT_REM_WITH_SLICE(kvs2add, ks2rem, from, cnt) => 
+      case PUT_REM_WITH_SLICE(kvs2add, ks2rem, from, cnt) =>
         val v = atomic {
-          kvs2add.foreach {kv =>
-            fooMap += (kv._1.getBytes, kv._2.getBytes)
+          kvs2add.foreach {
+            kv =>
+              fooMap += (kv._1.getBytes, kv._2.getBytes)
           }
-          ks2rem.foreach {k =>
-            fooMap -= k.getBytes
+          ks2rem.foreach {
+            k =>
+              fooMap -= k.getBytes
           }
           fooMap.slice(Some(from.getBytes), cnt)
         }
@@ -118,84 +133,84 @@ object Storage {
     }
   }
 
-  class HbaseSampleVectorStorage extends Actor {
+  class SampleVectorStorage extends Actor {
     self.lifeCycle = Permanent
     val FOO_VECTOR = "akka.sample.vector"
 
-    private var fooVector = atomic { HbaseStorage.getVector(FOO_VECTOR) }
+    private var fooVector = atomic {StorageObj.getVector(FOO_VECTOR)}
 
     def receive = {
       case VADD(v) =>
-        val size = 
-          atomic {
-            fooVector + v.getBytes
-            fooVector length
-          }
+        val size =
+        atomic {
+          fooVector + v.getBytes
+          fooVector length
+        }
         self.reply(size)
 
       case VGET(index) =>
         val ind =
-          atomic {
-            fooVector get index
-          }
+        atomic {
+          fooVector get index
+        }
         self.reply(ind)
 
       case VGET_AFTER_VADD(vs, is) =>
         val els =
-          atomic {
-            vs.foreach(fooVector + _.getBytes)
-            (is.foldRight(List[Array[Byte]]())(fooVector.get(_)  :: _)).map(new String(_))
-          }
+        atomic {
+          vs.foreach(fooVector + _.getBytes)
+          (is.foldRight(List[Array[Byte]]())(fooVector.get(_) :: _)).map(new String(_))
+        }
         self.reply(els)
 
       case VUPD_AND_ABORT(index, value) =>
-        val l = 
-          atomic {
-            fooVector.update(index, value.getBytes)
-            // force fail
-            fooVector get 100
-          }
+        val l =
+        atomic {
+          fooVector.update(index, value.getBytes)
+          // force fail
+          fooVector get 100
+        }
         self.reply(index)
 
       case VADD_WITH_SLICE(vs, s, c) =>
         val l =
-          atomic {
-            vs.foreach(fooVector + _.getBytes)
-            fooVector.slice(Some(s), None, c)
-          }
+        atomic {
+          vs.foreach(fooVector + _.getBytes)
+          fooVector.slice(Some(s), None, c)
+        }
         self.reply(l.map(new String(_)))
     }
   }
 }
 
-import Storage._
 
-@RunWith(classOf[JUnitRunner])
-class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
-  import org.apache.hadoop.hbase.HBaseTestingUtility
-  
-  val testUtil = new HBaseTestingUtility
-  
-  override def beforeAll {
-    testUtil.startMiniCluster
-  }
-  
-  override def afterAll {
-    testUtil.shutdownMiniCluster
-  }
+trait Ticket343Test extends
+Spec with
+        ShouldMatchers with
+        BeforeAndAfterEach {
+  def getMap: String => PersistentMap[Array[Byte], Array[Byte]]
+
+  def getVector: String => PersistentVector[Array[Byte]]
+
+
+  def dropMapsAndVectors: Unit
 
   override def beforeEach {
-    HbaseStorageBackend.drop
+    StorageObj.getMap = getMap
+    StorageObj.getVector = getVector
+    dropMapsAndVectors
+    println("** dropMapsAndVectors")
   }
-  
+
   override def afterEach {
-    HbaseStorageBackend.drop
+    dropMapsAndVectors
+    println("** dropMapsAndVectors")
   }
 
   describe("Ticket 343 Issue #1") {
     it("remove after put should work within the same transaction") {
-      val proc = actorOf[HbaseSampleMapStorage]
+      val proc = actorOf[SampleMapStorage]
       proc.start
 
       (proc !! SET("debasish", "anshinsoft")).getOrElse("Set failed") should equal(("debasish", "anshinsoft"))
@@ -228,7 +243,7 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
 
   describe("Ticket 343 Issue #2") {
     it("clear after put should work within the same transaction") {
-      val proc = actorOf[HbaseSampleMapStorage]
+      val proc = actorOf[SampleMapStorage]
       proc.start
 
       (proc !! SET("debasish", "anshinsoft")).getOrElse("Set failed") should equal(("debasish", "anshinsoft"))
@@ -245,7 +260,7 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
 
   describe("Ticket 343 Issue #3") {
     it("map size should change after the transaction") {
-      val proc = actorOf[HbaseSampleMapStorage]
+      val proc = actorOf[SampleMapStorage]
       proc.start
 
       (proc !! SET("debasish", "anshinsoft")).getOrElse("Set failed") should equal(("debasish", "anshinsoft"))
@@ -264,7 +279,7 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
 
   describe("slice test") {
     it("should pass") {
-      val proc = actorOf[HbaseSampleMapStorage]
+      val proc = actorOf[SampleMapStorage]
       proc.start
 
       (proc !! SET("debasish", "anshinsoft")).getOrElse("Set failed") should equal(("debasish", "anshinsoft"))
@@ -274,9 +289,9 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
       (proc !! MSET(List(("dg", "1"), ("mc", "2"), ("nd", "3")))).getOrElse("Mset failed") should equal(3)
       (proc !! MAP_SIZE).getOrElse("Size failed") should equal(4)
 
-      (proc !! PUT_WITH_SLICE(List(("ec", "1"), ("tb", "2"), ("mc", "10")), "dg", 3)).get.asInstanceOf[List[(Array[Byte], Array[Byte])]].map { case (k, v) => (new String(k), new String(v)) } should equal(List(("dg", "1"), ("ec", "1"), ("mc", "10")))
+      (proc !! PUT_WITH_SLICE(List(("ec", "1"), ("tb", "2"), ("mc", "10")), "dg", 3)).get.asInstanceOf[List[(Array[Byte], Array[Byte])]].map {case (k, v) => (new String(k), new String(v))} should equal(List(("dg", "1"), ("ec", "1"), ("mc", "10")))
 
-      (proc !! PUT_REM_WITH_SLICE(List(("fc", "1"), ("gb", "2"), ("xy", "10")), List("tb", "fc"), "dg", 5)).get.asInstanceOf[List[(Array[Byte], Array[Byte])]].map { case (k, v) => (new String(k), new String(v)) } should equal(List(("dg", "1"), ("ec", "1"), ("gb", "2"), ("mc", "10"), ("nd", "3")))
+      (proc !! PUT_REM_WITH_SLICE(List(("fc", "1"), ("gb", "2"), ("xy", "10")), List("tb", "fc"), "dg", 5)).get.asInstanceOf[List[(Array[Byte], Array[Byte])]].map {case (k, v) => (new String(k), new String(v))} should equal(List(("dg", "1"), ("ec", "1"), ("gb", "2"), ("mc", "10"), ("nd", "3")))
       proc.stop
     }
   }
@@ -284,7 +299,7 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
   describe("Ticket 343 Issue #4") {
     it("vector get should not ignore elements that were in vector before transaction") {
 
-      val proc = actorOf[HbaseSampleVectorStorage]
+      val proc = actorOf[SampleVectorStorage]
       proc.start
 
       // add 4 elements in separate transactions
@@ -293,10 +308,10 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
       (proc !! VADD("ramanendu")).getOrElse("VADD failed") should equal(3)
       (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(4)
 
-      new String((proc !! VGET(0)).get.asInstanceOf[Array[Byte]] ) should equal("nilanjan")
-      new String((proc !! VGET(1)).get.asInstanceOf[Array[Byte]] ) should equal("ramanendu")
-      new String((proc !! VGET(2)).get.asInstanceOf[Array[Byte]] ) should equal("maulindu")
-      new String((proc !! VGET(3)).get.asInstanceOf[Array[Byte]] ) should equal("debasish")
+      new String((proc !! VGET(0)).get.asInstanceOf[Array[Byte]]) should equal("nilanjan")
+      new String((proc !! VGET(1)).get.asInstanceOf[Array[Byte]]) should equal("ramanendu")
+      new String((proc !! VGET(2)).get.asInstanceOf[Array[Byte]]) should equal("maulindu")
+      new String((proc !! VGET(3)).get.asInstanceOf[Array[Byte]]) should equal("debasish")
 
       // now add 3 more and do gets in the same transaction
       (proc !! VGET_AFTER_VADD(List("a", "b", "c"), List(0, 2, 4))).get.asInstanceOf[List[String]] should equal(List("c", "a", "ramanendu"))
@@ -306,7 +321,7 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
 
   describe("Ticket 343 Issue #6") {
     it("vector update should not ignore transaction") {
-      val proc = actorOf[HbaseSampleVectorStorage]
+      val proc = actorOf[SampleVectorStorage]
       proc.start
 
       // add 4 elements in separate transactions
@@ -316,18 +331,18 @@ class HbaseTicket343SpecTestIntegration extends Spec with ShouldMatchers with Be
       (proc !! VADD("nilanjan")).getOrElse("VADD failed") should equal(4)
 
       evaluating {
-        (proc !! VUPD_AND_ABORT(0, "virat")).getOrElse("VUPD_AND_ABORT failed") 
-      } should produce [Exception]
+        (proc !! VUPD_AND_ABORT(0, "virat")).getOrElse("VUPD_AND_ABORT failed")
+      } should produce[Exception]
 
       // update aborts and hence values will remain unchanged
-      new String((proc !! VGET(0)).get.asInstanceOf[Array[Byte]] ) should equal("nilanjan")
+      new String((proc !! VGET(0)).get.asInstanceOf[Array[Byte]]) should equal("nilanjan")
       proc.stop
     }
   }
 
   describe("Ticket 343 Issue #5") {
     it("vector slice() should not ignore elements added in current transaction") {
-      val proc = actorOf[HbaseSampleVectorStorage]
+      val proc = actorOf[SampleVectorStorage]
       proc.start
 
       // add 4 elements in separate transactions
