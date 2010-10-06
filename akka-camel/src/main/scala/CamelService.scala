@@ -10,8 +10,8 @@ import org.apache.camel.CamelContext
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.{Logging, Bootable}
 import se.scalablesolutions.akka.util.JavaAPI.{Option => JOption}
+import se.scalablesolutions.akka.util.{Logging, Bootable}
 
 /**
  * Publishes (untyped) consumer actors and typed consumer actors via Camel endpoints. Actors
@@ -74,7 +74,7 @@ trait CamelService extends Bootable with Logging {
 
     // Register this instance as current CamelService and return it
     CamelServiceManager.register(this)
-    CamelServiceManager.service.get
+    CamelServiceManager.mandatoryService
   }
 
   /**
@@ -116,7 +116,7 @@ trait CamelService extends Bootable with Logging {
  *
  * @author Martin Krasser
  */
-object CamelServiceManager extends CamelServiceManagerJavaAPI {
+object CamelServiceManager {
 
   /**
    * The current (optional) CamelService. Is defined when a CamelService has been started.
@@ -140,12 +140,34 @@ object CamelServiceManager extends CamelServiceManagerJavaAPI {
   def stopCamelService = for (s <- service) s.stop
 
   /**
-   * Returns <code>Some(CamelService)</code> if <code>CamelService</code>
+   * Returns <code>Some(CamelService)</code> if this <code>CamelService</code>
    * has been started, <code>None</code> otherwise.
    */
   def service = _current
 
-  // TODO: add mandatoryService (throwing exception if service is not defined)
+  /**
+   * Returns the current <code>CamelService</code> if <code>CamelService</code>
+   * has been started, otherwise throws an <code>IllegalStateException</code>.
+   * <p>
+   * Java API
+   */
+  def getService: JOption[CamelService] = CamelServiceManager.service
+
+  /**
+   * Returns <code>Some(CamelService)</code> (containing the current CamelService)
+   * if this <code>CamelService</code>has been started, <code>None</code> otherwise.
+   */
+  def mandatoryService =
+    if (_current.isDefined) _current.get
+    else throw new IllegalStateException("co current Camel service")
+
+  /**
+   * Returns <code>Some(CamelService)</code> (containing the current CamelService)
+   * if this <code>CamelService</code>has been started, <code>None</code> otherwise.
+   * <p>
+   * Java API
+   */
+  def getMandatoryService = mandatoryService
 
   private[camel] def register(service: CamelService) =
     if (_current.isDefined) throw new IllegalStateException("current CamelService already registered")
@@ -154,21 +176,6 @@ object CamelServiceManager extends CamelServiceManagerJavaAPI {
   private[camel] def unregister(service: CamelService) =
     if (_current == Some(service)) _current = None
     else throw new IllegalStateException("only current CamelService can be unregistered")
-}
-
-/**
- * Java API for CamelServiceManager.
- *
- * @author Martin Krasser
- */
-trait CamelServiceManagerJavaAPI {
-  /**
-   * Returns <code>Some(CamelService)</code> if <code>CamelService</code>
-   * has been started, <code>None</code> otherwise.
-   * <p>
-   * Java API
-   */
-  def getService: JOption[CamelService] = CamelServiceManager.service
 }
 
 /**

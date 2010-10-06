@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package se.scalablesolutions.akka.camel
@@ -19,7 +19,7 @@ import se.scalablesolutions.akka.util.JavaAPI.{Option => JOption}
  *
  * @author Martin Krasser
  */
-trait CamelContextLifecycle extends CamelContextLifecycleJavaAPI with Logging {
+trait CamelContextLifecycle extends Logging {
   // TODO: enforce correct state transitions
   // valid: init -> start -> stop -> init ...
 
@@ -41,25 +41,65 @@ trait CamelContextLifecycle extends CamelContextLifecycleJavaAPI with Logging {
   private[camel] var typedActorRegistry: Map[String, AnyRef] = _
 
   /**
-   * Returns <code>Some(CamelContext)</code> if <code>CamelContextLifecycle</code>
-   * has been initialized, otherwise <code>None</code>.
+   * Returns <code>Some(CamelContext)</code> (containing the current CamelContext)
+   * if <code>CamelContextLifecycle</code> has been initialized, otherwise <code>None</code>.
    */
-  protected def context: Option[CamelContext] = _context
+  def context: Option[CamelContext] = _context
 
   /**
-   * Returns <code>Some(ProducerTemplate)</code> if <code>CamelContextLifecycle</code>
-   * has been initialized, otherwise <code>None</code>.
+   * Returns <code>Some(ProducerTemplate)</code> (containing the current ProducerTemplate)
+   * if <code>CamelContextLifecycle</code> has been initialized, otherwise <code>None</code>.
    */
-  protected def template: Option[ProducerTemplate] = _template
+  def template: Option[ProducerTemplate] = _template
 
+  /**
+   * Returns <code>Some(CamelContext)</code> (containing the current CamelContext)
+   * if <code>CamelContextLifecycle</code> has been initialized, otherwise <code>None</code>.
+   * <p>
+   * Java API.
+   */
+  def getContext: JOption[CamelContext] = context
+
+  /**
+   * Returns <code>Some(ProducerTemplate)</code> (containing the current ProducerTemplate)
+   * if <code>CamelContextLifecycle</code> has been initialized, otherwise <code>None</code>.
+   * <p>
+   * Java API.
+   */
+  def getTemplate: JOption[ProducerTemplate] = template
+
+  /**
+   * Returns the current <code>CamelContext</code> if this <code>CamelContextLifecycle</code>
+   * has been initialized, otherwise throws an <code>IllegalStateException</code>.
+   */
   def mandatoryContext =
     if (context.isDefined) context.get
     else throw new IllegalStateException("no current CamelContext")
 
+  /**
+   * Returns the current <code>ProducerTemplate</code> if this <code>CamelContextLifecycle</code>
+   * has been initialized, otherwise throws an <code>IllegalStateException</code>.
+   */
   def mandatoryTemplate =
     if (template.isDefined) template.get
     else throw new IllegalStateException("no current ProducerTemplate")
-  
+
+  /**
+   * Returns the current <code>CamelContext</code> if this <code>CamelContextLifecycle</code>
+   * has been initialized, otherwise throws an <code>IllegalStateException</code>.
+   * <p>
+   * Java API.
+   */
+  def getMandatoryContext = mandatoryContext
+
+  /**
+   * Returns the current <code>ProducerTemplate</code> if this <code>CamelContextLifecycle</code>
+   * has been initialized, otherwise throws an <code>IllegalStateException</code>.
+   * <p>
+   * Java API.
+   */
+  def getMandatoryTemplate = mandatoryTemplate
+
   def initialized = _initialized
   def started = _started
 
@@ -89,6 +129,7 @@ trait CamelContextLifecycle extends CamelContextLifecycleJavaAPI with Logging {
       t.stop
       c.stop
       _started = false
+      _initialized = false
       log.info("Camel context stopped")
     }
   }
@@ -121,37 +162,41 @@ trait CamelContextLifecycle extends CamelContextLifecycleJavaAPI with Logging {
 }
 
 /**
- * Java API for CamelContextLifecycle.
- *
- * @author Martin Krasser
- */
-trait CamelContextLifecycleJavaAPI { this: CamelContextLifecycle =>
-  /**
-   * Returns <code>Some(CamelContext)</code> if <code>CamelContextLifecycle</code>
-   * has been initialized, otherwise <code>None</code>.
-   */
-  def getContext: JOption[CamelContext] = context
-
-  /**
-   * Returns <code>Some(ProducerTemplate)</code> if <code>CamelContextLifecycle</code>
-   * has been initialized, otherwise <code>None</code>.
-   */
-  def getTemplate: JOption[ProducerTemplate] = template
-}
-
-/**
  * Manages a global CamelContext and an associated ProducerTemplate.
  */
-object CamelContextManager extends CamelContextLifecycle with CamelContextLifecycleJavaAPI {
-  /**
-   * Returns <code>Some(CamelContext)</code> if <code>CamelContextLifecycle</code>
-   * has been initialized, otherwise <code>None</code>.
-   */
-  override def context: Option[CamelContext] = super.context
+object CamelContextManager extends CamelContextLifecycle {
+
+  // -----------------------------------------------------
+  //  The inherited getters aren't statically accessible
+  //  from Java. Therefore, they are redefined here.
+  //  TODO: investigate if this is a Scala bug.
+  // -----------------------------------------------------
 
   /**
-   * Returns <code>Some(ProducerTemplate)</code> if <code>CamelContextLifecycle</code>
-   * has been initialized, otherwise <code>None</code>.
+   * see CamelContextLifecycle.getContext
+   * <p>
+   * Java API.
    */
-  override def template: Option[ProducerTemplate] = super.template
+  override def getContext: JOption[CamelContext] = super.getContext
+
+  /**
+   * see CamelContextLifecycle.getTemplate
+   * <p>
+   * Java API.
+   */
+  override def getTemplate: JOption[ProducerTemplate] = super.getTemplate
+
+  /**
+   * see CamelContextLifecycle.getMandatoryContext
+   * <p>
+   * Java API.
+   */
+  override def getMandatoryContext = super.getMandatoryContext
+
+  /**
+   * see CamelContextLifecycle.getMandatoryTemplate
+   * <p>
+   * Java API.
+   */
+  override def getMandatoryTemplate = super.getMandatoryTemplate
 }

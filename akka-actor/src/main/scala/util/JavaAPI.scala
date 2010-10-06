@@ -1,23 +1,21 @@
 package se.scalablesolutions.akka.util
 
 object JavaAPI {
-  /** A Function interface
-   * Used to create first-class-functions is Java (sort of)
-   * Java API
+  /**
+   * A Function interface. Used to create first-class-functions is Java (sort of).
    */
   trait Function[T,R] {
     def apply(param: T): R
   }
 
   /** A Procedure is like a Function, but it doesn't produce a return value
-   * Java API
    */
   trait Procedure[T] {
     def apply(param: T): Unit
   }
 
   /**
-   * An executable piece of code that takes no parameters and doesn't return any value
+   * An executable piece of code that takes no parameters and doesn't return any value.
    */
   trait SideEffect {
     def apply: Unit
@@ -31,45 +29,53 @@ object JavaAPI {
    * Java API
    */
   sealed abstract class Option[A] extends java.lang.Iterable[A] {
+    import scala.collection.JavaConversions._
+
     def get: A
-    def isDefined: Boolean
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
     def asScala: scala.Option[A]
+    def iterator = if (isEmpty) Iterator.empty else Iterator.single(get)
   }
 
-  /**
-   * Class <code>Some[A]</code> represents existing values of type
-   * <code>A</code>.
-   * <p>
-   * Java API
-   */
-  final case class Some[A](v: A) extends Option[A] {
-    import scala.collection.JavaConversions._
+  object Option {
+    /**
+     * <code>Option</code> factory that creates <code>Some</code>
+     */
+    def some[A](v: A): Option[A] = Some(v)
 
-    def get = v
-    def iterator = Iterator.single(v)
-    def isDefined = true
-    def asScala = scala.Some(v)
+    /**
+     * <code>Option</code> factory that creates <code>None</code>
+     */
+    def none[A] = None.asInstanceOf[Option[A]]
+
+    /**
+     * <code>Option</code> factory that creates <code>None</code> if
+     * <code>v</code> is <code>null</code>, <code>Some(v)</code> otherwise.
+     */
+    def option[A](v: A): Option[A] = if (v == null) none else some(v)
+
+    /**
+     * Class <code>Some[A]</code> represents existing values of type
+     * <code>A</code>.
+     */
+    private final case class Some[A](v: A) extends Option[A] {
+      def get = v
+      def isEmpty = false
+      def asScala = scala.Some(v)
+    }
+
+    /**
+     * This case object represents non-existent values.
+     */
+    private case object None extends Option[Nothing] {
+      def get = throw new NoSuchElementException("None.get")
+      def isEmpty = true
+      def asScala = scala.None
+    }
+
+    implicit def java2ScalaOption[A](o: Option[A]): scala.Option[A] = o.asScala
+    implicit def scala2JavaOption[A](o: scala.Option[A]): Option[A] = option(o.get)
   }
-
-  /**
-   * This case object represents non-existent values.
-   * <p>
-   * Java API
-   */
-  case class None[A]() extends Option[A] {
-    import scala.collection.JavaConversions._
-
-    def get = throw new NoSuchElementException("None.get")
-    def iterator = Iterator.empty
-    def isDefined = false
-    def asScala = scala.None
-  }
-
-  def some[A](v: A) = Some(v)
-  def none[A] = None[A]
-
-  implicit def java2ScalaOption[A](o: Option[A]): scala.Option[A] = o.asScala
-  implicit def scala2JavaOption[A](o: scala.Option[A]): Option[A] =
-    if (o.isDefined) Some(o.get) else None[A]
 }
 

@@ -19,7 +19,7 @@ class CamelServiceManagerTest extends WordSpec with BeforeAndAfterAll with MustM
     "the startCamelService method been has been called" must {
       "have registered the started CamelService instance" in {
         val service = CamelServiceManager.startCamelService
-        CamelServiceManager.service.get must be theSameInstanceAs (service)
+        CamelServiceManager.mandatoryService must be theSameInstanceAs (service)
       }
     }
     "the stopCamelService method been has been called" must {
@@ -35,7 +35,7 @@ class CamelServiceManagerTest extends WordSpec with BeforeAndAfterAll with MustM
     "a CamelService instance has been started externally" must {
       "have registered the started CamelService instance" in {
         service.start
-        CamelServiceManager.service.get must be theSameInstanceAs (service)
+        CamelServiceManager.mandatoryService must be theSameInstanceAs (service)
       }
     }
     "the current CamelService instance has been stopped externally" must {
