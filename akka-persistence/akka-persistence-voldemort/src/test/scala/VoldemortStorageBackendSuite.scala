@@ -103,10 +103,7 @@ class VoldemortStorageBackendSuite extends FunSuite with ShouldMatchers with Emb
     vectorClient.delete(getKey(key, vectorSizeIndex))
     vectorClient.delete(getIndexedKey(key, 0))
     vectorClient.delete(getIndexedKey(key, 1))
-    getVectorStorageEntryFor(key, 0) should be(empty)
-    getVectorStorageEntryFor(key, 1) should be(empty)
-    getVectorStorageRangeFor(key, None, None, 1).head should be(empty)
-
+    
     insertVectorStorageEntryFor(key, value)
     //again
     insertVectorStorageEntryFor(key, value)

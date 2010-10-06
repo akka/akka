@@ -626,16 +626,16 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
 
   override def equals(that: Any): Boolean = {
     that.isInstanceOf[ActorRef] &&
-      that.asInstanceOf[ActorRef].uuid == uuid
+    that.asInstanceOf[ActorRef].uuid == uuid
   }
 
   override def toString = "Actor[" + id + ":" + uuid + "]"
 
   protected[akka] def checkReceiveTimeout = {
     cancelReceiveTimeout
-    receiveTimeout.foreach { time =>
+    if (receiveTimeout.isDefined && dispatcher.mailboxSize(this) <= 0) { //Only reschedule if desired and there are currently no more messages to be processed
       log.debug("Scheduling timeout for %s", this)
-      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, time, TimeUnit.MILLISECONDS))
+      _futureTimeout = Some(Scheduler.scheduleOnce(this, ReceiveTimeout, receiveTimeout.get, TimeUnit.MILLISECONDS))
     }
   }
 
@@ -709,7 +709,6 @@ class LocalActorRef private[akka] (
     actorSelfFields._1.set(actor, this)
     actorSelfFields._2.set(actor, Some(this))
     start
-    checkReceiveTimeout
     ActorRegistry.register(this)
   }
 
@@ -813,7 +812,10 @@ class LocalActorRef private[akka] (
         _transactionFactory = Some(TransactionFactory(_transactionConfig, id))
       }
       _status = ActorRefStatus.RUNNING
+
       if (!isInInitialization) initializeActorInstance
+
+      checkReceiveTimeout //Schedule the initial Receive timeout
     }
     this
   }
@@ -1230,6 +1232,7 @@ class LocalActorRef private[akka] (
     finally {
       clearTransaction
       if (topLevelTransaction) clearTransactionSet
+      checkReceiveTimeout // Reschedule receive timeout
     }
   }
 
@@ -1309,9 +1312,7 @@ class LocalActorRef private[akka] (
     actor.preStart // run actor preStart
     Actor.log.trace("[%s] has started", toString)
     ActorRegistry.register(this)
-    if (id == "N/A") id = actorClass.getName // if no name set, then use default name (class name)
     clearTransactionSet // clear transaction set that might have been created if atomic block has been used within the Actor constructor body
-    checkReceiveTimeout
   }
 
   /*
