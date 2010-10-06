@@ -16,12 +16,11 @@ import java.util.{Calendar, Date}
 @RunWith(classOf[JUnitRunner])
 class CouchDBStorageBackendSpec extends Specification {
   doBeforeSpec { 
-    CouchDBStorageBackend.drop()
     CouchDBStorageBackend.create()
   }
   
   doAfterSpec {
-    // 
+    CouchDBStorageBackend.drop()
   }
   
   "CouchDBStorageBackend store and query in map" should {
