@@ -23,6 +23,7 @@ object Futures {
    */
   def future[T](timeout: Long)(body: => T): Future[T] = {
     val promise = new DefaultCompletableFuture[T](timeout)
+
     try {
       promise completeWithResult body
     } catch {
