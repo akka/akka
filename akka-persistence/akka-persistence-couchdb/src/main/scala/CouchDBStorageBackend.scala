@@ -77,21 +77,10 @@ private [akka] object CouchDBStorageBackend extends
 		findDocRev(name + "_map").flatMap(deleteData(URL + name + "_map", _))
 	}
 	
-<<<<<<< HEAD
-  def removeMapStorageFor(name: String, key: Array[Byte])/*: Unit*/ = {
-		// val oldDoc = getResponseForNameAsMap(name).getOrElse(Map[String, Any]())
-		// removeMapStorageFor(name)
-		// storeMap(name, oldDoc - new String(key) - "_rev")
-		getResponseForNameAsMap(name).flatMap(doc=>{ // if we can't find the map for name, then we don't need to delete it.
-		  		removeMapStorageFor(name)
-		    	storeMap(name, doc - new String(key))
-		    })
-=======
   def removeMapStorageFor(name: String, key: Array[Byte]): Unit = {
 		getResponseForNameAsMap(name, "_map").flatMap(doc=>{ // if we can't find the map for name, then we don't need to delete it.
     	storeMap(name, "_map", doc - new String(key))
     })
->>>>>>> abb7edf5aa35e155dbc2713b736ad3d3d0abebbf
 	}
 	
   def getMapStorageEntryFor(name: String, key: Array[Byte]): Option[Array[Byte]] = {
@@ -170,12 +159,7 @@ private [akka] object CouchDBStorageBackend extends
 	def getRefStorageFor(name: String): Option[Array[Byte]] ={
 		getResponseForNameAsMap(name, "_ref").flatMap(_.get("ref")).map(_.asInstanceOf[String].getBytes)
 	}
-<<<<<<< Updated upstream
 
-=======
-	
-	
->>>>>>> Stashed changes
 	private def findDocRev(name: String) = {
 		getResponse(URL + name).flatMap(JSON.parseFull(_)).asInstanceOf[Option[Map[String, Any]]]
 		.flatMap(_.get("_rev")).asInstanceOf[Option[String]]
