@@ -101,7 +101,7 @@ class CouchDBPersistentActorSpec extends
   }
 
   override def afterEach {
-    // CouchDBStorageBackend.drop
+    CouchDBStorageBackend.drop
   }
 
   describe("successful debit") {
