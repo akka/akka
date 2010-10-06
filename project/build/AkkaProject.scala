@@ -103,7 +103,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val SPRING_VERSION        = "3.0.3.RELEASE"
-  lazy val ASPECTWERKZ_VERSION   = "2.2.1"
+  lazy val ASPECTWERKZ_VERSION   = "2.2.2"
   lazy val JETTY_VERSION         = "7.1.4.v20100610"
 
   // -------------------------------------------------------------------------------------------------------------------
