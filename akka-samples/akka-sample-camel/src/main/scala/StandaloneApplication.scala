@@ -29,7 +29,7 @@ object StandaloneApplication extends Application {
   assert("hello msg1" == mandatoryContext.createProducerTemplate.requestBody("direct:test", "msg1"))
 
   // set expectations on upcoming endpoint activation
-  val activation = service.get.expectEndpointActivationCount(1)
+  val activation = mandatoryService.expectEndpointActivationCount(1)
 
   // 'internally' register typed actor (requires CamelService)
   TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
@@ -86,7 +86,7 @@ object StandaloneJmsApplication extends Application {
   startCamelService
 
   // Expect two consumer endpoints to be activated
-  val completion = service.get.expectEndpointActivationCount(2)
+  val completion = mandatoryService.expectEndpointActivationCount(2)
 
   val jmsUri = "jms:topic:test"
   // Wire publisher and consumer using a JMS topic
