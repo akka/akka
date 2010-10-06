@@ -21,10 +21,10 @@ object JavaAPI {
     def apply: Unit
   }
 
-	/**
+  /**
    * This class represents optional values. Instances of <code>Option</code>
-	 * are either instances of case class <code>Some</code> or it is case
-	 * object <code>None</code>.
+   * are either instances of case class <code>Some</code> or it is case
+   * object <code>None</code>.
    * <p>
    * Java API
    */
