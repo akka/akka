@@ -93,7 +93,7 @@ class BankAccountActor extends Transactor {
 }
 
 @RunWith(classOf[JUnitRunner])
-class CouchDBPersistentActorSuite extends
+class CouchDBPersistentActor extends
   Spec with
   ShouldMatchers with
   BeforeAndAfterEach {
