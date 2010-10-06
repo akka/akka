@@ -8,6 +8,7 @@ project/boot/*
 */project/boot
 lib_managed
 etags
+tags
 TAGS
 akka.tmproj
 reports
