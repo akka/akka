@@ -46,6 +46,11 @@ object ActorRegistry extends ListenerManagement {
    * Returns all actors in the system.
    */
   def actors: Array[ActorRef] = filter(_ => true)
+  
+  /**
+   * Returns the number of actors in the system.
+   */
+  def size : Int = actorsByUUID.size
 
   /**
    * Invokes a function for all actors.
@@ -127,6 +132,7 @@ object ActorRegistry extends ListenerManagement {
    * Invokes a function for all typed actors.
    */
   def foreachTypedActor(f: (AnyRef) => Unit) = {
+    TypedActorModule.ensureTypedActorEnabled
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val proxy = typedActorFor(elements.nextElement)
@@ -141,6 +147,7 @@ object ActorRegistry extends ListenerManagement {
    * Returns None if the function never returns Some
    */
   def findTypedActor[T](f: PartialFunction[AnyRef,T]) : Option[T] = {
+    TypedActorModule.ensureTypedActorEnabled
     val elements = actorsByUUID.elements
     while (elements.hasMoreElements) {
       val proxy = typedActorFor(elements.nextElement)
@@ -178,6 +185,7 @@ object ActorRegistry extends ListenerManagement {
    * Finds any typed actor that matches T.
    */
   def typedActorFor[T <: AnyRef](implicit manifest: Manifest[T]): Option[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
     def predicate(proxy: AnyRef) : Boolean = {
       val actorRef = actorFor(proxy)
       actorRef.isDefined && manifest.erasure.isAssignableFrom(actorRef.get.actor.getClass)
