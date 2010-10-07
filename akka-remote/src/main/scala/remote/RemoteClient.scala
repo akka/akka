@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable.{HashSet, HashMap}
 import scala.reflect.BeanProperty
 import se.scalablesolutions.akka.actor._
-import se.scalablesolutions.akka.util.{Address, ListenerManagement, Logging, Duration}
+import se.scalablesolutions.akka.util._
 
 /**
  * Life-cycle events for RemoteClient.
@@ -200,56 +200,52 @@ class RemoteClient private[akka] (
   private val remoteAddress = new InetSocketAddress(hostname, port)
 
   //FIXME rewrite to a wrapper object (minimize volatile access and maximize encapsulation)
-  @volatile private[remote] var isRunning = false
   @volatile private var bootstrap: ClientBootstrap = _
   @volatile private[remote] var connection: ChannelFuture = _
   @volatile private[remote] var openChannels: DefaultChannelGroup = _
   @volatile private var timer: HashedWheelTimer = _
+  private[remote] val runSwitch = new Switch()
+  
+  private[remote] def isRunning = runSwitch.isOn
 
   private val reconnectionTimeWindow = Duration(config.getInt(
     "akka.remote.client.reconnection-time-window", 600), TIME_UNIT).toMillis
   @volatile private var reconnectionTimeWindowStart = 0L
 
-  def connect = synchronized {
-    if (!isRunning) {
-      openChannels = new DefaultChannelGroup(classOf[RemoteClient].getName)
-      timer = new HashedWheelTimer
-      bootstrap = new ClientBootstrap(
-        new NioClientSocketChannelFactory(
-          Executors.newCachedThreadPool,Executors.newCachedThreadPool
-        )
+  def connect = runSwitch switchOn {
+    openChannels = new DefaultChannelGroup(classOf[RemoteClient].getName)
+    timer = new HashedWheelTimer
+    bootstrap = new ClientBootstrap(
+      new NioClientSocketChannelFactory(
+        Executors.newCachedThreadPool,Executors.newCachedThreadPool
       )
-      bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, remoteAddress, timer, this))
-      bootstrap.setOption("tcpNoDelay", true)
-      bootstrap.setOption("keepAlive", true)
-      connection = bootstrap.connect(remoteAddress)
-      log.info("Starting remote client connection to [%s:%s]", hostname, port)
-      // Wait until the connection attempt succeeds or fails.
-      val channel = connection.awaitUninterruptibly.getChannel
-      openChannels.add(channel)
-      if (!connection.isSuccess) {
-        notifyListeners(RemoteClientError(connection.getCause, this))
-        log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
-      }
-      notifyListeners(RemoteClientStarted(this))
-      isRunning = true
+    )
+    bootstrap.setPipelineFactory(new RemoteClientPipelineFactory(name, futures, supervisors, bootstrap, remoteAddress, timer, this))
+    bootstrap.setOption("tcpNoDelay", true)
+    bootstrap.setOption("keepAlive", true)
+    connection = bootstrap.connect(remoteAddress)
+    log.info("Starting remote client connection to [%s:%s]", hostname, port)
+    // Wait until the connection attempt succeeds or fails.
+    val channel = connection.awaitUninterruptibly.getChannel
+    openChannels.add(channel)
+    if (!connection.isSuccess) {
+      notifyListeners(RemoteClientError(connection.getCause, this))
+      log.error(connection.getCause, "Remote client connection to [%s:%s] has failed", hostname, port)
     }
+    notifyListeners(RemoteClientStarted(this))
   }
 
-  def shutdown = synchronized {
+  def shutdown = runSwitch switchOff {
     log.info("Shutting down %s", name)
-    if (isRunning) {
-      isRunning = false
-      notifyListeners(RemoteClientShutdown(this))
-      timer.stop
-      timer = null
-      openChannels.close.awaitUninterruptibly
-      openChannels = null
-      bootstrap.releaseExternalResources
-      bootstrap = null
-      connection = null
-      log.info("%s has been shut down", name)
-    }
+    notifyListeners(RemoteClientShutdown(this))
+    timer.stop
+    timer = null
+    openChannels.close.awaitUninterruptibly
+    openChannels = null
+    bootstrap.releaseExternalResources
+    bootstrap = null
+    connection = null
+    log.info("%s has been shut down", name)
   }
 
   @deprecated("Use addListener instead")
@@ -423,7 +419,7 @@ class RemoteClientHandler(
     }
   }
 
-  override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = if (client.isRunning) {
+  override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = client.runSwitch ifOn {
     if (client.isWithinReconnectionTimeWindow) {
       timer.newTimeout(new TimerTask() {
         def run(timeout: Timeout) = {
