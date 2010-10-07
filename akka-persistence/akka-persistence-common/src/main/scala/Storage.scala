@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.persistence.common
 import se.scalablesolutions.akka.stm._
 import se.scalablesolutions.akka.stm.TransactionManagement.transaction
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.japi.{Option => JOption}
 import collection.mutable.ArraySeq
 
 // FIXME move to 'stm' package + add message with more info
@@ -94,6 +95,56 @@ private[akka] object PersistentMap {
 }
 
 /**
+ * JavaAPI.
+ * java.util.Map like wrapper of PersistentMap.
+ */
+class JPersistentMap[K, V](map: PersistentMap[K,V]) {
+  import scala.collection.JavaConversions._
+
+  def clear() {
+    map.clear
+  }
+
+  def contains(key: K): Boolean = {
+    map.contains(key.asInstanceOf[K])
+  }
+
+  def get(key: K) : JOption[V] = {
+    map.get(key)
+  }
+
+  def isEmpty() : Boolean = {
+    map.isEmpty
+  }
+
+  def put(key: K, value: V) : JOption[V] = {
+	map.put(key, value)
+  }
+
+  def update(key: K, value: V) {
+	map.update(key, value)
+  }
+
+  def add(key: K, value: V) : JPersistentMap[K,V] = {
+    map.+=(key, value)
+    this
+  }
+
+  def putAll(m: java.util.Map[_ <: K, _ <: V]) {
+    m.entrySet.asInstanceOf[Set[java.util.Map.Entry[_ <: K, _ <: V]]].foreach(entry => put(entry.getKey, entry.getValue))
+  }
+
+  def remove(key: K) : JOption[V] = {
+	map.remove(key)
+  }
+
+  def size() : Int = {
+    map.size
+  }
+  
+}
+
+/**
  * Implementation of <tt>PersistentMap</tt> for every concrete
  * storage will have the same workflow. This abstracts the workflow.
  *
@@ -104,6 +155,10 @@ private[akka] object PersistentMap {
  */
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
         with Transactional with Committable with Abortable with Logging {
+
+  def asJava() : JPersistentMap[K, V] = {
+    new JPersistentMap(this)
+  }
 
   //Import Ops
   import PersistentMap._
@@ -215,7 +270,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     curr
   }
 
-  override def update(key: K, value: V) = {
+  override def update(key: K, value: V) {
     register
     val curr = getCurrentValue(key)
     appendOnlyTxLog add LogEntry(Some(key), Some(value), UPD)
@@ -223,7 +278,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     curr
   }
 
-  override def remove(key: K) = {
+  override def remove(key: K) : Option[V] = {
     register
     val curr = getCurrentValue(key)
     appendOnlyTxLog add LogEntry(Some(key), None, REM)
@@ -395,6 +450,27 @@ trait PersistentMapBinary extends PersistentMap[Array[Byte], Array[Byte]] {
       override def hasNext: Boolean = synchronized {!elements.isEmpty}
     }
   }
+
+  /**
+   * Java API.
+   */
+  def javaIterator: java.util.Iterator[java.util.Map.Entry[Array[Byte],Array[Byte]]]  = {
+    new java.util.Iterator[java.util.Map.Entry[Array[Byte],Array[Byte]]] {
+      private var elements = replayAllKeys
+      override def next: java.util.Map.Entry[Array[Byte], Array[Byte]] = synchronized {
+        val (k, v) = elements.head
+        elements = elements.tail
+        val entry = new java.util.Map.Entry[Array[Byte], Array[Byte]] {
+          override def getKey = k.toArray
+          override def getValue = v
+          override def setValue(v: Array[Byte]) = throw new UnsupportedOperationException("Use put or update methods to change a map entry.")
+        }
+        entry
+      }
+      override def hasNext: Boolean = synchronized { !elements.isEmpty }
+      override def remove: Unit = throw new UnsupportedOperationException("Use remove method to remove a map entry.")
+    }
+  }
 }
 
 private[akka] object PersistentVector {
@@ -406,6 +482,42 @@ private[akka] object PersistentVector {
 }
 
 /**
+ * Java API.
+ * Java friendly wrapper for PersistentVector.
+ */
+class JPersistentVector[T](underlying: PersistentVector[T]) {
+  import scala.collection.JavaConversions._
+
+  def add(elem: T) {
+    underlying.+(elem)
+  }
+
+  def get(index: Int) : T = {
+    underlying.get(index)
+  }
+
+  def isEmpty() : Boolean = {
+    underlying.isEmpty
+  }
+
+  def update(index: Int, element: T) {
+    underlying.update(index, element)
+  }
+
+  def size() : Int = {
+    underlying.size
+  }
+
+  def first() : T = {
+    underlying.first
+  }
+
+  def last() : T = {
+    underlying.last
+  }
+}
+
+/**
  * Implements a template for a concrete persistent transactional vector based storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -413,6 +525,10 @@ private[akka] object PersistentVector {
 trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable {
   //Import Ops
   import PersistentVector._
+
+  def asJava() : JPersistentVector[T] = {
+    new JPersistentVector(this)
+  }
 
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
