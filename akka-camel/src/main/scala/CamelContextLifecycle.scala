@@ -10,8 +10,8 @@ import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
 import se.scalablesolutions.akka.camel.component.TypedActorComponent
+import se.scalablesolutions.akka.japi.{Option => JOption}
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.util.JavaAPI.{Option => JOption}
 
 /**
  * Manages the lifecycle of a CamelContext. Allowed transitions are
