@@ -10,7 +10,7 @@ import org.apache.camel.CamelContext
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.actor.{AspectInitRegistry, ActorRegistry}
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.util.JavaAPI.{Option => JOption}
+import se.scalablesolutions.akka.japi.{Option => JOption}
 import se.scalablesolutions.akka.util.{Logging, Bootable}
 
 /**
