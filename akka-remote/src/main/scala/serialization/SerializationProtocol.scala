@@ -285,9 +285,9 @@ object RemoteActorSerialization {
       case ActorType.TypedActor => actorInfoBuilder.setActorType(TYPED_ACTOR)
     }
     val actorInfo = actorInfoBuilder.build
-
+    val requestUuid = newUuid
     val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
+        .setUuid(UuidProtocol.newBuilder.setHigh(requestUuid.getTime).setLow(requestUuid.getClockSeqAndNode).build)
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
