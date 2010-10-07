@@ -124,6 +124,19 @@ class ClientInitiatedRemoteActorSpec extends JUnitSuite {
   }
 
   @Test
+  def shouldSendBangBangMessageAndReceiveReplyConcurrently = {
+    val actors = (1 to 10).
+      map(num => {
+        val a = actorOf[RemoteActorSpecActorBidirectional]
+        a.makeRemote(HOSTNAME, PORT1)
+        a.start
+      }).toList
+    actors.map(_ !!! "Hello").
+           foreach(future => assert("World" === future.await.result.asInstanceOf[Option[String]].get))
+    actors.foreach(_.stop)
+  }
+
+  @Test
   def shouldSendAndReceiveRemoteException {
     implicit val timeout = 500000000L
     val actor = actorOf[RemoteActorSpecActorBidirectional]
