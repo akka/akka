@@ -825,6 +825,7 @@ class LocalActorRef private[akka] (
    */
   def stop() = guard.withGuard {
     if (isRunning) {
+      receiveTimeout = None
       cancelReceiveTimeout
       dispatcher.unregister(this)
       _transactionFactory = None
