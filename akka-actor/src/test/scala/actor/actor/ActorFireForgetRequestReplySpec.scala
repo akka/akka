@@ -20,7 +20,7 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class CrashingTemporaryActor extends Actor {
-    self.lifeCycle = Some(LifeCycle(Temporary))
+    self.lifeCycle = Temporary
 
     def receive = {
       case "Die" =>

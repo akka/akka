@@ -91,16 +91,10 @@ object ActorSerialization {
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef, format: Format[T], serializeMailBox: Boolean = true): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
-      def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
-        case Permanent => builder.setLifeCycle(LifeCycleType.PERMANENT)
-        case Temporary => builder.setLifeCycle(LifeCycleType.TEMPORARY)
-      }
-      val builder = LifeCycleProtocol.newBuilder
       actorRef.lifeCycle match {
-        case Some(LifeCycle(scope)) =>
-          setScope(builder, scope)
-          Some(builder.build)
-        case None => None
+        case Permanent => Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
+        case Temporary => Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.TEMPORARY).build)
+        case UndefinedLifeCycle => None//No need to send the undefined lifecycle over the wire  //builder.setLifeCycle(LifeCycleType.UNDEFINED)
       }
     }
 
@@ -164,11 +158,12 @@ object ActorSerialization {
 
     val lifeCycle =
     if (protocol.hasLifeCycle) {
-      val lifeCycleProtocol = protocol.getLifeCycle
-      Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent)
-      else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary)
-      else throw new IllegalActorStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
-    } else None
+      protocol.getLifeCycle.getLifeCycle match {
+        case LifeCycleType.PERMANENT => Permanent
+        case LifeCycleType.TEMPORARY => Temporary
+        case unknown => throw new IllegalActorStateException("LifeCycle type is not valid: " + unknown)
+      }
+    } else UndefinedLifeCycle
 
     val supervisor =
     if (protocol.hasSupervisor)
@@ -290,9 +285,9 @@ object RemoteActorSerialization {
       case ActorType.TypedActor => actorInfoBuilder.setActorType(TYPED_ACTOR)
     }
     val actorInfo = actorInfoBuilder.build
-
+    val requestUuid = newUuid
     val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
+        .setUuid(UuidProtocol.newBuilder.setHigh(requestUuid.getTime).setLow(requestUuid.getClockSeqAndNode).build)
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
