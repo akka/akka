@@ -223,15 +223,15 @@ object ReflectiveAccess extends Logging {
       getClassFor("se.scalablesolutions.akka.serialization.Serializer")
 
     def ensureEnterpriseEnabled = if (!isEnterpriseEnabled) throw new ModuleNotAvailableException(
-      "Feature is only available in Akka Enterprise")
+      "Feature is only available in Akka Enterprise edition")
 
-    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.FileBasedMailbox", actorRef)
+    def createFileBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.FileBasedMailbox", actorRef)
 
-    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.ZooKeeperBasedMailbox", actorRef)
+    def createZooKeeperBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.ZooKeeperBasedMailbox", actorRef)
 
-    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.BeanstalkBasedMailbox", actorRef)
+    def createBeanstalkBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.BeanstalkBasedMailbox", actorRef)
 
-    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.cluster.RedisBasedMailbox", actorRef)
+    def createRedisBasedMailbox(actorRef: ActorRef): Mailbox = createMailbox("se.scalablesolutions.akka.actor.mailbox.RedisBasedMailbox", actorRef)
 
     private def createMailbox(mailboxClassname: String, actorRef: ActorRef): Mailbox = {
       ensureEnterpriseEnabled

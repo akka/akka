@@ -16,10 +16,10 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ProducerParamete
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-class AMQPProducerMessageTest extends JUnitSuite with MustMatchers {
+class AMQPProducerMessageTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def producerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def producerMessage = AMQPTest.withCleanEndState {
 
     val connection: ActorRef = AMQP.newConnection()
     try {
@@ -30,7 +30,7 @@ class AMQPProducerMessageTest extends JUnitSuite with MustMatchers {
         }
       }
       val producerParameters = ProducerParameters(
-        ExchangeParameters("text_exchange", ExchangeType.Direct), returnListener = Some(returnListener))
+        Some(ExchangeParameters("text_exchange")), returnListener = Some(returnListener))
 
       val producer = AMQP.newProducer(connection, producerParameters)
 

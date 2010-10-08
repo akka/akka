@@ -6,7 +6,7 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.stm.Ref
 import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.util.{ Function => JFunc, Procedure => JProc }
+import se.scalablesolutions.akka.japi.{ Function => JFunc, Procedure => JProc }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
 

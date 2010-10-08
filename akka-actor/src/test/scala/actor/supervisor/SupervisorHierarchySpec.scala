@@ -37,8 +37,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
     val workerThree = actorOf(new CountDownActor(countDown))
 
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(5, 1000))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 5, 1000)
 
       protected def receive = { case _ => () }
     }).start
@@ -63,8 +62,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
     val countDown = new CountDownLatch(2)
     val crasher = actorOf(new CountDownActor(countDown))
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(1, 5000))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 1, 5000)
       protected def receive = {
         case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) =>
           countDown.countDown

@@ -243,13 +243,13 @@ object RemoteActorSerialization {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
-    Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
+    Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClassName, host, port)
     RemoteServer.getOrCreateServer(homeAddress)
     ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
 
     RemoteActorRefProtocol.newBuilder
       .setClassOrServiceName(uuid.toString)
-      .setActorClassname(actorClass.getName)
+      .setActorClassname(actorClassName)
       .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
       .setTimeout(timeout)
       .build
@@ -285,9 +285,9 @@ object RemoteActorSerialization {
       case ActorType.TypedActor => actorInfoBuilder.setActorType(TYPED_ACTOR)
     }
     val actorInfo = actorInfoBuilder.build
-
+    val requestUuid = newUuid
     val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
+        .setUuid(UuidProtocol.newBuilder.setHigh(requestUuid.getTime).setLow(requestUuid.getClockSeqAndNode).build)
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)

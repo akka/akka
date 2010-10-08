@@ -130,9 +130,9 @@ class ExecutorBasedEventDrivenDispatcherActorSpec extends JUnitSuite {
    slowOne ! "hogexecutor"
    slowOne ! "ping"
    fastOne ! "ping"
-   assert(ready.await(5,TimeUnit.SECONDS) === true)
-   Thread.sleep(deadlineMs)
+   assert(ready.await(2,TimeUnit.SECONDS) === true)
+   Thread.sleep(deadlineMs+10) // wait just a bit more than the deadline
    start.countDown
-   assert(latch.await(10,TimeUnit.SECONDS) === true)
+   assert(latch.await(2,TimeUnit.SECONDS) === true)
  }
 }

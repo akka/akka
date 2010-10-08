@@ -112,3 +112,61 @@ class SimpleLock {
     acquired.set(false)
   }
 }
+
+/**
+ * An atomic switch that can be either on or off
+ */
+class Switch(startAsOn: Boolean = false) {
+  private val switch = new AtomicBoolean(startAsOn)
+
+  protected def transcend(from: Boolean,action: => Unit): Boolean = {
+    if (switch.compareAndSet(from,!from)) {
+      try {
+        action
+      } catch {
+        case t =>
+          switch.compareAndSet(!from,from) //Revert status
+          throw t
+      }
+      true
+    } else false
+  }
+
+  def switchOff(action: => Unit): Boolean = transcend(from = true, action)
+  def switchOn(action: => Unit): Boolean  = transcend(from = false,action)
+
+  def ifOnYield[T](action: => T): Option[T] = {
+    if (switch.get)
+      Some(action)
+    else
+      None
+  }
+
+  def ifOffYield[T](action: => T): Option[T] = {
+    if (switch.get)
+      Some(action)
+    else
+      None
+  }
+
+  def ifOn(action: => Unit): Boolean = {
+    if (switch.get) {
+      action
+      true
+    }
+    else
+      false
+  }
+
+   def ifOff(action: => Unit): Boolean = {
+    if (!switch.get) {
+      action
+      true
+    }
+    else
+      false
+  }
+
+  def isOn = switch.get
+  def isOff = !isOn
+}

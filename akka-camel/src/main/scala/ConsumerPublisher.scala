@@ -23,7 +23,7 @@ private[camel] object ConsumerPublisher extends Logging {
    * Creates a route to the registered consumer actor.
    */
   def handleConsumerRegistered(event: ConsumerRegistered) {
-    CamelContextManager.context.addRoutes(new ConsumerActorRoute(event.uri, event.uuid, event.blocking))
+    CamelContextManager.mandatoryContext.addRoutes(new ConsumerActorRoute(event.uri, event.uuid, event.blocking))
     log.info("published actor %s at endpoint %s" format (event.actorRef, event.uri))
   }
 
@@ -31,7 +31,7 @@ private[camel] object ConsumerPublisher extends Logging {
    * Stops the route to the already un-registered consumer actor.
    */
   def handleConsumerUnregistered(event: ConsumerUnregistered) {
-    CamelContextManager.context.stopRoute(event.uuid.toString)
+    CamelContextManager.mandatoryContext.stopRoute(event.uuid.toString)
     log.info("unpublished actor %s from endpoint %s" format (event.actorRef, event.uri))
   }
 
@@ -43,7 +43,7 @@ private[camel] object ConsumerPublisher extends Logging {
     val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
 
     CamelContextManager.typedActorRegistry.put(objectId, event.typedActor)
-    CamelContextManager.context.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
+    CamelContextManager.mandatoryContext.addRoutes(new ConsumerMethodRoute(event.uri, objectId, targetMethod))
     log.info("published method %s of %s at endpoint %s" format (targetMethod, event.typedActor, event.uri))
   }
 
@@ -55,7 +55,7 @@ private[camel] object ConsumerPublisher extends Logging {
     val objectId = "%s_%s" format (event.init.actorRef.uuid, targetMethod)
 
     CamelContextManager.typedActorRegistry.remove(objectId)
-    CamelContextManager.context.stopRoute(objectId)
+    CamelContextManager.mandatoryContext.stopRoute(objectId)
     log.info("unpublished method %s of %s from endpoint %s" format (targetMethod, event.typedActor, event.uri))
   }
 }
