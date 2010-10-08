@@ -1032,16 +1032,15 @@ class LocalActorRef private[akka] (
   }
 
   protected[akka] def canRestart(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
-    (maxNrOfRetries, withinTimeRange) match {
-      case (None, None) => // immortal
-        true
-      case (Some(maxNrOfRetries), None) => // restrict number of restarts
-        maxNrOfRetriesCount < maxNrOfRetries
-      case (None, Some(withinTimeRange)) => // cannot restart within time range since last restart
-        canRestart(Some(1), Some(withinTimeRange))
-      case (Some(maxNrOfRetries), Some(withinTimeRange)) => // cannot restart more than N within M timerange
-        !((maxNrOfRetriesCount >= maxNrOfRetries) &&
-          (System.currentTimeMillis - restartsWithinTimeRangeTimestamp < withinTimeRange))
+    if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {  //Immortal
+      true
+    }
+    else if (withinTimeRange.isEmpty) { // restrict number of restarts
+      maxNrOfRetriesCount < maxNrOfRetries.get
+    } else {  // cannot restart more than N within M timerange
+      val maxRetries = if (maxNrOfRetries.isEmpty) 1 else maxNrOfRetries.get //Default to 1, has to match timerange also
+       !((maxNrOfRetriesCount >= maxRetries) &&
+        (System.currentTimeMillis - restartsWithinTimeRangeTimestamp < withinTimeRange.get))
     }
   }
 
