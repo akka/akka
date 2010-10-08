@@ -184,8 +184,7 @@ object AMQP {
   class AMQPSupervisorActor extends Actor {
     import self._
 
-    faultHandler = Some(OneForOneStrategy(5, 5000))
-    trapExit = List(classOf[Throwable])
+    faultHandler = OneForOneStrategy(List(classOf[Throwable]),5, 5000)
 
     def receive = {
       case _ => {} // ignore all messages

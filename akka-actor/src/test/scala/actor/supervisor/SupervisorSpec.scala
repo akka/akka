@@ -95,8 +95,7 @@ object SupervisorSpec {
   }
 
   class Master extends Actor {
-    self.trapExit = classOf[Exception] :: Nil
-    self.faultHandler = Some(OneForOneStrategy(5, 1000))
+    self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
     val temp = self.spawnLink[TemporaryActor]
     override def receive = {
       case Die => temp !! (Die, 5000)
