@@ -12,7 +12,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.lang.String
 import se.scalablesolutions.akka.amqp.AMQP._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol
-import se.scalablesolutions.akka.util.Procedure
+import se.scalablesolutions.akka.amqp.ExchangeType._
 
 object ExampleSession {
 

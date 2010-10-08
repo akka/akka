@@ -11,9 +11,6 @@ import se.scalablesolutions.akka.util.Procedure;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static se.scalablesolutions.akka.amqp.ChannelCallbacks.*;
-import static se.scalablesolutions.akka.amqp.ConnectionCallbacks.*;
-
 public class ExampleSessionJava {
 
     public static void main(String... args) {
@@ -166,11 +163,11 @@ class ChannelCallbackActor extends UntypedActor {
     }
 
     public void onReceive(Object message) throws Exception {
-        if (STARTED.getClass().isAssignableFrom(message.getClass())) {
+        if (Started.class.isAssignableFrom(message.getClass())) {
             System.out.println("### >> Channel callback: Started");
             channelCountdown.countDown();
-        } else if (RESTARTING.getClass().isAssignableFrom(message.getClass())) {
-        } else if (STOPPED.getClass().isAssignableFrom(message.getClass())) {
+        } else if (Restarting.class.isAssignableFrom(message.getClass())) {
+        } else if (Stopped.class.isAssignableFrom(message.getClass())) {
             System.out.println("### >> Channel callback: Stopped");
         } else throw new IllegalArgumentException("Unknown message: " + message);
     }
@@ -179,10 +176,10 @@ class ChannelCallbackActor extends UntypedActor {
 class ConnectionCallbackActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
-        if (CONNECTED.getClass().isAssignableFrom(message.getClass())) {
+        if (Connected.class.isAssignableFrom(message.getClass())) {
             System.out.println("### >> Connection callback: Connected!");
-        } else if (RECONNECTING.getClass().isAssignableFrom(message.getClass())) {
-        } else if (DISCONNECTED.getClass().isAssignableFrom(message.getClass())) {
+        } else if (Reconnecting.class.isAssignableFrom(message.getClass())) {
+        } else if (Disconnected.class.isAssignableFrom(message.getClass())) {
             System.out.println("### >> Connection callback: Disconnected!");
         } else throw new IllegalArgumentException("Unknown message: " + message);
     }

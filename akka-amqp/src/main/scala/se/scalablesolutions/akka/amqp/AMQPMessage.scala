@@ -5,8 +5,6 @@
 package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.ActorRef
-import se.scalablesolutions.akka.AkkaException
-
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.ShutdownSignalException
 
@@ -46,18 +44,18 @@ case class Delivery(
 // connection messages
 case object Connect extends AMQPMessage
 
-case object Connected extends AMQPMessage
-case object Reconnecting extends AMQPMessage
-case object Disconnected extends AMQPMessage
+case class Connected() extends AMQPMessage // Needed for Java API usage
+case class Reconnecting() extends AMQPMessage // Needed for Java API usage
+case class Disconnected() extends AMQPMessage // Needed for Java API usage
 
 case object ChannelRequest extends InternalAMQPMessage
 
 // channel messages
 case object Start extends AMQPMessage
 
-case object Started extends AMQPMessage
-case object Restarting extends AMQPMessage
-case object Stopped extends AMQPMessage
+case class Started() extends AMQPMessage // Needed for Java API usage
+case class Restarting() extends AMQPMessage // Needed for Java API usage
+case class Stopped() extends AMQPMessage // Needed for Java API usage
 
 // delivery messages
 case class Acknowledge(deliveryTag: Long) extends AMQPMessage
