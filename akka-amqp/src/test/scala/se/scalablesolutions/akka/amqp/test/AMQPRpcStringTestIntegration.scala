@@ -18,7 +18,7 @@ class AMQPRpcStringTestIntegration extends JUnitSuite with MustMatchers {
 
     val connection = AMQP.newConnection()
 
-    RPC.newStringRpcServer(connection, "stringservice", requestHandler)
+    RPC.newStringRpcServer(connection, "stringservice", requestHandler _)
 
     val protobufClient = RPC.newStringRpcClient(connection, "stringservice")
 

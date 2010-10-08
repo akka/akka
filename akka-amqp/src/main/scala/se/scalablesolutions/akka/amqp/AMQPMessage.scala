@@ -44,18 +44,30 @@ case class Delivery(
 // connection messages
 case object Connect extends AMQPMessage
 
-case class Connected() extends AMQPMessage // Needed for Java API usage
-case class Reconnecting() extends AMQPMessage // Needed for Java API usage
-case class Disconnected() extends AMQPMessage // Needed for Java API usage
+case object Connected extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Reconnecting extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Disconnected extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
 
 case object ChannelRequest extends InternalAMQPMessage
 
 // channel messages
 case object Start extends AMQPMessage
 
-case class Started() extends AMQPMessage // Needed for Java API usage
-case class Restarting() extends AMQPMessage // Needed for Java API usage
-case class Stopped() extends AMQPMessage // Needed for Java API usage
+case object Started extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Restarting extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Stopped extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
 
 // delivery messages
 case class Acknowledge(deliveryTag: Long) extends AMQPMessage

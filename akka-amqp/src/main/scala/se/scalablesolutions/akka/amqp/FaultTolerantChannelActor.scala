@@ -46,14 +46,14 @@ abstract private[amqp] class FaultTolerantChannelActor(
       } else {
         // channel error
         log.error(cause, "%s self restarting because of channel shutdown", toString)
-        notifyCallback(Restarting())
+        notifyCallback(Restarting)
         self ! Start
       }
     }
     case Failure(cause) =>
       log.error(cause, "%s self restarting because of channel failure", toString)
       closeChannel
-      notifyCallback(Restarting())
+      notifyCallback(Restarting)
       self ! Start
   }
 
@@ -81,7 +81,7 @@ abstract private[amqp] class FaultTolerantChannelActor(
 
     setupChannel(ch)
     channel = Some(ch)
-    notifyCallback(Started())
+    notifyCallback(Started)
     log.info("Channel setup for %s", toString)
   }
 
@@ -89,7 +89,7 @@ abstract private[amqp] class FaultTolerantChannelActor(
     channel.foreach {
       ch =>
         if (ch.isOpen) ch.close
-        notifyCallback(Stopped())
+        notifyCallback(Stopped)
         log.info("%s channel closed", toString)
     }
     channel = None
@@ -100,7 +100,7 @@ abstract private[amqp] class FaultTolerantChannelActor(
   }
 
   override def preRestart(reason: Throwable) = {
-    notifyCallback(Restarting())
+    notifyCallback(Restarting)
     closeChannel
   }
 

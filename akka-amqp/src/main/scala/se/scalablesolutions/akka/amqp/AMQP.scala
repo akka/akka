@@ -74,8 +74,12 @@ object AMQP {
    * Declaration type used for either exchange or queue declaration
    */
   sealed trait Declaration
-  case object NoActionDeclaration extends Declaration
-  case object PassiveDeclaration extends Declaration
+  case object NoActionDeclaration extends Declaration {
+    def getInstance() = this // Needed for Java API usage
+  }
+  case object PassiveDeclaration extends Declaration {
+    def getInstance() = this // Needed for Java API usage
+  }
   case class ActiveDeclaration(durable: Boolean = false, autoDelete: Boolean = true, exclusive: Boolean = false) extends Declaration {
 
     // Needed for Java API usage
@@ -90,13 +94,13 @@ object AMQP {
    */
   case class ExchangeParameters(
           exchangeName: String,
-          exchangeType: ExchangeType = ExchangeType.Topic(),
+          exchangeType: ExchangeType = Topic,
           exchangeDeclaration: Declaration = ActiveDeclaration(),
           configurationArguments: Map[String, AnyRef] = Map.empty) {
 
     // Needed for Java API usage
     def this(exchangeName: String) =
-      this (exchangeName, ExchangeType.Topic(), ActiveDeclaration(), Map.empty)
+      this (exchangeName, Topic, ActiveDeclaration(), Map.empty)
 
     // Needed for Java API usage
     def this(exchangeName: String, exchangeType: ExchangeType) =
