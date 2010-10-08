@@ -19,7 +19,6 @@ class SerializableTypeClassActorSpec extends
   ShouldMatchers with
   BeforeAndAfterAll {
 
-
   object BinaryFormatMyActor {
     implicit object MyActorFormat extends Format[MyActor] {
       def fromBinary(bytes: Array[Byte], act: MyActor) = {
@@ -145,8 +144,48 @@ class SerializableTypeClassActorSpec extends
       actor3.mailboxSize should equal(0)
       (actor3 !! "hello-reply").getOrElse("_") should equal("world")
     }
-  }
 
+    it("should be able to serialize and de-serialize an Actor hotswapped with 'become'") {
+      import BinaryFormatMyActor._
+      val actor1 = actorOf[MyActor].start
+      (actor1 !! "hello").getOrElse("_") should equal("world 1")
+      (actor1 !! "hello").getOrElse("_") should equal("world 2")
+      actor1 ! "swap"
+      (actor1 !! "hello").getOrElse("_") should equal("swapped")
+
+      val bytes = toBinary(actor1)
+      val actor2 = fromBinary(bytes)
+      actor2.start
+
+      (actor1 !! "hello").getOrElse("_") should equal("swapped")
+
+      actor1 ! RevertHotSwap
+      (actor2 !! "hello").getOrElse("_") should equal("world 3")
+    }
+/*
+    it("should be able to serialize and de-serialize an hotswapped actor") {
+      import BinaryFormatMyActor._
+
+      val actor1 = actorOf[MyActor].start
+      (actor1 !! "hello").getOrElse("_") should equal("world 1")
+      (actor1 !! "hello").getOrElse("_") should equal("world 2")
+      actor1 ! HotSwap {
+        case "hello" =>
+          self.reply("swapped")
+      }
+      (actor1 !! "hello").getOrElse("_") should equal("swapped")
+
+      val bytes = toBinary(actor1)
+      val actor2 = fromBinary(bytes)
+      actor2.start
+
+      (actor1 !! "hello").getOrElse("_") should equal("swapped")
+
+      actor1 ! RevertHotSwap
+      (actor2 !! "hello").getOrElse("_") should equal("world 3")
+    }
+*/
+  }
   describe("Custom serializable actors") {
     it("should serialize and de-serialize") {
       import BinaryFormatMyActorWithSerializableMessages._
@@ -182,13 +221,15 @@ class MyActorWithDualCounter extends Actor {
   }
 }
 
-class MyActor extends Actor {
+@serializable class MyActor extends Actor {
   var count = 0
 
   def receive = {
     case "hello" =>
       count = count + 1
       self.reply("world " + count)
+    case "swap" => 
+      become { case "hello" => self.reply("swapped") }
   }
 }
 

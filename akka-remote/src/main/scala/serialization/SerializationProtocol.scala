@@ -14,8 +14,11 @@ import ActorTypeProtocol._
 import se.scalablesolutions.akka.config.{AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.{uuidFrom,newUuid}
-import com.google.protobuf.ByteString
 import se.scalablesolutions.akka.actor._
+
+import scala.collection.immutable.Stack
+
+import com.google.protobuf.ByteString
 
 /**
  * Type class definition for Actor Serialization
@@ -139,8 +142,7 @@ object ActorSerialization {
     builder.setActorInstance(ByteString.copyFrom(format.toBinary(actorRef.actor.asInstanceOf[T])))
     lifeCycleProtocol.foreach(builder.setLifeCycle(_))
     actorRef.supervisor.foreach(s => builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
-    // FIXME: how to serialize the hotswap PartialFunction ??
-    //hotswap.foreach(builder.setHotswapStack(_))
+    if (!actorRef.hotswap.isEmpty) builder.setHotswapStack(ByteString.copyFrom(Serializer.Java.toBinary(actorRef.hotswap)))
     builder.build
   }
 
@@ -166,15 +168,14 @@ object ActorSerialization {
     } else UndefinedLifeCycle
 
     val supervisor =
-    if (protocol.hasSupervisor)
-      Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
-    else None
+      if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
+      else None
 
-    val hotswap =
-    if (serializer.isDefined && protocol.hasHotswapStack) Some(serializer.get
-        .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[PartialFunction[Any, Unit]]))
-        .asInstanceOf[PartialFunction[Any, Unit]])
-    else None
+    val hotswap = 
+      if (serializer.isDefined && protocol.hasHotswapStack) serializer.get
+        .fromBinary(protocol.getHotswapStack.toByteArray, Some(classOf[Stack[PartialFunction[Any, Unit]]]))
+        .asInstanceOf[Stack[PartialFunction[Any, Unit]]]
+      else Stack[PartialFunction[Any, Unit]]()
 
     val classLoader = loader.getOrElse(getClass.getClassLoader)
 
