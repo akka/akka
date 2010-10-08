@@ -10,13 +10,10 @@ import se.scalablesolutions.akka.actor.Actor
 import Actor._
 import com.rabbitmq.client.{ShutdownSignalException, Channel, ShutdownListener}
 import scala.PartialFunction
-import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ChannelParameters}
+import se.scalablesolutions.akka.amqp.AMQP._
 
 abstract private[amqp] class FaultTolerantChannelActor(
-        exchangeParameters: ExchangeParameters, channelParameters: Option[ChannelParameters]) extends Actor {
-
-  import exchangeParameters._
-
+        exchangeParameters: Option[ExchangeParameters], channelParameters: Option[ChannelParameters]) extends Actor {
   protected[amqp] var channel: Option[Channel] = None
   log.info("%s is started", toString)
 
@@ -64,12 +61,16 @@ abstract private[amqp] class FaultTolerantChannelActor(
   protected def setupChannel(ch: Channel)
 
   private def setupChannelInternal(ch: Channel) = if (channel.isEmpty) {
-    if (exchangeName != "") {
-      if (exchangePassive) {
-        ch.exchangeDeclarePassive(exchangeName)
-      } else {
-        ch.exchangeDeclare(exchangeName, exchangeType.toString, exchangeDurable, exchangeAutoDelete, JavaConversions.asMap(configurationArguments))
-      }
+
+    exchangeParameters.foreach {
+      params =>
+        import params._
+        exchangeDeclaration match {
+          case PassiveDeclaration => ch.exchangeDeclarePassive(exchangeName)
+          case ActiveDeclaration(durable, autoDelete, _) =>
+            ch.exchangeDeclare(exchangeName, exchangeType.toString, durable, autoDelete, JavaConversions.asMap(configurationArguments))
+          case NoActionDeclaration => // ignore
+        }
     }
     ch.addShutdownListener(new ShutdownListener {
       def shutdownCompleted(cause: ShutdownSignalException) = {

@@ -5,8 +5,6 @@
 package se.scalablesolutions.akka.amqp
 
 import se.scalablesolutions.akka.actor.ActorRef
-import se.scalablesolutions.akka.AkkaException
-
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.ShutdownSignalException
 
@@ -18,7 +16,23 @@ case class Message(
     routingKey: String,
     mandatory: Boolean = false,
     immediate: Boolean = false,
-    properties: Option[BasicProperties] = None) extends AMQPMessage
+    properties: Option[BasicProperties] = None) extends AMQPMessage {
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String) = this(payload, routingKey, false, false, None)
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String, mandatory: Boolean, immediate: Boolean) =
+    this(payload, routingKey, mandatory, immediate, None)
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String, properties: BasicProperties) =
+    this(payload, routingKey, false, false, Some(properties))
+
+  // Needed for Java API usage
+  def this(payload: Array[Byte], routingKey: String, mandatory: Boolean, immediate: Boolean, properties: BasicProperties) =
+    this(payload, routingKey, mandatory, immediate, Some(properties))
+}
 
 case class Delivery(
     payload: Array[Byte],
@@ -30,18 +44,30 @@ case class Delivery(
 // connection messages
 case object Connect extends AMQPMessage
 
-case object Connected extends AMQPMessage
-case object Reconnecting extends AMQPMessage
-case object Disconnected extends AMQPMessage
+case object Connected extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Reconnecting extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Disconnected extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
 
 case object ChannelRequest extends InternalAMQPMessage
 
 // channel messages
 case object Start extends AMQPMessage
 
-case object Started extends AMQPMessage
-case object Restarting extends AMQPMessage
-case object Stopped extends AMQPMessage
+case object Started extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Restarting extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
+case object Stopped extends AMQPMessage {
+  def getInstance() = this // Needed for Java API usage
+}
 
 // delivery messages
 case class Acknowledge(deliveryTag: Long) extends AMQPMessage
@@ -52,8 +78,8 @@ class RejectionException(deliveryTag: Long) extends RuntimeException
 
 // internal messages
 private[akka] case class Failure(cause: Throwable) extends InternalAMQPMessage
-private[akka] case class ConnectionShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
-private[akka] case class ChannelShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
+case class ConnectionShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
+case class ChannelShutdown(cause: ShutdownSignalException) extends InternalAMQPMessage
 
 private[akka] class MessageNotDeliveredException(
     val message: String,

@@ -11,16 +11,16 @@ import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.amqp.rpc.RPC
 
-class AMQPStringProducerConsumerTest extends JUnitSuite with MustMatchers {
+class AMQPStringProducerConsumerTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerMessage = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection()
 
     val responseLatch = new StandardLatch
 
-    RPC.newStringRpcServer(connection, "stringexchange", requestHandler)
+    RPC.newStringRpcServer(connection, "stringexchange", requestHandler _)
 
     val request = "somemessage"
 
@@ -29,9 +29,9 @@ class AMQPStringProducerConsumerTest extends JUnitSuite with MustMatchers {
       assert(response == request.reverse)
       responseLatch.open
     }
-    AMQP.newStringConsumer(connection, "", responseHandler, Some("string.reply.key"))
+    AMQP.newStringConsumer(connection, responseHandler _, None, Some("string.reply.key"))
 
-    val producer = AMQP.newStringProducer(connection, "stringexchange")
+    val producer = AMQP.newStringProducer(connection, Some("stringexchange"))
     producer.send(request, Some("string.reply.key"))
 
     responseLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
