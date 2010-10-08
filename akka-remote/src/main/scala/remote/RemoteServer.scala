@@ -66,7 +66,8 @@ object RemoteNode extends RemoteServer
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteServer {
+object
+RemoteServer {
   val UUID_PREFIX = "uuid:"
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT     = config.getInt("akka.remote.server.port", 9999)

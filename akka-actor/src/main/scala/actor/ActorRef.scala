@@ -600,8 +600,6 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
 
   protected[akka] def linkedActors: JMap[Uuid, ActorRef]
 
-  protected[akka] def linkedActorsAsList: List[ActorRef]
-
   override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
 
   override def equals(that: Any): Boolean = {
@@ -640,7 +638,7 @@ class LocalActorRef private[akka] (
   @volatile
   private[akka] var _remoteAddress: Option[InetSocketAddress] = None // only mutable to maintain identity across nodes
   @volatile
-  private[akka] var _linkedActors: Option[ConcurrentHashMap[Uuid, ActorRef]] = None
+  private[akka] lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
   @volatile
   private[akka] var _supervisor: Option[ActorRef] = None
   @volatile
@@ -944,9 +942,12 @@ class LocalActorRef private[akka] (
   /**
    * Shuts down and removes all linked actors.
    */
-  def shutdownLinkedActors(): Unit = {
-    linkedActorsAsList.foreach(_.stop)
-    linkedActors.clear
+  def shutdownLinkedActors() {
+    val i = linkedActors.values.iterator
+    while(i.hasNext) {
+      i.next.stop
+      i.remove
+    }
   }
 
   /**
@@ -1082,7 +1083,8 @@ class LocalActorRef private[akka] (
   }
 
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) = {
-    linkedActorsAsList.foreach { actorRef =>
+    import scala.collection.JavaConversions._
+    linkedActors.values foreach { actorRef =>
       actorRef.lifeCycle match {
         // either permanent or none where default is permanent
         case Temporary => shutDownTemporaryActor(actorRef)
@@ -1099,16 +1101,7 @@ class LocalActorRef private[akka] (
     } else None
   }
 
-  protected[akka] def linkedActors: JMap[Uuid, ActorRef] = guard.withGuard {
-    if (_linkedActors.isEmpty) {
-      val actors = new ConcurrentHashMap[Uuid, ActorRef]
-      _linkedActors = Some(actors)
-      actors
-    } else _linkedActors.get
-  }
-
-  protected[akka] def linkedActorsAsList: List[ActorRef] =
-    linkedActors.values.toArray.toList.asInstanceOf[List[ActorRef]]
+  protected[akka] def linkedActors: JMap[Uuid, ActorRef] = _linkedActors
 
   // ========= PRIVATE FUNCTIONS =========
 
@@ -1411,7 +1404,6 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
   protected[akka] def linkedActors: JMap[Uuid, ActorRef] = unsupported
-  protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
   protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
   protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
   protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported

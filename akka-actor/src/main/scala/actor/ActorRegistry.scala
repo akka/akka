@@ -187,7 +187,7 @@ object ActorRegistry extends ListenerManagement {
   def typedActorFor[T <: AnyRef](implicit manifest: Manifest[T]): Option[AnyRef] = {
     TypedActorModule.ensureTypedActorEnabled
     def predicate(proxy: AnyRef) : Boolean = {
-      val actorRef = actorFor(proxy)
+      val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
       actorRef.isDefined && manifest.erasure.isAssignableFrom(actorRef.get.actor.getClass)
     }
     findTypedActor({ case a:AnyRef if predicate(a) => a })
@@ -199,7 +199,7 @@ object ActorRegistry extends ListenerManagement {
   def typedActorsFor[T <: AnyRef](clazz: Class[T]): Array[AnyRef] = {
     TypedActorModule.ensureTypedActorEnabled
     def predicate(proxy: AnyRef) : Boolean = {
-      val actorRef = actorFor(proxy)
+      val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
       actorRef.isDefined && clazz.isAssignableFrom(actorRef.get.actor.getClass)
     }
     filterTypedActors(predicate)
@@ -231,13 +231,6 @@ object ActorRegistry extends ListenerManagement {
    */
   private def typedActorFor(actorRef: ActorRef): Option[AnyRef] = {
     TypedActorModule.typedActorObjectInstance.get.proxyFor(actorRef)
-  }
-
-  /**
-   * Get the underlying typed actor for a given proxy.
-   */
-  private def actorFor(proxy: AnyRef): Option[ActorRef] = {
-    TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
   }
 
 
