@@ -642,8 +642,6 @@ class LocalActorRef private[akka] (
   @volatile
   private[akka] var _supervisor: Option[ActorRef] = None
   @volatile
-  private var isInInitialization = false
-  @volatile
   private var maxNrOfRetriesCount: Int = 0
   @volatile
   private var restartsWithinTimeRangeTimestamp: Long = 0L
@@ -791,7 +789,8 @@ class LocalActorRef private[akka] (
       }
       _status = ActorRefStatus.RUNNING
 
-      if (!isInInitialization) initializeActorInstance
+      //If actorRefInCreation is empty, we're outside creation of the actor, and so we can initialize the actor instance.
+      if (Actor.actorRefInCreation.value.isEmpty) initializeActorInstance
 
       checkReceiveTimeout //Schedule the initial Receive timeout
     }
@@ -1128,7 +1127,6 @@ class LocalActorRef private[akka] (
 
   private[this] def newActor: Actor = {
     Actor.actorRefInCreation.withValue(Some(this)) {
-      isInInitialization = true
       val actor = actorFactory match {
         case Left(Some(clazz)) =>
           import ReflectiveAccess.{ createInstance, noParams, noArgs }
@@ -1146,7 +1144,6 @@ class LocalActorRef private[akka] (
       }
       if (actor eq null) throw new ActorInitializationException(
         "Actor instance passed to ActorRef can not be 'null'")
-      isInInitialization = false
       actor
     }
   }
