@@ -789,8 +789,9 @@ class LocalActorRef private[akka] (
       }
       _status = ActorRefStatus.RUNNING
 
-      //If actorRefInCreation is empty, we're outside creation of the actor, and so we can initialize the actor instance.
-      if (Actor.actorRefInCreation.value.isEmpty) initializeActorInstance
+      //If we are not currently creating this ActorRef instance
+      if ((actorInstance ne null) && (actorInstance.get ne null))
+        initializeActorInstance
 
       checkReceiveTimeout //Schedule the initial Receive timeout
     }
