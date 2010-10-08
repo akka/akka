@@ -72,7 +72,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
           log.info("Successfully (re)connected to AMQP Server %s:%s [%s]", host, port, self.id)
           log.debug("Sending new channel to %d already linked actors", self.linkedActorsAsList.size)
           self.linkedActorsAsList.foreach(_ ! conn.createChannel)
-          notifyCallback(Connected)
+          notifyCallback(Connected())
       }
     } catch {
       case e: Exception =>
@@ -81,7 +81,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
           , connectionParameters.initReconnectDelay, self.id)
         reconnectionTimer.schedule(new TimerTask() {
           override def run = {
-            notifyCallback(Reconnecting)
+            notifyCallback(Reconnecting())
             self ! Connect
           }
         }, connectionParameters.initReconnectDelay)
@@ -92,7 +92,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     try {
       connection.foreach(_.close)
       log.debug("Disconnected AMQP connection at %s:%s [%s]", host, port, self.id)
-      notifyCallback(Disconnected)
+      notifyCallback(Disconnected())
     } catch {
       case e: IOException => log.error("Could not close AMQP connection %s:%s [%s]", host, port, self.id)
       case _ => ()
@@ -114,7 +114,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
   override def preRestart(reason: Throwable) = disconnect
 
   override def postRestart(reason: Throwable) = {
-    notifyCallback(Reconnecting)
+    notifyCallback(Reconnecting())
     connect
   }
 }
