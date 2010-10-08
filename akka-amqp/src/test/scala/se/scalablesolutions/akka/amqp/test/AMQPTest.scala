@@ -10,9 +10,13 @@ object AMQPTest {
 
   def withCleanEndState(action: => Unit) {
     try {
-      action
-    } finally {
-      AMQP.shutdownAll
+      try {
+        action
+      } finally {
+        AMQP.shutdownAll
+      }
+    } catch {
+      case e => println(e)
     }
   }
 }

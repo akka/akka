@@ -29,7 +29,7 @@ class AMQPProtobufProducerConsumerTestIntegration extends JUnitSuite with MustMa
       assert(response.getHostname == request.getHostname.reverse)
       responseLatch.open
     }
-    AMQP.newProtobufConsumer(connection, responseHandler, None, Some("proto.reply.key"))
+    AMQP.newProtobufConsumer(connection, responseHandler _, None, Some("proto.reply.key"))
 
     val producer = AMQP.newProtobufProducer[AddressProtocol](connection, Some("protoexchange"))
     producer.send(request, Some("proto.reply.key"))

@@ -42,7 +42,7 @@ class AMQPRpcClientServerTestIntegration extends JUnitSuite with MustMatchers {
     def requestHandler(request: String) = 3
 
     val rpcServer = RPC.newRpcServer[String, Int](connection, exchangeName, "rpc.routing", rpcServerSerializer,
-      requestHandler, channelParameters = Some(channelParameters))
+      requestHandler _, channelParameters = Some(channelParameters))
 
     val rpcClientSerializer = new RpcClientSerializer[String, Int](
       new ToBinary[String] {

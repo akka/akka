@@ -20,7 +20,7 @@ class AMQPStringProducerConsumerTestIntegration extends JUnitSuite with MustMatc
 
     val responseLatch = new StandardLatch
 
-    RPC.newStringRpcServer(connection, "stringexchange", requestHandler)
+    RPC.newStringRpcServer(connection, "stringexchange", requestHandler _)
 
     val request = "somemessage"
 
@@ -29,7 +29,7 @@ class AMQPStringProducerConsumerTestIntegration extends JUnitSuite with MustMatc
       assert(response == request.reverse)
       responseLatch.open
     }
-    AMQP.newStringConsumer(connection, responseHandler, None, Some("string.reply.key"))
+    AMQP.newStringConsumer(connection, responseHandler _, None, Some("string.reply.key"))
 
     val producer = AMQP.newStringProducer(connection, Some("stringexchange"))
     producer.send(request, Some("string.reply.key"))

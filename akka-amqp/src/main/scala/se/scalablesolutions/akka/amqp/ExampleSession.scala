@@ -12,7 +12,6 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.lang.String
 import se.scalablesolutions.akka.amqp.AMQP._
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol
-import se.scalablesolutions.akka.amqp.ExchangeType._
 
 object ExampleSession {
 
@@ -68,7 +67,7 @@ object ExampleSession {
     // defaults to amqp://guest:guest@localhost:5672/
     val connection = AMQP.newConnection()
 
-    val exchangeParameters = ExchangeParameters("my_direct_exchange", Direct())
+    val exchangeParameters = ExchangeParameters("my_direct_exchange", Direct)
 
     val consumer = AMQP.newConsumer(connection, ConsumerParameters("some.routing", actor {
       case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
@@ -83,7 +82,7 @@ object ExampleSession {
     // defaults to amqp://guest:guest@localhost:5672/
     val connection = AMQP.newConnection()
 
-    val exchangeParameters = ExchangeParameters("my_fanout_exchange", Fanout())
+    val exchangeParameters = ExchangeParameters("my_fanout_exchange", Fanout)
 
     val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters("@george_bush", actor {
       case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
@@ -102,7 +101,7 @@ object ExampleSession {
     // defaults to amqp://guest:guest@localhost:5672/
     val connection = AMQP.newConnection()
 
-    val exchangeParameters = ExchangeParameters("my_topic_exchange", Topic())
+    val exchangeParameters = ExchangeParameters("my_topic_exchange", Topic)
 
     val bushConsumer = AMQP.newConsumer(connection, ConsumerParameters("@george_bush", actor {
       case Delivery(payload, _, _, _, _) => log.info("@george_bush received message from: %s", new String(payload))
@@ -136,7 +135,7 @@ object ExampleSession {
       case Restarting => // not used, sent when channel or connection fails and initiates a restart
       case Stopped => log.info("Channel callback: Stopped")
     }
-    val exchangeParameters = ExchangeParameters("my_callback_exchange", Direct())
+    val exchangeParameters = ExchangeParameters("my_callback_exchange", Direct)
     val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
     val consumer = AMQP.newConsumer(connection, ConsumerParameters("callback.routing", actor {
@@ -202,7 +201,7 @@ object ExampleSession {
     def requestHandler(request: String) = 3
 
     val rpcServer = RPC.newRpcServer[String,Int](connection, exchangeName, "rpc.in.key", rpcServerSerializer,
-      requestHandler, queueName = Some("rpc.in.key.queue"))
+      requestHandler _, queueName = Some("rpc.in.key.queue"))
 
 
     /** Client */
