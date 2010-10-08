@@ -14,10 +14,10 @@ import se.scalablesolutions.akka.amqp.AMQP._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers {
+class AMQPRpcClientServerTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerMessage = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection()
 
@@ -28,7 +28,7 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers {
       case Stopped => ()
     }
 
-    val exchangeParameters = ExchangeParameters("text_topic_exchange", ExchangeType.Topic)
+    val exchangeName = "text_topic_exchange"
     val channelParameters = ChannelParameters(channelCallback
             = Some(channelCallback))
 
@@ -41,8 +41,8 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers {
 
     def requestHandler(request: String) = 3
 
-    val rpcServer = RPC.newRpcServer[String, Int](connection, exchangeParameters, "rpc.routing", rpcServerSerializer,
-      requestHandler, channelParameters = Some(channelParameters))
+    val rpcServer = RPC.newRpcServer[String, Int](connection, exchangeName, "rpc.routing", rpcServerSerializer,
+      requestHandler _, channelParameters = Some(channelParameters))
 
     val rpcClientSerializer = new RpcClientSerializer[String, Int](
       new ToBinary[String] {
@@ -51,7 +51,7 @@ class AMQPRpcClientServerTest extends JUnitSuite with MustMatchers {
         def fromBinary(bytes: Array[Byte]) = bytes.head.toInt
       })
 
-    val rpcClient = RPC.newRpcClient[String, Int](connection, exchangeParameters, "rpc.routing", rpcClientSerializer,
+    val rpcClient = RPC.newRpcClient[String, Int](connection, exchangeName, "rpc.routing", rpcClientSerializer,
       channelParameters = Some(channelParameters))
 
     countDown.await(2, TimeUnit.SECONDS) must be(true)

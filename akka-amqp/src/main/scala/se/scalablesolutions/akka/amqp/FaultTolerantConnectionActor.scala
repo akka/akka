@@ -8,16 +8,16 @@ import java.util.{TimerTask, Timer}
 import java.io.IOException
 import com.rabbitmq.client._
 import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
-import se.scalablesolutions.akka.config.ScalaConfig.{Permanent, LifeCycle}
+import se.scalablesolutions.akka.config.ScalaConfig.{Permanent}
 import se.scalablesolutions.akka.config.OneForOneStrategy
-import se.scalablesolutions.akka.actor.{ActorRef, Exit, Actor}
+import se.scalablesolutions.akka.actor.{Exit, Actor}
 
 private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor {
   import connectionParameters._
 
   self.id = "amqp-connection-%s".format(host)
   self.lifeCycle = Permanent
-  self.faultHandler = OneForOneStrategy(List(classOf[Throwable]),5, 5000)
+  self.faultHandler = OneForOneStrategy(List(classOf[Throwable]))
 
   val reconnectionTimer = new Timer("%s-timer".format(self.id))
 
