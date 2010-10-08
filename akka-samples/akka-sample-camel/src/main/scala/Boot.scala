@@ -27,8 +27,8 @@ class Boot {
   //val supervisor = Supervisor(
   //  SupervisorConfig(
   //    RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-  //    Supervise(actorOf[Consumer1], LifeCycle(Permanent)) ::
-  //    Supervise(actorOf[Consumer2], LifeCycle(Permanent)) :: Nil))
+  //    Supervise(actorOf[Consumer1], Permanent) ::
+  //    Supervise(actorOf[Consumer2], Permanent) :: Nil))
 
   // -----------------------------------------------------------------------
   // Custom Camel route example
@@ -40,7 +40,7 @@ class Boot {
 
   // Use a custom Camel context and a custom touter builder
   CamelContextManager.init(new DefaultCamelContext(registry))
-  CamelContextManager.context.addRoutes(new CustomRouteBuilder)
+  CamelContextManager.mandatoryContext.addRoutes(new CustomRouteBuilder)
 
   val producer = actorOf[Producer1]
   val mediator = actorOf(new Transformer(producer))

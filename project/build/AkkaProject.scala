@@ -54,6 +54,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val CasbahRepoReleases   = MavenRepository("Casbah Release Repo", "http://repo.bumnetworks.com/releases")
     lazy val ZookeeperRepo        = MavenRepository("Zookeeper Repo", "http://lilycms.org/maven/maven2/deploy/")
     lazy val ClojarsRepo          = MavenRepository("Clojars Repo", "http://clojars.org/repo")
+    lazy val ScalaToolsRelRepo    = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -77,7 +78,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val jgroupsModuleConfig     = ModuleConfiguration("jgroups", JBossRepo)
   lazy val multiverseModuleConfig  = ModuleConfiguration("org.multiverse", CodehausRepo)
   lazy val nettyModuleConfig       = ModuleConfiguration("org.jboss.netty", JBossRepo)
-  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsSnapshots)
+  lazy val scalaTestModuleConfig   = ModuleConfiguration("org.scalatest", ScalaToolsRelRepo)
   lazy val logbackModuleConfig     = ModuleConfiguration("ch.qos.logback",sbt.DefaultMavenRepository)
   lazy val atomikosModuleConfig    = ModuleConfiguration("com.atomikos",sbt.DefaultMavenRepository)
   lazy val casbahRelease           = ModuleConfiguration("com.novus",CasbahRepoReleases)
@@ -91,7 +92,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // Versions
   // -------------------------------------------------------------------------------------------------------------------
 
-  lazy val ATMO_VERSION          = "0.6.1"
+  lazy val ATMO_VERSION          = "0.6.2"
   lazy val CAMEL_VERSION         = "2.4.0"
   lazy val CASSANDRA_VERSION     = "0.6.1"
   lazy val DISPATCH_VERSION      = "0.7.4"
@@ -99,11 +100,11 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val JACKSON_VERSION       = "1.2.1"
   lazy val JERSEY_VERSION        = "1.3"
   lazy val MULTIVERSE_VERSION    = "0.6.1"
-  lazy val SCALATEST_VERSION     = "1.2-for-scala-2.8.0.final-SNAPSHOT"
+  lazy val SCALATEST_VERSION     = "1.2"
   lazy val LOGBACK_VERSION       = "0.9.24"
   lazy val SLF4J_VERSION         = "1.6.0"
   lazy val SPRING_VERSION        = "3.0.3.RELEASE"
-  lazy val ASPECTWERKZ_VERSION   = "2.2.1"
+  lazy val ASPECTWERKZ_VERSION   = "2.2.2"
   lazy val JETTY_VERSION         = "7.1.4.v20100610"
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -190,7 +191,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
     lazy val rabbit = "com.rabbitmq" % "amqp-client" % "1.8.1" % "compile"
 
-    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0" % "compile"
+    lazy val redis = "com.redis" % "redisclient" % "2.8.0-2.0.1" % "compile"
 
     lazy val sbinary = "sbinary" % "sbinary" % "2.8.0-0.3.1" % "compile"
 
@@ -480,6 +481,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
 
   class AkkaCamelProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
     val camel_core = Dependencies.camel_core
+    
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -595,7 +598,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val dbcp = Dependencies.dbcp
     val sjson = Dependencies.sjson_test
 
-    override def testOptions = createTestFilter( _.endsWith("Suite"))
+    override def testOptions = createTestFilter({ s:String=> s.endsWith("Suite") || s.endsWith("Test")})
   }
 
 
@@ -732,7 +735,6 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   // -------------------------------------------------------------------------------------------------------------------
 
   class AkkaSampleAntsProject(info: ProjectInfo) extends DefaultSpdeProject(info) {
-    //val scalaToolsSnapshots = ScalaToolsSnapshots
     override def spdeSourcePath = mainSourcePath / "spde"
   }
 
@@ -764,6 +766,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
         <dependency org="org.apache.activemq" name="activemq-core" rev="5.3.2">
         </dependency>
       </dependencies>
+
+    override def testOptions = createTestFilter( _.endsWith("Test"))
   }
 
   class AkkaSampleSecurityProject(info: ProjectInfo) extends AkkaDefaultProject(info, deployPath) {

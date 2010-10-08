@@ -91,16 +91,10 @@ object ActorSerialization {
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef, format: Format[T], serializeMailBox: Boolean = true): SerializedActorRefProtocol = {
     val lifeCycleProtocol: Option[LifeCycleProtocol] = {
-      def setScope(builder: LifeCycleProtocol.Builder, scope: Scope) = scope match {
-        case Permanent => builder.setLifeCycle(LifeCycleType.PERMANENT)
-        case Temporary => builder.setLifeCycle(LifeCycleType.TEMPORARY)
-      }
-      val builder = LifeCycleProtocol.newBuilder
       actorRef.lifeCycle match {
-        case Some(LifeCycle(scope)) =>
-          setScope(builder, scope)
-          Some(builder.build)
-        case None => None
+        case Permanent => Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
+        case Temporary => Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.TEMPORARY).build)
+        case UndefinedLifeCycle => None//No need to send the undefined lifecycle over the wire  //builder.setLifeCycle(LifeCycleType.UNDEFINED)
       }
     }
 
@@ -164,11 +158,12 @@ object ActorSerialization {
 
     val lifeCycle =
     if (protocol.hasLifeCycle) {
-      val lifeCycleProtocol = protocol.getLifeCycle
-      Some(if (lifeCycleProtocol.getLifeCycle == LifeCycleType.PERMANENT) LifeCycle(Permanent)
-      else if (lifeCycleProtocol.getLifeCycle == LifeCycleType.TEMPORARY) LifeCycle(Temporary)
-      else throw new IllegalActorStateException("LifeCycle type is not valid: " + lifeCycleProtocol.getLifeCycle))
-    } else None
+      protocol.getLifeCycle.getLifeCycle match {
+        case LifeCycleType.PERMANENT => Permanent
+        case LifeCycleType.TEMPORARY => Temporary
+        case unknown => throw new IllegalActorStateException("LifeCycle type is not valid: " + unknown)
+      }
+    } else UndefinedLifeCycle
 
     val supervisor =
     if (protocol.hasSupervisor)
@@ -192,7 +187,7 @@ object ActorSerialization {
     }
 
     val ar = new LocalActorRef(
-      uuidFrom(protocol.getUuid.getHigh,protocol.getUuid.getLow),
+      uuidFrom(protocol.getUuid.getHigh, protocol.getUuid.getLow),
       protocol.getId,
       protocol.getOriginalAddress.getHostname,
       protocol.getOriginalAddress.getPort,
@@ -202,7 +197,6 @@ object ActorSerialization {
       lifeCycle,
       supervisor,
       hotswap,
-      classLoader, // TODO: should we fall back to getClass.getClassLoader?
       factory)
 
     val messages = protocol.getMessagesList.toArray.toList.asInstanceOf[List[RemoteRequestProtocol]]
@@ -231,7 +225,7 @@ object RemoteActorSerialization {
    * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    Actor.log.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n" + protocol)
+    Actor.log.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s", protocol)
     RemoteActorRef(
       protocol.getClassOrServiceName,
       protocol.getActorClassname,
@@ -249,13 +243,13 @@ object RemoteActorSerialization {
     val host = homeAddress.getHostName
     val port = homeAddress.getPort
 
-    Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClass.getName, host, port)
+    Actor.log.debug("Register serialized Actor [%s] as remote @ [%s:%s]", actorClassName, host, port)
     RemoteServer.getOrCreateServer(homeAddress)
-    RemoteServer.registerActorByUuid(homeAddress, uuid.toString, ar)
+    ActorRegistry.registerActorByUuid(homeAddress, uuid.toString, ar)
 
     RemoteActorRefProtocol.newBuilder
       .setClassOrServiceName(uuid.toString)
-      .setActorClassname(actorClass.getName)
+      .setActorClassname(actorClassName)
       .setHomeAddress(AddressProtocol.newBuilder.setHostname(host).setPort(port).build)
       .setTimeout(timeout)
       .build
@@ -291,15 +285,19 @@ object RemoteActorSerialization {
       case ActorType.TypedActor => actorInfoBuilder.setActorType(TYPED_ACTOR)
     }
     val actorInfo = actorInfoBuilder.build
-
+    val requestUuid = newUuid
     val requestBuilder = RemoteRequestProtocol.newBuilder
-        .setUuid(UuidProtocol.newBuilder.setHigh(uuid.getTime).setLow(uuid.getClockSeqAndNode).build)
+        .setUuid(UuidProtocol.newBuilder.setHigh(requestUuid.getTime).setLow(requestUuid.getClockSeqAndNode).build)
         .setMessage(MessageSerializer.serialize(message))
         .setActorInfo(actorInfo)
         .setIsOneWay(isOneWay)
 
     val id = registerSupervisorAsRemoteActor
-    if (id.isDefined) requestBuilder.setSupervisorUuid(UuidProtocol.newBuilder.setHigh(id.get.getTime).setLow(id.get.getClockSeqAndNode).build)
+    if (id.isDefined) requestBuilder.setSupervisorUuid(
+      UuidProtocol.newBuilder
+      .setHigh(id.get.getTime)
+      .setLow(id.get.getClockSeqAndNode)
+      .build)
 
     senderOption.foreach { sender =>
       RemoteServer.getOrCreateServer(sender.homeAddress).register(sender.uuid.toString, sender)
@@ -337,7 +335,7 @@ object TypedActorSerialization {
       proxy: AnyRef, format: Format[T]): SerializedTypedActorRefProtocol = {
 
     val init = AspectInitRegistry.initFor(proxy)
-    if (init == null) throw new IllegalArgumentException("Proxy for typed actor could not be found in AspectInitRegistry.")
+    if (init eq null) throw new IllegalArgumentException("Proxy for typed actor could not be found in AspectInitRegistry.")
 
     SerializedTypedActorRefProtocol.newBuilder
         .setActorRef(ActorSerialization.toSerializedActorRefProtocol(init.actorRef, format))

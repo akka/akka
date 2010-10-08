@@ -11,7 +11,7 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import se.scalablesolutions.akka.actor.Actor._
 import se.scalablesolutions.akka.dispatch.CompletableFuture
 import se.scalablesolutions.akka.AkkaException
-import se.scalablesolutions.akka.util.{ Function, SideEffect }
+import se.scalablesolutions.akka.japi.{ Function, SideEffect }
 
 /**
  * Implements Oz-style dataflow (single assignment) variables.

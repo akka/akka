@@ -7,20 +7,45 @@ package se.scalablesolutions.akka.config
 import se.scalablesolutions.akka.actor.{ActorRef}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
-sealed abstract class FaultHandlingStrategy
-object AllForOneStrategy {
-  def apply(maxNrOfRetries: Int, withinTimeRange: Int): AllForOneStrategy =
-    AllForOneStrategy(if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+sealed abstract class FaultHandlingStrategy {
+  def trapExit: List[Class[_ <: Throwable]]
 }
-case class AllForOneStrategy(maxNrOfRetries: Option[Int] = None, withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy
+
+object AllForOneStrategy {
+  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new AllForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def apply(trapExit: Array[Class[Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new AllForOneStrategy(trapExit.toList,maxNrOfRetries,withinTimeRange)
+}
+
+case class AllForOneStrategy(trapExit: List[Class[_ <: Throwable]],
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  def this(trapExit: List[Class[_ <: Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: Array[Class[Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toList,maxNrOfRetries,withinTimeRange)
+}
 
 object OneForOneStrategy {
-  def apply(maxNrOfRetries: Int, withinTimeRange: Int): OneForOneStrategy =
-    this(if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new OneForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def apply(trapExit: Array[Class[Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new OneForOneStrategy(trapExit.toList,maxNrOfRetries,withinTimeRange)
 }
-case class OneForOneStrategy(maxNrOfRetries: Option[Int] = None, withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy
+
+case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  def this(trapExit: List[Class[_ <: Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: Array[Class[Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toList,maxNrOfRetries,withinTimeRange)
+}
+
+case object NoFaultHandlingStrategy extends FaultHandlingStrategy {
+  def trapExit: List[Class[_ <: Throwable]] = Nil
+}
 
 /**
  * Configuration classes - not to be used as messages.
@@ -32,12 +57,13 @@ object ScalaConfig {
 
   abstract class Server extends ConfigElement
   abstract class FailOverScheme extends ConfigElement
-  abstract class Scope extends ConfigElement
+  abstract class LifeCycle extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: RestartStrategy, worker: List[Server]) extends Server
   class Supervise(val actorRef: ActorRef, val lifeCycle: LifeCycle, _remoteAddress: RemoteAddress) extends Server {
     val remoteAddress: Option[RemoteAddress] = if (_remoteAddress eq null) None else Some(_remoteAddress)
   }
+  
   object Supervise {
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle, remoteAddress: RemoteAddress) = new Supervise(actorRef, lifeCycle, remoteAddress)
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, null)
@@ -53,9 +79,9 @@ object ScalaConfig {
   case object AllForOne extends FailOverScheme
   case object OneForOne extends FailOverScheme
 
-  case class LifeCycle(scope: Scope) extends ConfigElement
-  case object Permanent extends Scope
-  case object Temporary extends Scope
+  case object Permanent extends LifeCycle
+  case object Temporary extends LifeCycle
+  case object UndefinedLifeCycle extends LifeCycle
 
   case class RemoteAddress(val hostname: String, val port: Int) extends ConfigElement
 
@@ -139,20 +165,20 @@ object JavaConfig {
       scheme.transform, maxNrOfRetries, withinTimeRange, trapExceptions.toList)
   }
 
-  class LifeCycle(@BeanProperty val scope: Scope) extends ConfigElement {
-    def transform = {
-      se.scalablesolutions.akka.config.ScalaConfig.LifeCycle(scope.transform)
-    }
+  abstract class LifeCycle extends ConfigElement {
+    def transform: se.scalablesolutions.akka.config.ScalaConfig.LifeCycle
   }
 
-  abstract class Scope extends ConfigElement {
-    def transform: se.scalablesolutions.akka.config.ScalaConfig.Scope
-  }
-  class Permanent extends Scope {
+  class Permanent extends LifeCycle {
     override def transform = se.scalablesolutions.akka.config.ScalaConfig.Permanent
   }
-  class Temporary extends Scope {
+  
+  class Temporary extends LifeCycle {
     override def transform = se.scalablesolutions.akka.config.ScalaConfig.Temporary
+  }
+
+  class UndefinedLifeCycle extends LifeCycle {
+    override def transform = se.scalablesolutions.akka.config.ScalaConfig.UndefinedLifeCycle
   }
 
   abstract class FailOverScheme extends ConfigElement {

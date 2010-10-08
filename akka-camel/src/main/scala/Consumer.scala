@@ -20,30 +20,24 @@ trait Consumer { self: Actor =>
   def endpointUri: String
 
   /**
-   * Determines whether two-way communications with this consumer actor should
-   * be done in blocking or non-blocking mode (default is non-blocking). One-way
-   * communications never block.
+   * Determines whether two-way communications between an endpoint and this consumer actor
+   * should be done in blocking or non-blocking mode (default is non-blocking). This method
+   * doesn't have any effect on one-way communications (they'll never block). 
    */
   def blocking = false
 }
 
 /**
- * Java-friendly {@link Consumer} inherited by
+ * Java-friendly Consumer.
  *
- * <ul>
- *   <li>{@link UntypedConsumerActor}</li>
- *   <li>{@link RemoteUntypedConsumerActor}</li>
- *   <li>{@link UntypedConsumerTransactor}</li>
- * </ul>
- *
- * implementations.
+ * @see UntypedConsumerActor
+ * @see RemoteUntypedConsumerActor
+ * @see UntypedConsumerTransactor
  *
  * @author Martin Krasser
  */
 trait UntypedConsumer extends Consumer { self: UntypedActor =>
-
   final override def endpointUri = getEndpointUri
-
   final override def blocking = isBlocking
 
   /**
@@ -52,9 +46,9 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
   def getEndpointUri(): String
 
   /**
-   * Determines whether two-way communications with this consumer actor should
-   * be done in blocking or non-blocking mode (default is non-blocking). One-way
-   * communications never block.
+   * Determines whether two-way communications between an endpoint and this consumer actor
+   * should be done in blocking or non-blocking mode (default is non-blocking). This method
+   * doesn't have any effect on one-way communications (they'll never block).
    */
   def isBlocking() = super.blocking
 }
@@ -89,7 +83,7 @@ private[camel] object Consumer {
    * reference with a target actor that implements the <code>Consumer</code> trait. The
    * target <code>Consumer</code> object is passed as argument to <code>f</code>. This
    * method returns <code>None</code> if <code>actorRef</code> is not a valid reference
-   * to a consumer actor, <code>Some</code> result otherwise.
+   * to a consumer actor, <code>Some</code> consumer actor otherwise.
    */
   def forConsumer[T](actorRef: ActorRef)(f: Consumer => T): Option[T] = {
     if (!actorRef.actor.isInstanceOf[Consumer]) None

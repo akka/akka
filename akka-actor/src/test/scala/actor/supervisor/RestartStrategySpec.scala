@@ -22,8 +22,7 @@ class RestartStrategySpec extends JUnitSuite {
   def slaveShouldStayDeadAfterMaxRestarts = {
 
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(1, 1000))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), 1, 1000)
       protected def receive = { case _ => () }
     }).start
 
@@ -75,8 +74,7 @@ class RestartStrategySpec extends JUnitSuite {
   def slaveShouldBeImmortalWithoutMaxRestarts = {
 
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(None, None))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, None)
       protected def receive = { case _ => () }
     }).start
 

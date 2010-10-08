@@ -4,14 +4,16 @@
 
 package se.scalablesolutions.akka.actor
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 import scala.reflect.Manifest
 
 import java.util.concurrent.{ConcurrentSkipListSet, ConcurrentHashMap}
 import java.util.{Set => JSet}
 
-import se.scalablesolutions.akka.util.ListenerManagement
 import annotation.tailrec
+import se.scalablesolutions.akka.util.ReflectiveAccess._
+import se.scalablesolutions.akka.util.{ReadWriteGuard, Address, ListenerManagement}
+import java.net.InetSocketAddress
 
 /**
  * Base trait for ActorRegistry events, allows listen to when an actor is added and removed from the ActorRegistry.
@@ -37,11 +39,18 @@ case class ActorUnregistered(actor: ActorRef) extends ActorRegistryEvent
 object ActorRegistry extends ListenerManagement {
   private val actorsByUUID =          new ConcurrentHashMap[Uuid, ActorRef]
   private val actorsById =            new Index[String,ActorRef]
+  private val remoteActorSets =       Map[Address, RemoteActorSet]()
+  private val guard = new ReadWriteGuard
   
   /**
    * Returns all actors in the system.
    */
   def actors: Array[ActorRef] = filter(_ => true)
+  
+  /**
+   * Returns the number of actors in the system.
+   */
+  def size : Int = actorsByUUID.size
 
   /**
    * Invokes a function for all actors.
@@ -109,10 +118,121 @@ object ActorRegistry extends ListenerManagement {
    */
   def actorsFor(id: String): Array[ActorRef] = actorsById values id
 
-   /**
+  /**
    * Finds the actor that has a specific UUID.
    */
   def actorFor(uuid: Uuid): Option[ActorRef] = Option(actorsByUUID get uuid)
+
+  /**
+   * Returns all typed actors in the system.
+   */
+  def typedActors: Array[AnyRef] = filterTypedActors(_ => true)
+
+  /**
+   * Invokes a function for all typed actors.
+   */
+  def foreachTypedActor(f: (AnyRef) => Unit) = {
+    TypedActorModule.ensureTypedActorEnabled
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val proxy = typedActorFor(elements.nextElement)
+      if (proxy.isDefined) {
+        f(proxy.get)
+      }
+    }
+  }
+
+  /**
+   * Invokes the function on all known typed actors until it returns Some
+   * Returns None if the function never returns Some
+   */
+  def findTypedActor[T](f: PartialFunction[AnyRef,T]) : Option[T] = {
+    TypedActorModule.ensureTypedActorEnabled
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val proxy = typedActorFor(elements.nextElement)
+      if(proxy.isDefined && (f isDefinedAt proxy))
+        return Some(f(proxy))
+    }
+    None
+  }
+
+  /**
+   * Finds all typed actors that satisfy a predicate.
+   */
+  def filterTypedActors(p: AnyRef => Boolean): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    val all = new ListBuffer[AnyRef]
+    val elements = actorsByUUID.elements
+    while (elements.hasMoreElements) {
+      val proxy = typedActorFor(elements.nextElement)
+      if (proxy.isDefined && p(proxy.get))  {
+        all += proxy.get
+      }
+    }
+    all.toArray
+  }
+
+  /**
+   * Finds all typed actors that are subtypes of the class passed in as the Manifest argument.
+   */
+  def typedActorsFor[T <: AnyRef](implicit manifest: Manifest[T]): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    typedActorsFor[T](manifest.erasure.asInstanceOf[Class[T]])
+  }
+
+  /**
+   * Finds any typed actor that matches T.
+   */
+  def typedActorFor[T <: AnyRef](implicit manifest: Manifest[T]): Option[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    def predicate(proxy: AnyRef) : Boolean = {
+      val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
+      actorRef.isDefined && manifest.erasure.isAssignableFrom(actorRef.get.actor.getClass)
+    }
+    findTypedActor({ case a:AnyRef if predicate(a) => a })
+  }
+
+  /**
+   * Finds all typed actors of type or sub-type specified by the class passed in as the Class argument.
+   */
+  def typedActorsFor[T <: AnyRef](clazz: Class[T]): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    def predicate(proxy: AnyRef) : Boolean = {
+      val actorRef = TypedActorModule.typedActorObjectInstance.get.actorFor(proxy)
+      actorRef.isDefined && clazz.isAssignableFrom(actorRef.get.actor.getClass)
+    }
+    filterTypedActors(predicate)
+  }
+
+  /**
+   * Finds all typed actors that have a specific id.
+   */
+  def typedActorsFor(id: String): Array[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    val actorRefs = actorsById values id
+    actorRefs.flatMap(typedActorFor(_))
+  }
+
+  /**
+   * Finds the typed actor that has a specific UUID.
+   */
+  def typedActorFor(uuid: Uuid): Option[AnyRef] = {
+    TypedActorModule.ensureTypedActorEnabled
+    val actorRef = actorsByUUID get uuid
+    if (actorRef eq null)
+      None
+    else
+      typedActorFor(actorRef)
+  }
+
+  /**
+   * Get the typed actor proxy for a given typed actor ref.
+   */
+  private def typedActorFor(actorRef: ActorRef): Option[AnyRef] = {
+    TypedActorModule.typedActorObjectInstance.get.proxyFor(actorRef)
+  }
+
 
   /**
    * Registers an actor in the ActorRegistry.
@@ -145,67 +265,130 @@ object ActorRegistry extends ListenerManagement {
    */
   def shutdownAll() {
     log.info("Shutting down all actors in the system...")
-    foreach(_.stop)
+    if (TypedActorModule.isTypedActorEnabled) {
+      val elements = actorsByUUID.elements
+      while (elements.hasMoreElements) {
+        val actorRef = elements.nextElement
+        val proxy = typedActorFor(actorRef)
+        if (proxy.isDefined) {
+          TypedActorModule.typedActorObjectInstance.get.stop(proxy.get)
+        } else {
+          actorRef.stop
+        }
+      }
+    } else {
+      foreach(_.stop)
+    }
     actorsByUUID.clear
     actorsById.clear
     log.info("All actors have been shut down and unregistered from ActorRegistry")
   }
+
+  /**
+   * Get the remote actors for the given server address. For internal use only.
+   */
+  private[akka] def actorsFor(remoteServerAddress: Address): RemoteActorSet = guard.withWriteGuard {
+    remoteActorSets.getOrElseUpdate(remoteServerAddress, new RemoteActorSet)
+  }
+
+  private[akka] def registerActorByUuid(address: InetSocketAddress, uuid: String, actor: ActorRef) {
+    actorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, actor)
+  }
+
+  private[akka] def registerTypedActorByUuid(address: InetSocketAddress, uuid: String, typedActor: AnyRef) {
+    typedActorsByUuid(Address(address.getHostName, address.getPort)).putIfAbsent(uuid, typedActor)
+  }
+
+  private[akka] def actors(address: Address) = actorsFor(address).actors
+  private[akka] def actorsByUuid(address: Address) = actorsFor(address).actorsByUuid
+  private[akka] def typedActors(address: Address) = actorsFor(address).typedActors
+  private[akka] def typedActorsByUuid(address: Address) = actorsFor(address).typedActorsByUuid
+
+  private[akka] class RemoteActorSet {
+    private[ActorRegistry] val actors = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistry] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
+    private[ActorRegistry] val typedActors = new ConcurrentHashMap[String, AnyRef]
+    private[ActorRegistry] val typedActorsByUuid = new ConcurrentHashMap[String, AnyRef]
+  }
 }
 
+/**
+ * An implementation of a ConcurrentMultiMap
+ * Adds/remove is serialized over the specified key
+ * Reads are fully concurrent <-- el-cheapo
+ *
+ * @author Viktor Klang
+ */
 class Index[K <: AnyRef,V <: AnyRef : Manifest] {
-  import scala.collection.JavaConversions._
-  
   private val Naught = Array[V]() //Nil for Arrays
   private val container = new ConcurrentHashMap[K, JSet[V]]
   private val emptySet = new ConcurrentSkipListSet[V]
 
-  def put(key: K, value: V) {
-
-    //Returns whether it needs to be retried or not
-    def tryPut(set: JSet[V], v: V): Boolean = {
-      set.synchronized {
-          if (set.isEmpty) true //IF the set is empty then it has been removed, so signal retry
-          else { //Else add the value to the set and signal that retry is not needed
-            set add v
-            false
-          }
-      }
-    }
-
-    @tailrec def syncPut(k: K, v: V): Boolean = {
+  /**
+   * Associates the value of type V with the key of type K
+   * @returns true if the value didn't exist for the key previously, and false otherwise
+   */
+  def put(key: K, value: V): Boolean = {
+    //Tailrecursive spin-locking put
+    @tailrec def spinPut(k: K, v: V): Boolean = {
       var retry = false
+      var added = false
       val set = container get k
-      if (set ne null) retry = tryPut(set,v)
+
+      if (set ne null) {
+        set.synchronized {
+          if (set.isEmpty) {
+            retry = true //IF the set is empty then it has been removed, so signal retry
+          }
+          else { //Else add the value to the set and signal that retry is not needed
+            added = set add v
+            retry = false
+          }
+        }
+      }
       else {
         val newSet = new ConcurrentSkipListSet[V]
         newSet add v
 
         // Parry for two simultaneous putIfAbsent(id,newSet)
         val oldSet = container.putIfAbsent(k,newSet)
-        if (oldSet ne null)
-          retry = tryPut(oldSet,v)
+        if (oldSet ne null) {
+          oldSet.synchronized {
+            if (oldSet.isEmpty) {
+              retry = true //IF the set is empty then it has been removed, so signal retry
+            }
+            else { //Else try to add the value to the set and signal that retry is not needed
+              added = oldSet add v
+              retry = false
+            }
+          }
+        } else {
+          added = true
+        }
       }
 
-      if (retry) syncPut(k,v)
-      else true
+      if (retry) spinPut(k,v)
+      else added
     }
 
-    syncPut(key,value)
+    spinPut(key,value)
   }
 
-  def values(key: K) = {
+  /**
+   * @returns a _new_ array of all existing values for the given key at the time of the call
+   */
+  def values(key: K): Array[V] = {
     val set: JSet[V] = container get key
-    if (set ne null) set toArray Naught
-    else Naught
+    val result = if (set ne null) set toArray Naught else Naught
+    result.asInstanceOf[Array[V]]
   }
 
-  def foreach(key: K)(fun: (V) => Unit) {
-    val set = container get key
-    if (set ne null)
-     set foreach fun
-  }
-
+  /**
+   * @returns Some(value) for the first matching value where the supplied function returns true for the given key,
+   * if no matches it returns None
+   */
   def findValue(key: K)(f: (V) => Boolean): Option[V] = {
+    import scala.collection.JavaConversions._
     val set = container get key
     if (set ne null)
      set.iterator.find(f)
@@ -213,23 +396,43 @@ class Index[K <: AnyRef,V <: AnyRef : Manifest] {
      None
   }
 
+  /**
+   * Applies the supplied function to all keys and their values
+   */
   def foreach(fun: (K,V) => Unit) {
+    import scala.collection.JavaConversions._
     container.entrySet foreach {
       (e) => e.getValue.foreach(fun(e.getKey,_))
     }
   }
 
-  def remove(key: K, value: V) {
+  /**
+   * Disassociates the value of type V from the key of type K
+   * @returns true if the value was disassociated from the key and false if it wasn't previously associated with the key
+   */
+  def remove(key: K, value: V): Boolean = {
     val set = container get key
+
     if (set ne null) {
       set.synchronized {
         if (set.remove(value)) { //If we can remove the value
           if (set.isEmpty)       //and the set becomes empty
             container.remove(key,emptySet) //We try to remove the key if it's mapped to an empty set
+
+          true //Remove succeeded
         }
+        else false //Remove failed
       }
-    }
+    } else false //Remove failed
   }
 
-  def clear = { foreach(remove _) }
+  /**
+   * @returns true if the underlying containers is empty, may report false negatives when the last remove is underway
+   */
+  def isEmpty: Boolean = container.isEmpty
+
+  /**
+   *  Removes all keys and all values
+   */
+  def clear = foreach { case (k,v) => remove(k,v) }
 }

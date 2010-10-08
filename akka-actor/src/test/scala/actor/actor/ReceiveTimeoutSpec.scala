@@ -6,6 +6,7 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 import org.multiverse.api.latches.StandardLatch
 import Actor._
+import java.util.concurrent.atomic.AtomicInteger
 
 class ReceiveTimeoutSpec extends JUnitSuite {
 
@@ -22,6 +23,7 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     }).start
 
     assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS))
+    timeoutActor.stop
   }
 
   @Test def swappedReceiveShouldAlsoGetTimout = {
@@ -44,9 +46,10 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     })
 
     assert(swappedLatch.tryAwait(3, TimeUnit.SECONDS))
+    timeoutActor.stop
   }
 
-  @Test def timeoutShouldBeCancelledAfterRegularReceive = {
+  @Test def timeoutShouldBeRescheduledAfterRegularReceive = {
 
     val timeoutLatch = new StandardLatch
     case object Tick
@@ -60,7 +63,30 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     }).start
     timeoutActor ! Tick
 
-    assert(timeoutLatch.tryAwait(2, TimeUnit.SECONDS) == false)
+    assert(timeoutLatch.tryAwait(2, TimeUnit.SECONDS) == true)
+    timeoutActor.stop
+  }
+
+  @Test def timeoutShouldBeTurnedOffIfDesired = {
+    val count = new AtomicInteger(0)
+    val timeoutLatch = new StandardLatch
+    case object Tick
+    val timeoutActor = actorOf(new Actor {
+      self.receiveTimeout = Some(500L)
+
+      protected def receive = {
+        case Tick => ()
+        case ReceiveTimeout =>
+          timeoutLatch.open
+          count.incrementAndGet
+          self.receiveTimeout = None
+      }
+    }).start
+    timeoutActor ! Tick
+
+    assert(timeoutLatch.tryAwait(2, TimeUnit.SECONDS) == true)
+    assert(count.get === 1)
+    timeoutActor.stop
   }
 
   @Test def timeoutShouldNotBeSentWhenNotSpecified = {
@@ -73,5 +99,6 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     }).start
 
     assert(timeoutLatch.tryAwait(1, TimeUnit.SECONDS) == false)
+    timeoutActor.stop
   }
 }

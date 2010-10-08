@@ -97,7 +97,7 @@ trait ChatStorage extends Actor
  * Redis-backed chat storage implementation.
  */
 class RedisChatStorage extends ChatStorage {
-  self.lifeCycle = Some(LifeCycle(Permanent))
+  self.lifeCycle = Permanent
   val CHAT_LOG = "akka.chat.log"
 
   private var chatLog = atomic { RedisStorage.getVector(CHAT_LOG) }
@@ -170,9 +170,7 @@ trait RedisChatStorageFactory { this: Actor =>
  * Chat server. Manages sessions and redirects all other messages to the Session for the client.
  */
 trait ChatServer extends Actor {
-  self.faultHandler = Some(OneForOneStrategy(5, 5000))
-  self.trapExit = List(classOf[Exception])
-
+  self.faultHandler = OneForOneStrategy(List(classOf[Exception]),5, 5000)
   val storage: ActorRef
 
   log.info("Chat server is starting up...")

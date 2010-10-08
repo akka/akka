@@ -29,10 +29,10 @@ class SupervisorException private[akka](message: String) extends AkkaException(m
  *      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception]),
  *      Supervise(
  *        myFirstActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Supervise(
  *        mySecondActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Nil))
  * </pre>
  *
@@ -60,10 +60,10 @@ object Supervisor {
  *      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception]),
  *      Supervise(
  *        myFirstActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Supervise(
  *        mySecondActor,
- *        LifeCycle(Permanent)) ::
+ *        Permanent) ::
  *      Nil))
  * </pre>
  *
@@ -79,14 +79,14 @@ object Supervisor {
 object SupervisorFactory {
   def apply(config: SupervisorConfig) = new SupervisorFactory(config)
 
-  private[akka] def retrieveFaultHandlerAndTrapExitsFrom(config: SupervisorConfig):
-    Tuple2[FaultHandlingStrategy, List[Class[_ <: Throwable]]] = config match {
-    case SupervisorConfig(RestartStrategy(scheme, maxNrOfRetries, timeRange, trapExceptions), _) =>
-      scheme match {
-        case AllForOne => (AllForOneStrategy(maxNrOfRetries, timeRange), trapExceptions)
-        case OneForOne => (OneForOneStrategy(maxNrOfRetries, timeRange), trapExceptions)
-      }
-    }
+  private[akka] def retrieveFaultHandlerAndTrapExitsFrom(config: SupervisorConfig): FaultHandlingStrategy =
+    config match {
+      case SupervisorConfig(RestartStrategy(scheme, maxNrOfRetries, timeRange, trapExceptions), _) =>
+        scheme match {
+          case AllForOne => AllForOneStrategy(trapExceptions,maxNrOfRetries, timeRange)
+          case OneForOne => OneForOneStrategy(trapExceptions,maxNrOfRetries, timeRange)
+        }
+     }
 }
 
 /**
@@ -99,9 +99,8 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
 
   def newInstance: Supervisor = newInstanceFor(config)
 
-  def newInstanceFor(config: SupervisorConfig): Supervisor = {
-    val (handler, trapExits) = SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config)
-    val supervisor = new Supervisor(handler, trapExits)
+  def newInstanceFor(config: SupervisorConfig): Supervisor = { 
+    val supervisor = new Supervisor(SupervisorFactory.retrieveFaultHandlerAndTrapExitsFrom(config))
     supervisor.configure(config)
     supervisor.start
     supervisor
@@ -121,13 +120,13 @@ class SupervisorFactory private[akka] (val config: SupervisorConfig) extends Log
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 sealed class Supervisor private[akka] (
-  handler: FaultHandlingStrategy, trapExceptions: List[Class[_ <: Throwable]]) {
+  handler: FaultHandlingStrategy) {
   import Supervisor._
 
   private val _childActors = new ConcurrentHashMap[String, List[ActorRef]]
   private val _childSupervisors = new CopyOnWriteArrayList[Supervisor]
 
-  private[akka] val supervisor = actorOf(new SupervisorActor(handler, trapExceptions)).start
+  private[akka] val supervisor = actorOf(new SupervisorActor(handler)).start
 
   def uuid = supervisor.uuid
 
@@ -160,7 +159,7 @@ sealed class Supervisor private[akka] (
               else list
             }
             _childActors.put(className, actorRef :: currentActors)
-            actorRef.lifeCycle = Some(lifeCycle)
+            actorRef.lifeCycle = lifeCycle
             supervisor.link(actorRef)
             remoteAddress.foreach { address =>
               RemoteServerModule.registerActor(
@@ -179,13 +178,9 @@ sealed class Supervisor private[akka] (
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final class SupervisorActor private[akka] (
-  handler: FaultHandlingStrategy,
-  trapExceptions: List[Class[_ <: Throwable]]) extends Actor {
+final class SupervisorActor private[akka] (handler: FaultHandlingStrategy) extends Actor {
   import self._
-
-  trapExit = trapExceptions
-  faultHandler = Some(handler)
+  faultHandler = handler
 
   override def postStop(): Unit = shutdownLinkedActors
 

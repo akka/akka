@@ -10,7 +10,6 @@ import Actor._
 
 object ActorFireForgetRequestReplySpec {
   class ReplyActor extends Actor {
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
     def receive = {
       case "Send" =>
@@ -21,7 +20,7 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class CrashingTemporaryActor extends Actor {
-    self.lifeCycle = Some(LifeCycle(Temporary))
+    self.lifeCycle = Temporary
 
     def receive = {
       case "Die" =>
@@ -31,10 +30,10 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class SenderActor(replyActor: ActorRef) extends Actor {
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self)
 
     def receive = {
-      case "Init" => replyActor ! "Send"
+      case "Init" => 
+        replyActor ! "Send"
       case "Reply" => {
         state.s = "Reply"
         state.finished.await
@@ -84,7 +83,7 @@ class ActorFireForgetRequestReplySpec extends JUnitSuite {
     val actor = actorOf[CrashingTemporaryActor].start
     assert(actor.isRunning)
     actor ! "Die"
-    try { state.finished.await(1L, TimeUnit.SECONDS) }
+    try { state.finished.await(10L, TimeUnit.SECONDS) }
     catch { case e: TimeoutException => fail("Never got the message") }
     Thread.sleep(100)
     assert(actor.isShutdown)
