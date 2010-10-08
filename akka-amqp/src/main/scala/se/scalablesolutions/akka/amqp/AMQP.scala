@@ -11,6 +11,8 @@ import com.rabbitmq.client.{ReturnListener, ShutdownListener, ConnectionFactory}
 import ConnectionFactory._
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.{String, IllegalArgumentException}
+import reflect.Manifest
+import se.scalablesolutions.akka.util.Procedure
 
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
@@ -88,13 +90,13 @@ object AMQP {
    */
   case class ExchangeParameters(
           exchangeName: String,
-          exchangeType: ExchangeType = Topic,
+          exchangeType: ExchangeType = ExchangeType.Topic(),
           exchangeDeclaration: Declaration = ActiveDeclaration(),
           configurationArguments: Map[String, AnyRef] = Map.empty) {
 
     // Needed for Java API usage
     def this(exchangeName: String) =
-      this (exchangeName, Topic, ActiveDeclaration(), Map.empty)
+      this (exchangeName, ExchangeType.Topic(), ActiveDeclaration(), Map.empty)
 
     // Needed for Java API usage
     def this(exchangeName: String, exchangeType: ExchangeType) =
@@ -113,8 +115,7 @@ object AMQP {
           producerId: Option[String] = None,
           returnListener: Option[ReturnListener] = None,
           channelParameters: Option[ChannelParameters] = None) {
-
-    def this() = this(None, None, None, None)
+    def this() = this (None, None, None, None)
 
     // Needed for Java API usage
     def this(exchangeParameters: ExchangeParameters) = this (Some(exchangeParameters), None, None, None)
@@ -147,7 +148,6 @@ object AMQP {
           queueDeclaration: Declaration = ActiveDeclaration(),
           selfAcknowledging: Boolean = true,
           channelParameters: Option[ChannelParameters] = None) {
-    
     if (queueName.isEmpty) {
       queueDeclaration match {
         case ActiveDeclaration(true, _, _) =>
@@ -210,7 +210,7 @@ object AMQP {
     def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
       this (routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), queueDeclaration, selfAcknowledging, Some(channelParameters))
 
-    // How about that for some overloading... huh? :P (yes, I know, there are still posibilities left...sue me!)
+    // How about that for some overloading... huh? :P (yes, I know, there are still possibilities left...sue me!)
     // Who said java is easy :(
   }
 
@@ -246,6 +246,15 @@ object AMQP {
    *  Convenience
    */
   class ProducerClient[O](client: ActorRef, routingKey: String, toBinary: ToBinary[O]) {
+    // Needed for Java API usage
+    def send(request: O): Unit = {
+      send(request, None)
+    }
+    // Needed for Java API usage
+    def send(request: O, replyTo: String): Unit = {
+      send(request, Some(replyTo))  
+    }
+
     def send(request: O, replyTo: Option[String] = None) = {
       val basicProperties = new BasicProperties
       basicProperties.setReplyTo(replyTo.getOrElse(null))
@@ -253,6 +262,27 @@ object AMQP {
     }
 
     def stop() = client.stop
+  }
+
+  // Needed for Java API usage
+  def newStringProducer(connection: ActorRef,
+                        exchangeName: String): ProducerClient[String] = {
+    newStringProducer(connection, Some(exchangeName))
+  }
+
+  // Needed for Java API usage
+  def newStringProducer(connection: ActorRef,
+                        exchangeName: String,
+                        routingKey: String): ProducerClient[String] = {
+    newStringProducer(connection, Some(exchangeName), Some(routingKey))
+  }
+
+  // Needed for Java API usage
+  def newStringProducer(connection: ActorRef,
+                        exchangeName: String,
+                        routingKey: String,
+                        producerId: String): ProducerClient[String] = {
+    newStringProducer(connection, Some(exchangeName), Some(routingKey), Some(producerId))
   }
 
   def newStringProducer(connection: ActorRef,
@@ -271,6 +301,30 @@ object AMQP {
       def toBinary(t: String) = t.getBytes
     }
     new ProducerClient(producerRef, rKey, toBinary)
+  }
+
+  // Needed for Java API usage
+  def newStringConsumer(connection: ActorRef,
+                        handler: Procedure[String],
+                        exchangeName: String): ActorRef = {
+    newStringConsumer(connection, handler.apply _, Some(exchangeName))    
+  }
+
+  // Needed for Java API usage
+  def newStringConsumer(connection: ActorRef,
+                        handler: Procedure[String],
+                        exchangeName: String,
+                        routingKey: String): ActorRef = {
+    newStringConsumer(connection, handler.apply _, Some(exchangeName), Some(routingKey))
+  }
+
+  // Needed for Java API usage
+  def newStringConsumer(connection: ActorRef,
+                        handler: Procedure[String],
+                        exchangeName: String,
+                        routingKey: String,
+                        queueName: String): ActorRef = {
+    newStringConsumer(connection, handler.apply _, Some(exchangeName), Some(routingKey), Some(queueName))    
   }
 
   def newStringConsumer(connection: ActorRef,
@@ -295,6 +349,27 @@ object AMQP {
   }
 
 
+  // Needed for Java API usage
+  def newProtobufProducer[O <: com.google.protobuf.Message](connection: ActorRef,
+                                                            exchangeName: String): ProducerClient[O] = {
+    newProtobufProducer(connection, Some(exchangeName))
+  }
+
+  // Needed for Java API usage
+  def newProtobufProducer[O <: com.google.protobuf.Message](connection: ActorRef,
+                                                            exchangeName: String,
+                                                            routingKey: String): ProducerClient[O] = {
+    newProtobufProducer(connection, Some(exchangeName), Some(routingKey))
+  }
+
+  // Needed for Java API usage
+  def newProtobufProducer[O <: com.google.protobuf.Message](connection: ActorRef,
+                                                            exchangeName: String,
+                                                            routingKey: String,
+                                                            producerId: String): ProducerClient[O] = {
+    newProtobufProducer(connection, Some(exchangeName), Some(routingKey), Some(producerId))
+  }
+
   def newProtobufProducer[O <: com.google.protobuf.Message](connection: ActorRef,
                                                             exchangeName: Option[String],
                                                             routingKey: Option[String] = None,
@@ -310,6 +385,36 @@ object AMQP {
     new ProducerClient(producerRef, rKey, new ToBinary[O] {
       def toBinary(t: O) = t.toByteArray
     })
+  }
+
+  // Needed for Java API usage
+  def newProtobufConsumer[I <: com.google.protobuf.Message](connection: ActorRef,
+                                                            handler: Procedure[I],
+                                                            exchangeName: String,
+                                                            clazz: Class[I]): ActorRef = {
+    implicit val manifest = Manifest.classType[I](clazz)
+    newProtobufConsumer[I](connection, handler.apply _, Some(exchangeName))
+  }
+
+  // Needed for Java API usage
+  def newProtobufConsumer[I <: com.google.protobuf.Message](connection: ActorRef,
+                                                            handler: Procedure[I],
+                                                            exchangeName: String,
+                                                            routingKey: String,
+                                                            clazz: Class[I]): ActorRef = {
+    implicit val manifest = Manifest.classType[I](clazz)
+    newProtobufConsumer[I](connection, handler.apply _, Some(exchangeName), Some(routingKey))
+  }
+
+  // Needed for Java API usage
+  def newProtobufConsumer[I <: com.google.protobuf.Message](connection: ActorRef,
+                                                            handler: Procedure[I],
+                                                            exchangeName: String,
+                                                            routingKey: String,
+                                                            queueName: String,
+                                                            clazz: Class[I]): ActorRef = {
+    implicit val manifest = Manifest.classType[I](clazz)
+    newProtobufConsumer[I](connection, handler.apply _, Some(exchangeName), Some(routingKey), Some(queueName))
   }
 
   def newProtobufConsumer[I <: com.google.protobuf.Message](connection: ActorRef,
@@ -335,7 +440,7 @@ object AMQP {
     newConsumer(connection, ConsumerParameters(rKey, deliveryHandler, Some(qName), exchangeParameters))
   }
 
-  
+
   /**
    * Main supervisor
    */

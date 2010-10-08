@@ -5,8 +5,14 @@ import se.scalablesolutions.akka.actor.ActorRegistry;
 import se.scalablesolutions.akka.actor.UntypedActor;
 import se.scalablesolutions.akka.actor.UntypedActorFactory;
 
+import se.scalablesolutions.akka.remote.protocol.RemoteProtocol;
+import se.scalablesolutions.akka.util.Procedure;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import static se.scalablesolutions.akka.amqp.ChannelCallbacks.*;
+import static se.scalablesolutions.akka.amqp.ConnectionCallbacks.*;
 
 public class ExampleSessionJava {
 
@@ -21,13 +27,21 @@ public class ExampleSessionJava {
         printTopic("CALLBACK");
         callback();
 
-        printTopic("Happy hAkking :-)");
+        printTopic("EASY STRING PRODUCER AND CONSUMER");
+        easyStringProducerConsumer();
+
+        printTopic("EASY PROTOBUF PRODUCER AND CONSUMER");
+        easyProtobufProducerConsumer();
+
 
         // postStop everything the amqp tree except the main AMQP supervisor
         // all connections/consumers/producers will be stopped
         AMQP.shutdownAll();
 
         ActorRegistry.shutdownAll();
+
+        printTopic("Happy hAkking :-)");
+
         System.exit(0);
     }
 
@@ -46,7 +60,7 @@ public class ExampleSessionJava {
         // defaults to amqp://guest:guest@localhost:5672/
         ActorRef connection = AMQP.newConnection();
 
-        AMQP.ExchangeParameters exchangeParameters = new AMQP.ExchangeParameters("my_direct_exchange", ExchangeTypes.DIRECT);
+        AMQP.ExchangeParameters exchangeParameters = new AMQP.ExchangeParameters("my_direct_exchange", new ExchangeType.Direct());
 
         ActorRef deliveryHandler = UntypedActor.actorOf(DirectDeliveryHandlerActor.class);
 
@@ -75,7 +89,7 @@ public class ExampleSessionJava {
         });
         channelCallback.start();
 
-        AMQP.ExchangeParameters exchangeParameters = new AMQP.ExchangeParameters("my_callback_exchange", ExchangeTypes.DIRECT);
+        AMQP.ExchangeParameters exchangeParameters = new AMQP.ExchangeParameters("my_callback_exchange", new ExchangeType.Direct());
         AMQP.ChannelParameters channelParameters = new AMQP.ChannelParameters(channelCallback);
 
         ActorRef dummyHandler = UntypedActor.actorOf(DummyActor.class);
@@ -83,7 +97,7 @@ public class ExampleSessionJava {
 
         ActorRef consumer = AMQP.newConsumer(connection, consumerParameters);
 
-        ActorRef producer = AMQP.newProducer(connection, new AMQP.ProducerParameters(exchangeParameters));
+        ActorRef producer = AMQP.newProducer(connection, new AMQP.ProducerParameters(exchangeParameters, channelParameters));
 
         // Wait until both channels (producer & consumer) are started before stopping the connection
         try {
@@ -91,6 +105,49 @@ public class ExampleSessionJava {
         } catch (InterruptedException ignore) {
         }
         connection.stop();
+    }
+
+    public void easyStringProducerConsumer() {
+        ActorRef connection = AMQP.newConnection();
+
+        String exchangeName = "easy.string";
+
+        // listen by default to:
+        // exchange = optional exchangeName
+        // routingKey = provided routingKey or <exchangeName>.request
+        // queueName = <routingKey>.in
+        Procedure<String> procedure = new Procedure<String>() {
+            public void apply(String message) {
+                System.out.println("### >> Received message: " + message);
+            }
+        };
+        AMQP.newStringConsumer(connection, procedure, exchangeName);
+
+        // send by default to:
+        // exchange = exchangeName
+        // routingKey = <exchange>.request
+        AMQP.ProducerClient<String> producer = AMQP.newStringProducer(connection, exchangeName);
+
+        producer.send("This shit is easy!");
+    }
+
+    public void easyProtobufProducerConsumer() {
+
+        ActorRef connection = AMQP.newConnection();
+
+        String exchangeName = "easy.protobuf";
+        
+        Procedure<RemoteProtocol.AddressProtocol> procedure = new Procedure<RemoteProtocol.AddressProtocol>() {
+            public void apply(RemoteProtocol.AddressProtocol message) {
+                System.out.println("### >> Received message: " + message);
+            }
+        };
+
+        AMQP.newProtobufConsumer(connection, procedure, exchangeName, RemoteProtocol.AddressProtocol.class);
+
+        AMQP.ProducerClient<RemoteProtocol.AddressProtocol> producerClient = AMQP.newProtobufProducer(connection, exchangeName);
+
+        producerClient.send(RemoteProtocol.AddressProtocol.newBuilder().setHostname("akkarocks.com").setPort(1234).build());
     }
 }
 
@@ -109,11 +166,11 @@ class ChannelCallbackActor extends UntypedActor {
     }
 
     public void onReceive(Object message) throws Exception {
-        if (ChannelCallbacks.STARTED.getClass().isAssignableFrom(message.getClass())) {
+        if (STARTED.getClass().isAssignableFrom(message.getClass())) {
             System.out.println("### >> Channel callback: Started");
             channelCountdown.countDown();
-        } else if (ChannelCallbacks.RESTARTING.getClass().isAssignableFrom(message.getClass())) {
-        } else if (ChannelCallbacks.STOPPED.getClass().isAssignableFrom(message.getClass())) {
+        } else if (RESTARTING.getClass().isAssignableFrom(message.getClass())) {
+        } else if (STOPPED.getClass().isAssignableFrom(message.getClass())) {
             System.out.println("### >> Channel callback: Stopped");
         } else throw new IllegalArgumentException("Unknown message: " + message);
     }
@@ -122,10 +179,10 @@ class ChannelCallbackActor extends UntypedActor {
 class ConnectionCallbackActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
-        if (ConnectionCallbacks.CONNECTED.getClass().isAssignableFrom(message.getClass())) {
+        if (CONNECTED.getClass().isAssignableFrom(message.getClass())) {
             System.out.println("### >> Connection callback: Connected!");
-        } else if (ConnectionCallbacks.RECONNECTING.getClass().isAssignableFrom(message.getClass())) {
-        } else if (ConnectionCallbacks.DISCONNECTED.getClass().isAssignableFrom(message.getClass())) {
+        } else if (RECONNECTING.getClass().isAssignableFrom(message.getClass())) {
+        } else if (DISCONNECTED.getClass().isAssignableFrom(message.getClass())) {
             System.out.println("### >> Connection callback: Disconnected!");
         } else throw new IllegalArgumentException("Unknown message: " + message);
     }
