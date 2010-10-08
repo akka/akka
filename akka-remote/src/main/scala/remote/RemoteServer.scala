@@ -66,7 +66,8 @@ object RemoteNode extends RemoteServer
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object RemoteServer {
+object
+RemoteServer {
   val UUID_PREFIX = "uuid:"
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT     = config.getInt("akka.remote.server.port", 9999)
@@ -572,6 +573,29 @@ class RemoteServerHandler(
     server.typedActorsByUuid().get(uuid)
   }
 
+  private def findActorByIdOrUuid(id: String, uuid: String) : ActorRef = {
+    var actorRefOrNull = if (id.startsWith(UUID_PREFIX)) {
+      findActorByUuid(id.substring(UUID_PREFIX.length))
+    } else {
+      findActorById(id)
+    }
+    if (actorRefOrNull eq null) {
+      actorRefOrNull = findActorByUuid(uuid)
+    }
+    actorRefOrNull
+  }
+
+  private def findTypedActorByIdOrUuid(id: String, uuid: String) : AnyRef = {
+    var actorRefOrNull = if (id.startsWith(UUID_PREFIX)) {
+      findTypedActorByUuid(id.substring(UUID_PREFIX.length))
+    } else {
+      findTypedActorById(id)
+    }
+    if (actorRefOrNull eq null) {
+      actorRefOrNull = findTypedActorByUuid(uuid)
+    }
+    actorRefOrNull
+  }
 
   /**
    * Creates a new instance of the actor with name, uuid and timeout specified as arguments.
@@ -587,11 +611,7 @@ class RemoteServerHandler(
     val name = actorInfo.getTarget
     val timeout = actorInfo.getTimeout
 
-    val actorRefOrNull = if (id.startsWith(UUID_PREFIX)) {
-      findActorByUuid(id.substring(UUID_PREFIX.length))
-    } else {
-      findActorById(id)
-    }
+    val actorRefOrNull = findActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
     
     if (actorRefOrNull eq null) {
       try {
@@ -603,7 +623,7 @@ class RemoteServerHandler(
         actorRef.id = id
         actorRef.timeout = timeout
         actorRef.remoteAddress = None
-        server.actors.put(id, actorRef) // register by id
+        server.actorsByUuid.put(actorRef.uuid.toString, actorRef) // register by uuid
         actorRef
       } catch {
         case e =>
@@ -618,11 +638,7 @@ class RemoteServerHandler(
     val uuid = actorInfo.getUuid
     val id = actorInfo.getId
 
-    val typedActorOrNull = if (id.startsWith(UUID_PREFIX)) {
-      findTypedActorByUuid(id.substring(UUID_PREFIX.length))
-    } else {
-      findTypedActorById(id)
-    }
+    val typedActorOrNull = findTypedActorByIdOrUuid(id, uuidFrom(uuid.getHigh,uuid.getLow).toString)
 
     if (typedActorOrNull eq null) {
       val typedActorInfo = actorInfo.getTypedActorInfo
@@ -639,7 +655,7 @@ class RemoteServerHandler(
 
         val newInstance = TypedActor.newInstance(
           interfaceClass, targetClass.asInstanceOf[Class[_ <: TypedActor]], actorInfo.getTimeout).asInstanceOf[AnyRef]
-        server.typedActors.put(id, newInstance) // register by id
+        server.typedActors.put(uuidFrom(uuid.getHigh,uuid.getLow).toString, newInstance) // register by uuid
         newInstance
       } catch {
         case e =>

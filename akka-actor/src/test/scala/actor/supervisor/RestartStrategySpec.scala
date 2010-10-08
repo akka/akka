@@ -24,8 +24,7 @@ class RestartStrategySpec extends JUnitSuite {
   def slaveShouldStayDeadAfterMaxRestartsWithinTimeRange = {
 
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(Some(2), Some(1000)))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(1000))
       protected def receive = { case _ => () }
     }).start
 
@@ -80,8 +79,7 @@ class RestartStrategySpec extends JUnitSuite {
   def slaveShouldBeImmortalWithoutMaxRestartsAndTimeRange = {
 
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(None, None))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, None)
       protected def receive = { case _ => () }
     }).start
 
@@ -108,8 +106,7 @@ class RestartStrategySpec extends JUnitSuite {
   def slaveShouldRestartAfterNumberOfCrashesNotWithinTimeRange = {
 
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(Some(2), Some(500)))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), Some(500))
       protected def receive = { case _ => () }
     }).start
 
@@ -170,8 +167,7 @@ class RestartStrategySpec extends JUnitSuite {
   @Test
   def slaveShouldNotRestartAfterMaxRetries = {
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(Some(2), None))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), Some(2), None)
       protected def receive = { case _ => () }
     }).start
 
@@ -227,8 +223,7 @@ class RestartStrategySpec extends JUnitSuite {
   @Test
   def slaveShouldNotRestartWithinTimeRange = {
     val boss = actorOf(new Actor{
-      self.trapExit = List(classOf[Throwable])
-      self.faultHandler = Some(OneForOneStrategy(None, Some(1000)))
+      self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))
       protected def receive = { case _ => () }
     }).start
 

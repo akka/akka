@@ -13,7 +13,7 @@ import se.scalablesolutions.akka.camel._
  */
 class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   import TypedActorComponentFeatureTest._
-  import CamelContextManager.template
+  import CamelContextManager.mandatoryTemplate
 
   override protected def beforeAll = {
     val typedActor     = TypedActor.newInstance(classOf[SampleTypedActor], classOf[SampleTypedActorImpl]) // not a consumer
@@ -24,7 +24,7 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
     registry.put("ta", typedActor)
 
     CamelContextManager.init(new DefaultCamelContext(registry))
-    CamelContextManager.context.addRoutes(new CustomRouteBuilder)
+    CamelContextManager.mandatoryContext.addRoutes(new CustomRouteBuilder)
     CamelContextManager.start
 
     // Internal registration
@@ -41,19 +41,19 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
     import ExchangePattern._
 
     scenario("two-way communication with method returning String") {
-      val result1 = template.requestBodyAndHeader("%s:tc?method=m2" format InternalSchema, "x", "test", "y")
-      val result2 = template.requestBodyAndHeader("%s:tc?method=m4" format InternalSchema, "x", "test", "y")
+      val result1 = mandatoryTemplate.requestBodyAndHeader("%s:tc?method=m2" format InternalSchema, "x", "test", "y")
+      val result2 = mandatoryTemplate.requestBodyAndHeader("%s:tc?method=m4" format InternalSchema, "x", "test", "y")
       assert(result1 === "m2: x y")
       assert(result2 === "m4: x y")
     }
 
     scenario("two-way communication with method returning void") {
-      val result = template.requestBodyAndHeader("%s:tc?method=m5" format InternalSchema, "x", "test", "y")
+      val result = mandatoryTemplate.requestBodyAndHeader("%s:tc?method=m5" format InternalSchema, "x", "test", "y")
       assert(result === "x") // returns initial body
     }
 
     scenario("one-way communication with method returning String") {
-      val result = template.send("%s:tc?method=m2" format InternalSchema, InOnly, new Processor {
+      val result = mandatoryTemplate.send("%s:tc?method=m2" format InternalSchema, InOnly, new Processor {
         def process(exchange: Exchange) = {
           exchange.getIn.setBody("x")
           exchange.getIn.setHeader("test", "y")
@@ -65,7 +65,7 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
     }
 
     scenario("one-way communication with method returning void") {
-      val result = template.send("%s:tc?method=m5" format InternalSchema, InOnly, new Processor {
+      val result = mandatoryTemplate.send("%s:tc?method=m5" format InternalSchema, InOnly, new Processor {
         def process(exchange: Exchange) = {
           exchange.getIn.setBody("x")
           exchange.getIn.setHeader("test", "y")
@@ -81,19 +81,19 @@ class TypedActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll 
   feature("Communicate with an internally-registered typed actor using typed-actor endpoint URIs") {
     scenario("communication not possible") {
       intercept[ResolveEndpointFailedException] {
-        template.requestBodyAndHeader("typed-actor:tc?method=m2", "x", "test", "y")
+        mandatoryTemplate.requestBodyAndHeader("typed-actor:tc?method=m2", "x", "test", "y")
       }
     }
   }
 
   feature("Communicate with an externally-registered typed actor using typed-actor endpoint URIs") {
     scenario("two-way communication with method returning String") {
-      val result = template.requestBody("typed-actor:ta?method=foo", "test")
+      val result = mandatoryTemplate.requestBody("typed-actor:ta?method=foo", "test")
       assert(result === "foo: test")
     }
 
     scenario("two-way communication with method returning String via custom route") {
-      val result = template.requestBody("direct:test", "test")
+      val result = mandatoryTemplate.requestBody("direct:test", "test")
       assert(result === "foo: test")
     }
   }

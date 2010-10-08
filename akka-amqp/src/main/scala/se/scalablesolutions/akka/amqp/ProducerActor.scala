@@ -7,14 +7,14 @@ package se.scalablesolutions.akka.amqp
 import com.rabbitmq.client._
 
 import se.scalablesolutions.akka.amqp.AMQP.ProducerParameters
-import se.scalablesolutions.akka.AkkaException
 
 private[amqp] class ProducerActor(producerParameters: ProducerParameters)
     extends FaultTolerantChannelActor(
         producerParameters.exchangeParameters, producerParameters.channelParameters) {
 
   import producerParameters._
-  import exchangeParameters._
+
+  val exchangeName = exchangeParameters.flatMap(params => Some(params.exchangeName))
 
   producerId.foreach(id => self.id = id)
 
@@ -22,7 +22,7 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
 
     case message@Message(payload, routingKey, mandatory, immediate, properties) if channel.isDefined => {
       log.debug("Sending message [%s]", message)
-      channel.foreach(_.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), payload))
+      channel.foreach(_.basicPublish(exchangeName.getOrElse(""), routingKey, mandatory, immediate, properties.getOrElse(null), payload))
     }
     case message@Message(payload, routingKey, mandatory, immediate, properties) => {
       log.warning("Unable to send message [%s]", message)
@@ -55,9 +55,6 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
 
   override def toString =
     "AMQP.Poducer[id= "+ self.id +
-    ", exchange=" + exchangeName +
-    ", exchangeType=" + exchangeType +
-    ", durable=" + exchangeDurable +
-    ", autoDelete=" + exchangeAutoDelete + "]"
+    ", exchangeParameters=" + exchangeParameters + "]"
 }
 

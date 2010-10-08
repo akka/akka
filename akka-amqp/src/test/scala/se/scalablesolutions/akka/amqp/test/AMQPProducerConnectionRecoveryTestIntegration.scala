@@ -14,13 +14,12 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ChannelParameter
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
-class AMQPProducerChannelRecoveryTest extends JUnitSuite with MustMatchers {
+class AMQPProducerConnectionRecoveryTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def producerChannelRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def producerConnectionRecovery = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
-
     try {
       val startedLatch = new StandardLatch
       val restartingLatch = new StandardLatch
@@ -40,12 +39,12 @@ class AMQPProducerChannelRecoveryTest extends JUnitSuite with MustMatchers {
 
       val channelParameters = ChannelParameters(channelCallback = Some(producerCallback))
       val producerParameters = ProducerParameters(
-        ExchangeParameters("text_exchange", ExchangeType.Direct), channelParameters = Some(channelParameters))
+        Some(ExchangeParameters("text_exchange")), channelParameters = Some(channelParameters))
 
       val producer = AMQP.newProducer(connection, producerParameters)
       startedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
 
-      producer ! new ChannelShutdown(new ShutdownSignalException(false, false, "TestException", "TestRef"))
+      connection ! new ConnectionShutdown(new ShutdownSignalException(true, false, "TestException", "TestRef"))
       restartingLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
       restartedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
     } finally {

@@ -40,7 +40,7 @@ class Boot {
 
   // Use a custom Camel context and a custom touter builder
   CamelContextManager.init(new DefaultCamelContext(registry))
-  CamelContextManager.context.addRoutes(new CustomRouteBuilder)
+  CamelContextManager.mandatoryContext.addRoutes(new CustomRouteBuilder)
 
   val producer = actorOf[Producer1]
   val mediator = actorOf(new Transformer(producer))

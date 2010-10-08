@@ -170,9 +170,7 @@ trait RedisChatStorageFactory { this: Actor =>
  * Chat server. Manages sessions and redirects all other messages to the Session for the client.
  */
 trait ChatServer extends Actor {
-  self.faultHandler = Some(OneForOneStrategy(5, 5000))
-  self.trapExit = List(classOf[Exception])
-
+  self.faultHandler = OneForOneStrategy(List(classOf[Exception]),5, 5000)
   val storage: ActorRef
 
   log.info("Chat server is starting up...")
