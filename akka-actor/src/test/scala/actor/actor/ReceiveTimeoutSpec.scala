@@ -41,7 +41,7 @@ class ReceiveTimeoutSpec extends JUnitSuite {
     assert(timeoutLatch.tryAwait(3, TimeUnit.SECONDS))
 
     val swappedLatch = new StandardLatch
-    timeoutActor ! HotSwap(Some{
+    timeoutActor ! HotSwap({
       case ReceiveTimeout => swappedLatch.open
     })
 

@@ -44,7 +44,9 @@ abstract class RemoteActor(address: InetSocketAddress) extends Actor {
  */
 @serializable sealed trait LifeCycleMessage
 
-case class HotSwap(code: Option[Actor.Receive]) extends LifeCycleMessage
+case class HotSwap(code: Actor.Receive) extends LifeCycleMessage
+
+case object RevertHotSwap extends LifeCycleMessage
 
 case class Restart(reason: Throwable) extends LifeCycleMessage
 
@@ -438,20 +440,16 @@ trait Actor extends Logging {
    */
   def isDefinedAt(message: Any): Boolean = processingBehavior.isDefinedAt(message)
 
-  /** One of the fundamental methods of the ActorsModel
-   * Actor assumes a new behavior,
-   * None reverts the current behavior to the original behavior
+  /**
+   * Changes tha Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
+   * Puts the behavior on top of the hotswap stack. 
    */
-  def become(behavior: Option[Receive]) {
-    self.hotswap = behavior
-  }
+  def become(behavior: Receive): Unit = self.hotswap = self.hotswap.push(behavior)
 
-  /** Akka Java API
-   * One of the fundamental methods of the ActorsModel
-   * Actor assumes a new behavior,
-   * null reverts the current behavior to the original behavior
+  /**
+   * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
-  def become(behavior: Receive): Unit = become(Option(behavior))
+  def unbecome: Unit = if (!self.hotswap.isEmpty) self.hotswap = self.hotswap.pop
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
@@ -463,13 +461,14 @@ trait Actor extends Logging {
     lazy val defaultBehavior = receive
     val actorBehavior: Receive = {
       case HotSwap(code)                 => become(code)
+      case RevertHotSwap                 => unbecome
       case Exit(dead, reason)            => self.handleTrapExit(dead, reason)
       case Link(child)                   => self.link(child)
       case Unlink(child)                 => self.unlink(child)
       case UnlinkAndStop(child)          => self.unlink(child); child.stop
       case Restart(reason)               => throw reason
-      case msg if self.hotswap.isDefined &&
-                  self.hotswap.get.isDefinedAt(msg) => self.hotswap.get.apply(msg)
+      case msg if !self.hotswap.isEmpty &&
+                  self.hotswap.head.isDefinedAt(msg) => self.hotswap.head.apply(msg)
       case msg if self.hotswap.isEmpty   &&
                   defaultBehavior.isDefinedAt(msg)  => defaultBehavior.apply(msg)
     }

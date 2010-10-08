@@ -258,8 +258,8 @@ object ReflectiveAccess extends Logging {
     ctor.setAccessible(true)
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: Exception =>
-      log.debug(e, "Could not instantiate class [%s] due to [%s]", clazz.getName, e.getMessage)
+    case e =>
+      log.debug("Could not instantiate class [%s] due to [%s]", clazz.getName, e)
       None
   }
 
@@ -275,8 +275,8 @@ object ReflectiveAccess extends Logging {
     ctor.setAccessible(true)
     Some(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: Exception =>
-      log.debug(e, "Could not instantiate class [%s] due to [%s]", fqn, e.getMessage)
+    case e =>
+      log.debug("Could not instantiate class [%s] due to [%s]", fqn, e)
       None
   }
 
@@ -287,8 +287,8 @@ object ReflectiveAccess extends Logging {
     instance.setAccessible(true)
     Option(instance.get(null).asInstanceOf[T])
   } catch {
-    case e: Exception =>
-      log.debug(e, "Could not get object [%s] due to [%s]", fqn, e.getMessage)
+    case e: ClassNotFoundException =>
+      log.debug("Could not get object [%s] due to [%s]", fqn, e)
       None
   }
 
@@ -296,6 +296,6 @@ object ReflectiveAccess extends Logging {
     assert(fqn ne null)
     Some(classloader.loadClass(fqn).asInstanceOf[Class[T]])
   } catch {
-    case e: Exception => None
+    case e => None
   }
 }

@@ -27,6 +27,7 @@ import java.util.{ Map => JMap }
 import java.lang.reflect.Field
 
 import scala.reflect.BeanProperty
+import scala.collection.immutable.Stack
 
 object ActorRefStatus {
   /** LifeCycles for ActorRefs
@@ -182,7 +183,7 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
    * Holds the hot swapped partial function.
    */
   @volatile
-  protected[akka] var hotswap: Option[PartialFunction[Any, Unit]] = None // FIXME: _hotswap should be a stack
+  protected[akka] var hotswap = Stack[PartialFunction[Any, Unit]]()
 
   /**
    * User overridable callback/setting.
@@ -694,7 +695,7 @@ class LocalActorRef private[akka] (
     __receiveTimeout: Option[Long],
     __lifeCycle: LifeCycle,
     __supervisor: Option[ActorRef],
-    __hotswap: Option[PartialFunction[Any, Unit]],
+    __hotswap: Stack[PartialFunction[Any, Unit]],
     __factory: () => Actor) = {
     this(__factory)
     _uuid = __uuid
