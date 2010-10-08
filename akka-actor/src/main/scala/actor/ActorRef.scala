@@ -6,7 +6,6 @@ package se.scalablesolutions.akka.actor
 
 import se.scalablesolutions.akka.dispatch._
 import se.scalablesolutions.akka.config.Config._
-import se.scalablesolutions.akka.config.{ AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy }
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.stm.global._
 import se.scalablesolutions.akka.stm.TransactionManagement._
@@ -27,6 +26,7 @@ import java.util.{ Map => JMap }
 import java.lang.reflect.Field
 
 import scala.reflect.BeanProperty
+import se.scalablesolutions.akka.config.{NoFaultHandlingStrategy, AllForOneStrategy, OneForOneStrategy, FaultHandlingStrategy}
 
 object ActorRefStatus {
   /** LifeCycles for ActorRefs
@@ -126,39 +126,19 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
 
   /**
    * Akka Java API
-   * Set 'trapExit' to the list of exception classes that the actor should be able to trap
-   * from the actor it is supervising. When the supervising actor throws these exceptions
-   * then they will trigger a restart.
-   * <p/>
-   *
-   * Trap all exceptions:
-   * <pre>
-   * getContext().setTrapExit(new Class[]{Throwable.class});
-   * </pre>
-   *
-   * Trap specific exceptions only:
-   * <pre>
-   * getContext().setTrapExit(new Class[]{MyApplicationException.class, MyApplicationError.class});
-   * </pre>
-   */
-  def setTrapExit(exceptions: Array[Class[_ <: Throwable]]) = trapExit = exceptions.toList
-  def getTrapExit(): Array[Class[_ <: Throwable]] = trapExit.toArray
-
-  /**
-   * Akka Java API
-   * If 'trapExit' is set for the actor to act as supervisor, then a 'faultHandler' must be defined.
+   *  A faultHandler defines what should be done when a linked actor signals an error.
    * <p/>
    * Can be one of:
    * <pre>
-   * getContext().setFaultHandler(new AllForOneStrategy(maxNrOfRetries, withinTimeRange));
+   * getContext().setFaultHandler(new AllForOneStrategy(new Class[]{Throwable.class},maxNrOfRetries, withinTimeRange));
    * </pre>
    * Or:
    * <pre>
-   * getContext().setFaultHandler(new OneForOneStrategy(maxNrOfRetries, withinTimeRange));
+   * getContext().setFaultHandler(new OneForOneStrategy(new Class[]{Throwable.class},maxNrOfRetries, withinTimeRange));
    * </pre>
    */
-  def setFaultHandler(handler: FaultHandlingStrategy) = this.faultHandler = Some(handler)
-  def getFaultHandler(): Option[FaultHandlingStrategy] = faultHandler
+  def setFaultHandler(handler: FaultHandlingStrategy)
+  def getFaultHandler(): FaultHandlingStrategy
 
   @volatile
   private[akka] var _dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
@@ -520,7 +500,7 @@ trait ActorRef extends ActorRefShared with TransactionManagement with Logging wi
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
    * receive a notification if the linked actor has crashed.
    * <p/>
-   * If the 'trapExit' member field has been set to at contain at least one exception class then it will
+   * If the 'trapExit' member field of the 'faultHandler' has been set to at contain at least one exception class then it will
    * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
    * defined by the 'faultHandler'.
    */
@@ -845,7 +825,7 @@ class LocalActorRef private[akka] (
    * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
    * receive a notification if the linked actor has crashed.
    * <p/>
-   * If the 'trapExit' member field has been set to at contain at least one exception class then it will
+   * If the 'trapExit' member field of the 'faultHandler' has been set to at contain at least one exception class then it will
    * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
    * defined by the 'faultHandler'.
    * <p/>
@@ -1034,20 +1014,19 @@ class LocalActorRef private[akka] (
   }
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = {
-    if (trapExit.exists(_.isAssignableFrom(reason.getClass))) {
+    if (faultHandler.trapExit.exists(_.isAssignableFrom(reason.getClass))) {
       faultHandler match {
-        case Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+        case AllForOneStrategy(_,maxNrOfRetries, withinTimeRange) =>
           restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
 
-        case Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange)) =>
+        case OneForOneStrategy(_,maxNrOfRetries, withinTimeRange) =>
           dead.restart(reason, maxNrOfRetries, withinTimeRange)
 
-        case None => throw new IllegalActorStateException(
-          "No 'faultHandler' defined for an actor with the 'trapExit' member field defined " +
-          "\n\tto non-empty list of exception classes - can't proceed " + toString)
+        case NoFaultHandlingStrategy =>
+          notifySupervisorWithMessage(Exit(this, reason)) //This shouldn't happen
       }
     } else {
-      notifySupervisorWithMessage(Exit(this, reason)) // if 'trapExit' is not defined then pass the Exit on
+      notifySupervisorWithMessage(Exit(this, reason)) // if 'trapExit' isn't triggered then pass the Exit on
     }
   }
 
@@ -1360,7 +1339,7 @@ object RemoteActorSystemMessage {
  */
 private[akka] case class RemoteActorRef private[akka] (
   classOrServiceName: String,
-  val className: String,
+  val actorClassName: String,
   val hostname: String,
   val port: Int,
   _timeout: Long,
@@ -1374,7 +1353,6 @@ private[akka] case class RemoteActorRef private[akka] (
   timeout = _timeout
 
   start
-  lazy val remoteClient = RemoteClientModule.clientFor(hostname, port, loader)
 
   def postMessageToMailbox(message: Any, senderOption: Option[ActorRef]): Unit =
     RemoteClientModule.send[Any](
@@ -1391,20 +1369,17 @@ private[akka] case class RemoteActorRef private[akka] (
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
-  def start: ActorRef = {
+  def start: ActorRef = synchronized {
     _status = ActorRefStatus.RUNNING
     this
   }
 
-  def stop: Unit = {
-    _status = ActorRefStatus.SHUTDOWN
-    postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+  def stop: Unit = synchronized {
+    if (_status != ActorRefStatus.SHUTDOWN) {
+      _status = ActorRefStatus.SHUTDOWN
+      postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+    }
   }
-
-  /**
-   * Returns the class name for the Actor instance that is managed by the ActorRef.
-   */
-  def actorClassName: String = className
 
   protected[akka] def registerSupervisorAsRemoteActor: Option[Uuid] = None
 
@@ -1496,47 +1471,21 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
 
   /**
    * User overridable callback/setting.
-   *
    * <p/>
-   * Set trapExit to the list of exception classes that the actor should be able to trap
-   * from the actor it is supervising. When the supervising actor throws these exceptions
-   * then they will trigger a restart.
-   * <p/>
-   *
-   * Trap no exceptions:
-   * <pre>
-   * trapExit = Nil
-   * </pre>
-   *
-   * Trap all exceptions:
-   * <pre>
-   * trapExit = List(classOf[Throwable])
-   * </pre>
-   *
-   * Trap specific exceptions only:
-   * <pre>
-   * trapExit = List(classOf[MyApplicationException], classOf[MyApplicationError])
-   * </pre>
-   */
-  @volatile
-  var trapExit: List[Class[_ <: Throwable]] = Nil
-
-  /**
-   * User overridable callback/setting.
-   * <p/>
-   * If 'trapExit' is set for the actor to act as supervisor, then a faultHandler must be defined.
+   *  Don't forget to supply a List of exception types to intercept (trapExit)
    * <p/>
    * Can be one of:
    * <pre>
-   *  faultHandler = Some(AllForOneStrategy(maxNrOfRetries, withinTimeRange))
+   *  faultHandler = AllForOneStrategy(trapExit = List(classOf[Exception]),maxNrOfRetries, withinTimeRange)
    * </pre>
    * Or:
    * <pre>
-   *  faultHandler = Some(OneForOneStrategy(maxNrOfRetries, withinTimeRange))
+   *  faultHandler = OneForOneStrategy(trapExit = List(classOf[Exception]),maxNrOfRetries, withinTimeRange)
    * </pre>
    */
   @volatile
-  var faultHandler: Option[FaultHandlingStrategy] = None
+  @BeanProperty
+  var faultHandler: FaultHandlingStrategy = NoFaultHandlingStrategy
 
   /**
    * The reference sender Actor of the last received message.
