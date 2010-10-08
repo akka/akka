@@ -5,8 +5,8 @@ import com.google.protobuf.Message
 import se.scalablesolutions.akka.actor.{Actor, ActorRef}
 import Actor._
 import se.scalablesolutions.akka.amqp._
-import se.scalablesolutions.akka.util.Procedure
 import reflect.Manifest
+import se.scalablesolutions.akka.japi
 
 object RPC {
 
@@ -44,7 +44,7 @@ object RPC {
                          exchangeName: String,
                          routingKey: String,
                          serializer: RpcServerSerializer[I, O],
-                         requestHandler: se.scalablesolutions.akka.util.Function[I,O]): RpcServerHandle = {
+                         requestHandler: japi.Function[I,O]): RpcServerHandle = {
     newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _)
   }
 
@@ -53,7 +53,7 @@ object RPC {
                          exchangeName: String,
                          routingKey: String,
                          serializer: RpcServerSerializer[I, O],
-                         requestHandler: se.scalablesolutions.akka.util.Function[I,O],
+                         requestHandler: Function[I,O],
                          queueName: String): RpcServerHandle = {
     newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _, Some(queueName))
   }
@@ -63,7 +63,7 @@ object RPC {
                          exchangeName: String,
                          routingKey: String,
                          serializer: RpcServerSerializer[I, O],
-                         requestHandler: se.scalablesolutions.akka.util.Function[I,O],
+                         requestHandler: japi.Function[I,O],
                          channelParameters: ChannelParameters): RpcServerHandle = {
     newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _, None, Some(channelParameters))
   }
@@ -73,7 +73,7 @@ object RPC {
                          exchangeName: String,
                          routingKey: String,
                          serializer: RpcServerSerializer[I, O],
-                         requestHandler: se.scalablesolutions.akka.util.Function[I,O],
+                         requestHandler: japi.Function[I,O],
                          queueName: String,
                          channelParameters: ChannelParameters): RpcServerHandle = {
     newRpcServer(connection, exchangeName, routingKey, serializer, requestHandler.apply _, Some(queueName), Some(channelParameters))
@@ -122,12 +122,12 @@ object RPC {
     }
 
     // Needed for Java API usage
-    def callAsync(request: O, responseHandler: Procedure[I]): Unit = {
+    def callAsync(request: O, responseHandler: japi.Procedure[I]): Unit = {
       callAsync(request, 5000, responseHandler)
     }
 
     // Needed for Java API usage
-    def callAsync(request: O, timeout: Long, responseHandler: Procedure[I]): Unit = {
+    def callAsync(request: O, timeout: Long, responseHandler: japi.Procedure[I]): Unit = {
       callAsync(request, timeout){
         case Some(response) => responseHandler.apply(response)
       }
@@ -147,7 +147,7 @@ object RPC {
   def newProtobufRpcServer[I <: Message, O <: Message](
           connection: ActorRef,
           exchangeName: String,
-          requestHandler: se.scalablesolutions.akka.util.Function[I,O],
+          requestHandler: japi.Function[I,O],
           resultClazz: Class[I]): RpcServerHandle = {
 
     implicit val manifest = Manifest.classType[I](resultClazz)
@@ -158,7 +158,7 @@ object RPC {
   def newProtobufRpcServer[I <: Message, O <: Message](
           connection: ActorRef,
           exchangeName: String,
-          requestHandler: se.scalablesolutions.akka.util.Function[I,O],
+          requestHandler: japi.Function[I,O],
           routingKey: String,
           resultClazz: Class[I]): RpcServerHandle = {
 
@@ -170,7 +170,7 @@ object RPC {
   def newProtobufRpcServer[I <: Message, O <: Message](
           connection: ActorRef,
           exchangeName: String,
-          requestHandler: se.scalablesolutions.akka.util.Function[I,O],
+          requestHandler: japi.Function[I,O],
           routingKey: String,
           queueName: String,
           resultClazz: Class[I]): RpcServerHandle = {
@@ -240,14 +240,14 @@ object RPC {
   // Needed for Java API usage
   def newStringRpcServer(connection: ActorRef,
                         exchangeName: String,
-                        requestHandler: se.scalablesolutions.akka.util.Function[String,String]): RpcServerHandle = {
+                        requestHandler: japi.Function[String,String]): RpcServerHandle = {
     newStringRpcServer(connection, exchangeName, requestHandler.apply _)
   }
 
   // Needed for Java API usage
   def newStringRpcServer(connection: ActorRef,
                         exchangeName: String,
-                        requestHandler: se.scalablesolutions.akka.util.Function[String,String],
+                        requestHandler: japi.Function[String,String],
                         routingKey: String): RpcServerHandle = {
     newStringRpcServer(connection, exchangeName, requestHandler.apply _, Some(routingKey))
   }
@@ -255,7 +255,7 @@ object RPC {
   // Needed for Java API usage
   def newStringRpcServer(connection: ActorRef,
                         exchangeName: String,
-                        requestHandler: se.scalablesolutions.akka.util.Function[String,String],
+                        requestHandler: japi.Function[String,String],
                         routingKey: String,
                         queueName: String): RpcServerHandle = {
     newStringRpcServer(connection, exchangeName, requestHandler.apply _, Some(routingKey), Some(queueName))
