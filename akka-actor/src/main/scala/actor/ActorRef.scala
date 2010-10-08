@@ -1050,19 +1050,24 @@ class LocalActorRef private[akka] (
     }
   }
 
+  protected[akka] def canRestart(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
+    (maxNrOfRetries, withinTimeRange) match {
+      case (None, None) => // immortal
+        true
+      case (Some(maxNrOfRetries), None) => // restrict number of restarts
+        maxNrOfRetriesCount < maxNrOfRetries
+      case (None, Some(withinTimeRange)) => // cannot restart within time range since last restart
+        canRestart(Some(1), Some(withinTimeRange))
+      case (Some(maxNrOfRetries), Some(withinTimeRange)) => // cannot restart more than N within M timerange
+        !((maxNrOfRetriesCount >= maxNrOfRetries) &&
+          (System.currentTimeMillis - restartsWithinTimeRangeTimestamp < withinTimeRange))
+    }
+  }
+
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
-    if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis // first time around
+    if (maxNrOfRetriesCount == 0) restartsWithinTimeRangeTimestamp = System.currentTimeMillis
 
-    val tooManyRestarts = if (maxNrOfRetries.isDefined) {
-      maxNrOfRetriesCount += 1
-      maxNrOfRetriesCount > maxNrOfRetries.get
-    } else false
-
-    val restartingHasExpired = if (withinTimeRange.isDefined)
-      (System.currentTimeMillis - restartsWithinTimeRangeTimestamp) > withinTimeRange.get
-    else false
-
-    if (tooManyRestarts || restartingHasExpired) {
+    if (!canRestart(maxNrOfRetries, withinTimeRange)) {
       val notification = MaximumNumberOfRestartsWithinTimeRangeReached(this, maxNrOfRetries, withinTimeRange, reason)
       Actor.log.warning(
         "Maximum number of restarts [%s] within time range [%s] reached." +
@@ -1096,6 +1101,13 @@ class LocalActorRef private[akka] (
             else restartActor(failedActor, reason)
 
             _status = ActorRefStatus.RUNNING
+
+            // update restart parameters
+            if (maxNrOfRetries.isDefined && maxNrOfRetriesCount % maxNrOfRetries.get == 0 && maxNrOfRetriesCount != 0)
+              restartsWithinTimeRangeTimestamp = System.currentTimeMillis
+            else if (!maxNrOfRetries.isDefined)
+              restartsWithinTimeRangeTimestamp = System.currentTimeMillis
+            maxNrOfRetriesCount += 1
         }
       }
     }
