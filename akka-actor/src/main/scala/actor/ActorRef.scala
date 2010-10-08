@@ -1375,7 +1375,7 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   def stop: Unit = synchronized {
-    if (_status != ActorRefStatus.SHUTDOWN) {
+    if (_status == ActorRefStatus.RUNNING) {
       _status = ActorRefStatus.SHUTDOWN
       postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
     }
