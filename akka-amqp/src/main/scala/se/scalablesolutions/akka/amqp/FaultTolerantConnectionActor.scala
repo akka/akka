@@ -19,9 +19,6 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
   self.lifeCycle = Permanent
   self.faultHandler = OneForOneStrategy(List(classOf[Throwable]))
 
-  self.trapExit = List(classOf[Throwable])
-  self.faultHandler = Some(OneForOneStrategy(None, None)) // never die
-
   val reconnectionTimer = new Timer("%s-timer".format(self.id))
 
   val connectionFactory: ConnectionFactory = new ConnectionFactory()

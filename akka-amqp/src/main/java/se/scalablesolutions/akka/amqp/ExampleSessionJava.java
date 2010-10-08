@@ -10,8 +10,8 @@ import se.scalablesolutions.akka.actor.UntypedActorFactory;
 import se.scalablesolutions.akka.amqp.rpc.RPC;
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol;
 
-import se.scalablesolutions.akka.util.Function;
-import se.scalablesolutions.akka.util.Procedure;
+import se.scalablesolutions.akka.japi.Function;
+import se.scalablesolutions.akka.japi.Procedure;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
