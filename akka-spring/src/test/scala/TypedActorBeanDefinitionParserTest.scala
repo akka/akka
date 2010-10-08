@@ -31,7 +31,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                                         </akka:typed-actor>
 
       val props = parser.parseActor(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.timeout === 1000)
       assert(props.target === "foo.bar.MyPojo")
       assert(props.transactional)
@@ -53,7 +53,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                   <akka:dispatcher type="thread-based" name="my-thread-based-dispatcher"/>
                 </akka:typed-actor>
       val props = parser.parseActor(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.dispatcher.dispatcherType === "thread-based")
     }
 
@@ -63,7 +63,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                   <akka:remote host="com.some.host" port="9999"/>
                 </akka:typed-actor>
       val props = parser.parseActor(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.host === "com.some.host")
       assert(props.port === "9999")
       assert(!props.serverManaged)
@@ -75,7 +75,7 @@ class TypedActorBeanDefinitionParserTest extends Spec with ShouldMatchers {
                   <akka:remote host="com.some.host" port="9999" service-name="my-service"/>
                 </akka:typed-actor>
       val props = parser.parseActor(dom(xml).getDocumentElement);
-      assert(props != null)
+      assert(props ne null)
       assert(props.host === "com.some.host")
       assert(props.port === "9999")
       assert(props.serviceName === "my-service")

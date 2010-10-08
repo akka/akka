@@ -21,7 +21,7 @@ object TypedActorComponent {
 
 /**
  * Camel component for exchanging messages with typed actors. This component
- * tries to obtain the typed actor from the <code>typedActorRegistry</code>
+ * tries to obtain the typed actor from its <code>typedActorRegistry</code>
  * first. If it's not there it tries to obtain it from the CamelContext's registry.
  *
  * @see org.apache.camel.component.bean.BeanComponent
@@ -32,9 +32,9 @@ class TypedActorComponent extends BeanComponent {
   val typedActorRegistry = new ConcurrentHashMap[String, AnyRef]
 
   /**
-   * Creates a {@link org.apache.camel.component.bean.BeanEndpoint} with a custom
-   * bean holder that uses <code>typedActorRegistry</code> for getting access to
-   * typed actors (beans).
+   * Creates an <code>org.apache.camel.component.bean.BeanEndpoint</code> with a custom
+   * bean holder that uses <code>typedActorRegistry</code> for getting access to typed
+   * actors (beans).
    *
    * @see se.scalablesolutions.akka.camel.component.TypedActorHolder
    */
@@ -51,7 +51,7 @@ class TypedActorComponent extends BeanComponent {
 }
 
 /**
- * {@link org.apache.camel.component.bean.BeanHolder} implementation that uses a custom
+ * <code>org.apache.camel.component.bean.BeanHolder</code> implementation that uses a custom
  * registry for getting access to typed actors.
  *
  * @author Martin Krasser
@@ -60,13 +60,16 @@ class TypedActorHolder(typedActorRegistry: Map[String, AnyRef], context: CamelCo
     extends RegistryBean(context, name) {
 
   /**
-   * Returns an {@link se.scalablesolutions.akka.camel.component.TypedActorInfo} instance.
+   * Returns an <code>se.scalablesolutions.akka.camel.component.TypedActorInfo</code> instance.
    */
   override def getBeanInfo: BeanInfo =
     new TypedActorInfo(getContext, getBean.getClass, getParameterMappingStrategy)
 
   /**
-   * Obtains an typed actor from <code>typedActorRegistry</code>.
+   * Obtains a typed actor from <code>typedActorRegistry</code>. If the typed actor cannot
+   * be found then this method tries to obtain the actor from the CamelContext's registry.
+   *
+   * @return a typed actor or <code>null</code>.
    */
   override def getBean: AnyRef = {
     val bean = typedActorRegistry.get(getName)
@@ -75,7 +78,7 @@ class TypedActorHolder(typedActorRegistry: Map[String, AnyRef], context: CamelCo
 }
 
 /**
- * Provides typed actor meta information.
+ * Typed actor meta information.
  *
  * @author Martin Krasser
  */
@@ -101,7 +104,7 @@ class TypedActorInfo(context: CamelContext, clazz: Class[_], strategy: Parameter
       }
     }
     val superclass = clazz.getSuperclass
-    if (superclass != null && !superclass.equals(classOf[AnyRef])) {
+    if ((superclass ne null) && !superclass.equals(classOf[AnyRef])) {
       introspect(superclass)
     }
   }

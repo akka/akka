@@ -14,16 +14,13 @@ import jsr166x.Deque
 import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
-import se.scalablesolutions.akka.camel.{Failure, CamelMessageConversion, Message}
-import CamelMessageConversion.toExchangeAdapter
+import se.scalablesolutions.akka.actor._
+import se.scalablesolutions.akka.camel.{Failure, Message}
+import se.scalablesolutions.akka.camel.CamelMessageConversion.toExchangeAdapter
 import se.scalablesolutions.akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 import se.scalablesolutions.akka.stm.TransactionConfig
-import se.scalablesolutions.akka.actor.{ScalaActorRef, ActorRegistry, Actor, ActorRef, Uuid, uuidFrom}
-
-import se.scalablesolutions.akka.AkkaException
 
 import scala.reflect.BeanProperty
-import se.scalablesolutions.akka.actor._
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -48,12 +45,13 @@ class ActorComponent extends DefaultComponent {
 }
 
 /**
- * Camel endpoint for referencing an (untyped) actor. The actor reference is given by the endpoint URI.
- * An actor can be referenced by its <code>ActorRef.id</code> or its <code>ActorRef.uuid</code>.
- * Supported endpoint URI formats are
- * <code>actor:&lt;actorid&gt;</code>,
- * <code>actor:id:&lt;actorid&gt;</code> and
- * <code>actor:uuid:&lt;actoruuid&gt;</code>.
+ * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
+ * are referenced using <code>actor</code> endpoint URIs of the following format:
+ * <code>actor:<actor-id></code>,
+ * <code>actor:id:<actor-id></code> and
+ * <code>actor:uuid:<actor-uuid></code>,
+ * where <code>actor-id</code> refers to <code>ActorRef.id</code> and  <code>actor-uuid</code>
+ * refers to the String-representation od <code>ActorRef.uuid</code>. 
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorProducer
@@ -66,8 +64,9 @@ class ActorEndpoint(uri: String,
                     val uuid: Option[Uuid]) extends DefaultEndpoint(uri, comp) {
 
   /**
-   * Blocking of caller thread during two-way message exchanges with consumer actors. This is set
-   * via the <code>blocking=true|false</code> endpoint URI parameter. If omitted blocking is false.
+   * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
+   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
+   * <code>false</code>.
    */
   @BeanProperty var blocking: Boolean = false
 
@@ -89,9 +88,18 @@ class ActorEndpoint(uri: String,
 }
 
 /**
- * Sends the in-message of an exchange to an (untyped) actor. If the exchange pattern is out-capable and
- * <code>blocking</code> is enabled then the producer waits for a reply (using the !! operator),
- * otherwise the ! operator is used for sending the message.
+ * Sends the in-message of an exchange to an (untyped) actor.
+ * <ul>
+ * <li>If the exchange pattern is out-capable and <code>blocking</code> is set to
+ * <code>true</code> then the producer waits for a reply, using the !! operator.</li>
+ * <li>If the exchange pattern is out-capable and <code>blocking</code> is set to
+ * <code>false</code> then the producer sends the message using the ! operator, together
+ * with a callback handler. The callback handler is an <code>ActorRef</code> that can be
+ * used by the receiving actor to asynchronously reply to the route that is sending the 
+ * message.</li>
+ * <li>If the exchange pattern is in-only then the producer sends the message using the
+ * ! operator.</li>
+ * </ul>
  *
  * @see se.scalablesolutions.akka.camel.component.ActorComponent
  * @see se.scalablesolutions.akka.camel.component.ActorEndpoint
@@ -186,11 +194,11 @@ private[akka] object AsyncCallbackAdapter {
 }
 
 /**
- * Adapts an <code>AsyncCallback</code> to <code>ActorRef.!</code>. Used by other actors to reply
- * asynchronously to Camel with <code>ActorRef.reply</code>.
+ * Adapts an <code>ActorRef</code> to a Camel <code>AsyncCallback</code>. Used by receiving actors to reply
+ * asynchronously to Camel routes with <code>ActorRef.reply</code>.
  * <p>
  * <em>Please note</em> that this adapter can only be used locally at the moment which should not
- * be a problem is most situations as Camel endpoints are only activated for local actor references,
+ * be a problem is most situations since Camel endpoints are only activated for local actor references,
  * never for remote references.
  *
  * @author Martin Krasser
@@ -207,8 +215,9 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   }
 
   /**
-   * Writes the reply <code>message</code> to <code>exchange</code> and uses <code>callback</code> to
-   * generate completion notifications.
+   * Populates the initial <code>exchange</code> with the reply <code>message</code> and uses the
+   * <code>callback</code> handler to notify Camel about the asynchronous completion of the message
+   * exchange.
    *
    * @param message reply message
    * @param sender ignored

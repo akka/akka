@@ -4,6 +4,7 @@ import org.apache.camel.{Endpoint, AsyncProcessor}
 import org.apache.camel.impl.DefaultCamelContext
 import org.junit._
 import org.scalatest.junit.JUnitSuite
+
 import se.scalablesolutions.akka.actor.uuidFrom
 
 class ActorComponentTest extends JUnitSuite {

@@ -78,7 +78,7 @@ object SupervisorSpec {
 
   class TemporaryActor extends Actor {
     import self._
-    lifeCycle = Some(LifeCycle(Temporary))
+    lifeCycle = Temporary
     def receive = {
       case Ping =>
         messageLog.put("ping")
@@ -95,8 +95,7 @@ object SupervisorSpec {
   }
 
   class Master extends Actor {
-    self.trapExit = classOf[Exception] :: Nil
-    self.faultHandler = Some(OneForOneStrategy(5, 1000))
+    self.faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
     val temp = self.spawnLink[TemporaryActor]
     override def receive = {
       case Die => temp !! (Die, 5000)
@@ -506,7 +505,7 @@ class SupervisorSpec extends JUnitSuite {
         RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           temporaryActor,
-          LifeCycle(Temporary))
+          Temporary)
         :: Nil))
   }
 
@@ -518,7 +517,7 @@ class SupervisorSpec extends JUnitSuite {
         RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
         :: Nil))
   }
 
@@ -530,7 +529,7 @@ class SupervisorSpec extends JUnitSuite {
         RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
         :: Nil))
   }
 
@@ -544,15 +543,15 @@ class SupervisorSpec extends JUnitSuite {
         RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
         ::
         Supervise(
           pingpong2,
-          LifeCycle(Permanent))
+          Permanent)
         ::
         Supervise(
           pingpong3,
-          LifeCycle(Permanent))
+          Permanent)
         :: Nil))
   }
 
@@ -566,15 +565,15 @@ class SupervisorSpec extends JUnitSuite {
         RestartStrategy(OneForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
         ::
         Supervise(
           pingpong2,
-          LifeCycle(Permanent))
+          Permanent)
         ::
         Supervise(
           pingpong3,
-          LifeCycle(Permanent))
+          Permanent)
         :: Nil))
   }
 
@@ -588,17 +587,17 @@ class SupervisorSpec extends JUnitSuite {
         RestartStrategy(AllForOne, 3, 5000, List(classOf[Exception])),
         Supervise(
           pingpong1,
-          LifeCycle(Permanent))
+          Permanent)
         ::
         SupervisorConfig(
           RestartStrategy(AllForOne, 3, 5000, Nil),
           Supervise(
             pingpong2,
-            LifeCycle(Permanent))
+            Permanent)
           ::
           Supervise(
             pingpong3,
-            LifeCycle(Permanent))
+            Permanent)
           :: Nil)
       :: Nil))
    }

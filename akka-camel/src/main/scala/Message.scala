@@ -10,7 +10,7 @@ import org.apache.camel.util.ExchangeHelper
 /**
  * An immutable representation of a Camel message. Actor classes that mix in
  * se.scalablesolutions.akka.camel.Producer or
- * se.scalablesolutions.akka.camel.Consumer use this message type for communication.
+ * se.scalablesolutions.akka.camel.Consumer usually use this message type for communication.
  *
  * @author Martin Krasser
  */
@@ -24,7 +24,7 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    * @see CamelContextManager.
    */
   def bodyAs[T](clazz: Class[T]): T =
-    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](clazz, body)
+    CamelContextManager.mandatoryContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
 
   /**
    * Returns the body of the message converted to the type <code>T</code>. Conversion is done
@@ -35,7 +35,7 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    * @see CamelContextManager.
    */
   def bodyAs[T](implicit m: Manifest[T]): T =
-    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], body)
+    CamelContextManager.mandatoryContext.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], body)
 
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
@@ -53,14 +53,14 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    * <code>NoSuchElementException</code> if the header doesn't exist.
    */
   def headerAs[T](name: String)(implicit m: Manifest[T]): T =
-    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], header(name))
+    CamelContextManager.mandatoryContext.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], header(name))
 
   /**
    * Returns the header with given <code>name</code> converted to type given by the <code>clazz</code>
    * argument. Throws <code>NoSuchElementException</code> if the header doesn't exist.
    */
   def headerAs[T](name: String, clazz: Class[T]): T =
-    CamelContextManager.context.getTypeConverter.mandatoryConvertTo[T](clazz, header(name))
+    CamelContextManager.mandatoryContext.getTypeConverter.mandatoryConvertTo[T](clazz, header(name))
 
   /**
    * Creates a Message with a new <code>body</code> using a <code>transformer</code> function.
@@ -264,8 +264,8 @@ class CamelMessageAdapter(val cm: CamelMessage) {
 
 /**
  * Defines conversion methods to CamelExchangeAdapter and CamelMessageAdapter.
- * Imported by applications
- * that implicitly want to use conversion methods of CamelExchangeAdapter and CamelMessageAdapter.
+ * Imported by applications that implicitly want to use conversion methods of
+ * CamelExchangeAdapter and CamelMessageAdapter.
  */
 object CamelMessageConversion {
 

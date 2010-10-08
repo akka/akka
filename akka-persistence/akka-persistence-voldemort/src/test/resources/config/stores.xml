@@ -15,9 +15,9 @@
         <value-serializer>
             <type>identity</type>
         </value-serializer>
-        </store>
+    </store>
     <store>
-        <name>MapValues</name>
+        <name>Maps</name>
         <replication-factor>1</replication-factor>
         <preferred-reads>1</preferred-reads>
         <required-reads>1</required-reads>
@@ -33,24 +33,7 @@
         </value-serializer>
     </store>
     <store>
-       <name>MapKeys</name>
-        <replication-factor>1</replication-factor>
-        <preferred-reads>1</preferred-reads>
-        <required-reads>1</required-reads>
-        <preferred-writes>1</preferred-writes>
-        <required-writes>1</required-writes>
-        <persistence>memory</persistence>
-        <routing>client</routing>
-        <key-serializer>
-            <type>string</type>
-            <schema-info>utf8</schema-info>
-        </key-serializer>
-        <value-serializer>
-            <type>identity</type>
-        </value-serializer>
-    </store>
-    <store>
-        <name>VectorValues</name>
+        <name>Vectors</name>
         <replication-factor>1</replication-factor>
         <preferred-reads>1</preferred-reads>
         <required-reads>1</required-reads>
@@ -66,7 +49,7 @@
         </value-serializer>
     </store>
     <store>
-       <name>VectorSizes</name>
+        <name>Queues</name>
         <replication-factor>1</replication-factor>
         <preferred-reads>1</preferred-reads>
         <required-reads>1</required-reads>
@@ -75,11 +58,11 @@
         <persistence>memory</persistence>
         <routing>client</routing>
         <key-serializer>
-            <type>string</type>
-            <schema-info>utf8</schema-info>
+            <type>identity</type>
         </key-serializer>
         <value-serializer>
             <type>identity</type>
         </value-serializer>
     </store>
+
 </stores>

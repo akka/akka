@@ -31,13 +31,15 @@ import se.scalablesolutions.akka.actor.{Actor, ActorRef, IllegalActorStateExcept
  */
 class ExecutorBasedEventDrivenWorkStealingDispatcher(
   _name: String,
-  capacity: Int = Dispatchers.MAILBOX_CAPACITY,
+  _mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
   config: (ThreadPoolBuilder) => Unit = _ => ()) extends MessageDispatcher with ThreadPoolBuilder {
 
-  def this(_name: String, capacity: Int) = this(_name,capacity, _ => ())
-  
-  mailboxCapacity = capacity
+  def this(_name: String, mailboxType: MailboxType) = this(_name, mailboxType, _ => ())
 
+  def this(_name: String) = this(_name, Dispatchers.MAILBOX_TYPE, _ => ())
+  
+  val mailboxType = Some(_mailboxType)
+  
   @volatile private var active: Boolean = false
 
   implicit def actorRef2actor(actorRef: ActorRef): Actor = actorRef.actor
@@ -73,33 +75,36 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
    * @return true if the mailbox was processed, false otherwise
    */
   private def tryProcessMailbox(mailbox: MessageQueue): Boolean = {
-    var lockAcquiredOnce = false
+    var mailboxWasProcessed = false
 
     // this do-wile loop is required to prevent missing new messages between the end of processing
     // the mailbox and releasing the lock
     do {
       if (mailbox.dispatcherLock.tryLock) {
-        lockAcquiredOnce = true
         try {
-          processMailbox(mailbox)
+          mailboxWasProcessed = processMailbox(mailbox)
         } finally {
           mailbox.dispatcherLock.unlock
         }
       }
-    } while ((lockAcquiredOnce && !mailbox.isEmpty))
+    } while ((mailboxWasProcessed && !mailbox.isEmpty))
 
-    lockAcquiredOnce
+    mailboxWasProcessed
   }
 
   /**
    * Process the messages in the mailbox of the given actor.
+   * @return
    */
-  private def processMailbox(mailbox: MessageQueue) = {
+  private def processMailbox(mailbox: MessageQueue): Boolean = {
     var messageInvocation = mailbox.dequeue
     while (messageInvocation ne null) {
       messageInvocation.invoke
+      if (messageInvocation.receiver.isBeingRestarted)
+        return false
       messageInvocation = mailbox.dequeue
     }
+    true
   }
 
   private def findThief(receiver: ActorRef): Option[ActorRef] = {
@@ -182,35 +187,45 @@ class ExecutorBasedEventDrivenWorkStealingDispatcher(
     buildThreadPool
   }
 
-  protected override def createMailbox(actorRef: ActorRef): AnyRef = {
-    if (mailboxCapacity <= 0) {
+  def createTransientMailbox(actorRef: ActorRef, mailboxType: TransientMailboxType): AnyRef = mailboxType match {
+    case UnboundedMailbox(blocking) => // FIXME make use of 'blocking' in work stealer ConcurrentLinkedDeque
       new ConcurrentLinkedDeque[MessageInvocation] with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
+
         def dequeue: MessageInvocation = this.poll()
 
-        def run = {
-          if (!tryProcessMailbox(this)) {
-            // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
-            // to another actor and then process his mailbox in stead.
-            findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
-          }
+        def run = if (!tryProcessMailbox(this)) {
+          // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
+          // to another actor and then process his mailbox in stead.
+          findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
         }
       }
-    }
-    else {
-      new LinkedBlockingDeque[MessageInvocation](mailboxCapacity) with MessageQueue with Runnable {
+    case BoundedMailbox(blocking, capacity, pushTimeOut) => 
+      val cap = if (mailboxCapacity == -1) capacity else mailboxCapacity
+      new LinkedBlockingDeque[MessageInvocation](cap) with MessageQueue with Runnable {
         def enqueue(handle: MessageInvocation): Unit = this.add(handle)
+
         def dequeue: MessageInvocation = this.poll()
 
-        def run = {
-          if (!tryProcessMailbox(this)) {
-            // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
-            // to another actor and then process his mailbox in stead.
-            findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef,_) )
-          }
+        def run = if (!tryProcessMailbox(this)) {
+          // we are not able to process our mailbox (another thread is busy with it), so lets donate some of our mailbox
+          // to another actor and then process his mailbox in stead.
+          findThief(actorRef).foreach( tryDonateAndProcessMessages(actorRef, _) )
         }
       }
-    }
+  }
+
+  /**
+   * Creates and returns a durable mailbox for the given actor.
+   */
+  protected def createDurableMailbox(actorRef: ActorRef, mailboxType: DurableMailboxType): AnyRef = mailboxType match {
+    // FIXME make generic (work for TypedActor as well)
+    case FileBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("FileBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case ZooKeeperBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("ZooKeeperBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case BeanstalkBasedDurableMailbox(serializer) => throw new UnsupportedOperationException("BeanstalkBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case RedisBasedDurableMailbox(serializer)     => throw new UnsupportedOperationException("RedisBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case AMQPBasedDurableMailbox(serializer)      => throw new UnsupportedOperationException("AMQPBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
+    case JMSBasedDurableMailbox(serializer)       => throw new UnsupportedOperationException("JMSBasedDurableMailbox is not yet supported for ExecutorBasedEventDrivenWorkStealingDispatcher")
   }
 
   override def register(actorRef: ActorRef) = {

@@ -12,7 +12,7 @@ import ConnectionFactory._
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.lang.{String, IllegalArgumentException}
 import reflect.Manifest
-import se.scalablesolutions.akka.util.Procedure
+import se.scalablesolutions.akka.japi.Procedure
 
 /**
  * AMQP Actor API. Implements Connection, Producer and Consumer materialized as Actors.
@@ -451,8 +451,7 @@ object AMQP {
   class AMQPSupervisorActor extends Actor {
     import self._
 
-    faultHandler = Some(OneForOneStrategy(None, None)) // never die
-    trapExit = List(classOf[Throwable])
+    faultHandler = OneForOneStrategy(List(classOf[Throwable]))
 
     def receive = {
       case _ => {} // ignore all messages

@@ -42,32 +42,30 @@ class AtmosphereRestServlet extends ServletContainer with AtmosphereServletProce
  * <p/>
  * Used by the Akka Kernel to bootstrap REST and Comet.
  */
-class AkkaServlet extends AtmosphereServlet with Logging {
+class AkkaServlet extends AtmosphereServlet {
   import se.scalablesolutions.akka.config.Config.{config => c}
 
+  /*
+   * Configure Atmosphere and Jersey (default, fall-back values)
+   */
   addInitParameter(AtmosphereServlet.DISABLE_ONSTATE_EVENT,"true")
   addInitParameter(AtmosphereServlet.BROADCASTER_CLASS,classOf[AkkaBroadcaster].getName)
   addInitParameter(AtmosphereServlet.PROPERTY_USE_STREAM,"true")
   addInitParameter("com.sun.jersey.config.property.packages",c.getList("akka.rest.resource_packages").mkString(";"))
   addInitParameter("com.sun.jersey.spi.container.ResourceFilters",c.getList("akka.rest.filters").mkString(","))
 
-  c.getInt("akka.rest.maxInactiveActivity") foreach { value =>
-    log.info("MAX_INACTIVE:%s",value.toString)
-    addInitParameter(CometSupport.MAX_INACTIVE,value.toString)
-  }
+  c.getInt("akka.rest.maxInactiveActivity") foreach { value => addInitParameter(CometSupport.MAX_INACTIVE,value.toString) }
+  c.getString("akka.rest.cometSupport") foreach { value => addInitParameter("cometSupport",value) }
 
-  c.getString("akka.rest.cometSupport") foreach { value =>
-    addInitParameter("cometSupport",value)
-  }
+  /*
+   * Provide a fallback for default values
+   */
+  override def getInitParameter(key : String) =
+    Option(super.getInitParameter(key)).getOrElse(initParams get key)
 
-
-  val servlet = new AtmosphereRestServlet {
-    override def getInitParameter(key : String) = AkkaServlet.this.getInitParameter(key)
-    override def getInitParameterNames() = AkkaServlet.this.getInitParameterNames()
-  }
-
-  override def getInitParameter(key : String) = Option(super.getInitParameter(key)).getOrElse(initParams.get(key))
-
+  /*
+   * Provide a fallback for default values
+   */
   override def getInitParameterNames() = {
     import scala.collection.JavaConversions._
     initParams.keySet.iterator ++ super.getInitParameterNames
@@ -80,24 +78,24 @@ class AkkaServlet extends AtmosphereServlet with Logging {
   override def loadConfiguration(sc: ServletConfig) {
     config.setSupportSession(false)
     isBroadcasterSpecified = true
+
+    //The bridge between Atmosphere and Jersey
+    val servlet = new AtmosphereRestServlet {
+      //These are needed to make sure that Jersey is reading the config from the outer servlet
+      override def getInitParameter(key : String) = AkkaServlet.this.getInitParameter(key)
+      override def getInitParameterNames() = AkkaServlet.this.getInitParameterNames()
+    }
+
     addAtmosphereHandler("/*", servlet, new AkkaBroadcaster)
   }
 
-   /**
-    * This method is overridden because Akka Kernel is bundles with Grizzly, so if we deploy the Kernel in another container,
-    * we need to handle that.
-    */
-   override def createCometSupportResolver() : CometSupportResolver = {
-      import scala.collection.JavaConversions._
+  override lazy val createCometSupportResolver: CometSupportResolver = new DefaultCometSupportResolver(config) {
+    import scala.collection.JavaConversions._
 
-      new DefaultCometSupportResolver(config) {
-        type CS = CometSupport[_ <: AtmosphereResource[_,_]]
+    lazy val desiredCometSupport =
+      Option(AkkaServlet.this.getInitParameter("cometSupport")) filter testClassExists map newCometSupport
 
-        override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CS = {
-           val predef = config.getInitParameter("cometSupport")
-           if (testClassExists(predef)) newCometSupport(predef)
-           else super.resolve(useNativeIfPossible, useBlockingAsDefault)
-        }
-      }
+    override def resolve(useNativeIfPossible : Boolean, useBlockingAsDefault : Boolean) : CometSupport[_ <: AtmosphereResource[_,_]] =
+      desiredCometSupport.getOrElse(super.resolve(useNativeIfPossible, useBlockingAsDefault))
   }
 }

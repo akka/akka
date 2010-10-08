@@ -33,11 +33,11 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
     val strategyElement = mandatoryElement(element, STRATEGY_TAG)
     val typedActorsElement = DomUtils.getChildElementByTagName(element, TYPED_ACTORS_TAG)
     val untypedActorsElement = DomUtils.getChildElementByTagName(element, UNTYPED_ACTORS_TAG)
-    if ((typedActorsElement == null) && (untypedActorsElement == null)) {
+    if ((typedActorsElement eq null) && (untypedActorsElement eq null)) {
       throw new IllegalArgumentException("One of 'akka:typed-actors' or 'akka:untyped-actors' needed.")
     }
     parseRestartStrategy(strategyElement, builder)
-    if (typedActorsElement != null) {
+    if (typedActorsElement ne null) {
       builder.addPropertyValue("typed", AkkaSpringConfigurationTags.TYPED_ACTOR_TAG)
       parseTypedActorList(typedActorsElement, builder)
     } else {

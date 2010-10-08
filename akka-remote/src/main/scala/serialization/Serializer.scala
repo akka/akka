@@ -129,7 +129,6 @@ object Serializer {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   trait ScalaJSON {
-    import dispatch.json._
     import sjson.json._
 
     var classLoader: Option[ClassLoader] = None
