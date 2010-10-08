@@ -8,9 +8,9 @@ import java.util.{TimerTask, Timer}
 import java.io.IOException
 import com.rabbitmq.client._
 import se.scalablesolutions.akka.amqp.AMQP.ConnectionParameters
-import se.scalablesolutions.akka.actor.{Exit, Actor}
 import se.scalablesolutions.akka.config.ScalaConfig.{Permanent, LifeCycle}
 import se.scalablesolutions.akka.config.OneForOneStrategy
+import se.scalablesolutions.akka.actor.{ActorRef, Exit, Actor}
 
 private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor {
   import connectionParameters._
@@ -68,8 +68,9 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
             }
           })
           log.info("Successfully (re)connected to AMQP Server %s:%s [%s]", host, port, self.id)
-          log.debug("Sending new channel to %d already linked actors", self.linkedActorsAsList.size)
-          self.linkedActorsAsList.foreach(_ ! conn.createChannel)
+          log.debug("Sending new channel to %d already linked actors", self.linkedActors.size)
+          import scala.collection.JavaConversions._
+          self.linkedActors.values.iterator.foreach(_ ! conn.createChannel)
           notifyCallback(Connected)
       }
     } catch {
