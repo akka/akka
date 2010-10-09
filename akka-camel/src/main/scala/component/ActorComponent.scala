@@ -206,12 +206,12 @@ private[akka] object AsyncCallbackAdapter {
 private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCallback) extends ActorRef with ScalaActorRef {
 
   def start = {
-    _status = ActorRefStatus.RUNNING
+    _status = ActorRefInternals.RUNNING
     this
   }
 
   def stop() = {
-    _status = ActorRefStatus.SHUTDOWN
+    _status = ActorRefInternals.SHUTDOWN
   }
 
   /**
