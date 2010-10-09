@@ -15,15 +15,15 @@ import se.scalablesolutions.akka.amqp.AMQP._
 import org.scalatest.junit.JUnitSuite
 import se.scalablesolutions.akka.actor.Actor._
 
-class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers {
+class AMQPConsumerChannelRecoveryTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerChannelRecovery = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerChannelRecovery = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
     try {
       val producer = AMQP.newProducer(connection, ProducerParameters(
-        ExchangeParameters("text_exchange", ExchangeType.Direct)))
+        Some(ExchangeParameters("text_exchange"))))
 
       val consumerStartedLatch = new StandardLatch
       val consumerRestartedLatch = new StandardLatch
@@ -40,11 +40,11 @@ class AMQPConsumerChannelRecoveryTest extends JUnitSuite with MustMatchers {
       }
 
       val payloadLatch = new StandardLatch
-      val consumerExchangeParameters = ExchangeParameters("text_exchange", ExchangeType.Direct)
+      val consumerExchangeParameters = ExchangeParameters("text_exchange")
       val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
-      val consumer = AMQP.newConsumer(connection, ConsumerParameters(consumerExchangeParameters, "non.interesting.routing.key", actor {
+      val consumer = AMQP.newConsumer(connection, ConsumerParameters("non.interesting.routing.key", actor {
         case Delivery(payload, _, _, _, _) => payloadLatch.open
-      }, channelParameters = Some(consumerChannelParameters)))
+      }, exchangeParameters = Some(consumerExchangeParameters), channelParameters = Some(consumerChannelParameters)))
       consumerStartedLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
 
       val listenerLatch = new StandardLatch

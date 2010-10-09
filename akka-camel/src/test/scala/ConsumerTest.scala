@@ -14,7 +14,7 @@ import se.scalablesolutions.akka.actor._
  * @author Martin Krasser
  */
 class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
-  import CamelContextManager.template
+  import CamelContextManager.mandatoryTemplate
   import ConsumerTest._
 
   var service: CamelService = _
@@ -45,12 +45,12 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
     val consumer = actorOf(new TestConsumer("direct:publish-test-2"))
     "started before starting the CamelService" must {
       "support an in-out message exchange via its endpoint" in {
-        template.requestBody("direct:publish-test-1", "msg1") must equal ("received msg1")
+        mandatoryTemplate.requestBody("direct:publish-test-1", "msg1") must equal ("received msg1")
       }
     }
     "not started" must {
       "not have an associated endpoint in the CamelContext" in {
-        CamelContextManager.context.hasEndpoint("direct:publish-test-2") must be (null)
+        CamelContextManager.mandatoryContext.hasEndpoint("direct:publish-test-2") must be (null)
       }
     }
     "started" must {
@@ -58,10 +58,10 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         val latch = service.expectEndpointActivationCount(1)
         consumer.start
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
-        template.requestBody("direct:publish-test-2", "msg2") must equal ("received msg2")
+        mandatoryTemplate.requestBody("direct:publish-test-2", "msg2") must equal ("received msg2")
       }
       "have an associated endpoint in the CamelContext" in {
-        CamelContextManager.context.hasEndpoint("direct:publish-test-2") must not be (null)
+        CamelContextManager.mandatoryContext.hasEndpoint("direct:publish-test-2") must not be (null)
       }
     }
     "stopped" must {
@@ -70,7 +70,7 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         consumer.stop
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
         intercept[CamelExecutionException] {
-          template.requestBody("direct:publish-test-2", "msg2")
+          mandatoryTemplate.requestBody("direct:publish-test-2", "msg2")
         }
       }
     }
@@ -83,9 +83,9 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         val latch = service.expectEndpointActivationCount(3)
         actor = TypedActor.newInstance(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl])
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
-        template.requestBodyAndHeader("direct:m2", "x", "test", "y") must equal ("m2: x y")
-        template.requestBodyAndHeader("direct:m3", "x", "test", "y") must equal ("m3: x y")
-        template.requestBodyAndHeader("direct:m4", "x", "test", "y") must equal ("m4: x y")
+        mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y") must equal ("m2: x y")
+        mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y") must equal ("m3: x y")
+        mandatoryTemplate.requestBodyAndHeader("direct:m4", "x", "test", "y") must equal ("m4: x y")
       }
     }
     "stopped" must {
@@ -94,13 +94,13 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         TypedActor.stop(actor)
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
         intercept[CamelExecutionException] {
-          template.requestBodyAndHeader("direct:m2", "x", "test", "y")
+          mandatoryTemplate.requestBodyAndHeader("direct:m2", "x", "test", "y")
         }
         intercept[CamelExecutionException] {
-          template.requestBodyAndHeader("direct:m3", "x", "test", "y")
+          mandatoryTemplate.requestBodyAndHeader("direct:m3", "x", "test", "y")
         }
         intercept[CamelExecutionException] {
-          template.requestBodyAndHeader("direct:m4", "x", "test", "y")
+          mandatoryTemplate.requestBodyAndHeader("direct:m4", "x", "test", "y")
         }
       }
     }
@@ -113,8 +113,8 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         val latch = service.expectEndpointActivationCount(2)
         actor = TypedActor.newInstance(classOf[TestTypedConsumer], classOf[TestTypedConsumerImpl])
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
-        template.requestBody("direct:publish-test-3", "x") must equal ("foo: x")
-        template.requestBody("direct:publish-test-4", "x") must equal ("bar: x")
+        mandatoryTemplate.requestBody("direct:publish-test-3", "x") must equal ("foo: x")
+        mandatoryTemplate.requestBody("direct:publish-test-4", "x") must equal ("bar: x")
       }
     }
     "stopped" must {
@@ -123,10 +123,10 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         TypedActor.stop(actor)
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
         intercept[CamelExecutionException] {
-          template.requestBody("direct:publish-test-3", "x")
+          mandatoryTemplate.requestBody("direct:publish-test-3", "x")
         }
         intercept[CamelExecutionException] {
-          template.requestBody("direct:publish-test-4", "x")
+          mandatoryTemplate.requestBody("direct:publish-test-4", "x")
         }
       }
     }
@@ -139,7 +139,7 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         val latch = service.expectEndpointActivationCount(1)
         consumer.start
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
-        template.requestBodyAndHeader("direct:test-untyped-consumer", "x", "test", "y") must equal ("x y")
+        mandatoryTemplate.requestBodyAndHeader("direct:test-untyped-consumer", "x", "test", "y") must equal ("x y")
       }
     }
     "stopped" must {
@@ -148,7 +148,7 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         consumer.stop
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
         intercept[CamelExecutionException] {
-          template.sendBodyAndHeader("direct:test-untyped-consumer", "blah", "test", "blub")
+          mandatoryTemplate.sendBodyAndHeader("direct:test-untyped-consumer", "blah", "test", "blub")
         }
       }
     }
@@ -162,7 +162,7 @@ class ConsumerTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
         latch.await(5000, TimeUnit.MILLISECONDS) must be (true)
 
         try {
-          template.requestBody("direct:publish-test-5", "msg3")
+          mandatoryTemplate.requestBody("direct:publish-test-5", "msg3")
           fail("expected TimoutException not thrown")
         } catch {
           case e => {

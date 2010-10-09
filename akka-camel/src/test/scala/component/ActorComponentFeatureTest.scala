@@ -18,7 +18,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
   override protected def beforeAll = {
     ActorRegistry.shutdownAll
     CamelContextManager.init
-    CamelContextManager.context.addRoutes(new TestRoute)
+    CamelContextManager.mandatoryContext.addRoutes(new TestRoute)
     CamelContextManager.start
   }
 
@@ -30,12 +30,12 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
   }
 
   feature("Communicate with an actor via an actor:uuid endpoint") {
-    import CamelContextManager.template
+    import CamelContextManager.mandatoryTemplate
 
     scenario("one-way communication") {
       val actor = actorOf[Tester1].start
       val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
-      template.sendBody("actor:uuid:%s" format actor.uuid, "Martin")
+      mandatoryTemplate.sendBody("actor:uuid:%s" format actor.uuid, "Martin")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       val reply = (actor !! GetRetainedMessage).get.asInstanceOf[Message]
       assert(reply.body === "Martin")
@@ -43,36 +43,36 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
 
     scenario("two-way communication") {
       val actor = actorOf[Tester2].start
-      assert(template.requestBody("actor:uuid:%s" format actor.uuid, "Martin") === "Hello Martin")
+      assert(mandatoryTemplate.requestBody("actor:uuid:%s" format actor.uuid, "Martin") === "Hello Martin")
     }
 
     scenario("two-way communication with timeout") {
       val actor = actorOf[Tester3].start
       intercept[RuntimeCamelException] {
-        template.requestBody("actor:uuid:%s?blocking=true" format actor.uuid, "Martin")
+        mandatoryTemplate.requestBody("actor:uuid:%s?blocking=true" format actor.uuid, "Martin")
       }
     }
 
     scenario("two-way communication via a custom route with failure response") {
       mockEndpoint.expectedBodiesReceived("whatever")
-      template.requestBody("direct:failure-test-1", "whatever")
+      mandatoryTemplate.requestBody("direct:failure-test-1", "whatever")
       mockEndpoint.assertIsSatisfied
     }
 
     scenario("two-way communication via a custom route with exception") {
       mockEndpoint.expectedBodiesReceived("whatever")
-      template.requestBody("direct:failure-test-2", "whatever")
+      mandatoryTemplate.requestBody("direct:failure-test-2", "whatever")
       mockEndpoint.assertIsSatisfied
     }
   }
 
   feature("Communicate with an actor via an actor:id endpoint") {
-    import CamelContextManager.template
+    import CamelContextManager.mandatoryTemplate
 
     scenario("one-way communication") {
       val actor = actorOf[Tester1].start
       val latch = (actor !! SetExpectedMessageCount(1)).as[CountDownLatch].get
-      template.sendBody("actor:%s" format actor.id, "Martin")
+      mandatoryTemplate.sendBody("actor:%s" format actor.id, "Martin")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
       val reply = (actor !! GetRetainedMessage).get.asInstanceOf[Message]
       assert(reply.body === "Martin")
@@ -80,17 +80,17 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
 
     scenario("two-way communication") {
       val actor = actorOf[Tester2].start
-      assert(template.requestBody("actor:%s" format actor.id, "Martin") === "Hello Martin")
+      assert(mandatoryTemplate.requestBody("actor:%s" format actor.id, "Martin") === "Hello Martin")
     }
 
     scenario("two-way communication via a custom route") {
       val actor = actorOf[CustomIdActor].start
-      assert(template.requestBody("direct:custom-id-test-1", "Martin") === "Received Martin")
-      assert(template.requestBody("direct:custom-id-test-2", "Martin") === "Received Martin")
+      assert(mandatoryTemplate.requestBody("direct:custom-id-test-1", "Martin") === "Received Martin")
+      assert(mandatoryTemplate.requestBody("direct:custom-id-test-2", "Martin") === "Received Martin")
     }
   }
 
-  private def mockEndpoint = CamelContextManager.context.getEndpoint("mock:mock", classOf[MockEndpoint])
+  private def mockEndpoint = CamelContextManager.mandatoryContext.getEndpoint("mock:mock", classOf[MockEndpoint])
 }
 
 object ActorComponentFeatureTest {

@@ -665,13 +665,12 @@ object TypedActor extends Logging {
    * @param trapExceptions array of exceptions that should be handled by the supervisor
    */
   def link(supervisor: AnyRef, supervised: AnyRef,
-           handler: FaultHandlingStrategy, trapExceptions: Array[Class[_ <: Throwable]]) = {
+           handler: FaultHandlingStrategy) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
       throw new IllegalActorStateException("Can't link when the supervisor is not an Typed Actor"))
     val supervisedActor = actorFor(supervised).getOrElse(
       throw new IllegalActorStateException("Can't link when the supervised is not an Typed Actor"))
-    supervisorActor.trapExit = trapExceptions.toList
-    supervisorActor.faultHandler = Some(handler)
+    supervisorActor.faultHandler = handler
     supervisorActor.link(supervisedActor)
   }
 
@@ -689,18 +688,6 @@ object TypedActor extends Logging {
   }
 
   /**
-   * Sets the trap exit for the given supervisor Typed Actor.
-   * @param supervisor the supervisor Typed Actor
-   * @param trapExceptions array of exceptions that should be handled by the supervisor
-   */
-  def trapExit(supervisor: AnyRef, trapExceptions: Array[Class[_ <: Throwable]]) = {
-    val supervisorActor = actorFor(supervisor).getOrElse(
-      throw new IllegalActorStateException("Can't set trap exceptions when the supervisor is not an Typed Actor"))
-    supervisorActor.trapExit = trapExceptions.toList
-    this
-  }
-
-  /**
    * Sets the fault handling strategy for the given supervisor Typed Actor.
    * @param supervisor the supervisor Typed Actor
    * @param handler fault handling strategy
@@ -708,7 +695,7 @@ object TypedActor extends Logging {
   def faultHandler(supervisor: AnyRef, handler: FaultHandlingStrategy) = {
     val supervisorActor = actorFor(supervisor).getOrElse(
       throw new IllegalActorStateException("Can't set fault handler when the supervisor is not an Typed Actor"))
-    supervisorActor.faultHandler = Some(handler)
+    supervisorActor.faultHandler = handler
     this
   }
 

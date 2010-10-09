@@ -14,10 +14,10 @@ import se.scalablesolutions.akka.amqp.AMQP.{ExchangeParameters, ConsumerParamete
 import org.multiverse.api.latches.StandardLatch
 import org.scalatest.junit.JUnitSuite
 
-class AMQPConsumerManualRejectTest extends JUnitSuite with MustMatchers {
+class AMQPConsumerManualRejectTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessageManualAcknowledge = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerMessageManualAcknowledge = AMQPTest.withCleanEndState {
     val connection = AMQP.newConnection()
     try {
       val countDown = new CountDownLatch(2)
@@ -27,19 +27,20 @@ class AMQPConsumerManualRejectTest extends JUnitSuite with MustMatchers {
         case Restarting => restartingLatch.open
         case Stopped => ()
       }
-      val exchangeParameters = ExchangeParameters("text_exchange",ExchangeType.Direct)
+      val exchangeParameters = ExchangeParameters("text_exchange")
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
       val rejectedLatch = new StandardLatch
-      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters(exchangeParameters, "manual.reject.this", actor {
+      val consumer:ActorRef = AMQP.newConsumer(connection, ConsumerParameters("manual.reject.this", actor {
         case Delivery(payload, _, deliveryTag, _, sender) => {
           sender.foreach(_ ! Reject(deliveryTag))
         }
         case Rejected(deliveryTag) => rejectedLatch.open
-      }, queueName = Some("self.reject.queue"), selfAcknowledging = false, queueAutoDelete = false, channelParameters = Some(channelParameters)))
+      }, queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
+        selfAcknowledging = false, channelParameters = Some(channelParameters)))
 
       val producer = AMQP.newProducer(connection,
-        ProducerParameters(exchangeParameters, channelParameters = Some(channelParameters)))
+        ProducerParameters(Some(exchangeParameters), channelParameters = Some(channelParameters)))
 
       countDown.await(2, TimeUnit.SECONDS) must be (true)
       producer ! Message("some_payload".getBytes, "manual.reject.this")
