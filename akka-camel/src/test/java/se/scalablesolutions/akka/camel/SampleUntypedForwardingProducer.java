@@ -12,7 +12,7 @@ public class SampleUntypedForwardingProducer extends UntypedProducerActor {
     @Override
     public void onReceiveAfterProduce(Object message) {
         Message msg = (Message)message;
-        String body = msg.bodyAs(String.class);
+        String body = msg.getBodyAs(String.class);
         CamelContextManager.getMandatoryTemplate().sendBody("direct:forward-test-1", body);
     }
 }
