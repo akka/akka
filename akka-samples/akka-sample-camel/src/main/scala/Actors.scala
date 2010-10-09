@@ -84,7 +84,7 @@ class Consumer5 extends Actor with Consumer with Logging {
 
 class Transformer(producer: ActorRef) extends Actor {
   protected def receive = {
-    case msg: Message => producer.forward(msg.transformBody[String]("- %s -" format _))
+    case msg: Message => producer.forward(msg.transformBody( (body: String) => "- %s -" format body))
   }
 }
 
@@ -137,7 +137,7 @@ class HttpProducer(transformer: ActorRef) extends Actor with Producer {
 
 class HttpTransformer extends Actor {
   protected def receive = {
-    case msg: Message => self.reply(msg.transformBody[String] {_ replaceAll ("Akka ", "AKKA ")})
+    case msg: Message => self.reply(msg.transformBody {body: String => body replaceAll ("Akka ", "AKKA ")})
     case msg: Failure => self.reply(msg)
   }
 }

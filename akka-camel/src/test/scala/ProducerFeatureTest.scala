@@ -246,7 +246,7 @@ object ProducerFeatureTest {
   class TestProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
     def endpointUri = uri
     override protected def receiveBeforeProduce = {
-      case msg: Message => if (upper) msg.transformBody[String] { _.toUpperCase } else msg
+      case msg: Message => if (upper) msg.transformBody { body: String => body.toUpperCase } else msg
     }
   }
 
@@ -261,7 +261,7 @@ object ProducerFeatureTest {
     protected def receive = {
       case msg: Message => msg.body match {
         case "fail" => self.reply(Failure(new Exception("failure"), msg.headers))
-        case _      => self.reply(msg.transformBody[String] { "received %s" format _ })
+        case _      => self.reply(msg.transformBody { body: String => "received %s" format body })
       }
     }
   }

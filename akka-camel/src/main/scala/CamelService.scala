@@ -159,7 +159,7 @@ object CamelServiceManager {
    */
   def mandatoryService =
     if (_current.isDefined) _current.get
-    else throw new IllegalStateException("co current Camel service")
+    else throw new IllegalStateException("co current CamelService")
 
   /**
    * Returns <code>Some(CamelService)</code> (containing the current CamelService)

@@ -10,17 +10,16 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitSuite
 
 
-class MessageTest extends JUnitSuite with BeforeAndAfterAll {
+class MessageScalaTest extends JUnitSuite with BeforeAndAfterAll {
   override protected def beforeAll = CamelContextManager.init
 
   @Test def shouldConvertDoubleBodyToString = {
-    assertEquals("1.4", Message(1.4, null).bodyAs[String])
-    assertEquals("1.4", Message(1.4, null).bodyAs(classOf[String]))
+    assertEquals("1.4", Message(1.4).bodyAs[String])
   }
 
   @Test def shouldThrowExceptionWhenConvertingDoubleBodyToInputStream {
     intercept[NoTypeConversionAvailableException] {
-      Message(1.4, null).bodyAs[InputStream]
+      Message(1.4).bodyAs[InputStream]
     }
   }
 
@@ -32,7 +31,6 @@ class MessageTest extends JUnitSuite with BeforeAndAfterAll {
   @Test def shouldConvertDoubleHeaderToString = {
     val message = Message("test" , Map("test" -> 1.4))
     assertEquals("1.4", message.headerAs[String]("test"))
-    assertEquals("1.4", message.headerAs("test", classOf[String]))
   }
 
   @Test def shouldReturnSubsetOfHeaders = {
@@ -43,7 +41,7 @@ class MessageTest extends JUnitSuite with BeforeAndAfterAll {
   @Test def shouldTransformBodyAndPreserveHeaders = {
     assertEquals(
       Message("ab", Map("A" -> "1")),
-      Message("a" , Map("A" -> "1")).transformBody[String](body => body + "b"))
+      Message("a" , Map("A" -> "1")).transformBody((body: String) => body + "b"))
   }
 
   @Test def shouldConvertBodyAndPreserveHeaders = {
