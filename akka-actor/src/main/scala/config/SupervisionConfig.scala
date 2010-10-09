@@ -7,20 +7,45 @@ package se.scalablesolutions.akka.config
 import se.scalablesolutions.akka.actor.{ActorRef}
 import se.scalablesolutions.akka.dispatch.MessageDispatcher
 
-sealed abstract class FaultHandlingStrategy
-object AllForOneStrategy {
-  def apply(maxNrOfRetries: Int, withinTimeRange: Int): AllForOneStrategy =
-    AllForOneStrategy(if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+sealed abstract class FaultHandlingStrategy {
+  def trapExit: List[Class[_ <: Throwable]]
 }
-case class AllForOneStrategy(maxNrOfRetries: Option[Int] = None, withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy
+
+object AllForOneStrategy {
+  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new AllForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def apply(trapExit: Array[Class[Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new AllForOneStrategy(trapExit.toList,maxNrOfRetries,withinTimeRange)
+}
+
+case class AllForOneStrategy(trapExit: List[Class[_ <: Throwable]],
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  def this(trapExit: List[Class[_ <: Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: Array[Class[Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toList,maxNrOfRetries,withinTimeRange)
+}
 
 object OneForOneStrategy {
-  def apply(maxNrOfRetries: Int, withinTimeRange: Int): OneForOneStrategy =
-    this(if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new OneForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def apply(trapExit: Array[Class[Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    new OneForOneStrategy(trapExit.toList,maxNrOfRetries,withinTimeRange)
 }
-case class OneForOneStrategy(maxNrOfRetries: Option[Int] = None, withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy
+
+case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  def this(trapExit: List[Class[_ <: Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: Array[Class[Throwable]],maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toList,maxNrOfRetries,withinTimeRange)
+}
+
+case object NoFaultHandlingStrategy extends FaultHandlingStrategy {
+  def trapExit: List[Class[_ <: Throwable]] = Nil
+}
 
 /**
  * Configuration classes - not to be used as messages.

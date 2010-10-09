@@ -21,8 +21,8 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
     import CamelContextManager._
     scenario("with a custom CamelContext and access a registered typed actor") {
       val appctx = new ClassPathXmlApplicationContext("/appContextCamelServiceCustom.xml")
-      assert(context.isInstanceOf[SpringCamelContext])
-      assert("hello sample" === template.requestBody("direct:test", "sample"))
+      assert(mandatoryContext.isInstanceOf[SpringCamelContext])
+      assert("hello sample" === mandatoryTemplate.requestBody("direct:test", "sample"))
       appctx.close
     }
 
@@ -32,10 +32,10 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
       val registry = new SimpleRegistry
       registry.put("custom", TypedActor.newInstance(classOf[SampleBeanIntf], classOf[SampleBean]))
       // set custom registry in DefaultCamelContext
-      assert(context.isInstanceOf[DefaultCamelContext])
-      context.asInstanceOf[DefaultCamelContext].setRegistry(registry)
+      assert(mandatoryContext.isInstanceOf[DefaultCamelContext])
+      mandatoryContext.asInstanceOf[DefaultCamelContext].setRegistry(registry)
       // access registered typed actor
-      assert("hello sample" === template.requestBody("typed-actor:custom?method=foo", "sample"))
+      assert("hello sample" === mandatoryTemplate.requestBody("typed-actor:custom?method=foo", "sample"))
       appctx.close
     }
   }

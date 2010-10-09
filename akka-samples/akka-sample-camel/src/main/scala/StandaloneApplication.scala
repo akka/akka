@@ -12,7 +12,7 @@ import se.scalablesolutions.akka.camel._
  * @author Martin Krasser
  */
 object StandaloneApplication extends Application {
-  import CamelContextManager.context
+  import CamelContextManager._
   import CamelServiceManager._
 
   // 'externally' register typed actors
@@ -21,15 +21,15 @@ object StandaloneApplication extends Application {
 
   // customize CamelContext
   CamelContextManager.init(new DefaultCamelContext(registry))
-  CamelContextManager.context.addRoutes(new StandaloneApplicationRoute)
+  CamelContextManager.mandatoryContext.addRoutes(new StandaloneApplicationRoute)
 
   startCamelService
 
   // access 'externally' registered typed actors
-  assert("hello msg1" == context.createProducerTemplate.requestBody("direct:test", "msg1"))
+  assert("hello msg1" == mandatoryContext.createProducerTemplate.requestBody("direct:test", "msg1"))
 
   // set expectations on upcoming endpoint activation
-  val activation = service.expectEndpointActivationCount(1)
+  val activation = mandatoryService.expectEndpointActivationCount(1)
 
   // 'internally' register typed actor (requires CamelService)
   TypedActor.newInstance(classOf[TypedConsumer2], classOf[TypedConsumer2Impl])
@@ -39,7 +39,7 @@ object StandaloneApplication extends Application {
 
   // access 'internally' (automatically) registered typed-actors
   // (see @consume annotation value at TypedConsumer2.foo method)
-  assert("default: msg3" == context.createProducerTemplate.requestBody("direct:default", "msg3"))
+  assert("default: msg3" == mandatoryContext.createProducerTemplate.requestBody("direct:default", "msg3"))
 
   stopCamelService
 
@@ -60,7 +60,7 @@ object StandaloneSpringApplication extends Application {
   val appctx = new ClassPathXmlApplicationContext("/context-standalone.xml")
 
   // access 'externally' registered typed actors with typed-actor component
-  assert("hello msg3" == template.requestBody("direct:test3", "msg3"))
+  assert("hello msg3" == mandatoryTemplate.requestBody("direct:test3", "msg3"))
 
   appctx.close
 
@@ -86,7 +86,7 @@ object StandaloneJmsApplication extends Application {
   startCamelService
 
   // Expect two consumer endpoints to be activated
-  val completion = service.expectEndpointActivationCount(2)
+  val completion = mandatoryService.expectEndpointActivationCount(2)
 
   val jmsUri = "jms:topic:test"
   // Wire publisher and consumer using a JMS topic
@@ -104,7 +104,7 @@ object StandaloneJmsApplication extends Application {
 
   // Send 10 messages to JMS topic directly
   for(i <- 1 to 10) {
-    CamelContextManager.template.sendBody(jmsUri, "Camel rocks (%d)" format i)
+    CamelContextManager.mandatoryTemplate.sendBody(jmsUri, "Camel rocks (%d)" format i)
   }
 
   stopCamelService

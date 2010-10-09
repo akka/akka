@@ -27,7 +27,7 @@ trait ProducerSupport { this: Actor =>
    * <code>Endpoint</code> object resolved from the current CamelContext with
    * <code>endpointUri</code>.
    */
-  private lazy val endpoint = CamelContextManager.context.getEndpoint(endpointUri)
+  private lazy val endpoint = CamelContextManager.mandatoryContext.getEndpoint(endpointUri)
 
   /**
    * <code>SendProcessor</code> for producing messages to <code>endpoint</code>.

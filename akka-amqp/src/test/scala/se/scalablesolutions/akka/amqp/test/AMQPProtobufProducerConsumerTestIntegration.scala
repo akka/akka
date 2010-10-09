@@ -12,10 +12,10 @@ import java.util.concurrent.TimeUnit
 import se.scalablesolutions.akka.amqp.rpc.RPC
 import se.scalablesolutions.akka.remote.protocol.RemoteProtocol.AddressProtocol
 
-class AMQPProtobufProducerConsumerTest extends JUnitSuite with MustMatchers {
+class AMQPProtobufProducerConsumerTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = if (AMQPTest.enabled) AMQPTest.withCleanEndState {
+  def consumerMessage = AMQPTest.withCleanEndState {
 
     val connection = AMQP.newConnection()
 
@@ -29,9 +29,9 @@ class AMQPProtobufProducerConsumerTest extends JUnitSuite with MustMatchers {
       assert(response.getHostname == request.getHostname.reverse)
       responseLatch.open
     }
-    AMQP.newProtobufConsumer(connection, "", responseHandler, Some("proto.reply.key"))
+    AMQP.newProtobufConsumer(connection, responseHandler _, None, Some("proto.reply.key"))
 
-    val producer = AMQP.newProtobufProducer[AddressProtocol](connection, "protoexchange")
+    val producer = AMQP.newProtobufProducer[AddressProtocol](connection, Some("protoexchange"))
     producer.send(request, Some("proto.reply.key"))
 
     responseLatch.tryAwait(2, TimeUnit.SECONDS) must be (true)
