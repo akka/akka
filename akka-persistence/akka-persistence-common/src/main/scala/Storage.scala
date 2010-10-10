@@ -95,56 +95,6 @@ private[akka] object PersistentMap {
 }
 
 /**
- * JavaAPI.
- * java.util.Map like wrapper of PersistentMap.
- */
-class JPersistentMap[K, V](map: PersistentMap[K,V]) {
-  import scala.collection.JavaConversions._
-
-  def clear() {
-    map.clear
-  }
-
-  def contains(key: K): Boolean = {
-    map.contains(key.asInstanceOf[K])
-  }
-
-  def get(key: K) : JOption[V] = {
-    map.get(key)
-  }
-
-  def isEmpty() : Boolean = {
-    map.isEmpty
-  }
-
-  def put(key: K, value: V) : JOption[V] = {
-	map.put(key, value)
-  }
-
-  def update(key: K, value: V) {
-	map.update(key, value)
-  }
-
-  def add(key: K, value: V) : JPersistentMap[K,V] = {
-    map.+=(key, value)
-    this
-  }
-
-  def putAll(m: java.util.Map[_ <: K, _ <: V]) {
-    m.entrySet.asInstanceOf[Set[java.util.Map.Entry[_ <: K, _ <: V]]].foreach(entry => put(entry.getKey, entry.getValue))
-  }
-
-  def remove(key: K) : JOption[V] = {
-	map.remove(key)
-  }
-
-  def size() : Int = {
-    map.size
-  }
-  
-}
-
-/**
  * Implementation of <tt>PersistentMap</tt> for every concrete
  * storage will have the same workflow. This abstracts the workflow.
  *
@@ -156,9 +106,7 @@ class JPersistentMap[K, V](map: PersistentMap[K,V]) {
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
         with Transactional with Committable with Abortable with Logging {
 
-  def asJava() : JPersistentMap[K, V] = {
-    new JPersistentMap(this)
-  }
+  def asJava() : java.util.Map[K, V] = scala.collection.JavaConversions.asMap(this)
 
   //Import Ops
   import PersistentMap._
@@ -482,42 +430,6 @@ private[akka] object PersistentVector {
 }
 
 /**
- * Java API.
- * Java friendly wrapper for PersistentVector.
- */
-class JPersistentVector[T](underlying: PersistentVector[T]) {
-  import scala.collection.JavaConversions._
-
-  def add(elem: T) {
-    underlying.+(elem)
-  }
-
-  def get(index: Int) : T = {
-    underlying.get(index)
-  }
-
-  def isEmpty() : Boolean = {
-    underlying.isEmpty
-  }
-
-  def update(index: Int, element: T) {
-    underlying.update(index, element)
-  }
-
-  def size() : Int = {
-    underlying.size
-  }
-
-  def first() : T = {
-    underlying.first
-  }
-
-  def last() : T = {
-    underlying.last
-  }
-}
-
-/**
  * Implements a template for a concrete persistent transactional vector based storage.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -526,9 +438,7 @@ trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committa
   //Import Ops
   import PersistentVector._
 
-  def asJava() : JPersistentVector[T] = {
-    new JPersistentVector(this)
-  }
+  def asJava() : java.util.List[T] = scala.collection.JavaConversions.asList(this)
 
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
