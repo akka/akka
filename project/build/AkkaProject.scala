@@ -86,6 +86,7 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
   lazy val casbahModuleConfig      = ModuleConfiguration("com.novus", CasbahRepo)
   lazy val timeModuleConfig        = ModuleConfiguration("org.scala-tools", "time", CasbahSnapshotRepo)
   lazy val voldemortModuleConfig   = ModuleConfiguration("voldemort", ClojarsRepo)
+  lazy val riakPBModuleConfig      = ModuleConfiguration("org.clojars.mmcgrana", ClojarsRepo)
   lazy val embeddedRepo            = EmbeddedRepo // This is the only exception, because the embedded repo is fast!
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -248,6 +249,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     lazy val vold_jetty = "org.mortbay.jetty" % "jetty" % "6.1.18" % "test"
     lazy val velocity = "org.apache.velocity" % "velocity" % "1.6.2" % "test"
     lazy val dbcp = "commons-dbcp" % "commons-dbcp" % "1.2.2" % "test"
+
+    //Riak PB Client
+    lazy val riak_pb_client = "org.clojars.mmcgrana"   %  "riak-java-pb-client"      % "0.1.0-SNAPSHOT"  % "compile"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -302,6 +306,9 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     " dist/akka-persistence-redis_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-mongo_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-persistence-cassandra_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-voldemort_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-riak_%s-%s.jar".format(buildScalaVersion, version) +
+    " dist/akka-persistence-hbase_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-kernel_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-spring_%s-%s.jar".format(buildScalaVersion, version) +
     " dist/akka-jta_%s-%s.jar".format(buildScalaVersion, version)
@@ -502,6 +509,8 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
       new AkkaHbaseProject(_), akka_persistence_common)
     lazy val akka_persistence_voldemort = project("akka-persistence-voldemort", "akka-persistence-voldemort",
       new AkkaVoldemortProject(_), akka_persistence_common)
+    lazy val akka_persistence_riak = project("akka-persistence-riak", "akka-persistence-riak",
+      new AkkaRiakProject(_), akka_persistence_common)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -599,6 +608,18 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val sjson = Dependencies.sjson_test
 
     override def testOptions = createTestFilter({ s:String=> s.endsWith("Suite") || s.endsWith("Test")})
+  }
+
+// akka-persistence-riak subproject
+  // -------------------------------------------------------------------------------------------------------------------
+
+  class AkkaRiakProject(info: ProjectInfo) extends AkkaDefaultProject(info, distPath) {
+    val riak_pb = Dependencies.riak_pb_client
+    //testing
+    val scalatest = Dependencies.scalatest
+
+
+    override def testOptions = createTestFilter(_.endsWith("Test"))
   }
 
 
