@@ -7,6 +7,7 @@ package se.scalablesolutions.akka.persistence.common
 import se.scalablesolutions.akka.stm._
 import se.scalablesolutions.akka.stm.TransactionManagement.transaction
 import se.scalablesolutions.akka.util.Logging
+import se.scalablesolutions.akka.japi.{Option => JOption}
 import collection.mutable.ArraySeq
 
 // FIXME move to 'stm' package + add message with more info
@@ -104,6 +105,8 @@ private[akka] object PersistentMap {
  */
 trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
         with Transactional with Committable with Abortable with Logging {
+
+  def asJava() : java.util.Map[K, V] = scala.collection.JavaConversions.asMap(this)
 
   //Import Ops
   import PersistentMap._
@@ -215,7 +218,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     curr
   }
 
-  override def update(key: K, value: V) = {
+  override def update(key: K, value: V) {
     register
     val curr = getCurrentValue(key)
     appendOnlyTxLog add LogEntry(Some(key), Some(value), UPD)
@@ -223,7 +226,7 @@ trait PersistentMap[K, V] extends scala.collection.mutable.Map[K, V]
     curr
   }
 
-  override def remove(key: K) = {
+  override def remove(key: K) : Option[V] = {
     register
     val curr = getCurrentValue(key)
     appendOnlyTxLog add LogEntry(Some(key), None, REM)
@@ -395,6 +398,27 @@ trait PersistentMapBinary extends PersistentMap[Array[Byte], Array[Byte]] {
       override def hasNext: Boolean = synchronized {!elements.isEmpty}
     }
   }
+
+  /**
+   * Java API.
+   */
+  def javaIterator: java.util.Iterator[java.util.Map.Entry[Array[Byte],Array[Byte]]]  = {
+    new java.util.Iterator[java.util.Map.Entry[Array[Byte],Array[Byte]]] {
+      private var elements = replayAllKeys
+      override def next: java.util.Map.Entry[Array[Byte], Array[Byte]] = synchronized {
+        val (k, v) = elements.head
+        elements = elements.tail
+        val entry = new java.util.Map.Entry[Array[Byte], Array[Byte]] {
+          override def getKey = k.toArray
+          override def getValue = v
+          override def setValue(v: Array[Byte]) = throw new UnsupportedOperationException("Use put or update methods to change a map entry.")
+        }
+        entry
+      }
+      override def hasNext: Boolean = synchronized { !elements.isEmpty }
+      override def remove: Unit = throw new UnsupportedOperationException("Use remove method to remove a map entry.")
+    }
+  }
 }
 
 private[akka] object PersistentVector {
@@ -413,6 +437,8 @@ private[akka] object PersistentVector {
 trait PersistentVector[T] extends IndexedSeq[T] with Transactional with Committable with Abortable {
   //Import Ops
   import PersistentVector._
+
+  def asJava() : java.util.List[T] = scala.collection.JavaConversions.asList(this)
 
   // append only log: records all mutating operations
   protected val appendOnlyTxLog = TransactionalVector[LogEntry]()
