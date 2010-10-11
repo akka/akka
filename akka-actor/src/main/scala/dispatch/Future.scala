@@ -20,7 +20,7 @@ object Futures {
    *  ... // do stuff
    * }
    * </pre>
-   */
+   *
   def future[T](timeout: Long)(body: => T): Future[T] = {
     val promise = new DefaultCompletableFuture[T](timeout)
 
@@ -31,6 +31,7 @@ object Futures {
     }
     promise
   }
+  */
 
   def awaitAll(futures: List[Future[_]]): Unit = futures.foreach(_.await)
 
