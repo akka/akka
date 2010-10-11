@@ -1045,7 +1045,7 @@ class LocalActorRef private[akka] (
                           } else {  // cannot restart more than N within M timerange
                             val windowStart = restartsWithinTimeRangeTimestamp
                             val now         = System.currentTimeMillis
-
+                            val retries     = maxNrOfRetriesCount.incrementAndGet
                             //We are within the time window if it isn't the first restart, or if the window hasn't closed
                             val insideWindow   = if (windowStart == 0)
                                                   false
@@ -1053,7 +1053,7 @@ class LocalActorRef private[akka] (
                                                   (now - windowStart) <= withinTimeRange.get
 
                             //The actor is dead if it dies X times within the window of restart
-                            val unrestartable = insideWindow && maxNrOfRetriesCount.incrementAndGet > maxNrOfRetries.getOrElse(1)
+                            val unrestartable = insideWindow && retries > maxNrOfRetries.getOrElse(1)
 
                             if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
                               restartsWithinTimeRangeTimestamp = now
