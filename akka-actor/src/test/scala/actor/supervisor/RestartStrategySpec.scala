@@ -221,10 +221,12 @@ class RestartStrategySpec extends JUnitSuite {
   }
 
   @Test
-  def slaveShouldNotRestartWithinTimeRange = {
+  def slaveShouldNotRestartWithinsTimeRange = {
     val boss = actorOf(new Actor{
       self.faultHandler = OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))
-      protected def receive = { case _ => () }
+      protected def receive = {
+        case m:MaximumNumberOfRestartsWithinTimeRangeReached => log.error(m.toString)
+      }
     }).start
 
     val restartLatch = new StandardLatch
