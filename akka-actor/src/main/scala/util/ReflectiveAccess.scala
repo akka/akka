@@ -194,7 +194,7 @@ object ReflectiveAccess extends Logging {
       "Can't load the typed actor module, make sure that akka-jta.jar is on the classpath")
 
     val transactionContainerObjectInstance: Option[TransactionContainerObject] =
-      getObjectFor("se.scalablesolutions.akka.actor.TransactionContainer$")
+      getObjectFor("se.scalablesolutions.akka.jta.TransactionContainer$")
 
     def createTransactionContainer: TransactionContainer = {
       ensureJtaEnabled
