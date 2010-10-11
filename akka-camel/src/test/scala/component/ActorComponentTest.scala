@@ -15,24 +15,52 @@ class ActorComponentTest extends JUnitSuite {
   @Test def shouldCreateEndpointWithIdDefined = {
     val ep1: ActorEndpoint = component.createEndpoint("actor:abc").asInstanceOf[ActorEndpoint]
     val ep2: ActorEndpoint = component.createEndpoint("actor:id:abc").asInstanceOf[ActorEndpoint]
-    assert(ep1.idValue === "abc")
-    assert(ep2.idValue === "abc")
+    assert(ep1.idValue === Some("abc"))
+    assert(ep2.idValue === Some("abc"))
     assert(ep1.idType === "id")
     assert(ep2.idType === "id")
     assert(!ep1.blocking)
     assert(!ep2.blocking)
   }
 
+  @Test def shouldCreateEndpointWithIdTemplate = {
+    val ep: ActorEndpoint = component.createEndpoint("actor:id:").asInstanceOf[ActorEndpoint]
+    assert(ep.idValue === None)
+    assert(ep.idType === "id")
+    assert(!ep.blocking)
+  }
+
+  @Test def shouldCreateEndpointWithIdTemplateAndBlockingSet = {
+    val ep: ActorEndpoint = component.createEndpoint("actor:id:?blocking=true").asInstanceOf[ActorEndpoint]
+    assert(ep.idValue === None)
+    assert(ep.idType === "id")
+    assert(ep.blocking)
+  }
+
   @Test def shouldCreateEndpointWithUuidDefined = {
     val ep: ActorEndpoint = component.createEndpoint("actor:uuid:%s" format testUUID).asInstanceOf[ActorEndpoint]
-    assert(ep.idValue === testUUID)
+    assert(ep.idValue === Some(testUUID))
     assert(ep.idType === "uuid")
     assert(!ep.blocking)
   }
 
+  @Test def shouldCreateEndpointWithUuidTemplate = {
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:").asInstanceOf[ActorEndpoint]
+    assert(ep.idValue === None)
+    assert(ep.idType === "uuid")
+    assert(!ep.blocking)
+  }
+
+  @Test def shouldCreateEndpointWithUuidTemplateandBlockingSet = {
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:?blocking=true").asInstanceOf[ActorEndpoint]
+    assert(ep.idValue === None)
+    assert(ep.idType === "uuid")
+    assert(ep.blocking)
+  }
+
   @Test def shouldCreateEndpointWithBlockingSet = {
     val ep: ActorEndpoint = component.createEndpoint("actor:uuid:%s?blocking=true" format testUUID).asInstanceOf[ActorEndpoint]
-    assert(ep.idValue === testUUID)
+    assert(ep.idValue === Some(testUUID))
     assert(ep.idType === "uuid")
     assert(ep.blocking)
   }
