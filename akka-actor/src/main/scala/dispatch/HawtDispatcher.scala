@@ -13,6 +13,7 @@ import org.fusesource.hawtdispatch.ListEventAggregator
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
 import java.util.concurrent.CountDownLatch
+import se.scalablesolutions.akka.util.Switch
 
 /**
  * Holds helper methods for working with actors that are using a HawtDispatcher as it's dispatcher.
@@ -141,19 +142,17 @@ object HawtDispatcher {
 class HawtDispatcher(val aggregate: Boolean = true, val parent: DispatchQueue = globalQueue) extends MessageDispatcher  {
   import HawtDispatcher._
 
-  private val active = new AtomicBoolean(false)
+  private val active = new Switch(false)
 
   val mailboxType: Option[MailboxType] = None
  
-  def start = if (active.compareAndSet(false, true)) retainNonDaemon
+  def start = active switchOn { retainNonDaemon }
 
-  def execute(task: Runnable) {}
+  def shutdown = active switchOff { releaseNonDaemon }
 
-  def shutdown = if (active.compareAndSet(true, false)) releaseNonDaemon
+  def isShutdown = active.isOff
 
-  def isShutdown = !active.get
-
-  def dispatch(invocation: MessageInvocation) = if (active.get()) {
+  def dispatch(invocation: MessageInvocation) = if (active.isOn) {
     mailbox(invocation.receiver).dispatch(invocation)
   } else {
     log.warning("%s is shut down,\n\tignoring the the messages sent to\n\t%s", toString, invocation.receiver)

@@ -94,7 +94,7 @@ class ExecutorBasedEventDrivenDispatcher(
   def dispatch(invocation: MessageInvocation) = {
     val mbox = getMailbox(invocation.receiver)
     mbox enqueue invocation
-    mbox.registerForExecution
+    registerForExecution(mbox)
   }
 
   /**
@@ -144,6 +144,17 @@ class ExecutorBasedEventDrivenDispatcher(
     "Can't build a new thread pool for a dispatcher that is already up and running")
   }
 
+  private[akka] def registerForExecution(mbox: MessageQueue with ExecutableMailbox): Unit = if (active.isOn) {
+    if (mbox.dispatcherLock.tryLock()) {
+      try {
+        executor execute mbox
+      } catch {
+        case e: RejectedExecutionException =>
+          mbox.dispatcherLock.unlock()
+          throw e
+      }
+    }
+  } else log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", this, mbox)
 
   override val toString = getClass.getSimpleName + "[" + name + "]"
 
@@ -168,7 +179,8 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
     } finally {
       dispatcherLock.unlock()
     }
-    if (reschedule || !self.isEmpty) registerForExecution
+    if (reschedule || !self.isEmpty)
+      dispatcher.registerForExecution(this)
   }
 
   /**
@@ -200,17 +212,5 @@ trait ExecutableMailbox extends Runnable { self: MessageQueue =>
     }
     false
   }
-
-  def registerForExecution: Unit = if (dispatcher.active.isOn) {
-    if (dispatcherLock.tryLock()) {
-      try {
-        dispatcher.execute(this)
-      } catch {
-        case e: RejectedExecutionException =>
-          dispatcherLock.unlock()
-          throw e
-      }
-    }
-  } else dispatcher.log.warning("%s is shut down,\n\tignoring the rest of the messages in the mailbox of\n\t%s", toString, this)
 }
 
