@@ -632,6 +632,10 @@ class AkkaParentProject(info: ProjectInfo) extends DefaultProject(info) {
     val atomikos_transactions_jta = Dependencies.atomikos_transactions_jta
     //val jta_1_1                   = Dependencies.jta_1_1
     //val atomikos_transactions_util = "com.atomikos" % "transactions-util" % "3.2.3" % "compile"
+    
+    //Testing
+    val junit        = Dependencies.junit
+    val scalatest    = Dependencies.scalatest
   }
 
   // -------------------------------------------------------------------------------------------------------------------
