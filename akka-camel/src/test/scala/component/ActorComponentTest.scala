@@ -10,30 +10,30 @@ import se.scalablesolutions.akka.actor.uuidFrom
 class ActorComponentTest extends JUnitSuite {
   val component: ActorComponent = ActorComponentTest.actorComponent
 
-  def testUUID = uuidFrom("93da8c80-c3fd-11df-abed-60334b120057")
+  def testUUID = "93da8c80-c3fd-11df-abed-60334b120057"
 
   @Test def shouldCreateEndpointWithIdDefined = {
     val ep1: ActorEndpoint = component.createEndpoint("actor:abc").asInstanceOf[ActorEndpoint]
     val ep2: ActorEndpoint = component.createEndpoint("actor:id:abc").asInstanceOf[ActorEndpoint]
-    assert(ep1.id === Some("abc"))
-    assert(ep2.id === Some("abc"))
-    assert(ep1.uuid === None)
-    assert(ep2.uuid === None)
+    assert(ep1.idValue === "abc")
+    assert(ep2.idValue === "abc")
+    assert(ep1.idType === "id")
+    assert(ep2.idType === "id")
     assert(!ep1.blocking)
     assert(!ep2.blocking)
   }
 
   @Test def shouldCreateEndpointWithUuidDefined = {
-    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:" + testUUID).asInstanceOf[ActorEndpoint]
-    assert(ep.uuid === Some(testUUID))
-    assert(ep.id === None)
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:%s" format testUUID).asInstanceOf[ActorEndpoint]
+    assert(ep.idValue === testUUID)
+    assert(ep.idType === "uuid")
     assert(!ep.blocking)
   }
 
   @Test def shouldCreateEndpointWithBlockingSet = {
-    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:"+testUUID+"?blocking=true").asInstanceOf[ActorEndpoint]
-    assert(ep.uuid === Some(testUUID))
-    assert(ep.id === None)
+    val ep: ActorEndpoint = component.createEndpoint("actor:uuid:%s?blocking=true" format testUUID).asInstanceOf[ActorEndpoint]
+    assert(ep.idValue === testUUID)
+    assert(ep.idType === "uuid")
     assert(ep.blocking)
   }
 }
